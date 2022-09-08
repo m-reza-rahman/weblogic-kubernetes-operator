@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.actions.impl.Operator;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
@@ -80,6 +81,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultWitParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
+import static oracle.weblogic.kubernetes.actions.TestActions.deleteNamespace;
 import static oracle.weblogic.kubernetes.actions.TestActions.dockerLogin;
 import static oracle.weblogic.kubernetes.actions.TestActions.dockerPull;
 import static oracle.weblogic.kubernetes.actions.TestActions.dockerPush;
@@ -87,12 +89,15 @@ import static oracle.weblogic.kubernetes.actions.TestActions.dockerTag;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.installIstio;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.uninstallIstio;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.awaitility.Awaitility.with;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 
 /**
@@ -565,5 +570,39 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
       return dockerPull(image) && dockerTag(image, kindRepoImage) && dockerPush(kindRepoImage);
     });
   }
+  
+  String webhookNamespace = "ns-webhook";
+  String chartDir = "../kubernetes/charts/weblogic-operator/webhook";
 
+  private void installWebHookOnlyOperator() {
+    // recreate WebHook namespace
+    deleteNamespace(webhookNamespace);
+    assertDoesNotThrow(() -> new Namespace().name(webhookNamespace).create());
+    createTestRepoSecret(webhookNamespace);
+    getLogger().info("Installing webhook only operator in namespace {0}", webhookNamespace);
+    String command = "helm install weblogic-operator-webhook  " + chartDir
+        + " --namespace ns-webhook  "
+        + "--set \"image=phx.ocir.io/weblogick8s/oracle/weblogic-kubernetes-operator:rel3440webhook\" "
+        + "--set \"enableClusterRoleBinding=false\" "
+        + "--set \"imagePullSecrets[0].name=test-images-repo-secret\" "
+        + "--set \"javaLoggingLevel=INFO\" "
+        + "--set \"serviceAccount=ns-webhook-sa\" "
+        + "--set \"domainNamespaces={null}\" "
+        + "--set \"domainNamespaceSelectionStrategy=List\" "
+        + "--set \"webhookOnly=true\"";
+    getLogger().info("Running command - \n" + command);
+    ExecResult result = null;
+    try {
+      result = ExecCommand.exec(command, true);
+      getLogger().info("The command returned exit value: "
+          + result.exitValue() + " command output: "
+          + result.stderr() + "\n" + result.stdout());
+      if (result.exitValue() != 0) {
+        getLogger().info("Command failed with errors " + result.stderr() + "\n" + result.stdout());
+        fail("Failed to install webhook");
+      }
+    } catch (Exception e) {
+      getLogger().info("Got exception, command failed with errors " + e.getMessage());
+    }
+  }
 }
