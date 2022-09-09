@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1ServiceAccount;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.actions.impl.Operator;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
@@ -78,6 +80,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_BUILD_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.createImage;
+import static oracle.weblogic.kubernetes.actions.TestActions.createServiceAccount;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultWitParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
@@ -580,6 +583,12 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
     // recreate WebHook namespace
     deleteNamespace(webhookNamespace);
     assertDoesNotThrow(() -> new Namespace().name(webhookNamespace).create());
+    getLogger().info("Creating service account");
+    assertDoesNotThrow(() -> createServiceAccount(new V1ServiceAccount()
+        .metadata(new V1ObjectMeta()
+            .namespace(webhookNamespace)
+            .name("ns-webhook-sa"))));
+    getLogger().info("Created service account: {0}", "ns-webhook-sa");
     createTestRepoSecret(webhookNamespace);
     getLogger().info("Installing webhook only operator in namespace {0}", webhookNamespace);
     String command = "helm install weblogic-operator-webhook  " + chartDir
