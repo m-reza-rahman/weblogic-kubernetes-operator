@@ -266,4 +266,3 @@ clusterSizePaddingValidationEnabled: true
 # runAsuser specifies the UID to run the operator and conversion webhook container processes. 
 # If not specified, it defaults to the user specified in the operator's container image.
 #runAsUser: 1000
-
