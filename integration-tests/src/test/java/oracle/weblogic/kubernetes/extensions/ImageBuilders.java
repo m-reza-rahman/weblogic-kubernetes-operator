@@ -342,6 +342,7 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
         logger.info("Uninstall istio after all test suites are run");
         uninstallIstio();
       }
+      deleteNamespace(webhookNamespace);
       logger.info("Cleanup WIT/WDT binary form {0}", RESULTS_ROOT);
       try {
         Files.deleteIfExists(Paths.get(RESULTS_ROOT, "wlthint3client.jar"));
@@ -580,8 +581,7 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
   String chartDir = "../kubernetes/charts/weblogic-operator/webhook";
 
   private void installWebHookOnlyOperator() {
-    // recreate WebHook namespace
-    deleteNamespace(webhookNamespace);
+    // recreate WebHook namespace    
     assertDoesNotThrow(() -> new Namespace().name(webhookNamespace).create());
     getLogger().info("Creating service account");
     assertDoesNotThrow(() -> createServiceAccount(new V1ServiceAccount()
