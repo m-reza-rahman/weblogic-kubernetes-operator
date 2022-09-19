@@ -594,7 +594,7 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
     String command = "helm install weblogic-operator-webhook  " + chartDir
         + " --namespace ns-webhook  "
         + "--set \"image=phx.ocir.io/weblogick8s/oracle/weblogic-kubernetes-operator:rel3440webhook\" "
-        + "--set \"enableClusterRoleBinding=false\" "
+        + "--set \"enableClusterRoleBinding=true\" "
         + "--set \"imagePullSecrets[0].name=test-images-repo-secret\" "
         + "--set \"javaLoggingLevel=INFO\" "
         + "--set \"serviceAccount=ns-webhook-sa\" "
