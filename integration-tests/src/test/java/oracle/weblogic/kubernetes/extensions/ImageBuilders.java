@@ -596,7 +596,7 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
         + "--set \"image=phx.ocir.io/weblogick8s/oracle/weblogic-kubernetes-operator:rel3440webhook\" "
         + "--set \"enableClusterRoleBinding=true\" "
         + "--set \"imagePullSecrets[0].name=test-images-repo-secret\" "
-        + "--set \"javaLoggingLevel=INFO\" "
+        + "--set \"javaLoggingLevel=FINE\" "
         + "--set \"serviceAccount=ns-webhook-sa\" "
         + "--set \"domainNamespaces={null}\" "
         + "--set \"domainNamespaceSelectionStrategy=List\" "
