@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.domain.Cluster;
+import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
@@ -290,9 +291,13 @@ public class CommonTestUtils {
    */
   public static boolean checkClusterReplicaCountMatches(String clusterName, String domainName,
                                                         String namespace, Integer replicaCount) throws ApiException {
-    Cluster cluster = TestActions.getDomainCustomResource(domainName, namespace).getSpec().getClusters()
-            .stream().filter(c -> c.clusterName().equals(clusterName)).findAny().orElse(null);
-    return Optional.ofNullable(cluster).get().replicas() == replicaCount;
+    DomainSpec spec = TestActions.getDomainCustomResource(domainName, namespace).getSpec();
+    Cluster cluster = spec.getClusters().stream().filter(c -> c.clusterName().equals(clusterName))
+        .findAny().orElse(null);
+    if (cluster == null) {
+      return spec.getReplicas() == replicaCount;
+    }
+    return cluster.replicas() == replicaCount;
   }
 
   /** Scale the WebLogic cluster to specified number of servers.

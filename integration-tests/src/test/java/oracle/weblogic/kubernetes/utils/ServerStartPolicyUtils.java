@@ -440,6 +440,10 @@ public class ServerStartPolicyUtils {
 
     ExecResult execResult = Command.withParams(params).executeAndReturnResult();
     if (checkResult) {
+      if (execResult.exitValue() != 0) {
+        logger.info("Failed to execute script " + script + ", exitValue() is " + execResult.exitValue()
+            + ", stdout is " + execResult.stdout() + ", stderr is " + execResult.stderr());
+      }
       assertEquals(0, execResult.exitValue(),
                 String.format("Failed to execute script  %s ", script));
     }
