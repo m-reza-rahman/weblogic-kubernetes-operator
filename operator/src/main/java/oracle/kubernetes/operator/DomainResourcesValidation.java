@@ -17,6 +17,7 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1beta1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1beta1PodDisruptionBudgetList;
+import io.kubernetes.client.util.Yaml;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.PodHelper;
@@ -155,6 +156,7 @@ class DomainResourcesValidation {
 
   private static void activateDomain(DomainProcessor dp, DomainPresenceInfo info) {
     info.setPopulated(true);
+    System.out.println("DEBUG: In activateDomain.. Activating domain " + Yaml.dump(info.getDomain()));
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
     if (info.getDomain().getStatus() == null) {
       makeRight = makeRight.interrupt();
