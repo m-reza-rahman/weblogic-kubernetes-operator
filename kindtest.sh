@@ -220,7 +220,7 @@ nodes:
       apiServer:
           # increase logging on the API server
           extraArgs:
-            v: 5
+            v: "5"
   - role: worker
     image: ${kind_image}
     extraMounts:
