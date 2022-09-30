@@ -357,8 +357,8 @@ public class CrdHelper {
         V1CustomResourceDefinition existingCrd = callResponse.getResult();
         mainDelegate.getCrdReference().set(existingCrd);
 
-        LOGGER.info("DEBUG: existingCrd is " + existingCrd);
         if (existingCrd == null) {
+          LOGGER.info("DEBUG: existingCrd is null");
           return doNext(createCrd(getNext()), packet);
         } else if (existingCrdContainsConversionWebhook(existingCrd)) {
           LOGGER.info("DEBUG: existingCrd contains conversion webhook.. do nothing");
