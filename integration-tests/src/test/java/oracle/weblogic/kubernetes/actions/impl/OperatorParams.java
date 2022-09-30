@@ -49,7 +49,7 @@ public class OperatorParams {
   private Map<String, Object> imagePullSecrets;
   private HelmParams helmParams;
   private boolean elkIntegrationEnabled;
-  private boolean enableClusterRoleBinding = false;
+  private boolean enableClusterRoleBinding = true;
   private String elasticSearchHost;
   private int elasticSearchPort;
   private String javaLoggingLevel;
