@@ -289,14 +289,15 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
           }
         }
 
+        //install webhook
+        installWebHookOnlyOperator();
+
         // set initialization success to true, not counting the istio installation as not all tests use istio
         isInitializationSuccessful = true;
         if (!OKD) {
           logger.info("Installing istio before any test suites are run");
           installIstio();
         }
-        //install webhook
-        installWebHookOnlyOperator();
       } finally {
         // Initialization is done. Release all waiting other threads. The latch is now disabled so
         // other threads
