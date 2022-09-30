@@ -618,18 +618,5 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
     } catch (Exception e) {
       getLogger().info("Got exception, command failed with errors " + e.getMessage());
     }
-    String podName = "weblogic-operator-webhook";
-    LoggingFacade logger = getLogger();
-    // wait for the operator to be ready
-    logger.info("Wait for the webhook operator pod to be ready in namespace {0}", webhookNamespace);
-    CommonTestUtils.withStandardRetryPolicy
-        .conditionEvaluationListener(
-            condition -> logger.info("Waiting for webhook operator to be running in namespace {0} "
-                    + "(elapsed time {1}ms, remaining time {2}ms)",
-                webhookNamespace,
-                condition.getElapsedTimeInMS(),
-                condition.getRemainingTimeInMS()))
-        .until(assertDoesNotThrow(() -> operatorIsReady(webhookNamespace),
-            "webhook operatorIsReady failed with ApiException"));
   }
 }
