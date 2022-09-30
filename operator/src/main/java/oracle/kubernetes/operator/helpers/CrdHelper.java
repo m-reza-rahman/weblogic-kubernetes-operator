@@ -357,15 +357,20 @@ public class CrdHelper {
         V1CustomResourceDefinition existingCrd = callResponse.getResult();
         mainDelegate.getCrdReference().set(existingCrd);
 
+        LOGGER.info("DEBUG: existingCrd is " + existingCrd);
         if (existingCrd == null) {
           return doNext(createCrd(getNext()), packet);
         } else if (existingCrdContainsConversionWebhook(existingCrd)) {
+          LOGGER.info("DEBUG: existingCrd contains conversion webhook.. do nothing");
           return doNext(packet);
         } else if (isOutdatedCrd(existingCrd)) {
+          LOGGER.info("DEBUG: existingCrd is outdated.. update crd");
           return doNext(updateCrd(getNext(), existingCrd), packet);
         } else if (!existingCrdContainsVersion(existingCrd)) {
+          LOGGER.info("DEBUG: existingCrd is doesn't contain version.. update crd");
           return doNext(updateExistingCrd(getNext(), existingCrd), packet);
         } else {
+          LOGGER.info("DEBUG: no condition match for existingCrd.., do nothing");
           return doNext(packet);
         }
       }
