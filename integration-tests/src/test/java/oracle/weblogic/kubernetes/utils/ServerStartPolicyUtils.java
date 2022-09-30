@@ -298,8 +298,8 @@ public class ServerStartPolicyUtils {
 
     setPodAntiAffinity(domain);
 
-    logger.info("Create domain custom resource for domainUid {0} in namespace {1}",
-            domainUid, domNamespace);
+    logger.info("Create domain custom resource for domainUid {0} in namespace {1}, domain is {2}",
+            domainUid, domNamespace, domain);
     boolean domCreated = assertDoesNotThrow(() -> createDomainCustomResource(domain),
             String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
                     domainUid, domNamespace));
