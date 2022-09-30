@@ -16,6 +16,7 @@ import io.kubernetes.client.openapi.apis.ApiextensionsV1Api;
 import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
 import io.kubernetes.client.util.ClientBuilder;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import org.awaitility.core.ConditionFactory;
@@ -99,6 +100,8 @@ public class Domain {
     }
     boolean domainExist = (domainObject != null);
     getLogger().info("Domain Object exists : " + domainExist);
+    getLogger().info("Domain Object is : " + domainObject);
+    getLogger().info("Domain Object is : " + Yaml.dump(domainObject));
     return domainExist;
   }
 
