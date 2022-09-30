@@ -201,7 +201,7 @@ reg_host="${reg_name}"
 echo "Registry Host: ${reg_host}"
 
 echo 'Create a cluster with the local registry enabled in containerd'
-cat <<EOF | kind create cluster --name "${kind_name}" --kubeconfig "${RESULT_ROOT}/kubeconfig" --config=-
+cat <<EOF | kind create cluster --name "${kind_name}" -v 5 --loglevel "debug" --kubeconfig "${RESULT_ROOT}/kubeconfig" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
