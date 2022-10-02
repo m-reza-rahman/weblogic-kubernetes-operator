@@ -100,8 +100,9 @@ public class Domain {
     }
     boolean domainExist = (domainObject != null);
     getLogger().info("Domain Object exists : " + domainExist);
-    getLogger().info("Domain Object is : " + domainObject);
-    getLogger().info("Domain Object is : " + Yaml.dump(domainObject));
+    if (domainExist) {
+      getLogger().info("Domain Object is : " + Yaml.dump(domainObject));
+    }
     return domainExist;
   }
 
