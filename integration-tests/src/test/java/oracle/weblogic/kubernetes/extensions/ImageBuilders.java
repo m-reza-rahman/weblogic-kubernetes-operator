@@ -31,6 +31,7 @@ import oracle.weblogic.kubernetes.actions.impl.Operator;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.CommonTestUtils;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.PortInuseEventWatcher;
@@ -90,6 +91,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.dockerPull;
 import static oracle.weblogic.kubernetes.actions.TestActions.dockerPush;
 import static oracle.weblogic.kubernetes.actions.TestActions.dockerTag;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
+import static oracle.weblogic.kubernetes.assertions.impl.Operator.isWebhookpodReady;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
@@ -616,5 +618,18 @@ public class ImageBuilders implements BeforeAllCallback, ExtensionContext.Store.
     } catch (Exception e) {
       getLogger().info("Got exception, command failed with errors " + e.getMessage());
     }
+    String podName = "weblogic-operator-webhook";
+    LoggingFacade logger = getLogger();
+    // wait for the operator to be ready
+    logger.info("Wait for the webhook operator pod to be ready in namespace {0}", webhookNamespace);
+    CommonTestUtils.withStandardRetryPolicy
+        .conditionEvaluationListener(
+            condition -> logger.info("Waiting for webhook operator to be running in namespace {0} "
+                    + "(elapsed time {1}ms, remaining time {2}ms)",
+                webhookNamespace,
+                condition.getElapsedTimeInMS(),
+                condition.getRemainingTimeInMS()))
+        .until(assertDoesNotThrow(() -> isWebhookpodReady(webhookNamespace),
+            "webhook operatorIsReady failed with ApiException"));
   }
 }

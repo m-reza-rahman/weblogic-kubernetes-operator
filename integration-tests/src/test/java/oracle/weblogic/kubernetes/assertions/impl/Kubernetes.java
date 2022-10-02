@@ -386,6 +386,34 @@ public class Kubernetes {
     }
     return status;
   }
+  
+  /**
+   * Checks if an operator pod is running in a given namespace.
+   * The method assumes the operator name to starts with weblogic-operator-
+   * and decorated with label weblogic.operatorName:namespace
+   * @param namespace in which to check for the pod existence
+   * @return true if pod exists and running otherwise false
+   * @throws ApiException when there is error in querying the cluster
+   */
+  public static boolean isOperatorWebhookPodReady(String namespace) throws ApiException {
+    boolean status = false;
+    String labelSelector = String.format("weblogic.webhookName in (%s)", namespace);
+    V1Pod pod = getPod(namespace, labelSelector, "weblogic-operator-");
+    if (pod != null && pod.getStatus() != null && pod.getStatus().getConditions() != null) {
+      // get the podCondition with the 'Ready' type field
+      V1PodCondition v1PodReadyCondition = pod.getStatus().getConditions().stream()
+          .filter(v1PodCondition -> "Ready".equals(v1PodCondition.getType()))
+          .findAny()
+          .orElse(null);
+
+      if (v1PodReadyCondition != null) {
+        status = v1PodReadyCondition.getStatus().equalsIgnoreCase("true");
+      }
+    } else {
+      getLogger().info("Pod doesn't exist");
+    }
+    return status;
+  }  
 
   /**
    * Checks if a NGINX pod is running in the specified namespace.
