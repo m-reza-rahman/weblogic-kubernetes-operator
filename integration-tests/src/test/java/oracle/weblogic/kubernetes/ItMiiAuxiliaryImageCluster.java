@@ -20,6 +20,7 @@ import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.apache.commons.io.FileUtils;
 import org.awaitility.core.ConditionFactory;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -214,6 +215,7 @@ class ItMiiAuxiliaryImageCluster {
    * verify the domain is patched and rolling restarted and
    * file in cluster scope image only copied to WLS server within the cluster.
    */
+  @Disabled
   @Test
   @Order(2)
   @DisplayName("Patch a domain using auxiliary image to add a new cluster configuration")
@@ -263,6 +265,7 @@ class ItMiiAuxiliaryImageCluster {
    * verify the domain is patched and rolling restarted,
    * files in cluster scope image only copied to WLS server within the cluster.
    */
+  @Disabled
   @Test
   @Order(3)
   @DisplayName("Patch a domain using auxiliary image to replace an existing cluster configuration")
@@ -313,6 +316,7 @@ class ItMiiAuxiliaryImageCluster {
    * to config the cluster scope configuration.
    * Verify that the JMS system resource config using adminServiceNodePort can not be found.
    */
+  @Disabled
   @Test
   @Order(4)
   @DisplayName("Verify that model files in an auxiliary images at the cluster scope are ignored")
