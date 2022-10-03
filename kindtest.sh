@@ -216,13 +216,21 @@ nodes:
     image: ${kind_image}
     kubeadmConfigPatches:
     - |
+      kind: KubeletConfiguration
+      containerLogMaxSize: "1000Mi"
+      containerLogMaxFiles: "2"
       kind: ClusterConfiguration
       apiServer:
           # increase logging on the API server
           extraArgs:
-            v: "5"
+            v: "3"
   - role: worker
     image: ${kind_image}
+    kubeadmConfigPatches:
+    - |
+      kind: KubeletConfiguration
+      containerLogMaxSize: "1000Mi"
+      containerLogMaxFiles: "2"
     extraMounts:
       - hostPath: ${PV_ROOT}
         containerPath: ${PV_ROOT}
