@@ -43,7 +43,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.awaitility.Awaitility.with;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -263,6 +262,27 @@ public class LoggingUtil {
     } catch (Exception ex) {
       logger.warning(ex.getMessage());
     }
+    
+    //write webhook pod log
+    String webHookNamespace = "ns-webhook";
+    try {
+      for (var pod : Kubernetes.listPods(webHookNamespace, null).getItems()) {
+        if (pod.getMetadata() != null) {
+          String podName = pod.getMetadata().getName();
+          List<V1Container> containers = pod.getSpec().getContainers();
+          logger.info("Found {0} container(s) in the pod {1}", containers.size(), podName);
+          for (var container : containers) {
+            String containerName = container.getName();
+            writeToFile(Kubernetes.getPodLog(podName, webHookNamespace, containerName), resultDir,
+                webHookNamespace + ".pod." + podName + ".container." + containerName + ".log", false);
+
+          }
+        }
+      }
+    } catch (Exception ex) {
+      logger.warning(ex.getMessage());
+    }
+    
   }
 
   /**
