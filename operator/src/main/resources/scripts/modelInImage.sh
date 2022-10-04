@@ -739,7 +739,7 @@ function createPrimordialDomain() {
         trace SEVERE \
           "The Domain resource specified 'spec.configuration.model.onlineUpdate.enabled=true'," \
           "but there are unsupported model changes for online update. Examples of unsupported" \
-          "changes include: changing ListenPort, ListenAddress, SSL, changing top level Topology attributes," \
+          "changes include- changing ListenPort, ListenAddress, SSL, changing top level Topology attributes," \
           "or deleting a ServerTemplate."
         exitOrLoop
       fi
