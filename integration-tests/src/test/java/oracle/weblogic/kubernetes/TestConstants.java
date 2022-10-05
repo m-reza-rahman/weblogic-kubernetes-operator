@@ -217,7 +217,7 @@ public interface TestConstants {
   public static final String LOGSTASH_NAME = "logstash";
   public static final String LOGSTASH_IMAGE = LOGSTASH_NAME + ":" + ELK_STACK_VERSION;
   public static final String FLUENTD_IMAGE = "fluent/fluentd-kubernetes-daemonset:" + FLUENTD_IMAGE_VERSION;
-  public static final String JAVA_LOGGING_LEVEL_VALUE = "INFO";
+  public static final String JAVA_LOGGING_LEVEL_VALUE = "FINE";
 
   public static final String WLS_LOGGING_EXPORTER_YAML_FILE_NAME = "WebLogicLoggingExporter.yaml";
   public static final String COPY_WLS_LOGGING_EXPORTER_FILE_NAME = "copy-logging-files-cmds.txt";
