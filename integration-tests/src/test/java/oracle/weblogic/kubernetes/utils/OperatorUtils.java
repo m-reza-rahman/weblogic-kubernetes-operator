@@ -331,7 +331,7 @@ public class OperatorUtils {
             domainNamespaceSelectionStrategy,
             domainNamespaceSelector,
             enableClusterRoleBinding,
-            "INFO",
+            "FINE",
             domainPresenceFailureRetryMaxCount,
             domainPresenceFailureRetrySeconds,
             false,
