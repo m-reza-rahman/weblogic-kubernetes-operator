@@ -65,11 +65,15 @@ public class RollingHelper {
     List<String> availableServers = new ArrayList<>();
     for (Map.Entry<String, ServerKubernetesObjects> entry : info.getServers().entrySet()) {
       V1Pod pod = entry.getValue().getPod().get();
-      if (pod != null && !PodHelper.isDeleting(pod) && PodHelper.getReadyStatus(pod)) {
+      if (pod != null && !isServerPodBeingDeleted(info, pod) && PodHelper.getReadyStatus(pod)) {
         availableServers.add(entry.getKey());
       }
     }
     return availableServers;
+  }
+
+  private static Boolean isServerPodBeingDeleted(DomainPresenceInfo info, V1Pod pod) {
+    return info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod)) || PodHelper.isDeleting(pod);
   }
 
   private static class RollingStep extends Step {

@@ -74,6 +74,7 @@ import io.kubernetes.client.openapi.models.V1ServiceAccount;
 import io.kubernetes.client.openapi.models.V1ServiceAccountList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1ServicePort;
+import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.PatchUtils;
 import io.kubernetes.client.util.Streams;
@@ -1369,9 +1370,13 @@ public class Kubernetes {
     );
 
     if (!response.isSuccess()) {
+
       getLogger().warning(
           "Failed to patch " + domainUid + " in namespace " + namespace + " using patch format: "
-              + patchFormat);
+              + patchFormat + ", response.getHttpStatusCode() is " + response.getHttpStatusCode()
+              + ", response is " + response.toString()
+              + ", status message is " + Optional.ofNullable(response.getStatus()).map(V1Status::getMessage)
+              + ", status reason is " + Optional.ofNullable(response.getStatus()).map(V1Status::getReason));
       return false;
     }
 
