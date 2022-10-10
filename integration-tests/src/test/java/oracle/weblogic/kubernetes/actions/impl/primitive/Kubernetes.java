@@ -291,7 +291,7 @@ public class Kubernetes {
         );
     deleteOptions = new DeleteOptions();
     deleteOptions.setGracePeriodSeconds(0L);
-    deleteOptions.setPropagationPolicy(FOREGROUND);
+    //deleteOptions.setPropagationPolicy(FOREGROUND);
   }
 
   // ------------------------  deployments -----------------------------------
