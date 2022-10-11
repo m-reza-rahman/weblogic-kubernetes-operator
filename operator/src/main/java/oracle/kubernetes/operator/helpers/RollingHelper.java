@@ -61,7 +61,7 @@ public class RollingHelper {
     return new RollingStep(rolling, next);
   }
 
-  private synchronized static List<String> getReadyServers(DomainPresenceInfo info) {
+  private static synchronized List<String> getReadyServers(DomainPresenceInfo info) {
     // These are presently Ready servers
     List<String> availableServers = new ArrayList<>();
     for (Map.Entry<String, ServerKubernetesObjects> entry : info.getServers().entrySet()) {
@@ -74,12 +74,12 @@ public class RollingHelper {
     return availableServers;
   }
 
-  private synchronized static Boolean isServerPodBeingDeleted(DomainPresenceInfo info, V1Pod pod) {
+  private static synchronized Boolean isServerPodBeingDeleted(DomainPresenceInfo info, V1Pod pod) {
     LOGGER.info("DEBUG: In isServerPodBeingDeleted.. pod is " + pod.getMetadata().getName()
         + ", deletion timestamp is " + pod.getMetadata().getDeletionTimestamp()
         + ", isServerPodBeingDeleted condition is " + info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod)));
-    return info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod)) ||
-        pod.getMetadata().getDeletionTimestamp() != null;
+    return info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod))
+        || pod.getMetadata().getDeletionTimestamp() != null;
   }
 
   private static class RollingStep extends Step {
