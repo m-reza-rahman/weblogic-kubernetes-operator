@@ -372,7 +372,7 @@ public class DomainStatusUpdater {
       if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
-        return onFailure(createRetry(context), packet, callResponse);
+        return super.onFailure(createRetry(context), packet, callResponse);
       }
     }
 
