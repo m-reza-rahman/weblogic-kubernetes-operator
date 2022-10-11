@@ -10,7 +10,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.utils.ItMiiSampleHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
+// import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -22,7 +22,7 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 /**
  * Tests to verify MII sample with JRF domain using auxiliary image.
  */
-@Disabled
+// @Disabled
 @DisplayName("Test model in image sample with JRF domain using auxiliary image")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @IntegrationTest
