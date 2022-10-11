@@ -438,7 +438,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
         if (!retriesLeft()) {
           return null;
         } else {
-          LOGGER.finer(MessageKeys.ASYNC_RETRY, identityHash(), String.valueOf(waitTime),
+          LOGGER.fine(MessageKeys.ASYNC_RETRY, identityHash(), String.valueOf(waitTime),
               requestParams.call, requestParams.namespace, requestParams.name, retryCount);
           na.delay(retryStep, packet, waitTime, TimeUnit.MILLISECONDS);
         }
@@ -449,7 +449,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
         long waitTime = Math.min((2 << ++retryCount) * SCALE, MAX) + (R.nextInt(HIGH - LOW) + LOW);
 
         LOGGER.fine(MessageKeys.ASYNC_RETRY, identityHash(), String.valueOf(waitTime),
-            requestParams.call, requestParams.namespace, requestParams.name);
+            requestParams.call, requestParams.namespace, requestParams.name, retryCount);
         NextAction na = new NextAction();
         na.delay(conflictStep, packet, waitTime, TimeUnit.MILLISECONDS);
         return na;
