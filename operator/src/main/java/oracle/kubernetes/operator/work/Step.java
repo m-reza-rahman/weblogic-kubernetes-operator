@@ -345,5 +345,9 @@ public abstract class Step {
     public Step getStep() {
       return step;
     }
+
+    public Packet getPacket() {
+      return packet;
+    }
   }
 }

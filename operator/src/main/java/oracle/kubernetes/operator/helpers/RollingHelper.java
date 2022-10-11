@@ -12,6 +12,8 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.Yaml;
@@ -276,9 +278,11 @@ public class RollingHelper {
         }
       }
 
-      LOGGER.info(MessageKeys.ROLLING_SERVERS, dom.getDomainUid(), servers, readyServers);
+      LOGGER.info(MessageKeys.ROLLING_SERVERS, dom.getDomainUid(), getServerNames(servers), readyServers);
 
       int countToRestartNow = countReady - dom.getMinAvailable(clusterName);
+      LOGGER.info("DEBUG: cluster is " + clusterName + ", countReady is " + countReady
+          + ", countToRestartNow is " + countToRestartNow + ", min available is " + dom.getMinAvailable(clusterName));
       Collection<StepAndPacket> restarts = new ArrayList<>();
       for (int i = 0; i < countToRestartNow; i++) {
         Optional.ofNullable(servers.poll())
@@ -286,12 +290,27 @@ public class RollingHelper {
       }
 
       if (!restarts.isEmpty()) {
+        LOGGER.info("DEBUG: cluster is " + clusterName + ", Starting " + getServerName(restarts) + " servers.");
         return doForkJoin(this, packet, restarts);
       } else if (!servers.isEmpty()) {
         return doDelay(this, packet, DELAY_IN_SECONDS, TimeUnit.SECONDS);
       } else {
         return doNext(packet);
       }
+    }
+
+    List<String> getServerNames(@Nonnull Queue<StepAndPacket> stepAndPackets) {
+      return stepAndPackets.stream().map(this::getServerName).collect(Collectors.toList());
+    }
+
+    List<String> getServerName(@Nonnull Collection<StepAndPacket> stepAndPackets) {
+      return stepAndPackets.stream().map(this::getServerName).collect(Collectors.toList());
+    }
+
+    String getServerName(StepAndPacket stepAndPacket) {
+      return (String) Optional.ofNullable(stepAndPacket.getPacket())
+          .map(p -> p.get(ProcessingConstants.SERVER_NAME))
+          .orElse("");
     }
   }
 }
