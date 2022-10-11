@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.util.Yaml;
 import oracle.kubernetes.operator.DomainStatusUpdater;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -60,11 +61,12 @@ public class RollingHelper {
     return new RollingStep(rolling, next);
   }
 
-  private static List<String> getReadyServers(DomainPresenceInfo info) {
+  private synchronized static List<String> getReadyServers(DomainPresenceInfo info) {
     // These are presently Ready servers
     List<String> availableServers = new ArrayList<>();
     for (Map.Entry<String, ServerKubernetesObjects> entry : info.getServers().entrySet()) {
       V1Pod pod = entry.getValue().getPod().get();
+      LOGGER.info("DEBUG: In getReadyServers, pod is " + Yaml.dump(pod));
       if (pod != null && !isServerPodBeingDeleted(info, pod) && PodHelper.getReadyStatus(pod)) {
         availableServers.add(entry.getKey());
       }
@@ -72,8 +74,12 @@ public class RollingHelper {
     return availableServers;
   }
 
-  private static Boolean isServerPodBeingDeleted(DomainPresenceInfo info, V1Pod pod) {
-    return info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod)) || PodHelper.isDeleting(pod);
+  private synchronized static Boolean isServerPodBeingDeleted(DomainPresenceInfo info, V1Pod pod) {
+    LOGGER.info("DEBUG: In isServerPodBeingDeleted.. pod is " + pod.getMetadata().getName()
+        + ", deletion timestamp is " + pod.getMetadata().getDeletionTimestamp()
+        + ", isServerPodBeingDeleted condition is " + info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod)));
+    return info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod)) ||
+        pod.getMetadata().getDeletionTimestamp() != null;
   }
 
   private static class RollingStep extends Step {
