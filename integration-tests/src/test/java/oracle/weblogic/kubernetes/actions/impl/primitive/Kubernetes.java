@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -1361,8 +1362,25 @@ public class Kubernetes {
    */
   public static boolean patchDomainCustomResource(String domainUid, String namespace,
                                                   V1Patch patch, String patchFormat) {
+    return patchDomainCustomResource(domainUid, namespace, patch, patchFormat, 0);
+  }
+
+  /**
+   * Patch the Domain Custom Resource.
+   *
+   * @param domainUid unique domain identifier
+   * @param namespace name of namespace
+   * @param patch patch data in format matching the specified media type
+   * @param patchFormat one of the following types used to identify patch document:
+   *     "application/json-patch+json", "application/merge-patch+json",
+   * @param maxRetryCount Max retry count.
+   * @return true if successful, false otherwise
+   */
+  public static boolean patchDomainCustomResource(String domainUid, String namespace,
+                                                  V1Patch patch, String patchFormat, int maxRetryCount) {
 
     final AtomicBoolean result = new AtomicBoolean(false);
+    final AtomicInteger retryCount = new AtomicInteger(0);
     testUntil(() -> {
       KubernetesApiResponse<Domain> response = crdClient.patch(
           namespace, // name of namespace
@@ -1371,8 +1389,8 @@ public class Kubernetes {
           patch // patch data
       );
       result.set(response.isSuccess());
-      return response.isSuccess();
-    }, getLogger(), "domain resource to be patched");
+      return response.isSuccess() || retryCount.incrementAndGet() > maxRetryCount;
+    }, getLogger(), "Retrying the domain resource patch operation until successful.");
 
     return result.get();
   }
