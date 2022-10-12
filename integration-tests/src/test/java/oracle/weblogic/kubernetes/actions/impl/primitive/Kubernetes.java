@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -74,7 +75,6 @@ import io.kubernetes.client.openapi.models.V1ServiceAccount;
 import io.kubernetes.client.openapi.models.V1ServiceAccountList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1ServicePort;
-import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.PatchUtils;
 import io.kubernetes.client.util.Streams;
@@ -92,6 +92,7 @@ import org.awaitility.core.ConditionFactory;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.awaitility.Awaitility.with;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -1361,26 +1362,19 @@ public class Kubernetes {
   public static boolean patchDomainCustomResource(String domainUid, String namespace,
                                                   V1Patch patch, String patchFormat) {
 
-    // GenericKubernetesApi uses CustomObjectsApi calls
-    KubernetesApiResponse<Domain> response = crdClient.patch(
-        namespace, // name of namespace
-        domainUid, // name of custom resource domain
-        patchFormat, // "application/json-patch+json" or "application/merge-patch+json"
-        patch // patch data
-    );
+    final AtomicBoolean result = new AtomicBoolean(false);
+    testUntil(() -> {
+      KubernetesApiResponse<Domain> response = crdClient.patch(
+          namespace, // name of namespace
+          domainUid, // name of custom resource domain
+          patchFormat, // "application/json-patch+json" or "application/merge-patch+json"
+          patch // patch data
+      );
+      result.set(response.isSuccess());
+      return response.isSuccess();
+    }, getLogger(), "domain resource to be patched");
 
-    if (!response.isSuccess()) {
-
-      getLogger().warning(
-          "Failed to patch " + domainUid + " in namespace " + namespace + " using patch format: "
-              + patchFormat + ", response.getHttpStatusCode() is " + response.getHttpStatusCode()
-              + ", response is " + response.toString()
-              + ", status message is " + Optional.ofNullable(response.getStatus()).map(V1Status::getMessage)
-              + ", status reason is " + Optional.ofNullable(response.getStatus()).map(V1Status::getReason));
-      return false;
-    }
-
-    return true;
+    return result.get();
   }
 
   /**
