@@ -26,7 +26,6 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.apache.commons.io.FileUtils;
 import org.awaitility.core.ConditionFactory;
 import org.junit.jupiter.api.BeforeAll;
-// import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -322,7 +321,6 @@ class ItMiiAuxiliaryImage {
    * verify the domain is running and JDBC DataSource resource is added.
    * Patch domain with updated JDBC URL info and verify the update.
    */
-  // @Disabled
   @Test
   @Order(2)
   @DisplayName("Test to update data source url in the  domain using auxiliary image")
@@ -380,7 +378,6 @@ class ItMiiAuxiliaryImage {
    * Verify all the pods are restarted and back to ready state.
    * Verify configured JMS and JDBC resources.
    */
-  // @Disabled
   @Test
   @Order(3)
   @DisplayName("Test to update Base Weblogic Image Name")
@@ -463,7 +460,6 @@ class ItMiiAuxiliaryImage {
    * Check the error message in introspector pod log, domain events and operator pod log.
    * Restore the domain by removing the custom mount command.
    */
-  // @Disabled
   @Test
   @Order(4)
   @DisplayName("Negative Test to patch domain using a custom mount command that's guaranteed to fail")
@@ -565,7 +561,6 @@ class ItMiiAuxiliaryImage {
    * in auxiliary image, set AUXILIARY_IMAGE_PATH to "/auxiliary"
    * Check the error message is in introspector pod log, domain events and operator pod log.
    */
-  // @Disabled
   @Test
   @Order(5)
   @DisplayName("Negative Test to create domain with mismatch mount path in auxiliary image and auxiliaryImageVolumes")
@@ -651,7 +646,6 @@ class ItMiiAuxiliaryImage {
    * Negative Test to create domain without WDT binary.
    * Check the error message is in introspector pod log, domain events and operator pod log.
    */
-  // @Disabled
   @Test
   @Order(6)
   @DisplayName("Negative Test to create domain without WDT binary")
@@ -738,7 +732,6 @@ class ItMiiAuxiliaryImage {
    * Negative Test to create domain without domain model file, the auxiliary image contains only sparse JMS config.
    * Check the error message is in introspector pod log, domain events and operator pod log
    */
-  // @Disabled
   @Test
   @Order(7)
   @DisplayName("Negative Test to create domain without domain model file, only having sparse JMS config")
@@ -830,7 +823,6 @@ class ItMiiAuxiliaryImage {
    * via provided Dockerfile.
    * Check the error message is in introspector pod log, domain events and operator pod log.
    */
-  // @Disabled
   @Test
   @Order(8)
   @DisplayName("Negative Test to create domain with file in auxiliary image not accessible by oracle user")
@@ -940,7 +932,6 @@ class ItMiiAuxiliaryImage {
    * update WDT version by patching with another auxiliary image (image3)
    * and verify the domain is running.
    */
-  // @Disabled
   @Test
   @Order(9)
   @DisplayName("Test to update WDT version using auxiliary images")
