@@ -12,7 +12,6 @@ import java.util.List;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.Domain;
 import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -392,10 +391,6 @@ class ItMiiDynamicUpdatePart3 {
     testUntil(
         () -> {
           Domain miidomain = getDomainCustomResource(domainUid, helper.domainNamespace);
-          if (miidomain != null) {
-            logger.info("DEBUG: miidomain is " + Yaml.dump(miidomain));
-            logger.info("DEBUG: miidomain.getStatus().getMessage() is " + miidomain.getStatus().getMessage());
-          }
           return (miidomain != null) && (miidomain.getStatus() != null) && (miidomain.getStatus().getMessage() != null)
               && miidomain.getStatus().getMessage().contains(expectedErrorMsg);
         },

@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.util.Yaml;
 import oracle.kubernetes.operator.DomainStatusUpdater;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -69,7 +68,6 @@ public class RollingHelper {
     for (Map.Entry<String, ServerKubernetesObjects> entry : info.getServers().entrySet()) {
       V1Pod pod = entry.getValue().getPod().get();
       if (pod != null && !isServerPodBeingDeleted(info, pod) && PodHelper.getReadyStatus(pod)) {
-        LOGGER.info("DEBUG: In getReadyServers, pod is " + Yaml.dump(pod));
         availableServers.add(entry.getKey());
       }
     }
@@ -77,9 +75,6 @@ public class RollingHelper {
   }
 
   private static synchronized Boolean isServerPodBeingDeleted(DomainPresenceInfo info, V1Pod pod) {
-    LOGGER.info("DEBUG: In isServerPodBeingDeleted.. pod is " + pod.getMetadata().getName()
-        + ", deletion timestamp is " + pod.getMetadata().getDeletionTimestamp()
-        + ", isServerPodBeingDeleted condition is " + info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod)));
     return info.isServerPodBeingDeleted(PodHelper.getPodServerName(pod))
         || pod.getMetadata().getDeletionTimestamp() != null;
   }
@@ -257,7 +252,6 @@ public class RollingHelper {
 
       // Refresh as this is constantly changing
       Domain dom = info.getDomain();
-      LOGGER.info("DEBUG: dom is " + Yaml.dump(dom) + ", ReplicaCount is " + dom.getReplicaCount(clusterName));
       // These are presently Ready servers
       List<String> availableServers = getReadyServers(info);
 
@@ -279,12 +273,8 @@ public class RollingHelper {
         }
       }
 
-      LOGGER.info(MessageKeys.ROLLING_SERVERS, dom.getDomainUid(), getServerNames(servers), readyServers);
 
-      LOGGER.info("DEBUG: ReplicaCount is " + dom.getReplicaCount(clusterName));
       int countToRestartNow = countReady - dom.getMinAvailable(clusterName);
-      LOGGER.info("DEBUG: cluster is " + clusterName + ", countReady is " + countReady
-          + ", countToRestartNow is " + countToRestartNow + ", min available is " + dom.getMinAvailable(clusterName));
       Collection<StepAndPacket> restarts = new ArrayList<>();
       for (int i = 0; i < countToRestartNow; i++) {
         Optional.ofNullable(servers.poll())
@@ -292,7 +282,6 @@ public class RollingHelper {
       }
 
       if (!restarts.isEmpty()) {
-        LOGGER.info("DEBUG: cluster is " + clusterName + ", Starting " + getServerName(restarts) + " servers.");
         return doForkJoin(this, packet, restarts);
       } else if (!servers.isEmpty()) {
         return doDelay(this, packet, DELAY_IN_SECONDS, TimeUnit.SECONDS);

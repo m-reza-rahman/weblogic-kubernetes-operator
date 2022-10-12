@@ -1177,7 +1177,6 @@ public class Kubernetes {
     String namespace = domain.metadata().getNamespace();
 
     JsonElement json = convertToJson(domain);
-    System.out.println("DEBUG: Domain json is " + json);
 
     Object response;
     try {

@@ -36,7 +36,6 @@ import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1beta1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1beta1PodDisruptionBudgetList;
 import io.kubernetes.client.util.Watch;
-import io.kubernetes.client.util.Yaml;
 import oracle.kubernetes.operator.TuningParameters.MainTuning;
 import oracle.kubernetes.operator.calls.FailureStatusSourceException;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
@@ -618,7 +617,6 @@ public class DomainProcessorImpl implements DomainProcessor {
 
   private void handleAddedDomain(Domain domain) {
     LOGGER.info(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
-    LOGGER.info("DEBUG: Added domain -> " + Yaml.dump(domain));
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
         .withExplicitRecheck()
@@ -628,7 +626,6 @@ public class DomainProcessorImpl implements DomainProcessor {
 
   private void handleModifiedDomain(Domain domain) {
     LOGGER.fine(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
-    LOGGER.info("DEBUG: Modified domain -> " + Yaml.dump(domain));
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
         .withEventData(EventItem.DOMAIN_CHANGED, null)
@@ -637,7 +634,6 @@ public class DomainProcessorImpl implements DomainProcessor {
 
   private void handleDeletedDomain(Domain domain) {
     LOGGER.info(MessageKeys.WATCH_DOMAIN_DELETED, domain.getDomainUid());
-    LOGGER.info("DEBUG: Deleted domain " + Yaml.dump(domain));
     createMakeRightOperation(new DomainPresenceInfo(domain)).interrupt().forDeletion().withExplicitRecheck()
         .withEventData(EventItem.DOMAIN_DELETED, null)
         .execute();
@@ -973,9 +969,6 @@ public class DomainProcessorImpl implements DomainProcessor {
               Component.createFor(liveInfo, delegate.getKubernetesVersion(),
                   PodAwaiterStepFactory.class, delegate.getPodAwaiterStepFactory(getNamespace()),
                   JobAwaiterStepFactory.class, delegate.getJobAwaiterStepFactory(getNamespace())));
-      LOGGER.info("DEBUG: calling runDomainPlan with domain -> "
-          + Optional.ofNullable(getDomain()).map(d -> Yaml.dump(getDomain())).orElse("null")
-          + ", willInterrupt is " + willInterrupt);
       runDomainPlan(
             getDomain(),
             getDomainUid(),

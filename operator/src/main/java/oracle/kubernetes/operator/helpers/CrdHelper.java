@@ -358,19 +358,14 @@ public class CrdHelper {
         mainDelegate.getCrdReference().set(existingCrd);
 
         if (existingCrd == null) {
-          LOGGER.info("DEBUG: existingCrd is null");
           return doNext(createCrd(getNext()), packet);
         } else if (existingCrdContainsConversionWebhook(existingCrd)) {
-          LOGGER.info("DEBUG: existingCrd contains conversion webhook.. do nothing");
           return doNext(packet);
         } else if (isOutdatedCrd(existingCrd)) {
-          LOGGER.info("DEBUG: existingCrd is outdated.. update crd");
           return doNext(updateCrd(getNext(), existingCrd), packet);
         } else if (!existingCrdContainsVersion(existingCrd)) {
-          LOGGER.info("DEBUG: existingCrd is doesn't contain version.. update crd");
           return doNext(updateExistingCrd(getNext(), existingCrd), packet);
         } else {
-          LOGGER.info("DEBUG: no condition match for existingCrd.., do nothing");
           return doNext(packet);
         }
       }

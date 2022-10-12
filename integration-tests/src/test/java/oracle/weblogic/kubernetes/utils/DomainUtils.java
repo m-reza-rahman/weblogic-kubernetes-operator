@@ -39,7 +39,6 @@ import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretReference;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
-import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -817,8 +816,6 @@ public class DomainUtils {
                             + "with ApiException when tried to get domain %s in namespace %s",
                     domainUid, domainNamespace));
 
-    getLogger().info("DEBUG: domain is " + Yaml.dump(domain));
-    getLogger().info("DEBUG: domain spec is " + Yaml.dump(domain.getSpec()));
     assertNotNull(domain, "Got null domain resource");
     assertNotNull(domain.getSpec(), domain + "/spec is null");
     return domain;
