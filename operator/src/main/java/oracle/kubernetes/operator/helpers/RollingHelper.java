@@ -257,6 +257,7 @@ public class RollingHelper {
 
       // Refresh as this is constantly changing
       Domain dom = info.getDomain();
+      LOGGER.info("DEBUG: dom is " + Yaml.dump(dom) + ", ReplicaCount is " + dom.getReplicaCount(clusterName));
       // These are presently Ready servers
       List<String> availableServers = getReadyServers(info);
 
@@ -280,6 +281,7 @@ public class RollingHelper {
 
       LOGGER.info(MessageKeys.ROLLING_SERVERS, dom.getDomainUid(), getServerNames(servers), readyServers);
 
+      LOGGER.info("DEBUG: ReplicaCount is " + dom.getReplicaCount(clusterName));
       int countToRestartNow = countReady - dom.getMinAvailable(clusterName);
       LOGGER.info("DEBUG: cluster is " + clusterName + ", countReady is " + countReady
           + ", countToRestartNow is " + countToRestartNow + ", min available is " + dom.getMinAvailable(clusterName));
