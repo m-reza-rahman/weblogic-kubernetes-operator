@@ -22,7 +22,6 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 /**
  * Tests to verify MII sample with JRF domain using auxiliary image.
  */
-// @Disabled
 @DisplayName("Test model in image sample with JRF domain using auxiliary image")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @IntegrationTest
