@@ -586,15 +586,15 @@
     <maven.compiler.target>11</maven.compiler.target>
     <java.version.range>11</java.version.range>
     <maven.version.range>[3.5.2,)</maven.version.range>
-    <maven-enforcer-plugin-version>3.0.0</maven-enforcer-plugin-version>
+    <maven-enforcer-plugin-version>3.1.0</maven-enforcer-plugin-version>
     <maven-clean-plugin-version>3.1.0</maven-clean-plugin-version>
-    <maven-compiler-plugin-version>3.10.0</maven-compiler-plugin-version>
+    <maven-compiler-plugin-version>3.10.1</maven-compiler-plugin-version>
     <maven-deploy-plugin-version>3.0.0-M2</maven-deploy-plugin-version>
-    <maven-install-plugin-version>3.0.0-M1</maven-install-plugin-version>
+    <maven-install-plugin-version>3.0.1</maven-install-plugin-version>
     <maven-jar-plugin-version>3.2.2</maven-jar-plugin-version>
     <maven-resources-plugin-version>3.2.0</maven-resources-plugin-version>
     <maven-site-plugin-version>3.11.0</maven-site-plugin-version>
-    <maven-surefire-plugin-version>3.0.0-M5</maven-surefire-plugin-version>
+    <maven-surefire-plugin-version>3.0.0-M7</maven-surefire-plugin-version>
     <maven-checkstyle-plugin-version>3.1.2</maven-checkstyle-plugin-version>
     <maven-release-plugin-version>3.0.0-M5</maven-release-plugin-version>
     <maven-javadoc-plugin-version>3.3.2</maven-javadoc-plugin-version>
@@ -605,14 +605,14 @@
     <spotbugs-version>4.7.1</spotbugs-version>
     <checkstyle-version>10.3.2</checkstyle-version>
     <directory-maven-version>1.0</directory-maven-version>
-    <maven-jxr-plugin-version>3.1.1</maven-jxr-plugin-version>
+    <maven-jxr-plugin-version>3.3.0</maven-jxr-plugin-version>
     <maven-gpg-plugin-version>3.0.1</maven-gpg-plugin-version>
     <hamcrest-junit-version>2.0.0.0</hamcrest-junit-version>
     <simplestub-version>1.3.2</simplestub-version>
     <jakarta-json-version>2.0.1</jakarta-json-version>
     <jms-api-version>2.0.1</jms-api-version>
     <kjetland-mbknor-jsonschema-version>1.0.39</kjetland-mbknor-jsonschema-version>
-    <networknt-jsonschmema-validator-version>1.0.68</networknt-jsonschmema-validator-version>
+    <networknt-jsonschmema-validator-version>1.0.73</networknt-jsonschmema-validator-version>
     <commons-exec-version>1.3</commons-exec-version>
     <commons-codec-version>1.15</commons-codec-version>
     <httpunit-version>1.7.3</httpunit-version>
@@ -624,14 +624,14 @@
     <commons.io.version>2.11.0</commons.io.version>
     <awaitility-version>4.2.0</awaitility-version>
     <client-java-version>14.0.1</client-java-version>
-    <kotlin-stdlib-version>1.7.10</kotlin-stdlib-version>
+    <kotlin-stdlib-version>1.7.20</kotlin-stdlib-version>
     <okhttp-version>4.10.0</okhttp-version>
-    <junit.jupiter.version>5.9.0</junit.jupiter.version>
+    <junit.jupiter.version>5.9.1</junit.jupiter.version>
     <junit.vintage.version>5.7.1</junit.vintage.version>
     <junit.platform.version>1.7.0</junit.platform.version>
     <junit.platform.surefire.version>1.3.2</junit.platform.surefire.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jersey-version>3.0.6</jersey-version>
+    <jersey-version>3.0.8</jersey-version>
     <jackson-version>2.13.3</jackson-version>
     <jackson-databind-version>2.13.3</jackson-databind-version>
     <dependency-check-version>7.0.0</dependency-check-version>
