@@ -46,6 +46,10 @@ spec:
       affinity:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
       - name: "weblogic-operator"
         image: {{ .image | quote }}
@@ -102,6 +106,15 @@ spec:
             {{- if .memoryLimits}}
             memory: {{ .memoryLimits }}
             {{- end }}
+        {{- if (eq ( .kubernetesPlatform | default "Generic" ) "OpenShift") }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        {{- end }}            
         volumeMounts:
         - name: "weblogic-operator-cm-volume"
           mountPath: "/deployment/config"
@@ -192,7 +205,8 @@ spec:
 {{- end }}
 ---
   {{ $chartVersion := .Chart.Version }}
-  {{ $webhookExists := include "utils.verifyExistingWebhookDeployment" (list $chartVersion) | trim }}
+  {{ $releaseNamespace := .Release.Namespace }}
+  {{ $webhookExists := include "utils.verifyExistingWebhookDeployment" (list $chartVersion $releaseNamespace) | trim }}
   {{- if and (ne $webhookExists "true") (not .operatorOnly) }}
     # webhook does not exist or chart version is newer, create a new webhook
     apiVersion: "v1"
@@ -301,6 +315,15 @@ spec:
                 {{- if .memoryLimits}}
                 memory: {{ .memoryLimits }}
                 {{- end }}
+            {{- if (eq ( .kubernetesPlatform | default "Generic") "OpenShift") }}
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                 drop: ["ALL"]
+              runAsNonRoot: true
+              seccompProfile:
+                type: RuntimeDefault
+            {{- end }}
             volumeMounts:
             - name: "weblogic-webhook-cm-volume"
               mountPath: "/deployment/config"
