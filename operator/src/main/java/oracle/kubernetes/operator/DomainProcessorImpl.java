@@ -932,6 +932,12 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       }
   
       private void runFailureSteps(Throwable throwable) {
+        String domainUid = Optional.ofNullable((DomainPresenceInfo)presenceInfo)
+            .map(DomainPresenceInfo::getDomainUid)
+            .orElse("null");
+        if ("domain9".equals(domainUid)) {
+          LOGGER.info("zzz- runFailureSteps");
+        }
         gate.startNewFiberIfCurrentFiberMatches(
             ((DomainPresenceInfo)presenceInfo).getDomainUid(),
             getFailureSteps(throwable),

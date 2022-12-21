@@ -55,12 +55,17 @@ public class IntrospectionStatus {
           .orElse(null);
   }
 
+  static boolean DEBUG = false;
+
   @Nullable
   static Step createStatusUpdateSteps(@Nonnull V1Pod pod) {
     final String terminatedErrorMessage = getTerminatedMessage(pod);
     final String waitingMessage = getWaitingMessageFromStatus(pod);
     final String initContainerWaitingMessages = getInitContainerWaitingMessages(pod);
 
+    if (DEBUG) {
+      return null;
+    }
     if (FailedPhase.inFailedPhase(pod)) {
       return new FailedPhase(pod).createStatusUpdateSteps();
     } else if (Unschedulable.isUnschedulable(pod)) {

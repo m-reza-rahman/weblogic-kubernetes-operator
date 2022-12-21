@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.utils.SystemClock;
 
@@ -204,10 +206,16 @@ public class FiberGate {
     @Override
     public void onThrowable(Packet packet, Throwable throwable) {
       try {
+        if ("domain9".equals(domainUid)) {
+          LOGGER.info("zzz- calling callback.onThrowable(). callback is: " + callback);
+        }
         callback.onThrowable(packet, throwable);
       } finally {
         gateMap.remove(domainUid, fiber);
       }
     }
   }
+
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
 }

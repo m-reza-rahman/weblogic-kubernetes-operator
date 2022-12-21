@@ -501,11 +501,20 @@ public class DomainStatusUpdater {
 
     private Step createUpdateSteps(Step next) {
       final List<Step> result = new ArrayList<>();
+      String domainUid = getDomain() == null ? null : getDomainUid();
       if (!isStatusUnchanged()) {
         result.add(createDomainStatusReplaceStep());
       }
       createDomainEvents().stream().map(EventHelper::createEventStep).forEach(result::add);
       Optional.ofNullable(next).ifPresent(result::add);
+      if ("domain9".equals(domainUid)) {
+        LOGGER.info("zzz- isStatusUnchanged? " + isStatusUnchanged() + " result.isEmpty() = " + result.isEmpty());
+        if (isStatusUnchanged()) {
+          LOGGER.info("zzz- unchanged status: " + getStatus());
+        } else {
+          LOGGER.info("zzz- new status: " + getNewStatus());
+        }
+      }
       return result.isEmpty() ? null : Step.chain(result);
     }
 
@@ -1457,6 +1466,18 @@ public class DomainStatusUpdater {
     private FailureStep(DomainFailureReason reason, Throwable throwable) {
       this.reason = reason;
       this.message = Optional.ofNullable(throwable.getMessage()).orElse(throwable.toString());
+    }
+
+    public NextAction apply(Packet packet) {
+      boolean debug = Optional.ofNullable(message).map(m -> m.contains("domain9")).orElse(false);
+      if (debug) {
+        LOGGER.info("zzz- FailureStep is run. " + this);
+      }
+      return doNext(createContext(packet).createUpdateSteps(getNext()), packet);
+    }
+
+    public String toString() {
+      return super.toString() + " <FailureStep: reason = " + getDetail() + ", message = " + message + ">";
     }
 
     @Override
