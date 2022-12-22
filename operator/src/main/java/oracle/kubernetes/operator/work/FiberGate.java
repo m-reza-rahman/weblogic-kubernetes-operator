@@ -113,11 +113,14 @@ public class FiberGate {
     private final Step steps;
     private final Packet packet;
 
+    private final boolean debug;
+
     FiberRequest(String domainUid, Fiber old, Step steps, Packet packet, CompletionCallback callback) {
       this.domainUid = domainUid;
       this.old = old;
       this.steps = steps;
       this.packet = packet;
+      this.debug = "domain9".equals(domainUid);
 
       fiber = engine.createFiber();
       gateCallback = new FiberGateCompletionCallback(callback, domainUid, fiber);
@@ -132,11 +135,24 @@ public class FiberGate {
     private boolean isAllowed() {
       if (old == null) {
         old = gateMap.put(domainUid, fiber);
+        if (debug) {
+          LOGGER.info("zzz- (old == null) case, isAllowed returning true");
+        }
         return true;
       } else if (old == placeholder) {
-        return gateMap.putIfAbsent(domainUid, fiber) == null;
+        boolean result = gateMap.putIfAbsent(domainUid, fiber) == null;
+        if (debug) {
+          LOGGER.info("zzz- (old == placeholder) case, isAllowed returning " + result
+              + ", old=" + old + ", placeholder=" + placeholder);
+        }
+        return result;
       } else {
-        return gateMap.replace(domainUid, old, fiber);
+        boolean result = gateMap.replace(domainUid, old, fiber);
+        if (debug) {
+          LOGGER.info("zzz- (old != placeholder) case, isAllowed returning " + result
+              + ", old=" + old + ", placeholder=" + placeholder);
+        }
+        return result;
       }
     }
   }
