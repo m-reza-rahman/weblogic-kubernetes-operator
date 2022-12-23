@@ -137,21 +137,21 @@ public class FiberGate {
         old = gateMap.put(domainUid, fiber);
         if (debug) {
           LOGGER.info("zzz- (old == null) case, isAllowed returning true"
-              + ", old=" + old + ", placeholder=" + placeholder, ", fiber= " + fiber);
+              + ", old=" + old + ", placeholder=" + placeholder + ", fiber= " + fiber);
         }
         return true;
       } else if (old == placeholder) {
         boolean result = gateMap.putIfAbsent(domainUid, fiber) == null;
         if (debug) {
           LOGGER.info("zzz- (old == placeholder) case, isAllowed returning " + result
-              + ", old=" + old + ", placeholder=" + placeholder, ", fiber= " + fiber);
+              + ", old=" + old + ", placeholder=" + placeholder + ", fiber= " + fiber);
         }
         return result;
       } else {
         boolean result = gateMap.replace(domainUid, old, fiber);
         if (debug) {
           LOGGER.info("zzz- (old != placeholder) case, isAllowed returning " + result
-              + ", old=" + old + ", placeholder=" + placeholder, ", fiber= " + fiber);
+              + ", old=" + old + ", placeholder=" + placeholder + ", fiber= " + fiber);
         }
         return result;
       }
