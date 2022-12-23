@@ -388,8 +388,8 @@ class ItKubernetesDomainEvents {
    */
   @Test
   void testK8SEventsMultiClusterEvents() {
-    createNewCluster();
     OffsetDateTime timestamp = now();
+    createNewCluster();
     scaleClusterWithRestApi(domainUid, cluster2Name, 1,
             externalRestHttpsPort, opNamespace, opServiceAccount);
     logger.info("verify the Domain_Available event is generated");
@@ -408,7 +408,7 @@ class ItKubernetesDomainEvents {
     assertEquals(1, getOpGeneratedEventCount(domainNamespace3, domainUid,
             DOMAIN_COMPLETED, timestamp));
     logger.info("verify the only 1 ClusterCompleted event for domain is generated");
-    assertEquals(1, getOpGeneratedEventCount(domainNamespace3, domainUid,
+    assertEquals(2, getOpGeneratedEventCount(domainNamespace3, domainUid,
         CLUSTER_COMPLETED, timestamp));
   }
 
