@@ -7,18 +7,7 @@
 #      $ ./buildDockerImage.sh [-t <image-name>]
 #
 # -------------------------
-FROM ghcr.io/oracle/oraclelinux:9-slim AS jre-build
-
-ENV JAVA_URL="https://download.java.net/java/GA/jdk19.0.1/afdd2e245b014143b62ccb916125e3ce/10/GPL/openjdk-19.0.1_linux-x64_bin.tar.gz"
-
-RUN set -eux; \
-    microdnf -y install gzip tar; \
-    curl -fL -o /jdk.tar.gz "$JAVA_URL"; \
-    mkdir -p /jdk; \
-    tar --extract --file /jdk.tar.gz --directory /jdk --strip-components 1; \
-    /jdk/bin/jlink --verbose --compress 2 --strip-java-debug-attributes --no-header-files --no-man-pages --output jre --add-modules java.base,java.desktop,java.instrument,java.management,java.naming,java.net.http,java.sql,jdk.attach,jdk.jdi,jdk.unsupported,jdk.crypto.ec,jdk.zipfs
-
-FROM ghcr.io/oracle/oraclelinux:9-slim
+FROM container-registry.oracle.com/java/jdk:19.0.1-oraclelinux8
 
 LABEL "org.opencontainers.image.authors"="Ryan Eberhard <ryan.eberhard@oracle.com>" \
       "org.opencontainers.image.url"="https://github.com/oracle/weblogic-kubernetes-operator" \
@@ -30,19 +19,11 @@ LABEL "org.opencontainers.image.authors"="Ryan Eberhard <ryan.eberhard@oracle.co
 
 ENV LANG="en_US.UTF-8"
 
-COPY --from=jre-build /jre jre
-
 # Install Java and make the operator run with a non-root user id (1000 is the `oracle` user)
 RUN set -eux; \
-    microdnf -y update; \
-    microdnf -y install jq; \
-    microdnf clean all; \
-    for bin in /jre/bin/*; do \
-        base="$(basename "$bin")"; \
-        [ ! -e "/usr/bin/$base" ]; \
-        alternatives --install "/usr/bin/$base" "$base" "$bin" 20000; \
-    done; \
-    java -Xshare:dump; \
+    dnf -y update; \
+    dnf -y install jq; \
+    dnf clean all; \
     useradd -d /operator -M -s /bin/bash -g root -u 1000 oracle; \
     mkdir -m 775 /operator; \
     mkdir -m 775 /deployment; \
