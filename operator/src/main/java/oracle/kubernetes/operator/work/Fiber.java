@@ -371,6 +371,9 @@ public final class Fiber implements Runnable, ComponentRegistry, AsyncFiber, Bre
         try {
           if (s == NOT_COMPLETE && completionCallback != null) {
             if (na.throwable != null) {
+              if (na.getPacket() != null) {
+                na.getPacket().put("terminatedFiber", this);
+              }
               completionCallback.onThrowable(na.getPacket(), na.throwable);
             } else {
               completionCallback.onCompletion(na.getPacket());

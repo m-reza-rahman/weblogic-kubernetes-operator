@@ -65,6 +65,8 @@ public class IntrospectionStatus {
 
     if (DEBUG) {
       return null;
+    } else {
+      System.out.println("debug- breakpoint here to change value for DEBUG flag");
     }
     if (FailedPhase.inFailedPhase(pod)) {
       return new FailedPhase(pod).createStatusUpdateSteps();

@@ -938,20 +938,23 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
       @Override
       public void onThrowable(Packet packet, Throwable throwable) {
-        reportFailure(throwable);
+        reportFailure(packet, throwable);
       }
 
-      private void reportFailure(Throwable throwable) {
+      private void reportFailure(Packet packet, Throwable throwable) {
         logThrowable(throwable);
-        runFailureSteps(throwable);
+        runFailureSteps(packet, throwable);
       }
   
-      private void runFailureSteps(Throwable throwable) {
+      private void runFailureSteps(Packet packetFromCaller, Throwable throwable) {
         String domainUid = Optional.ofNullable((DomainPresenceInfo)presenceInfo)
             .map(DomainPresenceInfo::getDomainUid)
             .orElse("null");
         if ("domain9".equals(domainUid)) {
-          LOGGER.info("zzz- runFailureSteps");
+          Fiber terminatedFiber = Optional.ofNullable(packetFromCaller)
+              .map(p -> (Fiber)p.getValue("terminatedFiber"))
+              .orElse(null);
+          LOGGER.info("zzz- runFailureSteps, terminatedFiber= " + terminatedFiber);
         }
         gate.startNewFiberIfCurrentFiberMatches(
             ((DomainPresenceInfo)presenceInfo).getDomainUid(),
