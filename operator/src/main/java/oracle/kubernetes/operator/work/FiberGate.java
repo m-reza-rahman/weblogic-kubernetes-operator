@@ -6,6 +6,7 @@ package oracle.kubernetes.operator.work;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
@@ -223,13 +224,19 @@ public class FiberGate {
     @Override
     public void onThrowable(Packet packet, Throwable throwable) {
       try {
+        boolean currentFiberIsCompletionFiber = currentFiberIsCompletionFiber();
         if ("domain9".equals(domainUid)) {
-          LOGGER.info("zzz- calling callback.onThrowable(). callback is: " + callback);
+          LOGGER.info("zzz- calling callback.onThrowable(). callback is: " + callback
+              + ", currentFiberIsCompletionFiber? " + currentFiberIsCompletionFiber);
         }
         callback.onThrowable(packet, throwable);
       } finally {
         gateMap.remove(domainUid, fiber);
       }
+    }
+
+    private boolean currentFiberIsCompletionFiber() {
+      return Objects.equals(Fiber.getCurrentIfSet(), fiber);
     }
   }
 

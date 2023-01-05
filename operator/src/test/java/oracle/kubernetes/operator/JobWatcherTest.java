@@ -323,8 +323,9 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
   void whenJobTimedOutOnFirstRead_terminateWithException() {
     startWaitForReadyThenReadJob(this::markJobTimedOut);
 
-    assertThat(terminalStep.wasRun(), is(false));
-    testSupport.verifyCompletionThrowable(JobWatcher.DeadlineExceededException.class);
+    assertThat(terminalStep.wasRun(), is(true));
+    assertThat(terminalStep.getLastPacket().get(ProcessingConstants.INTROSPECTOR_JOB_FAILURE_THROWABLE).getClass(),
+        is(JobWatcher.DeadlineExceededException.class));
   }
 
   @Test
@@ -371,8 +372,9 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
   void whenReceivedDeadlineExceededResponse_terminateWithException() {
     sendJobModifiedWatchAfterWaitForReady(this::markJobTimedOut);
 
-    assertThat(terminalStep.wasRun(), is(false));
-    testSupport.verifyCompletionThrowable(JobWatcher.DeadlineExceededException.class);
+    assertThat(terminalStep.wasRun(), is(true));
+    assertThat(terminalStep.getLastPacket().get(ProcessingConstants.INTROSPECTOR_JOB_FAILURE_THROWABLE).getClass(),
+        is(JobWatcher.DeadlineExceededException.class));
   }
 
   @Test

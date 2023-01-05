@@ -10,6 +10,8 @@ public class TerminalStep extends Step {
   private boolean executed;
   private final AtomicInteger executionCount = new AtomicInteger(0);
 
+  private Packet lastPacket;
+
   public TerminalStep() {
     super(null);
   }
@@ -22,10 +24,15 @@ public class TerminalStep extends Step {
     return executionCount.get();
   }
 
+  public Packet getLastPacket() {
+    return lastPacket;
+  }
+
   @Override
   public NextAction apply(Packet packet) {
     executed = true;
     executionCount.getAndIncrement();
+    lastPacket = packet;
     return doNext(null, packet);
   }
 }
