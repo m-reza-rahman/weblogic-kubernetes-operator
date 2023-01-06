@@ -59,8 +59,11 @@ mkdir -m 777 -p /logs
 # Container memory optimization flags
 HEAP="-XshowSettings:vm"
 
+# Profiler
+PROFILER_OPTIONS="-XX:+FlightRecorder -XX:StartFlightRecording=duration=120s,filename=/tmp/operator.jfr,settings=profile.jfc"
+
 # Start operator
-java -cp /operator/weblogic-kubernetes-operator.jar $HEAP $MOCKING_WLS $DEBUG $LOGGING oracle.kubernetes.operator.WebhookMain &
+java -cp /operator/weblogic-kubernetes-operator.jar $HEAP $MOCKING_WLS $DEBUG $LOGGING $PROFILER_OPTIONS oracle.kubernetes.operator.WebhookMain &
 PID=$!
 wait $PID
 
