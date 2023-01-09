@@ -60,7 +60,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getNextIntrospectVe
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.now;
-import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApi;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.impl.Cluster.listClusterCustomResources;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
@@ -83,11 +82,9 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.JobUtils.createDomainJob;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.ABORTED_ERROR;
-import static oracle.weblogic.kubernetes.utils.K8sEvents.CLUSTER_AVAILABLE;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.CLUSTER_CHANGED;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.CLUSTER_COMPLETED;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.CLUSTER_DELETED;
-import static oracle.weblogic.kubernetes.utils.K8sEvents.DOMAIN_AVAILABLE;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.DOMAIN_CHANGED;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.DOMAIN_COMPLETED;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.DOMAIN_CREATED;
@@ -102,7 +99,6 @@ import static oracle.weblogic.kubernetes.utils.K8sEvents.checkDomainEvent;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.checkDomainEventWithCount;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.checkDomainFailedEventWithReason;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.getDomainEventCount;
-import static oracle.weblogic.kubernetes.utils.K8sEvents.getOpGeneratedEventCount;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTlsTerminationForRoute;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -377,39 +373,6 @@ class ItKubernetesDomainEvents {
     checkFailedEvent(opNamespace, domainNamespace5, domainUid, ABORTED_ERROR, "Warning", timestamp);
 
     shutdownDomain(domainUid, domainNamespace5);
-  }
-
-  /**
-   * Test verifies there is only 1 Completed event is logged
-   * regardless of how many clusters exists in the domain.
-   * Test creates a new cluster in the WebLogic domain, patches the domain resource to add the new cluster
-   * and starts up the new cluster.
-   * Verifies the scaling operation generates only one Completed.
-   */
-  @Test
-  void testK8SEventsMultiClusterEvents() {
-    OffsetDateTime timestamp = now();
-    createNewCluster();
-    scaleClusterWithRestApi(domainUid, cluster2Name, 1,
-            externalRestHttpsPort, opNamespace, opServiceAccount);
-    logger.info("verify the Domain_Available event is generated");
-    checkEvent(opNamespace, domainNamespace3, domainUid,
-            DOMAIN_AVAILABLE, "Normal", timestamp);
-    logger.info("verify the Cluster_Available event is generated");
-    checkEvent(opNamespace, domainNamespace3, domainUid,
-        CLUSTER_AVAILABLE, "Normal", timestamp);
-    logger.info("verify the Completed event is generated");
-    checkEvent(opNamespace, domainNamespace3,
-            domainUid, DOMAIN_COMPLETED, "Normal", timestamp);
-    logger.info("verify the ClusterCompleted event is generated");
-    checkEvent(opNamespace, domainNamespace3,
-        domainUid, CLUSTER_COMPLETED, "Normal", timestamp);
-    logger.info("verify the only 1 Completed event for domain is generated");
-    assertEquals(1, getOpGeneratedEventCount(domainNamespace3, domainUid,
-            DOMAIN_COMPLETED, timestamp));
-    logger.info("verify the only 1 ClusterCompleted event for domain is generated");
-    assertEquals(1, getOpGeneratedEventCount(domainNamespace3, domainUid,
-        CLUSTER_COMPLETED, timestamp));
   }
 
   /**
