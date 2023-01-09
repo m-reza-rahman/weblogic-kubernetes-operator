@@ -638,6 +638,7 @@ public class DomainStatusUpdater {
     private boolean shouldSkipDomainStatusUpdate(Packet packet) {
       DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
       return info.getServerStartupInfo() == null
+          && info.getServerShutdownInfo() == null
           && info.clusterStatusInitialized()
           && !endOfProcessing;
     }

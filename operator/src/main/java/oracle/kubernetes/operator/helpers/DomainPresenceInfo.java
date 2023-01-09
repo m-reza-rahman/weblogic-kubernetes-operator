@@ -800,6 +800,15 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
   }
 
   /**
+   * Server shutdown info.
+   *
+   * @return Server shutdown info or null if the current value is not set.
+   */
+  public Collection<ServerShutdownInfo> getServerShutdownInfo() {
+    return serverShutdownInfo.get();
+  }
+
+  /**
    * Sets server shutdown info.
    *
    * @param serverShutdownInfo Server shutdown info

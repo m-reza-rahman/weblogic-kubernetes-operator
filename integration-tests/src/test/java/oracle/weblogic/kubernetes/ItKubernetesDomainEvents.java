@@ -391,6 +391,7 @@ class ItKubernetesDomainEvents {
     OffsetDateTime timestamp = now();
     createNewCluster();
     OffsetDateTime timestamp2 = now();
+    logger.info("Scale the newly-added cluster");
     scaleClusterWithRestApi(domainUid, cluster2Name, 1,
             externalRestHttpsPort, opNamespace, opServiceAccount);
     logger.info("verify the Domain_Available event is generated");
