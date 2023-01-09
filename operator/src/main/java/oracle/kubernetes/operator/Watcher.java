@@ -181,7 +181,9 @@ abstract class Watcher<T> {
 
         setIsDraining(isStopping());
         if (isDraining()) {
-          continue;
+          if (!"DELETED".equalsIgnoreCase(item.type)) {
+            continue;
+          }
         }
 
         try (ThreadLoggingContext ignored =
