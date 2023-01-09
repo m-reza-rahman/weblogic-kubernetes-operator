@@ -371,7 +371,7 @@ public class DomainStatusUpdater {
       if (callResponse.getResult() != null) {
         packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
       }
-      return doNext(packet);
+      return doNext(createClusterResourceStatusUpdaterStep(getNext()), packet);
     }
 
     @Override
@@ -662,7 +662,7 @@ public class DomainStatusUpdater {
       Step createUpdateSteps(Step next) {
         return shouldSkipUpdate(packet)
             ? next
-            : super.createUpdateSteps(createClusterResourceStatusUpdaterStep(next));
+            : super.createUpdateSteps(next);
       }
 
       boolean shouldSkipUpdate(Packet packet) {
