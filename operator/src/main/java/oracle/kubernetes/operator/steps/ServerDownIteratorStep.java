@@ -21,11 +21,18 @@ import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo.ServerShutdownInfo;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
+import static oracle.kubernetes.common.logging.MessageKeys.ALL_SERVERS_SHUTDOWN;
+
 public class ServerDownIteratorStep extends Step {
+
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
   private final List<ServerShutdownInfo> serverShutdownInfos;
 
   ServerDownIteratorStep(List<ServerShutdownInfo> serverShutdownInfos, Step next) {
@@ -191,6 +198,7 @@ public class ServerDownIteratorStep extends Step {
     @Override
     public NextAction apply(Packet packet) {
       if (shutdownDetails.isEmpty()) {
+        LOGGER.info("Server shtudown completed.");
         return doNext(getNext(), packet);
       } else {
         return doForkJoin(getNext(), packet, shutdownDetails);
@@ -215,6 +223,7 @@ public class ServerDownIteratorStep extends Step {
     public NextAction apply(Packet packet) {
 
       if (serversToShutdown.isEmpty()) {
+        LOGGER.info(ALL_SERVERS_SHUTDOWN);
         return doNext(packet);
       } else {
         Collection<StepAndPacket> servers = Collections.singletonList(serversToShutdown.poll());

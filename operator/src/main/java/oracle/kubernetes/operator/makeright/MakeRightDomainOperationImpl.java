@@ -258,7 +258,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   private Step createDomainDownPlan() {
-    return Step.chain(new DownHeadStep(), new DeleteDomainStep(), new UnregisterStep());
+    return Step.chain(new DeleteDomainStep(), new DownHeadStep(), new UnregisterStep());
   }
 
   private class DownHeadStep extends Step {
