@@ -540,7 +540,7 @@ public class DomainStatusUpdater {
       }
       createDomainEvents().stream().map(EventHelper::createEventStep).forEach(result::add);
       Optional.ofNullable(next).ifPresent(result::add);
-      if ("domain9".equals(domainUid)) {
+      if ("k8seventsdomain".equals(domainUid)) {
         LOGGER.info("zzz- isStatusUnchanged? " + isStatusUnchanged() + " result.isEmpty() = " + result.isEmpty());
         if (isStatusUnchanged()) {
           LOGGER.info("zzz- unchanged status: " + getStatus());

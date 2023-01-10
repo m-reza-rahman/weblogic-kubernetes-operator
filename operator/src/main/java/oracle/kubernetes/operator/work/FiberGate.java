@@ -225,7 +225,7 @@ public class FiberGate {
     public void onThrowable(Packet packet, Throwable throwable) {
       try {
         boolean currentFiberIsCompletionFiber = currentFiberIsCompletionFiber();
-        if ("domain9".equals(domainUid)) {
+        if ("k8seventsdomain".equals(domainUid)) {
           LOGGER.info("zzz- calling callback.onThrowable(). callback is: " + callback
               + ", currentFiberIsCompletionFiber? " + currentFiberIsCompletionFiber);
         }

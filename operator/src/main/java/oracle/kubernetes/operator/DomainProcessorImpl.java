@@ -950,7 +950,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         String domainUid = Optional.ofNullable((DomainPresenceInfo)presenceInfo)
             .map(DomainPresenceInfo::getDomainUid)
             .orElse("null");
-        if ("domain9".equals(domainUid)) {
+        if ("k8seventsdomain".equals(domainUid)) {
           Fiber terminatedFiber = Optional.ofNullable(packetFromCaller)
               .map(p -> (Fiber)p.getValue("terminatedFiber"))
               .orElse(null);

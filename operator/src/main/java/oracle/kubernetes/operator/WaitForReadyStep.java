@@ -20,7 +20,6 @@ import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
-import static oracle.kubernetes.operator.ProcessingConstants.INTROSPECTOR_JOB_FAILURE_THROWABLE;
 import static oracle.kubernetes.operator.ProcessingConstants.MAKE_RIGHT_DOMAIN_OPERATION;
 import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 
@@ -289,8 +288,8 @@ abstract class WaitForReadyStep<T> extends Step {
     private void handleResourceReady(AsyncFiber fiber, Packet packet, T resource) {
       updatePacket(packet, resource);
       if (shouldTerminateFiber(resource)) {
-        //fiber.terminate(createTerminationException(resource), packet);
-        packet.put(INTROSPECTOR_JOB_FAILURE_THROWABLE, createTerminationException(resource));
+        fiber.terminate(createTerminationException(resource), packet);
+        //packet.put(INTROSPECTOR_JOB_FAILURE_THROWABLE, createTerminationException(resource));
       }
     }
 
