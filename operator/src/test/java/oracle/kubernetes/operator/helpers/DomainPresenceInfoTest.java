@@ -363,4 +363,42 @@ class DomainPresenceInfoTest {
     assertThat(labels.get(labelKey), equalTo(labelValue));
   }
 
+  @Test
+  void whenClusterResourceDoesNotDefineRollingRestartTimeout_verifyDefaultValue() {
+    final String clusterName = "cluster-1";
+    final DomainResource domain = createDomain(NAMESPACE, DOMAIN_UID);
+    final DomainPresenceInfo info = createDomainPresenceInfo(domain);
+    createAndAddClusterResourceToDomainPresenceInfo(info, clusterName);
+
+    assertThat(info.getRollingRestartTimeout(clusterName), equalTo(0));
+  }
+
+  @Test
+  void whenClusterResourceDoesNotDefineRollingRestartTimeout_verifyConfiguredValue() {
+    final String clusterName = "cluster-1";
+    final DomainResource domain = createDomain(NAMESPACE, DOMAIN_UID);
+    final DomainPresenceInfo info = createDomainPresenceInfo(domain);
+    ClusterResource clusterResource = createClusterResource(clusterName);
+    clusterResource.getSpec().setRollingRestartTimeout(300);
+    info.addClusterResource(clusterResource);
+
+    assertThat(info.getRollingRestartTimeout(clusterName), equalTo(300));
+  }
+
+  @Test
+  void whenDomainResourceDoesNotDefineRollingRestartTimeout_verifyDefaultValue() {
+    final DomainResource domain = createDomain(NAMESPACE, DOMAIN_UID);
+    final DomainPresenceInfo info = createDomainPresenceInfo(domain);
+
+    assertThat(info.getRollingRestartTimeout(), equalTo(0));
+  }
+
+  @Test
+  void whenDomainResourceDoesNotDefineRollingRestartTimeout_verifyConfiguredValue() {
+    final DomainResource domain = createDomain(NAMESPACE, DOMAIN_UID);
+    domain.getSpec().setRollingRestartTimeout(180);
+    final DomainPresenceInfo info = createDomainPresenceInfo(domain);
+
+    assertThat(info.getRollingRestartTimeout(), equalTo(180));
+  }
 }

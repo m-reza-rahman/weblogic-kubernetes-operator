@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,6 +64,7 @@ import static oracle.kubernetes.operator.ProcessingConstants.SERVERS_TO_ROLL;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_SCAN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anEmptyMap;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
@@ -356,6 +358,20 @@ class RollingHelperTest {
     CLUSTERED_SERVER_NAMES.forEach(s ->
           assertThat(testSupport,
                 hasEvent(POD_CYCLE_STARTING_EVENT).inNamespace(NS).withMessageContaining(getPodName(s))));
+  }
+
+  @Test
+  void whenRollingConditionDefined_verifyTimeoutDurationRelativeToStartTime() {
+    domain.getSpec().setRollingRestartTimeout(300);
+    initializeExistingPods();
+    configureDomain().withRestartVersion("123");
+    CLUSTERED_SERVER_NAMES.forEach(s ->
+        rolling.put(s, createRollingStepAndPacket(
+            modifyDomainHome(modifyRestartVersion(createPodModel(s), "V5"), "xxxx"), s)));
+
+    testSupport.runSteps(RollingHelper.rollServers(rolling, terminalStep));
+    long duration = RollingHelper.getRollingRestartTimeout(testSupport.getPacket(), OffsetDateTime.now());
+    assertThat(duration, equalTo(300L));
   }
 
   private String getPodName(String s) {

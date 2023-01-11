@@ -9,6 +9,7 @@ import javax.annotation.Nullable;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import oracle.kubernetes.json.Default;
 import oracle.kubernetes.json.Description;
 import oracle.kubernetes.json.EnumClass;
 import oracle.kubernetes.json.Range;
@@ -90,6 +91,16 @@ public class ClusterSpec extends BaseConfiguration implements Comparable<Cluster
   )
   @Range(minimum = 0)
   private Integer maxConcurrentShutdown;
+
+  @Description(
+      "Number of seconds after which a rolling restart of a cluster will timeout.  "
+      + "If a rolling restart of a cluster has not completed within the specified timeout duration, "
+      + "the Domain condition will be set to a FAILED state.  A value of 0 means a rolling restart "
+      + "will not timeout. Defaults to 0."
+  )
+  @Range(minimum = 0)
+  @Default(intDefault = 0)
+  private Integer rollingRestartTimeout;
 
   protected ClusterSpec getConfiguration() {
     ClusterSpec configuration = new ClusterSpec();
@@ -197,6 +208,14 @@ public class ClusterSpec extends BaseConfiguration implements Comparable<Cluster
     this.maxUnavailable = maxUnavailable;
   }
 
+  public Integer getRollingRestartTimeout() {
+    return rollingRestartTimeout;
+  }
+
+  public void setRollingRestartTimeout(Integer rollingRestartTimeout) {
+    this.rollingRestartTimeout = rollingRestartTimeout;
+  }
+
   void fillInFrom(ClusterSpec other) {
     if (other == null) {
       return;
@@ -216,6 +235,7 @@ public class ClusterSpec extends BaseConfiguration implements Comparable<Cluster
         .append("maxUnavailable", maxUnavailable)
         .append("maxConcurrentStartup", maxConcurrentStartup)
         .append("maxConcurrentShutdown", maxConcurrentShutdown)
+        .append("rollingRestartTimeout", rollingRestartTimeout)
         .toString();
   }
 
@@ -240,6 +260,7 @@ public class ClusterSpec extends BaseConfiguration implements Comparable<Cluster
         .append(maxUnavailable, clusterSpec.maxUnavailable)
         .append(maxConcurrentStartup, clusterSpec.maxConcurrentStartup)
         .append(maxConcurrentShutdown, clusterSpec.maxConcurrentShutdown)
+        .append(rollingRestartTimeout, clusterSpec.rollingRestartTimeout)
         .isEquals();
   }
 
@@ -254,6 +275,7 @@ public class ClusterSpec extends BaseConfiguration implements Comparable<Cluster
         .append(maxUnavailable)
         .append(maxConcurrentStartup)
         .append(maxConcurrentShutdown)
+        .append(rollingRestartTimeout)
         .toHashCode();
   }
 

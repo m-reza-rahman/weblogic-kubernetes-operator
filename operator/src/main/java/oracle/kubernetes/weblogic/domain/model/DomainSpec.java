@@ -326,6 +326,16 @@ public class DomainSpec extends BaseConfiguration {
       + "have the exporter sidecar or not, as appropriate. See https://github.com/oracle/weblogic-monitoring-exporter.")
   private MonitoringExporterSpecification monitoringExporter;
 
+  @Description(
+      "Number of seconds after which a rolling restart of a domain will timeout.  "
+          + "If a rolling restart of a domain has not completed within the specified timeout duration, "
+          + "the Domain condition will be set to a FAILED state.  A value of 0 means a rolling restart "
+          + "will not timeout. Defaults to 0."
+  )
+  @Range(minimum = 0)
+  @Default(intDefault = 0)
+  private Integer rollingRestartTimeout;
+
   public MonitoringExporterSpecification getMonitoringExporterSpecification() {
     return monitoringExporter;
   }
@@ -966,6 +976,14 @@ public class DomainSpec extends BaseConfiguration {
         .map(Configuration::getModel).map(Model::getAuxiliaryImageVolumeSizeLimit).orElse(null);
   }
 
+  public Integer getRollingRestartTimeout() {
+    return rollingRestartTimeout;
+  }
+
+  public void setRollingRestartTimeout(Integer rollingRestartTimeout) {
+    this.rollingRestartTimeout = rollingRestartTimeout;
+  }
+
   @Override
   public String toString() {
     ToStringBuilder builder =
@@ -991,6 +1009,7 @@ public class DomainSpec extends BaseConfiguration {
             .append("maxClusterUnavailable", maxClusterUnavailable)
             .append("monitoringExporter", monitoringExporter)
             .append("replicas", replicas)
+            .append("rollingRestartTimeout", rollingRestartTimeout)
             .append("serverStartPolicy", serverStartPolicy)
             .append("webLogicCredentialsSecret", webLogicCredentialsSecret)
             .append("fluentdSpecification", fluentdSpecification);
@@ -1023,6 +1042,7 @@ public class DomainSpec extends BaseConfiguration {
             .append(maxClusterUnavailable)
             .append(monitoringExporter)
             .append(replicas)
+            .append(rollingRestartTimeout)
             .append(serverStartPolicy)
             .append(webLogicCredentialsSecret)
             .append(fluentdSpecification);
@@ -1057,6 +1077,7 @@ public class DomainSpec extends BaseConfiguration {
             .append(managedServers, rhs.managedServers)
             .append(clusters, rhs.clusters)
             .append(replicas, rhs.replicas)
+            .append(rollingRestartTimeout, rhs.rollingRestartTimeout)
             .append(logHome, rhs.logHome)
             .append(logHomeLayout, rhs.logHomeLayout)
             .append(logHomeEnabled, rhs.logHomeEnabled)

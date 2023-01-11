@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -122,10 +123,11 @@ public final class Fiber implements Runnable, ComponentRegistry, AsyncFiber, Bre
    * @param timeout the interval before the check should run, in units
    * @param unit the unit of time that defines the interval
    * @param runnable the operation to run
+   * @return A scheduled future object
    */
   @Override
-  public void scheduleOnce(long timeout, TimeUnit unit, Runnable runnable) {
-    this.owner.getExecutor().schedule(runnable, timeout, unit);
+  public ScheduledFuture<?> scheduleOnce(long timeout, TimeUnit unit, Runnable runnable) {
+    return this.owner.getExecutor().schedule(runnable, timeout, unit);
   }
 
   /**

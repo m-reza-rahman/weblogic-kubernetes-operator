@@ -3,6 +3,8 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,6 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -25,13 +28,19 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
+import oracle.kubernetes.operator.work.Fiber;
+import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.Step.StepAndPacket;
 import oracle.kubernetes.utils.OperatorUtils;
+import oracle.kubernetes.weblogic.domain.model.DomainCondition;
+import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
+import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.ROLLING;
 
 /**
  * After the {@link PodHelper} identifies servers that are presently running, but that are using an
@@ -64,6 +73,32 @@ public class RollingHelper {
 
   private static boolean hasReadyServer(V1Pod pod) {
     return !PodHelper.isDeleting(pod) && PodHelper.hasReadyStatus(pod);
+  }
+
+  // This calculates the timeout duration relative to the Rolling condition start tine (lastTransitionTime).
+  // This is done in case the operator has been restarted, we don't want to extend the timeout
+  // relative to the current time.
+  protected static long getRollingRestartTimeout(Packet packet, OffsetDateTime currentTime) {
+    DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
+    OffsetDateTime startTime = getRollingRestartStartTime(info.getDomain());
+    if (startTime != null) {
+      OffsetDateTime timeoutTime = startTime.plusSeconds(info.getRollingRestartTimeout());
+      Duration duration = Duration.between(currentTime.toLocalTime(), timeoutTime.toLocalTime());
+      return duration.getNano() > 0 ? duration.getSeconds() + 1 : duration.getSeconds();
+    }
+
+    return info.getRollingRestartTimeout();
+  }
+
+  protected static OffsetDateTime getRollingRestartStartTime(DomainResource domain) {
+    return Optional.ofNullable(getDomainConditionRolling(domain))
+        .map(DomainCondition::getLastTransitionTime).orElse(null);
+  }
+
+  private static DomainCondition getDomainConditionRolling(DomainResource domain) {
+    return Optional.ofNullable(domain.getStatus())
+        .map(DomainStatus::getConditions).orElse(Collections.emptyList())
+        .stream().filter(dc -> dc.getType().equals(ROLLING)).findFirst().orElse(null);
   }
 
   private abstract static class BaseStepContext {
@@ -106,8 +141,42 @@ public class RollingHelper {
       if (context.hasNoWork()) {
         return doNext(packet);
       } else {
-        return doForkJoin(getNext(), packet, context.getWork());
+        if (isDomainRollingRestartTimeoutEnabled(packet)) {
+          return doSuspend(getNext(),
+              fiber -> {
+                CompletionCallback callback = new CompletionCallback() {
+                  @Override
+                  public void onCompletion(Packet packet) {
+                    fiber.resume(packet);
+                  }
+
+                  @Override
+                  public void onThrowable(Packet packet, Throwable throwable) {
+                    fiber.resume(packet);
+                  }
+                };
+
+                Fiber child = fiber.createChildFiber();
+                Runnable runnable = () -> LOGGER.info("Cancel child fiber: " + child);
+                ScheduledFuture<?> future = fiber.scheduleOnce(getRollingRestartTimeout(packet, OffsetDateTime.now()),
+                    TimeUnit.SECONDS, runnable);
+                child.start(new Step() {
+                  @Override
+                  public NextAction apply(Packet packet) {
+                    // step = null as terminal step when complete?
+                    return doForkJoin(null, packet, context.getWork());
+                  }
+                }, packet, callback);
+              });
+        } else {
+          return doForkJoin(getNext(), packet, context.getWork());
+        }
       }
+    }
+
+    private static boolean isDomainRollingRestartTimeoutEnabled(Packet packet) {
+      DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
+      return info.getRollingRestartTimeout() > 0;
     }
 
     private static class StepContext extends BaseStepContext {
@@ -248,12 +317,32 @@ public class RollingHelper {
       }
 
       if (!restarts.isEmpty()) {
+        //if (isRollingRestartTimeoutEnabled(packet, clusterName)) {
+        //  return doSuspend(
+        //      this,
+        //      fiber -> {
+        //        Fiber child = fiber.createChildFiber();
+        //        child.start(new Step() {
+        //          @Override
+        //          public NextAction apply(Packet packet) {
+        //            return doForkJoin(this, packet, restarts);
+        //          }
+        //        }, packet, null);
+        //        //ScheduledFuture<?> future = fiber.scheduleOnce(timeout, TimeUnit.SECONDS, );
+        //      });
+        //} else {
         return doForkJoin(this, packet, restarts);
+        //}
       } else if (!servers.isEmpty()) {
         return doDelay(this, packet, DELAY_IN_SECONDS, TimeUnit.SECONDS);
       } else {
         return doNext(packet);
       }
+    }
+
+    private static boolean isRollingRestartTimeoutEnabled(Packet packet, String clusterName) {
+      DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
+      return info.getRollingRestartTimeout(clusterName) > 0;
     }
 
     private static class StepContext extends BaseStepContext {

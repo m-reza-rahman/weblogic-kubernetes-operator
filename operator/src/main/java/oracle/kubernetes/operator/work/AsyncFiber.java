@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.work;
 
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,12 +28,12 @@ public interface AsyncFiber {
 
   /**
    * Schedules an operation for some time in the future.
-   *
-   * @param timeout the interval before the check should run, in units
+   *  @param timeout the interval before the check should run, in units
    * @param unit the unit of time that defines the interval
    * @param runnable the operation to run
+   * @return A scheduled future object
    */
-  void scheduleOnce(long timeout, TimeUnit unit, Runnable runnable);
+  ScheduledFuture<?> scheduleOnce(long timeout, TimeUnit unit, Runnable runnable);
 
   /**
    * Creates a child Fiber. If this Fiber is cancelled, so will all of the children.

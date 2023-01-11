@@ -170,6 +170,12 @@
           "description": "The name of the cluster. This value must match the name of a WebLogic cluster already defined in the WebLogic domain configuration. Required.",
           "type": "string"
         },
+        "rollingRestartTimeout": {
+          "default": 0,
+          "description": "Number of seconds after which a rolling restart of a cluster will timeout.  If a rolling restart of a cluster has not completed within the specified timeout duration, the Domain condition will be set to a FAILED state.  A value of 0 means a rolling restart will not timeout. Defaults to 0.",
+          "type": "integer",
+          "minimum": 0
+        },
         "serverPod": {
           "description": "Customization affecting the generation of Pods for WebLogic Server instances.",
           "$ref": "#/definitions/ServerPod"
@@ -369,6 +375,12 @@
           "items": {
             "$ref": "https://github.com/garethr/kubernetes-json-schema/blob/master/v1.13.5/_definitions.json#/definitions/io.k8s.api.core.v1.LocalObjectReference"
           }
+        },
+        "rollingRestartTimeout": {
+          "default": 0,
+          "description": "Number of seconds after which a rolling restart of a domain will timeout.  If a rolling restart of a domain has not completed within the specified timeout duration, the Domain condition will be set to a FAILED state.  A value of 0 means a rolling restart will not timeout. Defaults to 0.",
+          "type": "integer",
+          "minimum": 0
         },
         "fluentdSpecification": {
           "description": "Automatic fluentd sidecar injection. If specified, the operator will deploy a sidecar container alongside each WebLogic Server instance that runs the fluentd, Optionally, the introspector job pod can be enabled to deploy with the fluentd sidecar container. WebLogic Server instances that are already running when the `fluentdSpecification` field is created or deleted, will not be affected until they are restarted. When any given server is restarted for another reason, such as a change to the `restartVersion`, then the newly created pod  will have the fluentd sidecar or not, as appropriate",

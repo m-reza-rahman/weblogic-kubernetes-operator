@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -282,8 +283,9 @@ class HttpAsyncRequestStepTest {
     }
 
     @Override
-    public void scheduleOnce(long timeout, TimeUnit unit, Runnable runnable) {
+    public ScheduledFuture<?> scheduleOnce(long timeout, TimeUnit unit, Runnable runnable) {
       runnable.run();
+      return null;
     }
   }
 

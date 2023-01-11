@@ -1022,6 +1022,16 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
     return clusters.values();
   }
 
+  public int getRollingRestartTimeout(String clusterName) {
+    return Optional.ofNullable(getClusterResource(clusterName))
+        .map(c -> c.getSpec().getRollingRestartTimeout()).orElse(0);
+  }
+
+  public int getRollingRestartTimeout() {
+    return Optional.ofNullable(getDomain())
+        .map(d -> d.getSpec().getRollingRestartTimeout()).orElse(0);
+  }
+
   /** Details about a specific managed server. */
   public static class ServerInfo {
     public final WlsServerConfig serverConfig;

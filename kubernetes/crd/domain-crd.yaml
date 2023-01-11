@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: ef5a1384d2d549e6e8cc47550e0b31e01725188491beed7dd163b56ac962a7d5
+    weblogic.sha256: a64493b621e13b0de066b46cdfc7838b4e05ad13b6477119138b793789a53857
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -334,6 +334,15 @@ spec:
                     name:
                       type: string
                 type: array
+              rollingRestartTimeout:
+                default: 0
+                description: Number of seconds after which a rolling restart of a
+                  domain will timeout.  If a rolling restart of a domain has not completed
+                  within the specified timeout duration, the Domain condition will
+                  be set to a FAILED state.  A value of 0 means a rolling restart
+                  will not timeout. Defaults to 0.
+                minimum: 0
+                type: integer
               fluentdSpecification:
                 description: Automatic fluentd sidecar injection. If specified, the
                   operator will deploy a sidecar container alongside each WebLogic
