@@ -206,14 +206,22 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
   public void receivedResponse(Watch.Response<V1Job> item) {
     LOGGER.entering();
 
-    LOGGER.info("JobWatcher.receivedResponse response item: " + item);
+    LOGGER.fine("JobWatcher.receivedResponse response item: " + item);
     switch (item.type) {
       case "ADDED":
+        LOGGER.fine("JobWatcher.receivedResponse  ADDED response item: " + item.object);
+        dispatchCallback(getJobName(item), item.object);
+        break;
       case "MODIFIED":
+        LOGGER.fine("JobWatcher.receivedResponse MODIFIED response item: " + item.object);
         dispatchCallback(getJobName(item), item.object);
         break;
       case "DELETED":
+        LOGGER.fine("JobWatcher.receivedResponse DELETED response item: " + item.object);
+        break;
       case "ERROR":
+        LOGGER.fine("JobWatcher.receivedResponse ERROR response item: " + item.object);
+        break;
       default:
     }
 
