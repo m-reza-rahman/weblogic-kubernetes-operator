@@ -1538,7 +1538,7 @@ public class DomainStatusUpdater {
     }
 
     public NextAction apply(Packet packet) {
-      boolean debug = Optional.ofNullable(message).map(m -> m.contains("domain9")).orElse(false);
+      boolean debug = Optional.ofNullable(message).map(m -> m.contains("k8seventsdomain")).orElse(false);
       if (debug) {
         LOGGER.info("zzz- FailureStep is run. " + this);
       }

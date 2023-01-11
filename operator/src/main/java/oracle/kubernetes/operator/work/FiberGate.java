@@ -121,7 +121,7 @@ public class FiberGate {
       this.old = old;
       this.steps = steps;
       this.packet = packet;
-      this.debug = "domain9".equals(domainUid);
+      this.debug = "k8seventsdomain".equals(domainUid);
 
       fiber = engine.createFiber();
       gateCallback = new FiberGateCompletionCallback(callback, domainUid, fiber);
