@@ -137,7 +137,7 @@ class DomainUpPlanTest {
     }
 
     @Override
-    public Step waitForServerShutdown(String serverName, DomainResource domain, Step next) {
+    public Step waitForServerShutdown(V1Pod pod, Step next) {
       return null;
     }
   }

@@ -27,7 +27,6 @@ import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
-import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.helpers.SecretHelper;
 import oracle.kubernetes.operator.http.client.HttpAsyncRequestStep;
 import oracle.kubernetes.operator.http.client.HttpResponseStep;
@@ -43,10 +42,8 @@ import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
 import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
 
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.WLS_CONTAINER_NAME;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.WebLogicConstants.ADMIN_STATE;
@@ -338,11 +335,16 @@ public class ShutdownManagedServerStep extends Step {
       LOGGER.fine(MessageKeys.SERVER_SHUTDOWN_REST_SUCCESS, serverName);
       removeShutdownRequestRetryCount(packet);
       PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
-      return doNext(pw.waitForServerShutdown(serverName, getDomainPresenceInfo(packet).getDomain(), getNext()), packet);
+      return doNext(pw.waitForServerShutdown(getServerPod(packet), getNext()), packet);
+    }
+
+    private V1Pod getServerPod(Packet packet) {
+      return getDomainPresenceInfo(packet).getServerPod(serverName);
     }
 
     @Override
     public NextAction onFailure(Packet packet, HttpResponse<String> response) {
+      DomainPresenceInfo info = getDomainPresenceInfo(packet);
       if (getThrowableResponse(packet) != null) {
         Throwable throwable = getThrowableResponse(packet);
         if (shouldRetry(packet)) {
@@ -359,12 +361,13 @@ public class ShutdownManagedServerStep extends Step {
       }
 
       removeShutdownRequestRetryCount(packet);
-      return doNext(Step.chain(createDomainRefreshStep(getDomainPresenceInfo(packet).getDomainName(),
-          getDomainPresenceInfo(packet).getNamespace()), getNext()), packet);
+      return doNext(Step.chain(createPodRefreshStep(info.getServerPod(serverName),
+          info.getNamespace(), info.getDomainUid()), getNext()), packet);
     }
 
-    private Step createDomainRefreshStep(String domainName, String namespace) {
-      return new CallBuilder().readDomainAsync(domainName, namespace, new DomainUpdateStep());
+    private Step createPodRefreshStep(V1Pod pod, String namespace, String domainUid) {
+      return new CallBuilder().readPodAsync(pod.getMetadata().getName(), namespace,
+          domainUid, new PodReadResponseStep());
     }
 
     private boolean shouldRetry(Packet packet) {
@@ -398,18 +401,14 @@ public class ShutdownManagedServerStep extends Step {
     }
   }
 
-  static class DomainUpdateStep extends ResponseStep<DomainResource> {
+  static class PodReadResponseStep extends DefaultResponseStep<V1Pod> {
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+    public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+      V1Pod result = callResponse.getResult();
+      if (result != null) {
+        packet.getSpi(DomainPresenceInfo.class).setServerPodFromEvent(PodHelper.getPodServerName(result), result);
+      }
       return doNext(packet);
-    }
-
-    @Override
-    public NextAction onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
-      return callResponse.getStatusCode() == HTTP_NOT_FOUND
-          ? doNext(packet)
-          : super.onFailure(packet, callResponse);
     }
   }
 }

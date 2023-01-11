@@ -4,6 +4,7 @@
 package oracle.kubernetes.operator;
 
 import java.math.BigInteger;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,6 +37,7 @@ import static oracle.kubernetes.common.utils.LogMatcher.containsFine;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
+import static oracle.kubernetes.operator.WebLogicConstants.SERVER_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SUSPENDING_STATE;
 import static oracle.kubernetes.operator.helpers.LegalNames.DEFAULT_INTROSPECTOR_JOB_NAME_SUFFIX;
@@ -443,7 +445,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
     PodWatcher watcher = createWatcher(stopping);
 
     try {
-      testSupport.runSteps(watcher.waitForServerShutdown(NAME, domain, terminalStep));
+      testSupport.runSteps(watcher.waitForServerShutdown(createPod(), terminalStep));
 
       assertThat(terminalStep.getExecutionCount(), is(1));
     } finally {
@@ -457,21 +459,20 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
     AtomicBoolean stopping = new AtomicBoolean(false);
     PodWatcher watcher = createWatcher(stopping);
 
-    testSupport.defineResources(domain);
+    V1Pod pod = createPod();
+    pod.getMetadata().setAnnotations(Collections.singletonMap(SERVER_STATE, SUSPENDING_STATE));
+
+
+    testSupport.defineResources(pod);
     try {
-      testSupport.runSteps(watcher.waitForServerShutdown(NAME, domainWithSuspendingState(domain), terminalStep));
-      domain.setStatus(new DomainStatus().addServer(new ServerStatus().withServerName(NAME).withState(SHUTDOWN_STATE)));
+      testSupport.runSteps(watcher.waitForServerShutdown(pod, terminalStep));
+      pod.getMetadata().setAnnotations(Collections.singletonMap(SERVER_STATE, SHUTDOWN_STATE));
       testSupport.setTime(10, TimeUnit.SECONDS);
 
       assertThat(terminalStep.getExecutionCount(), is(1));
     } finally {
       stopping.set(true);
     }
-  }
-
-  private DomainResource domainWithSuspendingState(DomainResource domainResource) {
-    return domainResource.withStatus(
-        new DomainStatus().addServer(new ServerStatus().withServerName(NAME).withState(SUSPENDING_STATE)));
   }
 
   @Test
@@ -482,8 +483,8 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
     testSupport.addDomainPresenceInfo(new DomainPresenceInfo(domain));
 
     try {
-      testSupport.failOnResource(KubernetesTestSupport.DOMAIN, NAME, NS, HTTP_NOT_FOUND);
-      testSupport.runSteps(watcher.waitForServerShutdown(NAME, domain, terminalStep));
+      testSupport.failOnResource(KubernetesTestSupport.POD, NAME, NS, HTTP_NOT_FOUND);
+      testSupport.runSteps(watcher.waitForServerShutdown(createPod(), terminalStep));
     } finally {
       stopping.set(true);
     }

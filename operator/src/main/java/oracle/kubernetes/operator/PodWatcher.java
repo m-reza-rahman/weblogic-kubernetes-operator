@@ -35,13 +35,12 @@ import oracle.kubernetes.operator.watcher.WatchListener;
 import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
 import static oracle.kubernetes.common.logging.MessageKeys.EXECUTE_MAKE_RIGHT_DOMAIN;
 import static oracle.kubernetes.common.logging.MessageKeys.LOG_WAITING_COUNT;
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_NAME;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
+import static oracle.kubernetes.operator.helpers.PodHelper.getServerStateAnnotation;
 
 /**
  * Watches for changes to pods.
@@ -384,79 +383,73 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     }
   }
 
-  public Step waitForServerShutdown(String serverName, DomainResource domain, Step next) {
-    return new WaitForServerShutdownStep(next, serverName, domain);
+  public Step waitForServerShutdown(V1Pod pod, Step next) {
+    return new WaitForServerShutdownStep(next, pod);
   }
 
-  private class WaitForServerShutdownStep extends WaitForReadyStep<DomainResource> {
-    private final String serverName;
+  private class WaitForServerShutdownStep extends WaitForReadyStep<V1Pod> {
 
-    WaitForServerShutdownStep(Step next, String serverName, DomainResource domain) {
-      super(domain, next);
-      this.serverName = serverName;
+    WaitForServerShutdownStep(Step next, V1Pod pod) {
+      super(pod, next);
     }
 
     @Override
-    protected boolean isReady(DomainResource resource) {
-      return Optional.ofNullable(PodHelper.getServerState(resource, serverName)).map(s -> s.equals(SHUTDOWN_STATE))
-          .orElse(false);
+    protected boolean isReady(V1Pod resource) {
+      return Optional.ofNullable(getServerStateAnnotation(resource)).map(SHUTDOWN_STATE::equals).orElse(false);
     }
 
     @Override
-    V1ObjectMeta getMetadata(DomainResource resource) {
+    V1ObjectMeta getMetadata(V1Pod resource) {
       return resource.getMetadata();
     }
 
     @Override
-    void addCallback(String name, Consumer<DomainResource> callback) {
-      // Ignore
+    void addCallback(String name, Consumer<V1Pod> callback) {
+      synchronized (modifiedCallbackRegistrations) {
+        modifiedCallbackRegistrations.computeIfAbsent(name, k -> new ArrayList<>()).add(callback);
+      }
     }
 
     @Override
-    void removeCallback(String name, Consumer<DomainResource> callback) {
-      // Ignore
+    void removeCallback(String name, Consumer<V1Pod> callback) {
+      synchronized (modifiedCallbackRegistrations) {
+        Optional.ofNullable(modifiedCallbackRegistrations.get(name)).ifPresent(c -> c.remove(callback));
+      }
     }
 
     @Override
     Step createReadAsyncStep(String name, String namespace, String domainUid,
-                             ResponseStep<DomainResource> responseStep) {
-      return new CallBuilder().readDomainAsync(name, namespace, responseStep);
+                             ResponseStep<V1Pod> responseStep) {
+      return new CallBuilder().readPodAsync(name, namespace, domainUid, responseStep);
     }
 
     @Override
     protected ResponseStep resumeIfReady(WaitForReadyStep.Callback callback) {
-      return new WaitForServerShutdownResponseStep(callback, serverName);
+      return new WaitForServerShutdownResponseStep(callback);
     }
 
-    private class WaitForServerShutdownResponseStep extends ResponseStep<DomainResource> {
+    private class WaitForServerShutdownResponseStep extends DefaultResponseStep<V1Pod> {
 
-      private final WaitForReadyStep<DomainResource>.Callback callback;
-      private final String serverName;
+      private final WaitForReadyStep<V1Pod>.Callback callback;
 
-      WaitForServerShutdownResponseStep(WaitForReadyStep<DomainResource>.Callback callback, String serverName) {
+      WaitForServerShutdownResponseStep(WaitForReadyStep<V1Pod>.Callback callback) {
         super(WaitForServerShutdownStep.this.getNext());
         this.callback = callback;
-        this.serverName = serverName;
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
+      public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
         DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
-        if (isReady(callResponse.getResult()) || callback.didResumeFiber()) {
-          Optional.ofNullable(info).ifPresent(i -> i.updateLastKnownServerStatus(serverName, SHUTDOWN_STATE));
-          callback.proceedFromWait(callResponse.getResult());
+        V1Pod result = callResponse.getResult();
+        if (result == null || isReady(result) || callback.didResumeFiber()) {
+          Optional.ofNullable(result).ifPresent(res ->
+              Optional.ofNullable(info).ifPresent(i -> i.setServerPodFromEvent(PodHelper.getPodServerName(res), res)));
+          callback.proceedFromWait(result);
           return doEnd(packet);
         } else {
           return doDelay(createReadAndIfReadyCheckStep(callback), packet,
               getWatchBackstopRecheckDelaySeconds(), TimeUnit.SECONDS);
         }
-      }
-
-      @Override
-      public NextAction onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
-        return callResponse.getStatusCode() == HTTP_NOT_FOUND
-            ? doNext(packet)
-            : super.onFailure(packet, callResponse);
       }
     }
   }

@@ -20,7 +20,6 @@ import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.operator.JobWatcher.getFailedReason;
@@ -138,15 +137,15 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
     }
 
     @Override
-    public Step waitForServerShutdown(String serverName, DomainResource domain, Step next) {
+    public Step waitForServerShutdown(V1Pod pod, Step next) {
       return next;
     }
   }
 
   private class PassThroughWithServerShutdownAwaiterStepFactory extends PassthroughPodAwaiterStepFactory {
     @Override
-    public Step waitForServerShutdown(String serverName, DomainResource domain, Step next) {
-      if (Optional.ofNullable(PodHelper.getServerState(domain, serverName))
+    public Step waitForServerShutdown(V1Pod pod, Step next) {
+      if (Optional.ofNullable(PodHelper.getServerStateAnnotation(pod))
           .map(s -> s.equals(SHUTDOWN_STATE)).orElse(false)) {
         return next;
       } else {

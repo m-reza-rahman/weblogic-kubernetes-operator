@@ -5,7 +5,6 @@ package oracle.kubernetes.operator;
 
 import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.kubernetes.operator.work.Step;
-import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
 public interface PodAwaiterStepFactory {
   /**
@@ -38,10 +37,9 @@ public interface PodAwaiterStepFactory {
   /**
    * Waits until the Pod server is shut down.
    *
-   * @param serverName Pod Server name to watch
-   * @param domain Domain resource
+   * @param pod Pod to watch
    * @param next Next processing step once Pod is shut down
    * @return Asynchronous step
    */
-  Step waitForServerShutdown(String serverName, DomainResource domain, Step next);
+  Step waitForServerShutdown(V1Pod pod, Step next);
 }

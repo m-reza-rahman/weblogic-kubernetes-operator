@@ -284,11 +284,12 @@ class ShutdownManagedServerStepTest {
   }
 
   @Test
-  void whenInvokeShutdown_standaloneServer_DomainNotFound_verifyFailureAndRunNextStep() {
+  void whenInvokeShutdown_standaloneServer_PodNotFound_verifyFailureAndRunNextStep() {
     selectServer(MANAGED_SERVER1, standaloneServerService);
 
     defineResponse(404, "http://test-domain-managed-server1.namespace:7001");
-    testSupport.failOnResource(KubernetesTestSupport.DOMAIN, UID, NS, HTTP_NOT_FOUND);
+    testSupport.failOnResource(KubernetesTestSupport.POD,
+        info.getServerPod(MANAGED_SERVER1).getMetadata().getName(), NS, HTTP_NOT_FOUND);
 
     testSupport.runSteps(shutdownStandaloneManagedServer);
 

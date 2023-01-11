@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -16,11 +19,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
+import jakarta.json.Json;
+import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.ClientPool;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
@@ -29,6 +37,7 @@ import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
+import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.steps.ReadHealthStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.KubernetesExec;
@@ -44,6 +53,7 @@ import oracle.kubernetes.weblogic.domain.model.ServerHealth;
 import static oracle.kubernetes.operator.KubernetesConstants.WLS_CONTAINER_NAME;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_STATE_MAP;
+import static oracle.kubernetes.operator.WebLogicConstants.SERVER_STATE;
 import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadContext;
 
 /** Creates an asynchronous step to read the WebLogic server state from a particular pod. */
@@ -108,7 +118,6 @@ public class ServerStatusReader {
     /**
      * Creates asynchronous step to read WebLogic server state from a particular pod.
      *
-     * @param info the domain presence
      * @param pod The pod
      * @param serverName Server name
      * @param timeoutSeconds Timeout in seconds
@@ -120,8 +129,46 @@ public class ServerStatusReader {
 
     private StepAndPacket createStatusReaderStep(Packet packet, V1Pod pod) {
       return new StepAndPacket(
-          createServerStatusReaderStep(pod, PodHelper.getPodServerName(pod), timeoutSeconds),
-          packet.copy());
+          Step.chain(createServerStatusReaderStep(pod, PodHelper.getPodServerName(pod), timeoutSeconds),
+              patchPod(pod, getNext(), PodHelper.getPodServerName(pod))), packet.copy());
+    }
+
+    private Step patchPod(V1Pod currentPod, Step next, String serverName) {
+      JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
+      KubernetesUtils.addPatches(
+          patchBuilder, "/metadata/annotations/", getAnnotations(currentPod),
+          getServerStateAnnotation(currentPod, serverName));
+      return new CallBuilder()
+          .patchPodAsync(currentPod.getMetadata().getName(), info.getNamespace(), info.getDomainUid(),
+              new V1Patch(patchBuilder.build().toString()), new PatchPodResponseStep(next));
+    }
+
+    private Map<String, String> getAnnotations(V1Pod pod) {
+      return Optional.ofNullable(pod.getMetadata()).map(V1ObjectMeta::getAnnotations).orElseGet(Collections::emptyMap);
+    }
+
+    private Map<String, String> getServerStateAnnotation(V1Pod pod, String serverName) {
+      Map<String,String> result = new HashMap<>(getAnnotations(pod));
+      String serverState = Optional.ofNullable(serverName).map(n -> info.getLastKnownServerStatus(n))
+          .map(s -> s.getStatus()).orElse(null);
+      Optional.ofNullable(serverState).ifPresent(state -> result.put(SERVER_STATE, state));
+      return result;
+    }
+
+    private class PatchPodResponseStep extends DefaultResponseStep<V1Pod> {
+
+      PatchPodResponseStep(Step next) {
+        super(next);
+      }
+
+      @Override
+      public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+        V1Pod newPod = callResponse.getResult();
+        if (newPod != null) {
+          info.setServerPod(PodHelper.getPodServerName(callResponse.getResult()), callResponse.getResult());
+        }
+        return doNext(getNext(), packet);
+      }
     }
   }
 

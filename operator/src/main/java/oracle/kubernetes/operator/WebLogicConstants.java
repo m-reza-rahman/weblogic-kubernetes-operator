@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public interface WebLogicConstants {
+  String SERVER_STATE = "weblogic.state";
   String UNKNOWN_STATE = "UNKNOWN";
   String STARTING_STATE = "STARTING";
   String SHUTTING_DOWN_STATE = "SHUTTING_DOWN";

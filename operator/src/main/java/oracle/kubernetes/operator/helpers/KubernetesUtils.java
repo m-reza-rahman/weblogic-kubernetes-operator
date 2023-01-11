@@ -71,11 +71,11 @@ public class KubernetesUtils {
    * @param current      a map of the values found in a Kubernetes resource
    * @param required     a map of the values specified for the resource by the domain
    */
-  static void addPatches(
-        JsonPatchBuilder patchBuilder,
-        String basePath,
-        Map<String, String> current,
-        Map<String, String> required) {
+  public static void addPatches(
+      JsonPatchBuilder patchBuilder,
+      String basePath,
+      Map<String, String> current,
+      Map<String, String> required) {
 
     for (Map.Entry<String, String> entry : required.entrySet()) {
       String name = entry.getKey();
