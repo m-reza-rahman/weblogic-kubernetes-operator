@@ -71,6 +71,10 @@ public class IntrospectionStatus {
     if (FailedPhase.inFailedPhase(pod)) {
       return new FailedPhase(pod).createStatusUpdateSteps();
     } else if (Unschedulable.isUnschedulable(pod)) {
+      if ("k8seventsdomain".equals(getPodDomainUid(pod))) {
+        LOGGER.info("debug- return null instead of calling createStatusUpdateSteps for debugging");
+        return null;
+      }
       return new Unschedulable(pod).createStatusUpdateSteps();
     } else if (terminatedErrorMessage != null) {
       return new SelectedMessage(pod, terminatedErrorMessage, true).createStatusUpdateSteps();
