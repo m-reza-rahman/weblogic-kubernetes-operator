@@ -198,7 +198,7 @@ public class ServerDownIteratorStep extends Step {
     @Override
     public NextAction apply(Packet packet) {
       if (shutdownDetails.isEmpty()) {
-        LOGGER.info("Server shtudown completed.");
+        LOGGER.info(ALL_SERVERS_SHUTDOWN);
         return doNext(getNext(), packet);
       } else {
         return doForkJoin(getNext(), packet, shutdownDetails);
