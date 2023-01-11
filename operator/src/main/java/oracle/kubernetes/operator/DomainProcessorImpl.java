@@ -570,11 +570,14 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     switch (watchType) {
       case ADDED:
+        updateDomainStatus(pod, info, delegate);
+        break;
       case MODIFIED:
+        LOGGER.info("105106- Introspector Pod " + getPodName(pod) + " for domain " + domainUid + " is updated.");
         updateDomainStatus(pod, info, delegate);
         break;
       case DELETED:
-        LOGGER.fine("Introspector Pod " + getPodName(pod) + " for domain " + domainUid + " is deleted.");
+        LOGGER.info("Introspector Pod " + getPodName(pod) + " for domain " + domainUid + " is deleted.");
         break;
       default:
     }

@@ -62,16 +62,23 @@ public class IntrospectionStatus {
     final String initContainerWaitingMessages = getInitContainerWaitingMessages(pod);
 
     if (FailedPhase.inFailedPhase(pod)) {
+      LOGGER.info("105106- Introspector pod " + getPodName(pod) + " inFailedPhase");
       return new FailedPhase(pod).createStatusUpdateSteps();
     } else if (Unschedulable.isUnschedulable(pod)) {
+      LOGGER.info("105106- Introspector pod " + getPodName(pod) + " isUnschedulable");
       return new Unschedulable(pod).createStatusUpdateSteps();
     } else if (terminatedErrorMessage != null) {
+      LOGGER.info("105106- Introspector pod " + getPodName(pod) + " terminatedErrorMessage= " + terminatedErrorMessage);
       return new SelectedMessage(pod, terminatedErrorMessage, true).createStatusUpdateSteps();
     } else if (waitingMessage != null) {
+      LOGGER.info("105106- Introspector pod " + getPodName(pod) + " waitingMessage= " + waitingMessage);
       return new SelectedMessage(pod, waitingMessage, false).createStatusUpdateSteps();
     } else if (initContainerWaitingMessages != null) {
+      LOGGER.info("105106- Introspector pod " + getPodName(pod)
+          + " initContainerWaitingMessages= " + initContainerWaitingMessages);
       return new SelectedMessage(pod, initContainerWaitingMessages, false).createStatusUpdateSteps();
     } else {
+      LOGGER.info("105106- Introspector pod " + getPodName(pod) + " returning null");
       return null;
     }
   }
