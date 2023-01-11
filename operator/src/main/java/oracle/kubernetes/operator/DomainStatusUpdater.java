@@ -1563,6 +1563,9 @@ public class DomainStatusUpdater {
         status.addCondition(new DomainCondition(COMPLETED).withStatus(false));
         Optional.ofNullable(jobUid).ifPresent(status::setFailedIntrospectionUid);
         status.removeMarkedFailures();
+        if (jobUid != null) {
+          LOGGER.info("105106- <jobUid=" + jobUid + "> FailureStep updating status to " + status);
+        }
       }
 
     }

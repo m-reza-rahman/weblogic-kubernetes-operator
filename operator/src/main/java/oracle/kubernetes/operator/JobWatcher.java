@@ -206,7 +206,7 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
   public void receivedResponse(Watch.Response<V1Job> item) {
     LOGGER.entering();
 
-    LOGGER.fine("JobWatcher.receivedResponse response item: " + item);
+    LOGGER.info("JobWatcher.receivedResponse response item: " + item);
     switch (item.type) {
       case "ADDED":
       case "MODIFIED":
