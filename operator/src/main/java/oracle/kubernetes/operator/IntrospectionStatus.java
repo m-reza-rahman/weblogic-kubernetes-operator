@@ -78,7 +78,7 @@ public class IntrospectionStatus {
           + " initContainerWaitingMessages= " + initContainerWaitingMessages);
       return new SelectedMessage(pod, initContainerWaitingMessages, false).createStatusUpdateSteps();
     } else {
-      LOGGER.info("105106- Introspector pod " + getPodName(pod) + " returning null");
+      LOGGER.info("105106- Introspector pod " + getPodName(pod) + " returning null. Pod status: " + pod.getStatus());
       return null;
     }
   }
