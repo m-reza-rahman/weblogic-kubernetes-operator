@@ -16,6 +16,8 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.utils.SystemClock;
 
+import static oracle.kubernetes.operator.ProcessingConstants.DEBUG_DOMAIN_UID;
+
 /**
  * Allows at most one running Fiber per key value. However, rather than queue later arriving Fibers
  * this class cancels the earlier arriving Fibers. For the operator, this makes sense as domain
@@ -121,7 +123,7 @@ public class FiberGate {
       this.old = old;
       this.steps = steps;
       this.packet = packet;
-      this.debug = "k8seventsdomain".equals(domainUid);
+      this.debug = DEBUG_DOMAIN_UID.equals(domainUid);
 
       fiber = engine.createFiber();
       gateCallback = new FiberGateCompletionCallback(callback, domainUid, fiber);
@@ -225,7 +227,7 @@ public class FiberGate {
     public void onThrowable(Packet packet, Throwable throwable) {
       try {
         boolean currentFiberIsCompletionFiber = currentFiberIsCompletionFiber();
-        if ("k8seventsdomain".equals(domainUid)) {
+        if (DEBUG_DOMAIN_UID.equals(domainUid)) {
           LOGGER.info("zzz- calling callback.onThrowable(). callback is: " + callback
               + ", currentFiberIsCompletionFiber? " + currentFiberIsCompletionFiber);
         }

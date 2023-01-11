@@ -83,6 +83,7 @@ import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.TO_BE_ROLLED_LABEL;
 import static oracle.kubernetes.operator.MIINonDynamicChangesMethod.COMMIT_UPDATE_ONLY;
+import static oracle.kubernetes.operator.ProcessingConstants.DEBUG_DOMAIN_UID;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 import static oracle.kubernetes.operator.ProcessingConstants.MII_DYNAMIC_UPDATE;
 import static oracle.kubernetes.operator.ProcessingConstants.MII_DYNAMIC_UPDATE_RESTART_REQUIRED;
@@ -540,7 +541,7 @@ public class DomainStatusUpdater {
       }
       createDomainEvents().stream().map(EventHelper::createEventStep).forEach(result::add);
       Optional.ofNullable(next).ifPresent(result::add);
-      if ("k8seventsdomain".equals(domainUid)) {
+      if (DEBUG_DOMAIN_UID.equals(domainUid)) {
         LOGGER.info("zzz- isStatusUnchanged? " + isStatusUnchanged() + " result.isEmpty() = " + result.isEmpty());
         if (isStatusUnchanged()) {
           LOGGER.info("zzz- unchanged status: " + getStatus());
@@ -1538,7 +1539,7 @@ public class DomainStatusUpdater {
     }
 
     public NextAction apply(Packet packet) {
-      boolean debug = Optional.ofNullable(message).map(m -> m.contains("k8seventsdomain")).orElse(false);
+      boolean debug = Optional.ofNullable(message).map(m -> m.contains(DEBUG_DOMAIN_UID)).orElse(false);
       if (debug) {
         LOGGER.info("zzz- FailureStep is run. " + this);
       }

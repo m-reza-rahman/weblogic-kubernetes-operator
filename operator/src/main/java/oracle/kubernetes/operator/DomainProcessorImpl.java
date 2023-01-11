@@ -70,6 +70,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static oracle.kubernetes.operator.DomainStatusUpdater.createInternalFailureSteps;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createIntrospectionFailureSteps;
+import static oracle.kubernetes.operator.ProcessingConstants.DEBUG_DOMAIN_UID;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_STATE_MAP;
 import static oracle.kubernetes.operator.helpers.PodHelper.getPodDomainUid;
@@ -950,7 +951,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         String domainUid = Optional.ofNullable((DomainPresenceInfo)presenceInfo)
             .map(DomainPresenceInfo::getDomainUid)
             .orElse("null");
-        if ("k8seventsdomain".equals(domainUid)) {
+        if (DEBUG_DOMAIN_UID.equals(domainUid)) {
           Fiber terminatedFiber = Optional.ofNullable(packetFromCaller)
               .map(p -> (Fiber)p.getValue("terminatedFiber"))
               .orElse(null);
