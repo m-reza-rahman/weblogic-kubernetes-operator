@@ -258,6 +258,7 @@ abstract class WaitForReadyStep<T> extends Step {
       if (makeRightDomainOperation != null) {
         makeRightDomainOperation.clear();
         makeRightDomainOperation.setLiveInfo(new DomainPresenceInfo((DomainResource) callResponse.getResult()));
+        System.out.println("DEBUG: create make-right due to wait timeout.");
         makeRightDomainOperation.withExplicitRecheck().interrupt().execute();
       }
       callback.fiber.terminate(new Exception(WAIT_TIMEOUT_EXCEEDED), packet);

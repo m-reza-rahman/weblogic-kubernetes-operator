@@ -618,6 +618,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       case DELETED:
         boolean removed = ServiceHelper.deleteFromEvent(info, item.object);
         if (removed && info.isNotDeleting()) {
+          LOGGER.info("DEBUG: create make-right due to DELETED service event");
           createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
         }
         break;
@@ -650,6 +651,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       case DELETED:
         boolean removed = PodDisruptionBudgetHelper.deleteFromEvent(info, item.object);
         if (removed && info.isNotDeleting()) {
+          LOGGER.info("DEBUG: create make-right due to DELETED PDB event");
           createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
         }
         break;
@@ -992,6 +994,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     private void scheduleRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
       final MakeRightDomainOperation retry = operation.createRetry(domainPresenceInfo);
+      LOGGER.info("DEBUG: create make-right due to scheduled retry");
       gate.getExecutor().schedule(retry::execute, delayUntilNextRetry(domainPresenceInfo), TimeUnit.SECONDS);
     }
     

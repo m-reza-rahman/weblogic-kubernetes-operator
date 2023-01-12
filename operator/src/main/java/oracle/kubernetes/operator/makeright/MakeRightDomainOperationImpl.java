@@ -370,9 +370,12 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
     @Override
     public NextAction onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
-      return callResponse.getStatusCode() == HTTP_NOT_FOUND
-          ? doNext(createDomainDownPlan(), packet)
-          : super.onFailure(packet, callResponse);
+      if (callResponse.getStatusCode() == HTTP_NOT_FOUND) {
+        DomainPresenceInfo.fromPacket(packet).ifPresent(i -> i.setDeleting(true));
+        System.out.println("DEBUG: Creating domain down plan since domain not found during make-right.");
+        return doNext(createDomainDownPlan(), packet);
+      }
+      return super.onFailure(packet, callResponse);
     }
   }
 

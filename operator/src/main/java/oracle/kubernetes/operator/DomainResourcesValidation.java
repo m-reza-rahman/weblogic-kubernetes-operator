@@ -29,6 +29,8 @@ import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -43,6 +45,9 @@ import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_CR
  * that any domains which are found have the proper pods and services.
  */
 class DomainResourcesValidation {
+
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
   private final String namespace;
   private final DomainProcessor processor;
   private ClusterList activeClusterResources;
@@ -213,6 +218,8 @@ class DomainResourcesValidation {
   private static void removeStrandedDomainPresenceInfo(DomainProcessor dp, DomainPresenceInfo info) {
     info.setDeleting(true);
     info.setPopulated(true);
+    LOGGER.info("DEBUG: executing make right to delete domain " + info.getDomainUid()
+        + ".. should generate DOMAIN DELETED event");
     dp.createMakeRightOperation(info).interrupt().withExplicitRecheck().forDeletion().withEventData(new EventData(
         EventHelper.EventItem.DOMAIN_DELETED)).execute();
   }
@@ -231,10 +238,13 @@ class DomainResourcesValidation {
     if (info.getDomain().getStatus() == null) {
       makeRight = makeRight.withEventData(new EventData(DOMAIN_CREATED)).interrupt();
     }
+    LOGGER.info("DEBUG: executing make right to activate " + info.getDomainUid());
     makeRight.execute();
   }
 
   private void deActivateCluster(DomainProcessor dp, ClusterPresenceInfo info) {
+    LOGGER.info("DEBUG: executing make right to delete cluster " + info.getResourceName()
+        + ".. should generate CLUSTER DELETED event");
     dp.createMakeRightOperationForClusterEvent(EventHelper.EventItem.CLUSTER_DELETED, info.getResource()).execute();
   }
 
