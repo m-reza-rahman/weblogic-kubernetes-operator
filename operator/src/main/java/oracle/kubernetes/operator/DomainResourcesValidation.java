@@ -213,7 +213,7 @@ class DomainResourcesValidation {
   private static void removeStrandedDomainPresenceInfo(DomainProcessor dp, DomainPresenceInfo info) {
     info.setDeleting(true);
     info.setPopulated(true);
-    dp.createMakeRightOperation(info).withExplicitRecheck().forDeletion().withEventData(new EventData(
+    dp.createMakeRightOperation(info).interrupt().withExplicitRecheck().forDeletion().withEventData(new EventData(
         EventHelper.EventItem.DOMAIN_DELETED)).execute();
   }
 

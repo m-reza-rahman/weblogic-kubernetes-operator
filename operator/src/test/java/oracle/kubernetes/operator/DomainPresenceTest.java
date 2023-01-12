@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -134,6 +135,7 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
 
     testSupport.runSteps(domainNamespaces.readExistingResources(NS, dp));
 
+    assertThat(dp.isDeletingStrandedResources(UID2), is(true));
     assertThat(getDomainPresenceInfoMap(dp).keySet(), hasSize(2));
     assertThat(getDomainPresenceInfoMap(dp), not(hasKey(UID2)));
   }
@@ -411,14 +413,17 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
     }
 
     boolean isDeletingStrandedResources(String uid) {
-      return Optional.ofNullable(getMakeRightOperations(uid))
-            .map(MakeRightDomainOperationStub::isDeletingStrandedResources)
-            .orElse(false);
+      return Optional.ofNullable(getMakeRightOperationsList(uid)).orElse(new ArrayList<>()).stream()
+          .anyMatch(o -> o.isDeletingStrandedResources() && o.eventData != null);
     }
 
     @Override
     public Stream<DomainPresenceInfo> findStrandedDomainPresenceInfos(String namespace, Set<String> domainUids) {
       return dpis.entrySet().stream().filter(e -> !domainUids.contains(e.getKey())).map(Map.Entry::getValue);
+    }
+
+    private List<MakeRightDomainOperationStub> getMakeRightOperationsList(String uid) {
+      return operationStubs.stream().filter(s -> uid.equals(s.getUid())).collect(Collectors.toList());
     }
 
     private MakeRightDomainOperationStub getMakeRightOperations(String uid) {
@@ -492,6 +497,11 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
       @Override
       public MakeRightDomainOperation forDeletion() {
         deleting = true;
+        return this;
+      }
+
+      @Override
+      public MakeRightDomainOperation interrupt() {
         return this;
       }
 
