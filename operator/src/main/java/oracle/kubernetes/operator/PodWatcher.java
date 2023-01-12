@@ -371,9 +371,13 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
       @Override
       public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
         DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+        LOGGER.info("DEBUG: WaitForDelete, callResponse.getStatusCode() is " + callResponse.getStatusCode());
+        LOGGER.info("DEBUG: WaitForDelete, callResponse.exception str is " + callResponse.getExceptionString());
+        LOGGER.info("DEBUG: WaitForDelete, callResponse.exception() is " + callResponse.getE());
         if (callResponse.getResult() == null || callback.didResumeFiber()) {
           Optional.ofNullable(info).ifPresent(i -> i.deleteServerPodFromEvent(packet.getValue(SERVER_NAME), null));
           callback.proceedFromWait(callResponse.getResult());
+          LOGGER.info("DEBUG: pod for server " + packet.getValue(SERVER_NAME) + ", deleted, ending fiber.");
           return doEnd(packet);
         } else {
           return doDelay(createReadAndIfReadyCheckStep(callback), packet,
@@ -445,6 +449,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
           Optional.ofNullable(result).ifPresent(res ->
               Optional.ofNullable(info).ifPresent(i -> i.setServerPodFromEvent(PodHelper.getPodServerName(res), res)));
           callback.proceedFromWait(result);
+          LOGGER.info("DEBUG: server " + PodHelper.getPodServerName(result) + ", shutdown, ending fiber.");
           return doEnd(packet);
         } else {
           return doDelay(createReadAndIfReadyCheckStep(callback), packet,
