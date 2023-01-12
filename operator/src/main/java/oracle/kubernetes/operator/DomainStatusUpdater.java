@@ -1528,6 +1528,14 @@ public class DomainStatusUpdater {
       this.message = Optional.ofNullable(throwable.getMessage()).orElse(throwable.toString());
     }
 
+    public NextAction apply(Packet packet) {
+      boolean debug = Optional.ofNullable(message).map(m -> m.contains("k8seventsdomain")).orElse(false);
+      if (debug) {
+        LOGGER.info("zzz- FailureStep is run. " + this);
+      }
+      return doNext(createContext(packet).createUpdateSteps(getNext()), packet);
+    }
+
     @Override
     protected String getDetail() {
       return reason.toString();
