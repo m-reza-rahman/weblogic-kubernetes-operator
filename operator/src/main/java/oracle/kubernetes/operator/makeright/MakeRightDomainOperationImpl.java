@@ -58,6 +58,7 @@ import static oracle.kubernetes.operator.DomainStatusUpdater.createStatusInitial
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECT_REQUESTED;
+import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_DELETED;
 
 /**
  * A factory which creates and executes steps to align the cached domain status with the value read from Kubernetes.
@@ -222,6 +223,8 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
       result.add(createStatusInitializationStep());
     }
     if (deleting || domainHasDeletionTimestamp()) {
+      LOGGER.info("DEBUG: creating domain down plan. deleting is " + deleting
+          + ", domainHasDeletionTimestamp is " + domainHasDeletionTimestamp());
       result.add(new StartPlanStep(liveInfo, createDomainDownPlan()));
     } else {
       result.add(createListClusterResourcesStep(getNamespace()));
@@ -263,7 +266,11 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   private Step createDomainDownPlan() {
-    return Step.chain(new DeleteDomainStep(), new DownHeadStep(), new UnregisterStep());
+    Step eventSteps = null;
+    if (Optional.ofNullable(eventData).map(e -> e.getItem() != DOMAIN_DELETED).orElse(true)) {
+      eventSteps = EventHelper.createEventStep(new EventHelper.EventData(DOMAIN_DELETED));
+    }
+    return Step.chain(eventSteps, new DeleteDomainStep(), new DownHeadStep(), new UnregisterStep());
   }
 
   private class DownHeadStep extends Step {
@@ -370,11 +377,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     private void updateCache(DomainPresenceInfo info, DomainResource domain) {
-      if (domain.getMetadata().getDeletionTimestamp() != null) {
-        info.setDeleting(true);
-      } else {
-        info.setDeleting(false);
-      }
+      info.setDeleting(domain.getMetadata().getDeletionTimestamp() != null);
       info.setDomain(domain);
     }
 
