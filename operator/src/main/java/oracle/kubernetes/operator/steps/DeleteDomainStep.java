@@ -13,6 +13,8 @@ import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -22,6 +24,7 @@ import static oracle.kubernetes.operator.LabelConstants.getCreatedByOperatorSele
 
 public class DeleteDomainStep extends Step {
 
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
   @Override
   public NextAction apply(Packet packet) {
@@ -30,6 +33,8 @@ public class DeleteDomainStep extends Step {
 
   @Nonnull
   private ServerDownIteratorStep createNextSteps(DomainPresenceInfo info) {
+    LOGGER.info("DEBUG: Deleting domain " + info.getDomainUid());
+    info.setDeleting(true);
     return new ServerDownIteratorStep(getShutdownInfos(info), createDomainDownStep(info));
   }
 
@@ -58,6 +63,7 @@ public class DeleteDomainStep extends Step {
   }
 
   private Step deleteServices(DomainPresenceInfo info) {
+    LOGGER.info("DEBUG: deleting all svcs for domain " + info.getDomainUid() + ", ns " + info.getNamespace());
     return new CallBuilder()
         .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector())
         .listServiceAsync(
@@ -70,6 +76,7 @@ public class DeleteDomainStep extends Step {
   }
 
   private Step deletePodDisruptionBudgets(DomainPresenceInfo info) {
+    LOGGER.info("DEBUG: deleting all pdbs for domain " + info.getDomainUid() + ", ns " + info.getNamespace());
     return new CallBuilder()
         .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector())
         .listPodDisruptionBudgetAsync(
@@ -82,6 +89,7 @@ public class DeleteDomainStep extends Step {
   }
 
   private Step deletePods(DomainPresenceInfo info) {
+    LOGGER.info("DEBUG: deleting all pods for domain " + info.getDomainUid() + ", ns " + info.getNamespace());
     return new CallBuilder()
         .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector())
         .deleteCollectionPodAsync(info.getNamespace(), new DefaultResponseStep<>(null));

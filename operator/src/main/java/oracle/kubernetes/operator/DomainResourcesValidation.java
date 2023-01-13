@@ -194,7 +194,13 @@ class DomainResourcesValidation {
 
     getDomainPresenceInfoMap().values().stream()
         .filter(dpi -> !domainNamesFromList.contains(dpi.getDomainUid())).collect(Collectors.toList())
-        .forEach(i -> getDomainPresenceInfo(i.getDomainUid()).setDomain(null));
+        .forEach(i -> setStrandedDomain(i, domainNamesFromList));
+  }
+
+  private void setStrandedDomain(DomainPresenceInfo i, Collection<String> domainNamesFromList) {
+    LOGGER.info("DEBUG: domain " + i.getDomainUid() + " is in cache but not found in the list -> "
+        + domainNamesFromList + ", set domain to be stranded.");
+    getDomainPresenceInfo(i.getDomainUid()).setDomain(null);
   }
 
   private void addDomain(DomainResource domain) {
@@ -212,7 +218,9 @@ class DomainResourcesValidation {
   }
 
   private boolean isStranded(DomainPresenceInfo dpi) {
-    return dpi.getDomain() == null;
+    boolean stranded = dpi.getDomain() == null;
+    LOGGER.info("Domain " + dpi.getDomainUid() + " stranded value is " + stranded);
+    return stranded;
   }
 
   private static void removeStrandedDomainPresenceInfo(DomainProcessor dp, DomainPresenceInfo info) {
@@ -229,7 +237,9 @@ class DomainResourcesValidation {
   }
 
   private boolean isActive(DomainPresenceInfo dpi) {
-    return dpi.getDomain() != null;
+    boolean active = dpi.getDomain() != null;
+    LOGGER.info("DEBUG: active status for domain " + dpi.getDomainUid() + " is " + active);
+    return active;
   }
 
   private static void activateDomain(DomainProcessor dp, DomainPresenceInfo info) {
@@ -237,8 +247,10 @@ class DomainResourcesValidation {
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
     if (info.getDomain().getStatus() == null) {
       makeRight = makeRight.withEventData(new EventData(DOMAIN_CREATED)).interrupt();
+      LOGGER.info("DEBUG: executing interrupting make right to activate " + info.getDomainUid());
+    } else {
+      LOGGER.info("DEBUG: executing make right to activate " + info.getDomainUid());
     }
-    LOGGER.info("DEBUG: executing make right to activate " + info.getDomainUid());
     makeRight.execute();
   }
 

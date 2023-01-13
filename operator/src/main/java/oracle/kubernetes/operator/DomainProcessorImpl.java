@@ -775,7 +775,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       LOGGER.info(MessageKeys.WATCH_CLUSTER_WITHOUT_DOMAIN, cluster.getMetadata().getName());
     } else {
       hostingDomains.forEach(info -> {
-        LOGGER.info(MessageKeys.WATCH_CLUSTER_DELETED, cluster.getMetadata().getName(), info.getDomainUid());
+        LOGGER.info(MessageKeys.WATCH_CLUSTER_DELETED, cluster.getMetadata().getName(), info.getDomainUid(),
+            info.getNamespace());
         info.removeClusterResource(cluster.getClusterName());
         createMakeRightOperation(info)
             .interrupt()

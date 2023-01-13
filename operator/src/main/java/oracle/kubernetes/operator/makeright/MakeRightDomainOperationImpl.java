@@ -39,6 +39,8 @@ import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.steps.DeleteDomainStep;
 import oracle.kubernetes.operator.steps.ManagedServersUpStep;
@@ -62,6 +64,9 @@ import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECT_R
  */
 public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainPresenceInfo>
     implements MakeRightDomainOperation {
+
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
   private boolean explicitRecheck;
   private boolean deleting;
   private boolean inspectionRun;
@@ -265,6 +270,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
     @Override
     public NextAction apply(Packet packet) {
+      LOGGER.info("DEBUG: In DownHeadStep.. unregister status updater");
       DomainPresenceInfo.fromPacket(packet).ifPresent(this::unregisterStatusUpdater);
       return doNext(packet);
     }
@@ -364,7 +370,11 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     private void updateCache(DomainPresenceInfo info, DomainResource domain) {
-      info.setDeleting(false);
+      if (domain.getMetadata().getDeletionTimestamp() != null) {
+        info.setDeleting(true);
+      } else {
+        info.setDeleting(false);
+      }
       info.setDomain(domain);
     }
 
