@@ -491,6 +491,7 @@ class ItKubernetesDomainEvents {
   @Test
   void testK8sEventsFailed() {
     OffsetDateTime timestamp = now();
+    boolean testFailed = false;
     try {
       String pvName = getUniqueName("sample-pv-");
       String pvcName = getUniqueName("sample-pvc-");
@@ -511,26 +512,35 @@ class ItKubernetesDomainEvents {
           "Failed to patch domain");
 
       logger.info("verify the Failed event is generated");
-      checkEvent(opNamespace, domainNamespace3, domainUid, DOMAIN_FAILED, "Warning", timestamp);
+      try {
+        checkEvent(opNamespace, domainNamespace3, domainUid, DOMAIN_FAILED, "Warning", timestamp);
+      } catch (Exception e) {
+        testFailed = true;
+        logger.info("105106- test failed!!! skip finally block");
+        throw e;
+      }
     } finally {
-      String introspectVersion = assertDoesNotThrow(() -> getNextIntrospectVersion(domainUid, domainNamespace3));
-      String patchStr
-          = "["
-          + "{\"op\": \"replace\", \"path\": \"/spec/serverPod/volumeMounts/0/name\", \"value\": \"" + pvName3 + "\"},"
-          + "{\"op\": \"replace\", \"path\": \"/spec/serverPod/volumes/0/name\", \"value\": \"" + pvName3 + "\"},"
-          + "{\"op\": \"replace\", \"path\": "
-          + "\"/spec/serverPod/volumes/0/persistentVolumeClaim/claimName\", \"value\": \"" + pvcName3 + "\"},"
-          + "{\"op\": \"add\", \"path\": \"/spec/introspectVersion\", \"value\": \"" + introspectVersion + "\"}"
-          + "]";
-      logger.info("Updating pv/pvcs in domain resource using patch string: {0}", patchStr);
-      V1Patch patch = new V1Patch(patchStr);
-      timestamp = now();
-      assertTrue(patchDomainCustomResource(domainUid, domainNamespace3, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
-          "Failed to patch domain");
+      if (!testFailed) {
+        String introspectVersion = assertDoesNotThrow(() -> getNextIntrospectVersion(domainUid, domainNamespace3));
+        String patchStr
+            = "["
+            + "{\"op\": \"replace\", \"path\": \"/spec/serverPod/volumeMounts/0/name\", \"value\": \""
+            + pvName3 + "\"},"
+            + "{\"op\": \"replace\", \"path\": \"/spec/serverPod/volumes/0/name\", \"value\": \"" + pvName3 + "\"},"
+            + "{\"op\": \"replace\", \"path\": "
+            + "\"/spec/serverPod/volumes/0/persistentVolumeClaim/claimName\", \"value\": \"" + pvcName3 + "\"},"
+            + "{\"op\": \"add\", \"path\": \"/spec/introspectVersion\", \"value\": \"" + introspectVersion + "\"}"
+            + "]";
+        logger.info("Updating pv/pvcs in domain resource using patch string: {0}", patchStr);
+        V1Patch patch = new V1Patch(patchStr);
+        timestamp = now();
+        assertTrue(patchDomainCustomResource(domainUid, domainNamespace3, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
+            "Failed to patch domain");
 
-      logger.info("verify domain changed and completed events are logged");
-      checkEvent(opNamespace, domainNamespace3, domainUid, DOMAIN_CHANGED, "Normal", timestamp);
-      checkEvent(opNamespace, domainNamespace3, domainUid, DOMAIN_COMPLETED, "Normal", timestamp);
+        logger.info("verify domain changed and completed events are logged");
+        checkEvent(opNamespace, domainNamespace3, domainUid, DOMAIN_CHANGED, "Normal", timestamp);
+        checkEvent(opNamespace, domainNamespace3, domainUid, DOMAIN_COMPLETED, "Normal", timestamp);
+      }
     }
   }
 
