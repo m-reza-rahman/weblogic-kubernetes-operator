@@ -848,6 +848,107 @@ class ItMiiAuxiliaryImage {
   }
 
   /**
+   * Create a domain using auxiliary image with configMap and no model files.
+   * Verify domain events and operator log contains the expected error message.
+   * Add to the configMap  model files.
+   * Verify domain is created and running.
+   */
+  @Test
+  @DisplayName("Test to create domain using auxiliary image with configMap and empty model"
+      + " files dir in the auxiliary image")
+  void testCreateDomainWithConfigMapAndEmptryModelFileDir() {
+
+    final String auxiliaryImagePathCustom = "/customauxiliary";
+    String domainUid = "testdomain8";
+    String adminServerPodName = domainUid + "-admin-server";
+    String managedServerPrefix = domainUid + "-managed-server";
+    List<String> archiveList = Collections.singletonList(ARCHIVE_DIR + "/" + MII_BASIC_APP_NAME + ".zip");
+
+    WitParams witParams =
+        new WitParams()
+            .modelImageName(MII_AUXILIARY_IMAGE_NAME)
+            .modelImageTag(miiAuxiliaryImage12Tag)
+            .wdtHome(auxiliaryImagePathCustom)
+            .modelArchiveFiles(archiveList)
+            .wdtModelHome(auxiliaryImagePathCustom + "/models");
+    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME,miiAuxiliaryImage12Tag, witParams);
+
+    String configMapName = "modelfiles-cm";
+    logger.info("Create ConfigMap {0} in namespace {1} with WDT models {3} and {4}",
+        configMapName, domainNamespace, MII_BASIC_WDT_MODEL_FILE, "/multi-model-one-ds.20.yaml");
+
+    //create empty configMap with no models files and verify that domain creation failed.
+    List<Path> cmFiles = new ArrayList<>();
+
+    assertDoesNotThrow(
+        () -> createConfigMapForDomainCreation(
+            configMapName, cmFiles, domainNamespace, this.getClass().getSimpleName()),
+        "Create configmap for domain creation failed");
+    OffsetDateTime timestamp = now();
+
+    // create domain custom resource using auxiliary image
+    logger.info("Creating domain custom resource with domainUid {0} and auxiliary image {1}",
+        domainUid, miiAuxiliaryImage12);
+    final DomainResource domainCR = createDomainResourceWithAuxiliaryImage(domainUid, domainNamespace,
+        WEBLOGIC_IMAGE_TO_USE_IN_SPEC, adminSecretName, createSecretsForImageRepos(domainNamespace),
+        encryptionSecretName, replicaCount, auxiliaryImagePathCustom,
+        miiAuxiliaryImage12);
+    assertNotNull(domainCR, "failed to create domain resource");
+    domainCR.spec().configuration().model().configMap(configMapName);
+    // create domain and verify it is failed
+    logger.info("Creating domain custom resource for domainUid {0} in namespace {1}",
+        domainUid, domainNamespace);
+    assertDoesNotThrow(() -> createDomainCustomResource(domainCR),
+        String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
+            domainUid, domainNamespace));
+    // check the introspector pod log contains the expected error message
+    String expectedErrorMsg = "createDomain argument processing failed: createDomain failed to find a model file "
+        + "in archive /aux/models/sample-app.zip, and -model_file argument not specified";
+
+    // check the domain event contains the expected error message
+    checkDomainEventContainsExpectedMsg(opNamespace, domainNamespace, domainUid, DOMAIN_FAILED,
+        "Warning", timestamp, expectedErrorMsg);
+
+    // check the operator pod log contains the expected error message
+    checkPodLogContainsString(opNamespace, operatorPodName, expectedErrorMsg);
+
+    // check there are no admin server and managed server pods and services not created
+    checkPodDoesNotExist(adminServerPodName, domainUid, domainNamespace);
+    checkServiceDoesNotExist(adminServerPodName, domainNamespace);
+    for (int i = 1; i <= replicaCount; i++) {
+      checkPodDoesNotExist(managedServerPrefix + i, domainUid, domainNamespace);
+      checkServiceDoesNotExist(managedServerPrefix + i, domainNamespace);
+    }
+
+    // delete domain8
+    deleteDomainResource(domainNamespace, domainUid);
+    domainUid = "testdomain10";
+    String configMapName1 = "modelfiles1-cm";
+
+    //add model files to configmap and verify domain is running
+    cmFiles.add(
+        Paths.get(MODEL_DIR + "/" + MII_BASIC_WDT_MODEL_FILE));
+    cmFiles.add(Paths.get(MODEL_DIR + "/multi-model-one-ds.20.yaml"));
+    assertDoesNotThrow(
+        () -> createConfigMapForDomainCreation(
+            configMapName1, cmFiles, domainNamespace, this.getClass().getSimpleName()),
+        "Create configmap for domain creation failed");
+
+    // create domain custom resource using auxiliary image
+    logger.info("Creating domain custom resource with domainUid {0} and auxiliary image {1}",
+        domainUid, miiAuxiliaryImage12);
+    DomainResource domainCR1 = createDomainResourceWithAuxiliaryImage(domainUid, domainNamespace,
+        WEBLOGIC_IMAGE_TO_USE_IN_SPEC, adminSecretName, createSecretsForImageRepos(domainNamespace),
+        encryptionSecretName, replicaCount, auxiliaryImagePathCustom,
+        miiAuxiliaryImage12);
+    assertNotNull(domainCR1, "failed to create domain resource");
+    domainCR1.spec().configuration().model().configMap(configMapName1);
+    createDomainAndVerify(domainUid, domainCR1, domainNamespace,
+        adminServerPodName, managedServerPrefix, replicaCount);
+  }
+
+
+  /**
    * Create a domain using auxiliary image with custom wdtModelHome and wdtInstallHome
    * where the wdtModelHome ("/aux/y/models") is placed
    * under the wdtInstallHome (/aux") directory. Verify domain creation.
