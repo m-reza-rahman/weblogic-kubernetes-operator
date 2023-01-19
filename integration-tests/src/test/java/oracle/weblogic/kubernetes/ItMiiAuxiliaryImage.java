@@ -923,6 +923,8 @@ class ItMiiAuxiliaryImage {
     // delete domain8
     deleteDomainResource(domainNamespace, domainUid);
     domainUid = "testdomain10";
+    adminServerPodName = domainUid + "-admin-server";
+    managedServerPrefix = domainUid + "-managed-server";
     String configMapName1 = "modelfiles1-cm";
 
     //add model files to configmap and verify domain is running
