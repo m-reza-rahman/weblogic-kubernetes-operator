@@ -71,10 +71,13 @@ import oracle.kubernetes.operator.tuning.CallBuilderTuning;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.api.WeblogicApi;
+import oracle.kubernetes.weblogic.domain.api.WeblogicGenericApi;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import oracle.kubernetes.weblogic.domain.model.PartialObjectMetadata;
+import oracle.kubernetes.weblogic.domain.model.PartialObjectMetadataList;
 
 import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 import static oracle.kubernetes.utils.OperatorUtils.isNullOrEmpty;
@@ -109,6 +112,7 @@ public class CallBuilder {
   private static final Boolean ALLOW_WATCH_BOOKMARKS = false;
   private static final String DRY_RUN = null;
   private static final String PRETTY = null;
+
   private final CallFactory<DomainResource> replaceDomain =
       (requestParams, usage, cont, callback) ->
           wrap(
@@ -479,6 +483,16 @@ public class CallBuilder {
                   RESOURCE_VERSION,
                   timeoutSeconds,
                   WATCH);
+
+  private final SynchronousCallFactory<PartialObjectMetadataList> listCrdMetadataCall =
+      (client, requestParams) ->
+          new WeblogicGenericApi(client)
+              .listCustomResourceDefinitionMetadata(labelSelector);
+
+  private final SynchronousCallFactory<PartialObjectMetadata> getCRDMetadataCall =
+      (client, requestParams) ->
+          new WeblogicGenericApi(client).getCustomResourceDefinitionMetadata(requestParams.name);
+
   private final SynchronousCallFactory<DomainResource> readDomainCall =
       (client, requestParams) ->
           new WeblogicApi(client)
@@ -869,6 +883,30 @@ public class CallBuilder {
     return executeSynchronousCall(requestParams, listDomainCall);
   }
 
+  /**
+   * List crd metadata.
+   *
+   * @return crd metadata list
+   * @throws ApiException API exception
+   */
+  public @Nonnull PartialObjectMetadataList listCrdMetadata() throws ApiException {
+    RequestParams requestParams = new RequestParams("listCrdMetadata", null,
+        null, null, callParams);
+    return executeSynchronousCall(requestParams, listCrdMetadataCall);
+  }
+
+  /**
+   * Get crd metadata.
+   *
+   * @return crd metadata
+   * @throws ApiException API exception
+   */
+  public @Nonnull PartialObjectMetadata readCRDMetadata(String name) throws ApiException {
+    RequestParams requestParams = new RequestParams("readCRDMetadata", null,
+        name, null, callParams);
+    return executeSynchronousCall(requestParams, getCRDMetadataCall);
+  }
+
   private Call listDomainAsync(
       ApiClient client, String namespace, String cont, ApiCallback<DomainList> callback)
       throws ApiException {
@@ -1073,6 +1111,7 @@ public class CallBuilder {
   private Call readCustomResourceDefinitionAsync(
       ApiClient client, String name, ApiCallback<V1CustomResourceDefinition> callback)
       throws ApiException {
+
     return new ApiextensionsV1Api(client)
         .readCustomResourceDefinitionAsync(name, PRETTY, callback);
   }
