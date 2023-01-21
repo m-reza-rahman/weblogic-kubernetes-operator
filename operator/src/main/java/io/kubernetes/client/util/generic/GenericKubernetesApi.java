@@ -20,6 +20,7 @@ import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiCallback;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -38,6 +39,15 @@ import io.kubernetes.client.util.generic.options.PatchOptions;
 import io.kubernetes.client.util.generic.options.UpdateOptions;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import okhttp3.Call;
 import okhttp3.HttpUrl;
@@ -789,30 +799,117 @@ public class GenericKubernetesApi<
     return new KubernetesApiResponse<>(gson.fromJson(element, dataClass));
   }
 
+  private Call prepareCall(CallBuilder callBuilder) throws ApiException {
+    Call call = callBuilder.build();
+    return tweakCallForCoreV1Group(call);
+  }
+
+  private void checkForIOException(ApiException e) {
+    if (e.getCause() instanceof IOException) {
+      throw new IllegalStateException(e.getCause()); // make this a checked exception?
+    }
+  }
+
+  private <DataType extends KubernetesType> KubernetesApiResponse<DataType> responseFromApiException(
+      ApiClient apiClient, ApiException e) {
+    checkForIOException(e);
+    final V1Status status;
+    try {
+      status = apiClient.getJSON().deserialize(e.getResponseBody(), V1Status.class);
+    } catch (JsonSyntaxException jsonEx) {
+      // craft a status object
+      return new KubernetesApiResponse<>(
+          new V1Status().code(e.getCode()).message(e.getResponseBody()), e.getCode());
+    }
+    if (null == status) { // the response body can be something unexpected sometimes..
+      // this line should never reach?
+      throw new RuntimeException(e);
+    }
+    return new KubernetesApiResponse<>(status, e.getCode());
+  }
+
   private <DataType extends KubernetesType> KubernetesApiResponse<DataType> executeCall(
       ApiClient apiClient, Class<DataType> dataClass, CallBuilder callBuilder) {
     try {
-      Call call = callBuilder.build();
-      call = tweakCallForCoreV1Group(call);
+      Call call = prepareCall(callBuilder);
       JsonElement element = apiClient.<JsonElement>execute(call, JsonElement.class).getData();
       return getKubernetesApiResponse(dataClass, element, apiClient.getJSON().getGson());
     } catch (ApiException e) {
-      if (e.getCause() instanceof IOException) {
-        throw new IllegalStateException(e.getCause()); // make this a checked exception?
-      }
-      final V1Status status;
-      try {
-        status = apiClient.getJSON().deserialize(e.getResponseBody(), V1Status.class);
-      } catch (JsonSyntaxException jsonEx) {
-        // craft a status object
-        return new KubernetesApiResponse<>(
-            new V1Status().code(e.getCode()).message(e.getResponseBody()), e.getCode());
-      }
-      if (null == status) { // the response body can be something unexpected sometimes..
-        // this line should never reach?
-        throw new RuntimeException(e);
-      }
-      return new KubernetesApiResponse<>(status, e.getCode());
+      return responseFromApiException(apiClient, e);
+    }
+  }
+
+  private <DataType extends KubernetesType> Future<KubernetesApiResponse<DataType>> executeCallAsync(
+      ApiClient apiClient, Class<DataType> dataClass, CallBuilder callBuilder,
+      Consumer<KubernetesApiResponse<DataType>> callback) {
+    try {
+      Call call = prepareCall(callBuilder);
+      CountDownLatch latch = new CountDownLatch(1);
+      AtomicReference<KubernetesApiResponse<DataType>> result = new AtomicReference<>();
+      apiClient.executeAsync(call, JsonElement.class, new ApiCallback<JsonElement>() {
+        @Override
+        public void onFailure(ApiException e, int statusCode, Map<String, List<String>> responseHeaders) {
+          KubernetesApiResponse<DataType> r = responseFromApiException(apiClient, e);
+          result.set(r);
+          latch.countDown();
+          callback.accept(r);
+        }
+
+        @Override
+        public void onSuccess(JsonElement element, int statusCode, Map<String, List<String>> responseHeaders) {
+          KubernetesApiResponse<DataType> r = getKubernetesApiResponse(
+              dataClass, element, apiClient.getJSON().getGson());
+          result.set(r);
+          latch.countDown();
+          callback.accept(r);
+        }
+
+        @Override
+        public void onUploadProgress(long bytesWritten, long contentLength, boolean done) {
+          // no-op
+        }
+
+        @Override
+        public void onDownloadProgress(long bytesRead, long contentLength, boolean done) {
+          // no-op
+        }
+      });
+
+      return new Future<>() {
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+          call.cancel();
+          return call.isCanceled();
+        }
+
+        @Override
+        public boolean isCancelled() {
+          return call.isCanceled();
+        }
+
+        @Override
+        public boolean isDone() {
+          return latch.getCount() == 0;
+        }
+
+        @Override
+        public KubernetesApiResponse<DataType> get() throws InterruptedException, ExecutionException {
+          latch.await();
+          return result.get();
+        }
+
+        @Override
+        public KubernetesApiResponse<DataType> get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+          if (latch.await(timeout, unit)) {
+            return result.get();
+          } else {
+            throw new TimeoutException();
+          }
+        }
+      };
+    } catch (ApiException e) {
+      checkForIOException(e);
+      throw new RuntimeException(e);
     }
   }
 
