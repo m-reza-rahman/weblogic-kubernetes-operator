@@ -40,13 +40,16 @@ public class WeblogicGenericApi extends GenericKubernetesApi<PartialObjectMetada
    * @throws ApiException on failure
    */
   public PartialObjectMetadata readCustomResourceDefinitionMetadata(String name) {
-    OkHttpClient httpClient = this.apiClient.getHttpClient();
-    // Add the interceptor to insert the Accept header to get the metatdata-only response
-    this.apiClient.setHttpClient(httpClient.newBuilder()
-        .addInterceptor(new ReplaceHeaderInterceptor("Accept", PARTIAL_OBJECT_METADATA_HEADER)).build());
-    PartialObjectMetadata partialObjectMetadata = toPartialObjectMetadata(get(name));
-    // Remove the interceptor
-    this.apiClient.setHttpClient(httpClient);
+    PartialObjectMetadata partialObjectMetadata;
+    synchronized(apiClient) {
+      OkHttpClient httpClient = this.apiClient.getHttpClient();
+      // Add the interceptor to insert the Accept header to get the metatdata-only response
+      this.apiClient.setHttpClient(httpClient.newBuilder()
+          .addInterceptor(new ReplaceHeaderInterceptor("Accept", PARTIAL_OBJECT_METADATA_HEADER)).build());
+      partialObjectMetadata = toPartialObjectMetadata(get(name));
+      // Remove the interceptor
+      this.apiClient.setHttpClient(httpClient);
+    }
     return partialObjectMetadata;
   }
 
