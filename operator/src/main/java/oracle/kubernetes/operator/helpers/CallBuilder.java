@@ -78,6 +78,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.PartialObjectMetadata;
 
+import static oracle.kubernetes.operator.ProcessingConstants.PARTIAL_OBJECT_METADATA;
 import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 import static oracle.kubernetes.utils.OperatorUtils.isNullOrEmpty;
 
@@ -485,7 +486,8 @@ public class CallBuilder {
 
   private final SynchronousCallFactory<PartialObjectMetadata> readCRDMetadataCall =
       (client, requestParams) ->
-          new WeblogicGenericApi(client).readCustomResourceDefinitionMetadata(requestParams.name);
+          new WeblogicGenericApi(client, PARTIAL_OBJECT_METADATA)
+              .readCustomResourceDefinitionMetadata(requestParams.name);
 
   private final SynchronousCallFactory<DomainResource> readDomainCall =
       (client, requestParams) ->

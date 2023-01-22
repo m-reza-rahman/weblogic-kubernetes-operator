@@ -18,19 +18,23 @@ import okhttp3.Response;
 import oracle.kubernetes.weblogic.domain.model.PartialObjectMetadata;
 import oracle.kubernetes.weblogic.domain.model.PartialObjectMetadataList;
 
+import static oracle.kubernetes.operator.ProcessingConstants.PARTIAL_OBJECT_METADATA;
+
 public class WeblogicGenericApi extends GenericKubernetesApi<PartialObjectMetadata,PartialObjectMetadataList> {
   public static final String PARTIAL_OBJECT_METADATA_HEADER =
       "application/json;as=PartialObjectMetadata;g=meta.k8s.io;v=v1,application/json";
   private final ApiClient apiClient;
+  private final String requestType;
 
   /**
    * Constructs a generic api client used to get the partial CRD metadata.
    * @param apiClient api client.
    */
-  public WeblogicGenericApi(ApiClient apiClient) {
+  public WeblogicGenericApi(ApiClient apiClient, String requestType) {
     super(PartialObjectMetadata.class, PartialObjectMetadataList.class, "apiextensions.k8s.io", "v1",
         "customresourcedefinitions", apiClient);
     this.apiClient = apiClient;
+    this.requestType = requestType;
   }
 
   /**
@@ -40,16 +44,13 @@ public class WeblogicGenericApi extends GenericKubernetesApi<PartialObjectMetada
    * @throws ApiException on failure
    */
   public PartialObjectMetadata readCustomResourceDefinitionMetadata(String name) {
-    PartialObjectMetadata partialObjectMetadata;
-    synchronized (apiClient) {
-      OkHttpClient httpClient = this.apiClient.getHttpClient();
-      // Add the interceptor to insert the Accept header to get the metatdata-only response
-      this.apiClient.setHttpClient(httpClient.newBuilder()
-          .addInterceptor(new ReplaceHeaderInterceptor("Accept", PARTIAL_OBJECT_METADATA_HEADER)).build());
-      partialObjectMetadata = toPartialObjectMetadata(get(name));
-      // Remove the interceptor
-      this.apiClient.setHttpClient(httpClient);
-    }
+    OkHttpClient httpClient = this.apiClient.getHttpClient();
+    // Add the interceptor to insert the Accept header to get the metatdata-only response
+    this.apiClient.setHttpClient(httpClient.newBuilder()
+        .addInterceptor(new ReplaceHeaderInterceptor("Accept", PARTIAL_OBJECT_METADATA_HEADER)).build());
+    PartialObjectMetadata partialObjectMetadata = toPartialObjectMetadata(get(name));
+    // Remove the interceptor
+    this.apiClient.setHttpClient(httpClient);
     return partialObjectMetadata;
   }
 
@@ -78,17 +79,19 @@ public class WeblogicGenericApi extends GenericKubernetesApi<PartialObjectMetada
     public Response intercept(Chain chain) throws IOException {
       Request request = chain.request();
       Request newRequest;
-
-      try {
-        newRequest = request.newBuilder()
-            .removeHeader(headerName)
-            .addHeader(headerName, headerValue)
-            .build();
-      } catch (Exception e) {
-        return chain.proceed(request);
+      if (PARTIAL_OBJECT_METADATA.equals(requestType)) {
+        try {
+          newRequest = request.newBuilder()
+              .removeHeader(headerName)
+              .addHeader(headerName, headerValue)
+              .build();
+        } catch (Exception e) {
+          return chain.proceed(request);
+        }
+        return chain.proceed(newRequest);
       }
+      return chain.proceed(request);
 
-      return chain.proceed(newRequest);
     }
   }
 }

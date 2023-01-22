@@ -68,4 +68,6 @@ public interface ProcessingConstants {
   String SKIP_STATUS_UPDATE = "skipStatusUpdate";
   String END_OF_PROCESSING = "lastStatusUpdate";
   String AUTHORIZATION_SOURCE = "AuthorizationSource";
+
+  String PARTIAL_OBJECT_METADATA = "PartialObjectMetadata";
 }
