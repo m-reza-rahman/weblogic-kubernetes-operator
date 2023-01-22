@@ -41,7 +41,7 @@ public class WeblogicGenericApi extends GenericKubernetesApi<PartialObjectMetada
    */
   public PartialObjectMetadata readCustomResourceDefinitionMetadata(String name) {
     PartialObjectMetadata partialObjectMetadata;
-    synchronized(apiClient) {
+    synchronized (apiClient) {
       OkHttpClient httpClient = this.apiClient.getHttpClient();
       // Add the interceptor to insert the Accept header to get the metatdata-only response
       this.apiClient.setHttpClient(httpClient.newBuilder()
