@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 // Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+=======
+// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -9,9 +13,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+<<<<<<< HEAD
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+=======
+import java.util.Collections;
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -24,17 +32,30 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
+<<<<<<< HEAD
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
 import oracle.weblogic.domain.ClusterList;
 import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
+=======
+import io.kubernetes.client.openapi.models.V1SecretReference;
+import oracle.weblogic.domain.AdminServer;
+import oracle.weblogic.domain.AdminService;
+import oracle.weblogic.domain.Channel;
+import oracle.weblogic.domain.Cluster;
+import oracle.weblogic.domain.Configuration;
+import oracle.weblogic.domain.Domain;
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.MonitoringExporterSpecification;
 import oracle.weblogic.domain.ServerPod;
+<<<<<<< HEAD
 import oracle.weblogic.kubernetes.actions.impl.Cluster;
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import oracle.weblogic.kubernetes.actions.impl.Grafana;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
 import oracle.weblogic.kubernetes.actions.impl.Prometheus;
@@ -46,13 +67,17 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.assertions.impl.ClusterRole;
 import oracle.weblogic.kubernetes.assertions.impl.ClusterRoleBinding;
+<<<<<<< HEAD
 import oracle.weblogic.kubernetes.assertions.impl.RoleBinding;
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.apache.commons.io.FileUtils;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
+<<<<<<< HEAD
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_REPO_NAME;
@@ -61,15 +86,28 @@ import static oracle.weblogic.kubernetes.TestConstants.HTTPS_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+=======
+import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_REPO_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_REPO_URL;
+import static oracle.weblogic.kubernetes.TestConstants.HTTPS_PROXY;
+import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MONITORING_EXPORTER_BRANCH;
 import static oracle.weblogic.kubernetes.TestConstants.MONITORING_EXPORTER_WEBAPP_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+<<<<<<< HEAD
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_REPO_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_REPO_URL;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+=======
+import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_REPO_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_REPO_URL;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MONITORING_EXPORTER_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteSecret;
@@ -84,21 +122,32 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.isHelmRelease
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPrometheusAdapterReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPrometheusReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndCheckForServerNameInResponse;
+<<<<<<< HEAD
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.addSccToDBSvcAccount;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+<<<<<<< HEAD
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkFile;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+<<<<<<< HEAD
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodName;
+=======
+import static oracle.weblogic.kubernetes.utils.ImageUtils.dockerLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -126,6 +175,7 @@ public class MonitoringUtils {
   public static void downloadMonitoringExporterApp(String configFile, String applicationDir) {
     //version of wls-exporter.war published in https://github.com/oracle/weblogic-monitoring-exporter/releases/
     String monitoringExporterRelease = MONITORING_EXPORTER_WEBAPP_VERSION;
+<<<<<<< HEAD
     String curlDownloadCmd = String.format("cd %s && "
             + "curl -O -L -k https://github.com/oracle/weblogic-monitoring-exporter/releases/download/v%s/get_v%s.sh",
         applicationDir,
@@ -160,8 +210,45 @@ public class MonitoringUtils {
         logger,
         "Downloading monitoring exporter webapp");
 
+=======
+    String monitoringExporterWebAppScriptVersion = monitoringExporterRelease.substring(0,
+            monitoringExporterRelease.length() - 2);
+    String curlDownloadCmd = String.format("cd %s && "
+                    + "curl -O -L -k https://github.com/oracle/weblogic-monitoring-exporter/releases/download/v%s/get%s.sh",
+            applicationDir,
+            monitoringExporterRelease,
+            monitoringExporterWebAppScriptVersion);
+    String monitoringExporterBuildFile = String.format(
+            "%s/get%s.sh", applicationDir, monitoringExporterWebAppScriptVersion);
+    logger.info("execute command  a monitoring exporter curl command {0} ", curlDownloadCmd);
+    assertTrue(Command
+            .withParams(new CommandParams()
+                    .command(curlDownloadCmd))
+            .execute(), "Failed to download monitoring exporter webapp");
+    String command = String.format("chmod 777 %s ", monitoringExporterBuildFile);
+    assertTrue(Command
+            .withParams(new CommandParams()
+                    .command(command))
+            .execute(), "Failed to download monitoring exporter webapp");
+
+    String command1 = String.format("cd %s && %s  %s",
+            applicationDir,
+            monitoringExporterBuildFile,
+            configFile);
+    testUntil(
+            (() -> Command
+                    .withParams(
+                            new CommandParams()
+                                    .verbose(true)
+                                    .command(command1))
+                    .executeAndVerify("adding: config.yml")
+            ),
+            logger,
+            "Downloading monitoring exporter webapp");
+
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     assertDoesNotThrow(() -> checkFile(applicationDir + "/wls-exporter.war"),
-        "Monitoring Exporter web application file was not found");
+            "Monitoring Exporter web application file was not found");
   }
 
   /**
@@ -310,6 +397,7 @@ public class MonitoringUtils {
   /**
    * Install Prometheus and wait up to five minutes until the prometheus pods are ready.
    *
+<<<<<<< HEAD
    * @param promReleaseSuffix the prometheus release name unique suffix
    * @param promNamespace the prometheus namespace in which the prometheus will be installed
    * @param promVersion the version of the prometheus helm chart
@@ -333,18 +421,24 @@ public class MonitoringUtils {
   /**
    * Install Prometheus and wait up to five minutes until the prometheus pods are ready.
    *
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
    * @param promReleaseSuffix the prometheus release name unigue suffix
    * @param promNamespace the prometheus namespace in which the operator will be installed
    * @param promVersion the version of the prometheus helm chart
    * @param prometheusRegexValue string (namespace;domainuid) to manage specific domain,
    *                            default is regex: default;domain1
+<<<<<<< HEAD
    * @param promHelmValuesFileDir path to prometheus helm values file directory
    * @param webhookNS namespace for webhook namespace
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
    * @return the prometheus Helm installation parameters
    */
   public static PrometheusParams installAndVerifyPrometheus(String promReleaseSuffix,
                                                       String promNamespace,
                                                       String promVersion,
+<<<<<<< HEAD
                                                       String prometheusRegexValue,
                                                       String promHelmValuesFileDir,
                                                       String webhookNS) {
@@ -352,11 +446,22 @@ public class MonitoringUtils {
     String prometheusReleaseName = "prometheus" + promReleaseSuffix;
     logger.info("create a staging location for prometheus scripts");
     Path fileTemp = Paths.get(promHelmValuesFileDir);
+=======
+                                                      String prometheusRegexValue) {
+    LoggingFacade logger = getLogger();
+    String prometheusReleaseName = "prometheus" + promReleaseSuffix;
+    logger.info("create a staging location for monitoring creation scripts");
+    Path fileTemp = Paths.get(RESULTS_ROOT, "prometheus" + promReleaseSuffix, "createTempValueFile");
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for prometheus");
 
     assertDoesNotThrow(() -> Files.createDirectories(fileTemp), "Failed to create temp dir for prometheus");
 
+<<<<<<< HEAD
     logger.info("copy the promvalues.yaml to staging location");
+=======
+    logger.info("copy the promvalue.yaml to staging location");
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     Path srcPromFile = Paths.get(RESOURCE_DIR, "exporter", "promvalues.yaml");
     Path targetPromFile = Paths.get(fileTemp.toString(), "promvalues.yaml");
     assertDoesNotThrow(() -> Files.copy(srcPromFile, targetPromFile,
@@ -371,12 +476,15 @@ public class MonitoringUtils {
     assertDoesNotThrow(() -> replaceStringInFile(targetPromFile.toString(),
         "pvc-prometheus",
         "pvc-" + prometheusReleaseName),"Failed to replace String ");
+<<<<<<< HEAD
     if (webhookNS != null) {
       //replace with webhook ns
       assertDoesNotThrow(() -> replaceStringInFile(targetPromFile.toString(),
               "webhook.webhook.svc.cluster.local",
               String.format("webhook.%s.svc.cluster.local", webhookNS)), "Failed to replace String ");
     }
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     if (OKD) {
       assertDoesNotThrow(() -> replaceStringInFile(targetPromFile.toString(),
           "65534",
@@ -625,7 +733,11 @@ public class MonitoringUtils {
       if (ClusterRoleBinding.clusterRoleBindingExists(prometheusReleaseName + "-server")) {
         Kubernetes.deleteClusterRoleBinding(prometheusReleaseName + "-server");
       }
+<<<<<<< HEAD
       String command = KUBERNETES_CLI + " delete psp " + grafanaReleaseName + "  " + grafanaReleaseName + "-test";
+=======
+      String command = "kubectl delete psp " + grafanaReleaseName + "  " + grafanaReleaseName + "-test";
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
       ExecCommand.exec(command);
     } catch (Exception ex) {
       //ignoring
@@ -634,6 +746,7 @@ public class MonitoringUtils {
   }
 
   /**
+<<<<<<< HEAD
    * Extra clean up for Prometheus Adapter artifacts.
    *
    */
@@ -667,12 +780,15 @@ public class MonitoringUtils {
   }
 
   /**
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
    * Download src from monitoring exporter github project and build webapp.
    *
    * @param monitoringExporterDir full path to monitoring exporter install location
    */
   public static void installMonitoringExporter(String monitoringExporterDir) {
 
+<<<<<<< HEAD
     //adding ability to build monitoring exporter if branch is not main
     boolean toBuildMonitoringExporter = (!MONITORING_EXPORTER_BRANCH.equalsIgnoreCase(("main")));
     installMonitoringExporter(monitoringExporterDir, toBuildMonitoringExporter);
@@ -686,6 +802,8 @@ public class MonitoringUtils {
    */
   public static void installMonitoringExporter(String monitoringExporterDir, boolean toBuildMonitoringExporter) {
 
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     String monitoringExporterSrcDir = Paths.get(monitoringExporterDir, "srcdir").toString();
     String monitoringExporterAppDir = Paths.get(monitoringExporterDir, "apps").toString();
 
@@ -696,6 +814,7 @@ public class MonitoringUtils {
     Path monitoringAppNoRestPort = Paths.get(monitoringExporterAppDir, "norestport");
     assertDoesNotThrow(() -> deleteDirectory(monitoringAppNoRestPort.toFile()));
     assertDoesNotThrow(() -> Files.createDirectories(monitoringAppNoRestPort));
+<<<<<<< HEAD
     Path monitoringAppAdministrationRestPort = Paths.get(monitoringExporterAppDir, "administrationrestport");
     assertDoesNotThrow(() -> deleteDirectory(monitoringAppAdministrationRestPort.toFile()));
     assertDoesNotThrow(() -> Files.createDirectories(monitoringAppAdministrationRestPort));
@@ -704,20 +823,34 @@ public class MonitoringUtils {
     monitoringExporterAppDir = monitoringApp.toString();
     String monitoringExporterAppNoRestPortDir = monitoringAppNoRestPort.toString();
     String monitoringExporterAppAdministrationRestPortDir = monitoringAppAdministrationRestPort.toString();
+=======
+
+    //adding ability to build monitoring exporter if branch is not main
+    boolean toBuildMonitoringExporter = (!MONITORING_EXPORTER_BRANCH.equalsIgnoreCase(("main")));
+    monitoringExporterAppDir = monitoringApp.toString();
+    String monitoringExporterAppNoRestPortDir = monitoringAppNoRestPort.toString();
+
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     if (!toBuildMonitoringExporter) {
       downloadMonitoringExporterApp(RESOURCE_DIR
           + "/exporter/exporter-config.yaml", monitoringExporterAppDir);
       downloadMonitoringExporterApp(RESOURCE_DIR
           + "/exporter/exporter-config-norestport.yaml", monitoringExporterAppNoRestPortDir);
+<<<<<<< HEAD
       downloadMonitoringExporterApp(RESOURCE_DIR
           + "/exporter/exporter-config-administrationrestport.yaml", monitoringExporterAppAdministrationRestPortDir);
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     } else {
       buildMonitoringExporterApp(monitoringExporterSrcDir, RESOURCE_DIR
           + "/exporter/exporter-config.yaml", monitoringExporterAppDir);
       buildMonitoringExporterApp(monitoringExporterSrcDir,RESOURCE_DIR
           + "/exporter/exporter-config-norestport.yaml", monitoringExporterAppNoRestPortDir);
+<<<<<<< HEAD
       buildMonitoringExporterApp(monitoringExporterSrcDir,RESOURCE_DIR
           + "/exporter/exporter-config-administrationrestport.yaml", monitoringExporterAppAdministrationRestPortDir);
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     }
     logger.info("Finished to build Monitoring Exporter webapp.");
   }
@@ -758,6 +891,7 @@ public class MonitoringUtils {
     String myImage =
         createMiiImageAndVerify(imageName, modelList, appList);
 
+<<<<<<< HEAD
     // login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(myImage);
 
@@ -789,6 +923,10 @@ public class MonitoringUtils {
 
     // login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(myImage);
+=======
+    // docker login and push image to docker registry if necessary
+    dockerLoginAndPushImageToRegistry(myImage);
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 
     return myImage;
   }
@@ -819,6 +957,7 @@ public class MonitoringUtils {
   /**
    * Create Domain Cr and verity.
    *
+<<<<<<< HEAD
    * @param adminSecretName WebLogic admin credentials
    * @param repoSecretName image repository secret name
    * @param encryptionSecretName model encryption secret name
@@ -830,6 +969,8 @@ public class MonitoringUtils {
    * @param twoClusters boolean indicating if the domain has 2 clusters
    * @param monexpConfig monitoring exporter config
    * @param exporterImage exporter image
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
    */
   public static void createDomainCrAndVerify(String adminSecretName,
                                              String repoSecretName,
@@ -843,9 +984,14 @@ public class MonitoringUtils {
                                              String monexpConfig,
                                              String exporterImage) {
     int t3ChannelPort = getNextFreePort();
+<<<<<<< HEAD
 
     // create the domain CR
     DomainResource domain = new DomainResource()
+=======
+    // create the domain CR
+    Domain domain = new Domain()
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
         .apiVersion(DOMAIN_API_VERSION)
         .kind("Domain")
         .metadata(new V1ObjectMeta()
@@ -857,12 +1003,20 @@ public class MonitoringUtils {
             .image(miiImage)
             .addImagePullSecretsItem(new V1LocalObjectReference()
                 .name(repoSecretName))
+<<<<<<< HEAD
             .webLogicCredentialsSecret(new V1LocalObjectReference()
                 .name(adminSecretName))
             .includeServerOutInPodLog(true)
             .serverStartPolicy("IfNeeded")
             .failureRetryIntervalSeconds(FAILURE_RETRY_INTERVAL_SECONDS)
             .failureRetryLimitMinutes(FAILURE_RETRY_LIMIT_MINUTES)
+=======
+            .webLogicCredentialsSecret(new V1SecretReference()
+                .name(adminSecretName)
+                .namespace(namespace))
+            .includeServerOutInPodLog(true)
+            .serverStartPolicy("IF_NEEDED")
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
             .serverPod(new ServerPod()
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
@@ -872,6 +1026,10 @@ public class MonitoringUtils {
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
             .adminServer(new AdminServer()
+<<<<<<< HEAD
+=======
+                .serverStartState("RUNNING")
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
                         .channelName("default")
@@ -879,11 +1037,19 @@ public class MonitoringUtils {
                     .addChannelsItem(new Channel()
                         .channelName("T3Channel")
                         .nodePort(t3ChannelPort))))
+<<<<<<< HEAD
+=======
+            .addClustersItem(new Cluster()
+                .clusterName(cluster1Name)
+                .replicas(replicaCount)
+                .serverStartState("RUNNING"))
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
             .configuration(new Configuration()
                 .model(new Model()
                     .domainType("WLS")
                     .runtimeEncryptionSecret(encryptionSecretName))
                 .introspectorJobActiveDeadlineSeconds(300L)));
+<<<<<<< HEAD
 
     // add clusters to the domain resource
     ClusterList clusters = Cluster.listClusterCustomResources(namespace);
@@ -904,6 +1070,17 @@ public class MonitoringUtils {
     setPodAntiAffinity(domain);
     // create domain using model in image
     logger.info("Create model in image domain {0} in namespace {1} using image {2}",
+=======
+    if (twoClusters) {
+      domain.getSpec().getClusters().add(new Cluster()
+          .clusterName(cluster2Name)
+          .replicas(replicaCount)
+          .serverStartState("RUNNING"));
+    }
+    setPodAntiAffinity(domain);
+    // create domain using model in image
+    logger.info("Create model in image domain {0} in namespace {1} using docker image {2}",
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
         domainUid, namespace, miiImage);
     if (monexpConfig != null) {
       //String monexpImage = "phx.ocir.io/weblogick8s/exporter:beta";
@@ -915,9 +1092,16 @@ public class MonitoringUtils {
         e.printStackTrace();
       }
 
+<<<<<<< HEAD
       domain.getSpec().monitoringExporter(new MonitoringExporterSpecification()
           .image(exporterImage)
           .imagePullPolicy(IMAGE_PULL_POLICY)
+=======
+      String imagePullPolicy = "IfNotPresent";
+      domain.getSpec().monitoringExporter(new MonitoringExporterSpecification()
+          .image(exporterImage)
+          .imagePullPolicy(imagePullPolicy)
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
           .configuration(contents));
 
       logger.info("Created domain CR with Monitoring exporter configuration : "
@@ -925,6 +1109,7 @@ public class MonitoringUtils {
     }
     createDomainAndVerify(domain, namespace);
   }
+<<<<<<< HEAD
   
   /**
    * create domain from provided image and monitoring exporter sidecar and verify it's start.
@@ -937,6 +1122,13 @@ public class MonitoringUtils {
    * @param twoClusters boolean indicating if the domain has 2 clusters
    * @param monexpConfig monitoring exporter config
    * @param exporterImage exporter image
+=======
+
+
+  /**
+   * create domain from provided image and monitoring exporter sidecar and verify it's start.
+   *
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
    */
   public static void createAndVerifyDomain(String miiImage,
                                             String domainUid,
@@ -946,10 +1138,17 @@ public class MonitoringUtils {
                                             boolean twoClusters,
                                             String monexpConfig,
                                             String exporterImage) {
+<<<<<<< HEAD
     // create registry secret to pull the image from registry
     // this secret is used only for non-kind cluster
     // create secret for admin credentials
     logger.info("Create registry secret in namespace {0}", namespace);
+=======
+    // create docker registry secret to pull the image from registry
+    // this secret is used only for non-kind cluster
+    // create secret for admin credentials
+    logger.info("Create docker registry secret in namespace {0}", namespace);
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
     createTestRepoSecret(namespace);
     logger.info("Create secret for admin credentials");
     String adminSecretName = "weblogic-credentials";
@@ -965,7 +1164,11 @@ public class MonitoringUtils {
         String.format("create encryption secret failed for %s", encryptionSecretName));
 
     // create domain and verify
+<<<<<<< HEAD
     logger.info("Create model in image domain {0} in namespace {1} using image {2}",
+=======
+    logger.info("Create model in image domain {0} in namespace {1} using docker image {2}",
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
         domainUid, namespace, miiImage);
     createDomainCrAndVerify(adminSecretName, TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, miiImage,domainUid,
         namespace, domainHomeSource, replicaCount, twoClusters, monexpConfig, exporterImage);
@@ -1014,7 +1217,12 @@ public class MonitoringUtils {
             + " -X GET http://admin:12345678@%s/api/dashboards",
         hostPort);
     testUntil(
+<<<<<<< HEAD
         assertDoesNotThrow(() -> searchForKey(curlCmd, "grafana"), "Check access to grafana dashboard"),
+=======
+        assertDoesNotThrow(() -> searchForKey(curlCmd, "grafana"),
+            String.format("Check access to grafana dashboard")),
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
         logger,
         "Check access to grafana dashboard");
     logger.info("installing grafana dashboard");
@@ -1068,11 +1276,20 @@ public class MonitoringUtils {
             ADMIN_PASSWORD_DEFAULT,
             K8S_NODEPORT_HOST,
             nodeport);
+<<<<<<< HEAD
     testUntil(withLongRetryPolicy,
         callTestWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 50),
         logger,
         "Verify NGINX can access the monitoring exporter metrics \n"
             + "from all managed servers in the domain via http");
+=======
+    assertThat(callWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 50))
+        .as("Verify NGINX can access the monitoring exporter metrics "
+            + "from all managed servers in the domain via http")
+        .withFailMessage("NGINX can not access the monitoring exporter metrics "
+            + "from one or more of the managed servers via http")
+        .isTrue();
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   }
 
   /**
@@ -1126,7 +1343,11 @@ public class MonitoringUtils {
     }
     // access metrics
     final String command = String.format(
+<<<<<<< HEAD
         KUBERNETES_CLI + " exec -n " + domainNS + "  " + podName + " -- curl -k %s://"
+=======
+        "kubectl exec -n " + domainNS + "  " + podName + " -- curl -k %s://"
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
             + ADMIN_USERNAME_DEFAULT
             + ":"
             + ADMIN_PASSWORD_DEFAULT
@@ -1142,7 +1363,11 @@ public class MonitoringUtils {
       isFound = response.contains(searchKey);
       logger.info("isFound value:" + isFound);
     } catch (Exception ex) {
+<<<<<<< HEAD
       logger.info("Can't execute command " + command + Arrays.toString(ex.getStackTrace()));
+=======
+      logger.info("Can't execute command " + command + ex.getStackTrace());
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
       return false;
     }
     return isFound;
@@ -1160,7 +1385,11 @@ public class MonitoringUtils {
 
     // access metrics
     final String command = String.format(
+<<<<<<< HEAD
         KUBERNETES_CLI + " exec -n " + domainNS + "  " + podName + " -- curl -X GET -u %s:%s http://localhost:8080/metrics", ADMIN_USERNAME_DEFAULT,
+=======
+        "kubectl exec -n " + domainNS + "  " + podName + " -- curl -X GET -u %s:%s http://localhost:8080/metrics", ADMIN_USERNAME_DEFAULT,
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
         ADMIN_PASSWORD_DEFAULT);
 
     logger.info("accessing managed server exporter via " + command);
@@ -1174,7 +1403,11 @@ public class MonitoringUtils {
       isFound = response.contains(searchKey);
       logger.info("isFound value:" + isFound);
     } catch (Exception ex) {
+<<<<<<< HEAD
       logger.info("Can't execute command " + command + Arrays.toString(ex.getStackTrace()));
+=======
+      logger.info("Can't execute command " + command + ex.getStackTrace());
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
       return false;
     }
     return isFound;
@@ -1198,13 +1431,21 @@ public class MonitoringUtils {
       logger.info(" proxyHost: " + proxyHost);
 
       command = String.format("cd %s && mvn clean install -Dmaven.test.skip=true "
+<<<<<<< HEAD
               + " &&   " + WLSIMG_BUILDER + " build . -t "
+=======
+              + " &&   docker build . -t "
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
               + imageName
               + " --build-arg MAVEN_OPTS=\"-Dhttps.proxyHost=%s -Dhttps.proxyPort=80\" --build-arg https_proxy=%s",
           monitoringExporterSrcDir, proxyHost, httpsproxy);
     } else {
       command = String.format("cd %s && mvn clean install -Dmaven.test.skip=true "
+<<<<<<< HEAD
           + " &&   " + WLSIMG_BUILDER + " build . -t "
+=======
+          + " &&   docker build . -t "
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
           + imageName
           + monitoringExporterSrcDir);
     }
@@ -1213,8 +1454,13 @@ public class MonitoringUtils {
         .withParams(new CommandParams()
             .command(command))
         .execute(), "Failed to build monitoring exporter image");
+<<<<<<< HEAD
     // login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(imageName);
+=======
+    // docker login and push image to docker registry if necessary
+    dockerLoginAndPushImageToRegistry(imageName);
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   }
 
   /** Change monitoring exporter webapp confiuration inside the pod.

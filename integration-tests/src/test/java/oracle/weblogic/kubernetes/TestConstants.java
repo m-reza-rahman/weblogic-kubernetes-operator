@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 // Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+=======
+// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -7,14 +11,23 @@ import java.net.InetAddress;
 import java.util.Optional;
 
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
+<<<<<<< HEAD
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getEnvironmentProperty;
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getKindRepoValue;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNonEmptySystemProperty;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 public interface TestConstants {
 
+<<<<<<< HEAD
   public static final String OLD_DOMAIN_VERSION = "v8";
+=======
+  public static final Boolean SKIP_BASIC_IMAGE_BUILD =
+      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.skip.basic.image.build", "false"));
+
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final Boolean SKIP_CLEANUP =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.skip.cleanup", "false"));
   public static final Boolean COLLECT_LOGS_ON_SUCCESS =
@@ -27,7 +40,11 @@ public interface TestConstants {
 
   // domain constants
   public static final String DOMAIN_VERSION =
+<<<<<<< HEAD
       getNonEmptySystemProperty("wko.it.domain.version", "v9");
+=======
+      getNonEmptySystemProperty("wko.it.domain.version", "v8");
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String DOMAIN_API_VERSION = "weblogic.oracle/" + DOMAIN_VERSION;
   public static final String ADMIN_SERVER_NAME_BASE = "admin-server";
   public static final String MANAGED_SERVER_NAME_BASE = "managed-server";
@@ -36,12 +53,15 @@ public interface TestConstants {
   public static final String DEFAULT_WEBLOGIC_IMAGE_TAGS = "12.2.1.3, 12.2.1.4, 14.1.1.0-11";
   public static final String WEBLOGIC_IMAGE_TAGS =
       getNonEmptySystemProperty("wko.it.weblogic.image.tags", DEFAULT_WEBLOGIC_IMAGE_TAGS);
+<<<<<<< HEAD
   public static final int DEFAULT_MAX_CLUSTER_SIZE = 5;
 
   // cluster constants
   public static final String CLUSTER_VERSION =
       getNonEmptySystemProperty("wko.it.cluster.version", "v1");
   public static final String CLUSTER_API_VERSION = "weblogic.oracle/" + CLUSTER_VERSION;
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 
   // operator constants
   public static final String OPERATOR_RELEASE_NAME = "weblogic-operator";
@@ -49,7 +69,11 @@ public interface TestConstants {
       "../kubernetes/charts/weblogic-operator";
   public static final String IMAGE_NAME_OPERATOR =
       getNonEmptySystemProperty("wko.it.image.name.operator", "oracle/weblogic-kubernetes-operator");
+<<<<<<< HEAD
   public static final String OPERATOR_IMAGE_BUILD_SCRIPT =
+=======
+  public static final String OPERATOR_DOCKER_BUILD_SCRIPT =
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
       "../buildDockerImage.sh";
   public static final String OPERATOR_SERVICE_NAME = "internal-weblogic-operator-svc";
   public static final String OPERATOR_GITHUB_CHART_REPO_URL =
@@ -58,6 +82,7 @@ public interface TestConstants {
   // kind constants
   public static final String KIND_REPO = getKindRepoValue("wko.it.kind.repo");
 
+<<<<<<< HEAD
   // BASE_IMAGES_REPO represents the repository from where all the base WebLogic
   // and InfraStructure images are pulled
   // Default for BASE_IMAGES_REPO is phx.ocir.io
@@ -70,21 +95,32 @@ public interface TestConstants {
   public static final String BASE_IMAGES_REPO_EMAIL = System.getenv("BASE_IMAGES_REPO_EMAIL");
   public static final String BASE_IMAGES_REPO_SECRET_NAME = "base-images-repo-secret";
 
+=======
+  // TEST_IMAGES_REPO constants
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   // TEST_IMAGES_REPO represents the repository (a) which contains few external
   // images such as nginx,elasticsearch,Oracle DB operator (b) all test domain 
   // images to be pushed into it.
   // Default for TEST_IMAGES_REPO is phx.ocir.io
   public static final String TEST_IMAGES_REPO_DEFAULT = "phx.ocir.io";
+<<<<<<< HEAD
   public static final String TEST_IMAGES_REPO =
+=======
+  public static final String TEST_IMAGES_REPO = 
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
        getNonEmptySystemProperty("wko.it.test.images.repo", TEST_IMAGES_REPO_DEFAULT);
   public static final String TEST_IMAGES_REPO_USERNAME = System.getenv("TEST_IMAGES_REPO_USERNAME");
   public static final String TEST_IMAGES_REPO_PASSWORD = System.getenv("TEST_IMAGES_REPO_PASSWORD");
   public static final String TEST_IMAGES_REPO_EMAIL = System.getenv("TEST_IMAGES_REPO_EMAIL");
   public static final String TEST_IMAGES_REPO_SECRET_NAME = "test-images-repo-secret";
 
+<<<<<<< HEAD
   // Default image names, tags to be used to downlaod base images 
   // It depends on the default value of BASE_IMAGES_REPO. 
   // Following defaults are assumining OCIR as default for BASE_IMAGES_REPO.
+=======
+  // ocir default image values, these values will be used while running locally
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String WEBLOGIC_IMAGE_NAME_DEFAULT = "weblogick8s/test-images/weblogic";
   public static final String WEBLOGIC_IMAGE_TAG_DEFAULT = "12.2.1.4";
   public static final String FMWINFRA_IMAGE_NAME_DEFAULT = "weblogick8s/test-images/fmw-infrastructure";
@@ -92,14 +128,21 @@ public interface TestConstants {
   public static final String DB_IMAGE_NAME_DEFAULT = "weblogick8s/test-images/database/enterprise";
   public static final String DB_IMAGE_TAG_DEFAULT = "12.2.0.1-slim";
 
+<<<<<<< HEAD
   // repository to push the domain images created during test execution
   // (a) for kind cluster push to kind repo
   // (b) for OKD or OKE push to TEST_IMAGES_REPO 
   // (c) for local runs don't push the domain images to any repo
+=======
+  // repository to push the domain images, for kind push to kind repo
+  // for others push to REPO_REGISTRY if REPO_REGISTRY env var is provided,
+  // if its not provided (like local runs) don't push the domain images to any repo
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String DOMAIN_IMAGES_REPO = Optional.ofNullable(KIND_REPO)
       .orElse(getNonEmptySystemProperty("wko.it.test.images.repo") != null
           ? getNonEmptySystemProperty("wko.it.test.images.repo") + "/weblogick8s/" : "");
 
+<<<<<<< HEAD
   // Get WEBLOGIC_IMAGE_NAME/WEBLOGIC_IMAGE_TAG from env var, 
   // if its not provided use OCIR default image values
   public static final String WEBLOGIC_IMAGE_NAME =
@@ -117,11 +160,43 @@ public interface TestConstants {
 
   // Get DB_IMAGE_NAME/DB_IMAGE_TAG from env var, if its not provided and
   // if base images repo is OCIR use OCIR default image values
+=======
+  // BASE_IMAGES_REPO constants
+  // BASE_IMAGES_REPO represents the repository from where all the base WebLogic
+  // and InfraStructure images are pulled
+  // Default for BASE_IMAGES_REPO is phx.ocir.io
+  public static final String BASE_IMAGES_REPO_DEFAULT = "phx.ocir.io";
+  public static final String BASE_IMAGES_REPO = 
+      getNonEmptySystemProperty("wko.it.base.images.repo", BASE_IMAGES_REPO_DEFAULT);
+  public static final String BASE_IMAGES_REPO_USERNAME = System.getenv("BASE_IMAGES_REPO_USERNAME");
+  public static final String BASE_IMAGES_REPO_PASSWORD = System.getenv("BASE_IMAGES_REPO_PASSWORD");
+  public static final String BASE_IMAGES_REPO_EMAIL = System.getenv("BASE_IMAGES_REPO_EMAIL");
+  public static final String BASE_IMAGES_REPO_SECRET_NAME = "base-images-repo-secret";
+
+  // Get WEBLOGIC_IMAGE_NAME/WEBLOGIC_IMAGE_TAG from env var, if its not 
+  // provided use OCIR default image values
+  public static final String WEBLOGIC_IMAGE_NAME =
+      BASE_IMAGES_REPO + "/" + getNonEmptySystemProperty("wko.it.weblogic.image.name", WEBLOGIC_IMAGE_NAME_DEFAULT);
+  public static final String WEBLOGIC_IMAGE_TAG = getNonEmptySystemProperty("wko.it.weblogic.image.tag",
+       WEBLOGIC_IMAGE_TAG_DEFAULT);
+
+  // Get FMWINFRA_IMAGE_NAME/FMWINFRA_IMAGE_TAG from env var, if its not 
+  // provided use OCIR default image values
+  public static final String FMWINFRA_IMAGE_NAME =
+      BASE_IMAGES_REPO + "/" + getNonEmptySystemProperty("wko.it.fmwinfra.image.name",
+        FMWINFRA_IMAGE_NAME_DEFAULT);
+  public static final String FMWINFRA_IMAGE_TAG = getNonEmptySystemProperty("wko.it.fmwinfra.image.tag",
+        FMWINFRA_IMAGE_TAG_DEFAULT);
+
+  // Get DB_IMAGE_NAME/DB_IMAGE_TAG from env var, if its not provided
+  // provided use OCIR default image values
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String DB_IMAGE_NAME =
       BASE_IMAGES_REPO + "/" + getNonEmptySystemProperty("wko.it.db.image.name",
       DB_IMAGE_NAME_DEFAULT);
   public static final String DB_IMAGE_TAG = getNonEmptySystemProperty("wko.it.db.image.tag", DB_IMAGE_TAG_DEFAULT);
 
+<<<<<<< HEAD
   // WebLogic Base Image with Japanese Locale
   public static final String LOCALE_IMAGE_NAME = "phx.ocir.io/weblogick8s/test-images/weblogic";
   public static final String LOCALE_IMAGE_TAG = "12.2.1.4-jp";
@@ -134,6 +209,15 @@ public interface TestConstants {
   // localhost:5000/middleware/weblogic:12.2.1.4 in kind and 
   // in non-kind cluster it will be used as is.
   public static final String DB_19C_IMAGE_TAG = "19.3.0.0";
+=======
+  // WebLogic Base Image with Japanease Locale
+  public static final String LOCALE_IMAGE_NAME = "phx.ocir.io/weblogick8s/test-images/weblogic";
+  public static final String LOCALE_IMAGE_TAG = "12.2.1.4-jp";
+
+  // For kind, replace repo name in image name with KIND_REPO, otherwise use the actual image name
+  // For example, image container-registry.oracle.com/middleware/weblogic:12.2.1.4 will be pushed/used as
+  // localhost:5000/middleware/weblogic:12.2.1.4 in kind and in non-kind cluster it will be used as is.
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String WEBLOGIC_IMAGE_TO_USE_IN_SPEC = KIND_REPO != null ? KIND_REPO
       + (WEBLOGIC_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG).substring(TestConstants.BASE_IMAGES_REPO.length() + 1)
       : WEBLOGIC_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG;
@@ -147,17 +231,29 @@ public interface TestConstants {
   // jenkins constants
   public static final String BUILD_ID = System.getProperty("wko.it.jenkins.build.id", "");
   public static final String BRANCH_NAME_FROM_JENKINS = System.getProperty("wko.it.jenkins.branch.name", "");
+<<<<<<< HEAD
   public static final String SAFE_BRANCH_IMAGE_NAME =
+=======
+  public static final String DOCKER_SAFE_BRANCH_NAME =
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
       BRANCH_NAME_FROM_JENKINS.codePoints().map(cp -> Character.isLetterOrDigit(cp) ? cp : '-')
           .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString();
   public static final String IMAGE_TAG_OPERATOR = getNonEmptySystemProperty("wko.it.image.tag.operator");
   public static final String IMAGE_TAG_OPERATOR_FOR_JENKINS =
+<<<<<<< HEAD
       IMAGE_TAG_OPERATOR != null ? IMAGE_TAG_OPERATOR : SAFE_BRANCH_IMAGE_NAME + BUILD_ID;
+=======
+      IMAGE_TAG_OPERATOR != null ? IMAGE_TAG_OPERATOR : DOCKER_SAFE_BRANCH_NAME + BUILD_ID;
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 
   public static final String K8S_NODEPORT_HOST = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
       assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
   public static final String K8S_NODEPORT_HOSTNAME = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
+<<<<<<< HEAD
         assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostName()));
+=======
+      assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostName()));
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String RESULTS_BASE = getNonEmptySystemProperty("wko.it.result.root",
       System.getProperty("java.io.tmpdir") + "/it-testsresults");
 
@@ -197,9 +293,15 @@ public interface TestConstants {
 
   // Get APACHE_IMAGE_NAME/APACHE_IMAGE_TAG from env var, if it is not provided use OCIR default image values
   public static final String APACHE_IMAGE_NAME = BASE_IMAGES_REPO + "/"
+<<<<<<< HEAD
       + getNonEmptySystemProperty("wko.it.apache.image.name", APACHE_IMAGE_NAME_DEFAULT);
   public static final String APACHE_IMAGE_TAG =
       getNonEmptySystemProperty("wko.it.apache.image.tag", APACHE_IMAGE_TAG_DEFAULT);
+=======
+      + getNonEmptySystemProperty("wko.it.apache.image.name", OCIR_APACHE_IMAGE_NAME);
+  public static final String APACHE_IMAGE_TAG =
+      getNonEmptySystemProperty("wko.it.apache.image.tag", OCIR_APACHE_IMAGE_TAG);
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String APACHE_IMAGE = APACHE_IMAGE_NAME + ":" + APACHE_IMAGE_TAG;
   public static final String APACHE_RELEASE_NAME = "apache-release" + BUILD_ID;
   public static final String APACHE_SAMPLE_CHART_DIR = "../kubernetes/samples/charts/apache-webtier";
@@ -210,7 +312,11 @@ public interface TestConstants {
   public static final String ELK_STACK_VERSION = "7.8.1";
   public static final String FLUENTD_IMAGE_VERSION =
       getNonEmptySystemProperty("wko.it.fluentd.image.version", "v1.14.5-debian-elasticsearch7-1.1");
+<<<<<<< HEAD
   public static final String ELASTICSEARCH_IMAGE = ELASTICSEARCH_IMAGE_NAME + ":" + ELK_STACK_VERSION;
+=======
+  public static final String ELASTICSEARCH_IMAGE = ELASTICSEARCH_NAME + ":" + ELK_STACK_VERSION;
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String ELASTICSEARCH_HOST = "elasticsearch.default.svc.cluster.local";
   public static final int DEFAULT_LISTEN_PORT = 7100;
   public static final int ELASTICSEARCH_HTTP_PORT = 9200;
@@ -240,7 +346,11 @@ public interface TestConstants {
   public static final String MII_AUXILIARY_IMAGE_NAME = DOMAIN_IMAGES_REPO + "mii-ai-image";
   public static final boolean SKIP_BUILD_IMAGES_IF_EXISTS =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.skip.build.images.if.exists", "false"));
+<<<<<<< HEAD
   public static final String BUSYBOX_IMAGE = "phx.ocir.io/weblogick8s/test-images/docker/busybox";
+=======
+  public static final String BUSYBOX_IMAGE = TEST_IMAGES_REPO + "/weblogick8s/test-images/docker/busybox";
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String BUSYBOX_TAG = "1.34.1";
 
   // Skip the mii/wdt basic image build locally if needed
@@ -268,6 +378,7 @@ public interface TestConstants {
   public static final String WDT_BASIC_IMAGE_DOMAINTYPE = "wdt";
   public static final String WDT_BASIC_APP_NAME = "sample-app";
 
+<<<<<<< HEAD
   // Here we need a old version of WDT to build a Auxiliary Image with 
   // WDT binary only. Later it will be overwritten by latest WDT version
   // See ItMiiAuxiliaryImage.testUpdateWDTVersionUsingMultipleAuxiliaryImages
@@ -277,6 +388,15 @@ public interface TestConstants {
   //monitoring constants
   public static final String MONITORING_EXPORTER_WEBAPP_VERSION =
       getNonEmptySystemProperty("wko.it.monitoring.exporter.webapp.version", "2.1.1");
+=======
+  // TODO - why do we need a different variable for this and why is the default so old?
+  public static final String WDT_TEST_VERSION =
+      getNonEmptySystemProperty("wko.it.wdt.test.version", "1.9.15");
+
+  //monitoring constants
+  public static final String MONITORING_EXPORTER_WEBAPP_VERSION =
+      getNonEmptySystemProperty("wko.it.monitoring.exporter.webapp.version", "2.1.0");
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String MONITORING_EXPORTER_BRANCH =
       getNonEmptySystemProperty("wko.it.monitoring.exporter.branch", "main");
   public static final String PROMETHEUS_CHART_VERSION =
@@ -285,7 +405,10 @@ public interface TestConstants {
       getNonEmptySystemProperty("wko.it.grafana.chart.version", "6.44.11");
   public static final String PROMETHEUS_REPO_NAME = "prometheus-community";
   public static final String PROMETHEUS_REPO_URL = "https://prometheus-community.github.io/helm-charts";
+<<<<<<< HEAD
 
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String GRAFANA_REPO_NAME = "grafana";
   public static final String GRAFANA_REPO_URL = "https://grafana.github.io/helm-charts";
 
@@ -304,8 +427,14 @@ public interface TestConstants {
       PROJECT_ROOT + "/../kubernetes/samples/scripts/rest/generate-external-rest-identity.sh";
   public static final String DEFAULT_EXTERNAL_REST_IDENTITY_SECRET_NAME = "weblogic-operator-external-rest-identity";
 
+<<<<<<< HEAD
   public static final String ISTIO_VERSION =
       getNonEmptySystemProperty("wko.it.istio.version", "1.13.2");
+=======
+  // Default ISTIO version is 1.11.1
+  public static final String ISTIO_VERSION =
+      Optional.ofNullable(System.getenv("ISTIO_VERSION")).orElse("1.11.1");
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 
   //MySQL database constants
   public static final String MYSQL_VERSION = "5.6";
@@ -314,8 +443,12 @@ public interface TestConstants {
   public static final boolean OKE_CLUSTER =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.oke.cluster", "false"));
   public static final String NFS_SERVER = System.getProperty("wko.it.nfs.server", "");
+<<<<<<< HEAD
   public static final String NODE_IP = System.getProperty("wko.it.node.ip", "");
   public static final String [] FSS_DIR = System.getProperty("wko.it.fss.dir","").split(",");
+=======
+  public static final String FSS_DIR = System.getProperty("wko.it.fss.dir", "");
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
   public static final String IMAGE_PULL_POLICY = "IfNotPresent";
 
   //OKD constants
@@ -335,8 +468,11 @@ public interface TestConstants {
       "-Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust";
 
   public static final boolean WEBLOGIC_SLIM = WEBLOGIC_IMAGE_TAG.contains("slim");
+<<<<<<< HEAD
   public static final boolean WEBLOGIC_12213 = WEBLOGIC_IMAGE_TAG.contains("12.2.1.3") 
           && !WEBLOGIC_IMAGE_TAG.toLowerCase().contains("cpu");
+=======
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 
   public static final String WEBLOGIC_VERSION = WEBLOGIC_IMAGE_TAG.substring(0,8) + ".0";
   public static final String HTTP_PROXY =
@@ -345,6 +481,7 @@ public interface TestConstants {
       Optional.ofNullable(System.getenv("HTTPS_PROXY")).orElse(System.getenv("https_proxy"));
   public static final String NO_PROXY =
       Optional.ofNullable(System.getenv("NO_PROXY")).orElse(System.getenv("no_proxy"));
+<<<<<<< HEAD
 
   // domain status condition type
   public static final String DOMAIN_STATUS_CONDITION_COMPLETED_TYPE = "Completed";
@@ -398,4 +535,7 @@ public interface TestConstants {
   // metrics server constants
   public static final String METRICS_SERVER_YAML =
       "https://github.com/kubernetes-sigs/metrics-server/releases/download/metrics-server-helm-chart-3.8.2/components.yaml";
+=======
+  public static final String YAML_MAX_FILE_SIZE_PROPERTY = "-Dwdt.config.yaml.max.file.size=25000000";
+>>>>>>> c5f824a919a2064881cc648c2a5b38a2c7894c16
 }
