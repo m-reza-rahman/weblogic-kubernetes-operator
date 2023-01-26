@@ -42,13 +42,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import okhttp3.Call;
 import okhttp3.HttpUrl;
 import okhttp3.Request;
@@ -80,12 +80,12 @@ public class GenericKubernetesApi<
   // TODO(yue9944882): supports generic sub-resource operations..
   // TODO(yue9944882): supports delete-collections..
 
-  private Class<ApiType> apiTypeClass;
-  private Class<ApiListType> apiListTypeClass;
-  private String apiGroup;
-  private String apiVersion;
-  private String resourcePlural;
-  private CustomObjectsApi customObjectsApi;
+  private final Class<ApiType> apiTypeClass;
+  private final Class<ApiListType> apiListTypeClass;
+  private final String apiGroup;
+  private final String apiVersion;
+  private final String resourcePlural;
+  private final CustomObjectsApi customObjectsApi;
 
   /**
    * Instantiates a new Generic kubernetes api.
@@ -115,7 +115,7 @@ public class GenericKubernetesApi<
    * Instantiates a new Generic kubernetes api.
    *
    * @param apiTypeClass the api type class, e.g. V1Job.class
-   * @param apiListTypeClass the api list type class e.g V1JobList.class
+   * @param apiListTypeClass the api list type class e.g. V1JobList.class
    * @param apiGroup the api group
    * @param apiVersion the api version
    * @param resourcePlural the resource plural, e.g. "jobs"
@@ -141,7 +141,7 @@ public class GenericKubernetesApi<
    * Instantiates a new Generic kubernetes api with the ApiClient specified.
    *
    * @param apiTypeClass the api type class, e.g. V1Job.class
-   * @param apiListTypeClass the api list type class e.g V1JobList.class
+   * @param apiListTypeClass the api list type class e.g. V1JobList.class
    * @param apiGroup the api group
    * @param apiVersion the api version
    * @param resourcePlural the resource plural, e.g. "jobs"
@@ -626,37 +626,60 @@ public class GenericKubernetesApi<
    * @return the kubernetes api response
    */
   public KubernetesApiResponse<ApiType> create(ApiType object, final CreateOptions createOptions) {
+    V1ObjectMeta objectMeta = object.getMetadata();
+
+    boolean isNamespaced = !Strings.isNullOrEmpty(objectMeta.getNamespace());
+    if (isNamespaced) {
+      return create(objectMeta.getNamespace(), object, createOptions);
+    }
+
     return executeCall(
         customObjectsApi.getApiClient(),
         apiTypeClass,
-        makeCreateCallBuilder(object, createOptions));
+        makeClusterCreateCallBuilder(object, createOptions));
   }
 
-  private CallBuilder makeCreateCallBuilder(ApiType object, final CreateOptions createOptions) {
-    V1ObjectMeta objectMeta = object.getMetadata();
-    boolean isNamespaced = !Strings.isNullOrEmpty(objectMeta.getNamespace());
-
+  private CallBuilder makeClusterCreateCallBuilder(ApiType object, final CreateOptions createOptions) {
     // TODO(yue9944882): judge namespaced object via api discovery
-    return () -> isNamespaced ?
-        customObjectsApi.createNamespacedCustomObjectCall(
-            this.apiGroup,
-            this.apiVersion,
-            objectMeta.getNamespace(),
-            this.resourcePlural,
-            object,
-            null,
-            createOptions.getDryRun(),
-            createOptions.getFieldManager(),
-            null) :
-        customObjectsApi.createClusterCustomObjectCall(
-            this.apiGroup,
-            this.apiVersion,
-            this.resourcePlural,
-            object,
-            null,
-            createOptions.getDryRun(),
-            createOptions.getFieldManager(),
-            null);
+    return () -> customObjectsApi.createClusterCustomObjectCall(
+        this.apiGroup,
+        this.apiVersion,
+        this.resourcePlural,
+        object,
+        null,
+        createOptions.getDryRun(),
+        createOptions.getFieldManager(),
+        null);
+  }
+
+  /**
+   * Create kubernetes api response.
+   *
+   * @param namespace the namespace
+   * @param object the object
+   * @param createOptions the create options
+   * @return the kubernetes api response
+   */
+  public KubernetesApiResponse<ApiType> create(String namespace, ApiType object, final CreateOptions createOptions) {
+    return executeCall(
+        customObjectsApi.getApiClient(),
+        apiTypeClass,
+        makeNamespacedCreateCallBuilder(namespace, object, createOptions));
+  }
+
+  private CallBuilder makeNamespacedCreateCallBuilder(String namespace, ApiType object, final
+  CreateOptions createOptions) {
+    // TODO(yue9944882): judge namespaced object via api discovery
+    return () -> customObjectsApi.createNamespacedCustomObjectCall(
+        this.apiGroup,
+        this.apiVersion,
+        namespace,
+        this.resourcePlural,
+        object,
+        null,
+        createOptions.getDryRun(),
+        createOptions.getFieldManager(),
+        null);
   }
 
   /**
@@ -669,10 +692,35 @@ public class GenericKubernetesApi<
    */
   public Future<KubernetesApiResponse<ApiType>> createAsync(ApiType object, final CreateOptions createOptions,
                                                             Consumer<KubernetesApiResponse<ApiType>> callback) {
+    V1ObjectMeta objectMeta = object.getMetadata();
+
+    boolean isNamespaced = !Strings.isNullOrEmpty(objectMeta.getNamespace());
+    if (isNamespaced) {
+      return createAsync(objectMeta.getNamespace(), object, createOptions, callback);
+    }
     return executeCallAsync(
         customObjectsApi.getApiClient(),
         apiTypeClass,
-        makeCreateCallBuilder(object, createOptions),
+        makeClusterCreateCallBuilder(object, createOptions),
+        callback);
+  }
+
+  /**
+   * Create kubernetes api response.
+   *
+   * @param namespace the namespace
+   * @param object the object
+   * @param createOptions the create options
+   * @param callback the callback
+   * @return future for the kubernetes api response
+   */
+  public Future<KubernetesApiResponse<ApiType>> createAsync(String namespace, ApiType object,
+                                                            final CreateOptions createOptions,
+                                                            Consumer<KubernetesApiResponse<ApiType>> callback) {
+    return executeCallAsync(
+        customObjectsApi.getApiClient(),
+        apiTypeClass,
+        makeNamespacedCreateCallBuilder(namespace, object, createOptions),
         callback);
   }
 
@@ -814,7 +862,7 @@ public class GenericKubernetesApi<
    * @param status function to extract the status from the object
    * @param updateOptions the update options
    * @param callback the callback
-   * @return futrue for the kubernetes api response
+   * @return future for the kubernetes api response
    */
   public Future<KubernetesApiResponse<ApiType>> updateStatusAsync(
       ApiType object, Function<ApiType, Object> status, final UpdateOptions updateOptions,
@@ -1043,7 +1091,7 @@ public class GenericKubernetesApi<
    * @param name the name
    * @param deleteOptions the delete options
    * @param callback the callback
-   * @return futrue for the kubernetes api response
+   * @return future for the kubernetes api response
    */
   public Future<KubernetesApiResponse<ApiType>> deleteAsync(String name, final DeleteOptions deleteOptions,
                                                             Consumer<KubernetesApiResponse<ApiType>> callback) {
@@ -1191,7 +1239,7 @@ public class GenericKubernetesApi<
       return new KubernetesApiResponse<>(
           new V1Status().code(e.getCode()).message(e.getResponseBody()), e.getCode());
     }
-    if (null == status) { // the response body can be something unexpected sometimes..
+    if (null == status) { // the response body can be something unexpected sometimes...
       // this line should never reach?
       throw new RuntimeException(e);
     }
@@ -1263,13 +1311,14 @@ public class GenericKubernetesApi<
         }
 
         @Override
-        public KubernetesApiResponse<DataType> get() throws InterruptedException, ExecutionException {
+        public KubernetesApiResponse<DataType> get() throws InterruptedException {
           latch.await();
           return result.get();
         }
 
         @Override
-        public KubernetesApiResponse<DataType> get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+        public KubernetesApiResponse<DataType> get(long timeout, @Nonnull TimeUnit unit)
+            throws InterruptedException, TimeoutException {
           if (latch.await(timeout, unit)) {
             return result.get();
           } else {
