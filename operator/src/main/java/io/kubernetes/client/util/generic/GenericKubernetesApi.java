@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -1296,8 +1297,15 @@ public class GenericKubernetesApi<
       return new Future<KubernetesApiResponse<DataType>>() {
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
+          if (isDone()) {
+            return false;
+          }
           call.cancel();
-          return call.isCanceled();
+          boolean isCanceled = call.isCanceled();
+          if (isCanceled) {
+            latch.countDown();
+          }
+          return isCanceled;
         }
 
         @Override
@@ -1313,6 +1321,9 @@ public class GenericKubernetesApi<
         @Override
         public KubernetesApiResponse<DataType> get() throws InterruptedException {
           latch.await();
+          if (isCancelled()) {
+            throw new CancellationException();
+          }
           return result.get();
         }
 
@@ -1320,6 +1331,9 @@ public class GenericKubernetesApi<
         public KubernetesApiResponse<DataType> get(long timeout, @Nonnull TimeUnit unit)
             throws InterruptedException, TimeoutException {
           if (latch.await(timeout, unit)) {
+            if (isCancelled()) {
+              throw new CancellationException();
+            }
             return result.get();
           } else {
             throw new TimeoutException();
