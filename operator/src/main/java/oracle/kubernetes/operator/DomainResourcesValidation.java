@@ -34,8 +34,10 @@ import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_CREATED;
+import static oracle.kubernetes.weblogic.domain.model.DomainStatus.LOGGER;
 
 /**
  * A class to handle coordinating the operator with the actual resources in Kubernetes. This reviews lists
@@ -189,7 +191,12 @@ class DomainResourcesValidation {
 
     getDomainPresenceInfoMap().values().stream()
         .filter(dpi -> !domainNamesFromList.contains(dpi.getDomainUid())).collect(Collectors.toList())
-        .forEach(i -> getDomainPresenceInfo(i.getDomainUid()).setDomain(null));
+        .forEach(i -> recordStrandedDomain(i));
+  }
+
+  private void recordStrandedDomain(DomainPresenceInfo i) {
+    LOGGER.info("XXX domain " + i.getDomainUid() + " is stranded");
+    getDomainPresenceInfo(i.getDomainUid()).setDomain(null);
   }
 
   private void addDomain(DomainResource domain) {
@@ -228,10 +235,14 @@ class DomainResourcesValidation {
   private static void activateDomain(DomainProcessor dp, DomainPresenceInfo info) {
     info.setPopulated(true);
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
-    if (info.getDomain().getStatus() == null) {
+    if (getDomainStatus(info) == null) {
       makeRight = makeRight.withEventData(new EventData(DOMAIN_CREATED)).interrupt();
     }
     makeRight.execute();
+  }
+
+  private static DomainStatus getDomainStatus(DomainPresenceInfo info) {
+    return Optional.ofNullable(info.getDomain()).map(DomainResource::getStatus).orElse(null);
   }
 
   private void deActivateCluster(DomainProcessor dp, ClusterPresenceInfo info) {

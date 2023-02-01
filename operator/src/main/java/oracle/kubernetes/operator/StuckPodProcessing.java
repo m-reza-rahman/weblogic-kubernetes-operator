@@ -117,6 +117,7 @@ public class StuckPodProcessing {
 
     @Nonnull
     private Step readExistingNamespaces() {
+      LOGGER.info("XXX PodActionStep.readExistingNamespaces ");
       return mainDelegate.getDomainNamespaces().readExistingResources(
           namespace, mainDelegate.getDomainProcessor());
     }

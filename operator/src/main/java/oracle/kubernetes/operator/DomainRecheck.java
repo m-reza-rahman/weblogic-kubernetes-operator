@@ -213,6 +213,7 @@ class DomainRecheck {
   }
 
   private Step startNamespaceSteps(String ns) {
+    LOGGER.info("XXX startNamespacesStep: ns = " + ns);
     try (ThreadLoggingContext ignored =
              setThreadContext().namespace(ns)) {
       return Step.chain(

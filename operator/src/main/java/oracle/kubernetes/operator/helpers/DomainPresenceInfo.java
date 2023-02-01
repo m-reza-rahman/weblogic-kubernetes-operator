@@ -60,6 +60,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static oracle.kubernetes.operator.helpers.PodHelper.hasClusterNameOrNull;
 import static oracle.kubernetes.operator.helpers.PodHelper.isNotAdminServer;
+import static oracle.kubernetes.weblogic.domain.model.DomainStatus.LOGGER;
 
 /**
  * Operator's mapping between custom resource Domain and runtime details about that domain,
@@ -731,6 +732,9 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
    * @param domain Domain
    */
   public void setDomain(DomainResource domain) {
+    if (domain == null) {
+      LOGGER.info("XXX DPI setDomain to null");
+    }
     this.domain.set(domain);
   }
 
@@ -815,7 +819,14 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
    * @return true if the domain has cluster(s) and the cluster statuses have all been initially populated.
    */
   public boolean clusterStatusInitialized() {
-    return !getDomain().getSpec().getClusters().isEmpty() && allClusterStatusInitialized();
+    return hasClusters() && allClusterStatusInitialized();
+  }
+
+  private boolean hasClusters() {
+    return !Optional.ofNullable(getDomain())
+        .map(DomainResource::getSpec)
+        .map(DomainSpec::getClusters)
+        .orElse(Collections.emptyList()).isEmpty();
   }
 
   private boolean allClusterStatusInitialized() {
