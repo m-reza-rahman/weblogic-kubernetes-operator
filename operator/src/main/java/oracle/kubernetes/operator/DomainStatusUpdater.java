@@ -631,6 +631,9 @@ public class DomainStatusUpdater {
 
     @Override
     public NextAction apply(Packet packet) {
+      if (isDomainNotPresent(packet)) {
+        return doNext(packet);
+      }
       packet.put(ProcessingConstants.SKIP_STATUS_UPDATE,
           Boolean.valueOf(shouldSkipDomainStatusUpdate(packet)));
       if (endOfProcessing) {
@@ -644,6 +647,11 @@ public class DomainStatusUpdater {
       return info.getServerStartupInfo() == null
           && info.clusterStatusInitialized()
           && !endOfProcessing;
+    }
+
+    private boolean isDomainNotPresent(Packet packet) {
+      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      return info == null || info.getDomain() == null;
     }
 
     static class StatusUpdateContext extends DomainStatusUpdaterContext {
