@@ -67,6 +67,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ServerHealth;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static oracle.kubernetes.operator.DomainStatusUpdater.createInternalFailureSteps;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createIntrospectionFailureSteps;
@@ -389,6 +390,9 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     } else if (operation.isExplicitRecheck() || liveInfo.isDomainGenerationChanged(cachedInfo)) {
       return true;
     } else {
+      if (liveInfo.getDomain() == null) {
+        LOGGER.info("XXX shouldCOntinue: nothing to do for domain = " + liveInfo.getDomainUid() + " domain is null");
+      }
       cachedInfo.setDomain(liveInfo.getDomain());
       return false;
     }
@@ -461,11 +465,16 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     steps.add(PodHelper.createAdminPodStep(null));
 
     if (info.getDomain().isExternalServiceConfigured()) {
+      //if (isExternalServiceConfigured(info)) {
       steps.add(ServiceHelper.createForExternalServiceStep(null));
     }
     steps.add(ServiceHelper.createForServerStep(null));
     steps.add(new WatchPodReadyAdminStep(podAwaiterStepFactory, null));
     return Step.chain(steps.toArray(new Step[0]));
+  }
+
+  private static boolean isExternalServiceConfigured(DomainPresenceInfo info) {
+    return Optional.ofNullable(info.getDomain()).map(DomainResource::isExternalServiceConfigured).orElse(false);
   }
 
   /**
@@ -997,9 +1006,15 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     
     private long delayUntilNextRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
       final OffsetDateTime nextRetryTime = domainPresenceInfo.getDomain().getNextRetryTime();
+      //final OffsetDateTime nextRetryTime = getNextRetryTime(domainPresenceInfo);
       final Duration interval = Duration.between(SystemClock.now(), nextRetryTime);
       return interval.getSeconds();
 
+    }
+
+    @Nullable
+    private OffsetDateTime getNextRetryTime(@NotNull DomainPresenceInfo domainPresenceInfo) {
+      return Optional.ofNullable(domainPresenceInfo.getDomain()).map(DomainResource::getNextRetryTime).orElse(null);
     }
 
   }

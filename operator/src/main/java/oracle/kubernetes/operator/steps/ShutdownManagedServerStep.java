@@ -399,6 +399,9 @@ public class ShutdownManagedServerStep extends Step {
   static class DomainUpdateStep extends DefaultResponseStep<DomainResource> {
     @Override
     public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
+      if (callResponse.getResult() == null) {
+        LOGGER.info("XXX ShutdownManagedServerStep DomainUpdateStep onSuccess: domain in the response is null");
+      }
       packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
       return doNext(packet);
     }
