@@ -819,7 +819,8 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
    * @return true if the domain has cluster(s) and the cluster statuses have all been initially populated.
    */
   public boolean clusterStatusInitialized() {
-    return hasClusters() && allClusterStatusInitialized();
+    //return hasClusters() && allClusterStatusInitialized();
+    return !getDomain().getSpec().getClusters().isEmpty() && allClusterStatusInitialized();
   }
 
   private boolean hasClusters() {

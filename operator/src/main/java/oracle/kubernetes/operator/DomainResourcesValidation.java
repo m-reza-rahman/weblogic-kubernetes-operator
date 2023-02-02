@@ -235,7 +235,8 @@ class DomainResourcesValidation {
   private static void activateDomain(DomainProcessor dp, DomainPresenceInfo info) {
     info.setPopulated(true);
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
-    if (getDomainStatus(info) == null) {
+    //if (getDomainStatus(info) == null) {
+    if (info.getDomain().getStatus() == null) {
       makeRight = makeRight.withEventData(new EventData(DOMAIN_CREATED)).interrupt();
     }
     makeRight.execute();
