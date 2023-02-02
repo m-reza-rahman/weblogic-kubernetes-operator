@@ -395,10 +395,11 @@ public class DomainStatusUpdater {
   static class DomainUpdateStep extends ResponseStep<DomainResource> {
     @Override
     public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (callResponse.getResult() == null) {
-        LOGGER.info("XXX DomainStatusUpdaer DomainUpdateStep onSuccess: domain in the response is null");
+      if (callResponse.getResult() != null) {
+        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+      } else {
+        LOGGER.info("XXX DomainStatusUpdater DomainUpdateStep onSuccess: domain in the response is null");
       }
-      packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
       return doNext(packet);
     }
 
