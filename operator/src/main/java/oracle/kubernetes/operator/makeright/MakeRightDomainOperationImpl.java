@@ -266,7 +266,6 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
       eventStep = EventHelper.createEventStep(new EventData(DOMAIN_DELETED));
     }
     return Step.chain(
-        new UnregisterDPIStep(),
         eventStep,
         new DeleteDomainStep(),
         new UnregisterStatusUpdaterStep(),
@@ -390,15 +389,6 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
   }
 
-  private class UnregisterDPIStep extends Step {
-
-    @Override
-    public NextAction apply(Packet packet) {
-      DomainPresenceInfo.fromPacket(packet).ifPresent(executor::unregisterDomainPresenceInfo);
-      return doNext(packet);
-    }
-  }
-
   private class UnregisterEventK8SObjectsStep extends Step {
 
     @Override
@@ -419,7 +409,11 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
     @Override
     public NextAction apply(Packet packet) {
-      executor.registerDomainPresenceInfo(info);
+      if (deleting) {
+        executor.unregisterDomainPresenceInfo(info);
+      } else {
+        executor.registerDomainPresenceInfo(info);
+      }
 
       return doNext(getNextSteps(), packet);
     }
