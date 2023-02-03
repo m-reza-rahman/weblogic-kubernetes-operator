@@ -63,4 +63,6 @@ public interface MakeRightExecutor {
    * @param info the presence info which encapsulates the domain
    */
   void unregisterDomainPresenceInfo(DomainPresenceInfo info);
+
+  void unregisterDomainEventK8SObjects(DomainPresenceInfo info);
 }
