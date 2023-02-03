@@ -68,7 +68,6 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private boolean explicitRecheck;
   private boolean deleting;
   private boolean inspectionRun;
-  private EventData eventData;
 
   /**
    * Create the operation.
@@ -136,11 +135,6 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   public MakeRightDomainOperation interrupt() {
     willInterrupt = true;
     return this;
-  }
-
-  @Override
-  public boolean wasStartedFromEvent() {
-    return eventData != null;
   }
 
   @Override
