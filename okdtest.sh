@@ -32,20 +32,6 @@ usage() {
   exit $1
 }
 
-dockerLogin() {
-  echo "Info: about to do docker login"
-  if [ ! -z ${DOCKER_USERNAME+x} ] && [ ! -z ${DOCKER_PASSWORD+x} ]; then
-    out=$(echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin)
-    res=$?
-    if [ $res -ne 0 ]; then
-      echo 'docker login failed'
-      exit 1
-    fi
-  else
-    echo "Info: Docker credentials DOCKER_USERNAME and DOCKER_PASSWORD are not set."
-  fi
-}
-
 k8s_version="1.21"
 
 echo "checking nodes"
@@ -146,9 +132,7 @@ kubectl get clusterrolebindings --no-headers | awk '/traefik-/{print $1}' | xarg
 
 sudo rm -rf ${PV_ROOT}/*
 
-dockerLogin
 export OKD=true
-
 echo 'docker info'
 docker info
 docker ps
