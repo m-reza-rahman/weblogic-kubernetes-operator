@@ -33,6 +33,7 @@ cleanupLB() {
             lb=`oci lb load-balancer get --load-balancer-id=$i`
             if [[ (-z "${lb##*$vcn_cidr_prefix*}") || (-z "${lb##*$k*}") ]] ;then
                echo "deleting lb with id $i"
+               sleep 60
                oci lb load-balancer delete --load-balancer-id=$i --force || true
             fi
         done
@@ -60,4 +61,4 @@ out=$(cleanupLB Subnet01 && :)
 echo $out
 out=$(cleanupLB Subnet02 && :)
 echo $out
-deleteOKE
+deleteOKE || true
