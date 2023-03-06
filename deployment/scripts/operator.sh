@@ -67,7 +67,7 @@ mkdir -m 777 -p /logs
 HEAP="-XshowSettings:vm"
 
 # Start operator
-java $HEAP $MOCKING_WLS $DEBUG $LOGGING -jar /operator/weblogic-kubernetes-operator.jar &
+java --enable-preview $HEAP $MOCKING_WLS $DEBUG $LOGGING -jar /operator/weblogic-kubernetes-operator.jar &
 PID=$!
 wait $PID
 
