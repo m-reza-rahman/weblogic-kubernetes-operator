@@ -56,7 +56,6 @@ import oracle.kubernetes.operator.http.metrics.MetricsServer;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
 import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.Container;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -86,7 +85,6 @@ import static oracle.kubernetes.common.logging.MessageKeys.WAIT_FOR_CRD_INSTALLA
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.common.utils.LogMatcher.containsSevere;
 import static oracle.kubernetes.common.utils.LogMatcher.containsWarning;
-import static oracle.kubernetes.operator.BaseMain.container;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_CHANGED_EVENT;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_CREATED_EVENT;
 import static oracle.kubernetes.operator.EventConstants.NAMESPACE_WATCHING_STARTED_EVENT;
@@ -1283,7 +1281,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   @Test
   void whenOperatorStarted_startMetricsServer() throws UnrecoverableKeyException, CertificateException, IOException,
       NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
-    operatorMain.startMetricsServer(container, 9001);
+    operatorMain.startMetricsServer(9001);
     assertNotNull(operatorMain.getMetricsServer());
     assertInstanceOf(MetricsServer.class, operatorMain.getMetricsServer());
     HttpServer httpServer = ((MetricsServer) operatorMain.getMetricsServer()).getMetricsHttpServer();
@@ -1297,7 +1295,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   @Test
   void whenOperatorStopping_stopMetricsServer() throws UnrecoverableKeyException, CertificateException, IOException,
       NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
-    operatorMain.startMetricsServer(container, 9000);
+    operatorMain.startMetricsServer(9000);
     HttpServer httpServer = ((MetricsServer) operatorMain.getMetricsServer()).getMetricsHttpServer();
     assertNotNull(httpServer);
     assertTrue(httpServer.isStarted());
@@ -1376,7 +1374,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     private boolean isStopCalled = false;
 
     @Override
-    public void start(Container container) throws UnrecoverableKeyException, CertificateException, IOException,
+    public void start() throws UnrecoverableKeyException, CertificateException, IOException,
         NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
       // no-op
     }

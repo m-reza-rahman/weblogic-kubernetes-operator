@@ -125,7 +125,7 @@ pipeline {
 
     tools {
         maven 'maven-3.8.5'
-        jdk 'OpenJDK 17.0.2'
+        jdk 'OpenJDK 19.0.2'
     }
 
     environment {

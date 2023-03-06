@@ -16,7 +16,6 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,8 +45,6 @@ import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.steps.InitializeInternalIdentityStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
-import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.Container;
 import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
@@ -72,19 +69,6 @@ public class OperatorMain extends BaseMain {
    * The interval in sec that the operator will check the CRD presence and log a message if CRD not installed.
    */
   private static final long CRD_DETECTION_DELAY = 10;
-
-  static {
-    container
-        .getComponents()
-        .put(
-            ProcessingConstants.MAIN_COMPONENT_NAME,
-            Component.createFor(
-                ScheduledExecutorService.class,
-                wrappedExecutorService,
-                ThreadFactory.class,
-                threadFactory));
-  }
-
 
   Object getOperatorNamespaceEventWatcher() {
     return operatorNamespaceEventWatcher;
@@ -290,8 +274,8 @@ public class OperatorMain extends BaseMain {
 
   void completeBegin() {
     try {
-      startMetricsServer(container);
-      startRestServer(container);
+      startMetricsServer();
+      startRestServer();
 
       // start periodic retry and recheck
       int recheckInterval = TuningParameters.getInstance().getDomainNamespaceRecheckIntervalSeconds();
@@ -307,12 +291,12 @@ public class OperatorMain extends BaseMain {
   }
 
   @Override
-  void startRestServer(Container container)
+  void startRestServer()
       throws UnrecoverableKeyException, CertificateException, IOException, NoSuchAlgorithmException,
       KeyStoreException, InvalidKeySpecException, KeyManagementException {
     if (Optional.ofNullable(HelmAccess.getHelmVariable(OPERATOR_ENABLE_REST_ENDPOINT_ENV))
         .map(Boolean::valueOf).orElse(Boolean.FALSE)) {
-      super.startRestServer(container);
+      super.startRestServer();
     }
   }
 

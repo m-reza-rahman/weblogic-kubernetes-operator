@@ -53,7 +53,6 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
-import oracle.kubernetes.operator.work.Container;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -652,7 +651,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
     private boolean isStopCalled = false;
 
     @Override
-    public void start(Container container) throws UnrecoverableKeyException, CertificateException, IOException,
+    public void start() throws UnrecoverableKeyException, CertificateException, IOException,
         NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
       // no-op
     }

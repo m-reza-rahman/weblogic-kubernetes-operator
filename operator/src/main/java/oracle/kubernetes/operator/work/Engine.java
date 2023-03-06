@@ -5,17 +5,12 @@ package oracle.kubernetes.operator.work;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nonnull;
 
 /**
  * Collection of {@link Fiber}s. Owns an {@link Executor} to run them.
  */
 public class Engine {
-  private static final int DEFAULT_THREAD_COUNT = 10;
   private final AtomicReference<ScheduledExecutorService> threadPool = new AtomicReference<>();
 
   /**
@@ -25,32 +20,6 @@ public class Engine {
    */
   public Engine(ScheduledExecutorService threadPool) {
     this.threadPool.set(threadPool);
-  }
-
-  /**
-   * Creates engine with the specified id and default container and executor.
-   *
-   * @param id Engine id
-   */
-  public Engine(String id) {
-    this(wrappedExecutorService(id, ContainerResolver.getDefault().getContainer()));
-  }
-
-  /**
-   * wrapped executor service.
-   * @param id id
-   * @param container container
-   * @return executor service
-   */
-  public static ScheduledExecutorService wrappedExecutorService(String id, Container container) {
-    ScheduledThreadPoolExecutor threadPool =
-        new ScheduledThreadPoolExecutor(DEFAULT_THREAD_COUNT, new DaemonThreadFactory(id));
-    threadPool.setRemoveOnCancelPolicy(true);
-    return wrap(container, threadPool);
-  }
-
-  private static ScheduledExecutorService wrap(Container container, ScheduledExecutorService ex) {
-    return container != null ? ContainerResolver.getDefault().wrapExecutor(container, ex) : ex;
   }
 
   /**
@@ -80,26 +49,5 @@ public class Engine {
 
   Fiber createChildFiber(Fiber parent) {
     return new Fiber(this, parent);
-  }
-
-  private static class DaemonThreadFactory implements ThreadFactory {
-    final AtomicInteger threadNumber = new AtomicInteger(1);
-    final String namePrefix;
-
-    DaemonThreadFactory(String id) {
-      namePrefix = "engine-" + id + "-thread-";
-    }
-
-    public Thread newThread(@Nonnull Runnable r) {
-      Thread t = new Thread(r);
-      t.setName(namePrefix + threadNumber.getAndIncrement());
-      if (!t.isDaemon()) {
-        t.setDaemon(true);
-      }
-      if (t.getPriority() != Thread.NORM_PRIORITY) {
-        t.setPriority(Thread.NORM_PRIORITY);
-      }
-      return t;
-    }
   }
 }

@@ -127,8 +127,8 @@ public class WebhookMain extends BaseMain {
 
   void completeBegin() {
     try {
-      startMetricsServer(container);
-      startRestServer(container);
+      startMetricsServer();
+      startRestServer();
 
       // start periodic recheck of CRD
       int recheckInterval = TuningParameters.getInstance().getDomainNamespaceRecheckIntervalSeconds();
