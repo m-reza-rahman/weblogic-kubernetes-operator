@@ -19,12 +19,12 @@ import java.security.spec.InvalidKeySpecException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.annotation.Nonnull;
 
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.calls.UnrecoverableCallException;
@@ -39,13 +39,9 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.PathSupport;
 import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.Container;
-import oracle.kubernetes.operator.work.ContainerResolver;
-import oracle.kubernetes.operator.work.Engine;
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-import oracle.kubernetes.operator.work.ThreadFactorySingleton;
 import oracle.kubernetes.utils.SystemClock;
 
 /** An abstract base main class for the operator and the webhook. */
@@ -57,10 +53,9 @@ public abstract class BaseMain {
   static final String GIT_COMMIT_KEY = "git.commit.id.abbrev";
   static final String GIT_BUILD_TIME_KEY = "git.build.time";
 
-  static final Container container = new Container();
-  static final ThreadFactory threadFactory = new WrappedThreadFactory();
-  static final ScheduledExecutorService wrappedExecutorService =
-      Engine.wrappedExecutorService("operator", container);
+  static final ThreadFactory threadFactory = Thread.ofVirtual().factory();
+  static final ScheduledExecutorService wrappedExecutorService
+      = Executors.newSingleThreadScheduledExecutor(threadFactory); // FIXME?
   static final AtomicReference<OffsetDateTime> lastFullRecheck =
       new AtomicReference<>(SystemClock.now());
   static final Semaphore shutdownSignal = new Semaphore(0);
@@ -174,12 +169,12 @@ public abstract class BaseMain {
     }
   }
 
-  void startRestServer(Container container)
+  void startRestServer()
       throws UnrecoverableKeyException, CertificateException, IOException, NoSuchAlgorithmException,
       KeyStoreException, InvalidKeySpecException, KeyManagementException {
     BaseRestServer value = createRestServer();
     restServer.set(value);
-    value.start(container);
+    value.start();
   }
 
   abstract BaseRestServer createRestServer();
@@ -193,17 +188,17 @@ public abstract class BaseMain {
     Optional.ofNullable(restServer.getAndSet(null)).ifPresent(BaseServer::stop);
   }
 
-  void startMetricsServer(Container container) throws UnrecoverableKeyException, CertificateException, IOException,
+  void startMetricsServer() throws UnrecoverableKeyException, CertificateException, IOException,
       NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
-    startMetricsServer(container, delegate.getMetricsPort());
+    startMetricsServer(delegate.getMetricsPort());
   }
 
   // for test
-  void startMetricsServer(Container container, int port) throws UnrecoverableKeyException, CertificateException,
+  void startMetricsServer(int port) throws UnrecoverableKeyException, CertificateException,
       IOException, NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
     BaseServer value = new MetricsServer(port);
     metricsServer.set(value);
-    value.start(container);
+    value.start();
   }
 
   // for test
@@ -273,19 +268,6 @@ public abstract class BaseMain {
         LoggingContext.LOGGING_CONTEXT_KEY,
         Component.createFor(new LoggingContext().namespace(ns)));
     return packet;
-  }
-
-  private static class WrappedThreadFactory implements ThreadFactory {
-    private final ThreadFactory delegate = ThreadFactorySingleton.getInstance();
-
-    @Override
-    public Thread newThread(@Nonnull Runnable r) {
-      return delegate.newThread(
-          () -> {
-            ContainerResolver.getDefault().enterContainer(container);
-            r.run();
-          });
-    }
   }
 
   static class NullCompletionCallback implements CompletionCallback {

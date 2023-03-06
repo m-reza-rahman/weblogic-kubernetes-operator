@@ -42,7 +42,6 @@ import static oracle.kubernetes.operator.logging.LoggingContext.LOGGING_CONTEXT_
  */
 @SuppressWarnings("UnusedReturnValue")
 public class FiberTestSupport {
-  private static final Container container = new Container();
   private final CompletionCallbackStub completionCallback = new CompletionCallbackStub();
   private final ScheduledExecutorStub schedule = ScheduledExecutorStub.create();
   private final Engine engine = new Engine(schedule);
@@ -306,14 +305,8 @@ public class FiberTestSupport {
 
     private void runNextRunnable() {
       while (null != (current = queue.poll())) {
-        ThreadLocalContainerResolver cr = ContainerResolver.getDefault();
-        Container old = cr.enterContainer(container);
-        try {
-          current.run();
-          numItemsRun++;
-        } finally {
-          cr.exitContainer(old);
-        }
+        current.run();
+        numItemsRun++;
         current = null;
       }
     }

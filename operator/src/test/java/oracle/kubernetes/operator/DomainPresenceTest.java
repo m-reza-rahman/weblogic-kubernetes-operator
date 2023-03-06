@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
 
@@ -532,7 +533,7 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
     @NotNull
     private Map<String, FiberGate> createMakeRightFiberGateMap() {
       Map<String, FiberGate> map = new ConcurrentHashMap<>();
-      map.put(NS, new TestFiberGate(new Engine("Test")));
+      map.put(NS, new TestFiberGate(new Engine(Executors.newScheduledThreadPool(1))));
       return map;
     }
 

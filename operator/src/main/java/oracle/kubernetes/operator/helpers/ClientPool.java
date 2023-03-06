@@ -21,8 +21,6 @@ import okhttp3.OkHttpClient;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
-import oracle.kubernetes.operator.work.Container;
-import oracle.kubernetes.operator.work.ContainerResolver;
 
 public class ClientPool extends Pool<ApiClient> {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
@@ -65,16 +63,7 @@ public class ClientPool extends Pool<ApiClient> {
     ApiClient client = null;
     LOGGER.fine(MessageKeys.CREATING_API_CLIENT);
     try {
-      ClientFactory clientFactory = null;
-      Container c = ContainerResolver.getInstance().getContainer();
-      if (c != null) {
-        clientFactory = c.getSpi(ClientFactory.class);
-      }
-      if (clientFactory == null) {
-        clientFactory = ClientPool.factory;
-      }
-
-      client = clientFactory.get();
+      client = ClientPool.factory.get();
     } catch (Throwable e) {
       LOGGER.warning(MessageKeys.EXCEPTION, e);
     }
