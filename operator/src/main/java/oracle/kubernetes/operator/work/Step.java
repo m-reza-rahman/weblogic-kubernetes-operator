@@ -191,6 +191,15 @@ public abstract class Step {
   }
 
   /**
+   * End the fiber processing.
+   *
+   * @param packet Packet
+   */
+  protected final Void doEnd(Packet packet) {
+    return doNext(null, packet);
+  }
+
+  /**
    * Invokes the indicated next step.
    *
    * @param step The step

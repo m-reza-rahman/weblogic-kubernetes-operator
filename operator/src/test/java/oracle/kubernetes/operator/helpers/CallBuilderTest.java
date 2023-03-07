@@ -83,7 +83,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
-import static oracle.kubernetes.operator.calls.AsyncRequestStep.CONTINUE;
+import static oracle.kubernetes.operator.calls.RequestStep.CONTINUE;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionMatcher.hasCondition;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.AVAILABLE;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
@@ -1479,10 +1479,10 @@ class CallBuilderTest {
     defineResource(resourceName + "/" + name, pseudoServlet);
   }
 
-  static class PseudoServletCallDispatcher implements SynchronousCallDispatcher, AsyncRequestStepFactory {
+  static class PseudoServletCallDispatcher implements SynchronousCallDispatcher, RequestStepFactory {
     private static String basePath;
     private SynchronousCallDispatcher underlyingSyncDispatcher;
-    private AsyncRequestStepFactory underlyingAsyncRequestStepFactory;
+    private RequestStepFactory underlyingAsyncRequestStepFactory;
 
     static Memento installSync(String basePath) throws NoSuchFieldException {
       PseudoServletCallDispatcher.basePath = basePath;
@@ -1504,7 +1504,7 @@ class CallBuilderTest {
       this.underlyingSyncDispatcher = underlyingSyncDispatcher;
     }
 
-    void setUnderlyingAsyncRequestStepFactory(AsyncRequestStepFactory underlyingAsyncRequestStepFactory) {
+    void setUnderlyingAsyncRequestStepFactory(RequestStepFactory underlyingAsyncRequestStepFactory) {
       this.underlyingAsyncRequestStepFactory = underlyingAsyncRequestStepFactory;
     }
 
@@ -1520,7 +1520,7 @@ class CallBuilderTest {
                                        RetryStrategy retryStrategy, Pool<ApiClient> helper,
                                        int timeoutSeconds, int maxRetryCount, Integer gracePeriodSeconds,
                                        String fieldSelector, String labelSelector, String resourceVersion) {
-      return underlyingAsyncRequestStepFactory.createRequestAsync(
+      return underlyingAsyncRequestStepFactory.createRequest(
           next, requestParams, factory, retryStrategy, createSingleUsePool(), timeoutSeconds, maxRetryCount,
           gracePeriodSeconds, fieldSelector, labelSelector, resourceVersion);
     }
