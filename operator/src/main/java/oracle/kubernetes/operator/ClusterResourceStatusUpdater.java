@@ -27,7 +27,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-import oracle.kubernetes.operator.work.Step.StepAndPacket;
 import oracle.kubernetes.weblogic.domain.model.ClusterCondition;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.ClusterStatus;
@@ -58,15 +57,6 @@ public class ClusterResourceStatusUpdater {
     return new ClusterResourceStatusUpdaterStep(next);
   }
 
-  private static Step createUpdateClusterResourceStatusSteps(Packet packet,
-      Collection<ClusterResource> clusterResources) {
-    List<StepAndPacket> result = clusterResources.stream()
-        .filter(res -> createContext(packet, res).isClusterResourceStatusChanged())
-        .map(res -> createContext(packet, res).createReplaceClusterResourceStatusStep()).collect(
-        Collectors.toList());
-    return result.isEmpty() ? null : new RunInParallelStep(result);
-  }
-
   private static ReplaceClusterStatusContext createContext(Packet packet, ClusterResource resource) {
     return new ReplaceClusterStatusContext(packet, resource);
   }
@@ -90,6 +80,15 @@ public class ClusterResourceStatusUpdater {
           .map(domain -> createUpdateClusterResourceStatusSteps(packet, info.getClusterResources()))
           .orElse(null);
       return doNext(chainStep(step, getNext()), packet);
+    }
+
+    private static Step createUpdateClusterResourceStatusSteps(Packet packet,
+                                                               Collection<ClusterResource> clusterResources) {
+      List<StepAndPacket> result = clusterResources.stream()
+          .filter(res -> createContext(packet, res).isClusterResourceStatusChanged())
+          .map(res -> new StepAndPacket(createContext(packet, res).createReplaceClusterResourceStatusStep(), packet))
+          .collect(Collectors.toList());
+      return result.isEmpty() ? null : new RunInParallelStep(result);
     }
 
     private static Step chainStep(Step one, Step two) {
@@ -209,7 +208,7 @@ public class ClusterResourceStatusUpdater {
       return !Objects.equals(getNewStatus(), resource.getStatus());
     }
 
-    private StepAndPacket createReplaceClusterResourceStatusStep() {
+    private Step createReplaceClusterResourceStatusStep() {
       LOGGER.fine(MessageKeys.CLUSTER_STATUS, getClusterResourceName(),
           getNewStatus());
 
@@ -228,7 +227,7 @@ public class ClusterResourceStatusUpdater {
           .map(ncs -> getClusterStatusConditionEvents(ncs.getConditions())).orElse(Collections.emptyList())
           .stream().map(EventHelper::createClusterResourceEventStep).forEach(result::add);
 
-      return new StepAndPacket(Step.chain(result), packet);
+      return Step.chain(result);
     }
 
     private List<EventData> getClusterStatusConditionEvents(List<ClusterCondition> conditions) {
@@ -316,7 +315,7 @@ public class ClusterResourceStatusUpdater {
       // Get the ClusterResource, that was refreshed, from DomainPresenceInfo.
       DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
       ClusterResource res = info.getClusterResource(clusterName);
-      return doNext(createUpdateClusterResourceStatusSteps(packet, Collections.singletonList(res)), packet);
+      return doNext(createContext(packet, res).createReplaceClusterResourceStatusStep(), packet);
     }
   }
 }
