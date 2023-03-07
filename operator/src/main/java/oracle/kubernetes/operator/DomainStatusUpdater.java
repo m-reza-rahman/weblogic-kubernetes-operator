@@ -48,7 +48,6 @@ import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.OperatorUtils;
@@ -345,7 +344,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(createContext(packet).createUpdateSteps(getNext()), packet);
     }
 
@@ -367,7 +366,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
       if (callResponse.getResult() != null) {
         packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
       }
@@ -375,7 +374,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
@@ -394,7 +393,7 @@ public class DomainStatusUpdater {
 
   static class DomainUpdateStep extends ResponseStep<DomainResource> {
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
       if (callResponse.getResult() != null) {
         packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
       }
@@ -402,7 +401,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
       return callResponse.getStatusCode() == HTTP_NOT_FOUND
           ? doNext(null, packet)
           : super.onFailure(packet, callResponse);
@@ -623,7 +622,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (isDomainNotPresent(packet)) {
         return doNext(packet);
       }

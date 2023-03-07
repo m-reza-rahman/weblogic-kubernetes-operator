@@ -5,7 +5,6 @@ package oracle.kubernetes.operator.steps;
 
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.helpers.ResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -28,14 +27,14 @@ public class DefaultResponseStep<T> extends ResponseStep<T> {
   }
 
   @Override
-  public NextAction onFailure(Packet packet, CallResponse<T> callResponse) {
+  public Void onFailure(Packet packet, CallResponse<T> callResponse) {
     return callResponse.getStatusCode() == HTTP_NOT_FOUND
         ? onSuccess(packet, callResponse)
         : super.onFailure(packet, callResponse);
   }
 
   @Override
-  public NextAction onSuccess(Packet packet, CallResponse<T> callResponse) {
+  public Void onSuccess(Packet packet, CallResponse<T> callResponse) {
     return doNext(packet);
   }
 }

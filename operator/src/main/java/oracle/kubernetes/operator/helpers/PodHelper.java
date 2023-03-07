@@ -38,7 +38,6 @@ import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -531,7 +530,7 @@ public class PodHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       PodStepContext context = new AdminPodStepContext(this, packet);
 
       return doNext(context.verifyPod(getNext()), packet);
@@ -607,7 +606,7 @@ public class PodHelper {
       }
 
       @Override
-      public NextAction apply(Packet packet) {
+      public Void apply(Packet packet) {
         removeFromServersMarkedForRollMap();
         return doNext(packet);
       }
@@ -725,7 +724,7 @@ public class PodHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       ManagedPodStepContext context = new ManagedPodStepContext(this, packet);
 
       return doNext(context.verifyPod(getNext()), packet);
@@ -741,7 +740,7 @@ public class PodHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
 
       final DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
       final V1Pod oldPod = info.getServerPod(serverName);
@@ -805,7 +804,7 @@ public class PodHelper {
                   domainUid,
                   new DefaultResponseStep<>(next) {
                     @Override
-                    public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+                    public Void onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
                       V1Pod pod = callResponse.getResult();
 
                       if (pod != null && !PodHelper.isDeleting(pod)) {
@@ -832,8 +831,8 @@ public class PodHelper {
     }
 
     @Override
-    public NextAction doPotentialRetry(Step conflictStep, Packet packet, int statusCode) {
-      NextAction na = new NextAction();
+    public Void doPotentialRetry(Step conflictStep, Packet packet, int statusCode) {
+      Void na = new Void();
       na.invoke(retryStep, packet);
       return na;
     }

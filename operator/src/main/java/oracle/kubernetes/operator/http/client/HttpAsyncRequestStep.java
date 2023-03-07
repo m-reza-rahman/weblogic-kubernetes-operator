@@ -20,7 +20,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.AsyncFiber;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -90,7 +89,7 @@ public class HttpAsyncRequestStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     AsyncProcessing processing = new AsyncProcessing(packet);
     return doSuspend(processing::process);
   }

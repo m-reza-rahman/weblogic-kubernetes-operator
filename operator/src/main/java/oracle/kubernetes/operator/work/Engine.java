@@ -31,8 +31,8 @@ public class Engine {
     return threadPool.get();
   }
 
-  void addRunnable(Fiber fiber) {
-    getExecutor().execute(fiber);
+  void addRunnable(Runnable runnable) {
+    getExecutor().execute(runnable);
   }
 
   /**

@@ -25,7 +25,6 @@ import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.AsyncFiber;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
@@ -100,7 +99,7 @@ class HttpAsyncRequestStepTest {
 
   @Test
   void whenRequestMade_suspendProcessing() {
-    NextAction action = requestStep.apply(packet);
+    Void action = requestStep.apply(packet);
 
     assertThat(FiberTestSupport.isSuspendRequested(action), is(true));
   }
@@ -110,19 +109,19 @@ class HttpAsyncRequestStepTest {
   // when it receives a doSuspend()
   @Test
   void whenResponseReceived_resumeFiber() {
-    final NextAction nextAction = requestStep.apply(packet);
+    final Void nextAction = requestStep.apply(packet);
 
     receiveResponseBeforeTimeout(nextAction, response);
 
     assertThat(fiber.wasResumed(), is(true));
   }
 
-  private void receiveResponseBeforeTimeout(NextAction nextAction, HttpResponse<String> response) {
+  private void receiveResponseBeforeTimeout(Void nextAction, HttpResponse<String> response) {
     responseFuture.complete(response);
     FiberTestSupport.doOnExit(nextAction, fiber);
   }
 
-  private void completeWithThrowableBeforeTimeout(NextAction nextAction, Throwable throwable) {
+  private void completeWithThrowableBeforeTimeout(Void nextAction, Throwable throwable) {
     responseFuture.completeExceptionally(throwable);
     FiberTestSupport.doOnExit(nextAction, fiber);
   }
@@ -130,7 +129,7 @@ class HttpAsyncRequestStepTest {
 
   @Test
   void whenErrorResponseReceived_logMessage() {
-    final NextAction nextAction = requestStep.apply(packet);
+    final Void nextAction = requestStep.apply(packet);
 
     receiveResponseBeforeTimeout(nextAction, createStub(HttpResponseStub.class, 500));
 
@@ -142,7 +141,7 @@ class HttpAsyncRequestStepTest {
     collectHttpWarningMessage();
     createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 11).addToPacket(packet);
 
-    final NextAction nextAction = requestStep.apply(packet);
+    final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
 
@@ -169,7 +168,7 @@ class HttpAsyncRequestStepTest {
     DomainPresenceInfo info = createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 0);
     info.setServerPodBeingDeleted(MANAGED_SERVER1, true);
     info.addToPacket(packet);
-    final NextAction nextAction = requestStep.apply(packet);
+    final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
 
@@ -181,7 +180,7 @@ class HttpAsyncRequestStepTest {
     collectHttpWarningMessage();
     createDomainPresenceInfo(new V1Pod()
         .metadata(new V1ObjectMeta().deletionTimestamp(OffsetDateTime.now())), 0).addToPacket(packet);
-    final NextAction nextAction = requestStep.apply(packet);
+    final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
 
@@ -192,7 +191,7 @@ class HttpAsyncRequestStepTest {
   void whenThrowableResponseReceivedServerNotShuttingDownAndFailureCountLowerThanThreshold_dontLogMessage() {
     collectHttpWarningMessage();
     createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 0).addToPacket(packet);
-    final NextAction nextAction = requestStep.apply(packet);
+    final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
 
@@ -201,7 +200,7 @@ class HttpAsyncRequestStepTest {
 
   @Test
   void whenResponseReceived_populatePacket() {
-    NextAction nextAction = requestStep.apply(packet);
+    Void nextAction = requestStep.apply(packet);
 
     receiveResponseBeforeTimeout(nextAction, response);
 
@@ -211,7 +210,7 @@ class HttpAsyncRequestStepTest {
   @Test
   void whenResponseTimesOut_resumeFiber() {
     consoleMemento.ignoreMessage(HTTP_REQUEST_TIMED_OUT);
-    NextAction nextAction = requestStep.apply(packet);
+    Void nextAction = requestStep.apply(packet);
 
     receiveTimeout(nextAction);
 
@@ -222,7 +221,7 @@ class HttpAsyncRequestStepTest {
   void whenResponseTimesOut_packetHasNoResponse() {
     consoleMemento.ignoreMessage(HTTP_REQUEST_TIMED_OUT);
     HttpResponseStep.addToPacket(packet, response);
-    NextAction nextAction = requestStep.apply(packet);
+    Void nextAction = requestStep.apply(packet);
 
     receiveTimeout(nextAction);
 
@@ -232,7 +231,7 @@ class HttpAsyncRequestStepTest {
   @Test
   void whenResponseTimesOut_logWarning() {
     HttpResponseStep.addToPacket(packet, response);
-    NextAction nextAction = requestStep.apply(packet);
+    Void nextAction = requestStep.apply(packet);
 
     receiveTimeout(nextAction);
 
@@ -253,7 +252,7 @@ class HttpAsyncRequestStepTest {
     assertThat(getResponse().body(), equalTo("It works for testing!"));
   }
 
-  private void receiveTimeout(NextAction nextAction) {
+  private void receiveTimeout(Void nextAction) {
     FiberTestSupport.doOnExit(nextAction, fiber);
   }
 

@@ -27,7 +27,6 @@ import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.utils.Certificates;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.apache.commons.io.FileUtils;
@@ -67,7 +66,7 @@ public class InitializeInternalIdentityStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     try {
       if (configInternalCertFile.exists() && secretsInternalKeyFile.exists()) {
         // The operator's internal ssl identity has already been created.
@@ -90,7 +89,7 @@ public class InitializeInternalIdentityStep extends Step {
     FileUtils.copyFile(secretsInternalKeyFile, internalKeyFile);
   }
 
-  private NextAction createInternalIdentity(Packet packet) throws Exception {
+  private Void createInternalIdentity(Packet packet) throws Exception {
     KeyPair keyPair = createKeyPair();
     String key = convertToPEM(keyPair.getPrivate());
     writeToFile(key, internalKeyFile);
@@ -164,7 +163,7 @@ public class InitializeInternalIdentityStep extends Step {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
       V1Secret existingSecret = callResponse.getResult();
       if (existingSecret == null) {
         return doNext(createSecret(getNext(), internalOperatorKey), packet);

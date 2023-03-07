@@ -6,7 +6,6 @@ package oracle.kubernetes.operator.steps;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -16,7 +15,7 @@ public class BeforeAdminServiceStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     WlsDomainConfig domainTopology =
         (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
     String adminServerName = domainTopology.getAdminServerName();

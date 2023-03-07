@@ -54,7 +54,6 @@ import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.operator.work.FiberGate;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -519,26 +518,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     return Step.chain(steps.toArray(new Step[0]));
   }
 
-  /**
-   * Report on currently suspended fibers. This is the first step toward diagnosing if we need special handling
-   * to kill or kick these fibers.
-   */
-  @Override
-  public void reportSuspendedFibers() {
-    if (LOGGER.isFineEnabled()) {
-      BiConsumer<String, FiberGate> consumer =
-          (namespace, gate) -> gate.getCurrentFibers().forEach(
-            (key, fiber) -> Optional.ofNullable(fiber.getSuspendedStep()).ifPresent(suspendedStep -> {
-              try (ThreadLoggingContext ignored
-                  = setThreadContext().namespace(namespace).domainUid(getDomainUid(fiber))) {
-                LOGGER.fine("Fiber is SUSPENDED at " + suspendedStep.getResourceName());
-              }
-            }));
-      makeRightFiberGates.forEach(consumer);
-      statusFiberGates.forEach(consumer);
-    }
-  }
-
   private String getDomainUid(Fiber fiber) {
     return Optional.ofNullable(fiber)
           .map(Fiber::getPacket)
@@ -939,7 +918,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   public static class PopulatePacketServerMapsStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       populatePacketServerMapsFromDomain(packet);
       return doNext(packet);
     }
@@ -1177,7 +1156,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     private class DomainPresenceInfoStep extends Step {
       @Override
-      public NextAction apply(Packet packet) {
+      public Void apply(Packet packet) {
         Optional.ofNullable(domains.get(getNamespace()))
             .map(n -> n.get(getDomainUid()))
             .ifPresent(i -> i.addToPacket(packet));

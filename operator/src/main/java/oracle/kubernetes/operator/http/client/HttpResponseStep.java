@@ -10,7 +10,6 @@ import java.util.function.Consumer;
 import oracle.kubernetes.operator.helpers.AuthorizationSource;
 import oracle.kubernetes.operator.helpers.SecretHelper;
 import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -32,13 +31,13 @@ public abstract class HttpResponseStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     return Optional.ofNullable(getResponse(packet))
         .map(r -> doApply(packet, r))
         .orElse(handlePossibleThrowableOrContinue(packet));
   }
 
-  private NextAction handlePossibleThrowableOrContinue(Packet packet) {
+  private Void handlePossibleThrowableOrContinue(Packet packet) {
     return Optional.ofNullable(getThrowableResponse(packet))
         .map(t -> wrapOnFailure(packet, null))
         .orElse(doNext(packet));
@@ -48,12 +47,12 @@ public abstract class HttpResponseStep extends Step {
     return packet.getSpi(Throwable.class);
   }
 
-  private NextAction doApply(Packet packet, HttpResponse<String> response) {
+  private Void doApply(Packet packet, HttpResponse<String> response) {
     Optional.ofNullable(callback).ifPresent(c -> c.accept(response));
     return isSuccess(response) ? onSuccess(packet, response) : wrapOnFailure(packet, response);
   }
 
-  private NextAction wrapOnFailure(Packet packet, HttpResponse<String> response) {
+  private Void wrapOnFailure(Packet packet, HttpResponse<String> response) {
     if (response != null && (response.statusCode() == HTTP_FORBIDDEN || response.statusCode() == HTTP_UNAUTHORIZED)) {
       Optional.ofNullable(SecretHelper.getAuthorizationSource(packet)).ifPresent(AuthorizationSource::onFailure);
     }
@@ -102,7 +101,7 @@ public abstract class HttpResponseStep extends Step {
    * @param response the response from the server
    * @return the next action for the fiber to take
    */
-  public abstract NextAction onSuccess(Packet packet, HttpResponse<String> response);
+  public abstract Void onSuccess(Packet packet, HttpResponse<String> response);
 
   /**
    * Processes a failure response.
@@ -110,5 +109,5 @@ public abstract class HttpResponseStep extends Step {
    * @param response the response from the server
    * @return the next action for the fiber to take
    */
-  public abstract NextAction onFailure(Packet packet, HttpResponse<String> response);
+  public abstract Void onFailure(Packet packet, HttpResponse<String> response);
 }

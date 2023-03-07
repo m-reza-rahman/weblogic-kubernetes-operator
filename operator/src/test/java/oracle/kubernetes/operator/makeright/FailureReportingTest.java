@@ -37,7 +37,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.work.Fiber;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
@@ -395,11 +394,11 @@ class FailureReportingTest {
     }
 
     Memento install() throws NoSuchFieldException {
-      final BiConsumer<NextAction, String> detector = this::detectFlicker;
+      final BiConsumer<Void, String> detector = this::detectFlicker;
       return StaticStubSupport.install(Fiber.class, "preApplyReport", detector);
     }
 
-    void detectFlicker(NextAction nextAction, String fiberName) {
+    void detectFlicker(Void nextAction, String fiberName) {
       final Set<DomainCondition> conditions = getMatchingConditions(nextAction);
       if (flickeredStep != null) { // already found a problem; no need to keep looking
         return;
@@ -412,7 +411,7 @@ class FailureReportingTest {
       }
     }
 
-    private Set<DomainCondition> getMatchingConditions(NextAction nextAction) {
+    private Set<DomainCondition> getMatchingConditions(Void nextAction) {
       return getMatchingConditions(nextAction.getPacket());
     }
 
@@ -446,11 +445,11 @@ class FailureReportingTest {
     }
 
     Memento install() throws NoSuchFieldException {
-      final BiConsumer<NextAction, String> detector = this::detectBannedStep;
+      final BiConsumer<Void, String> detector = this::detectBannedStep;
       return StaticStubSupport.install(Fiber.class, "preApplyReport", detector);
     }
 
-    void detectBannedStep(NextAction nextAction, String fiberName) {
+    void detectBannedStep(Void nextAction, String fiberName) {
       if (reachedBannedStep == null && isSpecifiedStep(nextAction.getNext())) {
         reachedBannedStep = nextAction.getNext();
       }

@@ -46,7 +46,6 @@ import oracle.kubernetes.operator.steps.InitializeInternalIdentityStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.work.FiberGate;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
@@ -219,7 +218,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<CoreV1EventList> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<CoreV1EventList> callResponse) {
       CoreV1EventList list = callResponse.getResult();
       operatorNamespaceEventWatcher = startWatcher(getOperatorNamespace(), KubernetesUtils.getResourceVersion(list));
       list.getItems().forEach(DomainProcessorImpl::updateEventK8SObjects);
@@ -266,7 +265,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1NamespaceList> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<V1NamespaceList> callResponse) {
       namespaceWatcher = createNamespaceWatcher(KubernetesUtils.getResourceVersion(callResponse.getResult()));
       return doNext(packet);
     }
@@ -347,7 +346,7 @@ public class OperatorMain extends BaseMain {
   class CrdPresenceStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(new CallBuilder().readCustomResourceDefinitionAsync(
               KubernetesConstants.DOMAIN_CRD_NAME, createReadResponseStep(getNext())), packet);
     }
@@ -365,7 +364,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public NextAction onSuccess(
+    public Void onSuccess(
             Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
       V1CustomResourceDefinition existingCrd = callResponse.getResult();
 
@@ -386,7 +385,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    protected NextAction onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+    protected Void onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
       return isNotAuthorizedOrForbidden(callResponse)
               ? doNext(new CallBuilder().listDomainAsync(getOperatorNamespace(),
                 new CrdPresenceResponseStep(getNext())), packet) : super.onFailureNoRetry(packet, callResponse);
@@ -401,7 +400,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<DomainList> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<DomainList> callResponse) {
       LOGGER.info(MessageKeys.WAIT_FOR_CRD_INSTALLATION, CRD_DETECTION_DELAY);
       return doDelay(createCRDPresenceCheck(), packet, CRD_DETECTION_DELAY, TimeUnit.SECONDS);
     }

@@ -10,7 +10,6 @@ import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -29,7 +28,7 @@ public class ServerDownStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
     V1Pod oldPod = info.getServerPod(serverName);
 

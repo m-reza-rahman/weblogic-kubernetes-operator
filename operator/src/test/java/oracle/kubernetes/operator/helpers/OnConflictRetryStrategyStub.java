@@ -4,14 +4,13 @@
 package oracle.kubernetes.operator.helpers;
 
 import oracle.kubernetes.operator.calls.RetryStrategy;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
 public abstract class OnConflictRetryStrategyStub implements RetryStrategy {
   @Override
-  public NextAction doPotentialRetry(Step conflictStep, Packet packet, int statusCode) {
-    NextAction na = new NextAction();
+  public Void doPotentialRetry(Step conflictStep, Packet packet, int statusCode) {
+    Void na = new Void();
     na.invoke(conflictStep, packet);
     return na;
   }

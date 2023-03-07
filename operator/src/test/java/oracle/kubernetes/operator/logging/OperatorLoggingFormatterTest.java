@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.kubernetes.client.openapi.ApiException;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.junit.jupiter.api.Test;
@@ -192,7 +191,7 @@ class OperatorLoggingFormatterTest {
   class LoggingStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       try {
         packet.put("MESSAGE", getFormattedMessage());
         return doNext(packet);

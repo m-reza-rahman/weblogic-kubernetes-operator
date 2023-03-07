@@ -32,7 +32,6 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.watcher.WatchListener;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -205,7 +204,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     protected ResponseStep<V1Pod> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(getNext()) {
         @Override
-        public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+        public Void onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
 
           DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
           String serverName = (String)packet.get(SERVER_NAME);
@@ -370,7 +369,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
         DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
         if (callResponse.getResult() == null || callback.didResumeFiber()) {
           Optional.ofNullable(info).ifPresent(i -> i.deleteServerPodFromEvent(packet.getValue(SERVER_NAME), null));
@@ -440,7 +439,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
         DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
         if (isServerShutdown(info) || isReady(callResponse.getResult()) || callback.didResumeFiber()) {
           Optional.ofNullable(info).ifPresent(i -> i.updateLastKnownServerStatus(serverName, SHUTDOWN_STATE));

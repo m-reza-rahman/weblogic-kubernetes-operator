@@ -5,8 +5,6 @@ package oracle.kubernetes.operator.http.client;
 
 import java.net.http.HttpResponse;
 
-import oracle.kubernetes.operator.http.client.HttpResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -27,13 +25,13 @@ public class HttpResponseStepImpl extends HttpResponseStep {
   }
 
   @Override
-  public NextAction onSuccess(Packet packet, HttpResponse<String> response) {
+  public Void onSuccess(Packet packet, HttpResponse<String> response) {
     successResponse = response;
     return doNext(packet);
   }
 
   @Override
-  public NextAction onFailure(Packet packet, HttpResponse<String> response) {
+  public Void onFailure(Packet packet, HttpResponse<String> response) {
     failureResponse = response;
     return doNext(packet);
   }

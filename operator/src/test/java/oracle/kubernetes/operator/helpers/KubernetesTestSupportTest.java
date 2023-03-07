@@ -37,7 +37,6 @@ import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClockTestSupport;
@@ -666,14 +665,14 @@ class KubernetesTestSupportTest {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<T> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onFailure(packet, callResponse);
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<T> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onSuccess(packet, callResponse);

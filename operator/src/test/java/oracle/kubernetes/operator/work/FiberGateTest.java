@@ -68,7 +68,7 @@ class FiberGateTest {
   private static class NoopStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(packet);
     }
   }
@@ -81,7 +81,7 @@ class FiberGateTest {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       fiberGate.startFiberIfNoCurrentFiber(subStepUid, terminalStep, packet, completionCallback);
       return doNext(packet);
     }

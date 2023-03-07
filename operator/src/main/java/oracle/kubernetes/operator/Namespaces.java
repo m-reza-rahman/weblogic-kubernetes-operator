@@ -30,7 +30,6 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.tuning.TuningParameters;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.apache.commons.lang3.ArrayUtils;
@@ -271,7 +270,7 @@ public class Namespaces {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       NamespaceValidationContext validationContext = new NamespaceValidationContext(packet, domainNamespaces);
       getNonNullConfiguredDomainNamespaces().forEach(validationContext::validateConfiguredNamespace);
       List<StepAndPacket> nsStopEventSteps = getCreateNSStopEventSteps(packet, validationContext);
@@ -312,7 +311,7 @@ public class Namespaces {
       }
 
       @Override
-      public NextAction apply(Packet packet) {
+      public Void apply(Packet packet) {
         if (nsStopEventDetails.isEmpty()) {
           return doNext(getNext(), packet);
         } else {

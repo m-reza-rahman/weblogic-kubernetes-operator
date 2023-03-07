@@ -45,7 +45,6 @@ import oracle.kubernetes.operator.processing.EffectiveIntrospectorJobPodSpec;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.AuxiliaryImage;
@@ -789,7 +788,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<V1Job> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<V1Job> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
@@ -797,7 +796,7 @@ public class JobStepContext extends BasePodStepContext {
       }
     }
 
-    private NextAction updateDomainStatus(Packet packet, CallResponse<V1Job> callResponse) {
+    private Void updateDomainStatus(Packet packet, CallResponse<V1Job> callResponse) {
       return doNext(createKubernetesFailureSteps(callResponse), packet);
     }
 
@@ -806,7 +805,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1Job> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<V1Job> callResponse) {
       logJobCreated();
       V1Job job = callResponse.getResult();
       if (job != null) {

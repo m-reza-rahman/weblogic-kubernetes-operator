@@ -25,7 +25,6 @@ import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.Step.StepAndPacket;
@@ -85,7 +84,7 @@ public class ClusterResourceStatusUpdater {
      * @return Next action
      */
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
       Step step = Optional.ofNullable(info.getDomain())
           .map(domain -> createUpdateClusterResourceStatusSteps(packet, info.getClusterResources()))
@@ -112,7 +111,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<ClusterResource> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<ClusterResource> callResponse) {
       if (callResponse.getResult() != null) {
         packet.getSpi(DomainPresenceInfo.class).addClusterResource(callResponse.getResult());
       }
@@ -120,7 +119,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<ClusterResource> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<ClusterResource> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
@@ -148,7 +147,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (statusUpdateSteps.isEmpty()) {
         return doNext(getNext(), packet);
       } else {
@@ -290,7 +289,7 @@ public class ClusterResourceStatusUpdater {
 
   private static class ReadClusterResponseStep extends ResponseStep<ClusterResource> {
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<ClusterResource> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<ClusterResource> callResponse) {
       if (callResponse.getResult() != null) {
         packet.getSpi(DomainPresenceInfo.class).addClusterResource(callResponse.getResult());
       }
@@ -298,7 +297,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<ClusterResource> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<ClusterResource> callResponse) {
       return callResponse.getStatusCode() == HTTP_NOT_FOUND
           ? doNext(null, packet)
           : super.onFailure(packet, callResponse);
@@ -313,7 +312,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       // Get the ClusterResource, that was refreshed, from DomainPresenceInfo.
       DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
       ClusterResource res = info.getClusterResource(clusterName);

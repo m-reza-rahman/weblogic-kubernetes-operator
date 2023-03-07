@@ -232,7 +232,7 @@ class FiberTest {
 
   @Test
   void whenDebugEnable_breadCrumbsIncludeComments() throws NoSuchFieldException {
-    mementos.add(StaticStubSupport.install(NextAction.class, "commentPrefix", "PREFIX: "));
+    mementos.add(StaticStubSupport.install(Void.class, "commentPrefix", "PREFIX: "));
     packet.put(Fiber.DEBUG_FIBER, "PREFIX");
 
     runSteps(
@@ -266,7 +266,7 @@ class FiberTest {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       recordStep(packet);
       return doNext(packet);
     }
@@ -290,7 +290,7 @@ class FiberTest {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       recordStep(packet);
       return doNext(packet).withDebugComment(annotationGenerator);
     }
@@ -309,7 +309,7 @@ class FiberTest {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       recordStep(packet);
       return doNext(packet).withDebugComment(0, annotationGenerator);
     }
@@ -324,7 +324,7 @@ class FiberTest {
     int count = 2;
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       recordStep(packet);
       return count-- > 0 ? doRetry(packet, 50, TimeUnit.MILLISECONDS) : doNext(packet);
     }
@@ -332,7 +332,7 @@ class FiberTest {
 
   static class ThrowableStep extends BasicStep {
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       recordStep(packet);
 
       throw new RuntimeException("in test");
@@ -347,7 +347,7 @@ class FiberTest {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       recordStep(packet);
 
       return doSuspend(f -> suspendAction.accept(packet, f));
@@ -365,7 +365,7 @@ class FiberTest {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doForkJoin(nextStep, packet, createStepAndPacketList(packet));
     }
 

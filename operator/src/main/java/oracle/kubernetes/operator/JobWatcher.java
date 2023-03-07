@@ -40,7 +40,6 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.watcher.WatchListener;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -312,7 +311,7 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1PodList> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1PodList> callResponse) {
         final IntrospectorTerminationState terminationState = new IntrospectorTerminationState(jobName, packet);
         final V1Pod jobPod = getJobPod(callResponse.getResult());
 
@@ -406,7 +405,7 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
     protected DefaultResponseStep<V1Job> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(null) {
         @Override
-        public NextAction onSuccess(Packet packet, CallResponse<V1Job> callResponse) {
+        public Void onSuccess(Packet packet, CallResponse<V1Job> callResponse) {
 
           // The introspect container has exited, setting this so that the job will be considered finished
           // in the WaitDomainIntrospectorJobReadyStep and proceed reading the job pod log and process the result.

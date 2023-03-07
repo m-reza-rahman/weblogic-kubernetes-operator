@@ -34,7 +34,6 @@ import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.KubernetesExec;
 import oracle.kubernetes.operator.utils.KubernetesExecFactory;
 import oracle.kubernetes.operator.utils.KubernetesExecFactoryImpl;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.OperatorUtils;
@@ -85,7 +84,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       packet.put(SERVER_STATE_MAP, new ConcurrentHashMap<String, String>());
       packet.put(SERVER_HEALTH_MAP, new ConcurrentHashMap<String, ServerHealth>());
 
@@ -135,7 +134,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       @SuppressWarnings("unchecked")
       final ConcurrentMap<String, String> serverStateMap =
           (ConcurrentMap<String, String>) packet.get(SERVER_STATE_MAP);
@@ -267,7 +266,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       @SuppressWarnings("unchecked")
       ConcurrentMap<String, String> serverStateMap =
           (ConcurrentMap<String, String>) packet.get(SERVER_STATE_MAP);
@@ -292,7 +291,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(getNextStep(packet.getSpi(DomainPresenceInfo.class)), packet);
     }
 

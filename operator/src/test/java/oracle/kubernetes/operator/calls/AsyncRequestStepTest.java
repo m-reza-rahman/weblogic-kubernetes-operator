@@ -22,7 +22,6 @@ import oracle.kubernetes.operator.helpers.ClientPool;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
@@ -255,14 +254,14 @@ class AsyncRequestStepTest {
 
   static class TestStep extends ResponseStep<DomainList> {
     private DomainList result;
-    private NextAction nextAction;
+    private Void nextAction;
 
     TestStep() {
       super(null);
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<DomainList> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<DomainList> callResponse) {
       result = callResponse.getResult();
       nextAction = doContinueListOrNext(callResponse, packet);
       return nextAction;

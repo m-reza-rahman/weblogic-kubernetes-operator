@@ -7,7 +7,6 @@ import java.lang.reflect.Modifier;
 import java.net.HttpURLConnection;
 import java.net.http.HttpResponse;
 
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
@@ -79,7 +78,7 @@ class HttpResponseStepTest {
 
   @Test
   void whenNoResponseProvided_skipProcessing() {
-    NextAction nextAction = responseStep.apply(new Packet());
+    Void nextAction = responseStep.apply(new Packet());
 
     assertThat(responseStep.getSuccessResponse(), nullValue());
     assertThat(responseStep.getFailureResponse(), nullValue());

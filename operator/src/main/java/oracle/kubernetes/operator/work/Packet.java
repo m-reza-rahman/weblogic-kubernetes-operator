@@ -15,6 +15,7 @@ public class Packet extends AbstractMap<String, Object> implements ComponentRegi
   private final ConcurrentMap<String, Component> components =
       new ConcurrentHashMap<>();
   private final ConcurrentMap<String, Object> delegate = new ConcurrentHashMap<>();
+  private Fiber fiber;
 
   public Packet() {
   }
@@ -85,5 +86,13 @@ public class Packet extends AbstractMap<String, Object> implements ComponentRegi
   @SuppressWarnings("unchecked")
   public <T> T getValue(String key) {
     return (T) get(key);
+  }
+
+  void setFiber(Fiber fiber) {
+    this.fiber = fiber;
+  }
+
+  public Fiber getFiber() {
+    return fiber;
   }
 }

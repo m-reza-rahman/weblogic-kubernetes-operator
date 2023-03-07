@@ -22,7 +22,6 @@ import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -190,7 +189,7 @@ public class EventHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(createEventAPICall(createEventModel(packet, eventData)), packet);
     }
 
@@ -232,7 +231,7 @@ public class EventHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
         if (NAMESPACE_WATCHING_STARTED == eventData.eventItem) {
           LOGGER.info(BEGIN_MANAGING_NAMESPACE, eventData.getNamespace());
           domainNamespaces.shouldStartNamespace(eventData.getNamespace());
@@ -241,7 +240,7 @@ public class EventHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
         if (hasLoggedForbiddenNSWatchStoppedEvent(this, callResponse)) {
           return doNext(packet);
         }
@@ -282,12 +281,12 @@ public class EventHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
         restoreExistingEvent();
         if (hasLoggedForbiddenNSWatchStoppedEvent(this, callResponse)) {
           return doNext(packet);
@@ -341,7 +340,7 @@ public class EventHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
         DomainProcessorImpl.updateEventK8SObjects(callResponse.getResult());
         return doNext(packet);
       }
@@ -1170,7 +1169,7 @@ public class EventHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(createEventAPICall(createEventModel(eventData)), packet);
     }
 
@@ -1212,7 +1211,7 @@ public class EventHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
     }
@@ -1229,12 +1228,12 @@ public class EventHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
         restoreExistingClusterEvent();
         if (UnrecoverableErrorBuilder.isAsyncCallNotFoundFailure(callResponse)
             || UnrecoverableErrorBuilder.isAsyncCallConflictFailure(callResponse)) {
@@ -1271,7 +1270,7 @@ public class EventHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
         DomainProcessorImpl.updateEventK8SObjects(callResponse.getResult());
         return doNext(packet);
       }
