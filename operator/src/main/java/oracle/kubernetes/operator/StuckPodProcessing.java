@@ -21,7 +21,6 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -63,7 +62,7 @@ public class StuckPodProcessing {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1PodList> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<V1PodList> callResponse) {
       callResponse.getResult().getItems().stream()
             .filter(pod -> isStuck(pod, now))
             .forEach(pod -> addStuckPodToPacket(packet, pod));
@@ -101,7 +100,7 @@ public class StuckPodProcessing {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       final List<V1Pod> stuckPodList = getStuckPodList(packet);
       if (stuckPodList.isEmpty()) {
         return doNext(packet);
@@ -154,7 +153,7 @@ public class StuckPodProcessing {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<Object> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<Object> callResponse) {
       try (ThreadLoggingContext ignored =
                ThreadLoggingContext.setThreadContext().namespace(namespace).domainUid(domainUID)) {
         LOGGER.info(POD_FORCE_DELETED, name, namespace);

@@ -39,7 +39,6 @@ import oracle.kubernetes.operator.wlsconfig.PortDetails;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.ServerHealth;
@@ -75,7 +74,7 @@ public class ReadHealthStep extends Step {
   // overallHealthState, healthState
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     String serverName = (String) packet.get(ProcessingConstants.SERVER_NAME);
     DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
     V1Service service = info.getServerService(serverName);
@@ -189,7 +188,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       ReadHealthProcessing processing = new ReadHealthProcessing(packet, service, pod);
       if (processing.getWlsServerConfig() == null) {
         return doNext(packet);
@@ -215,7 +214,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, HttpResponse<String> response) {
+    public Void onSuccess(Packet packet, HttpResponse<String> response) {
       try {
         HealthResponseProcessing responseProcessing = new HealthResponseProcessing(packet, response);
         responseProcessing.recordStateAndHealth();
@@ -243,7 +242,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, HttpResponse<String> response) {
+    public Void onFailure(Packet packet, HttpResponse<String> response) {
       new HealthResponseProcessing(packet, response).recordFailedStateAndHealth();
       return doNext(packet);
     }

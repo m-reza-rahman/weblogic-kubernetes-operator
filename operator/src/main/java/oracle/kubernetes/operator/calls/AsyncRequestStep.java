@@ -27,7 +27,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.work.AsyncFiber;
 import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -317,7 +316,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     // we don't have the domain presence information and logging context information yet,
     // add a logging context to pass the namespace information to the LoggingFormatter
     if (requestParams.namespace != null 
@@ -419,7 +418,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
     }
 
     @Override
-    public NextAction doPotentialRetry(Step conflictStep, Packet packet, int statusCode) {
+    public Void doPotentialRetry(Step conflictStep, Packet packet, int statusCode) {
       if (mayRetryOnStatusValue(statusCode)) {
         optionallyAdjustListenTimeout(statusCode);
         return retriesLeft() ? backOffAndRetry(packet, retryStep) : null;
@@ -447,12 +446,12 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
     }
 
     @Nonnull
-    private NextAction backOffAndRetry(Packet packet, Step nextStep) {
+    private Void backOffAndRetry(Packet packet, Step nextStep) {
       final long waitTime = getNextWaitTime();
       LOGGER.finer(MessageKeys.ASYNC_RETRY, identityHash(), String.valueOf(waitTime),
             requestParams.call, requestParams.namespace, requestParams.name);
 
-      final NextAction na = new NextAction();
+      final Void na = new Void();
       na.delay(nextStep, packet, waitTime, TimeUnit.MILLISECONDS);
       return na;
     }

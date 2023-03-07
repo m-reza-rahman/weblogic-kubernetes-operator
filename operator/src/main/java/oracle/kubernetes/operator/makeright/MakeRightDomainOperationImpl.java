@@ -45,7 +45,6 @@ import oracle.kubernetes.operator.steps.DeleteDomainStep;
 import oracle.kubernetes.operator.steps.ManagedServersUpStep;
 import oracle.kubernetes.operator.steps.MonitoringExporterSteps;
 import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
@@ -243,7 +242,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   static class ListClusterResourcesResponseStep extends DefaultResponseStep<ClusterList> {
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<ClusterList> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<ClusterList> callResponse) {
       DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
       callResponse.getResult().getItems().stream().filter(c -> isForDomain(c, info))
           .forEach(info::addClusterResource);
@@ -271,7 +270,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private class UnregisterStatusUpdaterStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       DomainPresenceInfo.fromPacket(packet).ifPresent(this::unregisterStatusUpdater);
       return doNext(packet);
     }
@@ -320,7 +319,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private static class IntrospectionRequestStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       final String requestedIntrospectVersion = getRequestedIntrospectVersion(packet);
       if (!Objects.equals(requestedIntrospectVersion, packet.get(INTROSPECTION_STATE_LABEL))) {
         packet.put(DOMAIN_INTROSPECT_REQUESTED, Optional.ofNullable(requestedIntrospectVersion).orElse("0"));
@@ -340,7 +339,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private class DomainStatusStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       DomainPresenceInfo.fromPacket(packet).ifPresent(executor::scheduleDomainStatusUpdates);
       return doNext(packet);
     }
@@ -352,7 +351,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
       return doNext(new CallBuilder().readDomainAsync(info.getDomainName(), info.getNamespace(),
           new ReadDomainResponseStep(getNext())), packet);
@@ -365,7 +364,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
       DomainPresenceInfo.fromPacket(packet).ifPresent(info -> updateCache(info, callResponse.getResult()));
       return doNext(packet);
     }
@@ -380,7 +379,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
       if (callResponse.getStatusCode() == HTTP_NOT_FOUND) {
         DomainPresenceInfo.fromPacket(packet).ifPresent(i -> i.setDeleting(true));
         return doNext(createDomainDownPlan(), packet);
@@ -392,7 +391,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private class UnregisterEventK8SObjectsStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       DomainPresenceInfo.fromPacket(packet).ifPresent(executor::unregisterDomainEventK8SObjects);
       return doNext(packet);
     }
@@ -408,7 +407,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (deleting) {
         executor.unregisterDomainPresenceInfo(info);
       } else {
@@ -478,7 +477,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private static class TailStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(packet);
     }
   }

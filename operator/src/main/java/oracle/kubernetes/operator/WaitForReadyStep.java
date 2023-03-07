@@ -15,7 +15,6 @@ import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.AsyncFiber;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -169,7 +168,7 @@ abstract class WaitForReadyStep<T> extends Step {
   }
 
   @Override
-  public final NextAction apply(Packet packet) {
+  public final Void apply(Packet packet) {
     if (shouldTerminateFiber(initialResource)) {
       return doTerminate(createTerminationException(initialResource), packet);
     } else if (isReady(initialResource)) {
@@ -235,7 +234,7 @@ abstract class WaitForReadyStep<T> extends Step {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
       return doNext(createReadAsyncStep(resourceName, info.getNamespace(),
               info.getDomainUid(), responseStep), packet);
@@ -253,7 +252,7 @@ abstract class WaitForReadyStep<T> extends Step {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<V> callResponse) {
       MakeRightDomainOperation makeRightDomainOperation =
               (MakeRightDomainOperation)packet.get(MAKE_RIGHT_DOMAIN_OPERATION);
       if (makeRightDomainOperation != null) {

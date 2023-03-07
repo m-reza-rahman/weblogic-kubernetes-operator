@@ -150,7 +150,7 @@ public class FiberGate {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       WaitForOldFiberStep c = current.get();
       Fiber o = c != null ? c.old.getAndSet(null) : null;
       if (o == null) {

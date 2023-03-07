@@ -78,7 +78,6 @@ import oracle.kubernetes.operator.calls.SynchronousCallFactory;
 import oracle.kubernetes.operator.webhooks.model.Scale;
 import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -1378,7 +1377,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       numCalls++;
       try {
         Component oldResponse = packet.getComponents().remove(RESPONSE_COMPONENT_NAME);

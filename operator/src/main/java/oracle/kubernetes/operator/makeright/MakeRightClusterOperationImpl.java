@@ -14,7 +14,6 @@ import oracle.kubernetes.operator.MakeRightExecutor;
 import oracle.kubernetes.operator.helpers.ClusterPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.ClusterResourceEventData;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.jetbrains.annotations.NotNull;
@@ -120,7 +119,7 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (deleting) {
         executor.unregisterClusterPresenceInfo(info);
       } else {

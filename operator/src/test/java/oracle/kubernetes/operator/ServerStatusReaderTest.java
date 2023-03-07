@@ -24,7 +24,6 @@ import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
@@ -239,7 +238,7 @@ class ServerStatusReaderTest extends HttpUserAgentTest {
     public Step apply(Step next) {
       return new Step() {
         @Override
-        public NextAction apply(Packet packet) {
+        public Void apply(Packet packet) {
           serverNames.add((String) packet.get(ProcessingConstants.SERVER_NAME));
           return doNext(packet);
         }

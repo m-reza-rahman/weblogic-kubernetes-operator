@@ -36,7 +36,6 @@ import oracle.kubernetes.operator.wlsconfig.NetworkAccessPoint;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.AdminService;
@@ -219,11 +218,11 @@ public class ServiceHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doVerifyService(getNext(), packet);
     }
 
-    private NextAction doVerifyService(Step next, Packet packet) {
+    private Void doVerifyService(Step next, Packet packet) {
       return doNext(createContext(packet).verifyService(next), packet);
     }
 
@@ -619,7 +618,7 @@ public class ServiceHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public NextAction apply(Packet packet) {
+      public Void apply(Packet packet) {
         return doNext(
             new CallBuilder()
                 .readServiceAsync(
@@ -660,14 +659,14 @@ public class ServiceHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<V1Service> callResponse) {
         return callResponse.getStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
         V1Service service = callResponse.getResult();
         if (service == null) {
           removeServiceFromRecord();
@@ -684,14 +683,14 @@ public class ServiceHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<V1Service> callResponse) {
         return callResponse.getStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
         return doNext(createReplacementService(getNext()), packet);
       }
     }
@@ -705,7 +704,7 @@ public class ServiceHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<V1Service> callResponse) {
         if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -713,12 +712,12 @@ public class ServiceHelper {
         }
       }
 
-      private NextAction updateDomainStatus(Packet packet, CallResponse<V1Service> callResponse) {
+      private Void updateDomainStatus(Packet packet, CallResponse<V1Service> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
         logServiceCreated(messageKey);
         addServiceToRecord(callResponse.getResult());
         return doNext(packet);
@@ -735,7 +734,7 @@ public class ServiceHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
       return doNext(createActionStep(info), packet);
     }

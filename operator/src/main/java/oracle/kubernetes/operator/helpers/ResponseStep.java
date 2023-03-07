@@ -20,7 +20,6 @@ import oracle.kubernetes.operator.calls.RetryStrategy;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
@@ -78,8 +77,8 @@ public abstract class ResponseStep<T> extends Step {
   }
 
   @Override
-  public final NextAction apply(Packet packet) {
-    NextAction nextAction = getActionForCallResponse(packet);
+  public final Void apply(Packet packet) {
+    Void nextAction = getActionForCallResponse(packet);
 
     if (nextAction == null) { // no call response, since call timed-out
       nextAction = getPotentialRetryAction(packet);
@@ -93,7 +92,7 @@ public abstract class ResponseStep<T> extends Step {
     return nextAction;
   }
 
-  private NextAction getActionForCallResponse(Packet packet) {
+  private Void getActionForCallResponse(Packet packet) {
     return Optional.ofNullable(getCallResponse(packet)).map(c -> fromCallResponse(packet, c)).orElse(null);
   }
 
@@ -102,11 +101,11 @@ public abstract class ResponseStep<T> extends Step {
     return packet.getSpi(CallResponse.class);
   }
 
-  private NextAction fromCallResponse(Packet packet, CallResponse<T> callResponse) {
+  private Void fromCallResponse(Packet packet, CallResponse<T> callResponse) {
     return callResponse.isFailure() ? onFailure(packet, callResponse) : onSuccess(packet, callResponse);
   }
 
-  private NextAction getPotentialRetryAction(Packet packet) {
+  private Void getPotentialRetryAction(Packet packet) {
     return Optional.ofNullable(doPotentialRetry(conflictStep, packet, getCallResponse(packet))).orElse(doEnd(packet));
   }
 
@@ -118,7 +117,7 @@ public abstract class ResponseStep<T> extends Step {
    * @param packet Packet
    * @return Next action for list continue
    */
-  protected final NextAction doContinueListOrNext(CallResponse<T> callResponse, Packet packet) {
+  protected final Void doContinueListOrNext(CallResponse<T> callResponse, Packet packet) {
     return doContinueListOrNext(callResponse, packet, getNext());
   }
 
@@ -131,7 +130,7 @@ public abstract class ResponseStep<T> extends Step {
    * @param next Next step, if no continuation
    * @return Next action for list continue
    */
-  protected final NextAction doContinueListOrNext(CallResponse<T> callResponse, Packet packet, Step next) {
+  protected final Void doContinueListOrNext(CallResponse<T> callResponse, Packet packet, Step next) {
     String cont = accessContinue(callResponse.getResult());
     if (cont != null) {
       packet.put(CONTINUE, cont);
@@ -169,14 +168,14 @@ public abstract class ResponseStep<T> extends Step {
    * @param callResponse the response from the call
    * @return Next action for retry or null, if no retry is warranted
    */
-  private NextAction doPotentialRetry(Step conflictStep, Packet packet, CallResponse<T> callResponse) {
+  private Void doPotentialRetry(Step conflictStep, Packet packet, CallResponse<T> callResponse) {
     return Optional.ofNullable(packet.getSpi(RetryStrategy.class))
         .map(rs -> rs.doPotentialRetry(conflictStep, packet,
             Optional.ofNullable(callResponse).map(CallResponse::getStatusCode).orElse(FIBER_TIMEOUT)))
         .orElseGet(() -> logNoRetry(packet, callResponse));
   }
 
-  private NextAction logNoRetry(Packet packet, CallResponse<T> callResponse) {
+  private Void logNoRetry(Packet packet, CallResponse<T> callResponse) {
     if ((callResponse != null) && (callResponse.getStatusCode() != HTTP_NOT_FOUND)) {
       addDomainFailureStatus(packet, callResponse.getRequestParams(), callResponse.getE());
       if (LOGGER.isWarningEnabled()) {
@@ -230,7 +229,7 @@ public abstract class ResponseStep<T> extends Step {
    * @param packet Packet
    * @return Next action for the original request
    */
-  private NextAction resetRetryStrategyAndReinvokeRequest(Packet packet) {
+  private Void resetRetryStrategyAndReinvokeRequest(Packet packet) {
     RetryStrategy retryStrategy = packet.getSpi(RetryStrategy.class);
     if (retryStrategy != null) {
       retryStrategy.reset();
@@ -246,7 +245,7 @@ public abstract class ResponseStep<T> extends Step {
    * @param callResponse the result of the call
    * @return Next action for fiber processing, which may be a retry
    */
-  public NextAction onFailure(Packet packet, CallResponse<T> callResponse) {
+  public Void onFailure(Packet packet, CallResponse<T> callResponse) {
     return onFailure(null, packet, callResponse);
   }
 
@@ -262,12 +261,12 @@ public abstract class ResponseStep<T> extends Step {
    * @param callResponse the result of the call
    * @return Next action for fiber processing, which may be a retry
    */
-  public NextAction onFailure(Step conflictStep, Packet packet, CallResponse<T> callResponse) {
+  public Void onFailure(Step conflictStep, Packet packet, CallResponse<T> callResponse) {
     return Optional.ofNullable(doPotentialRetry(conflictStep, packet, callResponse))
           .orElseGet(() -> onFailureNoRetry(packet, callResponse));
   }
 
-  protected NextAction onFailureNoRetry(Packet packet, CallResponse<T> callResponse) {
+  protected Void onFailureNoRetry(Packet packet, CallResponse<T> callResponse) {
     return doTerminate(createTerminationException(packet, callResponse), packet);
   }
 
@@ -297,7 +296,7 @@ public abstract class ResponseStep<T> extends Step {
    * @param callResponse the result of the call
    * @return Next action for fiber processing
    */
-  public NextAction onSuccess(Packet packet, CallResponse<T> callResponse) {
+  public Void onSuccess(Packet packet, CallResponse<T> callResponse) {
     throw new IllegalStateException("Must be overridden, if called");
   }
 }

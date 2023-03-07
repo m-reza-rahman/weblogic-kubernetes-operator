@@ -22,7 +22,6 @@ import io.kubernetes.client.openapi.models.V1ServiceList;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
@@ -212,7 +211,7 @@ class NamespacedResources {
 
   class CompletionStep extends Step {
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       processors.forEach(p -> p.completeProcessing(packet));
       return doNext(packet);
     }
@@ -226,7 +225,7 @@ class NamespacedResources {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       Optional.ofNullable(watcher).ifPresent(Watcher::pause);
       return doNext(packet);
     }
@@ -240,7 +239,7 @@ class NamespacedResources {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<L> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<L> callResponse) {
       processors.forEach(p -> p.accept(callResponse.getResult()));
       return doContinueListOrNext(callResponse, packet);
     }

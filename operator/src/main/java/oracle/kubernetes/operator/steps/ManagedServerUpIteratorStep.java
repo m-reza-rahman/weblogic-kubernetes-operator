@@ -28,7 +28,6 @@ import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -63,7 +62,7 @@ public class ManagedServerUpIteratorStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     if (startupInfos.isEmpty()) {
       return doNext(packet);
     }
@@ -181,7 +180,7 @@ public class ManagedServerUpIteratorStep extends Step {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
 
       if (startDetailsQueue.isEmpty()) {
         return doNext(packet);

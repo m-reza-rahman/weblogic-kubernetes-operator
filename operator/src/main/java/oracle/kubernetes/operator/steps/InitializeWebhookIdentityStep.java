@@ -32,7 +32,6 @@ import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.utils.PathSupport;
 import oracle.kubernetes.operator.utils.SelfSignedCertUtils;
 import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.apache.commons.io.FileUtils;
@@ -77,7 +76,7 @@ public class InitializeWebhookIdentityStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     try {
       if (isWebHoodSslIdentityAlreadyCreated()) {
         reuseIdentity();
@@ -107,7 +106,7 @@ public class InitializeWebhookIdentityStep extends Step {
     FileUtils.copyFile(keyFile, webhookKeyFile);
   }
 
-  private NextAction createIdentity(Packet packet) throws IdentityInitializationException {
+  private Void createIdentity(Packet packet) throws IdentityInitializationException {
     try {
       final KeyPair keyPair = identityFactory.createKeyPair();
       final String key = identityFactory.convertToPEM(keyPair.getPrivate());
@@ -167,7 +166,7 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
       V1Secret existingSecret = callResponse.getResult();
       Map<String, byte[]> data = Optional.ofNullable(existingSecret).map(V1Secret::getData).orElse(new HashMap<>());
       if (existingSecret == null) {
@@ -228,7 +227,7 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<V1Secret> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<V1Secret> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallConflictFailure(callResponse)) {
         return doNext(Step.chain(readSecretResponseStep(getNext(), webhookIdentity), getNext()), packet);
       } else {

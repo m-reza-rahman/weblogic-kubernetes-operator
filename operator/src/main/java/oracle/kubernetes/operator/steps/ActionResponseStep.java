@@ -4,7 +4,6 @@
 package oracle.kubernetes.operator.steps;
 
 import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -23,7 +22,7 @@ public abstract class ActionResponseStep<T> extends DefaultResponseStep<T> {
   public abstract Step createSuccessStep(T result, Step next);
 
   @Override
-  public NextAction onSuccess(Packet packet, CallResponse<T> callResponse) {
+  public Void onSuccess(Packet packet, CallResponse<T> callResponse) {
     return callResponse.getResult() == null
         ? doNext(packet)
         : doNext(createSuccessStep(callResponse.getResult(),
@@ -39,7 +38,7 @@ public abstract class ActionResponseStep<T> extends DefaultResponseStep<T> {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return ActionResponseStep.this.doContinueListOrNext(callResponse, packet);
     }
   }

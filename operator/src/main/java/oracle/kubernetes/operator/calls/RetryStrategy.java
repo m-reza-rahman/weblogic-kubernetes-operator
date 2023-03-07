@@ -4,7 +4,6 @@
 package oracle.kubernetes.operator.calls;
 
 import oracle.kubernetes.operator.helpers.ResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -21,7 +20,7 @@ public interface RetryStrategy {
    * @return Desired next action which should specify retryStep. Return null when call will not be
    *     retried.
    */
-  NextAction doPotentialRetry(
+  Void doPotentialRetry(
       Step conflictStep,
       Packet packet,
       int statusCode);

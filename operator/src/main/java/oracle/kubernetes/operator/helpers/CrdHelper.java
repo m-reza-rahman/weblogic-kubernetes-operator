@@ -53,7 +53,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.utils.PathSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -197,7 +196,7 @@ public class CrdHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(context.verifyCrd(getNext()), packet);
     }
   }
@@ -214,7 +213,7 @@ public class CrdHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(context.verifyCrd(getNext()), packet);
     }
   }
@@ -554,7 +553,7 @@ public class CrdHelper {
       }
 
       @Override
-      public NextAction onSuccess(
+      public Void onSuccess(
           Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
         V1CustomResourceDefinition existingCrd = callResponse.getResult();
         if (existingCrd == null) {
@@ -571,7 +570,7 @@ public class CrdHelper {
       }
 
       @Override
-      protected NextAction onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+      protected Void onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
         return isNotAuthorizedOrForbidden(callResponse)
             ? doNext(packet) : super.onFailureNoRetry(packet, callResponse);
       }
@@ -583,20 +582,20 @@ public class CrdHelper {
       }
 
       @Override
-      public NextAction onFailure(
+      public Void onFailure(
           Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
         return super.onFailure(conflictStep, packet, callResponse);
       }
 
       @Override
-      public NextAction onSuccess(
+      public Void onSuccess(
           Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.CREATING_CRD, callResponse.getResult().getMetadata().getName());
         return doNext(packet);
       }
 
       @Override
-      protected NextAction onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+      protected Void onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.CREATE_CRD_FAILED, callResponse.getE().getResponseBody());
         return isNotAuthorizedOrForbidden(callResponse)
             ? doNext(packet) : super.onFailureNoRetry(packet, callResponse);
@@ -609,20 +608,20 @@ public class CrdHelper {
       }
 
       @Override
-      public NextAction onFailure(
+      public Void onFailure(
           Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
         return super.onFailure(conflictStep, packet, callResponse);
       }
 
       @Override
-      public NextAction onSuccess(
+      public Void onSuccess(
           Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.CREATING_CRD, callResponse.getResult().getMetadata().getName());
         return doNext(packet);
       }
 
       @Override
-      protected NextAction onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+      protected Void onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.REPLACE_CRD_FAILED, callResponse.getE().getResponseBody());
         return isNotAuthorizedOrForbidden(callResponse)
             || ((callResponse.getE().getCause() instanceof StreamResetException)

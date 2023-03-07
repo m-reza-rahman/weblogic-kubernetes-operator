@@ -23,7 +23,6 @@ import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -67,7 +66,7 @@ public class PodDisruptionBudgetHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(createContext(packet).verifyPodDisruptionBudget(getNext()), packet);
     }
 
@@ -99,7 +98,7 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
         if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -107,12 +106,12 @@ public class PodDisruptionBudgetHelper {
         }
       }
 
-      private NextAction updateDomainStatus(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      private Void updateDomainStatus(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
         logPodDisruptionBudgetCreated(messageKey);
         addPodDisruptionBudgetToRecord(callResponse.getResult());
         return doNext(packet);
@@ -125,14 +124,14 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
         return callResponse.getStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
         V1PodDisruptionBudget podDisruptionBudget = callResponse.getResult();
         if (podDisruptionBudget == null) {
           removePodDisruptionBudgetFromRecord();
@@ -149,14 +148,14 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
         return callResponse.getStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
         logPodDisruptionBudgetPatched();
         return doNext(packet);
       }
@@ -164,7 +163,7 @@ public class PodDisruptionBudgetHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public NextAction apply(Packet packet) {
+      public Void apply(Packet packet) {
         return doNext(
                 new CallBuilder().readPodDisruptionBudgetAsync(getPDBName(), info.getNamespace(),
                         new PodDisruptionBudgetContext.ReadResponseStep(conflictStep)), packet);

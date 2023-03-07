@@ -6,7 +6,6 @@ package oracle.kubernetes.operator.steps;
 import java.util.Collection;
 import java.util.Iterator;
 
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -23,7 +22,7 @@ public abstract class AbstractListStep<T> extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     if (it.hasNext()) {
       return doNext(createActionStep(it.next()), packet);
     } else {

@@ -25,7 +25,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.Step.StepAndPacket;
@@ -98,7 +97,7 @@ public class RollingHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       final StepContext context = new StepContext(packet);
       context.classifyRollingEntries(rolling);
 
@@ -199,7 +198,7 @@ public class RollingHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doForkJoin(getNext(), packet, serversThatCanRestartNow);
     }
   }
@@ -231,7 +230,7 @@ public class RollingHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       StepContext context = new StepContext(packet, clusterName);
       List<String> readyServers = context.getReadyServers(packet.getValue(DOMAIN_TOPOLOGY));
       if (loggedServersSize != servers.size() || !Objects.equals(loggedReadyServers, readyServers.toString())) {

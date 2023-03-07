@@ -24,7 +24,6 @@ import oracle.kubernetes.operator.steps.InitializeWebhookIdentityStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.webhooks.WebhookRestServer;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -206,17 +205,17 @@ public class WebhookMain extends BaseMain {
   }
 
   // on failure, aborts the processing.
-  private class  CrdPresenceResponseStep<L extends KubernetesListObject> extends DefaultResponseStep<L> {
+  private class CrdPresenceResponseStep<L extends KubernetesListObject> extends DefaultResponseStep<L> {
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<L> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<L> callResponse) {
       warnedOfCrdAbsence = false;
       crdPresenceCheckCount.set(0);
       return super.onSuccess(packet, callResponse);
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<L> callResponse) {
+    public Void onFailure(Packet packet, CallResponse<L> callResponse) {
       if (crdPresenceCheckCount.getAndIncrement() < getCrdPresenceFailureRetryMaxCount()) {
         return doNext(this, packet);
       }
@@ -249,7 +248,7 @@ public class WebhookMain extends BaseMain {
 
   public static class CheckFailureAndCreateEventStep extends Step {
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       Exception failure = packet.getSpi(Exception.class);
       if (failure != null) {
         return doNext(createEventStep(new EventHelper.EventData(WEBHOOK_STARTUP_FAILED, failure.getMessage())

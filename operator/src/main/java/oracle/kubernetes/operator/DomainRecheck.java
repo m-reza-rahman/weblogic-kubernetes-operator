@@ -31,7 +31,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -90,7 +89,7 @@ class DomainRecheck {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       NamespaceStatus nss = domainNamespaces.getNamespaceStatus(ns);
 
       // we don't have the domain presence information yet
@@ -158,7 +157,7 @@ class DomainRecheck {
     // If unable to list the namespaces, we may still be able to start them if we are using
     // a strategy that specifies them explicitly.
     @Override
-    protected NextAction onFailureNoRetry(Packet packet, CallResponse<V1NamespaceList> callResponse) {
+    protected Void onFailureNoRetry(Packet packet, CallResponse<V1NamespaceList> callResponse) {
       return useBackupStrategy(callResponse)
             ? doNext(createStartNamespacesStep(Namespaces.getConfiguredDomainNamespaces()), packet)
             : super.onFailureNoRetry(packet, callResponse);
@@ -170,7 +169,7 @@ class DomainRecheck {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1NamespaceList> callResponse) {
+    public Void onSuccess(Packet packet, CallResponse<V1NamespaceList> callResponse) {
       final Set<String> namespacesToStart = getNamespacesToStart(callResponse.getResult());
       Namespaces.getFoundDomainNamespaces(packet).addAll(namespacesToStart);
 
@@ -236,7 +235,7 @@ class DomainRecheck {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (domainNamespaces.shouldStartNamespace(ns)) {
         return doNext(addNSWatchingStartingEventsStep(), packet);
       }
@@ -283,7 +282,7 @@ class DomainRecheck {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (domainNamespaces == null) {
         return doNext(packet);
       } else {

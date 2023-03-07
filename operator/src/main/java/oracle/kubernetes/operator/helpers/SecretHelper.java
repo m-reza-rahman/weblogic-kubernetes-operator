@@ -12,7 +12,6 @@ import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -57,7 +56,7 @@ public class SecretHelper {
     private String namespace;
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       DomainPresenceInfo dpi = packet.getSpi(DomainPresenceInfo.class);
       V1Secret secret = dpi.getWebLogicCredentialsSecret();
       if (secret != null) {
@@ -91,7 +90,7 @@ public class SecretHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1Secret> callResponse) {
+      public Void onFailure(Packet packet, CallResponse<V1Secret> callResponse) {
         if (callResponse.getStatusCode() == HTTP_NOT_FOUND) {
           LoggingFilter loggingFilter = packet.getValue(LoggingFilter.LOGGING_FILTER_PACKET_KEY);
           LOGGER.warning(loggingFilter, SECRET_NOT_FOUND, secretName, namespace, WEBLOGIC_CREDENTIALS);
@@ -101,7 +100,7 @@ public class SecretHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
+      public Void onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
         V1Secret secret = callResponse.getResult();
         packet.getSpi(DomainPresenceInfo.class).setWebLogicCredentialsSecret(secret);
         insertAuthorizationSource(packet, secret);
