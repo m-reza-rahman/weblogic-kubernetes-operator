@@ -139,8 +139,7 @@ public class DomainValidationSteps {
       List<String> validationFailures = domain.getValidationFailures(new KubernetesResourceLookupImpl(packet));
       String errorMsg = getErrorMessage(fatalValidationFailures, validationFailures);
       if (validationFailures.isEmpty()) {
-        return doNext(createRemoveSelectedFailuresStep(getNext(), DOMAIN_INVALID), packet)
-              .withDebugComment(packet, this::domainValidated);
+        return doNext(createRemoveSelectedFailuresStep(getNext(), DOMAIN_INVALID), packet);
       } else {
         LOGGER.severe(DOMAIN_VALIDATION_FAILED, domain.getDomainUid(), errorMsg);
         return doNext(DomainStatusUpdater.createDomainInvalidFailureSteps(errorMsg), packet);
@@ -162,10 +161,6 @@ public class DomainValidationSteps {
       return String.join(lineSeparator(), validationFailures);
     }
 
-    private String domainValidated(Packet packet) {
-      return "Validated " + DomainPresenceInfo.fromPacket(packet).orElse(null);
-    }
-    
   }
 
   static class DomainAdditionalValidationStep extends Step {

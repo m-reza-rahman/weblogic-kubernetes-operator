@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import static java.net.HttpURLConnection.HTTP_GATEWAY_TIMEOUT;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
-import static oracle.kubernetes.operator.calls.AsyncRequestStep.RESPONSE_COMPONENT_NAME;
+import static oracle.kubernetes.operator.calls.RequestStep.RESPONSE_COMPONENT_NAME;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionMatcher.hasCondition;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.INTROSPECTION;
@@ -73,8 +73,8 @@ class AsyncRequestStepTest {
   private final CallFactoryStub callFactory = new CallFactoryStub();
   private final TestStep nextStep = new TestStep();
   private final ClientPool helper = ClientPool.getInstance();
-  private final AsyncRequestStep<DomainList> asyncRequestStep =
-      new AsyncRequestStep<>(
+  private final RequestStep<DomainList> asyncRequestStep =
+      new RequestStep<>(
           nextStep,
           requestParams,
           callFactory,
@@ -137,7 +137,7 @@ class AsyncRequestStepTest {
     callFactory.sendSuccessfulCallback(largeListPartOne);
 
     assertThat(nextStep.result, equalTo(largeListPartOne));
-    assertThat(nextStep.nextAction.getNext(), instanceOf(AsyncRequestStep.class));
+    assertThat(nextStep.nextAction.getNext(), instanceOf(RequestStep.class));
   }
 
   @Test

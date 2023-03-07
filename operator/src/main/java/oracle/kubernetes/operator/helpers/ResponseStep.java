@@ -13,7 +13,7 @@ import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.ApiException;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.builders.CallParams;
-import oracle.kubernetes.operator.calls.AsyncRequestStep;
+import oracle.kubernetes.operator.calls.RequestStep;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.RequestParams;
 import oracle.kubernetes.operator.calls.RetryStrategy;
@@ -28,9 +28,9 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_FORBIDDEN;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAUTHORIZED;
-import static oracle.kubernetes.operator.calls.AsyncRequestStep.CONTINUE;
-import static oracle.kubernetes.operator.calls.AsyncRequestStep.FIBER_TIMEOUT;
-import static oracle.kubernetes.operator.calls.AsyncRequestStep.accessContinue;
+import static oracle.kubernetes.operator.calls.RequestStep.CONTINUE;
+import static oracle.kubernetes.operator.calls.RequestStep.FIBER_TIMEOUT;
+import static oracle.kubernetes.operator.calls.RequestStep.accessContinue;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERNETES;
 
@@ -86,7 +86,7 @@ public abstract class ResponseStep<T> extends Step {
 
     if (previousStep != nextAction.getNext()) { // not a retry, clear out old response
       packet.remove(CONTINUE);
-      packet.getComponents().remove(AsyncRequestStep.RESPONSE_COMPONENT_NAME);
+      packet.getComponents().remove(RequestStep.RESPONSE_COMPONENT_NAME);
     }
 
     return nextAction;

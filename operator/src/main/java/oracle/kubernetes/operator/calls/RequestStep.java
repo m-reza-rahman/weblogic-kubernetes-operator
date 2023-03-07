@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.calls;
@@ -43,10 +43,9 @@ import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorName
 import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadContext;
 
 /**
- * A Step driven by an asynchronous call to the Kubernetes API, which results in a series of
- * callbacks until canceled.
+ * A Step driven by a call to the Kubernetes API.
  */
-public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
+public class RequestStep<T> extends Step implements RetryStrategyListener {
   public static final String RESPONSE_COMPONENT_NAME = "response";
   public static final String CONTINUE = "continue";
   public static final int FIBER_TIMEOUT = 0;
@@ -81,7 +80,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
    * @param labelSelector Label selector
    * @param resourceVersion Resource version
    */
-  public AsyncRequestStep(
+  public RequestStep(
       ResponseStep<T> next,
       RequestParams requestParams,
       CallFactory<T> factory,
@@ -110,7 +109,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
    * @param labelSelector Label selector
    * @param resourceVersion Resource version
    */
-  public AsyncRequestStep(
+  public RequestStep(
           ResponseStep<T> next,
           RequestParams requestParams,
           CallFactory<T> factory,
@@ -174,7 +173,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
     public AsyncRequestStepProcessing(Packet packet, RetryStrategy retry, String cont) {
       this.packet = packet;
       retryStrategy = Optional.ofNullable(retry)
-            .orElse(new DefaultRetryStrategy(maxRetryCount, AsyncRequestStep.this, AsyncRequestStep.this));
+            .orElse(new DefaultRetryStrategy(maxRetryCount, RequestStep.this, RequestStep.this));
       this.cont = Optional.ofNullable(cont).orElse(null);
       client = helper.take();
     }
