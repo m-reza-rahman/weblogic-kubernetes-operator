@@ -19,8 +19,7 @@ import io.kubernetes.client.openapi.models.V1JobList;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetList;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -239,8 +238,8 @@ class NamespacedResources {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<L> callResponse) {
-      processors.forEach(p -> p.accept(callResponse.getResult()));
+    public Void onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
+      processors.forEach(p -> p.accept(callResponse.getObject()));
       return doContinueListOrNext(callResponse, packet);
     }
   }

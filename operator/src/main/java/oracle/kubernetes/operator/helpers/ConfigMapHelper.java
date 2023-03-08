@@ -25,6 +25,7 @@ import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import jakarta.json.JsonValue;
@@ -34,7 +35,7 @@ import oracle.kubernetes.operator.DomainStatusUpdater;
 import oracle.kubernetes.operator.IntrospectorConfigMapConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.http.rest.Scan;
 import oracle.kubernetes.operator.http.rest.ScanCache;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -318,13 +319,13 @@ public class ConfigMapHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
         DomainResource domain = DomainPresenceInfo.fromPacket(packet).map(DomainPresenceInfo::getDomain).orElse(null);
         Optional.ofNullable(domain).map(DomainResource::getIntrospectVersion)
               .ifPresent(value -> addLabel(INTROSPECTION_STATE_LABEL, value));
         Optional.ofNullable(domain).map(DomainResource::getMetadata).map(V1ObjectMeta::getGeneration)
                 .ifPresent(value -> addLabel(INTROSPECTION_DOMAIN_SPEC_GENERATION, value.toString()));
-        V1ConfigMap existingMap = withoutTransientData(callResponse.getResult());
+        V1ConfigMap existingMap = withoutTransientData(callResponse.getObject());
         if (existingMap == null) {
           return doNext(createConfigMap(getNext()), packet);
         } else if (isOutdated(existingMap)) {
@@ -422,12 +423,12 @@ public class ConfigMapHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
         return super.onFailure(conflictStep, packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
         LOGGER.info(MessageKeys.CM_CREATED, getResourceName(), namespace);
         recordCurrentMap(packet, callResponse.getResult());
         return doNext(packet);
@@ -440,12 +441,12 @@ public class ConfigMapHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
         return super.onFailure(conflictStep, packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
         LOGGER.info(MessageKeys.CM_REPLACED, getResourceName(), namespace);
         recordCurrentMap(packet, callResponse.getResult());
         return doNext(packet);
@@ -460,7 +461,7 @@ public class ConfigMapHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
         LOGGER.info(MessageKeys.CM_PATCHED, getResourceName(), namespace);
         return doNext(packet);
       }
@@ -766,8 +767,8 @@ public class ConfigMapHelper {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1ConfigMapList> callResponse) {
-      final List<String> configMapNames = getIntrospectorOrFluentdConfigMapNames(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMapList> callResponse) {
+      final List<String> configMapNames = getIntrospectorOrFluentdConfigMapNames(callResponse.getObject());
       if (configMapNames.isEmpty()) {
         return doNext(packet);
       } else {
@@ -880,7 +881,7 @@ public class ConfigMapHelper {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
       V1ConfigMap result = callResponse.getResult();
       copyMapEntryToPacket(result, packet, SECRETS_MD_5);
       copyMapEntryToPacket(result, packet, DOMAINZIP_HASH);
@@ -993,7 +994,7 @@ public class ConfigMapHelper {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
       Optional.ofNullable(callResponse.getResult())
             .map(V1ConfigMap::getMetadata)
             .map(V1ObjectMeta::getLabels)
@@ -1013,7 +1014,7 @@ public class ConfigMapHelper {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
       LOGGER.info(MessageKeys.FLUENTD_CONFIGMAP_CREATED);
       return doNext(packet);
     }
@@ -1027,7 +1028,7 @@ public class ConfigMapHelper {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
       LOGGER.info(MessageKeys.FLUENTD_CONFIGMAP_REPLACED);
       return doNext(packet);
     }
@@ -1056,7 +1057,7 @@ public class ConfigMapHelper {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1ConfigMap> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
       DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
       String existingConfigMapData = Optional.ofNullable(callResponse.getResult())
               .map(V1ConfigMap::getData)

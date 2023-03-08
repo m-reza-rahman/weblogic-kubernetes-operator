@@ -13,15 +13,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.ClusterResourceEventData;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
-import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -110,15 +109,15 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<ClusterResource> callResponse) {
-      if (callResponse.getResult() != null) {
-        packet.getSpi(DomainPresenceInfo.class).addClusterResource(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
+      if (callResponse.getObject() != null) {
+        packet.getSpi(DomainPresenceInfo.class).addClusterResource(callResponse.getObject());
       }
       return doNext(packet);
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<ClusterResource> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
@@ -288,16 +287,16 @@ public class ClusterResourceStatusUpdater {
 
   private static class ReadClusterResponseStep extends ResponseStep<ClusterResource> {
     @Override
-    public Void onSuccess(Packet packet, CallResponse<ClusterResource> callResponse) {
-      if (callResponse.getResult() != null) {
-        packet.getSpi(DomainPresenceInfo.class).addClusterResource(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
+      if (callResponse.getObject() != null) {
+        packet.getSpi(DomainPresenceInfo.class).addClusterResource(callResponse.getObject());
       }
       return doNext(packet);
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<ClusterResource> callResponse) {
-      return callResponse.getStatusCode() == HTTP_NOT_FOUND
+    public Void onFailure(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
+      return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
           ? doNext(null, packet)
           : super.onFailure(packet, callResponse);
     }

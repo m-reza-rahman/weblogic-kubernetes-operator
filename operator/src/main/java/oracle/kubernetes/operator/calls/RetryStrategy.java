@@ -3,7 +3,6 @@
 
 package oracle.kubernetes.operator.calls;
 
-import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -11,7 +10,7 @@ import oracle.kubernetes.operator.work.Step;
 public interface RetryStrategy {
 
   /**
-   * Called during {@link ResponseStep#onFailure(Packet, CallResponse)} to decide if
+   * Called during {@link ResponseStep#onFailure(Packet, KubernetesApiResponse)} to decide if
    * another retry attempt will occur.
    *
    * @param conflictStep Conflict step, or null

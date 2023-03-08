@@ -42,12 +42,13 @@ import io.kubernetes.client.openapi.models.V1JSONSchemaProps;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1WebhookConversion;
 import io.kubernetes.client.util.Yaml;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import okhttp3.internal.http2.StreamResetException;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.json.Description;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -554,8 +555,8 @@ public class CrdHelper {
 
       @Override
       public Void onSuccess(
-          Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
-        V1CustomResourceDefinition existingCrd = callResponse.getResult();
+          Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
+        V1CustomResourceDefinition existingCrd = callResponse.getObject();
         if (existingCrd == null) {
           return doNext(createCrd(getNext()), packet);
         } else if (isOutdatedCrd(existingCrd)) {
@@ -570,7 +571,7 @@ public class CrdHelper {
       }
 
       @Override
-      protected Void onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+      protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         return isNotAuthorizedOrForbidden(callResponse)
             ? doNext(packet) : super.onFailureNoRetry(packet, callResponse);
       }
@@ -583,20 +584,20 @@ public class CrdHelper {
 
       @Override
       public Void onFailure(
-          Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+          Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         return super.onFailure(conflictStep, packet, callResponse);
       }
 
       @Override
       public Void onSuccess(
-          Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
-        LOGGER.info(MessageKeys.CREATING_CRD, callResponse.getResult().getMetadata().getName());
+          Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
+        LOGGER.info(MessageKeys.CREATING_CRD, callResponse.getObject().getMetadata().getName());
         return doNext(packet);
       }
 
       @Override
-      protected Void onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
-        LOGGER.info(MessageKeys.CREATE_CRD_FAILED, callResponse.getE().getResponseBody());
+      protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
+        LOGGER.info(MessageKeys.CREATE_CRD_FAILED, callResponse.get().getResponseBody());
         return isNotAuthorizedOrForbidden(callResponse)
             ? doNext(packet) : super.onFailureNoRetry(packet, callResponse);
       }
@@ -609,19 +610,19 @@ public class CrdHelper {
 
       @Override
       public Void onFailure(
-          Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+          Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         return super.onFailure(conflictStep, packet, callResponse);
       }
 
       @Override
       public Void onSuccess(
-          Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
-        LOGGER.info(MessageKeys.CREATING_CRD, callResponse.getResult().getMetadata().getName());
+          Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
+        LOGGER.info(MessageKeys.CREATING_CRD, callResponse.getObject().getMetadata().getName());
         return doNext(packet);
       }
 
       @Override
-      protected Void onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+      protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.REPLACE_CRD_FAILED, callResponse.getE().getResponseBody());
         return isNotAuthorizedOrForbidden(callResponse)
             || ((callResponse.getE().getCause() instanceof StreamResetException)

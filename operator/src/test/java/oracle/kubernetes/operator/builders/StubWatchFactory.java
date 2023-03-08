@@ -63,7 +63,7 @@ public class StubWatchFactory<T> implements WatchFactory<T> {
    *
    * @param events the events; will be converted to Watch.Response objects
    */
-  public static void addCallResponses(Watch.Response<?>... events) {
+  public static void addKubernetesApiResponses(Watch.Response<?>... events) {
     factory.calls.add(Arrays.asList(events));
   }
 

@@ -68,13 +68,9 @@ import jakarta.json.JsonStructure;
 import okhttp3.internal.http2.ErrorCode;
 import okhttp3.internal.http2.StreamResetException;
 import oracle.kubernetes.operator.builders.CallParams;
-import oracle.kubernetes.operator.calls.CallFactory;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.calls.RequestParams;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.RetryStrategy;
 import oracle.kubernetes.operator.calls.SimulatedStep;
-import oracle.kubernetes.operator.calls.SynchronousCallDispatcher;
-import oracle.kubernetes.operator.calls.SynchronousCallFactory;
 import oracle.kubernetes.operator.webhooks.model.Scale;
 import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.FiberTestSupport;
@@ -1382,7 +1378,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       try {
         Component oldResponse = packet.getComponents().remove(RESPONSE_COMPONENT_NAME);
         if (oldResponse != null) {
-          CallResponse<?> old = oldResponse.getSpi(CallResponse.class);
+          KubernetesApiResponse<?> old = oldResponse.getSpi(KubernetesApiResponse.class);
           if (old != null && old.getResult() != null) {
             // called again, access continue value, if available
             callContext.setContinue(accessContinue(old.getResult()));
@@ -1390,7 +1386,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
         }
 
         Object callResult = callContext.execute();
-        CallResponse<Object> callResponse = createResponse(callResult);
+        KubernetesApiResponse<Object> callResponse = createResponse(callResult);
         packet.getComponents().put(RESPONSE_COMPONENT_NAME, Component.createFor(callResponse));
         // clear out earlier results.  Replicating the behavior as in AsyncRequestStep.apply()
         packet.remove(CONTINUE);
@@ -1436,24 +1432,24 @@ public class KubernetesTestSupport extends FiberTestSupport {
       return cont;
     }
 
-    private <T> CallResponse<T> createResponse(T callResult) {
-      return CallResponse.createSuccess(REQUEST_PARAMS, callResult, HTTP_OK);
+    private <T> KubernetesApiResponse<T> createResponse(T callResult) {
+      return KubernetesApiResponse.createSuccess(REQUEST_PARAMS, callResult, HTTP_OK);
     }
 
-    private CallResponse<?> createResponse(NotFoundException e, RequestParams requestParams) {
-      return CallResponse.createFailure(requestParams, new ApiException(e), HTTP_NOT_FOUND);
+    private KubernetesApiResponse<?> createResponse(NotFoundException e, RequestParams requestParams) {
+      return KubernetesApiResponse.createFailure(requestParams, new ApiException(e), HTTP_NOT_FOUND);
     }
 
-    private CallResponse<?> createResponse(HttpErrorException e, RequestParams requestParams) {
-      return CallResponse.createFailure(requestParams, e.getApiException(), e.getApiException().getCode());
+    private KubernetesApiResponse<?> createResponse(HttpErrorException e, RequestParams requestParams) {
+      return KubernetesApiResponse.createFailure(requestParams, e.getApiException(), e.getApiException().getCode());
     }
 
-    private CallResponse<?> createResponse(JsonException e, RequestParams requestParams) {
-      return CallResponse.createFailure(requestParams, new ApiException(e), HTTP_INTERNAL_ERROR);
+    private KubernetesApiResponse<?> createResponse(JsonException e, RequestParams requestParams) {
+      return KubernetesApiResponse.createFailure(requestParams, new ApiException(e), HTTP_INTERNAL_ERROR);
     }
 
-    private CallResponse<?> createResponse(Throwable t, RequestParams requestParams) {
-      return CallResponse.createFailure(requestParams, new ApiException(t), HTTP_UNAVAILABLE);
+    private KubernetesApiResponse<?> createResponse(Throwable t, RequestParams requestParams) {
+      return KubernetesApiResponse.createFailure(requestParams, new ApiException(t), HTTP_UNAVAILABLE);
     }
   }
 

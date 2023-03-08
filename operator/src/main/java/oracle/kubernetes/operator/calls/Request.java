@@ -3,10 +3,14 @@
 
 package oracle.kubernetes.operator.calls;
 
+import io.kubernetes.client.common.KubernetesListObject;
+import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 
 @FunctionalInterface
-public interface Request<T> {
-  T execute(RequestParams requestParams, ApiClient client, String cont) throws ApiException;
+public interface Request<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject> {
+  KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, String cont) throws ApiException;
 }

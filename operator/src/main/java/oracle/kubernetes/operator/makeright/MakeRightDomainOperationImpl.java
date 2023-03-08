@@ -20,6 +20,7 @@ import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetList;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.DomainProcessorDelegate;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.JobAwaiterStepFactory;
@@ -28,8 +29,6 @@ import oracle.kubernetes.operator.MakeRightExecutor;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.Processors;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainValidationSteps;
@@ -38,7 +37,7 @@ import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.helpers.JobHelper;
 import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.PodHelper;
-import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.steps.DeleteDomainStep;
@@ -242,9 +241,9 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   static class ListClusterResourcesResponseStep extends DefaultResponseStep<ClusterList> {
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<ClusterList> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<ClusterList> callResponse) {
       DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
-      callResponse.getResult().getItems().stream().filter(c -> isForDomain(c, info))
+      callResponse.getObject().getItems().stream().filter(c -> isForDomain(c, info))
           .forEach(info::addClusterResource);
 
       return doContinueListOrNext(callResponse, packet);
@@ -364,8 +363,8 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      DomainPresenceInfo.fromPacket(packet).ifPresent(info -> updateCache(info, callResponse.getResult()));
+    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      DomainPresenceInfo.fromPacket(packet).ifPresent(info -> updateCache(info, callResponse.getObject()));
       return doNext(packet);
     }
 
@@ -379,8 +378,8 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (callResponse.getStatusCode() == HTTP_NOT_FOUND) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
         DomainPresenceInfo.fromPacket(packet).ifPresent(i -> i.setDeleting(true));
         return doNext(createDomainDownPlan(), packet);
       }

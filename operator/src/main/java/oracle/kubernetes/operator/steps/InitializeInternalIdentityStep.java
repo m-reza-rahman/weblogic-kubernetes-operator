@@ -18,12 +18,11 @@ import java.util.Optional;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.operator.MainDelegate;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
-import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.utils.Certificates;
@@ -163,8 +162,8 @@ public class InitializeInternalIdentityStep extends Step {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
-      V1Secret existingSecret = callResponse.getResult();
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+      V1Secret existingSecret = callResponse.getObject();
       if (existingSecret == null) {
         return doNext(createSecret(getNext(), internalOperatorKey), packet);
       } else {

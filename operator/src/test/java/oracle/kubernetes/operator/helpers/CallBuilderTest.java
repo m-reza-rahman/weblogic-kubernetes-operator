@@ -61,8 +61,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.Pair;
+import oracle.kubernetes.operator.calls.CallBuilder;
 import oracle.kubernetes.operator.calls.CallFactory;
 import oracle.kubernetes.operator.calls.RequestParams;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.RetryStrategy;
 import oracle.kubernetes.operator.calls.SynchronousCallDispatcher;
 import oracle.kubernetes.operator.calls.SynchronousCallFactory;
@@ -218,7 +220,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readDomainAsync(UID, NAMESPACE, responseStep));
 
-    DomainResource received = responseStep.waitForAndGetCallResponse().getResult();
+    DomainResource received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -279,7 +281,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().replaceDomainAsync(UID, NAMESPACE, domain, responseStep));
 
-    DomainResource received = responseStep.waitForAndGetCallResponse().getResult();
+    DomainResource received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(domain));
   }
@@ -296,7 +298,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().replaceDomainStatusAsync(UID, NAMESPACE, domain, responseStep));
 
-    DomainResource received = responseStep.waitForAndGetCallResponse().getResult();
+    DomainResource received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(domain));
   }
@@ -318,7 +320,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().patchDomainAsync(UID, NAMESPACE,
         new V1Patch(patchBuilder.build().toString()), responseStep));
 
-    DomainResource received = responseStep.waitForAndGetCallResponse().getResult();
+    DomainResource received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(domain));
   }
@@ -392,7 +394,7 @@ class CallBuilderTest {
             = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().listClusterAsync(NAMESPACE, responseStep));
 
-    ClusterList received = responseStep.waitForAndGetCallResponse().getResult();
+    ClusterList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
     assertThat(received.getItems(), hasSize(2));
     assertThat(received, equalTo(list));
     assertThat(received.getMetadata().getContinue(), equalTo(CONTINUE));
@@ -425,7 +427,7 @@ class CallBuilderTest {
             = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().listClusterAsync(NAMESPACE, responseStep));
 
-    ClusterList result = responseStep.waitForAndGetCallResponse().getResult();
+    ClusterList result = responseStep.waitForAndGetKubernetesApiResponse().getResult();
     assertThat(result.getItems(), hasSize(1));
     ClusterResource received = result.getItems().get(0);
     assertThat(received.getKind(), equalTo(myKind));
@@ -481,7 +483,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readClusterAsync(UID, NAMESPACE, responseStep));
 
-    ClusterResource received = responseStep.waitForAndGetCallResponse().getResult();
+    ClusterResource received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -519,7 +521,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().replaceClusterStatusAsync(UID, NAMESPACE, clusterResource, responseStep));
 
-    ClusterResource received = responseStep.waitForAndGetCallResponse().getResult();
+    ClusterResource received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(clusterResource));
   }
@@ -549,7 +551,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().listDomainAsync(NAMESPACE, responseStep));
 
-    DomainList received = responseStep.waitForAndGetCallResponse().getResult();
+    DomainList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
     assertThat(received.getItems(), hasSize(2));
     assertThat(received.getItems().get(0), allOf(hasCondition(PROGRESSING), hasCondition(AVAILABLE)));
     assertThat(received.getItems().get(1), allOf(hasCondition(PROGRESSING), hasCondition(FAILED)));
@@ -565,7 +567,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().withLabelSelectors("yyy").listServiceAsync(NAMESPACE, responseStep));
 
-    V1ServiceList received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ServiceList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -580,7 +582,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readServiceAsync(UID, NAMESPACE, UID, responseStep));
 
-    V1Service received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Service received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -596,7 +598,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createServiceAsync(NAMESPACE, service, responseStep));
 
-    V1Service received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Service received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(service));
   }
@@ -614,7 +616,7 @@ class CallBuilderTest {
         .deleteServiceAsync(Objects.requireNonNull(service.getMetadata()).getName(),
                 NAMESPACE, UID, new DeleteOptions(), responseStep));
 
-    V1Service received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Service received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(service));
   }
@@ -629,7 +631,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().withFieldSelector("xxx").listSecretsAsync(NAMESPACE, responseStep));
 
-    V1SecretList received = responseStep.waitForAndGetCallResponse().getResult();
+    V1SecretList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -644,7 +646,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readSecretAsync(UID, NAMESPACE, responseStep));
 
-    V1Secret received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Secret received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -660,7 +662,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createSecretAsync(NAMESPACE, secret, responseStep));
 
-    V1Secret received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Secret received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(secret));
   }
@@ -677,7 +679,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder()
         .replaceSecretAsync(Objects.requireNonNull(secret.getMetadata()).getName(), NAMESPACE, secret, responseStep));
 
-    V1Secret received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Secret received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(secret));
   }
@@ -693,7 +695,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createPodAsync(NAMESPACE, resource, responseStep));
 
-    V1Pod received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Pod received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -710,7 +712,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().withFieldSelector("xxx")
         .listPodAsync(NAMESPACE, responseStep));
 
-    V1PodList received = responseStep.waitForAndGetCallResponse().getResult();
+    V1PodList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -725,7 +727,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readPodAsync(UID, NAMESPACE, UID, responseStep));
 
-    V1Pod received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Pod received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -741,7 +743,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readPodLogAsync(UID, NAMESPACE, UID, responseStep));
 
-    String received = responseStep.waitForAndGetCallResponse().getResult();
+    String received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(log));
   }
@@ -762,7 +764,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().patchPodAsync(UID, NAMESPACE, UID,
         new V1Patch(patchBuilder.build().toString()), responseStep));
 
-    V1Pod received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Pod received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -796,7 +798,7 @@ class CallBuilderTest {
         .deletePodAsync(Objects.requireNonNull(resource.getMetadata()).getName(),
             NAMESPACE, UID, new DeleteOptions(), responseStep));
 
-    Object received = responseStep.waitForAndGetCallResponse().getResult();
+    Object received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertNotNull(received);
   }
@@ -812,7 +814,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder()
         .deleteCollectionPodAsync(NAMESPACE, responseStep));
 
-    V1Status received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Status received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(response));
   }
@@ -829,7 +831,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().withFieldSelector("xxx")
         .listJobAsync(NAMESPACE, responseStep));
 
-    V1JobList received = responseStep.waitForAndGetCallResponse().getResult();
+    V1JobList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -845,7 +847,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createJobAsync(NAMESPACE, UID, resource, responseStep));
 
-    V1Job received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Job received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -860,7 +862,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readJobAsync(UID, NAMESPACE, UID, responseStep));
 
-    V1Job received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Job received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -878,7 +880,7 @@ class CallBuilderTest {
         .deleteJobAsync(Objects.requireNonNull(resource.getMetadata()).getName(),
             NAMESPACE, UID, new DeleteOptions(), responseStep));
 
-    V1Status received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Status received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(response));
   }
@@ -895,7 +897,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().withFieldSelector("xxx")
         .listPodDisruptionBudgetAsync(NAMESPACE, responseStep));
 
-    V1PodDisruptionBudgetList received = responseStep.waitForAndGetCallResponse().getResult();
+    V1PodDisruptionBudgetList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -910,7 +912,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readPodDisruptionBudgetAsync(UID, NAMESPACE, responseStep));
 
-    V1PodDisruptionBudget received = responseStep.waitForAndGetCallResponse().getResult();
+    V1PodDisruptionBudget received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -926,7 +928,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createPodDisruptionBudgetAsync(NAMESPACE, resource, responseStep));
 
-    V1PodDisruptionBudget received = responseStep.waitForAndGetCallResponse().getResult();
+    V1PodDisruptionBudget received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -947,7 +949,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().patchPodDisruptionBudgetAsync(UID, NAMESPACE,
         new V1Patch(patchBuilder.build().toString()), responseStep));
 
-    V1PodDisruptionBudget received = responseStep.waitForAndGetCallResponse().getResult();
+    V1PodDisruptionBudget received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -965,7 +967,7 @@ class CallBuilderTest {
         .deletePodDisruptionBudgetAsync(Objects.requireNonNull(resource.getMetadata()).getName(),
             NAMESPACE, UID, new DeleteOptions(), responseStep));
 
-    V1Status received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Status received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(response));
   }
@@ -1029,7 +1031,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createCustomResourceDefinitionAsync(resource, responseStep));
 
-    V1CustomResourceDefinition received = responseStep.waitForAndGetCallResponse().getResult();
+    V1CustomResourceDefinition received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1044,7 +1046,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readCustomResourceDefinitionAsync(UID, responseStep));
 
-    V1CustomResourceDefinition received = responseStep.waitForAndGetCallResponse().getResult();
+    V1CustomResourceDefinition received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1071,7 +1073,7 @@ class CallBuilderTest {
         .replaceCustomResourceDefinitionAsync(Objects.requireNonNull(resource.getMetadata()).getName(),
                 resource, responseStep));
 
-    V1CustomResourceDefinition received = responseStep.waitForAndGetCallResponse().getResult();
+    V1CustomResourceDefinition received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1086,7 +1088,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().withFieldSelector("xxx").listConfigMapsAsync(NAMESPACE, responseStep));
 
-    V1ConfigMapList received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ConfigMapList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -1101,7 +1103,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readConfigMapAsync(UID, NAMESPACE, UID, responseStep));
 
-    V1ConfigMap received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ConfigMap received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1117,7 +1119,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createConfigMapAsync(NAMESPACE, resource, responseStep));
 
-    V1ConfigMap received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ConfigMap received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1135,7 +1137,7 @@ class CallBuilderTest {
         .replaceConfigMapAsync(Objects.requireNonNull(resource.getMetadata()).getName(),
                 NAMESPACE, resource, responseStep));
 
-    V1ConfigMap received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ConfigMap received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1156,7 +1158,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().patchConfigMapAsync(UID, NAMESPACE, UID,
         new V1Patch(patchBuilder.build().toString()), responseStep));
 
-    V1ConfigMap received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ConfigMap received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1175,7 +1177,7 @@ class CallBuilderTest {
         .deleteConfigMapAsync(Objects.requireNonNull(resource.getMetadata()).getName(),
             NAMESPACE, UID, new DeleteOptions(), responseStep));
 
-    V1Status received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Status received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(response));
   }
@@ -1190,7 +1192,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().withFieldSelector("xxx").listEventAsync(NAMESPACE, responseStep));
 
-    CoreV1EventList received = responseStep.waitForAndGetCallResponse().getResult();
+    CoreV1EventList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -1205,7 +1207,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readEventAsync(UID, NAMESPACE, responseStep));
 
-    CoreV1Event received = responseStep.waitForAndGetCallResponse().getResult();
+    CoreV1Event received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1221,7 +1223,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createEventAsync(NAMESPACE, resource, responseStep));
 
-    CoreV1Event received = responseStep.waitForAndGetCallResponse().getResult();
+    CoreV1Event received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1250,7 +1252,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder()
         .replaceEventAsync(resource.getMetadata().getName(), NAMESPACE, resource, responseStep));
 
-    CoreV1Event received = responseStep.waitForAndGetCallResponse().getResult();
+    CoreV1Event received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1267,7 +1269,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().withFieldSelector("xxx")
         .listNamespaceAsync(responseStep));
 
-    V1NamespaceList received = responseStep.waitForAndGetCallResponse().getResult();
+    V1NamespaceList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -1287,7 +1289,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().withFieldSelector("xxx")
         .listValidatingWebhookConfigurationAsync(responseStep));
 
-    V1ValidatingWebhookConfigurationList received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ValidatingWebhookConfigurationList received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(list));
   }
@@ -1304,7 +1306,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder()
         .readValidatingWebhookConfigurationAsync(TEST_VALIDATING_WEBHOOK_NAME, responseStep));
 
-    V1ValidatingWebhookConfiguration received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ValidatingWebhookConfiguration received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1321,7 +1323,7 @@ class CallBuilderTest {
         = new KubernetesTestSupportTest.TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().createValidatingWebhookConfigurationAsync(resource, responseStep));
 
-    V1ValidatingWebhookConfiguration received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ValidatingWebhookConfiguration received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1344,7 +1346,7 @@ class CallBuilderTest {
             Objects.requireNonNull(validatingWebhookConfig.getMetadata()).getName(),
                 validatingWebhookConfig, responseStep));
 
-    V1ValidatingWebhookConfiguration received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ValidatingWebhookConfiguration received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(validatingWebhookConfig));
   }
@@ -1369,7 +1371,7 @@ class CallBuilderTest {
     testSupport.runSteps(new CallBuilder().patchValidatingWebhookConfigurationAsync(TEST_VALIDATING_WEBHOOK_NAME,
         new V1Patch(patchBuilder.build().toString()), responseStep));
 
-    V1ValidatingWebhookConfiguration received = responseStep.waitForAndGetCallResponse().getResult();
+    V1ValidatingWebhookConfiguration received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(resource));
   }
@@ -1390,7 +1392,7 @@ class CallBuilderTest {
         .deleteValidatingWebhookConfigurationAsync(Objects.requireNonNull(resource.getMetadata()).getName(),
             new DeleteOptions(), responseStep));
 
-    V1Status received = responseStep.waitForAndGetCallResponse().getResult();
+    V1Status received = responseStep.waitForAndGetKubernetesApiResponse().getResult();
 
     assertThat(received, equalTo(response));
   }

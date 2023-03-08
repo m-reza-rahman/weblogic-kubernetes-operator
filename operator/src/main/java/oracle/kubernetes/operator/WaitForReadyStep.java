@@ -7,11 +7,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.AsyncFiber;
@@ -28,7 +28,7 @@ import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLab
  * implemented as a part of a {@link Watcher} and relies on callbacks from that watcher to proceed.
  * @param <T> the type of resource handled by this step
  */
-abstract class WaitForReadyStep<T> extends Step {
+abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
 
   static NextStepFactory nextStepFactory = WaitForReadyStep::createMakeDomainRightStep;
 
@@ -242,7 +242,7 @@ abstract class WaitForReadyStep<T> extends Step {
 
   }
 
-  static class MakeRightDomainStep<V> extends DefaultResponseStep<V> {
+  static class MakeRightDomainStep<V extends KubernetesObject> extends DefaultResponseStep<V> {
     public static final String WAIT_TIMEOUT_EXCEEDED = "Wait timeout exceeded";
     private final WaitForReadyStep<?>.Callback callback;
 
@@ -252,12 +252,12 @@ abstract class WaitForReadyStep<T> extends Step {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V> callResponse) {
       MakeRightDomainOperation makeRightDomainOperation =
               (MakeRightDomainOperation)packet.get(MAKE_RIGHT_DOMAIN_OPERATION);
       if (makeRightDomainOperation != null) {
         makeRightDomainOperation.clear();
-        makeRightDomainOperation.setLiveInfo(new DomainPresenceInfo((DomainResource) callResponse.getResult()));
+        makeRightDomainOperation.setLiveInfo(new DomainPresenceInfo((DomainResource) callResponse.getObject()));
         makeRightDomainOperation.withExplicitRecheck().interrupt().execute();
       }
       callback.fiber.terminate(new Exception(WAIT_TIMEOUT_EXCEEDED), packet);

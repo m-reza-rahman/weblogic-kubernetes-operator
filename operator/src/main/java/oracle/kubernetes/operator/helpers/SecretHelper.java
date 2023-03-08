@@ -6,10 +6,11 @@ package oracle.kubernetes.operator.helpers;
 import java.util.Optional;
 
 import io.kubernetes.client.openapi.models.V1Secret;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.LoggingFilter;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Packet;
@@ -90,8 +91,8 @@ public class SecretHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1Secret> callResponse) {
-        if (callResponse.getStatusCode() == HTTP_NOT_FOUND) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+        if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
           LoggingFilter loggingFilter = packet.getValue(LoggingFilter.LOGGING_FILTER_PACKET_KEY);
           LOGGER.warning(loggingFilter, SECRET_NOT_FOUND, secretName, namespace, WEBLOGIC_CREDENTIALS);
           return doNext(packet);
@@ -100,8 +101,8 @@ public class SecretHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
-        V1Secret secret = callResponse.getResult();
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+        V1Secret secret = callResponse.getObject();
         packet.getSpi(DomainPresenceInfo.class).setWebLogicCredentialsSecret(secret);
         insertAuthorizationSource(packet, secret);
         return doNext(packet);

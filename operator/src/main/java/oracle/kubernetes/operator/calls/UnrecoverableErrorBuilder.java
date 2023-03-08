@@ -4,6 +4,7 @@
 package oracle.kubernetes.operator.calls;
 
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 
 public class UnrecoverableErrorBuilder {
@@ -18,7 +19,7 @@ public class UnrecoverableErrorBuilder {
    * @param callResponse the response from a Kubernetes call
    * @return true if an unprocessable entity failure has been reported
    */
-  public static <T> boolean isAsyncCallUnrecoverableFailure(CallResponse<T> callResponse) {
+  public static <T> boolean isAsyncCallUnrecoverableFailure(KubernetesApiResponse<T> callResponse) {
     return callResponse.isFailure() && isUnrecoverable(callResponse.getE());
   }
 
@@ -28,11 +29,11 @@ public class UnrecoverableErrorBuilder {
    * @param <T> call response type
    * @return true if a NotFound/Gone entity failure has been reported
    */
-  public static <T> boolean isAsyncCallNotFoundFailure(CallResponse<T> callResponse) {
+  public static <T> boolean isAsyncCallNotFoundFailure(KubernetesApiResponse<T> callResponse) {
     return callResponse.isFailure() && isNotFound(callResponse.getE());
   }
 
-  public static <T> boolean isAsyncCallConflictFailure(CallResponse<T> callResponse) {
+  public static <T> boolean isAsyncCallConflictFailure(KubernetesApiResponse<T> callResponse) {
     return callResponse.isFailure() && hasConflict(callResponse.getE());
   }
 
@@ -53,7 +54,7 @@ public class UnrecoverableErrorBuilder {
    * @param callResponse the failed call response
    * @return status source object
    */
-  public static FailureStatusSource fromFailedCall(CallResponse<?> callResponse) {
+  public static FailureStatusSource fromFailedCall(KubernetesApiResponse<?> callResponse) {
     return UnrecoverableErrorBuilderImpl.fromFailedCall(callResponse);
   }
 
@@ -62,7 +63,7 @@ public class UnrecoverableErrorBuilder {
    * @param callResponse the failed call response
    * @return exception bearing status source object
    */
-  public static Exception createExceptionFromFailedCall(CallResponse<?> callResponse) {
+  public static Exception createExceptionFromFailedCall(KubernetesApiResponse<?> callResponse) {
     return new UnrecoverableCallException(fromFailedCall(callResponse), callResponse.getE());
   }
 }

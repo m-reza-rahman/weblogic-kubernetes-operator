@@ -21,11 +21,10 @@ import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.WebhookMainDelegate;
-import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
-import oracle.kubernetes.operator.helpers.CallBuilder;
-import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.utils.Certificates;
@@ -166,8 +165,8 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1Secret> callResponse) {
-      V1Secret existingSecret = callResponse.getResult();
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+      V1Secret existingSecret = callResponse.getObject();
       Map<String, byte[]> data = Optional.ofNullable(existingSecret).map(V1Secret::getData).orElse(new HashMap<>());
       if (existingSecret == null) {
         return doNext(createSecret(getNext(), webhookIdentity), packet);
@@ -227,7 +226,7 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<V1Secret> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallConflictFailure(callResponse)) {
         return doNext(Step.chain(readSecretResponseStep(getNext(), webhookIdentity), getNext()), packet);
       } else {

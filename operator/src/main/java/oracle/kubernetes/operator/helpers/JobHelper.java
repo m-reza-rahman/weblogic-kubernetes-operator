@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerState;
 import io.kubernetes.client.openapi.models.V1ContainerStateTerminated;
@@ -30,6 +31,7 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.IntrospectionStatus;
 import oracle.kubernetes.operator.IntrospectorConfigMapConstants;
@@ -38,7 +40,7 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -231,11 +233,11 @@ public class JobHelper {
       return new VerifyIntrospectorJobResponseStep<>();
     }
 
-    private class VerifyIntrospectorJobResponseStep<T> extends DefaultResponseStep<T> {
+    private class VerifyIntrospectorJobResponseStep<T extends KubernetesObject> extends DefaultResponseStep<T> {
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<T> callResponse) {
-        V1Job job = (V1Job) callResponse.getResult();
+      public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+        V1Job job = (V1Job) callResponse.getObject();
         if ((job != null) && (packet.get(DOMAIN_INTROSPECTOR_JOB) == null)) {
           packet.put(DOMAIN_INTROSPECTOR_JOB, job);
         }
@@ -521,7 +523,7 @@ public class JobHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<String> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<String> callResponse) {
         Optional.ofNullable(callResponse.getResult()).ifPresent(result -> processIntrospectionResult(packet, result));
 
         addFluentdContainerLogAsSevereStatus(packet);
@@ -540,8 +542,8 @@ public class JobHelper {
       }
 
       @Nonnull
-      private Boolean isDomainIntrospectionComplete(CallResponse<String> callResponse) {
-        return Optional.ofNullable(callResponse).map(CallResponse::getResult)
+      private Boolean isDomainIntrospectionComplete(KubernetesApiResponse<String> callResponse) {
+        return Optional.ofNullable(callResponse).map(KubernetesApiResponse::getResult)
             .map(r -> r.contains(DOMAIN_INTROSPECTION_COMPLETE)).orElse(false);
       }
 
@@ -771,9 +773,9 @@ public class JobHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1PodList> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
         final V1Pod jobPod
-              = Optional.ofNullable(callResponse.getResult())
+              = Optional.ofNullable(callResponse.getObject())
               .map(V1PodList::getItems)
               .orElseGet(Collections::emptyList)
               .stream()
@@ -798,7 +800,7 @@ public class JobHelper {
 
       @Override
       protected Throwable createTerminationException(Packet packet,
-          CallResponse<V1PodList> callResponse) {
+          KubernetesApiResponse<V1PodList> callResponse) {
         return new JobWatcher.DeadlineExceededException((V1Job) packet.get(DOMAIN_INTROSPECTOR_JOB));
       }
 

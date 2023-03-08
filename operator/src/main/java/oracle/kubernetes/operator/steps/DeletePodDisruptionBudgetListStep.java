@@ -8,7 +8,6 @@ import java.util.Collection;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.work.Step;
 
 import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;

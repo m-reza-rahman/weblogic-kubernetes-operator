@@ -21,7 +21,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.helpers.ClientPool;
+import oracle.kubernetes.operator.calls.Client;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.helpers.LastKnownStatus;
@@ -167,7 +167,7 @@ public class ServerStatusReader {
           fiber -> {
             Process proc = null;
             String state = null;
-            ClientPool helper = ClientPool.getInstance();
+            Client helper = Client.getInstance();
             ApiClient client = helper.take();
 
             try {

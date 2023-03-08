@@ -11,9 +11,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.WebhookHelper;
 import oracle.kubernetes.operator.http.rest.BaseRestServer;
@@ -208,14 +207,14 @@ public class WebhookMain extends BaseMain {
   private class CrdPresenceResponseStep<L extends KubernetesListObject> extends DefaultResponseStep<L> {
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<L> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
       warnedOfCrdAbsence = false;
       crdPresenceCheckCount.set(0);
       return super.onSuccess(packet, callResponse);
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<L> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<L> callResponse) {
       if (crdPresenceCheckCount.getAndIncrement() < getCrdPresenceFailureRetryMaxCount()) {
         return doNext(this, packet);
       }

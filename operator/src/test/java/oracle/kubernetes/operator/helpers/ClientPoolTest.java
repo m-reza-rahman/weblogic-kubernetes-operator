@@ -9,6 +9,7 @@ import java.util.List;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiClient;
 import oracle.kubernetes.operator.ClientFactoryStub;
+import oracle.kubernetes.operator.calls.Client;
 import oracle.kubernetes.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,22 +37,22 @@ class ClientPoolTest {
 
   @Test
   void onTake_returnApiClient() {
-    assertThat(ClientPool.getInstance().take(), instanceOf(ApiClient.class));
+    assertThat(Client.getInstance().take(), instanceOf(ApiClient.class));
   }
 
   @Test
   void afterRecycle_takeReturnsSameClient() {
-    ApiClient apiClient = ClientPool.getInstance().take();
-    ClientPool.getInstance().recycle(apiClient);
+    ApiClient apiClient = Client.getInstance().take();
+    Client.getInstance().recycle(apiClient);
 
-    assertThat(ClientPool.getInstance().take(), sameInstance(apiClient));
+    assertThat(Client.getInstance().take(), sameInstance(apiClient));
   }
 
   @Test
   void afterDiscard_takeReturnsDifferentClient() {
-    ApiClient apiClient = ClientPool.getInstance().take();
-    ClientPool.getInstance().discard(apiClient);
+    ApiClient apiClient = Client.getInstance().take();
+    Client.getInstance().discard(apiClient);
 
-    assertThat(ClientPool.getInstance().take(), not(sameInstance(apiClient)));
+    assertThat(Client.getInstance().take(), not(sameInstance(apiClient)));
   }
 }

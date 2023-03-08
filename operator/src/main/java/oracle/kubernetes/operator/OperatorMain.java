@@ -29,14 +29,13 @@ import io.kubernetes.client.openapi.models.V1NamespaceList;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.Watch;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.HelmAccess;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.helpers.PodHelper;
-import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.http.rest.BaseRestServer;
 import oracle.kubernetes.operator.http.rest.OperatorRestServer;
 import oracle.kubernetes.operator.http.rest.RestConfigImpl;
@@ -218,8 +217,8 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<CoreV1EventList> callResponse) {
-      CoreV1EventList list = callResponse.getResult();
+    public Void onSuccess(Packet packet, KubernetesApiResponse<CoreV1EventList> callResponse) {
+      CoreV1EventList list = callResponse.getObject();
       operatorNamespaceEventWatcher = startWatcher(getOperatorNamespace(), KubernetesUtils.getResourceVersion(list));
       list.getItems().forEach(DomainProcessorImpl::updateEventK8SObjects);
       return doContinueListOrNext(callResponse, packet);
@@ -265,7 +264,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1NamespaceList> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
       namespaceWatcher = createNamespaceWatcher(KubernetesUtils.getResourceVersion(callResponse.getResult()));
       return doNext(packet);
     }
@@ -365,8 +364,8 @@ public class OperatorMain extends BaseMain {
 
     @Override
     public Void onSuccess(
-            Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
-      V1CustomResourceDefinition existingCrd = callResponse.getResult();
+            Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
+      V1CustomResourceDefinition existingCrd = callResponse.getObject();
 
       if (!existingCrdContainsConversionWebhook(existingCrd)) {
         LOGGER.info(MessageKeys.WAIT_FOR_CRD_INSTALLATION, CRD_DETECTION_DELAY);
@@ -385,7 +384,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    protected Void onFailureNoRetry(Packet packet, CallResponse<V1CustomResourceDefinition> callResponse) {
+    protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
       return isNotAuthorizedOrForbidden(callResponse)
               ? doNext(new CallBuilder().listDomainAsync(getOperatorNamespace(),
                 new CrdPresenceResponseStep(getNext())), packet) : super.onFailureNoRetry(packet, callResponse);
@@ -400,7 +399,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<DomainList> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<DomainList> callResponse) {
       LOGGER.info(MessageKeys.WAIT_FOR_CRD_INSTALLATION, CRD_DETECTION_DELAY);
       return doDelay(createCRDPresenceCheck(), packet, CRD_DETECTION_DELAY, TimeUnit.SECONDS);
     }

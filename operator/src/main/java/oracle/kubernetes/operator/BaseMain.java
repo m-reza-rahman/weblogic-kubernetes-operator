@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.calls.UnrecoverableCallException;
-import oracle.kubernetes.operator.helpers.ClientPool;
+import oracle.kubernetes.operator.calls.Client;
 import oracle.kubernetes.operator.helpers.HelmAccess;
 import oracle.kubernetes.operator.http.BaseServer;
 import oracle.kubernetes.operator.http.metrics.MetricsServer;
@@ -75,7 +75,7 @@ public abstract class BaseMain {
       PrintStream nullOut = new PrintStream(output);
       System.setErr(nullOut);
 
-      ClientPool.initialize(threadFactory);
+      Client.initialize(threadFactory);
 
       // Simplify debugging the operator by allowing the setting of the operator
       // top-level directory using either an env variable or a property. In the normal,

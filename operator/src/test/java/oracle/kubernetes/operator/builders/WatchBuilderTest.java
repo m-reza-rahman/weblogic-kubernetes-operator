@@ -23,7 +23,7 @@ import io.kubernetes.client.util.Watchable;
 import oracle.kubernetes.operator.ClientFactoryStub;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.NoopWatcherStarter;
-import oracle.kubernetes.operator.helpers.ClientPool;
+import oracle.kubernetes.operator.calls.Client;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -82,7 +82,7 @@ class WatchBuilderTest {
             .withApiVersion(API_VERSION)
             .withKind("Cluster")
             .withMetadata(createMetaData("cluster1", NAMESPACE));
-    StubWatchFactory.addCallResponses(createAddResponse(cluster));
+    StubWatchFactory.addKubernetesApiResponses(createAddResponse(cluster));
 
     Watchable<ClusterResource> clusterWatch = new WatchBuilder().createClusterWatch(NAMESPACE);
 
@@ -96,7 +96,7 @@ class WatchBuilderTest {
             .withApiVersion(API_VERSION)
             .withKind("Cluster")
             .withMetadata(createMetaData("cluster1", NAMESPACE, BOOKMARK_RESOURCE_VERSION));
-    StubWatchFactory.addCallResponses(createBookmarkResponse(cluster));
+    StubWatchFactory.addKubernetesApiResponses(createBookmarkResponse(cluster));
 
     Watchable<ClusterResource> clusterWatch = new WatchBuilder().createClusterWatch(NAMESPACE);
 
@@ -110,7 +110,7 @@ class WatchBuilderTest {
             .withApiVersion(API_VERSION)
             .withKind("Domain")
             .withMetadata(createMetaData("domain1", NAMESPACE));
-    StubWatchFactory.addCallResponses(createAddResponse(domain));
+    StubWatchFactory.addKubernetesApiResponses(createAddResponse(domain));
 
     Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
 
@@ -124,7 +124,7 @@ class WatchBuilderTest {
                     .withApiVersion(API_VERSION)
                     .withKind("Domain")
                     .withMetadata(createMetaData("domain1", NAMESPACE, BOOKMARK_RESOURCE_VERSION));
-    StubWatchFactory.addCallResponses(createBookmarkResponse(domain));
+    StubWatchFactory.addKubernetesApiResponses(createBookmarkResponse(domain));
 
     Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
 
@@ -159,7 +159,7 @@ class WatchBuilderTest {
             .withApiVersion(API_VERSION)
             .withKind("Domain")
             .withMetadata(createMetaData("domain1", NAMESPACE));
-    StubWatchFactory.addCallResponses(createAddResponse(domain));
+    StubWatchFactory.addKubernetesApiResponses(createAddResponse(domain));
 
     try (Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE)) {
       domainWatch.next();
@@ -189,7 +189,7 @@ class WatchBuilderTest {
             .withApiVersion(API_VERSION)
             .withKind("Domain")
             .withMetadata(createMetaData("domain2", NAMESPACE));
-    StubWatchFactory.addCallResponses(createModifyResponse(domain1), createDeleteResponse(domain2));
+    StubWatchFactory.addKubernetesApiResponses(createModifyResponse(domain1), createDeleteResponse(domain2));
 
     Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
 
@@ -198,7 +198,7 @@ class WatchBuilderTest {
 
   @Test
   void whenDomainWatchReceivesErrorResponse_returnItFromIterator() throws Exception {
-    StubWatchFactory.addCallResponses(createErrorResponse(HTTP_ENTITY_TOO_LARGE));
+    StubWatchFactory.addKubernetesApiResponses(createErrorResponse(HTTP_ENTITY_TOO_LARGE));
 
     Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
 
@@ -214,7 +214,7 @@ class WatchBuilderTest {
             .kind("Service")
             .metadata(createMetaData("service3", NAMESPACE));
 
-    StubWatchFactory.addCallResponses(createModifyResponse(service));
+    StubWatchFactory.addKubernetesApiResponses(createModifyResponse(service));
 
     Watchable<V1Service> serviceWatch =
         new WatchBuilder()
@@ -233,7 +233,7 @@ class WatchBuilderTest {
   void whenPodWatchSpecifiesParameters_verifyAndReturnResponse() throws Exception {
     V1Pod pod =
         new V1Pod().apiVersion(API_VERSION).kind("Pod").metadata(createMetaData("pod4", NAMESPACE));
-    StubWatchFactory.addCallResponses(createAddResponse(pod));
+    StubWatchFactory.addKubernetesApiResponses(createAddResponse(pod));
 
     Watchable<V1Pod> podWatch =
         new WatchBuilder()
@@ -270,12 +270,12 @@ class WatchBuilderTest {
     return Integer.toString(resourceVersion++);
   }
 
-  static class ClientPoolStub extends ClientPool {
+  static class ClientPoolStub extends Client {
     private static Queue<ApiClient> queue;
 
     static Memento install() throws NoSuchFieldException {
       queue = new ArrayDeque<>();
-      return StaticStubSupport.install(ClientPool.class, "singleton", new ClientPoolStub());
+      return StaticStubSupport.install(Client.class, "singleton", new ClientPoolStub());
     }
 
     static Collection<ApiClient> getPooledClients() {

@@ -7,12 +7,12 @@ import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.ApiClient;
 import oracle.kubernetes.operator.helpers.ClientFactory;
-import oracle.kubernetes.operator.helpers.ClientPool;
+import oracle.kubernetes.operator.calls.Client;
 
 public class ClientFactoryStub implements ClientFactory {
 
   public static Memento install() throws NoSuchFieldException {
-    return StaticStubSupport.install(ClientPool.class, "factory", new ClientFactoryStub());
+    return StaticStubSupport.install(Client.class, "factory", new ClientFactoryStub());
   }
 
   @Override

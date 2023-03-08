@@ -19,8 +19,6 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ListMeta;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.helpers.Pool;
-import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingContext;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -37,8 +35,6 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_TOO_MANY_REQUESTS;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAVAILABLE;
-import static oracle.kubernetes.operator.calls.CallResponse.createFailure;
-import static oracle.kubernetes.operator.calls.CallResponse.createSuccess;
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
 import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadContext;
 
@@ -57,79 +53,29 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
   private static final int MAX = 10000;
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
-  private final Pool<ApiClient> helper;
-  private final RequestParams requestParams;
-  private final CallFactory<T> factory;
   private final int maxRetryCount;
-  private final RetryStrategy customRetryStrategy;
-  private final String fieldSelector;
-  private final String labelSelector;
   private final String resourceVersion;
   private int timeoutSeconds;
 
   /**
-   * Construct async step.
+   * Construct request step.
    *
    * @param next Next
-   * @param requestParams Request parameters
    * @param factory Factory
-   * @param helper Client pool
    * @param timeoutSeconds Timeout
    * @param maxRetryCount Max retry count
-   * @param fieldSelector Field selector
-   * @param labelSelector Label selector
-   * @param resourceVersion Resource version
-   */
-  public RequestStep(
-      ResponseStep<T> next,
-      RequestParams requestParams,
-      CallFactory<T> factory,
-      Pool<ApiClient> helper,
-      int timeoutSeconds,
-      int maxRetryCount,
-      String fieldSelector,
-      String labelSelector,
-      String resourceVersion) {
-    this(next, requestParams, factory, null, helper, timeoutSeconds, maxRetryCount,
-            null, fieldSelector, labelSelector, resourceVersion);
-  }
-
-  /**
-   * Construct async step.
-   *
-   * @param next Next
-   * @param requestParams Request parameters
-   * @param factory Factory
-   * @param customRetryStrategy Custom retry strategy
-   * @param helper Client pool
-   * @param timeoutSeconds Timeout
-   * @param maxRetryCount Max retry count
-   * @param gracePeriodSeconds Grace period
-   * @param fieldSelector Field selector
-   * @param labelSelector Label selector
    * @param resourceVersion Resource version
    */
   public RequestStep(
           ResponseStep<T> next,
-          RequestParams requestParams,
           CallFactory<T> factory,
-          RetryStrategy customRetryStrategy,
-          Pool<ApiClient> helper,
           int timeoutSeconds,
           int maxRetryCount,
-          Integer gracePeriodSeconds,
-          String fieldSelector,
-          String labelSelector,
           String resourceVersion) {
     super(next);
-    this.helper = helper;
-    this.requestParams = requestParams;
     this.factory = factory;
-    this.customRetryStrategy = customRetryStrategy;
     this.timeoutSeconds = timeoutSeconds;
     this.maxRetryCount = maxRetryCount;
-    this.fieldSelector = fieldSelector;
-    this.labelSelector = labelSelector;
     this.resourceVersion = resourceVersion;
 
     // TODO, RJE: consider reimplementing the connection between the response and request steps using just
@@ -168,14 +114,12 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
     final RetryStrategy retryStrategy;
     final String cont;
     final AtomicBoolean didResume = new AtomicBoolean(false);
-    final ApiClient client;
 
     public AsyncRequestStepProcessing(Packet packet, RetryStrategy retry, String cont) {
       this.packet = packet;
       retryStrategy = Optional.ofNullable(retry)
             .orElse(new DefaultRetryStrategy(maxRetryCount, RequestStep.this, RequestStep.this));
       this.cont = Optional.ofNullable(cont).orElse(null);
-      client = helper.take();
     }
 
     // Create a call to Kubernetes that we can cancel if it doesn't succeed in time.
@@ -335,7 +279,7 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
     Component oldResponse = packet.getComponents().remove(RESPONSE_COMPONENT_NAME);
     if (oldResponse != null) {
       @SuppressWarnings("unchecked")
-      CallResponse<T> old = oldResponse.getSpi(CallResponse.class);
+      KubernetesApiResponse<T> old = oldResponse.getSpi(KubernetesApiResponse.class);
       if (cont != null && old != null && old.getResult() != null) {
         // called again, access continue value, if available
         cont = accessContinue(old.getResult());
