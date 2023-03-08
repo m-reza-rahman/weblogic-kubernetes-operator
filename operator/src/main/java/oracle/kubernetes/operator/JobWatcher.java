@@ -30,12 +30,11 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.builders.WatchBuilder;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
-import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -311,9 +310,9 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1PodList> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
         final IntrospectorTerminationState terminationState = new IntrospectorTerminationState(jobName, packet);
-        final V1Pod jobPod = getJobPod(callResponse.getResult());
+        final V1Pod jobPod = getJobPod(callResponse.getObject());
 
         if (jobPod == null) {
           terminationState.remove(packet);
@@ -405,15 +404,15 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
     protected DefaultResponseStep<V1Job> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(null) {
         @Override
-        public Void onSuccess(Packet packet, CallResponse<V1Job> callResponse) {
+        public Void onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
 
           // The introspect container has exited, setting this so that the job will be considered finished
           // in the WaitDomainIntrospectorJobReadyStep and proceed reading the job pod log and process the result.
 
-          if (isReady(callResponse.getResult()) || callback.didResumeFiber()
+          if (isReady(callResponse.getObject()) || callback.didResumeFiber()
                 || JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER
                   .equals(packet.get(JOB_POD_INTROSPECT_CONTAINER_TERMINATED))) {
-            callback.proceedFromWait(callResponse.getResult());
+            callback.proceedFromWait(callResponse.getObject());
             return doNext(packet);
           }
           return doDelay(createReadAndIfReadyCheckStep(callback), packet,

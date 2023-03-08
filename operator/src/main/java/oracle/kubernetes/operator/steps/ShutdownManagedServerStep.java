@@ -18,13 +18,12 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ShutdownType;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.SecretHelper;
@@ -397,9 +396,9 @@ public class ShutdownManagedServerStep extends Step {
 
   static class DomainUpdateStep extends DefaultResponseStep<DomainResource> {
     @Override
-    public Void onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (callResponse.getResult() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      if (callResponse.getObject() != null) {
+        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getObject());
       }
       return doNext(packet);
     }

@@ -11,7 +11,7 @@ import java.util.Optional;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import oracle.kubernetes.operator.calls.CallBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.webhooks.model.AdmissionResponse;

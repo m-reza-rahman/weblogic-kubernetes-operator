@@ -18,9 +18,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.ClientFactoryStub;
 import oracle.kubernetes.operator.DomainProcessorTestSetup;
 import oracle.kubernetes.operator.builders.CallParams;
-import oracle.kubernetes.operator.helpers.ClientPool;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.utils.SystemClockTestSupport;
@@ -72,7 +70,7 @@ class AsyncRequestStepTest {
   private final RequestParams requestParams = new RequestParams(CALL_STRING, NS, RESOURCE_NAME, "body", callParams);
   private final CallFactoryStub callFactory = new CallFactoryStub();
   private final TestStep nextStep = new TestStep();
-  private final ClientPool helper = ClientPool.getInstance();
+  private final Client helper = Client.getInstance();
   private final RequestStep<DomainList> asyncRequestStep =
       new RequestStep<>(
           nextStep,
@@ -269,7 +267,7 @@ class AsyncRequestStepTest {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<DomainList> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainList> callResponse) {
       result = callResponse.getResult();
       nextAction = doContinueListOrNext(callResponse, packet);
       return nextAction;

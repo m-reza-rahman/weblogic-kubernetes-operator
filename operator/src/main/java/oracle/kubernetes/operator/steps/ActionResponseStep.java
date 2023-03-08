@@ -3,7 +3,7 @@
 
 package oracle.kubernetes.operator.steps;
 
-import oracle.kubernetes.operator.calls.CallResponse;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -22,7 +22,7 @@ public abstract class ActionResponseStep<T> extends DefaultResponseStep<T> {
   public abstract Step createSuccessStep(T result, Step next);
 
   @Override
-  public Void onSuccess(Packet packet, CallResponse<T> callResponse) {
+  public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
     return callResponse.getResult() == null
         ? doNext(packet)
         : doNext(createSuccessStep(callResponse.getResult(),
@@ -30,9 +30,9 @@ public abstract class ActionResponseStep<T> extends DefaultResponseStep<T> {
   }
 
   private class ContinueOrNextStep extends Step {
-    private final CallResponse<T> callResponse;
+    private final KubernetesApiResponse<T> callResponse;
 
-    public ContinueOrNextStep(CallResponse<T> callResponse, Step next) {
+    public ContinueOrNextStep(KubernetesApiResponse<T> callResponse, Step next) {
       super(next);
       this.callResponse = callResponse;
     }

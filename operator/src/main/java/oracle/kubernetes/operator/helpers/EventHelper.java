@@ -11,6 +11,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectReference;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.validation.constraints.NotNull;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.DomainNamespaces;
@@ -18,7 +19,7 @@ import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.EventConstants;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -231,7 +232,7 @@ public class EventHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         if (NAMESPACE_WATCHING_STARTED == eventData.eventItem) {
           LOGGER.info(BEGIN_MANAGING_NAMESPACE, eventData.getNamespace());
           domainNamespaces.shouldStartNamespace(eventData.getNamespace());
@@ -240,7 +241,7 @@ public class EventHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         if (hasLoggedForbiddenNSWatchStoppedEvent(this, callResponse)) {
           return doNext(packet);
         }
@@ -281,12 +282,12 @@ public class EventHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         restoreExistingEvent();
         if (hasLoggedForbiddenNSWatchStoppedEvent(this, callResponse)) {
           return doNext(packet);
@@ -321,12 +322,12 @@ public class EventHelper {
     }
 
     private boolean isForbiddenForNSWatchStoppedEvent(
-        ResponseStep<CoreV1Event> responseStep, CallResponse<CoreV1Event> callResponse) {
+        ResponseStep<CoreV1Event> responseStep, KubernetesApiResponse<CoreV1Event> callResponse) {
       return responseStep.isForbidden(callResponse) && NAMESPACE_WATCHING_STOPPED == eventData.eventItem;
     }
 
     private boolean hasLoggedForbiddenNSWatchStoppedEvent(
-        ResponseStep<CoreV1Event> responseStep, CallResponse<CoreV1Event> callResponse) {
+        ResponseStep<CoreV1Event> responseStep, KubernetesApiResponse<CoreV1Event> callResponse) {
       if (isForbiddenForNSWatchStoppedEvent(responseStep, callResponse)) {
         LOGGER.info(MessageKeys.CREATING_EVENT_FORBIDDEN, eventData.eventItem.getReason(), eventData.getNamespace());
         return true;
@@ -340,8 +341,8 @@ public class EventHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
-        DomainProcessorImpl.updateEventK8SObjects(callResponse.getResult());
+      public Void onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+        DomainProcessorImpl.updateEventK8SObjects(callResponse.getObject());
         return doNext(packet);
       }
     }
@@ -1211,7 +1212,7 @@ public class EventHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
     }
@@ -1228,12 +1229,12 @@ public class EventHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<CoreV1Event> callResponse) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         restoreExistingClusterEvent();
         if (UnrecoverableErrorBuilder.isAsyncCallNotFoundFailure(callResponse)
             || UnrecoverableErrorBuilder.isAsyncCallConflictFailure(callResponse)) {
@@ -1270,8 +1271,8 @@ public class EventHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<CoreV1Event> callResponse) {
-        DomainProcessorImpl.updateEventK8SObjects(callResponse.getResult());
+      public Void onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+        DomainProcessorImpl.updateEventK8SObjects(callResponse.getObject());
         return doNext(packet);
       }
     }

@@ -27,6 +27,7 @@ import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.helpers.AuxiliaryImageEnvVars;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.common.utils.CommonUtils;
@@ -37,7 +38,7 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.LogHomeLayoutType;
 import oracle.kubernetes.operator.ModelInImageDomainType;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -788,7 +789,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<V1Job> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
@@ -796,7 +797,7 @@ public class JobStepContext extends BasePodStepContext {
       }
     }
 
-    private Void updateDomainStatus(Packet packet, CallResponse<V1Job> callResponse) {
+    private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       return doNext(createKubernetesFailureSteps(callResponse), packet);
     }
 
@@ -805,9 +806,9 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1Job> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       logJobCreated();
-      V1Job job = callResponse.getResult();
+      V1Job job = callResponse.getObject();
       if (job != null) {
         packet.put(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB, job);
       }

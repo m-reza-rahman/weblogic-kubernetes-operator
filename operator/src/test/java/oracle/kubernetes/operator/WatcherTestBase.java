@@ -161,7 +161,7 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
   void receivedEvents_areSentToListeners() {
     Object object1 = createObjectWithMetaData();
     Object object2 = createObjectWithMetaData();
-    StubWatchFactory.addCallResponses(createAddResponse(object1), createModifyResponse(object2));
+    StubWatchFactory.addKubernetesApiResponses(createAddResponse(object1), createModifyResponse(object2));
 
     createAndRunWatcher(NAMESPACE, stopping, INITIAL_RESOURCE_VERSION);
 
@@ -172,7 +172,7 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
   void receivedEvents_areNotSentToListenersWhenWatchersPaused() {
     Object object1 = createObjectWithMetaData();
     Object object2 = createObjectWithMetaData();
-    StubWatchFactory.addCallResponses(createAddResponse(object1), createModifyResponse(object2));
+    StubWatchFactory.addKubernetesApiResponses(createAddResponse(object1), createModifyResponse(object2));
 
     Watcher watcher = createWatcher(NAMESPACE, stopping, INITIAL_RESOURCE_VERSION);
     pauseWatcher(watcher);
@@ -199,7 +199,7 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
     Object object1 = createObjectWithMetaData();
     Object object2 = createObjectWithMetaData();
     Watch.Response[] firstSet = {createAddResponse(object1), createModifyResponse(object2)};
-    StubWatchFactory.addCallResponses(firstSet);
+    StubWatchFactory.addKubernetesApiResponses(firstSet);
     scheduleAddResponse(createObjectWithMetaData());
 
     createAndRunWatcher(NAMESPACE, stopping, INITIAL_RESOURCE_VERSION);
@@ -211,7 +211,7 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
 
   @Test
   void afterHttpGoneError_nextRequestSendsIncludedResourceVersion() {
-    StubWatchFactory.addCallResponses(createHttpGoneErrorResponse(NEXT_RESOURCE_VERSION));
+    StubWatchFactory.addKubernetesApiResponses(createHttpGoneErrorResponse(NEXT_RESOURCE_VERSION));
     scheduleDeleteResponse(createObjectWithMetaData());
 
     createAndRunWatcher(NAMESPACE, stopping, INITIAL_RESOURCE_VERSION);
@@ -223,7 +223,7 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
 
   @Test
   void afterHttpGoneErrorWithoutResourceVersion_nextRequestSendsResourceVersionZero() {
-    StubWatchFactory.addCallResponses(createHttpGoneErrorWithoutResourceVersionResponse());
+    StubWatchFactory.addKubernetesApiResponses(createHttpGoneErrorWithoutResourceVersionResponse());
     scheduleDeleteResponse(createObjectWithMetaData());
 
     createAndRunWatcher(NAMESPACE, stopping, INITIAL_RESOURCE_VERSION);
@@ -233,7 +233,7 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
 
   @Test
   void afterErrorWithoutStatus_nextRequestSendsResourceVersionZero() {
-    StubWatchFactory.addCallResponses(createErrorWithoutStatusResponse());
+    StubWatchFactory.addKubernetesApiResponses(createErrorWithoutStatusResponse());
     scheduleDeleteResponse(createObjectWithMetaData());
 
     createAndRunWatcher(NAMESPACE, stopping, INITIAL_RESOURCE_VERSION);
@@ -252,15 +252,15 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
   }
 
   void scheduleAddResponse(Object object) {
-    StubWatchFactory.addCallResponses(createAddResponse(object));
+    StubWatchFactory.addKubernetesApiResponses(createAddResponse(object));
   }
 
   void scheduleBookmarkResponse(Object object) {
-    StubWatchFactory.addCallResponses(createBookmarkResponse(object));
+    StubWatchFactory.addKubernetesApiResponses(createBookmarkResponse(object));
   }
 
   private void scheduleDeleteResponse(Object object) {
-    StubWatchFactory.addCallResponses(createDeleteResponse(object));
+    StubWatchFactory.addKubernetesApiResponses(createDeleteResponse(object));
   }
 
   private String getNextResourceVersion() {

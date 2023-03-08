@@ -9,7 +9,7 @@ import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import oracle.kubernetes.operator.calls.CallBuilder;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;

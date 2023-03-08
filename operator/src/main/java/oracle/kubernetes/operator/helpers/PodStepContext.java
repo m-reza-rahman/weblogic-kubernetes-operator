@@ -46,6 +46,7 @@ import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.util.Yaml;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
@@ -59,7 +60,7 @@ import oracle.kubernetes.operator.MIINonDynamicChangesMethod;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.WebLogicConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -1427,7 +1428,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<V1Pod> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
@@ -1435,7 +1436,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       }
     }
 
-    private Void updateDomainStatus(Packet packet, CallResponse<V1Pod> callResponse) {
+    private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       return doNext(createKubernetesFailureSteps(callResponse), packet);
     }
   }
@@ -1451,11 +1452,11 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       logPodCreated();
-      if (callResponse.getResult() != null) {
+      if (callResponse.getObject() != null) {
         info.updateLastKnownServerStatus(getServerName(), WebLogicConstants.STARTING_STATE);
-        setRecordedPod(callResponse.getResult());
+        setRecordedPod(callResponse.getObject());
       }
 
       boolean waitForPodReady =
@@ -1463,7 +1464,7 @@ public abstract class PodStepContext extends BasePodStepContext {
 
       if (waitForPodReady) {
         PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
-        return doNext(pw.waitForReady(callResponse.getResult(), getNext()), packet);
+        return doNext(pw.waitForReady(callResponse.getObject(), getNext()), packet);
       }
       return doNext(packet);
     }
@@ -1483,8 +1484,8 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<Object> callResponses) {
-      if (callResponses.getStatusCode() == HTTP_NOT_FOUND) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<Object> callResponses) {
+      if (callResponses.getHttpStatusCode() == HTTP_NOT_FOUND) {
         return onSuccess(packet, callResponses);
       }
       return super.onFailure(getConflictStep(), packet, callResponses);
@@ -1505,7 +1506,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<Object> callResponses) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<Object> callResponses) {
       PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
       return doNext(pw.waitForDelete(pod, replacePod(getNext())), packet);
     }
@@ -1527,7 +1528,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       return doNext(
           packet.getSpi(PodAwaiterStepFactory.class).waitForReady(processResponse(callResponse), getNext()),
           packet);
@@ -1549,13 +1550,13 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       processResponse(callResponse);
       return doNext(getNext(), packet);
     }
 
-    protected V1Pod processResponse(CallResponse<V1Pod> callResponse) {
-      V1Pod newPod = callResponse.getResult();
+    protected V1Pod processResponse(KubernetesApiResponse<V1Pod> callResponse) {
+      V1Pod newPod = callResponse.getObject();
       logPodChanged();
       if (newPod != null) {
         setRecordedPod(newPod);

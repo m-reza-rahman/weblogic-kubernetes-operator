@@ -20,9 +20,10 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -659,15 +660,15 @@ public class ServiceHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1Service> callResponse) {
-        return callResponse.getStatusCode() == HTTP_NOT_FOUND
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+        return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
-        V1Service service = callResponse.getResult();
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+        V1Service service = callResponse.getObject();
         if (service == null) {
           removeServiceFromRecord();
         } else {
@@ -683,14 +684,14 @@ public class ServiceHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1Service> callResponse) {
-        return callResponse.getStatusCode() == HTTP_NOT_FOUND
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+        return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return doNext(createReplacementService(getNext()), packet);
       }
     }
@@ -704,7 +705,7 @@ public class ServiceHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -712,14 +713,14 @@ public class ServiceHelper {
         }
       }
 
-      private Void updateDomainStatus(Packet packet, CallResponse<V1Service> callResponse) {
+      private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1Service> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         logServiceCreated(messageKey);
-        addServiceToRecord(callResponse.getResult());
+        addServiceToRecord(callResponse.getObject());
         return doNext(packet);
       }
     }

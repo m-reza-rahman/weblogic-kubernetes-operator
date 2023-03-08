@@ -14,11 +14,12 @@ import io.kubernetes.client.openapi.models.V1LabelSelector;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetSpec;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -98,7 +99,7 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -106,14 +107,14 @@ public class PodDisruptionBudgetHelper {
         }
       }
 
-      private Void updateDomainStatus(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         logPodDisruptionBudgetCreated(messageKey);
-        addPodDisruptionBudgetToRecord(callResponse.getResult());
+        addPodDisruptionBudgetToRecord(callResponse.getObject());
         return doNext(packet);
       }
     }
@@ -124,19 +125,19 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
-        return callResponse.getStatusCode() == HTTP_NOT_FOUND
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+        return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
-        V1PodDisruptionBudget podDisruptionBudget = callResponse.getResult();
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+        V1PodDisruptionBudget podDisruptionBudget = callResponse.getObject();
         if (podDisruptionBudget == null) {
           removePodDisruptionBudgetFromRecord();
         } else {
-          addPodDisruptionBudgetToRecord(callResponse.getResult());
+          addPodDisruptionBudgetToRecord(callResponse.getObject());
         }
         return doNext(packet);
       }
@@ -148,14 +149,14 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
-        return callResponse.getStatusCode() == HTTP_NOT_FOUND
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+        return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         logPodDisruptionBudgetPatched();
         return doNext(packet);
       }

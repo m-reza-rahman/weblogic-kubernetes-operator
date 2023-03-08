@@ -19,9 +19,8 @@ import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1NamespaceList;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1SubjectRulesReviewStatus;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.helpers.HealthCheckHelper;
@@ -157,20 +156,20 @@ class DomainRecheck {
     // If unable to list the namespaces, we may still be able to start them if we are using
     // a strategy that specifies them explicitly.
     @Override
-    protected Void onFailureNoRetry(Packet packet, CallResponse<V1NamespaceList> callResponse) {
+    protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
       return useBackupStrategy(callResponse)
             ? doNext(createStartNamespacesStep(Namespaces.getConfiguredDomainNamespaces()), packet)
             : super.onFailureNoRetry(packet, callResponse);
     }
 
     // Returns true if the failure wasn't due to authorization, and we have a list of namespaces to manage.
-    private boolean useBackupStrategy(CallResponse<V1NamespaceList> callResponse) {
+    private boolean useBackupStrategy(KubernetesApiResponse<V1NamespaceList> callResponse) {
       return haveExplicitlyConfiguredNamespacesToManage() && isNotAuthorizedOrForbidden(callResponse);
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1NamespaceList> callResponse) {
-      final Set<String> namespacesToStart = getNamespacesToStart(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
+      final Set<String> namespacesToStart = getNamespacesToStart(callResponse.getObject());
       Namespaces.getFoundDomainNamespaces(packet).addAll(namespacesToStart);
 
       return doContinueListOrNext(callResponse, packet, createNextSteps(namespacesToStart));

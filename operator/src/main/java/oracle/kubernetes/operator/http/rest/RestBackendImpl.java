@@ -38,7 +38,7 @@ import oracle.kubernetes.operator.helpers.AuthorizationProxy;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Operation;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Resource;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Scope;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import oracle.kubernetes.operator.calls.CallBuilder;
 import oracle.kubernetes.operator.http.rest.backend.RestBackend;
 import oracle.kubernetes.operator.http.rest.model.DomainAction;
 import oracle.kubernetes.operator.http.rest.model.DomainActionType;

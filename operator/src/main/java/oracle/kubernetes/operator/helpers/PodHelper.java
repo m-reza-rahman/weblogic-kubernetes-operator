@@ -21,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
@@ -29,7 +30,6 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.RetryStrategy;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -802,10 +802,10 @@ public class PodHelper {
                   name,
                   namespace,
                   domainUid,
-                  new DefaultResponseStep<>(next) {
+                  new DefaultResponseStep<V1Pod>(next) {
                     @Override
-                    public Void onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
-                      V1Pod pod = callResponse.getResult();
+                    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+                      V1Pod pod = callResponse.getObject();
 
                       if (pod != null && !PodHelper.isDeleting(pod)) {
                         // pod still needs to be deleted

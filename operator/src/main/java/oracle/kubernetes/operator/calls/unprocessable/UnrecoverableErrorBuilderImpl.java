@@ -8,7 +8,7 @@ import java.util.Set;
 
 import com.google.gson.Gson;
 import io.kubernetes.client.openapi.ApiException;
-import oracle.kubernetes.operator.calls.CallResponse;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.calls.FailureStatusSource;
 
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_METHOD;
@@ -36,11 +36,11 @@ public class UnrecoverableErrorBuilderImpl implements FailureStatusSource {
    * @param callResponse the failed call
    * @return the FailureStatusSource
    */
-  public static FailureStatusSource fromFailedCall(CallResponse<?> callResponse) {
+  public static FailureStatusSource fromFailedCall(KubernetesApiResponse<?> callResponse) {
     return new UnrecoverableErrorBuilderImpl(callResponse);
   }
 
-  private UnrecoverableErrorBuilderImpl(CallResponse<?> callResponse) {
+  private UnrecoverableErrorBuilderImpl(KubernetesApiResponse<?> callResponse) {
     message = callResponse.createFailureMessage();
     code = callResponse.getStatusCode();
     ErrorBody eb = new Gson().fromJson(callResponse.getE().getResponseBody(), ErrorBody.class);

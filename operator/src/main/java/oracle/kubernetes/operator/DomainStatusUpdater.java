@@ -27,19 +27,18 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.FailureStatusSource;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
-import oracle.kubernetes.operator.helpers.CallBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.helpers.LastKnownStatus;
 import oracle.kubernetes.operator.helpers.PodHelper;
-import oracle.kubernetes.operator.helpers.ResponseStep;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
@@ -235,7 +234,7 @@ public class DomainStatusUpdater {
    *
    * @param callResponse the response from an unrecoverable call
    */
-  public static Step createKubernetesFailureSteps(CallResponse<?> callResponse) {
+  public static Step createKubernetesFailureSteps(KubernetesApiResponse<?> callResponse) {
     FailureStatusSource failure = UnrecoverableErrorBuilder.fromFailedCall(callResponse);
 
     LOGGER.severe(MessageKeys.CALL_FAILED, failure.getMessage(), failure.getReason());
@@ -366,15 +365,15 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (callResponse.getResult() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      if (callResponse.getObject() != null) {
+        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getObject());
       }
       return doNext(createClusterResourceStatusUpdaterStep(getNext()), packet);
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
@@ -393,16 +392,16 @@ public class DomainStatusUpdater {
 
   static class DomainUpdateStep extends ResponseStep<DomainResource> {
     @Override
-    public Void onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (callResponse.getResult() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      if (callResponse.getObject() != null) {
+        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getObject());
       }
       return doNext(packet);
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
-      return callResponse.getStatusCode() == HTTP_NOT_FOUND
+    public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
           ? doNext(null, packet)
           : super.onFailure(packet, callResponse);
     }

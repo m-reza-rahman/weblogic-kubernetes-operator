@@ -7,9 +7,7 @@ import java.util.Collections;
 
 import io.kubernetes.client.openapi.ApiException;
 import oracle.kubernetes.operator.builders.CallParams;
-import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.FailureStatusSource;
-import oracle.kubernetes.operator.calls.RequestParams;
 import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNPROCESSABLE_ENTITY;
@@ -52,7 +50,7 @@ class UnprocessableEntityTest {
     ApiException exception = new ApiException(HTTP_UNPROCESSABLE_ENTITY, Collections.emptyMap(), SAMPLE_MESSAGE_BODY);
 
     FailureStatusSource builder = UnrecoverableErrorBuilderImpl.fromFailedCall(
-        CallResponse.createFailure(REQUEST_PARAMS, exception, HTTP_UNPROCESSABLE_ENTITY));
+        KubernetesApiResponse.createFailure(REQUEST_PARAMS, exception, HTTP_UNPROCESSABLE_ENTITY));
 
     assertThat(builder.getReason(), equalTo(KUBERNETES.toString()));
   }
@@ -62,7 +60,7 @@ class UnprocessableEntityTest {
     ApiException exception = new ApiException(HTTP_UNPROCESSABLE_ENTITY, Collections.emptyMap(), SAMPLE_MESSAGE_BODY);
 
     FailureStatusSource builder = UnrecoverableErrorBuilderImpl.fromFailedCall(
-        CallResponse.createFailure(REQUEST_PARAMS, exception, HTTP_UNPROCESSABLE_ENTITY));
+        KubernetesApiResponse.createFailure(REQUEST_PARAMS, exception, HTTP_UNPROCESSABLE_ENTITY));
 
     assertThat(builder.getMessage(), allOf(
           containsString("replace"), containsString("pod"), containsString("pod1"),
@@ -77,7 +75,7 @@ class UnprocessableEntityTest {
         .build();
 
     FailureStatusSource source = UnrecoverableErrorBuilderImpl.fromFailedCall(
-        CallResponse.createFailure(REQUEST_PARAMS, exception, HTTP_UNPROCESSABLE_ENTITY));
+        KubernetesApiResponse.createFailure(REQUEST_PARAMS, exception, HTTP_UNPROCESSABLE_ENTITY));
 
     assertThat(source.getReason(), equalTo(KUBERNETES.toString()));
     assertThat(source.getMessage(), allOf(

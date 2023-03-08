@@ -17,9 +17,9 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.DomainStatusUpdater;
-import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -76,9 +76,9 @@ public class DomainValidationSteps {
   static class ListSecretsResponseStep extends DefaultResponseStep<V1SecretList> {
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1SecretList> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1SecretList> callResponse) {
       List<V1Secret> list = getSecrets(packet);
-      list.addAll(callResponse.getResult().getItems());
+      list.addAll(callResponse.getObject().getItems());
       packet.put(SECRETS, list);
 
       return doContinueListOrNext(callResponse, packet);
@@ -96,9 +96,9 @@ public class DomainValidationSteps {
   static class ListConfigMapsResponseStep extends DefaultResponseStep<V1ConfigMapList> {
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<V1ConfigMapList> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMapList> callResponse) {
       List<V1ConfigMap> list = getConfigMaps(packet);
-      list.addAll(callResponse.getResult().getItems());
+      list.addAll(callResponse.getObject().getItems());
       packet.put(CONFIGMAPS, list);
 
       return doContinueListOrNext(callResponse, packet);
@@ -116,9 +116,9 @@ public class DomainValidationSteps {
   static class ListClustersResponseStep extends DefaultResponseStep<ClusterList> {
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<ClusterList> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<ClusterList> callResponse) {
       List<ClusterResource> list = getClusters(packet);
-      list.addAll(callResponse.getResult().getItems());
+      list.addAll(callResponse.getObject().getItems());
       packet.put(CLUSTERS, list);
 
       return doContinueListOrNext(callResponse, packet);

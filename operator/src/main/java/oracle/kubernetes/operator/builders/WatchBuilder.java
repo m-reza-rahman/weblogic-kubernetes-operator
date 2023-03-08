@@ -20,7 +20,6 @@ import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Watchable;
 import okhttp3.Call;
-import oracle.kubernetes.weblogic.domain.api.WeblogicApi;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 

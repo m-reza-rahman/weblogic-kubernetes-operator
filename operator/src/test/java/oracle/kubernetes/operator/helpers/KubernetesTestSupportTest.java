@@ -34,7 +34,6 @@ import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
 import io.kubernetes.client.openapi.models.V1TokenReview;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
-import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.work.Packet;
@@ -126,7 +125,7 @@ class KubernetesTestSupportTest {
   }
 
   @Test
-  void afterCreateCrd_crdReturnedInCallResponse() {
+  void afterCreateCrd_crdReturnedInKubernetesApiResponse() {
     V1CustomResourceDefinition crd = createCrd("mycrd");
 
     TestResponseStep<V1CustomResourceDefinition> responseStep = new TestResponseStep<>();
@@ -657,7 +656,7 @@ class KubernetesTestSupportTest {
 
   static class TestResponseStep<T> extends DefaultResponseStep<T> {
 
-    private CallResponse<T> callResponse;
+    private KubernetesApiResponse<T> callResponse;
     private final Semaphore responseAvailableSignal = new Semaphore(0);
 
     TestResponseStep() {
@@ -665,14 +664,14 @@ class KubernetesTestSupportTest {
     }
 
     @Override
-    public Void onFailure(Packet packet, CallResponse<T> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onFailure(packet, callResponse);
     }
 
     @Override
-    public Void onSuccess(Packet packet, CallResponse<T> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onSuccess(packet, callResponse);
@@ -685,7 +684,7 @@ class KubernetesTestSupportTest {
      * @return Call response
      * @throws InterruptedException Interrupted waiting for response available signal
      */
-    public CallResponse<T> waitForAndGetCallResponse() throws InterruptedException {
+    public KubernetesApiResponse<T> waitForAndGetKubernetesApiResponse() throws InterruptedException {
       responseAvailableSignal.acquire();
       return callResponse;
     }

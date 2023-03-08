@@ -15,6 +15,7 @@ import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import oracle.kubernetes.operator.builders.CallParams;
+import oracle.kubernetes.operator.calls.CallBuilder;
 import oracle.kubernetes.operator.calls.RequestParams;
 import oracle.kubernetes.operator.calls.SynchronousCallDispatcher;
 import oracle.kubernetes.operator.calls.SynchronousCallFactory;
