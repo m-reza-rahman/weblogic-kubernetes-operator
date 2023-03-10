@@ -10,6 +10,7 @@ import java.util.function.Consumer;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -34,8 +35,8 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
 
   protected static Step createMakeDomainRightStep(WaitForReadyStep<?>.Callback callback,
                                            DomainPresenceInfo info, Step next) {
-    return new CallBuilder().readDomainAsync(info.getDomainName(),
-            info.getNamespace(), new MakeRightDomainStep<>(callback, null));
+    return RequestBuilder.DOMAIN.get(info.getNamespace(), info.getDomainName(),
+        new MakeRightDomainStep<>(callback, null));
   }
 
   static int getWatchBackstopRecheckDelaySeconds() {
@@ -235,7 +236,7 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
 
     @Override
     public Void apply(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return doNext(createReadAsyncStep(resourceName, info.getNamespace(),
               info.getDomainUid(), responseStep), packet);
     }

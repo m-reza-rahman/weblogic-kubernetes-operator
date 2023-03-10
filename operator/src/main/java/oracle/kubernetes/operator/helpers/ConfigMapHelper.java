@@ -522,7 +522,7 @@ public class ConfigMapHelper {
 
     IntrospectionLoader(Packet packet, Step conflictStep) {
       this.packet = packet;
-      this.info = packet.getSpi(DomainPresenceInfo.class);
+      this.info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       this.conflictStep = conflictStep;
       parseIntrospectorResult();
     }
@@ -897,7 +897,8 @@ public class ConfigMapHelper {
                   .orElse(null);
 
       if (domainTopology != null) {
-        recordTopology(packet, packet.getSpi(DomainPresenceInfo.class), domainTopology);
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        recordTopology(packet, info, domainTopology);
         recordIntrospectVersionAndGeneration(result, packet);
       }
       return doNext(packet);

@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.calls.UnrecoverableCallException;
-import oracle.kubernetes.operator.calls.Client;
 import oracle.kubernetes.operator.helpers.HelmAccess;
 import oracle.kubernetes.operator.http.BaseServer;
 import oracle.kubernetes.operator.http.metrics.MetricsServer;
@@ -38,7 +37,6 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.PathSupport;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -74,8 +72,6 @@ public abstract class BaseMain {
       OutputStream output = new FileOutputStream("/dev/null");
       PrintStream nullOut = new PrintStream(output);
       System.setErr(nullOut);
-
-      Client.initialize(threadFactory);
 
       // Simplify debugging the operator by allowing the setting of the operator
       // top-level directory using either an env variable or a property. In the normal,
@@ -264,9 +260,7 @@ public abstract class BaseMain {
 
   static Packet createPacketWithLoggingContext(String ns) {
     Packet packet = new Packet();
-    packet.getComponents().put(
-        LoggingContext.LOGGING_CONTEXT_KEY,
-        Component.createFor(new LoggingContext().namespace(ns)));
+    packet.put(LoggingContext.LOGGING_CONTEXT_KEY, new LoggingContext().namespace(ns));
     return packet;
   }
 

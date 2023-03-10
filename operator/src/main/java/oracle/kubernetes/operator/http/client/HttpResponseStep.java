@@ -9,7 +9,6 @@ import java.util.function.Consumer;
 
 import oracle.kubernetes.operator.helpers.AuthorizationSource;
 import oracle.kubernetes.operator.helpers.SecretHelper;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -19,6 +18,7 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAUTHORIZED;
 
 public abstract class HttpResponseStep extends Step {
   private static final String RESPONSE = "httpResponse";
+  private static final String THROWABLE = "httpThrowable";
 
   private Consumer<HttpResponse<?>> callback;
 
@@ -44,7 +44,7 @@ public abstract class HttpResponseStep extends Step {
   }
 
   protected Throwable getThrowableResponse(Packet packet) {
-    return packet.getSpi(Throwable.class);
+    return (Throwable) packet.get(THROWABLE);
   }
 
   private Void doApply(Packet packet, HttpResponse<String> response) {
@@ -65,25 +65,25 @@ public abstract class HttpResponseStep extends Step {
 
   @SuppressWarnings("unchecked")
   protected HttpResponse<String> getResponse(Packet packet) {
-    return packet.getSpi(HttpResponse.class);
+    return (HttpResponse) packet.get(RESPONSE);
   }
 
   /**
-   * Adds the specified response to a packet so that this step can access it via {@link Packet#getSpi(Class)} call.
+   * Adds the specified response to a packet.
    * @param packet the packet to which the response should be added
    * @param response the response from the server
    */
   static void addToPacket(Packet packet, HttpResponse<String> response) {
-    packet.getComponents().put(RESPONSE, Component.createFor(HttpResponse.class, response));
+    packet.put(RESPONSE, response);
   }
 
   /**
-   * Adds the specified throwable to a packet so that this step can access it via {@link Packet#getSpi(Class)} call.
+   * Adds the specified throwable to a packet.
    * @param packet the packet to which the response should be added
    * @param throwable the throwable from the server
    */
   static void addToPacket(Packet packet, Throwable throwable) {
-    packet.getComponents().put(RESPONSE, Component.createFor(Throwable.class, throwable));
+    packet.put(THROWABLE, throwable);
   }
 
   /**
@@ -91,7 +91,7 @@ public abstract class HttpResponseStep extends Step {
    * @param packet the packet from which the response should be removed
    */
   static void removeResponse(Packet packet) {
-    packet.getComponents().remove(RESPONSE);
+    packet.remove(RESPONSE);
   }
 
 

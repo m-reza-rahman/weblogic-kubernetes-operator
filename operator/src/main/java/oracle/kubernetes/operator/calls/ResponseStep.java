@@ -77,6 +77,20 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
 
   @Override
   public final Void apply(Packet packet) {
+    // HERE
+    // Make call
+    // If failure, get retry strategy
+    // return doRetryOrFailure(conflictStep, retryStep, noRetryFunction, packet, response)
+    // clean-up packet
+    // return doSuccess
+
+
+    KubernetesApiResponse<T> response = packet.getSpi(KubernetesApiResponse.class);
+    if (response == null || !response.isSuccess()) {
+      return doPotentialRetry(conflictStep, packet, response);
+    }
+
+
     Void nextAction = getActionForKubernetesApiResponse(packet);
 
     if (nextAction == null) { // no call response, since call timed-out
@@ -91,23 +105,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     return nextAction;
   }
 
-  private Void getActionForKubernetesApiResponse(Packet packet) {
-    return Optional.ofNullable(getKubernetesApiResponse(packet)).map(c -> fromKubernetesApiResponse(packet, c)).orElse(null);
-  }
-
   @SuppressWarnings("unchecked")
-  private KubernetesApiResponse<T> getKubernetesApiResponse(Packet packet) {
-    return packet.getSpi(KubernetesApiResponse.class);
-  }
-
-  private Void fromKubernetesApiResponse(Packet packet, KubernetesApiResponse<T> callResponse) {
-    return callResponse.isFailure() ? onFailure(packet, callResponse) : onSuccess(packet, callResponse);
-  }
-
-  private Void getPotentialRetryAction(Packet packet) {
-    return Optional.ofNullable(doPotentialRetry(conflictStep, packet, getKubernetesApiResponse(packet))).orElse(doEnd(packet));
-  }
-
   /**
    * Returns next action that can be used to get the next batch of results from a list search that
    * specified a "continue" value, if any; otherwise, returns next.
@@ -137,26 +135,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
       // the next window of data.
       return resetRetryStrategyAndReinvokeRequest(packet);
     }
-    if (callResponse.getObject() instanceof KubernetesListObject) {
-      return doNext(next, packet).withDebugComment((KubernetesListObject)callResponse.getObject(), this::toComment);
-    } else {
-      return doNext(next, packet);
-    }
-  }
-
-  private String toComment(KubernetesListObject list) {
-    return Optional.ofNullable(list).map(KubernetesListObject::getItems).orElse(Collections.emptyList()).stream()
-          .map(this::toElementString).collect(Collectors.joining(", "));
-  }
-
-  private String toElementString(KubernetesObject object) {
-    return toElementType(object) + ' ' + object.getMetadata().getName();
-  }
-
-  @Nonnull
-  private String toElementType(KubernetesObject object) {
-    final String[] parts = object.getClass().getSimpleName().split("(?<!^)(?=[A-Z])");
-    return parts.length == 1 ? parts[0].toLowerCase() : parts[1].toLowerCase();
+    return doNext(next, packet);
   }
 
   /**
@@ -170,14 +149,14 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
   private Void doPotentialRetry(Step conflictStep, Packet packet, KubernetesApiResponse<T> callResponse) {
     return Optional.ofNullable(packet.getSpi(RetryStrategy.class))
         .map(rs -> rs.doPotentialRetry(conflictStep, packet,
-            Optional.ofNullable(callResponse).map(KubernetesApiResponse::getStatusCode).orElse(FIBER_TIMEOUT)))
+            Optional.ofNullable(callResponse).map(KubernetesApiResponse::getHttpStatusCode).orElse(FIBER_TIMEOUT)))
         .orElseGet(() -> logNoRetry(packet, callResponse));
   }
 
   private Void logNoRetry(Packet packet, KubernetesApiResponse<T> callResponse) {
     if ((callResponse != null)
-        && (callResponse.getStatusCode() != HTTP_NOT_FOUND)
-        && (callResponse.getStatusCode() != HTTP_CONFLICT)) {
+        && (callResponse.getHttpStatusCode() != HTTP_NOT_FOUND)
+        && (callResponse.getHttpStatusCode() != HTTP_CONFLICT)) {
       addDomainFailureStatus(packet, callResponse.getRequestParams(), callResponse.getE());
       if (LOGGER.isWarningEnabled()) {
         LOGGER.warning(
@@ -283,11 +262,11 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
   }
 
   protected boolean isNotAuthorizedOrForbidden(KubernetesApiResponse<T> callResponse) {
-    return callResponse.getStatusCode() == HTTP_UNAUTHORIZED || callResponse.getStatusCode() == HTTP_FORBIDDEN;
+    return callResponse.getHttpStatusCode() == HTTP_UNAUTHORIZED || callResponse.getHttpStatusCode() == HTTP_FORBIDDEN;
   }
 
   protected boolean isForbidden(KubernetesApiResponse<T> callResponse) {
-    return callResponse.getStatusCode() == HTTP_FORBIDDEN;
+    return callResponse.getHttpStatusCode() == HTTP_FORBIDDEN;
   }
 
   /**

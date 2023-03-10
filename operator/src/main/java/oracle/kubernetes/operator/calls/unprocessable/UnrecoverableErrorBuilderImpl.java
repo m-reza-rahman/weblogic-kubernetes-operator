@@ -42,7 +42,7 @@ public class UnrecoverableErrorBuilderImpl implements FailureStatusSource {
 
   private UnrecoverableErrorBuilderImpl(KubernetesApiResponse<?> callResponse) {
     message = callResponse.createFailureMessage();
-    code = callResponse.getStatusCode();
+    code = callResponse.getHttpStatusCode();
     ErrorBody eb = new Gson().fromJson(callResponse.getE().getResponseBody(), ErrorBody.class);
     if (eb == null) {
       eb = new ErrorBody();

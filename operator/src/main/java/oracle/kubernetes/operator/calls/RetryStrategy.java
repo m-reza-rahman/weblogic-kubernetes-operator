@@ -10,7 +10,7 @@ import oracle.kubernetes.operator.work.Step;
 public interface RetryStrategy {
 
   /**
-   * Called during {@link ResponseStep#onFailure(Packet, KubernetesApiResponse)} to decide if
+   * Called during after request failure to decide if
    * another retry attempt will occur.
    *
    * @param conflictStep Conflict step, or null
@@ -23,12 +23,4 @@ public interface RetryStrategy {
       Step conflictStep,
       Packet packet,
       int statusCode);
-
-  /**
-   * Called when retry count, or other statistics, should be reset, such as when partial list was
-   * returned and new request for next portion of list (continue) is invoked.
-   */
-  default void reset() {
-    // no-op
-  }
 }

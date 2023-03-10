@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.steps;
 
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -17,7 +18,7 @@ class DomainPresenceInfoUpdateStep extends Step {
 
   @Override
   public Void apply(Packet packet) {
-    DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     info.setServerPod(serverName, null);
     return doNext(packet);
   }

@@ -20,6 +20,7 @@ import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.DomainStatusUpdater;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -133,7 +134,7 @@ public class DomainValidationSteps {
 
     @Override
     public Void apply(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       DomainResource domain = info.getDomain();
       List<String> fatalValidationFailures = domain.getFatalValidationFailures();
       List<String> validationFailures = domain.getValidationFailures(new KubernetesResourceLookupImpl(packet));
@@ -172,7 +173,7 @@ public class DomainValidationSteps {
 
     @Override
     public Void apply(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       DomainResource domain = info.getDomain();
       List<String> validationFailures = domain.getAdditionalValidationFailures(podSpec);
 
@@ -254,7 +255,7 @@ public class DomainValidationSteps {
 
     @SuppressWarnings("unchecked")
     private List<ClusterResource> getClusters(Packet packet) {
-      return Optional.ofNullable(packet.getSpi(DomainPresenceInfo.class))
+      return Optional.ofNullable((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO))
           .map(DomainPresenceInfo::getReferencedClusters)
           .or(() -> Optional.ofNullable((List<ClusterResource>) packet.get(CLUSTERS))).orElse(Collections.emptyList());
     }

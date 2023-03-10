@@ -316,7 +316,7 @@ public class ShutdownManagedServerStep extends Step {
   }
 
   private static DomainPresenceInfo getDomainPresenceInfo(Packet packet) {
-    return packet.getSpi(DomainPresenceInfo.class);
+    return (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
   }
 
   static final class ShutdownManagedServerResponseStep extends HttpResponseStep {
@@ -398,7 +398,8 @@ public class ShutdownManagedServerStep extends Step {
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getObject() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getObject());
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.setDomain(callResponse.getObject());
       }
       return doNext(packet);
     }

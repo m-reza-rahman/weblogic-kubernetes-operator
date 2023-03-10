@@ -30,14 +30,13 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.RetryStrategy;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -367,15 +366,11 @@ public class PodHelper {
   }
 
   static void addToPacket(Packet packet, PodAwaiterStepFactory pw) {
-    packet
-        .getComponents()
-        .put(
-            ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-            Component.createFor(PodAwaiterStepFactory.class, pw));
+    packet.put(ProcessingConstants.PODWATCHER_COMPONENT_NAME, pw);
   }
 
   static PodAwaiterStepFactory getPodAwaiterStepFactory(Packet packet) {
-    return packet.getSpi(PodAwaiterStepFactory.class);
+    return (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
   }
 
   /**
@@ -741,8 +736,7 @@ public class PodHelper {
 
     @Override
     public Void apply(Packet packet) {
-
-      final DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      final DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       final V1Pod oldPod = info.getServerPod(serverName);
 
       if (oldPod == null || info.getDomain() == null) {
@@ -795,47 +789,20 @@ public class PodHelper {
     }
 
     private Step deletePod(String name, String namespace, String domainUid, long gracePeriodSeconds, Step next) {
+      Step conflictStep = RequestBuilder.POD.get(namespace, name, new DefaultResponseStep<V1Pod>(next) {
+        @Override
+        public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+          V1Pod pod = callResponse.getObject();
 
-      Step conflictStep =
-          new CallBuilder()
-              .readPodAsync(
-                  name,
-                  namespace,
-                  domainUid,
-                  new DefaultResponseStep<V1Pod>(next) {
-                    @Override
-                    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
-                      V1Pod pod = callResponse.getObject();
+          if (pod != null && !PodHelper.isDeleting(pod)) {
+            // pod still needs to be deleted
+            return doNext(DeletePodStep.this, packet);
+          }
+          return super.onSuccess(packet, callResponse);
+        }
+      });
 
-                      if (pod != null && !PodHelper.isDeleting(pod)) {
-                        // pod still needs to be deleted
-                        return doNext(DeletePodStep.this, packet);
-                      }
-                      return super.onSuccess(packet, callResponse);
-                    }
-                  });
-
-      V1DeleteOptions deleteOptions = new V1DeleteOptions().gracePeriodSeconds(gracePeriodSeconds);
-      DeletePodRetryStrategy retryStrategy = new DeletePodRetryStrategy(next);
-      return new CallBuilder().withRetryStrategy(retryStrategy)
-              .deletePodAsync(name, namespace, domainUid, deleteOptions, new DefaultResponseStep<>(conflictStep, next));
+      return RequestBuilder.POD.delete(namespace, name, new DefaultResponseStep<>(conflictStep, next));
     }
   }
-
-  /* Retry strategy for delete pod which will not perform any retries */
-  private static final class DeletePodRetryStrategy implements RetryStrategy {
-    private final Step retryStep;
-
-    DeletePodRetryStrategy(Step retryStep) {
-      this.retryStep = retryStep;
-    }
-
-    @Override
-    public Void doPotentialRetry(Step conflictStep, Packet packet, int statusCode) {
-      Void na = new Void();
-      na.invoke(retryStep, packet);
-      return na;
-    }
-  }
-
 }

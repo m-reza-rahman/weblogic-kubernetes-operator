@@ -13,13 +13,12 @@ import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.common.KubernetesListObject;
-import io.kubernetes.client.openapi.ApiCallback;
-import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ListMeta;
+import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.logging.LoggingContext;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
@@ -35,13 +34,12 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_TOO_MANY_REQUESTS;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAVAILABLE;
-import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
 import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadContext;
 
 /**
  * A Step driven by a call to the Kubernetes API.
  */
-public class RequestStep<T> extends Step implements RetryStrategyListener {
+public class RequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject> extends Step {
   public static final String RESPONSE_COMPONENT_NAME = "response";
   public static final String CONTINUE = "continue";
   public static final int FIBER_TIMEOUT = 0;
@@ -53,33 +51,40 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
   private static final int MAX = 10000;
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
-  private final int maxRetryCount;
-  private final String resourceVersion;
-  private int timeoutSeconds;
+  private final Class<ApiType> apiTypeClass;
+  private final Class<ApiListType> apiListTypeClass;
+  private final String apiGroup;
+  private final String apiVersion;
+  private final String resourcePlural;
+  private final Request<ApiType, ApiListType> request; // FIXME?
 
   /**
    * Construct request step.
    *
-   * @param next Next
-   * @param factory Factory
-   * @param timeoutSeconds Timeout
-   * @param maxRetryCount Max retry count
-   * @param resourceVersion Resource version
+   * @param next Response step
+   * @param apiTypeClass API type class
+   * @param apiListTypeClass API list type class
+   * @param apiGroup API group
+   * @param apiVersion API version
+   * @param resourcePlural Resource plural
+   * @param request Request function
    */
   public RequestStep(
-          ResponseStep<T> next,
-          CallFactory<T> factory,
-          int timeoutSeconds,
-          int maxRetryCount,
-          String resourceVersion) {
+          ResponseStep<ApiType> next, // FIXME?
+          Class<ApiType> apiTypeClass,
+          Class<ApiListType> apiListTypeClass,
+          String apiGroup,
+          String apiVersion,
+          String resourcePlural,
+          Request<ApiType, ApiListType> request) {
     super(next);
-    this.factory = factory;
-    this.timeoutSeconds = timeoutSeconds;
-    this.maxRetryCount = maxRetryCount;
-    this.resourceVersion = resourceVersion;
+    this.apiGroup = apiGroup;
+    this.apiVersion = apiVersion;
+    this.resourcePlural = resourcePlural;
+    this.apiTypeClass = apiTypeClass;
+    this.apiListTypeClass = apiListTypeClass;
+    this.request = request;
 
-    // TODO, RJE: consider reimplementing the connection between the response and request steps using just
-    // elements in the packet so that all step implementations are stateless.
     next.setPrevious(this);
   }
 
@@ -96,16 +101,6 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
         .map(V1ListMeta::getContinue)
         .filter(Predicate.not(String::isEmpty))
         .orElse(null);
-  }
-
-  @Override
-  protected String getDetail() {
-    return requestParams.call;
-  }
-
-  @Override
-  public void listenTimeoutDoubled() {
-    timeoutSeconds *= 2;
   }
 
   class AsyncRequestStepProcessing {
@@ -260,55 +255,27 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
 
   @Override
   public Void apply(Packet packet) {
-    // we don't have the domain presence information and logging context information yet,
-    // add a logging context to pass the namespace information to the LoggingFormatter
-    if (requestParams.namespace != null 
-        && DomainPresenceInfo.fromPacket(packet).isEmpty()
-        && LoggingContext.fromPacket(packet).isEmpty()
-        && !requestParams.namespace.equals(getOperatorNamespace())) {
-      packet.getComponents().put(
-          LoggingContext.LOGGING_CONTEXT_KEY,
-          Component.createFor(new LoggingContext()
-              .namespace(requestParams.namespace)
-              .domainUid(requestParams.domainUid)));
-    }
-
     // clear out earlier results
     String cont = (String) packet.remove(CONTINUE);
-    RetryStrategy retry = null;
     Component oldResponse = packet.getComponents().remove(RESPONSE_COMPONENT_NAME);
     if (oldResponse != null) {
       @SuppressWarnings("unchecked")
-      KubernetesApiResponse<T> old = oldResponse.getSpi(KubernetesApiResponse.class);
-      if (cont != null && old != null && old.getResult() != null) {
+      KubernetesApiResponse<?> old = oldResponse.getSpi(KubernetesApiResponse.class);
+      if (cont != null && old != null && old.getObject() != null) {
         // called again, access continue value, if available
-        cont = accessContinue(old.getResult());
+        cont = accessContinue(old.getObject());
       }
-
-      retry = oldResponse.getSpi(RetryStrategy.class);
-    }
-    if ((retry == null) && (customRetryStrategy != null)) {
-      retry = customRetryStrategy;
     }
 
-    if (LOGGER.isFinerEnabled()) {
-      logAsyncRequest();
-    }
+    // FIXME: if cont set and it's a list, then use the value
+    GenericKubernetesApi<ApiType, ApiListType> client = new GenericKubernetesApi<>(
+        apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, Client.getInstance());
+    KubernetesApiResponse<ApiType> result = request.execute(client);
 
-    AsyncRequestStepProcessing processing = new AsyncRequestStepProcessing(packet, retry, cont);
-    return doSuspend(
-        fiber -> {
-          try {
-            CancellableCall cc = processing.createCall(fiber);
-            scheduleTimeoutCheck(fiber, timeoutSeconds, () -> processing.handleTimeout(fiber, cc));
-          } catch (ApiException t) {
-            logAsyncFailure(t, t.getResponseBody());
-            processing.resumeAfterThrowable(fiber);
-          } catch (Throwable t) {
-            logAsyncFailure(t, "");
-            processing.resumeAfterThrowable(fiber);
-          }
-        });
+    // update packet
+    packet.getComponents().put(RESPONSE_COMPONENT_NAME, Component.createFor(result));
+
+    return doNext(packet);
   }
 
   // Schedule the timeout check to happen on the fiber at some number of seconds in the future.
@@ -316,48 +283,13 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
     fiber.scheduleOnce(timeoutSeconds, TimeUnit.SECONDS, timeoutCheck);
   }
 
-  private void logAsyncRequest() {
-    // called from the apply method where we have the necessary information for logging context
-    LOGGER.finer(
-        MessageKeys.ASYNC_REQUEST,
-        identityHash(),
-        requestParams.call,
-        requestParams.namespace,
-        requestParams.name,
-        Optional.ofNullable(requestParams.body).map(b -> LoggingFactory.getJson().serialize(b)).orElse(""),
-        fieldSelector,
-        labelSelector,
-        resourceVersion);
-  }
-
-  private void logAsyncFailure(Throwable t, String responseBody) {
-    // called from the apply method where we have the necessary information for logging context
-    LOGGER.warning(
-        MessageKeys.ASYNC_FAILURE,
-        identityHash(),
-        requestParams.call,
-        t.getMessage(),
-        0,
-        null,
-        requestParams.namespace,
-        requestParams.name,
-        Optional.ofNullable(requestParams.body).map(b -> LoggingFactory.getJson().serialize(b)).orElse(""),
-        fieldSelector,
-        labelSelector,
-        resourceVersion,
-        responseBody);
-  }
-
   private final class DefaultRetryStrategy implements RetryStrategy {
     private long retryCount = 0;
     private final int maxRetryCount;
     private final Step retryStep;
-    private final RetryStrategyListener listener;
-
-    DefaultRetryStrategy(int maxRetryCount, Step retryStep, RetryStrategyListener listener) {
+    DefaultRetryStrategy(int maxRetryCount, Step retryStep) {
       this.maxRetryCount = maxRetryCount;
       this.retryStep = retryStep;
-      this.listener = listener;
     }
 
     @Override
@@ -391,8 +323,6 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
     @Nonnull
     private Void backOffAndRetry(Packet packet, Step nextStep) {
       final long waitTime = getNextWaitTime();
-      LOGGER.finer(MessageKeys.ASYNC_RETRY, identityHash(), String.valueOf(waitTime),
-            requestParams.call, requestParams.namespace, requestParams.name);
 
       final Void na = new Void();
       na.delay(nextStep, packet, waitTime, TimeUnit.MILLISECONDS);
@@ -418,37 +348,6 @@ public class RequestStep<T> extends Step implements RetryStrategyListener {
     @Override
     public void reset() {
       retryCount = 0;
-    }
-  }
-
-  private class ApiCallbackImpl implements ApiCallback<T> {
-
-    private final AsyncRequestStepProcessing processing;
-    private final AsyncFiber fiber;
-
-    public ApiCallbackImpl(AsyncRequestStepProcessing processing, AsyncFiber fiber) {
-      this.processing = processing;
-      this.fiber = fiber;
-    }
-
-    @Override
-    public void onUploadProgress(long bytesWritten, long contentLength, boolean done) {
-      // no-op
-    }
-
-    @Override
-    public void onDownloadProgress(long bytesRead, long contentLength, boolean done) {
-      // no-op
-    }
-
-    @Override
-    public void onFailure(ApiException ae, int statusCode, Map<String, List<String>> responseHeaders) {
-      processing.onFailure(fiber, ae, statusCode, responseHeaders);
-    }
-
-    @Override
-    public void onSuccess(T result, int statusCode, Map<String, List<String>> responseHeaders) {
-      processing.onSuccess(fiber, result, statusCode, responseHeaders);
     }
   }
 }

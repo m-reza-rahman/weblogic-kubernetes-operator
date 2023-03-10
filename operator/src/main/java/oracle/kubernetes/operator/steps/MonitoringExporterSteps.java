@@ -21,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
 import oracle.kubernetes.operator.KubernetesConstants;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.SecretHelper;
@@ -241,7 +242,7 @@ public class MonitoringExporterSteps {
 
     ExporterRequestProcessing(Packet packet) {
       super(packet, getServerService(packet), getServerPod(packet));
-      info = packet.getSpi(DomainPresenceInfo.class);
+      info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     }
 
     private static V1Service getServerService(Packet packet) {

@@ -58,7 +58,7 @@ public class SecretHelper {
 
     @Override
     public Void apply(Packet packet) {
-      DomainPresenceInfo dpi = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo dpi = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       V1Secret secret = dpi.getWebLogicCredentialsSecret();
       if (secret != null) {
         insertAuthorizationSource(packet, secret);
@@ -79,7 +79,7 @@ public class SecretHelper {
 
     private void insertAuthorizationSource(Packet packet, V1Secret secret) {
       packet.put(ProcessingConstants.AUTHORIZATION_SOURCE,
-          new SecretContext(packet.getSpi(DomainPresenceInfo.class),
+          new SecretContext((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO),
               secret, packet.getValue(LoggingFilter.LOGGING_FILTER_PACKET_KEY))
               .createAuthorizationSource());
     }
@@ -103,7 +103,8 @@ public class SecretHelper {
       @Override
       public Void onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
         V1Secret secret = callResponse.getObject();
-        packet.getSpi(DomainPresenceInfo.class).setWebLogicCredentialsSecret(secret);
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.setWebLogicCredentialsSecret(secret);
         insertAuthorizationSource(packet, secret);
         return doNext(packet);
       }

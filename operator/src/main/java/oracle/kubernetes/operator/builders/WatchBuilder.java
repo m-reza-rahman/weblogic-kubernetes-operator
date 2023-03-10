@@ -10,6 +10,7 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.apis.PolicyV1Api;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
@@ -382,15 +383,20 @@ public class WatchBuilder {
       configureClient(client);
 
       try {
-        return new WeblogicApi(client)
-            .listNamespacedClusterCall(
+        return new CustomObjectsApi(client)
+            .listNamespacedCustomObjectCall(
+                "weblogic.oracle",
+                "v1",
                 namespace,
+                "clusters",
                 callParams.getPretty(),
+                ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
                 callParams.getLabelSelector(),
                 callParams.getLimit(),
                 callParams.getResourceVersion(),
+                null,
                 callParams.getTimeoutSeconds(),
                 WATCH,
                 null);
@@ -412,15 +418,20 @@ public class WatchBuilder {
       configureClient(client);
 
       try {
-        return new WeblogicApi(client)
-            .listNamespacedDomainCall(
+        return new CustomObjectsApi(client)
+            .listNamespacedCustomObjectCall(
+                "weblogic.oracle",
+                "v9",
                 namespace,
+                "domains",
                 callParams.getPretty(),
+                ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
                 callParams.getLabelSelector(),
                 callParams.getLimit(),
                 callParams.getResourceVersion(),
+                null,
                 callParams.getTimeoutSeconds(),
                 WATCH,
                 null);

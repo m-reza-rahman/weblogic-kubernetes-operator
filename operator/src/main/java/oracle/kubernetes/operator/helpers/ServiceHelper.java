@@ -389,7 +389,7 @@ public class ServiceHelper {
     private final OperatorServiceType serviceType;
 
     ServiceStepContext(Step conflictStep, Packet packet, OperatorServiceType serviceType) {
-      super(packet.getSpi(DomainPresenceInfo.class));
+      super((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
       this.conflictStep = conflictStep;
       domainTopology = (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
       this.serviceType = serviceType;
@@ -736,7 +736,7 @@ public class ServiceHelper {
 
     @Override
     public Void apply(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return doNext(createActionStep(info), packet);
     }
 

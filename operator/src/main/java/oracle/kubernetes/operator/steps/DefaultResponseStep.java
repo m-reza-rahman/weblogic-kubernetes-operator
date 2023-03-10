@@ -3,7 +3,7 @@
 
 package oracle.kubernetes.operator.steps;
 
-import io.kubernetes.client.common.KubernetesObject;
+import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.work.Packet;
@@ -15,7 +15,7 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
  * A response step which treats a NOT_FOUND status as success with a null result. By default, does
  * nothing on success. Subclasses must override #doSuccess to take action.
  */
-public class DefaultResponseStep<T extends KubernetesObject> extends ResponseStep<T> {
+public class DefaultResponseStep<T extends KubernetesType> extends ResponseStep<T> {
   public DefaultResponseStep() {
   }
 

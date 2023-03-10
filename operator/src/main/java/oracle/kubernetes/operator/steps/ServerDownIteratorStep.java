@@ -18,6 +18,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo.ServerShutdownInfo;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
@@ -52,7 +53,7 @@ public class ServerDownIteratorStep extends Step {
     public IteratorContext(Packet packet, List<ServerShutdownInfo> serverShutdownInfos) {
       this.packet = packet;
       this.serverShutdownInfos = Collections.unmodifiableList(serverShutdownInfos);
-      this.info = packet.getSpi(DomainPresenceInfo.class);
+      this.info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     }
 
     private Step createNextSteps() {

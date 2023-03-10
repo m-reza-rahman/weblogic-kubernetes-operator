@@ -60,6 +60,7 @@ import oracle.kubernetes.operator.MIINonDynamicChangesMethod;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.WebLogicConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
@@ -138,7 +139,7 @@ public abstract class PodStepContext extends BasePodStepContext {
   private String sha256Hash;
 
   PodStepContext(Step conflictStep, Packet packet) {
-    super(packet.getSpi(DomainPresenceInfo.class));
+    super((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
     this.conflictStep = conflictStep;
     this.packet = packet;
     domainTopology = (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
@@ -433,7 +434,7 @@ public abstract class PodStepContext extends BasePodStepContext {
   }
 
   private Step createPodAsync(ResponseStep<V1Pod> response) {
-    return new CallBuilder().createPodAsync(getNamespace(), getPodModel(), response);
+    return RequestBuilder.POD.create(getPodModel(), response);
   }
 
   /**
@@ -1046,7 +1047,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       this.message = message;
     }
 
-    private ResponseStep<Object> deleteResponse(V1Pod pod, Step next) {
+    private ResponseStep<V1Pod> deleteResponse(V1Pod pod, Step next) {
       return new DeleteResponseStep(pod, next);
     }
 
@@ -1058,9 +1059,7 @@ public abstract class PodStepContext extends BasePodStepContext {
      * @return a step to be scheduled.
      */
     private Step deletePod(V1Pod pod, Step next) {
-      return new CallBuilder()
-          .deletePodAsync(getPodName(), getNamespace(), getDomainUid(),
-              new V1DeleteOptions(), deleteResponse(pod, next));
+      return RequestBuilder.POD.delete(getNamespace(), getPodName(), deleteResponse(pod, next));
     }
 
     // Prevent the watcher from recreating pod with old spec
@@ -1106,9 +1105,8 @@ public abstract class PodStepContext extends BasePodStepContext {
           patchBuilder, "/metadata/labels/", getLabels(currentPod), getNonHashedPodLabels());
       KubernetesUtils.addPatches(
           patchBuilder, "/metadata/annotations/", getAnnotations(currentPod), getNonHashedPodAnnotations());
-      return new CallBuilder()
-          .patchPodAsync(getPodName(), getNamespace(), getDomainUid(),
-              new V1Patch(patchBuilder.build().toString()), patchResponse(next));
+      return RequestBuilder.POD.patch(getNamespace(), getPodName(),
+          new V1Patch(patchBuilder.build().toString()), patchResponse(next));
     }
 
     private Step patchCurrentPod(V1Pod currentPod, Step next) {
@@ -1470,7 +1468,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
   }
 
-  private class DeleteResponseStep extends ResponseStep<Object> {
+  private class DeleteResponseStep extends ResponseStep<V1Pod> {
     private final V1Pod pod;
 
     DeleteResponseStep(V1Pod pod, Step next) {
@@ -1484,7 +1482,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<Object> callResponses) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<V1Pod> callResponses) {
       if (callResponses.getHttpStatusCode() == HTTP_NOT_FOUND) {
         return onSuccess(packet, callResponses);
       }
@@ -1506,7 +1504,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<Object> callResponses) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponses) {
       PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
       return doNext(pw.waitForDelete(pod, replacePod(getNext())), packet);
     }

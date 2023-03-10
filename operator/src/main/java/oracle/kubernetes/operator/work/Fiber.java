@@ -16,7 +16,7 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 /**
  * Represents the execution of one processing flow.
  */
-public final class Fiber implements ComponentRegistry, AsyncFiber {
+public final class Fiber implements AsyncFiber {
 
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private static final int NOT_COMPLETE = 0;
@@ -30,7 +30,6 @@ public final class Fiber implements ComponentRegistry, AsyncFiber {
   private final Fiber parent;
   private final int id;
   private final AtomicInteger status = new AtomicInteger(NOT_COMPLETE);
-  private final Map<String, Component> components = new ConcurrentHashMap<>();
   private Packet packet;
   /** The next action for this Fiber. */
   private Collection<Fiber> children = null;
@@ -195,21 +194,6 @@ public final class Fiber implements ComponentRegistry, AsyncFiber {
     if (children != null) {
       children.forEach(Fiber::cancel);
     }
-  }
-
-  @Override
-  public <S> S getSpi(Class<S> spiType) {
-    for (Component c : components.values()) {
-      S spi = c.getSpi(spiType);
-      if (spi != null) {
-        return spi;
-      }
-    }
-    return null;
-  }
-
-  public Map<String, Component> getComponents() {
-    return components;
   }
 
   /**

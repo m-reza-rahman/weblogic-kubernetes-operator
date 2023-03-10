@@ -31,8 +31,10 @@ import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.builders.WatchBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -292,13 +294,13 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
     @Override
     Step createReadAsyncStep(String name, String namespace, String domainUid, ResponseStep<V1Job> responseStep) {
       return setIntrospectorTerminationState(namespace, name,
-              new CallBuilder().readJobAsync(name, namespace, domainUid, responseStep));
+          RequestBuilder.JOB.get(namespace, name, responseStep));
     }
 
     private Step setIntrospectorTerminationState(String namespace, String jobName, Step next) {
-      return new CallBuilder()
-              .withLabelSelectors(LabelConstants.JOBNAME_LABEL)
-              .listPodAsync(namespace, new TerminationStateResponseStep(jobName, next));
+      return RequestBuilder.POD.list(namespace,
+          new ListOptions().labelSelector(LabelConstants.JOBNAME_LABEL),
+          new TerminationStateResponseStep(jobName, next));
     }
 
     private class TerminationStateResponseStep extends ResponseStep<V1PodList> {

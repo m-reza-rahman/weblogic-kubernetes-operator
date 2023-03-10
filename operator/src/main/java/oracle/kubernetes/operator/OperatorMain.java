@@ -30,7 +30,9 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.HelmAccess;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
@@ -48,6 +50,7 @@ import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
+import org.bouncycastle.cert.ocsp.Req;
 
 import static oracle.kubernetes.operator.KubernetesConstants.OPERATOR_ENABLE_REST_ENDPOINT_ENV;
 import static oracle.kubernetes.operator.ProcessingConstants.WEBHOOK;
@@ -238,15 +241,15 @@ public class OperatorMain extends BaseMain {
     }
 
     private Step createOperatorNamespaceEventListStep() {
-      return new CallBuilder()
-          .withLabelSelectors(ProcessingConstants.OPERATOR_EVENT_LABEL_FILTER)
-          .listEventAsync(getOperatorNamespace(), new EventListResponseStep(mainDelegate.getDomainProcessor()));
+      return RequestBuilder.EVENT.list(getOperatorNamespace(),
+          new ListOptions().labelSelector(ProcessingConstants.OPERATOR_EVENT_LABEL_FILTER),
+          new EventListResponseStep(mainDelegate.getDomainProcessor()));
     }
 
     @Override
     public Step getDefaultSelection() {
       return Step.chain(
-          new CallBuilder().listNamespaceAsync(new StartNamespaceWatcherStep()),
+          RequestBuilder.NAMESPACE.list(new StartNamespaceWatcherStep()),
           createOperatorNamespaceEventListStep(),
           createDomainRecheckSteps());
     }
@@ -265,7 +268,7 @@ public class OperatorMain extends BaseMain {
 
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
-      namespaceWatcher = createNamespaceWatcher(KubernetesUtils.getResourceVersion(callResponse.getResult()));
+      namespaceWatcher = createNamespaceWatcher(KubernetesUtils.getResourceVersion(callResponse.getObject()));
       return doNext(packet);
     }
   }
@@ -346,8 +349,8 @@ public class OperatorMain extends BaseMain {
 
     @Override
     public Void apply(Packet packet) {
-      return doNext(new CallBuilder().readCustomResourceDefinitionAsync(
-              KubernetesConstants.DOMAIN_CRD_NAME, createReadResponseStep(getNext())), packet);
+      return doNext(
+          RequestBuilder.CRD.get(KubernetesConstants.DOMAIN_CRD_NAME, createReadResponseStep(getNext())), packet);
     }
   }
 
@@ -386,8 +389,8 @@ public class OperatorMain extends BaseMain {
     @Override
     protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
       return isNotAuthorizedOrForbidden(callResponse)
-              ? doNext(new CallBuilder().listDomainAsync(getOperatorNamespace(),
-                new CrdPresenceResponseStep(getNext())), packet) : super.onFailureNoRetry(packet, callResponse);
+          ? doNext(RequestBuilder.DOMAIN.list(getOperatorNamespace(), new CrdPresenceResponseStep(getNext())), packet)
+          : super.onFailureNoRetry(packet, callResponse);
     }
   }
 

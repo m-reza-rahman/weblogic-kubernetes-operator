@@ -12,6 +12,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.JSON;
 import io.swagger.annotations.ApiModel;
 import oracle.kubernetes.common.logging.BaseLoggingFormatter;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
@@ -58,7 +59,7 @@ public class OperatorLoggingFormatter extends BaseLoggingFormatter<Fiber> {
   }
 
   private DomainPresenceInfo getDomainPresenceInfo(Packet packet) {
-    return packet.getSpi(DomainPresenceInfo.class);
+    return (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
   }
 
   /**

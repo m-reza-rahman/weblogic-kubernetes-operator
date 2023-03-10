@@ -32,6 +32,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.calls.FailureStatusSource;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
@@ -238,10 +239,6 @@ public class DomainStatusUpdater {
     FailureStatusSource failure = UnrecoverableErrorBuilder.fromFailedCall(callResponse);
 
     LOGGER.severe(MessageKeys.CALL_FAILED, failure.getMessage(), failure.getReason());
-    ApiException apiException = callResponse.getE();
-    if (apiException != null) {
-      LOGGER.fine(MessageKeys.EXCEPTION, apiException);
-    }
 
     return new FailureStep(KUBERNETES, failure.getMessage());
   }
@@ -367,7 +364,8 @@ public class DomainStatusUpdater {
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getObject() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getObject());
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.setDomain(callResponse.getObject());
       }
       return doNext(createClusterResourceStatusUpdaterStep(getNext()), packet);
     }
@@ -386,7 +384,7 @@ public class DomainStatusUpdater {
     }
 
     private Step createDomainRefreshStep(DomainStatusUpdaterContext context) {
-      return new CallBuilder().readDomainAsync(context.getDomainName(), context.getNamespace(), new DomainUpdateStep());
+      return RequestBuilder.DOMAIN.get(context.getNamespace(), context.getDomainName(), new DomainUpdateStep());
     }
   }
 
@@ -394,7 +392,8 @@ public class DomainStatusUpdater {
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getObject() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getObject());
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.setDomain(callResponse.getObject());
       }
       return doNext(packet);
     }
@@ -514,10 +513,7 @@ public class DomainStatusUpdater {
           .withSpec(null)
           .withStatus(status);
 
-      return new CallBuilder().replaceDomainStatusAsync(
-          getDomainName(),
-          getNamespace(),
-          newDomain,
+      return RequestBuilder.DOMAIN.updateStatus(newDomain, DomainResource::getStatus,
           domainStatusUpdaterStep.createResponseStep(this));
     }
 
@@ -633,14 +629,14 @@ public class DomainStatusUpdater {
     }
 
     private boolean shouldSkipDomainStatusUpdate(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return info.getServerStartupInfo() == null
           && info.clusterStatusInitialized()
           && !endOfProcessing;
     }
 
     private boolean isDomainNotPresent(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return info == null || info.getDomain() == null;
     }
 
@@ -678,7 +674,8 @@ public class DomainStatusUpdater {
           setStatusDetails(status);
         }
         if (getDomain() != null) {
-          updateStatusDetails(status, packet.getSpi(DomainPresenceInfo.class));
+          DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+          updateStatusDetails(status, info);
           setStatusConditions(status);
         }
       }

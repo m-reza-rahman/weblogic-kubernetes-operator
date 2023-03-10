@@ -141,7 +141,7 @@ public class ServerStatusReader {
       final long unchangedCountToDelayStatusRecheck
           = TuningParameters.getInstance().getUnchangedCountToDelayStatusRecheck();
       final int eventualLongDelay = TuningParameters.getInstance().getEventualLongDelay();
-      final DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      final DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       final LastKnownStatus lastKnownStatus = info.getLastKnownServerStatus(serverName);
       final V1Pod currentPod = Optional.ofNullable(info.getServerPod(serverName)).orElse(null);
 
@@ -292,7 +292,8 @@ public class ServerStatusReader {
 
     @Override
     public Void apply(Packet packet) {
-      return doNext(getNextStep(packet.getSpi(DomainPresenceInfo.class)), packet);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+      return doNext(getNextStep(info), packet);
     }
 
     private Step getNextStep(DomainPresenceInfo info) {
