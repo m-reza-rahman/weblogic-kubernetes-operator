@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -50,7 +49,6 @@ import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.steps.BeforeAdminServiceStep;
 import oracle.kubernetes.operator.steps.WatchPodReadyAdminStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.operator.work.FiberGate;
@@ -84,9 +82,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   private static final String MODIFIED = "MODIFIED";
   private static final String DELETED = "DELETED";
   private static final String ERROR = "ERROR";
-
-  @SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal"})
-  private static String debugPrefix = null;  // Debugging: set this to a non-null value to dump the make-right steps
 
   /** A map that holds at most one FiberGate per namespace to run make-right steps. */
   @SuppressWarnings("FieldMayBeFinal")
@@ -515,7 +510,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   private String getDomainUid(Fiber fiber) {
     return Optional.ofNullable(fiber)
           .map(Fiber::getPacket)
-          .map(p -> p.getSpi(DomainPresenceInfo.class))
+          .map(p -> (DomainPresenceInfo) p.get(ProcessingConstants.DOMAIN_PRESENCE_INFO))
           .map(DomainPresenceInfo::getDomainUid).orElse("");
   }
 
@@ -601,7 +596,11 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   @Override
   public void updateDomainStatus(@Nonnull V1Pod pod, DomainPresenceInfo info) {
     Optional.ofNullable(IntrospectionStatus.createStatusUpdateSteps(pod))
-          .ifPresent(steps -> delegate.runSteps(new Packet().with(info), steps, null));
+          .ifPresent(steps -> {
+            Packet packet = new Packet();
+            packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, info);
+            delegate.runSteps(packet, steps, null);
+          });
   }
 
 
@@ -1081,8 +1080,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
 
     void execute() {
-      Optional.ofNullable(debugPrefix).ifPresent(prefix -> packet.put(Fiber.DEBUG_FIBER, prefix));
-
       if (operation.isWillInterrupt()) {
         gate.startFiber(presenceInfo.getResourceName(), firstStep, packet, createCompletionCallback());
       } else {
@@ -1139,11 +1136,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     @Nonnull
     private Packet createPacket() {
       Packet packet = new Packet();
-      packet
-          .getComponents()
-          .put(
-              ProcessingConstants.DOMAIN_COMPONENT_NAME,
-              Component.createFor(delegate.getKubernetesVersion()));
+      packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, delegate.getKubernetesVersion());
       packet.put(LoggingFilter.LOGGING_FILTER_PACKET_KEY, loggingFilter);
       return packet;
     }
@@ -1153,7 +1146,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       public Void apply(Packet packet) {
         Optional.ofNullable(domains.get(getNamespace()))
             .map(n -> n.get(getDomainUid()))
-            .ifPresent(i -> i.addToPacket(packet));
+            .ifPresent(i -> packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, i));
 
         return doNext(packet);
       }

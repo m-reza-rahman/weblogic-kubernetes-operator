@@ -160,7 +160,7 @@ public class HttpAsyncRequestStep extends Step {
     }
 
     private DomainPresenceInfo getDomainPresenceInfo() {
-      return packet.getSpi(DomainPresenceInfo.class);
+      return (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     }
 
     private int getHttpRequestFailureThreshold() {

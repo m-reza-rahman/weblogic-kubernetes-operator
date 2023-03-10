@@ -115,7 +115,7 @@ public class ManagedServersUpStep extends Step {
   @Override
   public Void apply(Packet packet) {
     LOGGER.entering();
-    DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     WlsDomainConfig config = (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
 
     ServersUpStepFactory factory = new ServersUpStepFactory(config, info);

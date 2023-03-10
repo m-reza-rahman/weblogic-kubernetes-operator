@@ -87,7 +87,7 @@ public class JobStepContext extends BasePodStepContext {
   private Step conflictStep;
 
   JobStepContext(Packet packet) {
-    super(packet.getSpi(DomainPresenceInfo.class));
+    super((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
     domainTopology = packet.getValue(ProcessingConstants.DOMAIN_TOPOLOGY);
     init();
   }

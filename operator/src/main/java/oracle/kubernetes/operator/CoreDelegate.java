@@ -11,14 +11,12 @@ import java.util.concurrent.TimeUnit;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.http.metrics.MetricsServer;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
-import oracle.kubernetes.operator.work.PacketComponent;
 import oracle.kubernetes.operator.work.Step;
 
 import static oracle.kubernetes.operator.ProcessingConstants.DELEGATE_COMPONENT_NAME;
 
-public interface CoreDelegate extends PacketComponent {
+public interface CoreDelegate {
 
   SemanticVersion getProductVersion();
 
@@ -49,14 +47,11 @@ public interface CoreDelegate extends PacketComponent {
   }
 
   default void runSteps(Packet packet, Step firstStep, Runnable completionAction) {
-    runStepsInternal(packet.with(this), firstStep, completionAction);
+    packet.put(DELEGATE_COMPONENT_NAME, this);
+    runStepsInternal(packet, firstStep, completionAction);
   }
 
   void runStepsInternal(Packet packet, Step firstStep, Runnable completionAction);
-
-  default void addToPacket(Packet packet) {
-    packet.getComponents().put(DELEGATE_COMPONENT_NAME, Component.createFor(CoreDelegate.class, this));
-  }
 
   ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
 

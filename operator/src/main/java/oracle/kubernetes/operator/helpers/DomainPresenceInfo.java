@@ -41,7 +41,6 @@ import oracle.kubernetes.operator.processing.EffectiveClusterSpec;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -65,8 +64,6 @@ import static oracle.kubernetes.operator.helpers.PodHelper.isNotAdminServer;
  * including the scan and the Pods and Services for servers.
  */
 public class DomainPresenceInfo extends ResourcePresenceInfo {
-
-  private static final String COMPONENT_KEY = "dpi";
   private final String domainUid;
   private final AtomicReference<DomainResource> domain;
   private final AtomicBoolean isDeleting = new AtomicBoolean(false);
@@ -294,11 +291,7 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
   }
 
   public static Optional<DomainPresenceInfo> fromPacket(Packet packet) {
-    return Optional.ofNullable(packet.getSpi(DomainPresenceInfo.class));
-  }
-
-  public void addToPacket(Packet packet) {
-    packet.getComponents().put(COMPONENT_KEY, Component.createFor(this));
+    return Optional.of((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
   }
 
   public String getAdminServerName() {

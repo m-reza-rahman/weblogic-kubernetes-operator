@@ -15,6 +15,7 @@ import javax.annotation.Nonnull;
 
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
@@ -111,7 +112,8 @@ public class ClusterResourceStatusUpdater {
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
       if (callResponse.getObject() != null) {
-        packet.getSpi(DomainPresenceInfo.class).addClusterResource(callResponse.getObject());
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.addClusterResource(callResponse.getObject());
       }
       return doNext(packet);
     }
@@ -132,8 +134,8 @@ public class ClusterResourceStatusUpdater {
     }
 
     private Step createClusterResourceRefreshStep() {
-      return new CallBuilder().readClusterAsync(context.getClusterResourceName(),
-          context.getNamespace(), new ReadClusterResponseStep());
+      return RequestBuilder.CLUSTER.get(
+          context.getNamespace(), context.getClusterResourceName(), new ReadClusterResponseStep());
     }
   }
 
@@ -276,12 +278,9 @@ public class ClusterResourceStatusUpdater {
     }
 
     private Step createReplaceClusterStatusAsyncStep() {
-      return new CallBuilder()
-          .replaceClusterStatusAsync(
-              getClusterResourceName(),
-              getNamespace(),
-              createReplacementClusterResource(),
-              new ClusterResourceStatusReplaceResponseStep(this));
+      return RequestBuilder.CLUSTER.updateStatus(
+          createReplacementClusterResource(), ClusterResource::getStatus,
+          new ClusterResourceStatusReplaceResponseStep(this));
     }
   }
 
@@ -289,7 +288,8 @@ public class ClusterResourceStatusUpdater {
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
       if (callResponse.getObject() != null) {
-        packet.getSpi(DomainPresenceInfo.class).addClusterResource(callResponse.getObject());
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.addClusterResource(callResponse.getObject());
       }
       return doNext(packet);
     }

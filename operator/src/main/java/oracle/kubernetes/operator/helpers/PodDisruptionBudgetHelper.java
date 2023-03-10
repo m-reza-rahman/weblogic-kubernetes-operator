@@ -81,7 +81,7 @@ public class PodDisruptionBudgetHelper {
     private final String clusterName;
 
     PodDisruptionBudgetContext(Step conflictStep, Packet packet) {
-      super(packet.getSpi(DomainPresenceInfo.class));
+      super((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
       this.conflictStep = conflictStep;
       this.clusterName = (String) packet.get(ProcessingConstants.CLUSTER_NAME);
     }

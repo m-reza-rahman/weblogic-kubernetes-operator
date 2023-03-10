@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -23,12 +22,11 @@ import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.DomainProcessorDelegate;
 import oracle.kubernetes.operator.DomainProcessorImpl;
-import oracle.kubernetes.operator.JobAwaiterStepFactory;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.MakeRightExecutor;
-import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.Processors;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainValidationSteps;
@@ -43,7 +41,6 @@ import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.steps.DeleteDomainStep;
 import oracle.kubernetes.operator.steps.ManagedServersUpStep;
 import oracle.kubernetes.operator.steps.MonitoringExporterSteps;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
@@ -185,14 +182,13 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   @Override
   @Nonnull
   public Packet createPacket() {
-    Packet packet = new Packet().with(delegate).with(liveInfo).with(this);
-    packet
-        .getComponents()
-        .put(
-            ProcessingConstants.DOMAIN_COMPONENT_NAME,
-            Component.createFor(delegate.getKubernetesVersion(),
-                PodAwaiterStepFactory.class, delegate.getPodAwaiterStepFactory(getNamespace()),
-                JobAwaiterStepFactory.class, delegate.getJobAwaiterStepFactory(getNamespace())));
+    Packet packet = new Packet();
+    packet.put(ProcessingConstants.DELEGATE_COMPONENT_NAME, delegate);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, liveInfo);
+    packet.put(ProcessingConstants.MAKE_RIGHT_DOMAIN_OPERATION, this);
+    packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, delegate.getKubernetesVersion());
+    packet.put(ProcessingConstants.PODWATCHER_COMPONENT_NAME, delegate.getPodAwaiterStepFactory(getNamespace()));
+    packet.put(ProcessingConstants.JOBWATCHER_COMPONENT_NAME, delegate.getJobAwaiterStepFactory(getNamespace()));
     return packet;
   }
 
@@ -230,7 +226,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   private static Step createListClusterResourcesStep(String domainNamespace) {
-    return new CallBuilder().listClusterAsync(domainNamespace, new ListClusterResourcesResponseStep());
+    return RequestBuilder.CLUSTER.list(domainNamespace, new ListClusterResourcesResponseStep());
   }
 
   @Override
@@ -242,7 +238,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<ClusterList> callResponse) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       callResponse.getObject().getItems().stream().filter(c -> isForDomain(c, info))
           .forEach(info::addClusterResource);
 
@@ -351,9 +347,10 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
     @Override
     public Void apply(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
-      return doNext(new CallBuilder().readDomainAsync(info.getDomainName(), info.getNamespace(),
-          new ReadDomainResponseStep(getNext())), packet);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+      return doNext(
+          RequestBuilder.DOMAIN.get(info.getNamespace(), info.getDomainName(), new ReadDomainResponseStep(getNext())),
+          packet);
     }
   }
 
@@ -437,9 +434,9 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
         private void processList(V1PodList list) {
           Collection<String> serverNamesFromPodList = list.getItems().stream()
-              .map(PodHelper::getPodServerName).collect(Collectors.toList());
+              .map(PodHelper::getPodServerName).toList();
 
-          info.getServerNames().stream().filter(s -> !serverNamesFromPodList.contains(s)).collect(Collectors.toList())
+          info.getServerNames().stream().filter(s -> !serverNamesFromPodList.contains(s)).toList()
               .forEach(name -> info.deleteServerPodFromEvent(name, null));
           list.getItems().forEach(this::addPod);
         }

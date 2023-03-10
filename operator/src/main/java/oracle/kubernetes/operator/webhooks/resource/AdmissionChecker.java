@@ -10,7 +10,6 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.ApiException;
-import oracle.kubernetes.operator.calls.CallBuilder;
 import oracle.kubernetes.operator.webhooks.model.AdmissionResponse;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;

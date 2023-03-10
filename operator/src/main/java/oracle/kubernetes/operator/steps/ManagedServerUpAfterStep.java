@@ -52,7 +52,8 @@ public class ManagedServerUpAfterStep extends Step {
   }
 
   private String getDomainUid(Packet packet) {
-    return packet.getSpi(DomainPresenceInfo.class).getDomainUid();
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+    return info.getDomainUid();
   }
 
   private Set<String> getRollingServerNames(Packet packet) {

@@ -38,7 +38,6 @@ import oracle.kubernetes.operator.helpers.AuthorizationProxy;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Operation;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Resource;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Scope;
-import oracle.kubernetes.operator.calls.CallBuilder;
 import oracle.kubernetes.operator.http.rest.backend.RestBackend;
 import oracle.kubernetes.operator.http.rest.model.DomainAction;
 import oracle.kubernetes.operator.http.rest.model.DomainActionType;
@@ -79,7 +78,6 @@ public class RestBackendImpl implements RestBackend {
   private final String principal;
   private final Supplier<Collection<String>> domainNamespaces;
   private V1UserInfo userInfo;
-  private final CallBuilder callBuilder;
 
   /**
    * Construct a RestBackendImpl that is used to handle one WebLogic operator REST request.
@@ -546,10 +544,6 @@ public class RestBackendImpl implements RestBackend {
   RestBackendImpl withAuthorizationProxy(AuthorizationProxy authorizationProxy) {
     this.atz = authorizationProxy;
     return this;
-  }
-
-  CallBuilder getCallBuilder() {
-    return this.callBuilder;
   }
 
   interface TopologyRetriever {

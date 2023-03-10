@@ -19,6 +19,8 @@ import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.EventConstants;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
+import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -172,7 +174,7 @@ public class EventHelper {
     private static CoreV1Event createEventModel(
         Packet packet,
         EventData eventData) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       EventItem eventItem = eventData.eventItem;
       eventData.domainPresenceInfo(info);
       addAdditionalMessage(eventData, info);
@@ -202,23 +204,15 @@ public class EventHelper {
     private Step createCreateEventCall(CoreV1Event event) {
       LOGGER.fine(MessageKeys.CREATING_EVENT, eventData.eventItem);
       event.firstTimestamp(event.getLastTimestamp());
-      return new CallBuilder()
-          .createEventAsync(
-              event.getMetadata().getNamespace(),
-              event,
-              new CreateEventResponseStep(getNext()));
+      return RequestBuilder.EVENT.create(event, new CreateEventResponseStep(getNext()));
     }
 
     private Step createReplaceEventCall(CoreV1Event event, @NotNull CoreV1Event existingEvent) {
       LOGGER.fine(MessageKeys.REPLACING_EVENT, eventData.eventItem);
       existingEvent.count(Optional.ofNullable(existingEvent.getCount()).map(c -> c + 1).orElse(1));
       existingEvent.lastTimestamp(event.getLastTimestamp());
-      return new CallBuilder()
-          .replaceEventAsync(
-              existingEvent.getMetadata().getName(),
-              existingEvent.getMetadata().getNamespace(),
-              existingEvent,
-              new ReplaceEventResponseStep(this, existingEvent, getNext()));
+      return RequestBuilder.EVENT.update(existingEvent,
+          new ReplaceEventResponseStep(this, existingEvent, getNext()));
     }
 
     private CoreV1Event getExistingEvent(CoreV1Event event) {
@@ -314,10 +308,8 @@ public class EventHelper {
       }
 
       private Step createEventRefreshStep(CoreV1Event event) {
-        return new CallBuilder().readEventAsync(
-            event.getMetadata().getName(),
-            event.getMetadata().getNamespace(),
-            new ReadEventResponseStep(getNext()));
+        return RequestBuilder.EVENT.get(
+            event.getMetadata().getNamespace(), event.getMetadata().getName(), new ReadEventResponseStep(getNext()));
       }
     }
 
@@ -1182,23 +1174,15 @@ public class EventHelper {
     private Step createCreateEventCall(CoreV1Event event) {
       LOGGER.fine(MessageKeys.CREATING_EVENT, eventData.eventItem);
       event.firstTimestamp(event.getLastTimestamp());
-      return new CallBuilder()
-          .createEventAsync(
-              event.getMetadata().getNamespace(),
-              event,
-              new CreateClusterResourceEventResponseStep(getNext()));
+      return RequestBuilder.EVENT.create(event, new CreateClusterResourceEventResponseStep(getNext()));
     }
 
     private Step createReplaceEventCall(CoreV1Event event, @NotNull CoreV1Event existingEvent) {
       LOGGER.fine(MessageKeys.REPLACING_EVENT, eventData.eventItem);
       existingEvent.count(Optional.ofNullable(existingEvent.getCount()).map(c -> c + 1).orElse(1));
       existingEvent.lastTimestamp(event.getLastTimestamp());
-      return new CallBuilder()
-          .replaceEventAsync(
-              existingEvent.getMetadata().getName(),
-              existingEvent.getMetadata().getNamespace(),
-              existingEvent,
-              new ReplaceClusterResourceEventResponseStep(this, existingEvent, getNext()));
+      return RequestBuilder.EVENT.update(
+          existingEvent, new ReplaceClusterResourceEventResponseStep(this, existingEvent, getNext()));
     }
 
     private CoreV1Event getExistingClusterEvent(CoreV1Event event) {
@@ -1258,10 +1242,8 @@ public class EventHelper {
       }
 
       private Step createClusterEventRefreshStep(CoreV1Event event) {
-        return new CallBuilder().readEventAsync(
-            event.getMetadata().getName(),
-            event.getMetadata().getNamespace(),
-            new ReadEventResponseStep(getNext()));
+        return RequestBuilder.EVENT.get(
+            event.getMetadata().getNamespace(), event.getMetadata().getName(), new ReadEventResponseStep(getNext()));
       }
     }
 

@@ -21,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1SubjectRulesReviewStatus;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.helpers.HealthCheckHelper;
@@ -29,7 +30,6 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -95,9 +95,7 @@ class DomainRecheck {
       // we add a logging context to pass the namespace information to the LoggingFormatter
 
       if (isDomainNamespace) {
-        packet.getComponents().put(
-            LoggingContext.LOGGING_CONTEXT_KEY,
-            Component.createFor(new LoggingContext().namespace(ns)));
+        packet.put(LoggingContext.LOGGING_CONTEXT_KEY, new LoggingContext().namespace(ns));
       }
 
       V1SubjectRulesReviewStatus status = nss.getRulesReviewStatus().updateAndGet(prev -> {
@@ -142,8 +140,7 @@ class DomainRecheck {
    * identified as domain namespaces.
    */
   Step readExistingNamespaces() {
-    return new CallBuilder()
-          .listNamespaceAsync(new NamespaceListResponseStep());
+    return RequestBuilder.NAMESPACE.list(new NamespaceListResponseStep());
   }
 
   private class NamespaceListResponseStep extends DefaultResponseStep<V1NamespaceList> {

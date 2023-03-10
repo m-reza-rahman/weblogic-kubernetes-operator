@@ -23,18 +23,12 @@ public class WatchPodReadyAdminStep extends Step {
 
   @Override
   public Void apply(Packet packet) {
-    DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     WlsDomainConfig domainTopology =
         (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
     V1Pod adminPod = info.getServerPod(domainTopology.getAdminServerName());
 
-    PodAwaiterStepFactory pw = podAwaiterStepFactory;
-    packet
-        .getComponents()
-        .put(
-            ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-            Component.createFor(PodAwaiterStepFactory.class, pw));
-
-    return doNext(pw.waitForReady(adminPod, getNext()), packet);
+    packet.put(ProcessingConstants.PODWATCHER_COMPONENT_NAME, podAwaiterStepFactory);
+    return doNext(podAwaiterStepFactory.waitForReady(adminPod, getNext()), packet);
   }
 }

@@ -115,7 +115,8 @@ public class ManagedServerUpIteratorStep extends Step {
 
 
   private String getDomainUid(Packet packet) {
-    return packet.getSpi(DomainPresenceInfo.class).getDomain().getDomainUid();
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+    return info.getDomain().getDomainUid();
   }
 
   private List<String> getServerNames(Collection<ServerStartupInfo> startupInfos) {
@@ -128,7 +129,8 @@ public class ManagedServerUpIteratorStep extends Step {
   }
 
   private StepAndPacket createManagedServerUpWaiters(Packet packet, ServerStartupInfo ssi) {
-    String podName = getPodName(packet.getSpi(DomainPresenceInfo.class), ssi.getServerName());
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+    String podName = getPodName(info, ssi.getServerName());
     return new StepAndPacket(Optional.ofNullable(packet.getSpi(PodAwaiterStepFactory.class))
             .map(p -> p.waitForReady(podName, null)).orElse(null),
             createPacketForServer(packet, ssi));
@@ -145,7 +147,7 @@ public class ManagedServerUpIteratorStep extends Step {
   private Map<String, StartClusteredServersStepFactory> getStartClusteredServersStepFactories(
       Collection<ServerStartupInfo> startupInfos,
       Packet packet) {
-    DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
 
     Map<String, StartClusteredServersStepFactory> factories = new HashMap<>();
     startupInfos.stream()
@@ -193,7 +195,7 @@ public class ManagedServerUpIteratorStep extends Step {
     }
 
     private boolean hasServerAvailableToStart(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       String adminServerName = ((WlsDomainConfig) packet.get(DOMAIN_TOPOLOGY)).getAdminServerName();
       return (getNumServersStarted() <= info.getNumScheduledManagedServers(clusterName, adminServerName)
               && (canStartConcurrently(info.getNumReadyManagedServers(clusterName, adminServerName))));

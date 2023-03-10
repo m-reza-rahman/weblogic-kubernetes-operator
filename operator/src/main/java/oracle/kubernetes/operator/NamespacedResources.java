@@ -20,6 +20,8 @@ import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetList;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.ListOptions;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -73,7 +75,7 @@ class NamespacedResources {
 
   private Step createConfigMapListStep(List<Consumer<V1ConfigMapList>> processing) {
     return Step.chain(getPauseWatchersStep(getConfigMapWatcher()),
-        new CallBuilder().listConfigMapsAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.CM.list(namespace, new ListResponseStep<>(processing)));
   }
 
   private ConfigMapWatcher getConfigMapWatcher() {
@@ -86,8 +88,9 @@ class NamespacedResources {
 
   private Step createPodEventListStep(List<Consumer<CoreV1EventList>> processing) {
     return Step.chain(getPauseWatchersStep(getEventWatcher()),
-        new CallBuilder().withFieldSelector(ProcessingConstants.READINESS_PROBE_FAILURE_EVENT_FILTER)
-            .listEventAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.EVENT.list(namespace,
+            new ListOptions().fieldSelector(ProcessingConstants.READINESS_PROBE_FAILURE_EVENT_FILTER),
+            new ListResponseStep<>(processing)));
   }
 
   private EventWatcher getEventWatcher() {
@@ -101,8 +104,9 @@ class NamespacedResources {
 
   private Step createOperatorEventListStep(List<Consumer<CoreV1EventList>> processing) {
     return Step.chain(getPauseWatchersStep(getOperatorEventWatcher()),
-        new CallBuilder().withLabelSelectors(ProcessingConstants.OPERATOR_EVENT_LABEL_FILTER)
-            .listEventAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.EVENT.list(namespace,
+            new ListOptions().labelSelector(ProcessingConstants.OPERATOR_EVENT_LABEL_FILTER),
+            new ListResponseStep<>(processing)));
   }
 
   private OperatorEventWatcher getOperatorEventWatcher() {
@@ -116,8 +120,9 @@ class NamespacedResources {
 
   private Step createPodDisruptionBudgetListStep(List<Consumer<V1PodDisruptionBudgetList>> processing) {
     return Step.chain(getPauseWatchersStep(getPodDisruptionBudgetWatcher()),
-        new CallBuilder().withLabelSelectors(forDomainUidSelector(domainUid), getCreatedByOperatorSelector())
-            .listPodDisruptionBudgetAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.PDB.list(namespace,
+            new ListOptions().labelSelector(forDomainUidSelector(domainUid) + "," + getCreatedByOperatorSelector()),
+            new ListResponseStep<>(processing)));
   }
 
   private PodDisruptionBudgetWatcher getPodDisruptionBudgetWatcher() {
@@ -131,7 +136,9 @@ class NamespacedResources {
 
   private Step createJobListStep(List<Consumer<V1JobList>> processing) {
     return Step.chain(getPauseWatchersStep(getJobWatcher()),
-        createSubResourceCallBuilder().listJobAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.JOB.list(namespace,
+            new ListOptions().labelSelector(LabelConstants.CREATEDBYOPERATOR_LABEL + "," + getDomainUidLabel()),
+            new ListResponseStep<>(processing)));
   }
 
   private JobWatcher getJobWatcher() {
@@ -144,15 +151,13 @@ class NamespacedResources {
 
   private Step createPodListStep(List<Consumer<V1PodList>> processing) {
     return Step.chain(getPauseWatchersStep(getPodWatcher()),
-        createSubResourceCallBuilder().listPodAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.POD.list(namespace,
+            new ListOptions().labelSelector(LabelConstants.CREATEDBYOPERATOR_LABEL + "," + getDomainUidLabel()),
+            new ListResponseStep<>(processing)));
   }
 
   private PodWatcher getPodWatcher() {
     return Optional.ofNullable(domainNamespaces).map(n -> n.getPodWatcher(namespace)).orElse(null);
-  }
-
-  private CallBuilder createSubResourceCallBuilder() {
-    return new CallBuilder().withLabelSelectors(LabelConstants.CREATEDBYOPERATOR_LABEL, getDomainUidLabel());
   }
 
   private String getDomainUidLabel() {
@@ -165,7 +170,9 @@ class NamespacedResources {
 
   private Step createServiceListStep(List<Consumer<V1ServiceList>> processing) {
     return Step.chain(getPauseWatchersStep(getServiceWatcher()),
-        createSubResourceCallBuilder().listServiceAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.SERVICE.list(namespace,
+            new ListOptions().labelSelector(LabelConstants.CREATEDBYOPERATOR_LABEL + "," + getDomainUidLabel()),
+            new ListResponseStep<>(processing)));
   }
 
   private ServiceWatcher getServiceWatcher() {
@@ -178,7 +185,7 @@ class NamespacedResources {
 
   private Step createClusterListSteps(List<Consumer<ClusterList>> processing) {
     return Step.chain(getPauseWatchersStep(getClusterWatcher()),
-        new CallBuilder().listClusterAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.CLUSTER.list(namespace, new ListResponseStep<>(processing)));
   }
 
   private ClusterWatcher getClusterWatcher() {
@@ -191,7 +198,7 @@ class NamespacedResources {
 
   private Step createDomainListSteps(List<Consumer<DomainList>> processing) {
     return Step.chain(getPauseWatchersStep(getDomainWatcher()),
-        new CallBuilder().listDomainAsync(namespace, new ListResponseStep<>(processing)));
+        RequestBuilder.DOMAIN.list(namespace, new ListResponseStep<>(processing)));
   }
 
   private DomainWatcher getDomainWatcher() {

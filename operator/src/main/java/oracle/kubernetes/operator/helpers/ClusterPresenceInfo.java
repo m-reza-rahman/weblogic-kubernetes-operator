@@ -7,8 +7,6 @@ import java.util.Optional;
 
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.MakeRightClusterOperation;
-import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 
 /**
@@ -16,7 +14,6 @@ import oracle.kubernetes.weblogic.domain.model.ClusterResource;
  */
 public class ClusterPresenceInfo extends ResourcePresenceInfo {
 
-  private static final String COMPONENT_KEY = "cpi";
   private ClusterResource cluster;
 
   /**
@@ -40,11 +37,6 @@ public class ClusterPresenceInfo extends ResourcePresenceInfo {
 
   public void setCluster(ClusterResource cluster) {
     this.cluster = cluster;
-  }
-
-  @Override
-  public void addToPacket(Packet packet) {
-    packet.getComponents().put(COMPONENT_KEY, Component.createFor(this));
   }
 
   /**

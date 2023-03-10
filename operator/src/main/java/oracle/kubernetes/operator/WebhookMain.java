@@ -12,7 +12,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.WebhookHelper;
 import oracle.kubernetes.operator.http.rest.BaseRestServer;
@@ -193,14 +195,18 @@ public class WebhookMain extends BaseMain {
   // domains in the operator's namespace. That should succeed (although usually returning an empty list)
   // if the CRD is present.
   private Step createDomainCRDPresenceCheck() {
-    return new CallBuilder().listDomainAsync(getWebhookNamespace(), new CrdPresenceResponseStep<>());
+    return RequestBuilder.DOMAIN.list(getWebhookNamespace(),
+        new ListOptions().isPartialObjectMetadataListRequest(true),
+        new CrdPresenceResponseStep<>());
   }
 
   // Returns a step that verifies the presence of an installed cluster CRD. It does this by attempting to list the
   // domains in the operator's namespace. That should succeed (although usually returning an empty list)
   // if the CRD is present.
   private Step createClusterCRDPresenceCheck() {
-    return new CallBuilder().listClusterAsync(getWebhookNamespace(), new CrdPresenceResponseStep<>());
+    return RequestBuilder.CLUSTER.list(getWebhookNamespace(),
+        new ListOptions().isPartialObjectMetadataListRequest(true),
+        new CrdPresenceResponseStep<>());
   }
 
   // on failure, aborts the processing.

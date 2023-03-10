@@ -8,12 +8,11 @@ import java.util.Optional;
 
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import oracle.kubernetes.operator.work.PacketComponent;
 
 /**
  * Base class for DomainPresenceInfo and ClusterPresenceInfo.
  */
-public abstract class ResourcePresenceInfo implements PacketComponent {
+public abstract class ResourcePresenceInfo {
 
   final String namespace;
 

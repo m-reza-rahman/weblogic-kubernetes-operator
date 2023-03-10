@@ -30,7 +30,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.utils.PathSupport;
 import oracle.kubernetes.operator.utils.SelfSignedCertUtils;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.apache.commons.io.FileUtils;
@@ -85,7 +84,7 @@ public class InitializeWebhookIdentityStep extends Step {
       }
     } catch (IdentityInitializationException | IOException e) {
       LOGGER.warning(WEBHOOK_IDENTITY_INITIALIZATION_FAILED, e.toString());
-      packet.getComponents().put(EXCEPTION, Component.createFor(Exception.class, e));
+      packet.put(EXCEPTION, e);
       return doNext(getNext(), packet);
     }
   }
@@ -175,7 +174,7 @@ public class InitializeWebhookIdentityStep extends Step {
           reuseExistingIdentity(data);
         } catch (Exception e) {
           LOGGER.severe(WEBHOOK_IDENTITY_INITIALIZATION_FAILED, e.toString());
-          packet.getComponents().put(EXCEPTION, Component.createFor(Exception.class, e));
+          packet.put(EXCEPTION, e);
         }
         return doNext(getNext(), packet);
       }

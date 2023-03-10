@@ -76,7 +76,7 @@ public class ReadHealthStep extends Step {
   @Override
   public Void apply(Packet packet) {
     String serverName = (String) packet.get(ProcessingConstants.SERVER_NAME);
-    DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     V1Service service = info.getServerService(serverName);
     if (service == null) {
       return doNext(packet);
@@ -159,7 +159,7 @@ public class ReadHealthStep extends Step {
     }
 
     private WlsDomainConfig getWlsDomainConfig() {
-      DomainPresenceInfo info = getPacket().getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) getPacket().get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       WlsDomainConfig domainConfig =
           (WlsDomainConfig) getPacket().get(ProcessingConstants.DOMAIN_TOPOLOGY);
       if (domainConfig == null) {
@@ -378,7 +378,7 @@ public class ReadHealthStep extends Step {
       }
 
       private DomainPresenceInfo getDomainPresenceInfo() {
-        return getPacket().getSpi(DomainPresenceInfo.class);
+        return (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       }
 
       Packet getPacket() {
