@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.logging;
 
 import java.util.Optional;
 
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.work.Packet;
 
 /** Necessary additional context information for Operator log messages. */
@@ -15,7 +16,7 @@ public class LoggingContext {
   protected String domainUid;
 
   public static Optional<LoggingContext> fromPacket(Packet packet) {
-    return Optional.ofNullable(packet.getSpi(LoggingContext.class));
+    return Optional.ofNullable((LoggingContext) packet.get(LOGGING_CONTEXT_KEY));
   }
   
   public LoggingContext namespace(String namespace) {
