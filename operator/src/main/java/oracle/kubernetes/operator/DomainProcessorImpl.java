@@ -28,7 +28,6 @@ import io.kubernetes.client.util.Watch;
 import oracle.kubernetes.common.logging.LoggingFilter;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.common.logging.OncePerMessageLoggingFilter;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.helpers.ClusterPresenceInfo;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
@@ -882,8 +881,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       for (Throwable t : ((Step.MultiThrowable) throwable).getThrowables()) {
         logThrowable(t);
       }
-    } else if (throwable instanceof UnrecoverableCallException) {
-      ((UnrecoverableCallException) throwable).log();
     } else {
       LOGGER.severe(MessageKeys.EXCEPTION, throwable);
     }

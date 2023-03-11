@@ -3,13 +3,10 @@
 
 package oracle.kubernetes.operator.calls;
 
-import java.util.Collections;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.Set;
 import javax.annotation.Nonnull;
 
-import io.kubernetes.client.common.KubernetesListObject;
-import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
@@ -23,10 +20,15 @@ import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_METHOD;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_CONFLICT;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_FORBIDDEN;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_GONE;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAUTHORIZED;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNPROCESSABLE_ENTITY;
 import static oracle.kubernetes.operator.calls.RequestStep.CONTINUE;
 import static oracle.kubernetes.operator.calls.RequestStep.FIBER_TIMEOUT;
 import static oracle.kubernetes.operator.calls.RequestStep.accessContinue;
@@ -42,6 +44,31 @@ import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERN
  */
 public abstract class ResponseStep<T extends KubernetesType> extends Step {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
+  private static final Set<Integer> UNRECOVERABLE_ERROR_CODES = Set.of(
+      HTTP_BAD_REQUEST, HTTP_UNAUTHORIZED, HTTP_FORBIDDEN, HTTP_NOT_FOUND,
+      HTTP_BAD_METHOD, HTTP_GONE, HTTP_UNPROCESSABLE_ENTITY, HTTP_INTERNAL_ERROR);
+
+  public static boolean isUnrecoverable(KubernetesApiResponse<?> r) {
+    return UNRECOVERABLE_ERROR_CODES.contains(r.getHttpStatusCode());
+  }
+
+  public static boolean isNotFound(KubernetesApiResponse<?> r) {
+    int code = r.getHttpStatusCode();
+    return code == HTTP_NOT_FOUND || code == HTTP_GONE;
+  }
+
+  public static boolean hasConflict(KubernetesApiResponse<?> r) {
+    return r.getHttpStatusCode() == HTTP_CONFLICT;
+  }
+
+  public static boolean isForbidden(KubernetesApiResponse<?> r) {
+    return r.getHttpStatusCode() == HTTP_FORBIDDEN;
+  }
+
+  public static boolean isNotAuthorizedOrForbidden(KubernetesApiResponse<?> r) {
+    return r.getHttpStatusCode() == HTTP_UNAUTHORIZED || r.getHttpStatusCode() == HTTP_FORBIDDEN;
+  }
 
   private final Step conflictStep;
   private Step previousStep = null;
@@ -153,35 +180,6 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
         .orElseGet(() -> logNoRetry(packet, callResponse));
   }
 
-  private Void logNoRetry(Packet packet, KubernetesApiResponse<T> callResponse) {
-    if ((callResponse != null)
-        && (callResponse.getHttpStatusCode() != HTTP_NOT_FOUND)
-        && (callResponse.getHttpStatusCode() != HTTP_CONFLICT)) {
-      addDomainFailureStatus(packet, callResponse.getRequestParams(), callResponse.getE());
-      if (LOGGER.isWarningEnabled()) {
-        LOGGER.warning(
-            MessageKeys.ASYNC_NO_RETRY,
-            Optional.ofNullable(previousStep).map(Step::identityHash).orElse(""),
-            Optional.of(callResponse.getRequestParams()).map(r -> r.call).orElse("--no call--"),
-            callResponse.getExceptionString(),
-            callResponse.getStatusCode(),
-            callResponse.getHeadersString(),
-            Optional.of(callResponse.getRequestParams()).map(r -> r.namespace).orElse(""),
-            Optional.of(callResponse.getRequestParams()).map(r -> r.name).orElse(""),
-            Optional.of(callResponse.getRequestParams()).map(r -> r.body)
-                .map(b -> LoggingFactory.getJson().serialize(b)).orElse(""),
-            Optional.of(callResponse.getRequestParams()).map(RequestParams::getCallParams)
-                .map(CallParams::getFieldSelector).orElse(""),
-            Optional.of(callResponse.getRequestParams()).map(RequestParams::getCallParams)
-                .map(CallParams::getLabelSelector).orElse(""),
-            Optional.of(callResponse.getRequestParams()).map(RequestParams::getCallParams)
-                .map(CallParams::getResourceVersion).orElse(""),
-            Optional.of(callResponse.getE()).map(ApiException::getResponseBody).orElse(""));
-      }
-    }
-    return null;
-  }
-
   private void addDomainFailureStatus(Packet packet, RequestParams requestParams, ApiException apiException) {
     DomainPresenceInfo.fromPacket(packet)
         .map(DomainPresenceInfo::getDomain)
@@ -259,14 +257,6 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    */
   protected Throwable createTerminationException(Packet packet, KubernetesApiResponse<T> callResponse) {
     return UnrecoverableErrorBuilder.createExceptionFromFailedCall(callResponse);
-  }
-
-  protected boolean isNotAuthorizedOrForbidden(KubernetesApiResponse<T> callResponse) {
-    return callResponse.getHttpStatusCode() == HTTP_UNAUTHORIZED || callResponse.getHttpStatusCode() == HTTP_FORBIDDEN;
-  }
-
-  protected boolean isForbidden(KubernetesApiResponse<T> callResponse) {
-    return callResponse.getHttpStatusCode() == HTTP_FORBIDDEN;
   }
 
   /**

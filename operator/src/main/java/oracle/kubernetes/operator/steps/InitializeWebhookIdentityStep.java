@@ -24,7 +24,6 @@ import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.WebhookMainDelegate;
 import oracle.kubernetes.operator.calls.RequestBuilder;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -223,7 +222,7 @@ public class InitializeWebhookIdentityStep extends Step {
 
     @Override
     public Void onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
-      if (UnrecoverableErrorBuilder.isAsyncCallConflictFailure(callResponse)) {
+      if (isUnrecoverable(callResponse)) {
         return doNext(Step.chain(readSecretResponseStep(getNext(), webhookIdentity), getNext()), packet);
       } else {
         return super.onFailure(packet, callResponse);

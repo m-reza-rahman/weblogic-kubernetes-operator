@@ -38,8 +38,8 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.LogHomeLayoutType;
 import oracle.kubernetes.operator.ModelInImageDomainType;
 import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveIntrospectorJobPodSpec;
@@ -254,7 +254,7 @@ public class JobStepContext extends BasePodStepContext {
    * @return a step to be scheduled.
    */
   Step createJob() {
-    conflictStep = new CallBuilder().createJobAsync(getNamespace(), getDomainUid(), getJobModel(), newCreateResponse());
+    conflictStep = RequestBuilder.JOB.create(getJobModel(), newCreateResponse());
     return conflictStep;
   }
 
@@ -790,7 +790,7 @@ public class JobStepContext extends BasePodStepContext {
 
     @Override
     public Void onFailure(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
-      if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+      if (isUnrecoverable(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
         return onFailure(conflictStep, packet, callResponse);

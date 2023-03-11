@@ -31,9 +31,7 @@ import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.FailureStatusSource;
 import oracle.kubernetes.operator.calls.RequestBuilder;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
@@ -372,7 +370,7 @@ public class DomainStatusUpdater {
 
     @Override
     public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
-      if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+      if (isUnrecoverable(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
         return onFailure(createRetry(context), packet, callResponse);

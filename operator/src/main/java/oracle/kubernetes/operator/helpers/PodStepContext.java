@@ -61,7 +61,6 @@ import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.WebLogicConstants;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -1426,7 +1425,7 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     @Override
     public Void onFailure(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
-      if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+      if (isUnrecoverable(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
         return onFailure(getConflictStep(), packet, callResponse);
