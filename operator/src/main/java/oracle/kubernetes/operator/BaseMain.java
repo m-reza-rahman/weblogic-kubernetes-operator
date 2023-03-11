@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.helpers.HelmAccess;
 import oracle.kubernetes.operator.http.BaseServer;
 import oracle.kubernetes.operator.http.metrics.MetricsServer;
@@ -280,11 +279,7 @@ public abstract class BaseMain {
 
     @Override
     public void onThrowable(Packet packet, Throwable throwable) {
-      if (throwable instanceof UnrecoverableCallException) {
-        ((UnrecoverableCallException) throwable).log();
-      } else {
-        LOGGER.severe(MessageKeys.EXCEPTION, throwable);
-      }
+      LOGGER.severe(MessageKeys.EXCEPTION, throwable);
     }
   }
 }

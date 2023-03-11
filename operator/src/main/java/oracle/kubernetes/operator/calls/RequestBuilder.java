@@ -26,6 +26,8 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
 import io.kubernetes.client.openapi.models.V1TokenReview;
+import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
+import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.GetOptions;
@@ -60,15 +62,23 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
       new RequestBuilder<>(CoreV1Event.class, CoreV1EventList.class, "", "v1", "events");
 
   public static final RequestBuilder<V1CustomResourceDefinition, V1CustomResourceDefinitionList> CRD =
-      new RequestBuilder<>(V1CustomResourceDefinition.class, V1CustomResourceDefinitionList.class, "apiextensions.k8s.io", "v1", "customresourcedefinitions");
+      new RequestBuilder<>(V1CustomResourceDefinition.class, V1CustomResourceDefinitionList.class,
+          "apiextensions.k8s.io", "v1", "customresourcedefinitions");
+  public static final RequestBuilder<V1ValidatingWebhookConfiguration, V1ValidatingWebhookConfigurationList> VWC =
+      new RequestBuilder<>(V1ValidatingWebhookConfiguration.class, V1ValidatingWebhookConfigurationList.class,
+  "admissionregistration.k8s.io", "v1", "validatingwebhookconfigurations");
+
   public static final RequestBuilder<V1Job, V1JobList> JOB =
       new RequestBuilder<>(V1Job.class, V1JobList.class, "batch", "v1", "jobs");
   public static final RequestBuilder<V1PodDisruptionBudget, V1PodDisruptionBudgetList> PDB =
-      new RequestBuilder<>(V1PodDisruptionBudget.class, V1PodDisruptionBudgetList.class, "policy", "v1", "poddisruptionbudgets");
+      new RequestBuilder<>(V1PodDisruptionBudget.class, V1PodDisruptionBudgetList.class,
+          "policy", "v1", "poddisruptionbudgets");
   public static final RequestBuilder<V1TokenReview, KubernetesListObject> TR =
-      new RequestBuilder<>(V1TokenReview.class, KubernetesListObject.class, "authentication.k8s.io", "v1", "tokenreviews");
+      new RequestBuilder<>(V1TokenReview.class, KubernetesListObject.class,
+          "authentication.k8s.io", "v1", "tokenreviews");
   public static final RequestBuilder<V1SubjectAccessReview, KubernetesListObject> SAR =
-      new RequestBuilder<>(V1SubjectAccessReview.class, KubernetesListObject.class, "authorization.k8s.io", "v1", "subjectaccessreviews");
+      new RequestBuilder<>(V1SubjectAccessReview.class, KubernetesListObject.class,
+          "authorization.k8s.io", "v1", "subjectaccessreviews");
 
   private final Class<ApiType> apiTypeClass;
   private final Class<ApiListType> apiListTypeClass;

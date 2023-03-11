@@ -22,7 +22,6 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Packet;
@@ -86,6 +85,7 @@ import static oracle.kubernetes.operator.EventConstants.OPERATOR_WEBHOOK_COMPONE
 import static oracle.kubernetes.operator.EventConstants.POD_CYCLE_STARTING_EVENT;
 import static oracle.kubernetes.operator.EventConstants.WEBHOOK_STARTUP_FAILED_EVENT;
 import static oracle.kubernetes.operator.EventConstants.WEBLOGIC_OPERATOR_COMPONENT;
+import static oracle.kubernetes.operator.calls.ResponseStep.isForbidden;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.NAMESPACE_WATCHING_STARTED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.NAMESPACE_WATCHING_STOPPED;
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
@@ -286,10 +286,9 @@ public class EventHelper {
         if (hasLoggedForbiddenNSWatchStoppedEvent(this, callResponse)) {
           return doNext(packet);
         }
-        if (UnrecoverableErrorBuilder.isAsyncCallNotFoundFailure(callResponse)
-            || UnrecoverableErrorBuilder.isAsyncCallConflictFailure(callResponse)) {
+        if (isNotFound(callResponse) || hasConflict(callResponse)) {
           return doNext(Step.chain(createCreateEventCall(createEventModel(packet, eventData)), getNext()), packet);
-        } else if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+        } else if (isUnrecoverable(callResponse)) {
           return onFailureNoRetry(packet, callResponse);
         } else {
           return onFailure(createRetry(existingEvent), packet, callResponse);
@@ -315,7 +314,7 @@ public class EventHelper {
 
     private boolean isForbiddenForNSWatchStoppedEvent(
         ResponseStep<CoreV1Event> responseStep, KubernetesApiResponse<CoreV1Event> callResponse) {
-      return responseStep.isForbidden(callResponse) && NAMESPACE_WATCHING_STOPPED == eventData.eventItem;
+      return isForbidden(callResponse) && NAMESPACE_WATCHING_STOPPED == eventData.eventItem;
     }
 
     private boolean hasLoggedForbiddenNSWatchStoppedEvent(
@@ -1220,10 +1219,9 @@ public class EventHelper {
       @Override
       public Void onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         restoreExistingClusterEvent();
-        if (UnrecoverableErrorBuilder.isAsyncCallNotFoundFailure(callResponse)
-            || UnrecoverableErrorBuilder.isAsyncCallConflictFailure(callResponse)) {
+        if (isNotFound(callResponse) || hasConflict(callResponse)) {
           return doNext(Step.chain(createCreateEventCall(createEventModel(eventData)), getNext()), packet);
-        } else if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+        } else if (isUnrecoverable(callResponse)) {
           return onFailureNoRetry(packet, callResponse);
         } else {
           return onFailure(createClusterEventRetryStep(existingClusterEvent), packet, callResponse);

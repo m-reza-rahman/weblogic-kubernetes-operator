@@ -5,12 +5,10 @@ package oracle.kubernetes.operator.steps;
 
 import java.util.Collection;
 
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Service;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.work.Step;
-
-import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 
 /**
  * A step which will delete each entry in the specified collection. It does so by chaining back to
@@ -24,10 +22,6 @@ public class DeleteServiceListStep extends AbstractListStep<V1Service> {
 
   Step createActionStep(V1Service service) {
     V1ObjectMeta meta = service.getMetadata();
-    V1DeleteOptions deleteOptions = new V1DeleteOptions();
-    return new CallBuilder()
-        .deleteServiceAsync(
-            meta.getName(), meta.getNamespace(), getDomainUidLabel(meta), deleteOptions,
-            new DefaultResponseStep<>(this));
+    return RequestBuilder.SERVICE.delete(meta.getNamespace(), meta.getName(), new DefaultResponseStep<>(this));
   }
 }

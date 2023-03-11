@@ -14,15 +14,14 @@ import javax.annotation.Nullable;
 
 import io.kubernetes.client.openapi.models.AdmissionregistrationV1ServiceReference;
 import io.kubernetes.client.openapi.models.AdmissionregistrationV1WebhookClientConfig;
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1RuleWithOperations;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhook;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -165,8 +164,7 @@ public class WebhookHelper {
     }
 
     private Step verifyValidatingWebhookConfiguration(Step next) {
-      return new CallBuilder().readValidatingWebhookConfigurationAsync(
-          getName(model), createReadResponseStep(next));
+      return RequestBuilder.VWC.get(getName(model), createReadResponseStep(next));
     }
 
     @Nullable
@@ -232,8 +230,7 @@ public class WebhookHelper {
       }
 
       private Step createValidatingWebhookConfiguration(Step next) {
-        return new CallBuilder().createValidatingWebhookConfigurationAsync(
-            model, createCreateResponseStep(next));
+        return RequestBuilder.VWC.create(model, createCreateResponseStep(next));
       }
 
       private ResponseStep<V1ValidatingWebhookConfiguration> createCreateResponseStep(Step next) {
@@ -241,8 +238,7 @@ public class WebhookHelper {
       }
 
       private Step replaceValidatingWebhookConfiguration(Step next, V1ValidatingWebhookConfiguration existing) {
-        return new CallBuilder().replaceValidatingWebhookConfigurationAsync(
-            VALIDATING_WEBHOOK_NAME, updateModel(existing), createReplaceResponseStep(next));
+        return RequestBuilder.VWC.update(updateModel(existing), createReplaceResponseStep(next));
       }
 
       private V1ValidatingWebhookConfiguration updateModel(V1ValidatingWebhookConfiguration existing) {
@@ -261,7 +257,7 @@ public class WebhookHelper {
       protected Void onFailureNoRetry(Packet packet,
                                             KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
         LOGGER.info(MessageKeys.READ_VALIDATING_WEBHOOK_CONFIGURATION_FAILED,
-            VALIDATING_WEBHOOK_NAME, callResponse.getE().getResponseBody());
+            VALIDATING_WEBHOOK_NAME, callResponse.getStatus());
         return super.onFailureNoRetry(packet, callResponse);
       }
     }
@@ -273,7 +269,7 @@ public class WebhookHelper {
 
       @Override
       public Void onSuccess(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        LOGGER.info(VALIDATING_WEBHOOK_CONFIGURATION_CREATED, getName(callResponse.getResult()));
+        LOGGER.info(VALIDATING_WEBHOOK_CONFIGURATION_CREATED, getName(callResponse.getObject()));
         return doNext(packet);
       }
 
@@ -281,7 +277,7 @@ public class WebhookHelper {
       protected Void onFailureNoRetry(Packet packet,
                                             KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
         LOGGER.info(MessageKeys.CREATE_VALIDATING_WEBHOOK_CONFIGURATION_FAILED,
-            VALIDATING_WEBHOOK_NAME, callResponse.getE().getResponseBody());
+            VALIDATING_WEBHOOK_NAME, callResponse.getStatus());
         return super.onFailureNoRetry(packet, callResponse);
       }
     }
@@ -297,7 +293,7 @@ public class WebhookHelper {
 
       @Override
       public Void onFailure(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        if (UnrecoverableErrorBuilder.isAsyncCallNotFoundFailure(callResponse)) {
+        if (isUnrecoverable(callResponse)) {
           return super.onFailure(getConflictStep(), packet, callResponse);
         } else {
           return super.onFailure(packet, callResponse);
@@ -306,7 +302,7 @@ public class WebhookHelper {
 
       @Override
       public Void onSuccess(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        LOGGER.info(MessageKeys.VALIDATING_WEBHOOK_CONFIGURATION_REPLACED, getName(callResponse.getResult()));
+        LOGGER.info(MessageKeys.VALIDATING_WEBHOOK_CONFIGURATION_REPLACED, getName(callResponse.getObject()));
         return doNext(packet);
       }
 
@@ -314,7 +310,7 @@ public class WebhookHelper {
       protected Void onFailureNoRetry(Packet packet,
                                             KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
         LOGGER.info(MessageKeys.REPLACE_VALIDATING_WEBHOOK_CONFIGURATION_FAILED,
-            VALIDATING_WEBHOOK_NAME, callResponse.getE().getResponseBody());
+            VALIDATING_WEBHOOK_NAME, callResponse.getStatus());
         return super.onFailureNoRetry(packet, callResponse);
       }
     }
@@ -326,7 +322,7 @@ public class WebhookHelper {
 
       @Override
       public Void onFailure(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+        if (isUnrecoverable(callResponse)) {
           return onFailureNoRetry(packet, callResponse);
         } else {
           return super.onFailure(getConflictStep(), packet, callResponse);
@@ -353,10 +349,7 @@ public class WebhookHelper {
     }
 
     private Step createActionStep() {
-      V1DeleteOptions deleteOptions = new V1DeleteOptions();
-      return new CallBuilder()
-          .deleteValidatingWebhookConfigurationAsync(VALIDATING_WEBHOOK_NAME, deleteOptions,
-              new DefaultResponseStep<>(getNext()));
+      return RequestBuilder.VWC.delete(VALIDATING_WEBHOOK_NAME, new DefaultResponseStep<>(getNext()));
     }
   }
 }
