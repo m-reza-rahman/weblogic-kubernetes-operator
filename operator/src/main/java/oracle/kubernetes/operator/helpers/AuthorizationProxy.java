@@ -14,7 +14,6 @@ import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
 import io.kubernetes.client.openapi.models.V1SubjectAccessReviewSpec;
 import io.kubernetes.client.openapi.models.V1SubjectAccessReviewStatus;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 

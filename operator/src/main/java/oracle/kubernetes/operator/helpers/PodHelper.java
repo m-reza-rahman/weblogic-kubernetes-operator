@@ -508,7 +508,7 @@ public class PodHelper {
     }
 
     private String getInternalOperatorCertFile() {
-      CoreDelegate delegate = packet.getSpi(CoreDelegate.class);
+      CoreDelegate delegate = (CoreDelegate) packet.get(ProcessingConstants.DELEGATE_COMPONENT_NAME);
       return new Certificates(delegate).getOperatorInternalCertificateData();
     }
 

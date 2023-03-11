@@ -29,7 +29,6 @@ import io.kubernetes.client.openapi.models.V1ConfigMapVolumeSource;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerBuilder;
 import io.kubernetes.client.openapi.models.V1ContainerPort;
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1ExecAction;
 import io.kubernetes.client.openapi.models.V1HTTPGetAction;
@@ -1461,7 +1460,7 @@ public abstract class PodStepContext extends BasePodStepContext {
           (boolean) Optional.ofNullable(packet.get(ProcessingConstants.WAIT_FOR_POD_READY)).orElse(false);
 
       if (waitForPodReady) {
-        PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
+        PodAwaiterStepFactory pw = (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
         return doNext(pw.waitForReady(callResponse.getObject(), getNext()), packet);
       }
       return doNext(packet);
@@ -1505,7 +1504,7 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponses) {
-      PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
+      PodAwaiterStepFactory pw = (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
       return doNext(pw.waitForDelete(pod, replacePod(getNext())), packet);
     }
   }
@@ -1527,9 +1526,8 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
-      return doNext(
-          packet.getSpi(PodAwaiterStepFactory.class).waitForReady(processResponse(callResponse), getNext()),
-          packet);
+      PodAwaiterStepFactory pw = (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
+      return doNext(pw.waitForReady(processResponse(callResponse), getNext()), packet);
     }
   }
 

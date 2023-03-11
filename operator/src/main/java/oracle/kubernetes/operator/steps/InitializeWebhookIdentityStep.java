@@ -23,6 +23,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.WebhookMainDelegate;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -134,8 +135,8 @@ public class InitializeWebhookIdentityStep extends Step {
   }
 
   private Step recordWebhookIdentity(WebhookIdentity webhookIdentity, Step next) {
-    return new CallBuilder().readSecretAsync(WEBHOOK_SECRETS,
-            getWebhookNamespace(), readSecretResponseStep(next, webhookIdentity));
+    return RequestBuilder.SECRET.get(
+        getWebhookNamespace(), WEBHOOK_SECRETS, readSecretResponseStep(next, webhookIdentity));
   }
 
   private ResponseStep<V1Secret> readSecretResponseStep(Step next, WebhookIdentity webhookIdentity) {
@@ -151,16 +152,12 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     private Step createSecret(Step next, WebhookIdentity webhookIdentity) {
-      return new CallBuilder()
-          .createSecretAsync(getWebhookNamespace(),
-              createModel(null, webhookIdentity),
-              new DefaultResponseStep<>(next));
+      return RequestBuilder.SECRET.create(createModel(null, webhookIdentity), new DefaultResponseStep<>(next));
     }
 
     private Step replaceSecret(Step next, V1Secret secret, WebhookIdentity webhookIdentity) {
-      return new CallBuilder()
-          .replaceSecretAsync(WEBHOOK_SECRETS, getWebhookNamespace(), createModel(secret, webhookIdentity),
-              new ReplaceSecretResponseStep(webhookIdentity, next));
+      return RequestBuilder.SECRET.update(createModel(secret, webhookIdentity),
+          new ReplaceSecretResponseStep(webhookIdentity, next));
     }
 
     @Override

@@ -54,11 +54,6 @@ public interface MakeRightDomainOperation extends MakeRightOperation<DomainPrese
 
   void clear();
 
-  @Override
-  default void addToPacket(Packet packet) {
-    packet.put(MAKE_RIGHT_DOMAIN_OPERATION, this);
-  }
-
   boolean wasInspectionRun();
 
   private static boolean wasInspectionRun(Packet packet) {

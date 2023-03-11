@@ -23,9 +23,9 @@ import com.google.gson.Gson;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import jakarta.json.JsonValue;
@@ -35,6 +35,7 @@ import oracle.kubernetes.operator.DomainStatusUpdater;
 import oracle.kubernetes.operator.IntrospectorConfigMapConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.http.rest.Scan;
 import oracle.kubernetes.operator.http.rest.ScanCache;
@@ -60,7 +61,6 @@ import static oracle.kubernetes.operator.KubernetesConstants.SCRIPT_CONFIG_MAP_N
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_DOMAIN_SPEC_GENERATION;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_VALIDATION_ERRORS;
-import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIGMAP_NAME_SUFFIX;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIG_DATA_NAME;
@@ -290,7 +290,7 @@ public class ConfigMapHelper {
      * @return the new step to run
      */
     Step verifyConfigMap(Step next) {
-      return new CallBuilder().readConfigMapAsync(getName(), namespace, null, new ReadResponseStep(next));
+      return RequestBuilder.CM.get(namespace, getName(), new ReadResponseStep(next));
     }
 
     boolean isOutdated(V1ConfigMap existingMap) {
@@ -346,8 +346,7 @@ public class ConfigMapHelper {
       }
 
       private Step createConfigMap(Step next) {
-        return new CallBuilder()
-            .createConfigMapAsync(namespace, getModel(), createCreateResponseStep(next));
+        return RequestBuilder.CM.create(getModel(), createCreateResponseStep(next));
       }
 
       private void logConfigMapExists() {
@@ -359,9 +358,7 @@ public class ConfigMapHelper {
       }
 
       private Step replaceConfigMap(Step next) {
-        return new CallBuilder().replaceConfigMapAsync(name, namespace,
-                                        model,
-                                        createReplaceResponseStep(next));
+        return RequestBuilder.CM.update(model, createReplaceResponseStep(next));
       }
 
       private Map<String,String> getLabels() {
@@ -395,10 +392,8 @@ public class ConfigMapHelper {
         KubernetesUtils.addPatches(
             patchBuilder, "/metadata/labels/", getMapLabels(currentMap), getLabels());
 
-        return new CallBuilder()
-            .patchConfigMapAsync(name, namespace,
-                getDomainUidLabel(Optional.of(currentMap).map(V1ConfigMap::getMetadata).orElse(null)),
-                new V1Patch(patchBuilder.build().toString()), createPatchResponseStep(next));
+        return RequestBuilder.CM.patch(
+            namespace, name, new V1Patch(patchBuilder.build().toString()), createPatchResponseStep(next));
       }
 
       private Step patchImageHashInCurrentMap(V1ConfigMap currentMap, Packet packet, Step next) {
@@ -406,10 +401,8 @@ public class ConfigMapHelper {
 
         patchBuilder.add("/data/" + DOMAIN_INPUTS_HASH, (String)packet.get(DOMAIN_INPUTS_HASH));
 
-        return new CallBuilder()
-                .patchConfigMapAsync(name, namespace,
-                        getDomainUidLabel(Optional.of(currentMap).map(V1ConfigMap::getMetadata).orElse(null)),
-                        new V1Patch(patchBuilder.build().toString()), createPatchResponseStep(next));
+        return RequestBuilder.CM.patch(
+            namespace, name, new V1Patch(patchBuilder.build().toString()), createPatchResponseStep(next));
       }
 
       private boolean labelsNotDefined(V1ConfigMap currentMap) {
@@ -430,7 +423,7 @@ public class ConfigMapHelper {
       @Override
       public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
         LOGGER.info(MessageKeys.CM_CREATED, getResourceName(), namespace);
-        recordCurrentMap(packet, callResponse.getResult());
+        recordCurrentMap(packet, callResponse.getObject());
         return doNext(packet);
       }
     }
@@ -448,7 +441,7 @@ public class ConfigMapHelper {
       @Override
       public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
         LOGGER.info(MessageKeys.CM_REPLACED, getResourceName(), namespace);
-        recordCurrentMap(packet, callResponse.getResult());
+        recordCurrentMap(packet, callResponse.getObject());
         return doNext(packet);
       }
     }
@@ -748,9 +741,9 @@ public class ConfigMapHelper {
 
     @Override
     public Void apply(Packet packet) {
-      Step step = new CallBuilder()
-            .withLabelSelectors(LabelConstants.getCreatedByOperatorSelector())
-            .listConfigMapsAsync(namespace, new SelectConfigMapsToDeleteStep(domainUid, namespace, getNext()));
+      Step step = RequestBuilder.CM.list(
+          namespace, new ListOptions().labelSelector(LabelConstants.getCreatedByOperatorSelector()),
+          new SelectConfigMapsToDeleteStep(domainUid, namespace, getNext()));
 
       return doNext(step, packet);
     }
@@ -830,9 +823,7 @@ public class ConfigMapHelper {
 
     private Step deleteIntrospectorConfigMap(Step next) {
       logConfigMapDeleted();
-      return new CallBuilder()
-          .deleteConfigMapAsync(configMapName, namespace, domainUid,
-              new V1DeleteOptions(), new DefaultResponseStep<>(next));
+      return RequestBuilder.CM.delete(namespace, configMapName, new DefaultResponseStep<>(next));
     }
   }
 
@@ -869,8 +860,7 @@ public class ConfigMapHelper {
       final String domainUid = info.getDomainUid();
       final String configMapName = getIntrospectorConfigMapName(domainUid);
 
-      return new CallBuilder()
-          .readConfigMapAsync(configMapName, ns, domainUid, responseStepConstructor.apply(getNext()));
+      return RequestBuilder.CM.get(ns, configMapName, responseStepConstructor.apply(getNext()));
     }
   }
 
@@ -882,7 +872,7 @@ public class ConfigMapHelper {
 
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
-      V1ConfigMap result = callResponse.getResult();
+      V1ConfigMap result = callResponse.getObject();
       copyMapEntryToPacket(result, packet, SECRETS_MD_5);
       copyMapEntryToPacket(result, packet, DOMAINZIP_HASH);
       copyMapEntryToPacket(result, packet, DOMAIN_RESTART_VERSION);
@@ -980,10 +970,8 @@ public class ConfigMapHelper {
     }
 
     private Step createNextStep(DomainPresenceInfo info) {
-      return new CallBuilder().readConfigMapAsync(
-          info.getDomainUid() + FLUENTD_CONFIGMAP_NAME_SUFFIX,
-          info.getNamespace(),
-          info.getDomainUid(),
+      return RequestBuilder.CM.get(
+          info.getNamespace(), info.getDomainUid() + FLUENTD_CONFIGMAP_NAME_SUFFIX,
           new ReadFluentdConfigMapResponseStep(getNext()));
     }
   }
@@ -996,7 +984,7 @@ public class ConfigMapHelper {
 
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
-      Optional.ofNullable(callResponse.getResult())
+      Optional.ofNullable(callResponse.getObject())
             .map(V1ConfigMap::getMetadata)
             .map(V1ObjectMeta::getLabels)
             .map(l -> l.get(INTROSPECTION_STATE_LABEL))
@@ -1042,25 +1030,19 @@ public class ConfigMapHelper {
     }
 
     private static Step createFluentdConfigMap(DomainPresenceInfo info, Step next) {
-      return new CallBuilder()
-          .createConfigMapAsync(info.getNamespace(),
-              FluentdHelper.getFluentdConfigMap(info),
-              new CreateFluentdConfigMapResponseStep(next));
+      return RequestBuilder.CM.create(
+          FluentdHelper.getFluentdConfigMap(info), new CreateFluentdConfigMapResponseStep(next));
     }
 
     private static Step replaceFluentdConfigMap(DomainPresenceInfo info, Step next) {
-      return new CallBuilder()
-          .replaceConfigMapAsync(
-              info.getDomainUid() + FLUENTD_CONFIGMAP_NAME_SUFFIX,
-              info.getNamespace(),
-              FluentdHelper.getFluentdConfigMap(info),
-              new ReplaceFluentdConfigMapResponseStep(next));
+      return RequestBuilder.CM.update(
+          FluentdHelper.getFluentdConfigMap(info), new ReplaceFluentdConfigMapResponseStep(next));
     }
 
     @Override
     public Void onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
       DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
-      String existingConfigMapData = Optional.ofNullable(callResponse.getResult())
+      String existingConfigMapData = Optional.ofNullable(callResponse.getObject())
               .map(V1ConfigMap::getData)
               .map(c -> c.get(FLUENTD_CONFIG_DATA_NAME))
               .orElse(null);
