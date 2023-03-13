@@ -49,7 +49,7 @@ public class OperatorLoggingFormatter extends BaseLoggingFormatter<Fiber> {
   private String getDomainUidFromLoggingContext(Fiber fiber) {
     return Optional.ofNullable(fiber)
             .map(Fiber::getPacket)
-            .map(p -> p.getSpi(LoggingContext.class))
+            .map(p -> (LoggingContext) p.get(LoggingContext.LOGGING_CONTEXT_KEY))
             .map(LoggingContext::domainUid)
             .orElse(getDomainUidFromThreadContext());
   }
@@ -81,7 +81,7 @@ public class OperatorLoggingFormatter extends BaseLoggingFormatter<Fiber> {
   private String getNamespaceFromLoggingContext(Fiber fiber) {
     return Optional.ofNullable(fiber)
             .map(Fiber::getPacket)
-            .map(p -> p.getSpi(LoggingContext.class))
+            .map(p -> (LoggingContext) p.get(LoggingContext.LOGGING_CONTEXT_KEY))
             .or(ThreadLoggingContext::optionalContext)
             .map(LoggingContext::namespace)
             .orElse("");

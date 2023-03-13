@@ -154,7 +154,7 @@ public class FiberGate {
       WaitForOldFiberStep c = current.get();
       Fiber o = c != null ? c.old.getAndSet(null) : null;
       if (o == null) {
-        return doNext(packet).withDebugComment(this::getProceedTime);
+        return doNext(packet);
       }
 
       return doSuspend(

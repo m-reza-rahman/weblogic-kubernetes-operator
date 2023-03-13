@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import oracle.kubernetes.operator.DomainProcessorDelegate;
 import oracle.kubernetes.operator.MakeRightClusterOperation;
 import oracle.kubernetes.operator.MakeRightExecutor;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.ClusterPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.ClusterResourceEventData;
@@ -68,7 +69,11 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
   @Override
   @Nonnull
   public Packet createPacket() {
-    return new Packet().with(delegate).with(liveInfo).with(this);
+    Packet packet = new Packet();
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, liveInfo);
+    packet.put(ProcessingConstants.DELEGATE_COMPONENT_NAME, delegate);
+    packet.put(ProcessingConstants.MAKE_RIGHT_DOMAIN_OPERATION, this);
+    return packet;
   }
 
   @Override
@@ -90,11 +95,6 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
 
   private boolean isDeleting() {
     return getEventData().getItem() == EventHelper.EventItem.CLUSTER_DELETED;
-  }
-
-  @Override
-  public void addToPacket(Packet packet) {
-    // no op
   }
 
   @Override

@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.steps;
 
+import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -11,7 +12,7 @@ import oracle.kubernetes.operator.work.Step;
  * A response step which treats a NOT_FOUND status as success with a null result. On success with
  * a non-null response, runs a specified new step before continuing the step chain.
  */
-public abstract class ActionResponseStep<T> extends DefaultResponseStep<T> {
+public abstract class ActionResponseStep<T extends KubernetesType> extends DefaultResponseStep<T> {
   protected ActionResponseStep() {
   }
 
@@ -23,9 +24,9 @@ public abstract class ActionResponseStep<T> extends DefaultResponseStep<T> {
 
   @Override
   public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
-    return callResponse.getResult() == null
+    return callResponse.getObject() == null
         ? doNext(packet)
-        : doNext(createSuccessStep(callResponse.getResult(),
+        : doNext(createSuccessStep(callResponse.getObject(),
             new ContinueOrNextStep(callResponse, getNext())), packet);
   }
 

@@ -8,6 +8,7 @@ import java.util.Collection;
 import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.work.Step;
 
 import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
@@ -24,10 +25,6 @@ public class DeletePodDisruptionBudgetListStep extends AbstractListStep<V1PodDis
 
   Step createActionStep(V1PodDisruptionBudget pdb) {
     V1ObjectMeta meta = pdb.getMetadata();
-    V1DeleteOptions deleteOptions = new V1DeleteOptions();
-    return new CallBuilder()
-        .deletePodDisruptionBudgetAsync(
-            meta.getName(), meta.getNamespace(), getDomainUidLabel(meta), deleteOptions,
-            new DefaultResponseStep<>(this));
+    return RequestBuilder.PDB.delete(meta.getNamespace(), meta.getName(), new DefaultResponseStep<>(this));
   }
 }

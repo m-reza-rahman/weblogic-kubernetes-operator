@@ -24,6 +24,7 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ShutdownType;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.SecretHelper;
@@ -333,7 +334,7 @@ public class ShutdownManagedServerStep extends Step {
     public Void onSuccess(Packet packet, HttpResponse<String> response) {
       LOGGER.fine(MessageKeys.SERVER_SHUTDOWN_REST_SUCCESS, serverName);
       removeShutdownRequestRetryCount(packet);
-      PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
+      PodAwaiterStepFactory pw = (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
       return doNext(pw.waitForServerShutdown(serverName, getDomainPresenceInfo(packet).getDomain(), getNext()), packet);
     }
 
@@ -360,7 +361,7 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     private Step createDomainRefreshStep(String domainName, String namespace) {
-      return new CallBuilder().readDomainAsync(domainName, namespace, new DomainUpdateStep());
+      return RequestBuilder.DOMAIN.get(namespace, domainName, new DomainUpdateStep());
     }
 
     private boolean shouldRetry(Packet packet) {

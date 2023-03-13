@@ -169,12 +169,6 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   @Override
-  public void addToPacket(Packet packet) {
-    MakeRightDomainOperation.super.addToPacket(packet);
-  }
-
-
-  @Override
   public boolean wasInspectionRun() {
     return inspectionRun;
   }

@@ -95,7 +95,8 @@ class DomainResourcesValidation {
 
       @Override
       public void completeProcessing(Packet packet) {
-        DomainProcessor dp = Optional.ofNullable(packet.getSpi(DomainProcessor.class)).orElse(processor);
+        DomainProcessor dp = Optional.ofNullable((DomainProcessor)
+            packet.get(ProcessingConstants.DOMAIN_PROCESSOR)).orElse(processor);
         getStrandedDomainPresenceInfos(dp).forEach(info -> removeStrandedDomainPresenceInfo(dp, info));
         Optional.ofNullable(activeClusterResources).ifPresent(c -> getActiveDomainPresenceInfos()
             .forEach(info -> adjustClusterResources(c, info)));
@@ -108,9 +109,9 @@ class DomainResourcesValidation {
   private void executeMakeRightForDeletedClusters(DomainProcessor dp) {
     List<String> clusterNamesFromList = Optional.ofNullable(activeClusterResources).map(ClusterList::getItems)
         .orElse(new ArrayList<>()).stream().map(ClusterResource::getMetadata).map(V1ObjectMeta::getName)
-        .collect(Collectors.toList());
+        .toList();
     getClusterPresenceInfoMap().values().stream()
-        .filter(cpi -> !clusterNamesFromList.contains(cpi.getResourceName())).collect(Collectors.toList())
+        .filter(cpi -> !clusterNamesFromList.contains(cpi.getResourceName())).toList()
         .forEach(info -> deActivateCluster(dp, info));
   }
 

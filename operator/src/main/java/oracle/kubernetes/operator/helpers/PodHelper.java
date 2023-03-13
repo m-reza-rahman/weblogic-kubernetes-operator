@@ -13,7 +13,6 @@ import javax.annotation.Nullable;
 
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1EnvVarBuilder;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -22,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.DeleteOptions;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
@@ -73,7 +73,6 @@ public class PodHelper {
    *   SCAN                 the topology for the server (WlsServerConfig)
    *   DOMAIN_TOPOLOGY      the topology for the domain (WlsDomainConfig)
    *
-   *
    * @param packet a packet describing the domain model and topology.
    * @return an appropriate Kubernetes resource
    */
@@ -87,7 +86,6 @@ public class PodHelper {
    *   CLUSTER_NAME         (optional) the name of the cluster to which the server is assigned
    *   SCAN                 the topology for the server (WlsServerConfig)
    *   DOMAIN_TOPOLOGY      the topology for the domain (WlsDomainConfig)
-   *
    *
    * @param packet a packet describing the domain model and topology.
    * @return an appropriate Kubernetes resource
@@ -276,7 +274,7 @@ public class PodHelper {
   }
 
   /**
-   * Chcek if the pod status shows that the pod is evicted.
+   * Check if the pod status shows that the pod is evicted.
    * @param status Pod status to be checked
    * @return True if the pod status shows that the pod is evicted, false otherwise
    */
@@ -584,6 +582,7 @@ public class PodHelper {
     @Override
     // let the pod rolling step update the pod
     Step replaceCurrentPod(V1Pod pod, Step next) {
+      // FIXME -- pod patching should be step and no longer sure that this deferProcessing() will work
       labelPodAsNeedingToRoll(pod);
       deferProcessing(createCyclePodStep(pod, next));
       return null;
@@ -751,7 +750,7 @@ public class PodHelper {
         }
 
         return doNext(
-            deletePod(name, info.getNamespace(), getPodDomainUid(oldPod), gracePeriodSeconds, getNext()),
+            deletePod(name, info.getNamespace(), gracePeriodSeconds, getNext()),
             packet);
       }
     }
@@ -778,18 +777,18 @@ public class PodHelper {
           .map(LastKnownStatus::getStatus).orElse(getServerState(info.getDomain(), serverName));
     }
 
-    // We add a 10 second fudge factor here to account for the fact that WLST takes
+    // We add a 10-second fudge factor here to account for the fact that WLST takes
     // ~6 seconds to start, so along with any other delay in connecting and issuing
     // the shutdown, the actual server instance has the full configured timeout to
     // gracefully shutdown before the container is destroyed by this timeout.
-    // We will remove this fudge factor when the operator connects via REST to shutdown
+    // We will remove this fudge factor when the operator connects via REST to shut down
     // the server instance.
     private long getConfiguredGracePeriodSeconds(EffectiveServerSpec effectiveServerSpec) {
       return effectiveServerSpec.getShutdown().getTimeoutSeconds() + DEFAULT_ADDITIONAL_DELETE_TIME;
     }
 
-    private Step deletePod(String name, String namespace, String domainUid, long gracePeriodSeconds, Step next) {
-      Step conflictStep = RequestBuilder.POD.get(namespace, name, new DefaultResponseStep<V1Pod>(next) {
+    private Step deletePod(String name, String namespace, long gracePeriodSeconds, Step next) {
+      Step conflictStep = RequestBuilder.POD.get(namespace, name, new DefaultResponseStep<>(next) {
         @Override
         public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
           V1Pod pod = callResponse.getObject();
@@ -802,7 +801,8 @@ public class PodHelper {
         }
       });
 
-      return RequestBuilder.POD.delete(namespace, name, new DefaultResponseStep<>(conflictStep, next));
+      DeleteOptions deleteOptions = (DeleteOptions) new DeleteOptions().gracePeriodSeconds(gracePeriodSeconds);
+      return RequestBuilder.POD.delete(namespace, name, deleteOptions, new DefaultResponseStep<>(conflictStep, next));
     }
   }
 }

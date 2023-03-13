@@ -39,6 +39,7 @@ import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.WEBHOOK_S
 import static oracle.kubernetes.operator.helpers.EventHelper.createConversionWebhookEvent;
 import static oracle.kubernetes.operator.helpers.EventHelper.createEventStep;
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getWebhookNamespace;
+import static oracle.kubernetes.operator.steps.InitializeWebhookIdentityStep.EXCEPTION;
 
 /** A Domain Custom Resource Conversion Webhook for WebLogic Kubernetes Operator. */
 public class WebhookMain extends BaseMain {
@@ -254,7 +255,7 @@ public class WebhookMain extends BaseMain {
   public static class CheckFailureAndCreateEventStep extends Step {
     @Override
     public Void apply(Packet packet) {
-      Exception failure = packet.getSpi(Exception.class);
+      Throwable failure = (Throwable) packet.get(EXCEPTION);
       if (failure != null) {
         return doNext(createEventStep(new EventHelper.EventData(WEBHOOK_STARTUP_FAILED, failure.getMessage())
             .resourceName(OPERATOR_WEBHOOK_COMPONENT)
