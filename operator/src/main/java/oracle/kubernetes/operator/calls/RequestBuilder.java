@@ -104,9 +104,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step create(ApiType object, CreateOptions createOptions, ResponseStep<ApiType> responseStep) {
-    return new RequestStep<>(
+    return new RequestStep.CreateRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-        client -> client.create(object, createOptions));
+        object, createOptions);
   }
 
   public Step delete(String name, ResponseStep<ApiType> responseStep) {
@@ -114,9 +114,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step delete(String name, DeleteOptions deleteOptions, ResponseStep<ApiType> responseStep) {
-    return new RequestStep<>(
+    return new RequestStep.ClusterDeleteRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-        client -> client.delete(name, deleteOptions));
+        name, deleteOptions);
   }
 
   public Step delete(String namespace, String name, ResponseStep<ApiType> responseStep) {
@@ -124,9 +124,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step delete(String namespace, String name, DeleteOptions deleteOptions, ResponseStep<ApiType> responseStep) {
-    return new RequestStep<>(
+    return new RequestStep.DeleteRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-        client -> client.delete(namespace, name, deleteOptions));
+        namespace, name, deleteOptions);
   }
 
   public Step get(String name, ResponseStep<ApiType> responseStep) {
@@ -134,9 +134,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step get(String name, GetOptions getOptions, ResponseStep<ApiType> responseStep) {
-    return new RequestStep<>(
+    return new RequestStep.ClusterGetRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-        client -> client.get(name, getOptions));
+        name, getOptions);
   }
 
   public Step get(String namespace, String name, ResponseStep<ApiType> responseStep) {
@@ -144,9 +144,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step get(String namespace, String name, GetOptions getOptions, ResponseStep<ApiType> responseStep) {
-    return new RequestStep<>(
+    return new RequestStep.GetRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-        client -> client.get(namespace, name, getOptions));
+        namespace, name, getOptions);
   }
 
   public Step list(ResponseStep<ApiListType> responseStep) {
@@ -154,7 +154,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step list(ListOptions listOptions, ResponseStep<ApiListType> responseStep) {
-    return null; // TODO: new ResponseStep...
+    return new RequestStep.ClusterListRequestStep<>(
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        listOptions);
   }
 
   public Step list(String namespace, ResponseStep<ApiListType> responseStep) {
@@ -162,7 +164,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step list(String namespace, ListOptions listOptions, ResponseStep<ApiListType> responseStep) {
-    return null; // TODO: new ResponseStep...
+    return new RequestStep.ListRequestStep<>(
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        namespace, listOptions);
   }
 
   public Step update(ApiType object, ResponseStep<ApiType> responseStep) {
@@ -170,9 +174,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step update(ApiType object, UpdateOptions updateOptions, ResponseStep<ApiType> responseStep) {
-    return new RequestStep<>(
+    return new RequestStep.UpdateRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-        client -> client.update(object, updateOptions));
+        object, updateOptions);
   }
 
   public Step patch(String name, String patchType, V1Patch patch, ResponseStep<ApiType> responseStep) {
@@ -180,9 +184,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step patch(String name, String patchType, V1Patch patch, PatchOptions patchOptions, ResponseStep<ApiType> responseStep) {
-    return new RequestStep<>(
+    return new RequestStep.ClusterPatchRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-        client -> client.patch(name, patchType, patch, patchOptions));
+        name, patchType, patch, patchOptions);
   }
 
   public Step patch(String namespace, String name, String patchType, V1Patch patch, ResponseStep<ApiType> responseStep) {
@@ -190,9 +194,9 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
   }
 
   public Step patch(String namespace, String name, String patchType, V1Patch patch, PatchOptions patchOptions, ResponseStep<ApiType> responseStep) {
-    return new RequestStep<>(
+    return new RequestStep.PatchRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-        client -> client.patch(namespace, name, patchType, patch, patchOptions));
+        namespace, name, patchType, patch, patchOptions);
   }
 
   public Step updateStatus(ApiType object, Function<ApiType, Object> status, ResponseStep<ApiType> responseStep) {

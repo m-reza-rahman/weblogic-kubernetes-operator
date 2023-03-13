@@ -104,8 +104,23 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @param nextStep Next step
    */
   protected ResponseStep(Step conflictStep, Step nextStep) {
-    super(nextStep);
+    super(new AfterStep(nextStep));
     this.conflictStep = conflictStep;
+  }
+
+  private static class AfterStep extends Step {
+
+    public AfterStep(Step next) {
+      super(next);
+    }
+
+    @Override
+    public Void apply(Packet packet) {
+      packet.remove(CONTINUE);
+      packet.remove(RequestStep.RESPONSE_COMPONENT_NAME);
+      packet.remove(RETRY);
+      return doNext(packet);
+    }
   }
 
   public final void setPrevious(Step previousStep) {
@@ -119,9 +134,6 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     if (response == null || !response.isSuccess()) {
       return onFailure(packet, response);
     } else {
-      packet.remove(CONTINUE);
-      packet.remove(RequestStep.RESPONSE_COMPONENT_NAME);
-      packet.remove(RETRY);
       return onSuccess(packet, response);
     }
   }
@@ -182,6 +194,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @return Next action for the original request
    */
   private Void resetRetryStrategyAndReinvokeRequest(Packet packet) {
+    @SuppressWarnings("unchecked")
     DefaultRetryStrategy retryStrategy = (DefaultRetryStrategy) packet.get(RETRY);
     if (retryStrategy != null) {
       retryStrategy.reset();
@@ -250,7 +263,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     }
 
     public Void doPotentialRetry(Step conflictStep, Packet packet,
-                                 KubernetesApiResponse<T> callResponse, FailureStrategy failureStrategy) {
+                                 KubernetesApiResponse<T> callResponse, FailureStrategy<T> failureStrategy) {
       int statusCode = Optional.ofNullable(callResponse)
           .map(KubernetesApiResponse::getHttpStatusCode).orElse(FIBER_TIMEOUT);
       if (mayRetryOnStatusValue(statusCode)) {
