@@ -19,8 +19,8 @@ import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -100,7 +100,7 @@ public class PodDisruptionBudgetHelper {
 
       @Override
       public Void onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
-        if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+        if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
           return onFailure(getConflictStep(), packet, callResponse);
@@ -166,8 +166,9 @@ public class PodDisruptionBudgetHelper {
       @Override
       public Void apply(Packet packet) {
         return doNext(
-                new CallBuilder().readPodDisruptionBudgetAsync(getPDBName(), info.getNamespace(),
-                        new PodDisruptionBudgetContext.ReadResponseStep(conflictStep)), packet);
+            RequestBuilder.PDB.get(info.getNamespace(), getPDBName(),
+                new PodDisruptionBudgetContext.ReadResponseStep(conflictStep)),
+            packet);
       }
 
       @Override
@@ -211,12 +212,9 @@ public class PodDisruptionBudgetHelper {
     }
 
     private Step patchPodDisruptionBudgetStep(Step next) {
-      return new CallBuilder()
-                      .patchPodDisruptionBudgetAsync(
-                              getPDBName(),
-                              info.getNamespace(),
-                              createPodDisruptionBudgetPatch(clusterName, info),
-                              new PatchResponseStep(next));
+      return RequestBuilder.PDB.patch(
+          info.getNamespace(), getPDBName(),
+          createPodDisruptionBudgetPatch(clusterName, info), new PatchResponseStep(next));
     }
 
     private String getPDBName() {
@@ -250,12 +248,8 @@ public class PodDisruptionBudgetHelper {
     }
 
     private Step createPodDisruptionBudget(String messageKey, Step next) {
-      return new CallBuilder()
-              .createPodDisruptionBudgetAsync(
-                      info.getNamespace(),
-                      createModel(),
-                      new PodDisruptionBudgetHelper.PodDisruptionBudgetContext
-                              .CreateResponseStep(messageKey, next));
+      return RequestBuilder.PDB.create(
+          createModel(), new PodDisruptionBudgetHelper.PodDisruptionBudgetContext.CreateResponseStep(messageKey, next));
     }
 
     public V1PodDisruptionBudget createModel() {

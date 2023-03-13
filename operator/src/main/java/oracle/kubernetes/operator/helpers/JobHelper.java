@@ -32,6 +32,8 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.DeleteOptions;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.IntrospectionStatus;
 import oracle.kubernetes.operator.IntrospectorConfigMapConstants;
@@ -40,6 +42,7 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -225,7 +228,7 @@ public class JobHelper {
     }
 
     private Step verifyIntrospectorJob() {
-      return new CallBuilder().readJobAsync(getJobName(), getNamespace(), getDomainUid(), createReadJobResponse());
+      return RequestBuilder.JOB.get(getNamespace(), getJobName(), createReadJobResponse());
     }
 
     @Nonnull
@@ -245,11 +248,11 @@ public class JobHelper {
         if (isKnownFailedJob(job) || JobWatcher.isJobTimedOut(job) || isInProgressJobOutdated(job)) {
           return doNext(cleanUpAndReintrospect(getNext()), packet);
         } else if (job != null) {
-          return doNext(processExistingIntrospectorJob(getNext()), packet).withDebugComment(job, this::jobDescription);
+          return doNext(processExistingIntrospectorJob(getNext()), packet);
         } else if (isIntrospectionNeeded(packet)) {
-          return doNext(createIntrospectionSteps(getNext()), packet).withDebugComment(packet, this::introspectReason);
+          return doNext(createIntrospectionSteps(getNext()), packet);
         } else {
-          return doNext(packet).withDebugComment(packet, this::introspectionNotNeededReason);
+          return doNext(packet);
         }
       }
 
@@ -503,13 +506,12 @@ public class JobHelper {
       @Override
       public Void apply(Packet packet) {
         logJobDeleted(getDomainUid(), getNamespace(), getJobName(), packet);
-        return doNext(new CallBuilder().withTimeoutSeconds(JOB_DELETE_TIMEOUT_SECONDS)
-                .deleteJobAsync(
-                      getJobName(),
-                        getNamespace(),
-                        getDomainUid(),
-                        new V1DeleteOptions().propagationPolicy("Foreground"),
-                        new DefaultResponseStep<>(getNext())), packet);
+        DeleteOptions deleteOptions = (DeleteOptions) new DeleteOptions()
+            .gracePeriodSeconds((long) JOB_DELETE_TIMEOUT_SECONDS).propagationPolicy("Foreground");
+
+        return doNext(
+            RequestBuilder.JOB.delete(getNamespace(), getJobName(), deleteOptions,
+                new DefaultResponseStep<>(getNext())), packet);
       }
     }
 
@@ -524,15 +526,15 @@ public class JobHelper {
 
       @Override
       public Void onSuccess(Packet packet, KubernetesApiResponse<String> callResponse) {
-        Optional.ofNullable(callResponse.getResult()).ifPresent(result -> processIntrospectionResult(packet, result));
+        Optional.ofNullable(callResponse.getObject()).ifPresent(result -> processIntrospectionResult(packet, result));
 
         addFluentdContainerLogAsSevereStatus(packet);
 
         final V1Job domainIntrospectorJob = packet.getValue(DOMAIN_INTROSPECTOR_JOB);
         if (severeStatuses.isEmpty()) {
           if (!isDomainIntrospectionComplete(callResponse)) {
-            LOGGER.severe(DOMAIN_INTROSPECTION_INCOMPLETE, callResponse.getResult());
-            severeStatuses.add(LOGGER.formatMessage(DOMAIN_INTROSPECTION_INCOMPLETE, callResponse.getResult()));
+            LOGGER.severe(DOMAIN_INTROSPECTION_INCOMPLETE, callResponse.getObject());
+            severeStatuses.add(LOGGER.formatMessage(DOMAIN_INTROSPECTION_INCOMPLETE, callResponse.getObject()));
             return handleFailure(packet, domainIntrospectorJob);
           }
           return doNext(createRemoveSelectedFailuresStep(getNext(), INTROSPECTION), packet);
@@ -543,7 +545,7 @@ public class JobHelper {
 
       @Nonnull
       private Boolean isDomainIntrospectionComplete(KubernetesApiResponse<String> callResponse) {
-        return Optional.ofNullable(callResponse).map(KubernetesApiResponse::getResult)
+        return Optional.ofNullable(callResponse).map(KubernetesApiResponse::getObject)
             .map(r -> r.contains(DOMAIN_INTROSPECTION_COMPLETE)).orElse(false);
       }
 
@@ -674,9 +676,8 @@ public class JobHelper {
       }
 
       private Step listPodsInNamespace(String namespace, Step next) {
-        return new CallBuilder()
-              .withLabelSelectors(LabelConstants.JOBNAME_LABEL)
-              .listPodAsync(namespace, new PodListResponseStep(next));
+        return RequestBuilder.POD.list(
+            namespace, new ListOptions().labelSelector(LabelConstants.JOBNAME_LABEL), new PodListResponseStep(next));
       }
     }
 

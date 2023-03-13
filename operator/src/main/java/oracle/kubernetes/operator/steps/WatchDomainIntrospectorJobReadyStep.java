@@ -18,7 +18,7 @@ public class WatchDomainIntrospectorJobReadyStep extends Step {
     V1Job domainIntrospectorJob = (V1Job) packet.get(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB);
 
     if (hasNotCompleted(domainIntrospectorJob)) {
-      JobAwaiterStepFactory jw = packet.getSpi(JobAwaiterStepFactory.class);
+      JobAwaiterStepFactory jw = (JobAwaiterStepFactory) packet.get(ProcessingConstants.JOBWATCHER_COMPONENT_NAME);
       return doNext(jw.waitForReady(domainIntrospectorJob, getNext()), packet);
     } else {
       return doNext(DomainStatusUpdater.createRemoveFailuresStep(getNext()), packet);

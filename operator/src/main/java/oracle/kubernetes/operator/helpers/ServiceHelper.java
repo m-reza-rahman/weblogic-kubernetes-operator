@@ -5,7 +5,6 @@ package oracle.kubernetes.operator.helpers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -14,17 +13,17 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveAdminServerSpec;
@@ -61,7 +60,6 @@ import static oracle.kubernetes.operator.DomainStatusUpdater.createKubernetesFai
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.forDomainUidSelector;
 import static oracle.kubernetes.operator.LabelConstants.getCreatedByOperatorSelector;
-import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 import static oracle.kubernetes.operator.helpers.OperatorServiceType.EXTERNAL;
 
 public class ServiceHelper {
@@ -243,7 +241,7 @@ public class ServiceHelper {
       serverName = (String) packet.get(ProcessingConstants.SERVER_NAME);
       clusterName = (String) packet.get(ProcessingConstants.CLUSTER_NAME);
       scan = (WlsServerConfig) packet.get(ProcessingConstants.SERVER_SCAN);
-      version = packet.getSpi(KubernetesVersion.class);
+      version = (KubernetesVersion) packet.get(ProcessingConstants.DOMAIN_COMPONENT_NAME);
     }
 
     @Override
@@ -584,26 +582,23 @@ public class ServiceHelper {
       if (serviceType == EXTERNAL) {
         return deleteAndReplaceNodePortService();
       } else {
-        V1DeleteOptions deleteOptions = new V1DeleteOptions();
-        return new CallBuilder()
-            .deleteServiceAsync(
-                createServiceName(), getNamespace(), getDomainUid(), deleteOptions, new DeleteServiceResponse(next));
+        return RequestBuilder.SERVICE.delete(getNamespace(), createServiceName(), new DeleteServiceResponse(next));
       }
     }
 
     private Step deleteAndReplaceNodePortService() {
-      return new CallBuilder()
-              .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector())
-              .listServiceAsync(
-                      getNamespace(),
-                      new ActionResponseStep<V1ServiceList>() {
-                      public Step createSuccessStep(V1ServiceList result, Step next) {
-                        Collection<V1Service> c = Optional.ofNullable(result).map(list -> list.getItems().stream()
-                                  .filter(ServiceHelper::isNodePortType)
-                                  .collect(Collectors.toList())).orElse(new ArrayList<>());
-                        return new DeleteServiceListStep(c, createReplacementService(next));
-                      }
-                    });
+      return RequestBuilder.SERVICE.list(getNamespace(),
+          new ListOptions().labelSelector(
+              forDomainUidSelector(info.getDomainUid()) + "," + getCreatedByOperatorSelector()),
+          new ActionResponseStep<>() {
+        @Override
+        public Step createSuccessStep(V1ServiceList result, Step next) {
+          return new DeleteServiceListStep(Optional.ofNullable(result).map(list -> list.getItems().stream()
+              .filter(ServiceHelper::isNodePortType)
+              .collect(Collectors.toList())).orElse(new ArrayList<>()),
+              createReplacementService(next));
+        }
+      });
     }
 
     private Step createReplacementService(Step next) {
@@ -613,17 +608,14 @@ public class ServiceHelper {
     protected abstract String getServiceReplaceMessageKey();
 
     private Step createService(String messageKey, Step next) {
-      return new CallBuilder()
-          .createServiceAsync(getNamespace(), createModel(), new CreateResponse(messageKey, next));
+      return RequestBuilder.SERVICE.create(createModel(), new CreateResponse(messageKey, next));
     }
 
     private class ConflictStep extends Step {
       @Override
       public Void apply(Packet packet) {
         return doNext(
-            new CallBuilder()
-                .readServiceAsync(
-                    createServiceName(), getNamespace(), getDomainUid(), new ReadServiceResponse(conflictStep)),
+            RequestBuilder.SERVICE.get(getNamespace(), createServiceName(), new ReadServiceResponse(conflictStep)),
             packet);
       }
 
@@ -706,7 +698,7 @@ public class ServiceHelper {
 
       @Override
       public Void onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
-        if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+        if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
           return onFailure(getConflictStep(), packet, callResponse);
@@ -748,11 +740,8 @@ public class ServiceHelper {
     }
 
     Step deleteService(V1ObjectMeta metadata) {
-      V1DeleteOptions deleteOptions = new V1DeleteOptions();
-      return new CallBuilder()
-          .deleteServiceAsync(metadata.getName(),
-              metadata.getNamespace(), getDomainUidLabel(metadata), deleteOptions,
-              new DefaultResponseStep<>(getNext()));
+      return RequestBuilder.SERVICE.delete(
+          metadata.getNamespace(), metadata.getName(), new DefaultResponseStep<>(getNext()));
     }
   }
 

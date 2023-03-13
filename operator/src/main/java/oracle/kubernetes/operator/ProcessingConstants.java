@@ -9,6 +9,7 @@ public interface ProcessingConstants {
   String MAIN_COMPONENT_NAME = "main";
   String DELEGATE_COMPONENT_NAME = "delegate";
   String DOMAIN_COMPONENT_NAME = "domain";
+  String DOMAIN_PROCESSOR = "domainProcessor";
   String PODWATCHER_COMPONENT_NAME = "podWatcher";
   String JOBWATCHER_COMPONENT_NAME = "jobWatcher";
 

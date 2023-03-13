@@ -22,6 +22,7 @@ import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.operator.MainDelegate;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -126,15 +127,13 @@ public class InitializeInternalIdentityStep extends Step {
     JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
     patchBuilder.add("/data/internalOperatorCert", getBase64Encoded(cert));
 
-    return new CallBuilder()
-            .patchConfigMapAsync(OPERATOR_CM, getOperatorNamespace(),
-                    null,
-                    new V1Patch(patchBuilder.build().toString()), new DefaultResponseStep<>(next));
+    return RequestBuilder.CM.patch(
+        getOperatorNamespace(), OPERATOR_CM,
+        new V1Patch(patchBuilder.build().toString()), new DefaultResponseStep<>(next));
   }
 
   private static Step recordInternalOperatorKey(String key, Step next) {
-    return new CallBuilder().readSecretAsync(OPERATOR_SECRETS,
-            getOperatorNamespace(), readSecretResponseStep(next, key));
+    return RequestBuilder.SECRET.get(getOperatorNamespace(), OPERATOR_SECRETS, readSecretResponseStep(next, key));
   }
 
   private static ResponseStep<V1Secret> readSecretResponseStep(Step next, String internalOperatorKey) {
@@ -150,15 +149,11 @@ public class InitializeInternalIdentityStep extends Step {
     }
 
     private static Step createSecret(Step next, String internalOperatorKey) {
-      return new CallBuilder()
-          .createSecretAsync(getOperatorNamespace(),
-              createModel(null, internalOperatorKey), new DefaultResponseStep<>(next));
+      return RequestBuilder.SECRET.create(createModel(null, internalOperatorKey), new DefaultResponseStep<>(next));
     }
 
     private static Step replaceSecret(Step next, V1Secret secret, String internalOperatorKey) {
-      return new CallBuilder()
-          .replaceSecretAsync(OPERATOR_SECRETS, getOperatorNamespace(), createModel(secret, internalOperatorKey),
-              new DefaultResponseStep<>(next));
+      return RequestBuilder.SECRET.update(createModel(secret, internalOperatorKey), new DefaultResponseStep<>(next));
     }
 
     @Override

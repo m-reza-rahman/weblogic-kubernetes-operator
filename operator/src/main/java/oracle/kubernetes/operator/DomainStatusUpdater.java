@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -234,11 +233,9 @@ public class DomainStatusUpdater {
    * @param callResponse the response from an unrecoverable call
    */
   public static Step createKubernetesFailureSteps(KubernetesApiResponse<?> callResponse) {
-    FailureStatusSource failure = UnrecoverableErrorBuilder.fromFailedCall(callResponse);
+    LOGGER.severe(MessageKeys.CALL_FAILED, callResponse.getStatus());
 
-    LOGGER.severe(MessageKeys.CALL_FAILED, failure.getMessage(), failure.getReason());
-
-    return new FailureStep(KUBERNETES, failure.getMessage());
+    return new FailureStep(KUBERNETES, callResponse.getStatus().toString());
   }
 
   /**

@@ -10,6 +10,7 @@ import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.LoggingFilter;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -71,8 +72,7 @@ public class SecretHelper {
           return doNext(packet);
         } else {
           LOGGER.fine(MessageKeys.RETRIEVING_SECRET, secretName);
-          final Step read = new CallBuilder().readSecretAsync(secretName, namespace, new SecretResponseStep(getNext()));
-          return doNext(read, packet);
+          return doNext(RequestBuilder.SECRET.get(namespace, secretName, new SecretResponseStep(getNext())), packet);
         }
       }
     }

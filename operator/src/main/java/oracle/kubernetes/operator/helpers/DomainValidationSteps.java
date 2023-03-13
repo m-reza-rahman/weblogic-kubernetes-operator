@@ -21,6 +21,7 @@ import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.DomainStatusUpdater;
 import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
@@ -71,7 +72,7 @@ public class DomainValidationSteps {
   }
 
   private static Step createListSecretsStep(String domainNamespace) {
-    return new CallBuilder().listSecretsAsync(domainNamespace, new ListSecretsResponseStep());
+    return RequestBuilder.SECRET.list(domainNamespace, new ListSecretsResponseStep());
   }
 
   static class ListSecretsResponseStep extends DefaultResponseStep<V1SecretList> {
@@ -91,7 +92,7 @@ public class DomainValidationSteps {
   }
 
   private static Step createListConfigMapsStep(String domainNamespace) {
-    return new CallBuilder().listConfigMapsAsync(domainNamespace, new ListConfigMapsResponseStep());
+    return RequestBuilder.CM.list(domainNamespace, new ListConfigMapsResponseStep());
   }
 
   static class ListConfigMapsResponseStep extends DefaultResponseStep<V1ConfigMapList> {
@@ -111,7 +112,7 @@ public class DomainValidationSteps {
   }
 
   private static Step createListClustersStep(String domainNamespace) {
-    return new CallBuilder().listClusterAsync(domainNamespace, new ListClustersResponseStep());
+    return RequestBuilder.CLUSTER.list(domainNamespace, new ListClustersResponseStep());
   }
 
   static class ListClustersResponseStep extends DefaultResponseStep<ClusterList> {

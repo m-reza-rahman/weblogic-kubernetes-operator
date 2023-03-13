@@ -132,7 +132,7 @@ public class ServerDownIteratorStep extends Step {
 
     @Nullable
     private Step createWaitSteps(ServerShutdownInfo ssi) {
-      return Optional.ofNullable(packet.getSpi(PodAwaiterStepFactory.class))
+      return Optional.ofNullable((PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME))
           .map(p -> waitForDelete(ssi, p)).orElse(null);
     }
 

@@ -131,7 +131,8 @@ public class ManagedServerUpIteratorStep extends Step {
   private StepAndPacket createManagedServerUpWaiters(Packet packet, ServerStartupInfo ssi) {
     DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     String podName = getPodName(info, ssi.getServerName());
-    return new StepAndPacket(Optional.ofNullable(packet.getSpi(PodAwaiterStepFactory.class))
+    return new StepAndPacket(Optional.ofNullable(
+        (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME))
             .map(p -> p.waitForReady(podName, null)).orElse(null),
             createPacketForServer(packet, ssi));
   }
