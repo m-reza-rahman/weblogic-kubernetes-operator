@@ -10,6 +10,7 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.ApiException;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.webhooks.model.AdmissionResponse;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -55,7 +56,7 @@ public abstract class AdmissionChecker {
   }
 
   public static List<ClusterResource> getClusters(String namespace) throws ApiException {
-    return Optional.of(new CallBuilder().listCluster(namespace))
+    return Optional.of(RequestBuilder.CLUSTER.list(namespace))
         .map(ClusterList::getItems).orElse(Collections.emptyList());
   }
 
