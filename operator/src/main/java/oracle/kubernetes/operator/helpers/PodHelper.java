@@ -639,8 +639,8 @@ public class PodHelper {
       try {
         JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
         patchBuilder.add("/metadata/labels/" + LabelConstants.TO_BE_ROLLED_LABEL, "true");
-        new CallBuilder()
-            .patchPod(super.getPodName(), getNamespace(), getDomainUid(), new V1Patch(patchBuilder.build().toString()));
+        RequestBuilder.POD.patch(getNamespace(), super.getPodName(),
+            V1Patch.PATCH_FORMAT_JSON_PATCH, new V1Patch(patchBuilder.build().toString()));
       } catch (ApiException ignored) {
         /* extraneous comment to fool checkstyle into thinking that this is not an empty catch block. */
       }

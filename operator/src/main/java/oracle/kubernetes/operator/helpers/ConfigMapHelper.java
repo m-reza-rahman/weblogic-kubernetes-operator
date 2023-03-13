@@ -393,7 +393,8 @@ public class ConfigMapHelper {
             patchBuilder, "/metadata/labels/", getMapLabels(currentMap), getLabels());
 
         return RequestBuilder.CM.patch(
-            namespace, name, new V1Patch(patchBuilder.build().toString()), createPatchResponseStep(next));
+            namespace, name, V1Patch.PATCH_FORMAT_JSON_PATCH,
+            new V1Patch(patchBuilder.build().toString()), createPatchResponseStep(next));
       }
 
       private Step patchImageHashInCurrentMap(V1ConfigMap currentMap, Packet packet, Step next) {
@@ -402,7 +403,8 @@ public class ConfigMapHelper {
         patchBuilder.add("/data/" + DOMAIN_INPUTS_HASH, (String)packet.get(DOMAIN_INPUTS_HASH));
 
         return RequestBuilder.CM.patch(
-            namespace, name, new V1Patch(patchBuilder.build().toString()), createPatchResponseStep(next));
+            namespace, name, V1Patch.PATCH_FORMAT_JSON_PATCH,
+            new V1Patch(patchBuilder.build().toString()), createPatchResponseStep(next));
       }
 
       private boolean labelsNotDefined(V1ConfigMap currentMap) {

@@ -1079,8 +1079,7 @@ public class EventHelper {
    */
   public static void createConversionWebhookEvent(EventData eventData) {
     try {
-      new CallBuilder()
-          .createEvent(getWebhookNamespace(), createConversionWebhookEventModel(eventData.getItem(), eventData));
+      RequestBuilder.EVENT.create(createConversionWebhookEventModel(eventData.getItem(), eventData));
     } catch (ApiException apiException) {
       LOGGER.warning(EXCEPTION, apiException);
     }
