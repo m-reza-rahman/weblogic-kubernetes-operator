@@ -14,6 +14,7 @@ import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
 import io.kubernetes.client.openapi.models.V1SubjectAccessReviewSpec;
 import io.kubernetes.client.openapi.models.V1SubjectAccessReviewStatus;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 
@@ -72,7 +73,7 @@ public class AuthorizationProxy {
         prepareSubjectAccessReview(
             principal, groups, operation, resource, resourceName, scope, namespaceName);
     try {
-      subjectAccessReview = new CallBuilder().createSubjectAccessReview(subjectAccessReview);
+      subjectAccessReview = RequestBuilder.SAR.create(subjectAccessReview);
     } catch (ApiException e) {
       LOGGER.severe(MessageKeys.APIEXCEPTION_FROM_SUBJECT_ACCESS_REVIEW, e);
       LOGGER.exiting(Boolean.FALSE);
@@ -167,7 +168,7 @@ public class AuthorizationProxy {
     spec.setNamespace(namespace);
     subjectRulesReview.setSpec(spec);
     try {
-      return new CallBuilder().createSelfSubjectRulesReview(subjectRulesReview);
+      return RequestBuilder.SSRR.create(subjectRulesReview);
     } catch (ApiException e) {
       LOGGER.warning(MessageKeys.EXCEPTION, e);
       return null;

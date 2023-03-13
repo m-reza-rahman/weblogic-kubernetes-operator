@@ -214,6 +214,7 @@ public class PodDisruptionBudgetHelper {
     private Step patchPodDisruptionBudgetStep(Step next) {
       return RequestBuilder.PDB.patch(
           info.getNamespace(), getPDBName(),
+          V1Patch.PATCH_FORMAT_JSON_PATCH,
           createPodDisruptionBudgetPatch(clusterName, info), new PatchResponseStep(next));
     }
 

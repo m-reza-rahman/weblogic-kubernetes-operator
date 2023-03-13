@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.calls;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import io.kubernetes.client.common.KubernetesListObject;
@@ -491,6 +492,46 @@ public abstract class RequestStep<
 
     public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
       return client.create(object, createOptions);
+    }
+  }
+
+  public static class UpdateStatusRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
+      extends RequestStep<ApiType, ApiListType, ApiType> {
+    private final ApiType object;
+    private final Function<ApiType, Object> status;
+    private final UpdateOptions updateOptions;
+
+    /**
+     * Construct update request step.
+     *
+     * @param next Response step
+     * @param apiTypeClass API type class
+     * @param apiListTypeClass API list type class
+     * @param apiGroup API group
+     * @param apiVersion API version
+     * @param resourcePlural Resource plural
+     * @param object Object
+     * @param status Function to generate status from object
+     * @param updateOptions Update options
+     */
+    public UpdateStatusRequestStep(
+        ResponseStep<ApiType> next,
+        Class<ApiType> apiTypeClass,
+        Class<ApiListType> apiListTypeClass,
+        String apiGroup,
+        String apiVersion,
+        String resourcePlural,
+        ApiType object,
+        Function<ApiType, Object> status,
+        UpdateOptions updateOptions) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      this.object = object;
+      this.status = status;
+      this.updateOptions = updateOptions;
+    }
+
+    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+      return client.updateStatus(object, status, updateOptions);
     }
   }
 }

@@ -129,6 +129,7 @@ public class InitializeInternalIdentityStep extends Step {
 
     return RequestBuilder.CM.patch(
         getOperatorNamespace(), OPERATOR_CM,
+        V1Patch.PATCH_FORMAT_JSON_PATCH,
         new V1Patch(patchBuilder.build().toString()), new DefaultResponseStep<>(next));
   }
 

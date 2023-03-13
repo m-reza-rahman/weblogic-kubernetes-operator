@@ -11,7 +11,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.GetOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.calls.RequestBuilder;
@@ -176,8 +179,8 @@ public class WebhookMain extends BaseMain {
   }
 
   private String getCrdResourceVersion(String crdName) throws ApiException {
-    return Optional.ofNullable(new CallBuilder().readCRDMetadata(crdName))
-        .map(pom -> pom.getMetadata()).map(m -> m.getResourceVersion()).orElse(null);
+    return Optional.ofNullable(RequestBuilder.CRD.get(crdName, new GetOptions().isPartialObjectMetadataRequest(true)))
+        .map(V1CustomResourceDefinition::getMetadata).map(V1ObjectMeta::getResourceVersion).orElse(null);
   }
 
   private Step createFullCRDRecheckSteps() {
