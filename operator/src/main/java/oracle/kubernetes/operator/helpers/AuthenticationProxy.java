@@ -8,6 +8,7 @@ import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1TokenReviewSpec;
 import io.kubernetes.client.openapi.models.V1TokenReviewStatus;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 
@@ -41,7 +42,7 @@ public class AuthenticationProxy {
               namespace == null ? AuthorizationProxy.Scope.CLUSTER : AuthorizationProxy.Scope.NAMESPACE,
               namespace);
       if (allowed) {
-        result = new CallBuilder().createTokenReview(prepareTokenReview(token));
+        result = RequestBuilder.TR.create(prepareTokenReview(token));
       } else {
         LOGGER.warning(MessageKeys.CANNOT_CREATE_TOKEN_REVIEW);
       }
