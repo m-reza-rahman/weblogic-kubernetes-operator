@@ -60,7 +60,6 @@ import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_DE
 public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainPresenceInfo>
     implements MakeRightDomainOperation {
 
-  private boolean explicitRecheck;
   private boolean deleting;
   private boolean inspectionRun;
 
