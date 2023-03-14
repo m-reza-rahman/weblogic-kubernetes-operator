@@ -3,6 +3,8 @@
 
 package oracle.kubernetes.operator;
 
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -16,6 +18,7 @@ import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.AsyncFiber;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -30,6 +33,7 @@ import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLab
  * @param <T> the type of resource handled by this step
  */
 abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
+  private static final String TIMEOUT = "wfrTimeout";
 
   static NextStepFactory nextStepFactory = WaitForReadyStep::createMakeDomainRightStep;
 
@@ -141,7 +145,7 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
 
   /**
    * Determines whether the state of the resource requires the fiber to be terminated.
-   * This default implementation always returns false; if it returns true, {@link #createTerminationException(Object)}
+   * This default implementation always returns false; if it returns true, {@link #createTerminationException(T)}
    * must return a non-null result
    * @param resource the resource to check
    * @return true if the fiber should be terminated
@@ -177,15 +181,27 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
     }
 
     logWaiting(getResourceName());
-    return doSuspend(fiber -> resumeWhenReady(packet, fiber));
+    final Semaphore resumeSignal = new Semaphore(0);
+    resumeWhenReady(packet, resumeSignal);
+    try {
+      while (!resumeSignal.tryAcquire(5, TimeUnit.SECONDS)) {
+        if (packet.get(TIMEOUT) != null) {
+          return doEnd(packet);
+        }
+        // TODO: if this fiber is cancelled then return
+      }
+    } catch (InterruptedException ie) {
+      return doTerminate(ie, packet);
+    }
+    return doNext(packet);
   }
 
   // Registers a callback for updates to the specified resource and
   // verifies that we haven't already missed the update.
-  private void resumeWhenReady(Packet packet, AsyncFiber fiber) {
-    Callback callback = new Callback(fiber, packet);
+  private void resumeWhenReady(Packet packet, Semaphore resumeSignal) {
+    Callback callback = new Callback(resumeSignal, packet);
     addCallback(getResourceName(), callback);
-    checkUpdatedResource(packet, fiber, callback);
+    checkUpdatedResource(packet, Fiber.getCurrentIfSet(), callback);
   }
 
   // It is possible that the watch event was received between the time the step was created, and the time the callback
@@ -244,7 +260,6 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
   }
 
   static class MakeRightDomainStep<V extends KubernetesObject> extends DefaultResponseStep<V> {
-    public static final String WAIT_TIMEOUT_EXCEEDED = "Wait timeout exceeded";
     private final WaitForReadyStep<?>.Callback callback;
 
     MakeRightDomainStep(WaitForReadyStep<?>.Callback callback, Step next) {
@@ -261,20 +276,20 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
         makeRightDomainOperation.setLiveInfo(new DomainPresenceInfo((DomainResource) callResponse.getObject()));
         makeRightDomainOperation.withExplicitRecheck().interrupt().execute();
       }
-      callback.fiber.terminate(new Exception(WAIT_TIMEOUT_EXCEEDED), packet);
+      callback.onTimeout();
       return super.onSuccess(packet, callResponse);
     }
 
   }
 
   class Callback implements Consumer<T> {
-    private final AsyncFiber fiber;
+    private final Semaphore resumeSignal;
     private final Packet packet;
     private final AtomicBoolean didResume = new AtomicBoolean(false);
     private final AtomicInteger recheckCount = new AtomicInteger(0);
 
-    Callback(AsyncFiber fiber, Packet packet) {
-      this.fiber = fiber;
+    Callback(Semaphore resumeSignal, Packet packet) {
+      this.resumeSignal = resumeSignal;
       this.packet = packet;
     }
 
@@ -298,7 +313,15 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
       removeCallback(getResourceName(), this);
       if (mayResumeFiber()) {
         handleResourceReady(packet, resource);
-        fiber.resume(packet);
+        resumeSignal.release();
+      }
+    }
+
+    protected void onTimeout() {
+      removeCallback(getResourceName(), this);
+      if (mayResumeFiber()) {
+        packet.put(TIMEOUT, Boolean.TRUE);
+        resumeSignal.release();
       }
     }
 
