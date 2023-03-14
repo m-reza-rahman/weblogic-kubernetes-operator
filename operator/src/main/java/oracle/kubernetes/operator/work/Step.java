@@ -17,6 +17,8 @@ import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 
 /** Individual step in a processing flow. */
 public abstract class Step {
+  public static String THROWABLE = "throwable";
+
   private Step next;
 
   /** Create a step with no next step. */
@@ -197,6 +199,18 @@ public abstract class Step {
    */
   protected final Void doEnd(Packet packet) {
     return doNext(null, packet);
+  }
+
+  /**
+   * Terminate fiber processing with a throwable.
+   *
+   * @param throwable Throwable
+   * @param packet Packet
+   * @return Next action that will end processing with a throwable
+   */
+  protected final Void doTerminate(Throwable throwable, Packet packet) {
+    packet.put(THROWABLE, throwable);
+    return doEnd(packet);
   }
 
   /**
