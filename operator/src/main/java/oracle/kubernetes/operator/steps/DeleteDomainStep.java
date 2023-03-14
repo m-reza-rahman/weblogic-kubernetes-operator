@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
+import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
@@ -80,9 +81,11 @@ public class DeleteDomainStep extends Step {
   }
 
   private Step deletePods(DomainPresenceInfo info) {
-    return new CallBuilder()
-        .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector())
-        .deleteCollectionPodAsync(info.getNamespace(), new DefaultResponseStep<>(null));
+    return RequestBuilder.POD.deleteCollection(
+        info.getNamespace(),
+        new ListOptions().labelSelector(
+            forDomainUidSelector(info.getDomainUid()) + "," + getCreatedByOperatorSelector()),
+        new DeleteOptions(), new DefaultResponseStep<>(null));
   }
 
 }

@@ -3,16 +3,23 @@
 
 package oracle.kubernetes.operator.calls;
 
+import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import com.google.gson.JsonSyntaxException;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1ListMeta;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
@@ -21,7 +28,6 @@ import io.kubernetes.client.util.generic.options.GetOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import io.kubernetes.client.util.generic.options.UpdateOptions;
-import oracle.kubernetes.operator.work.AsyncFiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -96,11 +102,6 @@ public abstract class RequestStep<
     packet.put(RESPONSE_COMPONENT_NAME, result);
 
     return doNext(packet);
-  }
-
-  // Schedule the timeout check to happen on the fiber at some number of seconds in the future.
-  private void scheduleTimeoutCheck(AsyncFiber fiber, int timeoutSeconds, Runnable timeoutCheck) {
-    fiber.scheduleOnce(timeoutSeconds, TimeUnit.SECONDS, timeoutCheck);
   }
 
   public static class ClusterGetRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
@@ -532,6 +533,123 @@ public abstract class RequestStep<
 
     public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
       return client.updateStatus(object, status, updateOptions);
+    }
+  }
+
+  private static void checkForIOException(ApiException e) {
+    if (e.getCause() instanceof IOException) {
+      throw new IllegalStateException(e.getCause()); // make this a checked exception?
+    }
+  }
+
+  private static <DataType extends KubernetesType>
+  KubernetesApiResponse<DataType> responseFromApiException(
+      ApiClient apiClient, ApiException e) {
+    checkForIOException(e);
+    final V1Status status;
+    try {
+      status = apiClient.getJSON().deserialize(e.getResponseBody(), V1Status.class);
+    } catch (JsonSyntaxException jsonEx) {
+      return new KubernetesApiResponse<>(
+          new V1Status().code(e.getCode()).message(e.getResponseBody()), e.getCode());
+    }
+    if (null == status) {
+      throw new RuntimeException(e);
+    }
+    return new KubernetesApiResponse<>(status, e.getCode());
+  }
+
+  public static class LogsRequestStep extends RequestStep<V1Pod, V1PodList, RequestBuilder.StringObject> {
+    private final String namespace;
+    private final String name;
+    private final String container;
+
+    /**
+     * Construct logs request step.
+     *
+     * @param next Response step
+     * @param apiTypeClass API type class
+     * @param apiListTypeClass API list type class
+     * @param apiGroup API group
+     * @param apiVersion API version
+     * @param resourcePlural Resource plural
+     * @param namespace Namespace
+     * @param name Name
+     * @param container Container
+     */
+    public LogsRequestStep(
+        ResponseStep<RequestBuilder.StringObject> next,
+        Class<V1Pod> apiTypeClass,
+        Class<V1PodList> apiListTypeClass,
+        String apiGroup,
+        String apiVersion,
+        String resourcePlural,
+        String namespace,
+        String name,
+        String container) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      this.namespace = namespace;
+      this.name = name;
+      this.container = container;
+    }
+
+    public KubernetesApiResponse<RequestBuilder.StringObject> execute(
+        GenericKubernetesApi<V1Pod, V1PodList> client, Packet packet) {
+      CoreV1Api c = new CoreV1Api(Client.getInstance());
+      try {
+        return new KubernetesApiResponse<>(new RequestBuilder.StringObject(
+            c.readNamespacedPodLog(name, namespace, container,
+            null, null, null, null, null, null, null, null)));
+      } catch (ApiException e) {
+        return responseFromApiException(c.getApiClient(), e);
+      }
+    }
+  }
+
+  public static class DeleteCollectionRequestStep extends RequestStep<V1Pod, V1PodList, RequestBuilder.V1StatusObject> {
+    private final String namespace;
+    private final ListOptions listOptions;
+    private final DeleteOptions deleteOptions;
+
+    /**
+     * Construct logs request step.
+     *
+     * @param next Response step
+     * @param apiTypeClass API type class
+     * @param apiListTypeClass API list type class
+     * @param apiGroup API group
+     * @param apiVersion API version
+     * @param resourcePlural Resource plural
+     * @param namespace Namespace
+     * @param listOptions List options
+     * @param deleteOptions Delete options
+     */
+    public DeleteCollectionRequestStep(
+        ResponseStep<RequestBuilder.V1StatusObject> next,
+        Class<V1Pod> apiTypeClass,
+        Class<V1PodList> apiListTypeClass,
+        String apiGroup,
+        String apiVersion,
+        String resourcePlural,
+        String namespace,
+        ListOptions listOptions,
+        DeleteOptions deleteOptions) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      this.namespace = namespace;
+      this.listOptions = listOptions;
+      this.deleteOptions = deleteOptions;
+    }
+
+    public KubernetesApiResponse<RequestBuilder.V1StatusObject> execute(
+        GenericKubernetesApi<V1Pod, V1PodList> client, Packet packet) {
+      CoreV1Api c = new CoreV1Api(Client.getInstance());
+      try {
+        return new KubernetesApiResponse<>(new RequestBuilder.V1StatusObject(
+            c.deleteCollectionNamespacedPod(namespace, null, null, null, listOptions.getFieldSelector(), null,
+                listOptions.getLabelSelector(), null, null, null, null, null, null, deleteOptions)));
+      } catch (ApiException e) {
+        return responseFromApiException(c.getApiClient(), e);
+      }
     }
   }
 }

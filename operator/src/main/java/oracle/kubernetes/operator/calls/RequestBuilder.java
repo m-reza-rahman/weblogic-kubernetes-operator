@@ -18,6 +18,7 @@ import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobList;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1NamespaceList;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetList;
@@ -27,6 +28,7 @@ import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.openapi.models.V1SelfSubjectRulesReview;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
+import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
 import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
@@ -54,8 +56,7 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
 
   public static final RequestBuilder<V1Namespace, V1NamespaceList> NAMESPACE =
       new RequestBuilder<>(V1Namespace.class, V1NamespaceList.class, "", "v1", "namespaces");
-  public static final RequestBuilder<V1Pod, V1PodList> POD =
-      new RequestBuilder<>(V1Pod.class, V1PodList.class, "", "v1", "pods");
+  public static final PodRequestBuilder POD = new PodRequestBuilder();
   public static final RequestBuilder<V1Service, V1ServiceList> SERVICE =
       new RequestBuilder<>(V1Service.class, V1ServiceList.class, "", "v1", "services");
   public static final RequestBuilder<V1ConfigMap, V1ConfigMapList> CM =
@@ -87,11 +88,11 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
       new RequestBuilder<>(V1SubjectAccessReview.class, KubernetesListObject.class,
           "authorization.k8s.io", "v1", "selfsubjectaccessreviews");
 
-  private final Class<ApiType> apiTypeClass;
-  private final Class<ApiListType> apiListTypeClass;
-  private final String apiGroup;
-  private final String apiVersion;
-  private final String resourcePlural;
+  protected final Class<ApiType> apiTypeClass;
+  protected final Class<ApiListType> apiListTypeClass;
+  protected final String apiGroup;
+  protected final String apiVersion;
+  protected final String resourcePlural;
 
   public RequestBuilder(
       Class<ApiType> apiTypeClass,
@@ -375,6 +376,77 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
         return callResponse.throwsApiException().getObject();
       }
       return null;
+    }
+  }
+
+  public static class StringObject implements KubernetesObject {
+    private final String value;
+
+    public StringObject(String value) {
+      this.value = value;
+    }
+
+    public String getValue() {
+      return value;
+    }
+
+    @Override
+    public V1ObjectMeta getMetadata() {
+      return null;
+    }
+
+    @Override
+    public String getApiVersion() {
+      return null;
+    }
+
+    @Override
+    public String getKind() {
+      return null;
+    }
+  }
+
+  public static class V1StatusObject implements KubernetesObject {
+    private final V1Status value;
+
+    public V1StatusObject(V1Status value) {
+      this.value = value;
+    }
+
+    @Override
+    public V1ObjectMeta getMetadata() {
+      return null;
+    }
+
+    @Override
+    public String getApiVersion() {
+      return value.getApiVersion();
+    }
+
+    @Override
+    public String getKind() {
+      return value.getKind();
+    }
+  }
+
+  public static class PodRequestBuilder extends RequestBuilder<V1Pod, V1PodList> {
+
+    public PodRequestBuilder() {
+      super(V1Pod.class, V1PodList.class, "", "v1", "pods");
+    }
+    public RequestStep<V1Pod, V1PodList, StringObject> logs(
+        String namespace, String name, String container, ResponseStep<StringObject> responseStep) {
+      return new RequestStep.LogsRequestStep(
+          responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+          namespace, name, container);
+    }
+
+    public RequestStep<V1Pod, V1PodList, V1StatusObject> deleteCollection(
+        String namespace, ListOptions listOptions, DeleteOptions deleteOptions,
+        ResponseStep<V1StatusObject> responseStep) {
+      return new RequestStep.DeleteCollectionRequestStep(
+          responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+          namespace, listOptions, deleteOptions);
     }
   }
 }
