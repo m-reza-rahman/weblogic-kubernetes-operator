@@ -490,10 +490,8 @@ public class JobHelper {
       }
 
       private Step readDomainIntrospectorPodLog(String jobPodName, Step next) {
-        return new CallBuilder()
-                .withContainerName(getDomain().getDomainUid() + "-introspector")
-                .readPodLogAsync(
-                        jobPodName, getNamespace(), getDomainUid(), new ReadPodLogResponseStep(next));
+        return RequestBuilder.POD.logs(getNamespace(), jobPodName,
+            getDomain().getDomainUid() + "-introspector", new ReadPodLogResponseStep(next));
       }
     }
 
@@ -515,7 +513,7 @@ public class JobHelper {
       }
     }
 
-    private static class ReadPodLogResponseStep extends ResponseStep<String> {
+    private static class ReadPodLogResponseStep extends ResponseStep<RequestBuilder.StringObject> {
       public static final String INTROSPECTION_FAILED = "INTROSPECTION_FAILED";
       private StringBuilder logMessage = new StringBuilder();
       private final List<String> severeStatuses = new ArrayList<>();
@@ -525,8 +523,9 @@ public class JobHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<String> callResponse) {
-        Optional.ofNullable(callResponse.getObject()).ifPresent(result -> processIntrospectionResult(packet, result));
+      public Void onSuccess(Packet packet, KubernetesApiResponse<RequestBuilder.StringObject> callResponse) {
+        Optional.ofNullable(callResponse.getObject())
+            .ifPresent(result -> processIntrospectionResult(packet, result.getValue()));
 
         addFluentdContainerLogAsSevereStatus(packet);
 
@@ -544,8 +543,9 @@ public class JobHelper {
       }
 
       @Nonnull
-      private Boolean isDomainIntrospectionComplete(KubernetesApiResponse<String> callResponse) {
+      private Boolean isDomainIntrospectionComplete(KubernetesApiResponse<RequestBuilder.StringObject> callResponse) {
         return Optional.ofNullable(callResponse).map(KubernetesApiResponse::getObject)
+            .map(RequestBuilder.StringObject::getValue)
             .map(r -> r.contains(DOMAIN_INTROSPECTION_COMPLETE)).orElse(false);
       }
 
@@ -797,12 +797,6 @@ public class JobHelper {
           recordJobPodName(packet, getName(jobPod));
           return doNext(processIntrospectorPodLog(getNext()), packet);
         }
-      }
-
-      @Override
-      protected Throwable createTerminationException(Packet packet,
-          KubernetesApiResponse<V1PodList> callResponse) {
-        return new JobWatcher.DeadlineExceededException((V1Job) packet.get(DOMAIN_INTROSPECTOR_JOB));
       }
 
       private boolean isJobPodTimedOut(V1Pod jobPod) {
