@@ -3,15 +3,12 @@
 
 package oracle.kubernetes.operator.work;
 
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
 
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
-import oracle.kubernetes.utils.SystemClock;
 
 /**
  * Allows at most one running Fiber per key value. However, rather than queue later arriving Fibers
@@ -123,60 +120,31 @@ public class FiberGate {
 
     void invoke() {
       if (isAllowed()) {
-        fiber.start(new WaitForOldFiberStep(old, steps), packet, gateCallback);
+        fiber.start(steps, packet, gateCallback);
       }
     }
 
     private boolean isAllowed() {
-      if (old == null) {
-        old = gateMap.put(domainUid, fiber);
-        return true;
-      } else if (old == placeholder) {
-        return gateMap.putIfAbsent(domainUid, fiber) == null;
-      } else {
-        return gateMap.replace(domainUid, old, fiber);
+      Fiber existing = null;
+      try {
+        if (old == null) {
+          existing = gateMap.put(domainUid, fiber);
+          return true;
+        } else if (old == placeholder) {
+          existing = gateMap.putIfAbsent(domainUid, fiber);
+          return existing == null;
+        } else {
+          boolean result = gateMap.replace(domainUid, old, fiber);
+          if (result) {
+            existing = old;
+          }
+          return result;
+        }
+      } finally {
+        if (existing != null) {
+          existing.cancel();
+        }
       }
-    }
-  }
-
-  private static class WaitForOldFiberStep extends Step {
-    private final AtomicReference<Fiber> old;
-    private final AtomicReference<WaitForOldFiberStep> current;
-
-    public WaitForOldFiberStep(Fiber old, Step next) {
-      super(next);
-      this.old = new AtomicReference<>(old);
-      current = new AtomicReference<>(this);
-    }
-
-    @Override
-    public Void apply(Packet packet) {
-      WaitForOldFiberStep c = current.get();
-      Fiber o = c != null ? c.old.getAndSet(null) : null;
-      if (o == null) {
-        return doNext(packet);
-      }
-
-      return doSuspend(
-          this,
-          fiber -> {
-            boolean isWillCall =
-                o.cancelAndExitCallback(
-                    true,
-                    () -> {
-                      current.set(o.getSpi(WaitForOldFiberStep.class));
-                      fiber.resume(packet);
-                    });
-
-            if (!isWillCall) {
-              current.set(o.getSpi(WaitForOldFiberStep.class));
-              fiber.resume(packet);
-            }
-          });
-    }
-
-    private String getProceedTime() {
-      return "starting fiber at " + SystemClock.now().format(DateTimeFormatter.ISO_LOCAL_TIME);
     }
   }
 

@@ -43,7 +43,7 @@ public class HttpAsyncTestSupport {
   private static final RequestHandler NO_SUCH_HANDLER = new RequestHandler(null, NOT_FOUND);
 
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
-  private HttpAsyncRequestStep.FutureFactory futureFactory = this::getFuture;
+  private HttpRequestStep.FutureFactory futureFactory = this::getFuture;
   private final Map<URI, List<RequestHandler>> cannedResponses = new HashMap<>();
   private final Stack<HttpRequest> receivedRequests = new Stack<>();
   private final List<Consumer<HttpRequest>> callbacks = new ArrayList<>();
@@ -165,7 +165,7 @@ public class HttpAsyncTestSupport {
   }
 
   public Memento install() throws NoSuchFieldException {
-    return StaticStubSupport.install(HttpAsyncRequestStep.class, "factory", futureFactory);
+    return StaticStubSupport.install(HttpRequestStep.class, "factory", futureFactory);
   }
 
   static class RequestContent implements Flow.Subscriber<ByteBuffer> {
