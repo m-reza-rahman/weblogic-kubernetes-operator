@@ -28,7 +28,7 @@ import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.SecretHelper;
-import oracle.kubernetes.operator.http.client.HttpAsyncRequestStep;
+import oracle.kubernetes.operator.http.client.HttpRequestStep;
 import oracle.kubernetes.operator.http.client.HttpResponseStep;
 import oracle.kubernetes.operator.http.rest.Scan;
 import oracle.kubernetes.operator.http.rest.ScanCache;
@@ -284,9 +284,9 @@ public class ShutdownManagedServerStep extends Step {
       return domainConfig;
     }
 
-    HttpAsyncRequestStep createRequestStep(
+    HttpRequestStep createRequestStep(
         ShutdownManagedServerResponseStep shutdownManagedServerResponseStep) {
-      HttpAsyncRequestStep requestStep = HttpAsyncRequestStep.create(createRequest(),
+      HttpRequestStep requestStep = HttpRequestStep.create(createRequest(),
           shutdownManagedServerResponseStep).withTimeoutSeconds(getRequestTimeoutSeconds());
       shutdownManagedServerResponseStep.requestStep = requestStep;
       return requestStep;
@@ -310,7 +310,7 @@ public class ShutdownManagedServerStep extends Step {
       ShutdownManagedServerProcessing processing = new ShutdownManagedServerProcessing(packet, service, pod);
       ShutdownManagedServerResponseStep shutdownManagedServerResponseStep =
           new ShutdownManagedServerResponseStep(PodHelper.getPodServerName(pod), getNext());
-      HttpAsyncRequestStep requestStep = processing.createRequestStep(shutdownManagedServerResponseStep);
+      HttpRequestStep requestStep = processing.createRequestStep(shutdownManagedServerResponseStep);
       return doNext(requestStep, packet);
     }
 
@@ -323,7 +323,7 @@ public class ShutdownManagedServerStep extends Step {
   static final class ShutdownManagedServerResponseStep extends HttpResponseStep {
     private static final String SHUTDOWN_REQUEST_RETRY_COUNT = "shutdownRequestRetryCount";
     private final String serverName;
-    private HttpAsyncRequestStep requestStep;
+    private HttpRequestStep requestStep;
 
     ShutdownManagedServerResponseStep(String serverName, Step next) {
       super(next);
@@ -390,7 +390,7 @@ public class ShutdownManagedServerStep extends Step {
       packet.remove(SHUTDOWN_REQUEST_RETRY_COUNT);
     }
 
-    void setHttpAsyncRequestStep(HttpAsyncRequestStep requestStep) {
+    void setHttpAsyncRequestStep(HttpRequestStep requestStep) {
       this.requestStep = requestStep;
     }
   }

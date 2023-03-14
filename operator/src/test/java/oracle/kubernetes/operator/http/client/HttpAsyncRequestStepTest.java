@@ -59,9 +59,9 @@ class HttpAsyncRequestStepTest {
   private final List<Memento> mementos = new ArrayList<>();
   private final TestFiber fiber = createStub(TestFiber.class);
   private final HttpResponse<String> response = createStub(HttpResponseStub.class, 200);
-  private HttpAsyncRequestStep requestStep;
+  private HttpRequestStep requestStep;
   private final CompletableFuture<HttpResponse<String>> responseFuture = new CompletableFuture<>();
-  private final HttpAsyncRequestStep.FutureFactory futureFactory = r -> responseFuture;
+  private final HttpRequestStep.FutureFactory futureFactory = r -> responseFuture;
   private final Collection<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleMemento;
 
@@ -70,8 +70,8 @@ class HttpAsyncRequestStepTest {
     mementos.add(consoleMemento = TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords, HTTP_METHOD_FAILED, HTTP_REQUEST_TIMED_OUT)
           .withLogLevel(Level.FINE)
-          .ignoringLoggedExceptions(HttpAsyncRequestStep.HttpTimeoutException.class));
-    mementos.add(StaticStubSupport.install(HttpAsyncRequestStep.class, "factory", futureFactory));
+          .ignoringLoggedExceptions(HttpRequestStep.HttpTimeoutException.class));
+    mementos.add(StaticStubSupport.install(HttpRequestStep.class, "factory", futureFactory));
     mementos.add(TuningParametersStub.install());
 
     requestStep = createStep();
@@ -84,7 +84,7 @@ class HttpAsyncRequestStepTest {
 
   @Test
   void classImplementsStep() {
-    assertThat(HttpAsyncRequestStep.class, typeCompatibleWith(Step.class));
+    assertThat(HttpRequestStep.class, typeCompatibleWith(Step.class));
   }
 
   @Test
@@ -93,8 +93,8 @@ class HttpAsyncRequestStepTest {
   }
 
   @Nonnull
-  private HttpAsyncRequestStep createStep() {
-    return HttpAsyncRequestStep.createGetRequest("http://localhost/nothing", responseStep);
+  private HttpRequestStep createStep() {
+    return HttpRequestStep.createGetRequest("http://localhost/nothing", responseStep);
   }
 
   @Test
@@ -246,7 +246,7 @@ class HttpAsyncRequestStepTest {
 
     httpSupport.defineResponse(request, createStub(HttpResponseStub.class, 200, "It works for testing!"));
 
-    HttpAsyncRequestStep step = HttpAsyncRequestStep.createGetRequest("http://nowhere", null);
+    HttpRequestStep step = HttpRequestStep.createGetRequest("http://nowhere", null);
     FiberTestSupport.doOnExit(step.apply(packet), fiber);
 
     assertThat(getResponse().body(), equalTo("It works for testing!"));

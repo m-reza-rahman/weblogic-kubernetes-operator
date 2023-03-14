@@ -162,62 +162,57 @@ public class ServerStatusReader {
 
       final boolean stdin = false;
       final boolean tty = false;
+      Process proc = null;
+      String state = null;
+      ApiClient client = Client.getInstance();
 
-      return doSuspend(
-          fiber -> {
-            Process proc = null;
-            String state = null;
-            Client helper = Client.getInstance();
-            ApiClient client = helper.take();
+      try {
+        try (ThreadLoggingContext stack =
+                 setThreadContext().namespace(getNamespace(currentPod)).domainUid(getDomainUid(currentPod))) {
 
-            try {
-              try (ThreadLoggingContext stack =
-                       setThreadContext().namespace(getNamespace(currentPod)).domainUid(getDomainUid(currentPod))) {
+          KubernetesExec kubernetesExec = execFactory.create(client, currentPod, WLS_CONTAINER_NAME);
+          kubernetesExec.setStdin(stdin);
+          kubernetesExec.setTty(tty);
+          proc = kubernetesExec.exec("/weblogic-operator/scripts/readState.sh");
 
-                KubernetesExec kubernetesExec = execFactory.create(client, currentPod, WLS_CONTAINER_NAME);
-                kubernetesExec.setStdin(stdin);
-                kubernetesExec.setTty(tty);
-                proc = kubernetesExec.exec("/weblogic-operator/scripts/readState.sh");
+          try (final Reader reader = new InputStreamReader(proc.getInputStream())) {
+            state = OperatorUtils.toString(reader);
+          }
 
-                try (final Reader reader = new InputStreamReader(proc.getInputStream())) {
-                  state = OperatorUtils.toString(reader);
-                }
-
-                if (proc.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
-                  int exitValue = proc.exitValue();
-                  LOGGER.fine("readState exit: " + exitValue + ", readState for " + currentPod.getMetadata().getName());
-                  if (exitValue == 1 || exitValue == 2) {
-                    state =
-                        isPodBeingDeleted(info, currentPod)
-                            ? WebLogicConstants.SHUTDOWN_STATE
-                            : WebLogicConstants.STARTING_STATE;
-                  } else if (exitValue != 0) {
-                    state = WebLogicConstants.UNKNOWN_STATE;
-                  }
-                }
-              }
-            } catch (InterruptedException ignore) {
-              Thread.currentThread().interrupt();
-            } catch (IOException | ApiException e) {
-              try (ThreadLoggingContext stack =
-                       setThreadContext().namespace(getNamespace(currentPod)).domainUid(getDomainUid(currentPod))) {
-                LOGGER.warning(MessageKeys.EXCEPTION, e);
-              }
-            } finally {
-              helper.recycle(client);
-              if (proc != null) {
-                proc.destroy();
-              }
+          if (proc.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+            int exitValue = proc.exitValue();
+            LOGGER.fine("readState exit: " + exitValue + ", readState for " + currentPod.getMetadata().getName());
+            if (exitValue == 1 || exitValue == 2) {
+              state =
+                  isPodBeingDeleted(info, currentPod)
+                      ? WebLogicConstants.SHUTDOWN_STATE
+                      : WebLogicConstants.STARTING_STATE;
+            } else if (exitValue != 0) {
+              state = WebLogicConstants.UNKNOWN_STATE;
             }
+          }
+        }
+      } catch (InterruptedException ignore) {
+        Thread.currentThread().interrupt();
+      } catch (IOException | ApiException e) {
+        try (ThreadLoggingContext stack =
+                 setThreadContext().namespace(getNamespace(currentPod)).domainUid(getDomainUid(currentPod))) {
+          LOGGER.warning(MessageKeys.EXCEPTION, e);
+        }
+      } finally {
+        if (proc != null) {
+          proc.destroy();
+        }
+      }
 
-            try (ThreadLoggingContext stack =
-                     setThreadContext().namespace(getNamespace(currentPod)).domainUid(getDomainUid(currentPod))) {
-              LOGGER.fine("readState: " + state + " for " + currentPod.getMetadata().getName());
-              state = chooseStateOrLastKnownServerStatus(info, lastKnownStatus, state, currentPod);
-              serverStateMap.put(serverName, state);
-            }
-            fiber.resume(packet);
-          });
+      try (ThreadLoggingContext stack =
+               setThreadContext().namespace(getNamespace(currentPod)).domainUid(getDomainUid(currentPod))) {
+        LOGGER.fine("readState: " + state + " for " + currentPod.getMetadata().getName());
+        state = chooseStateOrLastKnownServerStatus(info, lastKnownStatus, state, currentPod);
+        serverStateMap.put(serverName, state);
+      }
+
+      return doNext(packet);
     }
 
     private boolean isPodBeingDeleted(DomainPresenceInfo info, V1Pod pod) {

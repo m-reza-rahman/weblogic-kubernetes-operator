@@ -31,7 +31,7 @@ import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
-import oracle.kubernetes.operator.http.client.HttpAsyncRequestStep;
+import oracle.kubernetes.operator.http.client.HttpRequestStep;
 import oracle.kubernetes.operator.http.client.HttpAsyncTestSupport;
 import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.steps.ShutdownManagedServerStep.ShutdownManagedServerProcessing;
@@ -352,7 +352,7 @@ class ShutdownManagedServerStepTest {
         .createFor(Throwable.class, new Throwable()));
     ShutdownManagedServerProcessing processing = new ShutdownManagedServerProcessing(p,
         standaloneServerService, standaloneManagedServer1);
-    HttpAsyncRequestStep httpAsyncRequestStep = processing.createRequestStep(responseStep);
+    HttpRequestStep httpAsyncRequestStep = processing.createRequestStep(responseStep);
     responseStep.setHttpAsyncRequestStep(httpAsyncRequestStep);
     setServerState(state);
 

@@ -23,7 +23,7 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Service;
 import oracle.kubernetes.operator.helpers.AuthorizationSource;
 import oracle.kubernetes.operator.helpers.SecretHelper;
-import oracle.kubernetes.operator.http.client.HttpAsyncRequestStep;
+import oracle.kubernetes.operator.http.client.HttpRequestStep;
 import oracle.kubernetes.operator.http.client.HttpResponseStep;
 import oracle.kubernetes.operator.wlsconfig.PortDetails;
 import oracle.kubernetes.operator.work.Packet;
@@ -45,9 +45,9 @@ abstract class HttpRequestProcessing {
     this.packet = packet;
   }
 
-  static HttpAsyncRequestStep createRequestStep(HttpRequest request, HttpResponseStep responseStep) {
+  static HttpRequestStep createRequestStep(HttpRequest request, HttpResponseStep responseStep) {
     responseStep.setCallback(HttpRequestProcessing::addCookies);
-    return HttpAsyncRequestStep.create(request, responseStep)
+    return HttpRequestStep.create(request, responseStep)
         .withTimeoutSeconds(HTTP_TIMEOUT_SECONDS);
   }
 
