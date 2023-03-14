@@ -26,4 +26,6 @@ public interface MakeRightOperation<T extends ResourcePresenceInfo> {
   T getPresenceInfo();
 
   boolean hasEventData();
+
+  boolean isExplicitRecheck();
 }
