@@ -452,6 +452,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageDefined_hasAuxiliaryImageInitContainerVolumeAndMounts() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")));
 
     V1Job job = runStepsAndGetJobs().get(0);
@@ -533,6 +534,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageAndVolumeHavingAuxiliaryImagePath_hasVolumeMountWithAuxiliaryImagePath() {
     DomainConfiguratorFactory.forDomain(domain)
+            .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImageVolumeMountPath(CUSTOM_MOUNT_PATH)
             .withAuxiliaryImages(getAuxiliaryImages("wdt-image:v1"));
 
@@ -545,6 +547,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageVolumeWithMedium_createdJobPodsHasVolumeWithSpecifiedMedium() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImageVolumeMedium("Memory")
             .withAuxiliaryImages(getAuxiliaryImages("wdt-image:v1"));
 
@@ -557,6 +560,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageVolumeWithSizeLimit_createdJobPodsHasVolumeWithSpecifiedSizeLimit() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImageVolumeSizeLimit("100G")
             .withAuxiliaryImages(getAuxiliaryImages());
 
@@ -569,8 +573,9 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageWithImagePullPolicy_createJobPodHasImagePullPolicy() {
     getConfigurator()
-            .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
-                    .imagePullPolicy("Always")));
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
+        .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
+                .imagePullPolicy("Always")));
 
     V1Job job = runStepsAndGetJobs().get(0);
     assertThat(getPodTemplateInitContainers(job),
@@ -581,6 +586,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageWithResourceRequirements_createInitContainerHasResourceRequirements() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
             .imagePullPolicy("Always")))
         .withLimitRequirement("cpu", "250m")
@@ -597,6 +603,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageWithResourceLimits_createInitContainerHasResourceLimits() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
             .imagePullPolicy("Always")))
         .withLimitRequirement("memory", "1Gi");
@@ -611,6 +618,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageWithResourceRequests_createInitContainerHasResourceRequests() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
             .imagePullPolicy("Always")))
         .withRequestRequirement("memory", "1Gi");
@@ -625,6 +633,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAIAndCustomSourceWDTInstallHome_createPodWithInitContainerHavingCustomSourceWDTInstallHome() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
                     .sourceWDTInstallHome(CUSTOM_WDT_INSTALL_SOURCE_HOME)));
 
@@ -637,6 +646,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAIAndCustomSourceModelHome_createPodWithInitContainerHavingCustomSourceModelHome() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
                     .sourceModelHome(CUSTOM_MODEL_SOURCE_HOME)));
 
@@ -1016,6 +1026,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     ignoreJobCreatedAndDeletedLogs();
 
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v2")));
 
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
@@ -1084,6 +1095,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     ignoreJobCreatedAndDeletedLogs();
 
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")));
 
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
@@ -1115,6 +1127,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     ignoreJobCreatedAndDeletedLogs();
 
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(List.of(getAuxiliaryImage("wdt-image1:v1"), getAuxiliaryImage("wdt-image2:v1")));
 
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));

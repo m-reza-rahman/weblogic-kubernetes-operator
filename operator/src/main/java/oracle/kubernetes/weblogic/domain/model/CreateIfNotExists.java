@@ -5,15 +5,15 @@ package oracle.kubernetes.weblogic.domain.model;
 
 import com.google.gson.annotations.SerializedName;
 
-public enum CreateMode {
-  @SerializedName("CreateDomainIfNotExists")
-  CREATE_DOMAIN_IF_NOT_EXISTS("CreateDomainIfNotExists"),
-  @SerializedName("CreateDomainWithRcuIfNoExists")
-  CREATE_DOMAIN_WITH_RCU_IF_NOT_EXISTS("CreateDomainWithRcuIfNoExists");
+public enum CreateIfNotExists {
+  @SerializedName("domain")
+  DOMAIN("domain"),
+  @SerializedName("domainAndRCU")
+  DOMAIN_AND_RCU("domainAndRCU");
 
   private final String value;
 
-  CreateMode(String value) {
+  CreateIfNotExists(String value) {
     this.value = value;
   }
 

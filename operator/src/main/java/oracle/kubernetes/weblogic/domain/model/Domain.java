@@ -5,30 +5,34 @@ package oracle.kubernetes.weblogic.domain.model;
 
 import java.util.List;
 
+import oracle.kubernetes.json.Default;
 import oracle.kubernetes.json.Description;
 import oracle.kubernetes.operator.DomainType;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class InitDomain {
+public class Domain {
 
-  @Description("create domain mode.")
-  private CreateMode createMode = CreateMode.CREATE_DOMAIN_IF_NOT_EXISTS;
+  @Description("Domain creation mode. Legal values: CreateDomainIfNotExists, CreateDomainWithRcuIfNotExists."
+      + " Defaults to CreateDomainIfNotExists.")
+  @Default(strDefault = "CreateDomainIfNotExists")
+  private CreateIfNotExists createIfNotExists = CreateIfNotExists.DOMAIN;
 
-  @Description("Type of the domain.")
+  @Description("WebLogic Deploy Tooling domain type. Legal values: WLS, JRF. Defaults to JRF.")
+  @Default(strDefault = "JRF")
   private DomainType domainType = DomainType.JRF;
 
   /**
-   * The auxiliary images.
+   * The domain images.
    *
    */
-  @Description("Optionally, use auxiliary images to provide Model in Image model, application archive, and WebLogic "
-      + "Deploy Tooling files. This is a useful alternative for providing these files without requiring "
-      + "modifications to the pod's base image `domain.spec.image`. "
-      + "This feature internally uses a Kubernetes emptyDir volume and Kubernetes init containers to share "
-      + "the files from the additional images with the pod.")
-  private List<AuxiliaryImage> wdtImages;
+  @Description("Domain images containing WebLogic Deploy Tooling model, application archive, and WebLogic Deploy "
+      + "Tooling installation files."
+      + " These files will be used to create the domain during introspection. This feature"
+      + " internally uses a Kubernetes emptyDir volume and Kubernetes init containers to share"
+      + " the files from the additional images ")
+  private List<DomainCreationImage> domainCreationImages;
 
   @Description("Name of a ConfigMap containing the WebLogic Deploy Tooling model.")
   private String wdtConfigMap;
@@ -36,12 +40,12 @@ public class InitDomain {
   @Description("Settings for OPSS security.")
   private Opss opss;
 
-  public CreateMode getCreateMode() {
-    return createMode;
+  public CreateIfNotExists getCreateIfNotExists() {
+    return createIfNotExists;
   }
 
-  public InitDomain createMode(CreateMode createMode) {
-    this.createMode = createMode;
+  public Domain createMode(CreateIfNotExists createIfNotExists) {
+    this.createIfNotExists = createIfNotExists;
     return this;
   }
 
@@ -49,17 +53,17 @@ public class InitDomain {
     return domainType;
   }
 
-  public InitDomain domainType(DomainType domainType) {
+  public Domain domainType(DomainType domainType) {
     this.domainType = domainType;
     return this;
   }
 
-  public List<AuxiliaryImage> getWdtImages() {
-    return wdtImages;
+  public List<DomainCreationImage> getDomainCreationImages() {
+    return domainCreationImages;
   }
 
-  public InitDomain wdtImages(List<AuxiliaryImage> wdtImages) {
-    this.wdtImages = wdtImages;
+  public Domain wdtImages(List<DomainCreationImage> wdtImages) {
+    this.domainCreationImages = wdtImages;
     return this;
   }
 
@@ -67,7 +71,7 @@ public class InitDomain {
     return wdtConfigMap;
   }
 
-  public InitDomain wdtConfigMap(String wdtConfigMap) {
+  public Domain wdtConfigMap(String wdtConfigMap) {
     this.wdtConfigMap = wdtConfigMap;
     return this;
   }
@@ -76,7 +80,7 @@ public class InitDomain {
     return opss;
   }
 
-  public InitDomain opss(Opss opss) {
+  public Domain opss(Opss opss) {
     this.opss = opss;
     return this;
   }
@@ -85,9 +89,9 @@ public class InitDomain {
   public String toString() {
     ToStringBuilder builder =
         new ToStringBuilder(this)
-            .append("createMode", createMode)
+            .append("createMode", createIfNotExists)
             .append("domainType", domainType)
-            .append("wdtImages", wdtImages)
+            .append("wdtImages", domainCreationImages)
             .append("wdtConfigMap", wdtConfigMap)
             .append("opss", opss);
 
@@ -97,9 +101,9 @@ public class InitDomain {
   @Override
   public int hashCode() {
     HashCodeBuilder builder = new HashCodeBuilder()
-        .append(createMode)
+        .append(createIfNotExists)
         .append(domainType)
-        .append(wdtImages)
+        .append(domainCreationImages)
         .append(wdtConfigMap)
         .append(opss);
 
@@ -110,14 +114,14 @@ public class InitDomain {
   public boolean equals(Object other) {
     if (other == this) {
       return true;
-    } else if (!(other instanceof InitDomain)) {
+    } else if (!(other instanceof Domain)) {
       return false;
     }
 
-    InitDomain rhs = ((InitDomain) other);
+    Domain rhs = ((Domain) other);
     EqualsBuilder builder =
         new EqualsBuilder()
-            .append(createMode, rhs.createMode)
+            .append(createIfNotExists, rhs.createIfNotExists)
             .append(opss, rhs.opss)
             .append(domainType, rhs.domainType)
             .append(wdtConfigMap, rhs.wdtConfigMap)
