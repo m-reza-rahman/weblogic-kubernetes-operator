@@ -429,6 +429,15 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
   }
 
   /**
+   * Reference to secret opss key passphrase for MII.
+   *
+   * @return opss key passphrase
+   */
+  public String getModelOpssWalletPasswordSecret() {
+    return spec.getModelOpssWalletPasswordSecret();
+  }
+
+  /**
    * Reference to runtime encryption secret.
    *
    * @return runtime encryption secret
@@ -1298,7 +1307,7 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
           verifySecretExists(resourceLookup, getRuntimeEncryptionSecret(), SecretType.RUNTIME_ENCRYPTION);
         }
         if (ModelInImageDomainType.JRF.equals(getWdtDomainType())
-            && getOpssWalletPasswordSecret() == null) {
+            && getModelOpssWalletPasswordSecret() == null) {
           failures.add(DomainValidationMessages.missingRequiredOpssSecret(
               "spec.configuration.opss.walletPasswordSecret"));
         }

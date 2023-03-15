@@ -73,15 +73,15 @@ import oracle.kubernetes.weblogic.domain.model.AuxiliaryImage;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.ClusterSpec;
 import oracle.kubernetes.weblogic.domain.model.Configuration;
+import oracle.kubernetes.weblogic.domain.model.Domain;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainTestUtils;
-import oracle.kubernetes.weblogic.domain.model.InitDomain;
-import oracle.kubernetes.weblogic.domain.model.InitPv;
-import oracle.kubernetes.weblogic.domain.model.InitPvDomain;
+import oracle.kubernetes.weblogic.domain.model.InitializeDomainOnPv;
 import oracle.kubernetes.weblogic.domain.model.Model;
 import oracle.kubernetes.weblogic.domain.model.Opss;
+import oracle.kubernetes.weblogic.domain.model.PersistentVolume;
 import oracle.kubernetes.weblogic.domain.model.PersistentVolumeSpec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -472,7 +472,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenJobCreatedWithInitializeDomainOnPVDefined_hasSecretsInitContainerVolumeAndMounts() {
-    getConfigurator().withInitPvDomain(getInitializeDomainOnPV());
+    getConfigurator().withInitializeDomainOnPv(getInitializeDomainOnPV());
 
     V1Job job = runStepsAndGetJobs().get(0);
 
@@ -487,15 +487,30 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
             new V1SecretVolumeSource().secretName("wpSecret").defaultMode(420).optional(true))));
   }
 
-  private InitPvDomain getInitializeDomainOnPV() {
-    InitPvDomain initPvDomain = new InitPvDomain();
-    initPvDomain.setInitPv(createPv());
-    initPvDomain.setInitDomain(getInitDomain());
+  @Test
+  void whenJobCreatedWithoutInitializeDomainOnPVDefined_dontHaveSecretsInitContainerVolumeAndMounts() {
+    V1Job job = runStepsAndGetJobs().get(0);
+
+    assertThat(getJobPodSpec(job).getVolumes(),
+        hasItem(new V1Volume().name(SECRETS_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("webLogicCredentialsSecretName").defaultMode(420))));
+    assertThat(getJobPodSpec(job).getVolumes(),
+        not(hasItem(new V1Volume().name(OPSS_WALLETFILE_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("wfSecret").defaultMode(420).optional(true)))));
+    assertThat(getJobPodSpec(job).getVolumes(),
+        not(hasItem(new V1Volume().name(OPSS_KEYPASSPHRASE_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("wpSecret").defaultMode(420).optional(true)))));
+  }
+
+  private InitializeDomainOnPv getInitializeDomainOnPV() {
+    InitializeDomainOnPv initPvDomain = new InitializeDomainOnPv();
+    initPvDomain.setPersistentVolume(createPv());
+    initPvDomain.setDomain(getInitDomain());
     return initPvDomain;
   }
 
-  private InitDomain getInitDomain() {
-    InitDomain initDomain = new InitDomain();
+  private Domain getInitDomain() {
+    Domain initDomain = new Domain();
     initDomain.opss(getOpss());
     return initDomain;
   }
@@ -507,8 +522,8 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     return opss;
   }
 
-  private InitPv createPv() {
-    return new InitPv().metadata(new V1ObjectMeta().name("test-pv"))
+  private PersistentVolume createPv() {
+    return new PersistentVolume().metadata(new V1ObjectMeta().name("test-pv"))
         .spec(new PersistentVolumeSpec().storageClassName("oke-pv")
             .accessModes(Collections.singletonList("ReadWriteMany"))
             .capacity(Collections.singletonMap("storage", new Quantity("500Gi")))

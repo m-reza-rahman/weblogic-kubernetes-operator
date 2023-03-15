@@ -891,17 +891,21 @@ public class DomainSpec extends BaseConfiguration {
   }
 
   String getModelOpssWalletPasswordSecret() {
-    return Optional.ofNullable(configuration)
+    return isInitPvDomain() ? null : Optional.ofNullable(configuration)
         .map(Configuration::getOpss)
         .map(Opss::getWalletPasswordSecret)
         .orElse(null);
   }
 
-  String getInitPvDomainOpssWalletPasswordSecret() {
-    return getInitPvDomain() == null ? null : Optional.ofNullable(this)
+  private boolean isInitPvDomain() {
+    return getInitPvDomain() != null;
+  }
+
+  private String getInitPvDomainOpssWalletPasswordSecret() {
+    return !isInitPvDomain() ? null : Optional.ofNullable(this)
         .map(DomainSpec::getInitPvDomain)
-        .map(InitPvDomain::getInitDomain)
-        .map(InitDomain::getOpss)
+        .map(InitializeDomainOnPv::getDomain)
+        .map(Domain::getOpss)
         .map(Opss::getWalletPasswordSecret)
         .orElse(null);
   }
@@ -914,18 +918,18 @@ public class DomainSpec extends BaseConfiguration {
     return Optional.ofNullable(getInitPvDomainOpssWalletFileSecret()).orElse(getModelOpssWalletFileSecret());
   }
 
-  String getModelOpssWalletFileSecret() {
-    return Optional.ofNullable(configuration)
+  private String getModelOpssWalletFileSecret() {
+    return isInitPvDomain() ? null : Optional.ofNullable(configuration)
         .map(Configuration::getOpss)
         .map(Opss::getWalletFileSecret)
         .orElse(null);
   }
 
-  String getInitPvDomainOpssWalletFileSecret() {
-    return getInitPvDomain() == null ? null : Optional.ofNullable(this)
+  private String getInitPvDomainOpssWalletFileSecret() {
+    return !isInitPvDomain() ? null : Optional.ofNullable(this)
         .map(DomainSpec::getInitPvDomain)
-        .map(InitPvDomain::getInitDomain)
-        .map(InitDomain::getOpss)
+        .map(InitializeDomainOnPv::getDomain)
+        .map(Domain::getOpss)
         .map(Opss::getWalletFileSecret)
         .orElse(null);
   }
