@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static oracle.kubernetes.common.logging.MessageKeys.ASYNC_NO_RETRY;
 import static oracle.kubernetes.common.logging.MessageKeys.CREATE_CRD_FAILED;
@@ -63,8 +62,6 @@ class CrdHelperTest extends CrdHelperTestBase {
   private static final SemanticVersion PRODUCT_VERSION_OLD = new SemanticVersion(2, 4, 0);
   private static final SemanticVersion PRODUCT_VERSION_FUTURE = new SemanticVersion(3, 1, 0);
   public static final String WEBHOOK_CERTIFICATE = "/deployment/webhook-identity/webhookCert";
-
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
 
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
   private final List<Memento> mementos = new ArrayList<>();

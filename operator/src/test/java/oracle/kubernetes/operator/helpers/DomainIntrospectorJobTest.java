@@ -182,7 +182,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   private final List<Memento> mementos = new ArrayList<>();
   private final List<LogRecord> logRecords = new ArrayList<>();
   private final DomainConfigurator configurator = DomainConfiguratorFactory.forDomain(domain);
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final String jobPodName = LegalNames.toJobIntrospectorName(UID);
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
   private final SchemaConversionUtils schemaConversionUtils = new SchemaConversionUtils();

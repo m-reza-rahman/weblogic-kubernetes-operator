@@ -24,7 +24,6 @@ import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.HelmAccessStub;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
-import oracle.kubernetes.operator.helpers.OnConflictRetryStrategyStub;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.utils.TestUtils;
@@ -72,7 +71,6 @@ public class NamespaceTest {
   private final DomainProcessorStub dp = Stub.createNiceStub(DomainProcessorStub.class);
   private final MainDelegateStub delegate = createStrictStub(MainDelegateStub.class, dp, domainNamespaces);
   private final Collection<LogRecord> logRecords = new ArrayList<>();
-  private final OnConflictRetryStrategyStub retryStrategy = createStrictStub(OnConflictRetryStrategyStub.class);
 
   private TestUtils.ConsoleHandlerMemento loggerControl;
 
@@ -83,7 +81,6 @@ public class NamespaceTest {
     mementos.add(NoopWatcherStarter.install());
     mementos.add(HelmAccessStub.install());
     mementos.add(TuningParametersStub.install());
-    mementos.add(testSupport.install());
   }
 
   @AfterEach
