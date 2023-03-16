@@ -591,14 +591,14 @@ public class ServiceHelper {
           new ListOptions().labelSelector(
               forDomainUidSelector(info.getDomainUid()) + "," + getCreatedByOperatorSelector()),
           new ActionResponseStep<>() {
-        @Override
-        public Step createSuccessStep(V1ServiceList result, Step next) {
-          return new DeleteServiceListStep(Optional.ofNullable(result).map(list -> list.getItems().stream()
-              .filter(ServiceHelper::isNodePortType)
-              .collect(Collectors.toList())).orElse(new ArrayList<>()),
-              createReplacementService(next));
-        }
-      });
+            @Override
+            public Step createSuccessStep(V1ServiceList result, Step next) {
+              return new DeleteServiceListStep(Optional.ofNullable(result).map(list -> list.getItems().stream()
+                  .filter(ServiceHelper::isNodePortType)
+                  .collect(Collectors.toList())).orElse(new ArrayList<>()),
+                  createReplacementService(next));
+            }
+          });
     }
 
     private Step createReplacementService(Step next) {

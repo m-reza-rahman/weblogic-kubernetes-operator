@@ -73,11 +73,12 @@ public class DeleteDomainStep extends Step {
   private Step deletePodDisruptionBudgets(DomainPresenceInfo info) {
     return RequestBuilder.PDB.list(info.getNamespace(),
         new ListOptions().labelSelector(
-            forDomainUidSelector(info.getDomainUid()) + "," + getCreatedByOperatorSelector()), new ActionResponseStep<>() {
-      public Step createSuccessStep(V1PodDisruptionBudgetList result, Step next) {
-        return new DeletePodDisruptionBudgetListStep(result.getItems(), next);
-      }
-    });
+            forDomainUidSelector(
+                info.getDomainUid()) + "," + getCreatedByOperatorSelector()), new ActionResponseStep<>() {
+                  public Step createSuccessStep(V1PodDisruptionBudgetList result, Step next) {
+                    return new DeletePodDisruptionBudgetListStep(result.getItems(), next);
+                  }
+                });
   }
 
   private Step deletePods(DomainPresenceInfo info) {

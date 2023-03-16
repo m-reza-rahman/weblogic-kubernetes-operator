@@ -3,6 +3,8 @@
 
 package oracle.kubernetes.operator.calls;
 
+import java.util.function.Function;
+
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
@@ -46,9 +48,7 @@ import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
-import java.util.function.Function;
-
-public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject> {
+public class RequestBuilder<A extends KubernetesObject, L extends KubernetesListObject> {
   public static final RequestBuilder<DomainResource, DomainList> DOMAIN =
       new RequestBuilder<>(DomainResource.class, DomainList.class, "weblogic.oracle", "v9", "domains");
   public static final RequestBuilder<ClusterResource, ClusterList> CLUSTER =
@@ -71,7 +71,7 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
           "apiextensions.k8s.io", "v1", "customresourcedefinitions");
   public static final RequestBuilder<V1ValidatingWebhookConfiguration, V1ValidatingWebhookConfigurationList> VWC =
       new RequestBuilder<>(V1ValidatingWebhookConfiguration.class, V1ValidatingWebhookConfigurationList.class,
-  "admissionregistration.k8s.io", "v1", "validatingwebhookconfigurations");
+          "admissionregistration.k8s.io", "v1", "validatingwebhookconfigurations");
 
   public static final RequestBuilder<V1Job, V1JobList> JOB =
       new RequestBuilder<>(V1Job.class, V1JobList.class, "batch", "v1", "jobs");
@@ -88,15 +88,15 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
       new RequestBuilder<>(V1SubjectAccessReview.class, KubernetesListObject.class,
           "authorization.k8s.io", "v1", "selfsubjectaccessreviews");
 
-  protected final Class<ApiType> apiTypeClass;
-  protected final Class<ApiListType> apiListTypeClass;
+  protected final Class<A> apiTypeClass;
+  protected final Class<L> apiListTypeClass;
   protected final String apiGroup;
   protected final String apiVersion;
   protected final String resourcePlural;
 
-  public RequestBuilder(
-      Class<ApiType> apiTypeClass,
-      Class<ApiListType> apiListTypeClass,
+  RequestBuilder(
+      Class<A> apiTypeClass,
+      Class<L> apiListTypeClass,
       String apiGroup,
       String apiVersion,
       String resourcePlural) {
@@ -107,271 +107,586 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
     this.apiListTypeClass = apiListTypeClass;
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> create(ApiType object, ResponseStep<ApiType> responseStep) {
+  /**
+   * Step to create resource.
+   * @param object Resource
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> create(A object, ResponseStep<A> responseStep) {
     return create(object, new CreateOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> create(
-      ApiType object, CreateOptions createOptions, ResponseStep<ApiType> responseStep) {
+  /**
+   * Step to create resource.
+   * @param object Resource
+   * @param createOptions Create options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> create(
+      A object, CreateOptions createOptions, ResponseStep<A> responseStep) {
     return new RequestStep.CreateRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         object, createOptions);
   }
 
-  public ApiType create(ApiType object) throws ApiException {
+  /**
+   * Create resource.
+   * @param object Resource
+   * @return Created resource
+   * @throws ApiException On failure
+   */
+  public A create(A object) throws ApiException {
     return create(object, new CreateOptions());
   }
 
-  public ApiType create(ApiType object, CreateOptions createOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = create(object, createOptions, response);
+  /**
+   * Create resource.
+   * @param object Resource
+   * @param createOptions Create options
+   * @return Created resource
+   * @throws ApiException On failure
+   */
+  public A create(A object, CreateOptions createOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = create(object, createOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> delete(String name, ResponseStep<ApiType> responseStep) {
+  /**
+   * Step to delete resource.
+   * @param name Name
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> delete(String name, ResponseStep<A> responseStep) {
     return delete(name, new DeleteOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> delete(
-      String name, DeleteOptions deleteOptions, ResponseStep<ApiType> responseStep) {
+  /**
+   * Step to delete resource.
+   * @param name Name
+   * @param deleteOptions Delete options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> delete(
+      String name, DeleteOptions deleteOptions, ResponseStep<A> responseStep) {
     return new RequestStep.ClusterDeleteRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         name, deleteOptions);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> delete(
-      String namespace, String name, ResponseStep<ApiType> responseStep) {
+  /**
+   * Step to delete resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> delete(
+      String namespace, String name, ResponseStep<A> responseStep) {
     return delete(namespace, name, new DeleteOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> delete(
-      String namespace, String name, DeleteOptions deleteOptions, ResponseStep<ApiType> responseStep) {
+  /**
+   * Step to delete resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param deleteOptions Delete options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> delete(
+      String namespace, String name, DeleteOptions deleteOptions, ResponseStep<A> responseStep) {
     return new RequestStep.DeleteRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         namespace, name, deleteOptions);
   }
 
-  public ApiType delete(String name) throws ApiException {
+  /**
+   * Delete resource.
+   * @param name Name
+   * @return Deleted resource
+   * @throws ApiException On failure
+   */
+  public A delete(String name) throws ApiException {
     return delete(name, new DeleteOptions());
   }
 
-  public ApiType delete(String name, DeleteOptions deleteOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = delete(name, deleteOptions, response);
+  /**
+   * Delete resource.
+   * @param name Name
+   * @param deleteOptions Delete options
+   * @return Deleted resource
+   * @throws ApiException On failure
+   */
+  public A delete(String name, DeleteOptions deleteOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = delete(name, deleteOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public ApiType delete(String namespace, String name) throws ApiException {
+  /**
+   * Delete resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @return Deleted resource
+   * @throws ApiException On failure
+   */
+  public A delete(String namespace, String name) throws ApiException {
     return delete(namespace, name, new DeleteOptions());
   }
 
-  public ApiType delete(String namespace, String name, DeleteOptions deleteOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = delete(namespace, name, deleteOptions, response);
+  /**
+   * Delete resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param deleteOptions Delete options
+   * @return Deleted resource
+   * @throws ApiException On failure
+   */
+  public A delete(String namespace, String name, DeleteOptions deleteOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = delete(namespace, name, deleteOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> get(String name, ResponseStep<ApiType> responseStep) {
+  /**
+   * Get resource.
+   * @param name Name
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> get(String name, ResponseStep<A> responseStep) {
     return get(name, new GetOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> get(
-      String name, GetOptions getOptions, ResponseStep<ApiType> responseStep) {
+  /**
+   * Get resource.
+   * @param name Name
+   * @param getOptions Get options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> get(
+      String name, GetOptions getOptions, ResponseStep<A> responseStep) {
     return new RequestStep.ClusterGetRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         name, getOptions);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> get(
-      String namespace, String name, ResponseStep<ApiType> responseStep) {
+  /**
+   * Get resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> get(
+      String namespace, String name, ResponseStep<A> responseStep) {
     return get(namespace, name, new GetOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> get(
-      String namespace, String name, GetOptions getOptions, ResponseStep<ApiType> responseStep) {
+  /**
+   * Get resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param getOptions Get options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> get(
+      String namespace, String name, GetOptions getOptions, ResponseStep<A> responseStep) {
     return new RequestStep.GetRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         namespace, name, getOptions);
   }
 
-  public ApiType get(String name) throws ApiException {
+  /**
+   * Get resource.
+   * @param name Name
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A get(String name) throws ApiException {
     return get(name, new GetOptions());
   }
 
-  public ApiType get(String name, GetOptions getOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = get(name, getOptions, response);
+  /**
+   * Get resource.
+   * @param name Name
+   * @param getOptions Get options
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A get(String name, GetOptions getOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = get(name, getOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public ApiType get(String namespace, String name) throws ApiException {
+  /**
+   * Get resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A get(String namespace, String name) throws ApiException {
     return get(namespace, name, new GetOptions());
   }
 
-  public ApiType get(String namespace, String name, GetOptions getOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = get(namespace, name, getOptions, response);
+  /**
+   * Get resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param getOptions Get options
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A get(String namespace, String name, GetOptions getOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = get(namespace, name, getOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public RequestStep<ApiType, ApiListType, ApiListType> list(ResponseStep<ApiListType> responseStep) {
+  /**
+   * List resources.
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, L> list(ResponseStep<L> responseStep) {
     return list(new ListOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiListType> list(
-      ListOptions listOptions, ResponseStep<ApiListType> responseStep) {
+  /**
+   * List resources.
+   * @param listOptions List options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, L> list(
+      ListOptions listOptions, ResponseStep<L> responseStep) {
     return new RequestStep.ClusterListRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         listOptions);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiListType> list(
-      String namespace, ResponseStep<ApiListType> responseStep) {
+  /**
+   * List resources.
+   * @param namespace Namespace
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, L> list(
+      String namespace, ResponseStep<L> responseStep) {
     return list(namespace, new ListOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiListType> list(
-      String namespace, ListOptions listOptions, ResponseStep<ApiListType> responseStep) {
+  /**
+   * List resources.
+   * @param namespace Namespace
+   * @param listOptions List options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, L> list(
+      String namespace, ListOptions listOptions, ResponseStep<L> responseStep) {
     return new RequestStep.ListRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         namespace, listOptions);
   }
 
-  public ApiListType list() throws ApiException {
+  /**
+   * List resources.
+   * @return List of resources
+   * @throws ApiException On failure
+   */
+  public L list() throws ApiException {
     return list(new ListOptions());
   }
 
-  public ApiListType list(ListOptions listOptions) throws ApiException {
-    DirectResponseStep<ApiListType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiListType> step = list(listOptions, response);
+  /**
+   * List resources.
+   * @param listOptions List options
+   * @return List of resources
+   * @throws ApiException On failure
+   */
+  public L list(ListOptions listOptions) throws ApiException {
+    DirectResponseStep<L> response = new DirectResponseStep<>();
+    RequestStep<A, L, L> step = list(listOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public ApiListType list(String namespace) throws ApiException {
+  /**
+   * List resources.
+   * @param namespace Namespace
+   * @return List of resources
+   * @throws ApiException On failure
+   */
+  public L list(String namespace) throws ApiException {
     return list(namespace, new ListOptions());
   }
 
-  public ApiListType list(String namespace, ListOptions listOptions) throws ApiException {
-    DirectResponseStep<ApiListType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiListType> step = list(namespace, listOptions, response);
+  /**
+   * List resources.
+   * @param namespace Namespace
+   * @param listOptions List options
+   * @return List of resources
+   * @throws ApiException On failure
+   */
+  public L list(String namespace, ListOptions listOptions) throws ApiException {
+    DirectResponseStep<L> response = new DirectResponseStep<>();
+    RequestStep<A, L, L> step = list(namespace, listOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> update(ApiType object, ResponseStep<ApiType> responseStep) {
+  /**
+   * Update resource.
+   * @param object Resource
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> update(A object, ResponseStep<A> responseStep) {
     return update(object, new UpdateOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> update(
-      ApiType object, UpdateOptions updateOptions, ResponseStep<ApiType> responseStep) {
+  /**
+   * Update resource.
+   * @param object Resource
+   * @param updateOptions Update options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> update(
+      A object, UpdateOptions updateOptions, ResponseStep<A> responseStep) {
     return new RequestStep.UpdateRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         object, updateOptions);
   }
 
-  public ApiType update(ApiType object) throws ApiException {
+  /**
+   * Update resource.
+   * @param object Resource
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A update(A object) throws ApiException {
     return update(object, new UpdateOptions());
   }
 
-  public ApiType update(ApiType object, UpdateOptions updateOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = update(object, updateOptions, response);
+  /**
+   * Update resource.
+   * @param object Resource
+   * @param updateOptions Update options
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A update(A object, UpdateOptions updateOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = update(object, updateOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> patch(
-      String name, String patchType, V1Patch patch, ResponseStep<ApiType> responseStep) {
+  /**
+   * Patch resource.
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> patch(
+      String name, String patchType, V1Patch patch, ResponseStep<A> responseStep) {
     return patch(name, patchType, patch, new PatchOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> patch(
-      String name, String patchType, V1Patch patch, PatchOptions patchOptions, ResponseStep<ApiType> responseStep) {
+  /**
+   * Patch resource.
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param patchOptions Patch options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> patch(
+      String name, String patchType, V1Patch patch, PatchOptions patchOptions, ResponseStep<A> responseStep) {
     return new RequestStep.ClusterPatchRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         name, patchType, patch, patchOptions);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> patch(
-      String namespace, String name, String patchType, V1Patch patch, ResponseStep<ApiType> responseStep) {
+  /**
+   * Patch resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> patch(
+      String namespace, String name, String patchType, V1Patch patch, ResponseStep<A> responseStep) {
     return patch(namespace, name, patchType, patch, new PatchOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> patch(
+  /**
+   * Patch resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param patchOptions Patch options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> patch(
       String namespace, String name, String patchType, V1Patch patch,
-      PatchOptions patchOptions, ResponseStep<ApiType> responseStep) {
+      PatchOptions patchOptions, ResponseStep<A> responseStep) {
     return new RequestStep.PatchRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         namespace, name, patchType, patch, patchOptions);
   }
 
-  public ApiType patch(String name, String patchType, V1Patch patch) throws ApiException {
+  /**
+   * Patch resource.
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A patch(String name, String patchType, V1Patch patch) throws ApiException {
     return patch(name, patchType, patch, new PatchOptions());
   }
 
-  public ApiType patch(String name, String patchType, V1Patch patch, PatchOptions patchOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = patch(name, patchType, patch, patchOptions, response);
+  /**
+   * Patch resource.
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param patchOptions Patch options
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A patch(String name, String patchType, V1Patch patch, PatchOptions patchOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = patch(name, patchType, patch, patchOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public ApiType patch(String namespace, String name, String patchType, V1Patch patch) throws ApiException {
+  /**
+   * Patch resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A patch(String namespace, String name, String patchType, V1Patch patch) throws ApiException {
     return patch(namespace, name, patchType, patch, new PatchOptions());
   }
 
-  public ApiType patch(String namespace, String name, String patchType, V1Patch patch,
-      PatchOptions patchOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = patch(namespace, name, patchType, patch, patchOptions, response);
+  /**
+   * Patch resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param patchOptions Patch options
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A patch(String namespace, String name, String patchType, V1Patch patch,
+                 PatchOptions patchOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = patch(namespace, name, patchType, patch, patchOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> updateStatus(
-      ApiType object, Function<ApiType, Object> status, ResponseStep<ApiType> responseStep) {
+  /**
+   * Update status.
+   * @param object Resource object
+   * @param status Function to get status from resource
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> updateStatus(
+      A object, Function<A, Object> status, ResponseStep<A> responseStep) {
     return updateStatus(object, status, new UpdateOptions(), responseStep);
   }
 
-  public RequestStep<ApiType, ApiListType, ApiType> updateStatus(
-      ApiType object, Function<ApiType, Object> status,
-      UpdateOptions updateOptions, ResponseStep<ApiType> responseStep) {
+  /**
+   * Update status.
+   * @param object Resource object
+   * @param status Function to get status from resource
+   * @param updateOptions Update options
+   * @param responseStep Response step
+   * @return Request step
+   */
+  public RequestStep<A, L, A> updateStatus(
+      A object, Function<A, Object> status,
+      UpdateOptions updateOptions, ResponseStep<A> responseStep) {
     return new RequestStep.UpdateStatusRequestStep<>(
         responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
         object, status, updateOptions);
   }
 
-  public ApiType updateStatus(ApiType object, Function<ApiType, Object> status) throws ApiException {
+  /**
+   * Update status.
+   * @param object Data object
+   * @param status Function to get status from data object
+   * @return Data object
+   * @throws ApiException On failure
+   */
+  public A updateStatus(A object, Function<A, Object> status) throws ApiException {
     return updateStatus(object, status, new UpdateOptions());
   }
 
-  public ApiType updateStatus(ApiType object, Function<ApiType, Object> status,
-      UpdateOptions updateOptions) throws ApiException {
-    DirectResponseStep<ApiType> response = new DirectResponseStep<>();
-    RequestStep<ApiType, ApiListType, ApiType> step = updateStatus(object, status, updateOptions, response);
+  /**
+   * Update status.
+   * @param object Data object
+   * @param status Function to get status from data object
+   * @param updateOptions Update options
+   * @return Data object
+   * @throws ApiException On failure
+   */
+  public A updateStatus(A object, Function<A, Object> status,
+                        UpdateOptions updateOptions) throws ApiException {
+    DirectResponseStep<A> response = new DirectResponseStep<>();
+    RequestStep<A, L, A> step = updateStatus(object, status, updateOptions, response);
     step.apply(new Packet());
     return response.get();
   }
 
-  private static class DirectResponseStep<ResponseType extends KubernetesType> extends ResponseStep<ResponseType> {
-    private KubernetesApiResponse<ResponseType> callResponse;
-    public Void onFailure(Packet packet, KubernetesApiResponse<ResponseType> callResponse) {
+  private static class DirectResponseStep<R extends KubernetesType> extends ResponseStep<R> {
+    private KubernetesApiResponse<R> callResponse;
+
+    public Void onFailure(Packet packet, KubernetesApiResponse<R> callResponse) {
       this.callResponse = callResponse;
       return doEnd(packet);
     }
 
-    public Void onSuccess(Packet packet, KubernetesApiResponse<ResponseType> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<R> callResponse) {
       this.callResponse = callResponse;
       return doEnd(packet);
     }
 
-    public ResponseType get() throws ApiException {
+    public R get() throws ApiException {
       if (callResponse != null) {
         return callResponse.throwsApiException().getObject();
       }
@@ -434,6 +749,15 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
     public PodRequestBuilder() {
       super(V1Pod.class, V1PodList.class, "", "v1", "pods");
     }
+
+    /**
+     * Step to return pod logs.
+     * @param namespace Namespace
+     * @param name Name
+     * @param container Container name
+     * @param responseStep Response step
+     * @return Request step
+     */
     public RequestStep<V1Pod, V1PodList, StringObject> logs(
         String namespace, String name, String container, ResponseStep<StringObject> responseStep) {
       return new RequestStep.LogsRequestStep(
@@ -441,6 +765,14 @@ public class RequestBuilder<ApiType extends KubernetesObject, ApiListType extend
           namespace, name, container);
     }
 
+    /**
+     * Step to delete collection of pods.
+     * @param namespace Namespace
+     * @param listOptions List options
+     * @param deleteOptions Delete options
+     * @param responseStep Response step
+     * @return Request step
+     */
     public RequestStep<V1Pod, V1PodList, V1StatusObject> deleteCollection(
         String namespace, ListOptions listOptions, DeleteOptions deleteOptions,
         ResponseStep<V1StatusObject> responseStep) {
