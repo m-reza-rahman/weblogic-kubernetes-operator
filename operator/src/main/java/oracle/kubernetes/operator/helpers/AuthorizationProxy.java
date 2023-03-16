@@ -167,6 +167,7 @@ public class AuthorizationProxy {
     V1SelfSubjectRulesReviewSpec spec = new V1SelfSubjectRulesReviewSpec();
     spec.setNamespace(namespace);
     subjectRulesReview.setSpec(spec);
+    subjectRulesReview.setMetadata(new V1ObjectMeta()); // work around NPE in GenericKubernetesApi
     try {
       return RequestBuilder.SSRR.create(subjectRulesReview);
     } catch (ApiException e) {
