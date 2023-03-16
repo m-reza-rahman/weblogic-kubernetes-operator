@@ -257,6 +257,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     private long retryCount = 0;
     private final int maxRetryCount;
     private final Step retryStep;
+
     DefaultRetryStrategy(int maxRetryCount, Step retryStep) {
       this.maxRetryCount = maxRetryCount;
       this.retryStep = retryStep;

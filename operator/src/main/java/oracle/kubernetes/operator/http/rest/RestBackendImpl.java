@@ -428,7 +428,8 @@ public class RestBackendImpl implements RestBackend {
     String name = (String) metadata.get("name");
     Object currentCluster = null;
     try {
-      currentCluster = clusterApiUntyped.getNamespacedCustomObject("weblogic.oracle", "v1", namespace, "clusters", name);
+      currentCluster = clusterApiUntyped.getNamespacedCustomObject(
+          "weblogic.oracle", "v1", namespace, "clusters", name);
     } catch (ApiException apiException) {
       if (apiException.getCode() != KubernetesConstants.HTTP_NOT_FOUND) {
         throw handleApiException(apiException);

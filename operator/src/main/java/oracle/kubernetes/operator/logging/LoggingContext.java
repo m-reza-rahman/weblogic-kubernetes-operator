@@ -5,7 +5,6 @@ package oracle.kubernetes.operator.logging;
 
 import java.util.Optional;
 
-import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.work.Packet;
 
 /** Necessary additional context information for Operator log messages. */

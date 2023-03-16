@@ -35,14 +35,14 @@ import oracle.kubernetes.operator.work.Step;
  * A Step driven by a call to the Kubernetes API.
  */
 public abstract class RequestStep<
-    ApiType extends KubernetesObject, ApiListType extends KubernetesListObject, ResponseType extends KubernetesType>
+    A extends KubernetesObject, L extends KubernetesListObject, R extends KubernetesType>
     extends Step {
   public static final String RESPONSE_COMPONENT_NAME = "response";
   public static final String CONTINUE = "continue";
   public static final int FIBER_TIMEOUT = 0;
 
-  private final Class<ApiType> apiTypeClass;
-  private final Class<ApiListType> apiListTypeClass;
+  private final Class<A> apiTypeClass;
+  private final Class<L> apiListTypeClass;
   private final String apiGroup;
   private final String apiVersion;
   private final String resourcePlural;
@@ -58,9 +58,9 @@ public abstract class RequestStep<
    * @param resourcePlural Resource plural
    */
   protected RequestStep(
-          ResponseStep<ResponseType> next,
-          Class<ApiType> apiTypeClass,
-          Class<ApiListType> apiListTypeClass,
+          ResponseStep<R> next,
+          Class<A> apiTypeClass,
+          Class<L> apiListTypeClass,
           String apiGroup,
           String apiVersion,
           String resourcePlural) {
@@ -74,8 +74,8 @@ public abstract class RequestStep<
     next.setPrevious(this);
   }
 
-  abstract KubernetesApiResponse<ResponseType> execute(
-      GenericKubernetesApi<ApiType, ApiListType> client, Packet packet);
+  abstract KubernetesApiResponse<R> execute(
+      GenericKubernetesApi<A, L> client, Packet packet);
 
   /**
    * Access continue field, if any, from list metadata.
@@ -94,9 +94,9 @@ public abstract class RequestStep<
 
   @Override
   public Void apply(Packet packet) {
-    GenericKubernetesApi<ApiType, ApiListType> client = new GenericKubernetesApi<>(
+    GenericKubernetesApi<A, L> client = new GenericKubernetesApi<>(
         apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, Client.getInstance());
-    KubernetesApiResponse<ResponseType> result = execute(client, packet);
+    KubernetesApiResponse<R> result = execute(client, packet);
 
     // update packet
     packet.put(RESPONSE_COMPONENT_NAME, result);
@@ -104,8 +104,8 @@ public abstract class RequestStep<
     return doNext(packet);
   }
 
-  public static class ClusterGetRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
+  public static class ClusterGetRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
     private final String name;
     private final GetOptions getOptions;
 
@@ -122,9 +122,9 @@ public abstract class RequestStep<
      * @param getOptions Get options
      */
     public ClusterGetRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
@@ -135,14 +135,14 @@ public abstract class RequestStep<
       this.getOptions = getOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(
-        GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(
+        GenericKubernetesApi<A, L> client, Packet packet) {
       return client.get(name, getOptions);
     }
   }
 
-  public static class GetRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
+  public static class GetRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
     private final String namespace;
     private final String name;
     private final GetOptions getOptions;
@@ -161,9 +161,9 @@ public abstract class RequestStep<
      * @param getOptions Get options
      */
     public GetRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
@@ -176,14 +176,14 @@ public abstract class RequestStep<
       this.getOptions = getOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
       return client.get(namespace, name, getOptions);
     }
   }
 
-  public static class UpdateRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
-    private final ApiType object;
+  public static class UpdateRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
+    private final A object;
     private final UpdateOptions updateOptions;
 
     /**
@@ -199,27 +199,27 @@ public abstract class RequestStep<
      * @param updateOptions Update options
      */
     public UpdateRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
-        ApiType object,
+        A object,
         UpdateOptions updateOptions) {
       super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
       this.object = object;
       this.updateOptions = updateOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
       return client.update(object, updateOptions);
     }
   }
 
-  public static class ClusterPatchRequestStep<ApiType extends KubernetesObject,
-      ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
+  public static class ClusterPatchRequestStep<A extends KubernetesObject,
+      L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
     private final String name;
     private final String patchType;
     private final V1Patch patch;
@@ -240,9 +240,9 @@ public abstract class RequestStep<
      * @param patchOptions Patch options
      */
     public ClusterPatchRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
@@ -257,13 +257,13 @@ public abstract class RequestStep<
       this.patchOptions = patchOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
       return client.patch(name, patchType, patch, patchOptions);
     }
   }
 
-  public static class PatchRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
+  public static class PatchRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
     private final String namespace;
     private final String name;
     private final String patchType;
@@ -286,9 +286,9 @@ public abstract class RequestStep<
      * @param patchOptions Patch options
      */
     public PatchRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
@@ -305,13 +305,13 @@ public abstract class RequestStep<
       this.patchOptions = patchOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
       return client.patch(namespace, name, patchType, patch, patchOptions);
     }
   }
 
-  public static class ClusterDeleteRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
+  public static class ClusterDeleteRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
     private final String name;
     private final DeleteOptions deleteOptions;
 
@@ -328,9 +328,9 @@ public abstract class RequestStep<
      * @param deleteOptions Delete options
      */
     public ClusterDeleteRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
@@ -341,13 +341,13 @@ public abstract class RequestStep<
       this.deleteOptions = deleteOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
       return client.delete(name, deleteOptions);
     }
   }
 
-  public static class DeleteRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
+  public static class DeleteRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
     private final String namespace;
     private final String name;
     private final DeleteOptions deleteOptions;
@@ -366,9 +366,9 @@ public abstract class RequestStep<
      * @param deleteOptions Delete options
      */
     public DeleteRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
@@ -381,13 +381,13 @@ public abstract class RequestStep<
       this.deleteOptions = deleteOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
       return client.delete(namespace, name, deleteOptions);
     }
   }
 
-  public static class ClusterListRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiListType> {
+  public static class ClusterListRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, L> {
     private final ListOptions listOptions;
 
     /**
@@ -402,9 +402,9 @@ public abstract class RequestStep<
      * @param listOptions List options
      */
     public ClusterListRequestStep(
-        ResponseStep<ApiListType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<L> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
@@ -413,14 +413,14 @@ public abstract class RequestStep<
       this.listOptions = listOptions;
     }
 
-    public KubernetesApiResponse<ApiListType> execute(
-        GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<L> execute(
+        GenericKubernetesApi<A, L> client, Packet packet) {
       return client.list(listOptions);
     }
   }
 
-  public static class ListRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiListType> {
+  public static class ListRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, L> {
     private final String namespace;
     private final ListOptions listOptions;
 
@@ -437,9 +437,9 @@ public abstract class RequestStep<
      * @param listOptions List options
      */
     public ListRequestStep(
-        ResponseStep<ApiListType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<L> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
@@ -450,8 +450,8 @@ public abstract class RequestStep<
       this.listOptions = listOptions;
     }
 
-    public KubernetesApiResponse<ApiListType> execute(
-        GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<L> execute(
+        GenericKubernetesApi<A, L> client, Packet packet) {
       String cont = (String) packet.remove(CONTINUE);
       if (cont != null) {
         listOptions.setContinue(cont);
@@ -460,9 +460,9 @@ public abstract class RequestStep<
     }
   }
 
-  public static class CreateRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
-    private final ApiType object;
+  public static class CreateRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
+    private final A object;
     private final CreateOptions createOptions;
 
     /**
@@ -478,28 +478,28 @@ public abstract class RequestStep<
      * @param createOptions Create options
      */
     public CreateRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
-        ApiType object,
+        A object,
         CreateOptions createOptions) {
       super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
       this.object = object;
       this.createOptions = createOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
       return client.create(object, createOptions);
     }
   }
 
-  public static class UpdateStatusRequestStep<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends RequestStep<ApiType, ApiListType, ApiType> {
-    private final ApiType object;
-    private final Function<ApiType, Object> status;
+  public static class UpdateStatusRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
+      extends RequestStep<A, L, A> {
+    private final A object;
+    private final Function<A, Object> status;
     private final UpdateOptions updateOptions;
 
     /**
@@ -516,14 +516,14 @@ public abstract class RequestStep<
      * @param updateOptions Update options
      */
     public UpdateStatusRequestStep(
-        ResponseStep<ApiType> next,
-        Class<ApiType> apiTypeClass,
-        Class<ApiListType> apiListTypeClass,
+        ResponseStep<A> next,
+        Class<A> apiTypeClass,
+        Class<L> apiListTypeClass,
         String apiGroup,
         String apiVersion,
         String resourcePlural,
-        ApiType object,
-        Function<ApiType, Object> status,
+        A object,
+        Function<A, Object> status,
         UpdateOptions updateOptions) {
       super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
       this.object = object;
@@ -531,7 +531,7 @@ public abstract class RequestStep<
       this.updateOptions = updateOptions;
     }
 
-    public KubernetesApiResponse<ApiType> execute(GenericKubernetesApi<ApiType, ApiListType> client, Packet packet) {
+    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
       return client.updateStatus(object, status, updateOptions);
     }
   }
@@ -542,8 +542,7 @@ public abstract class RequestStep<
     }
   }
 
-  private static <DataType extends KubernetesType>
-  KubernetesApiResponse<DataType> responseFromApiException(
+  private static <D extends KubernetesType> KubernetesApiResponse<D> responseFromApiException(
       ApiClient apiClient, ApiException e) {
     checkForIOException(e);
     final V1Status status;
@@ -593,7 +592,7 @@ public abstract class RequestStep<
       this.container = container;
     }
 
-    public KubernetesApiResponse<RequestBuilder.StringObject> execute(
+    KubernetesApiResponse<RequestBuilder.StringObject> execute(
         GenericKubernetesApi<V1Pod, V1PodList> client, Packet packet) {
       CoreV1Api c = new CoreV1Api(Client.getInstance());
       try {
@@ -640,7 +639,7 @@ public abstract class RequestStep<
       this.deleteOptions = deleteOptions;
     }
 
-    public KubernetesApiResponse<RequestBuilder.V1StatusObject> execute(
+    KubernetesApiResponse<RequestBuilder.V1StatusObject> execute(
         GenericKubernetesApi<V1Pod, V1PodList> client, Packet packet) {
       CoreV1Api c = new CoreV1Api(Client.getInstance());
       try {

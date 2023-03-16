@@ -193,6 +193,16 @@ public abstract class Step {
   }
 
   /**
+   * Invokes the indicated next step.
+   *
+   * @param step The step
+   * @param packet Packet to provide when invoking the next step
+   */
+  protected Void doNext(Step step, Packet packet) {
+    return step.apply(packet);
+  }
+
+  /**
    * End the fiber processing.
    *
    * @param packet Packet
@@ -211,16 +221,6 @@ public abstract class Step {
   protected final Void doTerminate(Throwable throwable, Packet packet) {
     packet.put(THROWABLE, throwable);
     return doEnd(packet);
-  }
-
-  /**
-   * Invokes the indicated next step.
-   *
-   * @param step The step
-   * @param packet Packet to provide when invoking the next step
-   */
-  protected Void doNext(Step step, Packet packet) {
-    return step.apply(packet);
   }
 
   /**

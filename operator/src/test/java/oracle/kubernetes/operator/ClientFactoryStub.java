@@ -6,8 +6,8 @@ package oracle.kubernetes.operator;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.ApiClient;
-import oracle.kubernetes.operator.helpers.ClientFactory;
 import oracle.kubernetes.operator.calls.Client;
+import oracle.kubernetes.operator.helpers.ClientFactory;
 
 public class ClientFactoryStub implements ClientFactory {
 
