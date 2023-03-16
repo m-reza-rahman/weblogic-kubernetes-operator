@@ -189,7 +189,7 @@ public abstract class Step {
    * @param packet Packet to provide when invoking the next step
    */
   protected Void doNext(Packet packet) {
-    return Optional.ofNullable(next).map(next -> next.apply(packet)).orElse(null);
+    return doNext(next, packet);
   }
 
   /**
@@ -199,7 +199,7 @@ public abstract class Step {
    * @param packet Packet to provide when invoking the next step
    */
   protected Void doNext(Step step, Packet packet) {
-    return step.apply(packet);
+    return Optional.ofNullable(step).map(s -> s.apply(packet)).orElse(null);
   }
 
   /**
