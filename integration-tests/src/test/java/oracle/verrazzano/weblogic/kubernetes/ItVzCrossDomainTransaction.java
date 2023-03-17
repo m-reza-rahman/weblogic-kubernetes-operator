@@ -98,7 +98,7 @@ class ItVzCrossDomainTransaction {
   private static String dbPodIP = null;
   private static int dbPort = 1521;
 
-   private static final String WDT_MODEL_FILE_DOMAIN1 = "model-crossdomaintransaction-domain1.yaml";
+  private static final String WDT_MODEL_FILE_DOMAIN1 = "model-crossdomaintransaction-domain1.yaml";
   private static final String WDT_MODEL_FILE_DOMAIN2 = "model-crossdomaintransaction-domain2.yaml";
 
   private static final String WDT_MODEL_DOMAIN1_PROPS = "model-crossdomaintransaction-domain1.properties";
@@ -117,7 +117,7 @@ class ItVzCrossDomainTransaction {
    JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(1) List<String> namespaces) throws Exception {
+  public static void initAll(@Namespaces(2) List<String> namespaces) throws Exception {
     logger = getLogger();
     logger.info("Getting unique namespace for Domain");
     assertNotNull(namespaces.get(0), "Namespace list is null");
@@ -125,6 +125,8 @@ class ItVzCrossDomainTransaction {
     setLabelToNamespace(domain1Namespace);
     domain2Namespace = namespaces.get(1);
     setLabelToNamespace(domain2Namespace);
+
+    //updatePropertyFile();
     buildApplicationsAndDomainImages();
   }
 
