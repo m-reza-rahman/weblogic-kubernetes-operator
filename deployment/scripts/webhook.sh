@@ -60,7 +60,7 @@ mkdir -m 777 -p /logs
 HEAP="-XshowSettings:vm"
 
 # Start operator
-java -cp /operator/weblogic-kubernetes-operator.jar $HEAP $MOCKING_WLS $DEBUG $LOGGING oracle.kubernetes.operator.WebhookMain &
+java --enable-preview -cp /operator/weblogic-kubernetes-operator.jar $HEAP $MOCKING_WLS $DEBUG $LOGGING oracle.kubernetes.operator.WebhookMain &
 PID=$!
 wait $PID
 
