@@ -3,6 +3,7 @@
 
 package oracle.verrazzano.weblogic.kubernetes;
 
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -291,6 +292,10 @@ class ItVzCrossDomainTransaction {
     String appSource2 = distDir.toString() + "/jmsservlet.war";
     logger.info("Application is in {0}", appSource2);
 
+    java.nio.file.Path target = Paths.get(PROPS_TEMP_DIR);
+    assertDoesNotThrow(() -> {
+      Files.createDirectories(target);
+    });
     java.nio.file.Path mdbSrcDir = Paths.get(APP_DIR, "mdbtopic");
     java.nio.file.Path mdbDestDir = Paths.get(PROPS_TEMP_DIR, "mdbtopic");
 
