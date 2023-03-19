@@ -15,8 +15,6 @@ import java.util.regex.Pattern;
 
 import oracle.weblogic.kubernetes.actions.impl.LoggingExporterParams;
 import oracle.weblogic.kubernetes.actions.impl.OperatorParams;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -28,7 +26,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-//import static java.nio.file.Paths.get;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HTTPS_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HTTP_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_IMAGE;
@@ -47,7 +44,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
-//import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
@@ -61,10 +58,12 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.searchStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.LoggingExporterUtils.installAndVerifyElasticsearch;
+import static oracle.weblogic.kubernetes.utils.LoggingExporterUtils.installAndVerifyKibana;
 import static oracle.weblogic.kubernetes.utils.LoggingExporterUtils.uninstallAndVerifyElasticsearch;
 import static oracle.weblogic.kubernetes.utils.LoggingExporterUtils.uninstallAndVerifyKibana;
 import static oracle.weblogic.kubernetes.utils.LoggingExporterUtils.verifyLoggingExporterReady;
-//import static oracle.weblogic.kubernetes.utils.OKDUtils.addSccToNsSvcAccount;
+import static oracle.weblogic.kubernetes.utils.OKDUtils.addSccToNsSvcAccount;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.upgradeAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -95,11 +94,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
-class ItElasticSample {
+class ItElasticLoggingSimple {
 
   // constants for creating domain image using model in image
   private static final String WLS_ELK_LOGGING_MODEL_FILE = "model.wlslogging.yaml";
   private static final String WLS_ELK_LOGGING_IMAGE_NAME = "wls-logging-image";
+
+  // constants for testing WebLogic Logging Exporter
+  private static final String wlsLoggingExporterYamlFileLoc = RESOURCE_DIR + "/loggingexporter";
 
   // constants for Domain
   private static String domainUid = "elk-domain1";
@@ -119,13 +121,11 @@ class ItElasticSample {
   private static LoggingExporterParams kibanaParams = null;
   private static LoggingFacade logger = null;
   static String elasticSearchHost;
-  static String elasticSearchNs = "default";
+  static String elasticSearchNs;
 
   private static String k8sExecCmdPrefix;
   private static Map<String, String> testVarMap;
 
-  private static String sampleELKConfigFile =
-      ITTESTS_DIR + "/../kubernetes/samples/scripts/elasticsearch-and-kibana/elasticsearch_and_kibana.yaml";
   private static String sourceConfigFile = ITTESTS_DIR + "/../kubernetes/charts/weblogic-operator/logstash.conf";
   private static String destConfigFile = WORK_DIR + "/logstash.conf";
   private static String sourceSettingsFile = ITTESTS_DIR + "/../kubernetes/charts/weblogic-operator/logstash.yml";
@@ -140,7 +140,7 @@ class ItElasticSample {
    *                   JUnit engine parameter resolution mechanism.
    */
   @BeforeAll
-  public static void init(@Namespaces(2) List<String> namespaces) {
+  public static void init(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
 
     // get a new unique opNamespace
@@ -148,19 +148,33 @@ class ItElasticSample {
     assertNotNull(namespaces.get(0), "Namespace list is null");
     opNamespace = namespaces.get(0);
 
+    // get a new unique opNamespace2
+    logger.info("Assigning a unique namespace for Operator");
+    assertNotNull(namespaces.get(1), "Namespace list is null");
+    opNamespace2 = namespaces.get(1);
+
     // get a new unique domainNamespace
     logger.info("Assigning a unique namespace for Domain");
-    assertNotNull(namespaces.get(1), "Namespace list is null");
-    domainNamespace = namespaces.get(1);
+    assertNotNull(namespaces.get(2), "Namespace list is null");
+    domainNamespace = namespaces.get(2);
 
-    // install and verify Elasticsearch and Kibana;
+    // install and verify Elasticsearch
+    elasticSearchNs = namespaces.get(3);
     elasticSearchHost = "elasticsearch." + elasticSearchNs + ".svc.cluster.local";
-    logger.info("install and verify Elasticsearch and Kibana");
 
-    CommandParams params = new CommandParams().defaults();
-    params.command(KUBERNETES_CLI + " apply -f " + sampleELKConfigFile);
-    boolean result = Command.withParams(params).execute();
-    assertTrue(result, "Failed to install Elasticsearch and Kibana");
+    if (OKD) {
+      addSccToNsSvcAccount("default", elasticSearchNs);
+    }
+
+    logger.info("install and verify Elasticsearch");
+    elasticsearchParams = assertDoesNotThrow(() -> installAndVerifyElasticsearch(elasticSearchNs),
+            "Failed to install Elasticsearch");
+    assertNotNull(elasticsearchParams, "Failed to install Elasticsearch");
+
+    // install and verify Kibana
+    logger.info("install and verify Kibana");
+    kibanaParams = assertDoesNotThrow(() -> installAndVerifyKibana(elasticSearchNs), "Failed to install Kibana");
+    assertNotNull(kibanaParams, "Failed to install Kibana");
 
     // Verify that ELK Stack is ready to use
     testVarMap = new HashMap<String, String>();
@@ -184,10 +198,7 @@ class ItElasticSample {
     OperatorParams opParams = new OperatorParams()
         .helmParams(upgradeHelmParams)
         .elkIntegrationEnabled(true)
-        .elasticSearchHost(elasticSearchHost)
-        .elasticSearchPort(9200)
-        .logStashImage("elkTestLogStashImage")
-        .createLogStashConfigMap(true);
+        .elasticSearchHost(elasticSearchHost);
 
     assertTrue(upgradeAndVerifyOperator(opNamespace, opParams),
         String.format("Failed to upgrade operator in namespace %s", opNamespace));
