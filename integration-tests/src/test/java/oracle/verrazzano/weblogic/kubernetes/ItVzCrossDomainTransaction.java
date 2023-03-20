@@ -3,13 +3,18 @@
 
 package oracle.verrazzano.weblogic.kubernetes;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Yaml;
@@ -86,6 +91,10 @@ class ItVzCrossDomainTransaction {
   private static String domain1AdminServerPodName = domainUid1 + "-admin-server";
   private final String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
   private static String domain2AdminServerPodName = domainUid2 + "-admin-server";
+  private static String domain1AdminSecretName = domainUid1 + "-weblogic-credentials";
+  private static  String domain2AdminSecretName = domainUid2 + "-weblogic-credentials";
+  private static String domain1EncryptionSecretName = domainUid1 + "-encryptionsecret";
+  private static String domain2EncryptionSecretName = domainUid2 + "-encryptionsecret";
   private final String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
   private final int replicaCount = 2;
   private static final String ORACLEDBURLPREFIX = "oracledb.";
@@ -127,7 +136,7 @@ class ItVzCrossDomainTransaction {
     domain2Namespace = namespaces.get(1);
     setLabelToNamespace(domain2Namespace);
 
-    //updatePropertyFile();
+    updatePropertyFile();
     buildApplicationsAndDomainImages();
   }
 
@@ -148,7 +157,7 @@ class ItVzCrossDomainTransaction {
     createTestRepoSecret(domain1Namespace);
 
     // create secret for admin credentials
-    logger.info("Create secret for admin credentials");
+    /*logger.info("Create secret for admin credentials");
     String adminSecretName = "weblogic-credentials";
     createSecretWithUsernamePassword(adminSecretName, domain1Namespace,
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
@@ -157,15 +166,15 @@ class ItVzCrossDomainTransaction {
     logger.info("Create encryption secret");
     String encryptionSecretName = "encryptionsecret";
     createSecretWithUsernamePassword(encryptionSecretName, domain1Namespace,
-            "weblogicenc", "weblogicenc");
+            "weblogicenc", "weblogicenc");*/
 
     // create cluster object
     String clusterName = "cluster-1";
 
     DomainResource domain = createDomainResource(domainUid1, domain1Namespace,
         domain1Image,
-        adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
-        encryptionSecretName, replicaCount, Arrays.asList(clusterName));
+        domain1AdminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
+        domain1EncryptionSecretName, replicaCount, Arrays.asList(clusterName));
 
     Component component = new Component()
         .apiVersion("core.oam.dev/v1alpha2")
@@ -253,6 +262,41 @@ class ItVzCrossDomainTransaction {
 
   }
 
+  private static void updatePropertyFile() {
+    //create a temporary directory to copy and update the properties file
+    java.nio.file.Path target = Paths.get(PROPS_TEMP_DIR);
+    java.nio.file.Path source1 = Paths.get(MODEL_DIR, WDT_MODEL_DOMAIN1_PROPS);
+    java.nio.file.Path source2 = Paths.get(MODEL_DIR, WDT_MODEL_DOMAIN2_PROPS);
+    logger.info("Copy the properties file to the above area so that we can add namespace property");
+    assertDoesNotThrow(() -> {
+      Files.createDirectories(target);
+      Files.copy(source1, target.resolve(source1.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+      Files.copy(source2, target.resolve(source2.getFileName()), StandardCopyOption.REPLACE_EXISTING);
+    });
+
+    assertDoesNotThrow(
+        () -> addToPropertyFile(WDT_MODEL_DOMAIN1_PROPS, domain1Namespace),
+        String.format("Failed to update %s with namespace %s", WDT_MODEL_DOMAIN1_PROPS, domain1Namespace));
+    assertDoesNotThrow(
+        () -> addToPropertyFile(WDT_MODEL_DOMAIN2_PROPS, domain2Namespace),
+        String.format("Failed to update %s with namespace %s", WDT_MODEL_DOMAIN2_PROPS, domain2Namespace));
+
+  }
+
+  private static void addToPropertyFile(String propFileName, String domainNamespace) throws IOException {
+    FileInputStream in = new FileInputStream(PROPS_TEMP_DIR + "/" + propFileName);
+    Properties props = new Properties();
+    props.load(in);
+    in.close();
+
+    FileOutputStream out = new FileOutputStream(PROPS_TEMP_DIR + "/" + propFileName);
+    props.setProperty("NAMESPACE", domainNamespace);
+    //props.setProperty("K8S_NODEPORT_HOST", dbPodIP);
+    //props.setProperty("DBPORT", Integer.toString(dbPort));
+    props.store(out, null);
+    out.close();
+  }
+
   private static void buildApplicationsAndDomainImages() {
 
     //build application archive
@@ -292,10 +336,6 @@ class ItVzCrossDomainTransaction {
     String appSource2 = distDir.toString() + "/jmsservlet.war";
     logger.info("Application is in {0}", appSource2);
 
-    java.nio.file.Path target = Paths.get(PROPS_TEMP_DIR);
-    assertDoesNotThrow(() -> {
-      Files.createDirectories(target);
-    });
     java.nio.file.Path mdbSrcDir = Paths.get(APP_DIR, "mdbtopic");
     java.nio.file.Path mdbDestDir = Paths.get(PROPS_TEMP_DIR, "mdbtopic");
 
@@ -326,17 +366,25 @@ class ItVzCrossDomainTransaction {
 
     // create admin credential secret for domain1
     logger.info("Create admin credential secret for domain1");
-    String domain1AdminSecretName = domainUid1 + "-weblogic-credentials";
     assertDoesNotThrow(() -> createSecretWithUsernamePassword(
         domain1AdminSecretName, domain1Namespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
         String.format("createSecret %s failed for %s", domain1AdminSecretName, domainUid1));
+    //create encryption secret for domain1
+    logger.info("Create encryption secret for domain1 ");
+    assertDoesNotThrow(() -> createSecretWithUsernamePassword(domain1EncryptionSecretName, domain1Namespace,
+            "weblogicenc", "weblogicenc"),
+        String.format("create encryption secret  %s failed for %s", domain1EncryptionSecretName, domainUid1));
 
     // create admin credential secret for domain2
     logger.info("Create admin credential secret for domain2");
-    String domain2AdminSecretName = domainUid2 + "-weblogic-credentials";
     assertDoesNotThrow(() -> createSecretWithUsernamePassword(
         domain2AdminSecretName, domain2Namespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
         String.format("createSecret %s failed for %s", domain2AdminSecretName, domainUid2));
+    //create encryption secret for domain2
+    logger.info("Create encryption secret for domain2 ");
+    assertDoesNotThrow(() -> createSecretWithUsernamePassword(domain2EncryptionSecretName, domain2Namespace,
+            "weblogicenc", "weblogicenc"),
+        String.format("create encryption secret  %s failed for %s", domain2EncryptionSecretName, domainUid2));
 
     // build the model file list for domain1
     final List<String> modelListDomain1 = Arrays.asList(
