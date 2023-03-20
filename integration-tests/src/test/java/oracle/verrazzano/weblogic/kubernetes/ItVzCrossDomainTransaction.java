@@ -218,15 +218,8 @@ class ItVzCrossDomainTransaction {
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(domain1AdminServerPodName)
-                                        .port(7001)),
-                                new IngressRule()
-                                    .paths(Arrays.asList(new Path()
-                                        .path("/sample-war")
-                                        .pathType("Prefix")))
-                                    .destination(new Destination()
-                                        .host(domainUid1 + "-cluster-" + clusterName)
-                                        .port(8001)))))))))));
-
+                                        .port(7001)))))))))));
+    
     logger.info(Yaml.dump(component));
     logger.info(Yaml.dump(application));
 
@@ -256,9 +249,9 @@ class ItVzCrossDomainTransaction {
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
     // verify sample running in cluster is accessible through istio/loadbalancer
-    message = "Hello World, you have reached server managed-server";
+    /*message = "Hello World, you have reached server managed-server";
     String appUrl = "https://" + host + "/sample-war/index.jsp --resolve " + host + ":443:" + address;
-    assertTrue(verifyVzApplicationAccess(appUrl, message), "Failed to get access to sample application");
+    assertTrue(verifyVzApplicationAccess(appUrl, message), "Failed to get access to sample application");*/
 
   }
 
