@@ -50,7 +50,6 @@ import oracle.kubernetes.operator.JobAwaiterStepFactory;
 import oracle.kubernetes.operator.JobWatcher;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.http.rest.ScanCacheStub;
 import oracle.kubernetes.operator.introspection.IntrospectionTestUtils;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -348,7 +347,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenNoJob_onInternalError() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_INTERNAL_ERROR);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
@@ -359,7 +357,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenNoJob_generateFailedEvent() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_INTERNAL_ERROR);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
