@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Yaml;
 import oracle.verrazzano.weblogic.ApplicationConfiguration;
@@ -32,7 +34,14 @@ import oracle.verrazzano.weblogic.Path;
 import oracle.verrazzano.weblogic.Workload;
 import oracle.verrazzano.weblogic.WorkloadSpec;
 import oracle.verrazzano.weblogic.kubernetes.annotations.VzIntegrationTest;
+import oracle.weblogic.domain.AdminServer;
+import oracle.weblogic.domain.AdminService;
+import oracle.weblogic.domain.Channel;
+import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.domain.DomainSpec;
+import oracle.weblogic.domain.Model;
+import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.junit.jupiter.api.BeforeAll;
@@ -42,21 +51,25 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
+import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
@@ -132,9 +145,8 @@ class ItVzCrossDomainTransaction {
     logger.info("Getting unique namespace for Domain");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domain1Namespace = namespaces.get(0);
-    setLabelToNamespace(domain1Namespace);
     domain2Namespace = namespaces.get(1);
-    setLabelToNamespace(domain2Namespace);
+    setLabelToNamespace(Arrays.asList(domain1Namespace, domain2Namespace));
 
     updatePropertyFile();
     buildApplicationsAndDomainImages();
@@ -169,12 +181,16 @@ class ItVzCrossDomainTransaction {
             "weblogicenc", "weblogicenc");*/
 
     // create cluster object
-    String clusterName = "cluster-1";
+    //String clusterName = "cluster-1";
 
-    DomainResource domain = createDomainResource(domainUid1, domain1Namespace,
+    /*DomainResource domain = createDomainResource(domainUid1, domain1Namespace,
         domain1Image,
         domain1AdminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
-        domain1EncryptionSecretName, replicaCount, Arrays.asList(clusterName));
+        domain1EncryptionSecretName, replicaCount, Arrays.asList(clusterName));*/
+
+    // create the domain CR
+    DomainResource domain = createDomainResource(domainUid1, domain1Namespace, domain1AdminSecretName,
+        domain1EncryptionSecretName, TEST_IMAGES_REPO_SECRET_NAME, replicaCount, domain1Image);
 
     Component component = new Component()
         .apiVersion("core.oam.dev/v1alpha2")
@@ -408,5 +424,59 @@ class ItVzCrossDomainTransaction {
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(domain2Image);
 
+  }
+
+  private static DomainResource createDomainResource(String domainUid, String domNamespace, String adminSecretName,
+                                    String encryptionSecretName,String  repoSecretName, int replicaCount,
+                                    String domainImage) {
+    logger.info("Image to be used is {0}", domainImage);
+
+    // create the domain CR
+    DomainResource domain = new DomainResource()
+        .apiVersion(DOMAIN_API_VERSION)
+        .kind("Domain")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid)
+            .namespace(domNamespace))
+        .spec(new DomainSpec()
+            .domainUid(domainUid)
+            .replicas(replicaCount)
+            .domainHomeSourceType("Image")
+            .image(domainImage)
+            .imagePullPolicy(IMAGE_PULL_POLICY)
+            .addImagePullSecretsItem(new V1LocalObjectReference()
+                .name(repoSecretName))
+            .webLogicCredentialsSecret(new V1LocalObjectReference()
+                .name(adminSecretName))
+            .includeServerOutInPodLog(true)
+            .serverStartPolicy("IfNeeded")
+            .serverPod(new ServerPod()
+                .addEnvItem(new V1EnvVar()
+                    .name("JAVA_OPTIONS")
+                    .value("-Dweblogic.transaction.EnableInstrumentedTM=true -Dweblogic.StdoutDebugEnabled=false"
+                        + "-Dweblogic.debug.DebugJTAXA=true "
+                        + "-Dweblogic.debug.DebugJTA2PC=true"))
+                .addEnvItem(new V1EnvVar()
+                    .name("USER_MEM_ARGS")
+                    .value("-Djava.security.egd=file:/dev/./urandom ")))
+            .adminServer(new AdminServer()
+                .adminService(new AdminService()
+                    .addChannelsItem(new Channel()
+                        .channelName("default")
+                        .nodePort(getNextFreePort()))))
+            .configuration(new Configuration()
+                .model(new Model()
+                    .domainType("WLS")
+                    .runtimeEncryptionSecret(encryptionSecretName))
+                .introspectorJobActiveDeadlineSeconds(600L)));
+    setPodAntiAffinity(domain);
+    logger.info("Create domain custom resource for domainUid {0} in namespace {1}",
+        domainUid, domNamespace);
+    boolean domCreated = assertDoesNotThrow(() -> createDomainCustomResource(domain),
+        String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
+            domainUid, domNamespace));
+    assertTrue(domCreated, String.format("Create domain custom resource failed with ApiException "
+        + "for %s in namespace %s", domainUid, domNamespace));
+    return domain;
   }
 }
