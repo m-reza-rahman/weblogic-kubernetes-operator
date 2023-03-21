@@ -4,22 +4,21 @@
 package oracle.kubernetes.operator.work;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Collection of {@link Fiber}s. Owns an {@link Executor} to run them.
  */
 public class Engine {
-  private final AtomicReference<ScheduledExecutorService> threadPool = new AtomicReference<>();
+  private final Executor threadPool;
 
   /**
    * Creates engine with the specified executor.
    *
    * @param threadPool Executor
    */
-  public Engine(ScheduledExecutorService threadPool) {
-    this.threadPool.set(threadPool);
+  public Engine(Executor threadPool) {
+    this.threadPool = threadPool;
   }
 
   /**
@@ -27,12 +26,36 @@ public class Engine {
    *
    * @return executor
    */
-  public ScheduledExecutorService getExecutor() {
-    return threadPool.get();
+  public Executor getExecutor() {
+    return threadPool;
   }
 
   void addRunnable(Runnable runnable) {
-    getExecutor().execute(runnable);
+    threadPool.execute(runnable);
+  }
+
+  /**
+   * Schedule a task for repeated execution with an initial delay and then a delay between each repetition. All
+   * times are in seconds. The repetition can be cancelled using the return value.
+   * @param command Command
+   * @param initialDelay Initial delay
+   * @param delay Ongoing delay
+   * @return Control to cancel further repetition
+   */
+  public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay) {
+    AtomicBoolean stopSignal = new AtomicBoolean(false);
+    threadPool.execute(() -> {
+      try {
+        Thread.sleep(initialDelay * 1000);
+        while (!stopSignal.get()) {
+          command.run();
+          Thread.sleep(delay * 1000);
+        }
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
+      }
+    });
+    return () -> stopSignal.compareAndSet(false, true);
   }
 
   /**

@@ -12,8 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
@@ -47,6 +45,7 @@ import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.steps.BeforeAdminServiceStep;
 import oracle.kubernetes.operator.steps.WatchPodReadyAdminStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
+import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.operator.work.FiberGate;
@@ -98,7 +97,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   // map namespace to map of uid to processing.
   @SuppressWarnings("FieldMayBeFinal")
-  private static Map<String, Map<String, ScheduledFuture<?>>> statusUpdaters = new ConcurrentHashMap<>();
+  private static Map<String, Map<String, Cancellable>> statusUpdaters = new ConcurrentHashMap<>();
 
   // List of clusters in a namespace.
   private static final Map<String, Map<String, ClusterPresenceInfo>> clusters = new ConcurrentHashMap<>();
@@ -181,11 +180,11 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private static void registerStatusUpdater(
-        String ns, String domainUid, ScheduledFuture<?> future) {
-    ScheduledFuture<?> existing =
+        String ns, String domainUid, Cancellable future) {
+    Cancellable existing =
           statusUpdaters.computeIfAbsent(ns, k -> new ConcurrentHashMap<>()).put(domainUid, future);
     if (existing != null) {
-      existing.cancel(false);
+      existing.cancel();
     }
   }
 
@@ -440,8 +439,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
             () -> new ScheduledStatusUpdater(info.getNamespace(), info.getDomainUid(), loggingFilter)
                 .withTimeoutSeconds(statusUpdateTimeoutSeconds).updateStatus(),
             initialShortDelay,
-            initialShortDelay,
-            TimeUnit.SECONDS));
+            initialShortDelay));
   }
 
   @Override
@@ -487,11 +485,11 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   @Override
   public void endScheduledDomainStatusUpdates(DomainPresenceInfo info) {
-    Map<String, ScheduledFuture<?>> map = statusUpdaters.get(info.getNamespace());
+    Map<String, Cancellable> map = statusUpdaters.get(info.getNamespace());
     if (map != null) {
-      ScheduledFuture<?> existing = map.remove(info.getDomainUid());
+      Cancellable existing = map.remove(info.getDomainUid());
       if (existing != null) {
-        existing.cancel(true);
+        existing.cancel();
       }
     }
   }
@@ -1018,7 +1016,14 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     private void scheduleRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
       final MakeRightDomainOperation retry = operation.createRetry(domainPresenceInfo);
-      gate.getExecutor().schedule(retry::execute, delayUntilNextRetry(domainPresenceInfo), TimeUnit.SECONDS);
+      gate.getExecutor().execute(() -> {
+        try {
+          Thread.sleep(delayUntilNextRetry(domainPresenceInfo) * 1000);
+          retry.execute();
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      });
     }
     
     private long delayUntilNextRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {

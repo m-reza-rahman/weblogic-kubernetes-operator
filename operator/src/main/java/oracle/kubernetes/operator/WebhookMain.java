@@ -5,8 +5,7 @@ package oracle.kubernetes.operator;
 
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.kubernetes.client.common.KubernetesListObject;
@@ -55,8 +54,8 @@ public class WebhookMain extends BaseMain {
   private static NextStepFactory nextStepFactory = WebhookMain::createInitializeWebhookIdentityStep;
 
   static class WebhookMainDelegateImpl extends CoreDelegateImpl implements WebhookMainDelegate {
-    public WebhookMainDelegateImpl(Properties buildProps, ScheduledExecutorService scheduledExecutorService) {
-      super(buildProps, scheduledExecutorService);
+    public WebhookMainDelegateImpl(Properties buildProps, Executor executor) {
+      super(buildProps, executor);
     }
 
     private void logStartup() {
@@ -98,7 +97,7 @@ public class WebhookMain extends BaseMain {
 
   static WebhookMain createMain(Properties buildProps) {
     final WebhookMainDelegateImpl delegate =
-            new WebhookMainDelegateImpl(buildProps, wrappedExecutorService);
+            new WebhookMainDelegateImpl(buildProps, executor);
 
     delegate.logStartup();
     return new WebhookMain(delegate);
@@ -136,7 +135,7 @@ public class WebhookMain extends BaseMain {
 
       // start periodic recheck of CRD
       int recheckInterval = TuningParameters.getInstance().getDomainNamespaceRecheckIntervalSeconds();
-      delegate.scheduleWithFixedDelay(recheckCrd(), recheckInterval, recheckInterval, TimeUnit.SECONDS);
+      delegate.scheduleWithFixedDelay(recheckCrd(), recheckInterval, recheckInterval);
 
       markReadyAndStartLivenessThread();
 

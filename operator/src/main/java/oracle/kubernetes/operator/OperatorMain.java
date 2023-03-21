@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -87,8 +87,8 @@ public class OperatorMain extends BaseMain {
     private final DomainNamespaces domainNamespaces;
     private final AtomicReference<V1CustomResourceDefinition> crdRefernce;
 
-    public MainDelegateImpl(Properties buildProps, ScheduledExecutorService scheduledExecutorService) {
-      super(buildProps, scheduledExecutorService);
+    public MainDelegateImpl(Properties buildProps, Executor executor) {
+      super(buildProps, executor);
 
       domainProcessor = new DomainProcessorImpl(this, productVersion);
 
@@ -184,7 +184,7 @@ public class OperatorMain extends BaseMain {
   }
 
   static @Nonnull OperatorMain createMain(Properties buildProps) {
-    final MainDelegateImpl delegate = new MainDelegateImpl(buildProps, wrappedExecutorService);
+    final MainDelegateImpl delegate = new MainDelegateImpl(buildProps, executor);
 
     delegate.logStartup(LOGGER);
     return new OperatorMain(delegate);
@@ -280,8 +280,8 @@ public class OperatorMain extends BaseMain {
       // start periodic retry and recheck
       int recheckInterval = TuningParameters.getInstance().getDomainNamespaceRecheckIntervalSeconds();
       int stuckPodInterval = TuningParameters.getInstance().getStuckPodRecheckSeconds();
-      mainDelegate.scheduleWithFixedDelay(recheckDomains(), recheckInterval, recheckInterval, TimeUnit.SECONDS);
-      mainDelegate.scheduleWithFixedDelay(checkStuckPods(), stuckPodInterval, stuckPodInterval, TimeUnit.SECONDS);
+      mainDelegate.scheduleWithFixedDelay(recheckDomains(), recheckInterval, recheckInterval);
+      mainDelegate.scheduleWithFixedDelay(checkStuckPods(), stuckPodInterval, stuckPodInterval);
 
       markReadyAndStartLivenessThread();
 

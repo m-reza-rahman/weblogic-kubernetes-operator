@@ -278,11 +278,15 @@ public abstract class Step {
         synchronized (throwables) {
           throwables.add(throwable);
         }
-        onCompletion(packet);
+        mark();
       }
 
       @Override
       public void onCompletion(Packet p) {
+        mark();
+      }
+
+      public void mark() {
         int current = count.decrementAndGet();
         if (current <= 0) {
           doneSignal.release();
@@ -303,18 +307,14 @@ public abstract class Step {
         return step.apply(packet);
       } else if (throwables.size() == 1) {
         Throwable t = throwables.get(0);
-        if (t instanceof RuntimeException) {
-          throw (RuntimeException) t;
-        } else {
-          throw new RuntimeException(t);
-        }
+        return doTerminate(t, packet);
       } else {
-        throw new MultiThrowable(throwables);
+        return doTerminate(new MultiThrowable(throwables), packet);
       }
     } catch (InterruptedException ignore) {
       Thread.currentThread().interrupt();
     }
-    return null;
+    return doEnd(packet);
   }
 
   /** Multi-exception. */
