@@ -219,7 +219,7 @@ class ItVzCrossDomainTransaction {
                                     .destination(new Destination()
                                         .host(domain1AdminServerPodName)
                                         .port(7001)))))))))));
-    
+
     logger.info(Yaml.dump(component));
     logger.info(Yaml.dump(application));
 
@@ -395,7 +395,7 @@ class ItVzCrossDomainTransaction {
     // build the model file list for domain2
     final List<String> modelListDomain2 = Arrays.asList(
         MODEL_DIR + "/" + WDT_MODEL_FILE_DOMAIN2,
-        MODEL_DIR + "/" + WDT_MODEL_FILE_JMS);
+        MODEL_DIR + "/" + WDT_MODEL_FILE_JMS2);
     //MODEL_DIR + "/" + WDT_MODEL_FILE_JDBC);
 
     final List<String> appSrcDirList2 = Collections.singletonList(appSource);
