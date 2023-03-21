@@ -6,15 +6,14 @@ package oracle.kubernetes.operator;
 import java.io.File;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executor;
 import javax.annotation.Nonnull;
 
 import oracle.kubernetes.operator.helpers.HealthCheckHelper;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
+import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.Engine;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
@@ -38,7 +37,7 @@ public class CoreDelegateImpl implements CoreDelegate {
   protected String domainCrdResourceVersion;
   protected String clusterCrdResourceVersion;
 
-  CoreDelegateImpl(Properties buildProps, ScheduledExecutorService scheduledExecutorService) {
+  CoreDelegateImpl(Properties buildProps, Executor executor) {
     buildVersion = getBuildVersion(buildProps);
     deploymentImpl = getBranch(buildProps) + "." + getCommit(buildProps);
     deploymentBuildTime = getBuildTime(buildProps);
@@ -46,7 +45,7 @@ public class CoreDelegateImpl implements CoreDelegate {
     productVersion = new SemanticVersion(buildVersion);
     kubernetesVersion = HealthCheckHelper.performK8sVersionCheck();
 
-    engine = new Engine(scheduledExecutorService);
+    engine = new Engine(executor);
 
     PodHelper.setProductVersion(productVersion.toString());
   }
@@ -123,7 +122,7 @@ public class CoreDelegateImpl implements CoreDelegate {
   }
 
   @Override
-  public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-    return engine.getExecutor().scheduleWithFixedDelay(command, initialDelay, delay, unit);
+  public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay) {
+    return engine.scheduleWithFixedDelay(command, initialDelay, delay);
   }
 }

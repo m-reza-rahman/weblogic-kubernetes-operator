@@ -5,7 +5,6 @@ package oracle.kubernetes.operator.work;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -54,17 +53,6 @@ public final class Fiber implements AsyncFiber {
    */
   public static Fiber getCurrentIfSet() {
     return CURRENT_FIBER.get();
-  }
-
-  /**
-   * Use this fiber's executor to schedule an operation for some time in the future.
-   * @param timeout the interval before the check should run, in units
-   * @param unit the unit of time that defines the interval
-   * @param runnable the operation to run
-   */
-  @Override
-  public void scheduleOnce(long timeout, TimeUnit unit, Runnable runnable) {
-    this.owner.getExecutor().schedule(runnable, timeout, unit);
   }
 
   /**

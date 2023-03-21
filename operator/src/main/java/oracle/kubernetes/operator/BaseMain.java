@@ -19,11 +19,10 @@ import java.security.spec.InvalidKeySpecException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import oracle.kubernetes.common.logging.MessageKeys;
@@ -51,8 +50,7 @@ public abstract class BaseMain {
   static final String GIT_BUILD_TIME_KEY = "git.build.time";
 
   static final ThreadFactory threadFactory = Thread.ofVirtual().factory();
-  static final ScheduledExecutorService wrappedExecutorService
-      = Executors.newSingleThreadScheduledExecutor(threadFactory); // FIXME?
+  static final Executor executor = Executors.newVirtualThreadPerTaskExecutor();
   static final AtomicReference<OffsetDateTime> lastFullRecheck =
       new AtomicReference<>(SystemClock.now());
   static final Semaphore shutdownSignal = new Semaphore(0);
@@ -88,7 +86,7 @@ public abstract class BaseMain {
       }
       probesHome = new File(probesHomeLoc);
 
-      TuningParameters.initializeInstance(wrappedExecutorService, new File(deploymentHome, "config"));
+      TuningParameters.initializeInstance(executor, new File(deploymentHome, "config"));
     } catch (IOException e) {
       LOGGER.warning(MessageKeys.EXCEPTION, e);
       throw new RuntimeException(e);
@@ -157,8 +155,8 @@ public abstract class BaseMain {
 
       logStartingLivenessMessage();
       // every five seconds we need to update the last modified time on the liveness file
-      wrappedExecutorService.scheduleWithFixedDelay(
-              new DeploymentLiveness(delegate), 5, 5, TimeUnit.SECONDS);
+      delegate.scheduleWithFixedDelay(
+              new DeploymentLiveness(delegate), 5, 5);
     } catch (IOException io) {
       LOGGER.severe(MessageKeys.EXCEPTION, io);
     }
@@ -244,13 +242,13 @@ public abstract class BaseMain {
   }
 
   void scheduleCheckForShutdownMarker() {
-    wrappedExecutorService.scheduleWithFixedDelay(
+    delegate.scheduleWithFixedDelay(
         () -> {
           File marker = new File(delegate.getDeploymentHome(), "marker.shutdown");
           if (isFileExists(marker)) {
             releaseShutdownSignal();
           }
-        }, 5, 2, TimeUnit.SECONDS);
+        }, 5, 2);
   }
 
   private static boolean isFileExists(File file) {

@@ -6,7 +6,7 @@ package oracle.kubernetes.operator.work;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executor;
 
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 
@@ -42,7 +42,7 @@ public class FiberGate {
     return new HashMap<>(gateMap);
   }
 
-  public ScheduledExecutorService getExecutor() {
+  public Executor getExecutor() {
     return engine.getExecutor();
   }
 

@@ -5,12 +5,11 @@ package oracle.kubernetes.operator;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.http.metrics.MetricsServer;
+import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -53,6 +52,6 @@ public interface CoreDelegate {
 
   void runStepsInternal(Packet packet, Step firstStep, Runnable completionAction);
 
-  ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
+  Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay);
 
 }
