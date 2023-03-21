@@ -153,11 +153,11 @@ class ItVzCrossDomainTransaction {
   }
 
   /**
-   * Create a WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
+   * Create a WebLogic domain Verrazzano WebLogicWorkload component in verrazzano.
    */
   @Test
   @DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
-  void testCreateVzMiiDomain1() {
+  void testCreateVzDomain1() {
 
     // admin/managed server name here should match with model yaml in MII_BASIC_WDT_MODEL_FILE
     /*final String adminServerPodName = domainUid1 + "-admin-server";
@@ -213,7 +213,7 @@ class ItVzCrossDomainTransaction {
         .apiVersion("core.oam.dev/v1alpha2")
         .kind("ApplicationConfiguration")
         .metadata(new V1ObjectMeta()
-            .name("myvzdomain")
+            .name("myvzdomain1")
             .namespace(domain1Namespace)
             .annotations(keyValueMap))
         .spec(new ApplicationConfigurationSpec()
@@ -262,6 +262,100 @@ class ItVzCrossDomainTransaction {
     // verify WebLogic console page is accessible through istio/loadbalancer
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
+    logger.info("domain1 admin consoleUrl is: {0}", consoleUrl);
+    assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
+
+    // verify sample running in cluster is accessible through istio/loadbalancer
+    /*message = "Hello World, you have reached server managed-server";
+    String appUrl = "https://" + host + "/sample-war/index.jsp --resolve " + host + ":443:" + address;
+    assertTrue(verifyVzApplicationAccess(appUrl, message), "Failed to get access to sample application");*/
+
+  }
+
+  /**
+   * Create a WebLogic domain Verrazzano WebLogicWorkload component in verrazzano.
+   */
+  @Test
+  @DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
+  void testCreateVzDomain2() {
+
+    createTestRepoSecret(domain2Namespace);
+
+    // create the domain CR
+    DomainResource domain = createDomainResource(domainUid2, domain2Namespace, domain2AdminSecretName,
+        domain2EncryptionSecretName, TEST_IMAGES_REPO_SECRET_NAME, replicaCount, domain2Image);
+
+    Component component = new Component()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("Component")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid2)
+            .namespace(domain2Namespace))
+        .spec(new ComponentSpec()
+            .workLoad(new Workload()
+                .apiVersion("oam.verrazzano.io/v1alpha1")
+                .kind("VerrazzanoWebLogicWorkload")
+                .spec(new WorkloadSpec()
+                    .template(domain))));
+
+    Map<String, String> keyValueMap = new HashMap<>();
+    keyValueMap.put("version", "v1.0.0");
+    keyValueMap.put("description", "My vz wls application");
+
+    ApplicationConfiguration application = new ApplicationConfiguration()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("ApplicationConfiguration")
+        .metadata(new V1ObjectMeta()
+            .name("myvzdomain2")
+            .namespace(domain2Namespace)
+            .annotations(keyValueMap))
+        .spec(new ApplicationConfigurationSpec()
+            .components(Arrays.asList(new Components()
+                .componentName(domainUid2)
+                .traits(Arrays.asList(new IngressTraits()
+                    .trait(new IngressTrait()
+                        .apiVersion("oam.verrazzano.io/v1alpha1")
+                        .kind("IngressTrait")
+                        .metadata(new V1ObjectMeta()
+                            .name("mydomain-ingress")
+                            .namespace(domain2Namespace))
+                        .spec(new IngressTraitSpec()
+                            .ingressRules(Arrays.asList(
+                                new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/console")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(domain2AdminServerPodName)
+                                        .port(7001)))))))))));
+
+    logger.info(Yaml.dump(component));
+    logger.info(Yaml.dump(application));
+
+    logger.info("Deploying components");
+    assertDoesNotThrow(() -> createComponent(component));
+    logger.info("Deploying application");
+    assertDoesNotThrow(() -> createApplication(application));
+
+    // check admin server pod is ready
+    logger.info("Wait for admin server pod {0} to be ready in namespace {1}",
+        domain2AdminServerPodName, domain2Namespace);
+    checkPodReadyAndServiceExists(domain2AdminServerPodName, domainUid2, domain2Namespace);
+    // check managed server pods are ready
+    for (int i = 1; i <= replicaCount; i++) {
+      logger.info("Wait for managed server pod {0} to be ready in namespace {1}",
+          domain2ManagedServerPrefix + i, domain2Namespace);
+      checkPodReadyAndServiceExists(domain2ManagedServerPrefix + i, domainUid2, domain2Namespace);
+    }
+
+    // get istio gateway host and loadbalancer address
+    String host = getIstioHost(domain2Namespace);
+    String address = getLoadbalancerAddress();
+
+    // verify WebLogic console page is accessible through istio/loadbalancer
+    String message = "Oracle WebLogic Server Administration Console";
+    String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
+    logger.info("domain2 admin consoleUrl is: {0}", consoleUrl);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
     // verify sample running in cluster is accessible through istio/loadbalancer
