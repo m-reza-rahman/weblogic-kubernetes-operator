@@ -21,6 +21,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
@@ -75,12 +76,13 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainTestUtils;
 import oracle.kubernetes.weblogic.domain.model.Model;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_DEFAULT_INIT_CONTAINER_COMMAND;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX;
@@ -146,6 +148,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 @SuppressWarnings({"SameParameterValue"})
 class DomainIntrospectorJobTest extends DomainTestUtils {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final int MAX_RETRY_COUNT = 2;
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
@@ -197,7 +201,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(TuningParametersStub.install());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(ScanCacheStub.install());
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(UnitTestHash.install());
@@ -211,7 +215,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
     testSupport.defineResources(domain);
     testSupport.defineResources(cluster);
-    testSupport.addComponent(JOBWATCHER_COMPONENT_NAME, JobAwaiterStepFactory.class, new JobAwaiterStepFactoryStub());
+    testSupport.addToPacket(JOBWATCHER_COMPONENT_NAME, new JobAwaiterStepFactoryStub());
 
     TuningParametersStub.setParameter(DOMAIN_PRESENCE_RECHECK_INTERVAL_SECONDS, "2");
   }
@@ -1146,7 +1150,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   }
 
   private void replaceFailedJobPodWithSuccess() {
-    testSupport.deleteResources(createIntrospectorJobPod());
     testSupport.defineResources(createIntrospectorJobPod());
   }
 
@@ -1395,7 +1398,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenJobCreateFailsWith409Error_JobIsCreated() {
-    testSupport.addRetryStrategy(createStrictStub(OnConflictRetryStrategyStub.class));
     testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_CONFLICT);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());

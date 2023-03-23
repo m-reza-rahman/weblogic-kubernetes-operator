@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -27,9 +28,11 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import org.hamcrest.Matchers;
+import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.EXECUTE_MAKE_RIGHT_DOMAIN;
 import static oracle.kubernetes.common.logging.MessageKeys.INTROSPECTOR_POD_FAILED;
 import static oracle.kubernetes.common.utils.LogMatcher.containsFine;
@@ -50,6 +53,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 /** This test class verifies the behavior of the PodWatcher. */
 class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final BigInteger INITIAL_RESOURCE_VERSION = new BigInteger("234");
   private static final String NS = "ns";
@@ -71,7 +76,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   @BeforeEach
   public void setUp() throws Exception {
     super.setUp();
-    addMemento(testSupport.install());
+    addMemento(testSupport.install(wireMockRule));
   }
 
   private String[] getMessageKeys() {

@@ -228,7 +228,6 @@ public class NamespaceTest {
   @Test
   void whenStartNamespaceBeforeStepRun403OnEventCreation_thenSucceed_namespaceStartingFlagSet() {
     String namespace = "TEST_NAMESPACE_3";
-    testSupport.addRetryStrategy(retryStrategy);
     defineNamespaces(namespace);
     specifyDomainNamespaces(namespace);
 

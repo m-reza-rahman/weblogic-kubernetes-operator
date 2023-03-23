@@ -460,8 +460,7 @@
     </dependency>
     <dependency>
       <groupId>com.github.tomakehurst</groupId>
-      <artifactId>wiremock</artifactId>
-      <type>pom</type>
+      <artifactId>wiremock-jre8</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

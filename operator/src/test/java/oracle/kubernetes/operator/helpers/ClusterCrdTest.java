@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionVersion;
@@ -17,10 +18,12 @@ import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
 import oracle.kubernetes.utils.TestUtils;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.CREATE_CRD_FAILED;
 import static oracle.kubernetes.common.logging.MessageKeys.CREATING_CRD;
 import static oracle.kubernetes.common.logging.MessageKeys.REPLACE_CRD_FAILED;
@@ -32,6 +35,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class ClusterCrdTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final SemanticVersion PRODUCT_VERSION = new SemanticVersion(3, 0, 0);
   public static final String EMPTY_YAML = "{}";
@@ -50,7 +55,7 @@ class ClusterCrdTest {
     mementos.add(TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, CREATING_CRD, REPLACE_CRD_FAILED, CREATE_CRD_FAILED)
             .withLogLevel(Level.FINE));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(fileSystem.install());
     mementos.add(TuningParametersStub.install());
   }

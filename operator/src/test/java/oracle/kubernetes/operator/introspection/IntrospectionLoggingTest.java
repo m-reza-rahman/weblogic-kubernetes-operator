@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1Job;
@@ -22,10 +23,12 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.INTROSPECTION_EVENT_ERROR;
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.common.utils.LogMatcher.containsSevere;
@@ -47,6 +50,9 @@ import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class IntrospectionLoggingTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
   private final DomainPresenceInfo info = new DomainPresenceInfo(domain);
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
@@ -61,7 +67,7 @@ class IntrospectionLoggingTest {
   public void setUp() throws Exception {
     mementos.add(TestUtils.silenceOperatorLogger().collectAllLogMessages(logRecords));
     mementos.add(TuningParametersStub.install());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
 
     testSupport.addDomainPresenceInfo(info);
     testSupport.addToPacket(JOB_POD_NAME, jobPodName);

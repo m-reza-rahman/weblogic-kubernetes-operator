@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -46,10 +47,12 @@ import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import org.hamcrest.MatcherAssert;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static com.meterware.simplestub.Stub.createStub;
 import static oracle.kubernetes.operator.DomainProcessorTest.getInitContainerStatusWithImagePullError;
@@ -74,6 +77,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 @SuppressWarnings("SameParameterValue")
 class DomainPresenceTest extends ThreadFactoryTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final String NS = "default";
   private static final String UID1 = "UID1";
@@ -98,7 +103,7 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(TestUtils.silenceOperatorLogger().withLogLevel(Level.OFF));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(ClientFactoryStub.install());
     mementos.add(StubWatchFactory.install());
     mementos.add(StaticStubSupport.install(ThreadFactorySingleton.class, "instance", this));

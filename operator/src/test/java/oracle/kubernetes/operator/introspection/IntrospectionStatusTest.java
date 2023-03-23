@@ -11,6 +11,7 @@ import java.util.Random;
 import java.util.logging.LogRecord;
 import javax.annotation.Nullable;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.V1ContainerState;
@@ -36,10 +37,12 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.INTROSPECTOR_POD_FAILED;
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
@@ -54,6 +57,9 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 /** Tests updates to a domain status from progress of the introspection job. */
 class IntrospectionStatusTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String CHAR_LOWER = "abcdefghijklmnopqrstuvwxyz";
   private static final Random random = new Random();
 
@@ -80,7 +86,7 @@ class IntrospectionStatusTest {
   void setUp() throws Exception {
     consoleHandlerMemento = TestUtils.silenceOperatorLogger();
     mementos.add(consoleHandlerMemento);
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domains", presenceInfoMap));
     mementos.add(TuningParametersStub.install());
     mementos.add(UnitTestHash.install());

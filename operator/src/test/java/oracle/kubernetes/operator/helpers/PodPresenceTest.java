@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.collect.ImmutableMap;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
@@ -35,10 +36,12 @@ import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import org.hamcrest.junit.MatcherAssert;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.KubernetesConstants.EVICTED_REASON;
@@ -62,6 +65,8 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class PodPresenceTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final String CLUSTER = "cluster1";
   private static final String SERVER = "server1";
@@ -85,7 +90,7 @@ class PodPresenceTest {
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(TestUtils.silenceOperatorLogger());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domains", domains));
     mementos.add(TuningParametersStub.install());
     mementos.add(InMemoryCertificates.install());

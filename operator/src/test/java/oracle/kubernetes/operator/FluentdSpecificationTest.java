@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ConfigMapKeySelector;
 import io.kubernetes.client.openapi.models.V1EnvVar;
@@ -16,10 +17,12 @@ import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.FluentdSpecification;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_EXISTS;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_REPLACED;
@@ -27,6 +30,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class FluentdSpecificationTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
   private final List<Memento> mementos = new ArrayList<>();
@@ -38,7 +43,7 @@ class FluentdSpecificationTest {
         TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, CM_CREATED, CM_EXISTS, CM_REPLACED)
             .withLogLevel(Level.FINE));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
   }
 
   @AfterEach

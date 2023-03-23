@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -19,17 +20,18 @@ import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.common.logging.MessageKeys.POD_FORCE_DELETED;
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
@@ -45,6 +47,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class StuckPodTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final long DELETION_GRACE_PERIOD_SECONDS = 5L;
   private static final String SERVER_POD_1 = "name1";
@@ -64,7 +68,7 @@ class StuckPodTest {
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(consoleMemento = TestUtils.silenceOperatorLogger());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
     mementos.add(NoopWatcherStarter.install());
@@ -213,7 +217,7 @@ class StuckPodTest {
 
     @Override
     public void addToPacket(Packet packet) {
-      packet.getComponents().put(DELEGATE_COMPONENT_NAME, Component.createFor(MainDelegate.class, this));
+      packet.put(DELEGATE_COMPONENT_NAME, this);
     }
 
     @Override

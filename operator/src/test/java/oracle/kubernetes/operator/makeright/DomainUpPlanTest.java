@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -31,10 +32,12 @@ import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import org.hamcrest.Description;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.POD;
 import static oracle.kubernetes.operator.makeright.DomainUpPlanTest.ContainerPortMatcher.hasContainerPort;
@@ -42,6 +45,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
 class DomainUpPlanTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private final TerminalStep adminStep = new TerminalStep();
   private final TerminalStep managedServersStep = new TerminalStep();
@@ -60,7 +65,7 @@ class DomainUpPlanTest {
   public void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger().ignoringLoggedExceptions(ApiException.class));
     mementos.add(ClientFactoryStub.install());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(InMemoryCertificates.install());
     mementos.add(TuningParametersStub.install());
 

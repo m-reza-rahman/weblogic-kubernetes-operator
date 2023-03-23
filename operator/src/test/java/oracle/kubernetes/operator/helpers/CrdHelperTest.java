@@ -13,6 +13,7 @@ import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1CustomResourceConversion;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
@@ -29,6 +30,7 @@ import oracle.kubernetes.operator.utils.InMemoryFileSystem;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static oracle.kubernetes.common.logging.MessageKeys.ASYNC_NO_RETRY;
 import static oracle.kubernetes.common.logging.MessageKeys.CREATE_CRD_FAILED;
@@ -59,6 +62,9 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class CrdHelperTest extends CrdHelperTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final SemanticVersion PRODUCT_VERSION_OLD = new SemanticVersion(2, 4, 0);
   private static final SemanticVersion PRODUCT_VERSION_FUTURE = new SemanticVersion(3, 1, 0);
   public static final String WEBHOOK_CERTIFICATE = "/deployment/webhook-identity/webhookCert";
@@ -76,7 +82,7 @@ class CrdHelperTest extends CrdHelperTestBase {
         consoleHandlerMemento = TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, CREATING_CRD, REPLACE_CRD_FAILED, CREATE_CRD_FAILED)
             .withLogLevel(Level.FINE));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(fileSystem.install());
     mementos.add(InMemoryCertificates.install(fileSystem));
     mementos.add(TuningParametersStub.install());

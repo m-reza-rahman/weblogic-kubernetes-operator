@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import com.meterware.simplestub.Stub;
@@ -33,10 +34,12 @@ import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import org.hamcrest.Matchers;
 import org.hamcrest.junit.MatcherAssert;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.operator.EventConstants.WEBHOOK_STARTUP_FAILED_EVENT;
 import static oracle.kubernetes.operator.EventTestUtils.containsEventsWithCountOne;
@@ -49,6 +52,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 class InitializeWebhookIdentityStepTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private final List<Memento> mementos = new ArrayList<>();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
 
@@ -64,7 +70,7 @@ class InitializeWebhookIdentityStepTest {
   void setup() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger());
 
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
 
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());

@@ -18,6 +18,7 @@ import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -27,8 +28,6 @@ import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -44,11 +43,12 @@ import oracle.kubernetes.weblogic.domain.ServiceConfigurator;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.ADMIN_SERVICE_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.ADMIN_SERVICE_EXISTS;
 import static oracle.kubernetes.common.logging.MessageKeys.ADMIN_SERVICE_REPLACED;
@@ -92,6 +92,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 @SuppressWarnings("ConstantConditions")
 abstract class ServiceHelperTest extends ServiceHelperTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final int TEST_NODE_PORT = 30001;
   private static final int TEST_NODE_SSL_PORT = 30002;
@@ -131,7 +133,6 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
   private final TerminalStep terminalStep = new TerminalStep();
   public TestFacade testFacade;
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private WlsServerConfig serverConfig;
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
@@ -202,7 +203,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
                 .collectLogMessages(logRecords, MESSAGE_KEYS)
                 .withLogLevel(Level.FINE)
                 .ignoringLoggedExceptions(ApiException.class));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(UnitTestHash.install());
     mementos.add(TuningParametersStub.install());
 
@@ -445,7 +446,6 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
 
   @Test
   void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(SERVICE, NS, HTTP_INTERNAL_ERROR);
 
     runServiceHelper();

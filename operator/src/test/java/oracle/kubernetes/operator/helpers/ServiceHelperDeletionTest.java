@@ -3,14 +3,16 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Service;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
+import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.SERVICE;
 import static org.hamcrest.Matchers.empty;
@@ -19,6 +21,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class ServiceHelperDeletionTest extends ServiceHelperTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String UID = "uid1";
   private static final String SERVER_NAME = "server1";
   private static final String SERVICE_NAME = LegalNames.toServerServiceName(UID, SERVER_NAME);
@@ -33,7 +38,7 @@ class ServiceHelperDeletionTest extends ServiceHelperTestBase {
   @BeforeEach
   public void setUpDeletionTest() {
     mementos.add(TestUtils.silenceOperatorLogger());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
 
     domainPresenceInfo.setServerService(SERVER_NAME, service);
     testSupport.addDomainPresenceInfo(domainPresenceInfo);

@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerPort;
@@ -39,10 +40,12 @@ import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStub;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.defineSecretData;
@@ -57,6 +60,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class MonitoringExporterStepsTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final int EXPORTER_PORT = 8000;
   private static final String ADMIN_SERVER = "admin-server";
@@ -97,7 +102,7 @@ class MonitoringExporterStepsTest {
   @BeforeEach
   void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(httpSupport.install());
 
     configureDomain(domain).withMonitoringExporterConfiguration(NEW_CONFIGURATION);

@@ -15,6 +15,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
@@ -34,10 +35,12 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ManagedServer;
 import oracle.kubernetes.weblogic.domain.model.Model;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.DOMAIN_INVALID_EVENT_ERROR;
 import static oracle.kubernetes.common.logging.MessageKeys.DOMAIN_VALIDATION_FAILED;
 import static oracle.kubernetes.common.utils.LogMatcher.containsSevere;
@@ -67,6 +70,9 @@ import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class DomainValidationStepTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   /** More than one chunk's worth of secrets or configmaps. */
   private static final int MULTI_CHUNKS_FIRST_NUM_IN_SECOND_CHUNK = DEFAULT_CALL_LIMIT + 1;
   private static final int MULTI_CHUNKS_MIDDLE_NUM_IN_FIRST_CHUNK = DEFAULT_CALL_LIMIT / 2;
@@ -96,7 +102,7 @@ class DomainValidationStepTest {
   public void setUp() throws Exception {
     consoleControl = TestUtils.silenceOperatorLogger().collectLogMessages(logRecords);
     mementos.add(consoleControl);
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
 
     domains.put(NS, new HashMap<>());
     domains.get(NS).put(UID, info);

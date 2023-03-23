@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -55,7 +56,6 @@ import oracle.kubernetes.operator.http.BaseServer;
 import oracle.kubernetes.operator.http.metrics.MetricsServer;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -68,11 +68,13 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createNiceStub;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.common.logging.MessageKeys.CRD_NOT_INSTALLED;
@@ -131,6 +133,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OperatorMainTest extends ThreadFactoryTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   public static final VersionInfo TEST_VERSION_INFO = new VersionInfo().major("1").minor("18").gitVersion("0");
   public static final KubernetesVersion TEST_VERSION = new KubernetesVersion(TEST_VERSION_INFO);
 
@@ -214,7 +219,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(loggerControl);
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TestStepFactory.install());
     mementos.add(HelmAccessStub.install());
     mementos.add(TuningParametersStub.install());
@@ -1414,7 +1419,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
 
     @Override
     public void addToPacket(Packet packet) {
-      packet.getComponents().put(DELEGATE_COMPONENT_NAME, Component.createFor(CoreDelegate.class, this));
+      packet.put(DELEGATE_COMPONENT_NAME, this);
     }
 
     @Override
@@ -1472,11 +1477,6 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     @Override
     public int getMetricsPort() {
       return 8090;
-    }
-
-    @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-      return testSupport.scheduleWithFixedDelay(command, initialDelay, delay, unit);
     }
   }
 

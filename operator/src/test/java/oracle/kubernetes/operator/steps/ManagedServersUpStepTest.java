@@ -15,6 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -49,10 +50,12 @@ import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.ServerConfigurator;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.REPLICAS_EXCEEDS_TOTAL_CLUSTER_SERVER_COUNT;
 import static oracle.kubernetes.common.utils.LogMatcher.containsFine;
 import static oracle.kubernetes.common.utils.LogMatcher.containsWarning;
@@ -80,6 +83,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
  */
 @SuppressWarnings({"ConstantConditions", "SameParameterValue"})
 class ManagedServersUpStepTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final String DOMAIN = "domain";
   private static final String NS = "namespace";
@@ -134,7 +139,7 @@ class ManagedServersUpStepTest {
   void setUp() throws NoSuchFieldException {
     mementos.add(consoleHandlerMemento = TestUtils.silenceOperatorLogger());
     mementos.add(factoryMemento = TestStepFactory.install());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     testSupport.addDomainPresenceInfo(info);
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domainEventK8SObjects", domainEventObjects));
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "namespaceEventK8SObjects", nsEventObjects));

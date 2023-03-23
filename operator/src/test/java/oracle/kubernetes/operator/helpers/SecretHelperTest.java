@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
@@ -16,10 +17,12 @@ import oracle.kubernetes.operator.DomainProcessorTestSetup;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.SECRET_DATA_NOT_FOUND;
 import static oracle.kubernetes.common.logging.MessageKeys.SECRET_NOT_FOUND;
 import static oracle.kubernetes.common.utils.LogMatcher.containsWarning;
@@ -32,6 +35,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class SecretHelperTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final String USERNAME = "itsMe";
   private static final String PASSWORD = "shhh";
@@ -49,7 +54,7 @@ class SecretHelperTest {
   public void setUp() {
     mementos.add(TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords, SECRET_NOT_FOUND, SECRET_DATA_NOT_FOUND));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
 
     testSupport.addDomainPresenceInfo(info);
   }

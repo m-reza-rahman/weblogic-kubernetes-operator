@@ -7,20 +7,26 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.webhooks.resource.AdmissionChecker;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.operator.webhooks.AdmissionWebhookTestSetUp.CLUSTER_NAME_2;
 import static oracle.kubernetes.operator.webhooks.AdmissionWebhookTestSetUp.createCluster;
 import static oracle.kubernetes.operator.webhooks.AdmissionWebhookTestSetUp.createDomainWithClustersAndStatus;
 import static oracle.kubernetes.operator.webhooks.AdmissionWebhookTestSetUp.createDomainWithoutCluster;
 
 abstract class AdmissionCheckerTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   static final String MOUNT_NAME = "bad-mount";
   static final String BAD_MOUNT_PATH = "mydir/mount";
   static final String MOUNT_PATH_WITH_TOKEN = "$(DOMAIN_HOME)/mount";
@@ -47,7 +53,7 @@ abstract class AdmissionCheckerTestBase {
 
   @BeforeEach
   public void setUp() throws NoSuchFieldException, IOException {
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     setupCheckers();
   }
 
