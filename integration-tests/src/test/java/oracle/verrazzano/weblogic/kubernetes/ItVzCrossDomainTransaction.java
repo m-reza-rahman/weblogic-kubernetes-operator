@@ -110,6 +110,8 @@ class ItVzCrossDomainTransaction {
   private static String domain1EncryptionSecretName = domainUid1 + "-encryptionsecret";
   private static String domain2EncryptionSecretName = domainUid2 + "-encryptionsecret";
   private static String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
+  private static String host1 = null;
+  private static String address1 = null;
   private final int replicaCount = 2;
   private static final String ORACLEDBURLPREFIX = "oracledb.";
   private static String ORACLEDBSUFFIX = null;
@@ -271,12 +273,12 @@ class ItVzCrossDomainTransaction {
     }
 
     // get istio gateway host and loadbalancer address
-    String host = getIstioHost(domain1Namespace);
-    String address = getLoadbalancerAddress();
+    String host1 = getIstioHost(domain1Namespace);
+    String address1 = getLoadbalancerAddress();
 
     // verify WebLogic console page is accessible through istio/loadbalancer
     String message = "Oracle WebLogic Server Administration Console";
-    String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
+    String consoleUrl = "https://" + host1 + "/console/login/LoginForm.jsp --resolve " + host1 + ":443:" + address1;
     logger.info("domain1 admin consoleUrl is: {0}", consoleUrl);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
@@ -376,7 +378,7 @@ class ItVzCrossDomainTransaction {
   void testCrossDomainTranscatedMDB() {
 
     // No extra header info
-    assertTrue(checkAppIsActive(domain1Namespace,
+    assertTrue(checkAppIsActive(host1, address1,
                  "", "mdbtopic","cluster-1",
                  ADMIN_USERNAME_DEFAULT,ADMIN_PASSWORD_DEFAULT),
              "MDB application can not be activated on domain1/cluster");
@@ -632,7 +634,8 @@ class ItVzCrossDomainTransaction {
   }
 
   private static boolean checkAppIsActive(
-      String domainNamespace,
+      String host,
+      String address,
       String headers,
       String application,
       String target,
@@ -641,8 +644,8 @@ class ItVzCrossDomainTransaction {
   ) {
 
     // get istio gateway host and loadbalancer address
-    String host = getIstioHost(domainNamespace);
-    String address = getLoadbalancerAddress();
+    //String host = getIstioHost(domainNamespace);
+    //String address = getLoadbalancerAddress();
 
     String curlString = String.format("curl -v --show-error --noproxy '*' "
         + "--user " + username + ":" + password + " " + headers
