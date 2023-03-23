@@ -13,6 +13,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1EnvVar;
@@ -38,7 +39,6 @@ import oracle.kubernetes.operator.steps.ShutdownManagedServerStep.ShutdownManage
 import oracle.kubernetes.operator.steps.ShutdownManagedServerStep.ShutdownManagedServerResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
@@ -49,12 +49,14 @@ import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
 import org.hamcrest.junit.MatcherAssert;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStub;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static oracle.kubernetes.common.logging.MessageKeys.SERVER_SHUTDOWN_REST_FAILURE;
@@ -79,6 +81,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 
 class ShutdownManagedServerStepTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   // The log messages to be checked during this test
   private static final String[] LOG_KEYS = {
       SERVER_SHUTDOWN_REST_SUCCESS, SERVER_SHUTDOWN_REST_FAILURE,
@@ -134,7 +139,7 @@ class ShutdownManagedServerStepTest {
         .collectLogMessages(logRecords, LOG_KEYS)
         .withLogLevel(Level.FINE));
 
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(httpSupport.install());
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
@@ -348,8 +353,7 @@ class ShutdownManagedServerStepTest {
     Packet p = testSupport.getPacket();
 
     // Setup Throwable exception
-    p.getComponents().put(RESPONSE, Component
-        .createFor(Throwable.class, new Throwable()));
+    p.put(RESPONSE, new Throwable());
     ShutdownManagedServerProcessing processing = new ShutdownManagedServerProcessing(p,
         standaloneServerService, standaloneManagedServer1);
     HttpRequestStep httpAsyncRequestStep = processing.createRequestStep(responseStep);

@@ -13,6 +13,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.Stub;
 import io.kubernetes.client.openapi.models.V1Job;
@@ -37,12 +38,14 @@ import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import org.hamcrest.Matchers;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_FAILED_EVENT;
 import static oracle.kubernetes.operator.EventMatcher.hasEvent;
 import static oracle.kubernetes.operator.ProcessingConstants.FATAL_INTROSPECTOR_ERROR;
@@ -55,6 +58,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 
 class FailureRetryTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
   private final DomainResource cachedDomain = DomainProcessorTestSetup.createTestDomain();
@@ -75,7 +80,7 @@ class FailureRetryTest {
   void setUp() throws NoSuchFieldException {
     consoleHandlerMemento = TestUtils.silenceOperatorLogger();
     mementos.add(consoleHandlerMemento);
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TuningParametersStub.install());
     mementos.add(UnitTestHash.install());
     mementos.add(SystemClockTestSupport.installClock());

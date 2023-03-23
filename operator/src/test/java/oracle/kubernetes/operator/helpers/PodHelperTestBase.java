@@ -21,6 +21,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.google.common.collect.ImmutableMap;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
@@ -91,10 +92,12 @@ import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainValidationTestBase;
 import oracle.kubernetes.weblogic.domain.model.ServerEnvVars;
 import org.hamcrest.junit.MatcherAssert;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStub;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_DEFAULT_INIT_CONTAINER_COMMAND;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX;
@@ -188,6 +191,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 @SuppressWarnings({"SameParameterValue", "ConstantConditions", "OctalInteger", "unchecked"})
 public abstract class PodHelperTestBase extends DomainValidationTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   public static final String EXPORTER_IMAGE = "monexp:latest";
   public static final String CUSTOM_WDT_INSTALL_SOURCE_HOME = "/myaux/weblogic-deploy";
@@ -340,7 +345,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @BeforeEach
   public void setUp() throws Exception {
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TuningParametersStub.install());
     mementos.add(hashMemento = UnitTestHash.install());
     mementos.add(InMemoryCertificates.install());
@@ -365,9 +370,8 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
         .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainTopology)
         .addToPacket(SERVER_SCAN, domainTopology.getServerConfig(serverName))
         .addDomainPresenceInfo(domainPresenceInfo);
-    testSupport.addComponent(
+    testSupport.addToPacket(
         ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-        PodAwaiterStepFactory.class,
         new PassthroughPodAwaiterStepFactory());
 
     definePodTuning();
@@ -2366,7 +2370,6 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenNoPod_onInternalError() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
@@ -2378,7 +2381,6 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenNoPod_generateFailedEvent() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();

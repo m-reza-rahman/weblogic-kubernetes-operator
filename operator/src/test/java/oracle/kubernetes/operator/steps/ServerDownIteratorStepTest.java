@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -39,16 +40,20 @@ import oracle.kubernetes.weblogic.domain.ClusterConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class ServerDownIteratorStepTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   protected static final String DOMAIN_NAME = "domain1";
   private static final String NS = "namespace";
@@ -131,15 +136,14 @@ class ServerDownIteratorStepTest {
   public void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger().ignoringLoggedExceptions(ApiException.class));
     mementos.add(TuningParametersStub.install());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
 
     testSupport.defineResources(domain);
     testSupport
             .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig)
             .addDomainPresenceInfo(domainPresenceInfo);
-    testSupport.addComponent(
+    testSupport.addToPacket(
             ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-            PodAwaiterStepFactory.class,
             new PodHelperTestBase.DelayedPodAwaiterStepFactory(1));
   }
 

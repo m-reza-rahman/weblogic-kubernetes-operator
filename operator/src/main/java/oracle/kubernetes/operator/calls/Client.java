@@ -4,6 +4,7 @@
 package oracle.kubernetes.operator.calls;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.kubernetes.client.monitoring.Monitoring;
 import io.kubernetes.client.openapi.ApiClient;
@@ -16,21 +17,33 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 public class Client {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
-  private static final ApiClient singleton;
+  @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
+  private static ClientFactory factory = new DefaultClientFactory();
 
-  static {
-    try {
-      LOGGER.fine(MessageKeys.CREATING_API_CLIENT);
-      singleton = ClientBuilder.standard().build();
-      Monitoring.installMetrics(singleton);
-      Configuration.setDefaultApiClient(singleton);
-    } catch (IOException e) {
-      LOGGER.warning(MessageKeys.EXCEPTION, e);
-      throw new RuntimeException(e);
-    }
-  }
+  private static final AtomicReference<ApiClient> singleton = new AtomicReference<>();
 
   public static ApiClient getInstance() {
-    return singleton;
+    return singleton.getAndUpdate(c -> {
+      if (c != null) {
+        return c;
+      }
+      try {
+      LOGGER.fine(MessageKeys.CREATING_API_CLIENT);
+      ApiClient client = factory.get();
+      Monitoring.installMetrics(client);
+      Configuration.setDefaultApiClient(client);
+      return client;
+      } catch (IOException e) {
+        LOGGER.warning(MessageKeys.EXCEPTION, e);
+        throw new RuntimeException(e);
+      }
+    });
+  }
+
+  private static class DefaultClientFactory implements ClientFactory {
+    @Override
+    public ApiClient get() throws IOException {
+      return ClientBuilder.standard().build();
+    }
   }
 }

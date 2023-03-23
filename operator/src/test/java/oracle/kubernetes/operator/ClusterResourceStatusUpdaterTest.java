@@ -6,13 +6,12 @@ package oracle.kubernetes.operator;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
-import oracle.kubernetes.operator.helpers.RetryStrategyStub;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
@@ -23,10 +22,12 @@ import oracle.kubernetes.weblogic.domain.model.ClusterSpec;
 import oracle.kubernetes.weblogic.domain.model.ClusterStatus;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
@@ -45,6 +46,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class ClusterResourceStatusUpdaterTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String NAME = UID;
   public static final String CLUSTER = "cluster-1";
   private final TerminalStep endStep = new TerminalStep();
@@ -53,12 +57,11 @@ class ClusterResourceStatusUpdaterTest {
   private final ClusterResource cluster = createClusterResource(CLUSTER);
   private final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
   private final DomainPresenceInfo info = new DomainPresenceInfo(domain);
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
 
   @BeforeEach
   void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger().ignoringLoggedExceptions(ApiException.class));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TuningParametersStub.install());
     mementos.add(ClientFactoryStub.install());
 
@@ -180,8 +183,6 @@ class ClusterResourceStatusUpdaterTest {
     domain.getStatus().addCluster(newStatus);
     cluster.withStatus(null);
     info.addClusterResource(cluster);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnReplaceStatus(CLUSTER_STATUS, NAME + '-' + CLUSTER, NS, HTTP_UNAVAILABLE);
 
     updateClusterResourceStatus();

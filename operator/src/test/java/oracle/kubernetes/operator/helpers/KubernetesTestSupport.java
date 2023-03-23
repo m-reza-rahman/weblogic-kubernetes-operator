@@ -3,6 +3,11 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import java.util.List;
+import javax.annotation.Nonnull;
+
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
@@ -35,9 +40,6 @@ import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
-import javax.annotation.Nonnull;
-import java.util.List;
-
 @SuppressWarnings("WeakerAccess")
 public class KubernetesTestSupport extends FiberTestSupport {
   public static final String CONFIG_MAP = "ConfigMap";
@@ -64,6 +66,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
   public static final String VALIDATING_WEBHOOK_CONFIGURATION = "ValidatingWebhookConfiguration";
 
   private long resourceVersion;
+
+  public Memento install(WireMockRule rule) {
+    return new KubernetesTestSupportMemento(rule);
+  }
 
   private ClusterList createClusterList(List<ClusterResource> items) {
     return new ClusterList().withMetadata(createListMeta()).withItems(items);
@@ -122,6 +128,27 @@ public class KubernetesTestSupport extends FiberTestSupport {
     return new V1ListMeta().resourceVersion(Long.toString(++resourceVersion));
   }
 
+  @SuppressWarnings("unchecked")
+  public <T> List<T> getResources(String resourceType) {
+    // TODO
+  }
+
+  /**
+   * get resource with name.
+   * @param resourceType resource type
+   * @param name name
+   * @param <T> type
+   * @return resource
+   */
+  @SuppressWarnings("unchecked")
+  public <T> T getResourceWithName(String resourceType, String name) {
+    return (T)
+        getResources(resourceType).stream()
+            .filter(o -> name.equals(KubernetesUtils.getResourceName(o)))
+            .findFirst()
+            .orElse(null);
+  }
+
   /**
    * define resources.
    * @param resources resources.
@@ -129,6 +156,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
    */
   @SafeVarargs
   public final <T> void defineResources(T... resources) {
+    // TODO
+  }
+
+  public void definePodLog(String name, String namespace, Object contents) {
     // TODO
   }
 
@@ -258,5 +289,24 @@ public class KubernetesTestSupport extends FiberTestSupport {
    */
   public void failOnResource(@Nonnull String resourceType, String name, String namespace, ApiException apiException) {
     // TODO
+  }
+
+  private class KubernetesTestSupportMemento implements Memento {
+
+    public KubernetesTestSupportMemento(WireMockRule rule) {
+      CallBuilder.setStepFactory(new AsyncRequestStepFactoryImpl());
+      CallBuilder.setCallDispatcher(new CallDispatcherImpl());
+    }
+
+    @Override
+    public void revert() {
+      CallBuilder.resetStepFactory();
+      CallBuilder.resetCallDispatcher();
+    }
+
+    @Override
+    public <T> T getOriginalValue() {
+      throw new UnsupportedOperationException();
+    }
   }
 }

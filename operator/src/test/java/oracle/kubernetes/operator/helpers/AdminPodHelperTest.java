@@ -22,7 +22,6 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
@@ -240,21 +239,7 @@ class AdminPodHelperTest extends PodHelperTestBase {
   }
 
   @Test
-  void whenAdminPodDeletionFails_unrecoverableFailureOnUnauthorized() {
-    testSupport.addRetryStrategy(retryStrategy);
-    initializeExistingPod(getIncompatiblePod());
-    testSupport.failOnDelete(KubernetesTestSupport.POD, getPodName(), NS, HTTP_UNAUTHORIZED);
-
-    FiberTestSupport.StepFactory stepFactory = getStepFactory();
-    Step initialStep = stepFactory.createStepList(terminalStep);
-    testSupport.runSteps(initialStep);
-
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
-  }
-
-  @Test
   void whenAdminPodReplacementFails() {
-    testSupport.addRetryStrategy(retryStrategy);
     initializeExistingPod(getIncompatiblePod());
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 
@@ -268,7 +253,6 @@ class AdminPodHelperTest extends PodHelperTestBase {
 
   @Test
   void whenAdminPodReplacementFails_generateFailedEvent() {
-    testSupport.addRetryStrategy(retryStrategy);
     initializeExistingPod(getIncompatiblePod());
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 

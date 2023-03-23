@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import oracle.kubernetes.operator.DomainProcessorTestSetup;
@@ -15,10 +16,12 @@ import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_EXISTS;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_REPLACED;
@@ -29,6 +32,9 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class FluentdHelperTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String DOMAIN_NS = "namespace";
 
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
@@ -44,7 +50,7 @@ class FluentdHelperTest {
         TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, CM_CREATED, CM_EXISTS, CM_REPLACED)
             .withLogLevel(Level.FINE));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
   }
 
   @AfterEach

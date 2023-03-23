@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -53,10 +54,12 @@ import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.util.Collections.emptyMap;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.SERVERNAME_LABEL;
@@ -74,6 +77,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class ManagedServerUpIteratorStepTest extends ThreadFactoryTestBase implements WatchListener<V1Pod>,
         StubWatchFactory.AllWatchesClosedListener {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   protected static final String DOMAIN_NAME = "domain1";
   private static final String NS = "namespace";
@@ -183,7 +188,7 @@ class ManagedServerUpIteratorStepTest extends ThreadFactoryTestBase implements W
     mementos.add(TestUtils.silenceOperatorLogger()
             .ignoringLoggedExceptions(ApiException.class, InterruptedException.class));
     mementos.add(TuningParametersStub.install());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(StubWatchFactory.install());
     StubWatchFactory.setListener(this);
 
@@ -192,9 +197,8 @@ class ManagedServerUpIteratorStepTest extends ThreadFactoryTestBase implements W
             .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig)
             .addDomainPresenceInfo(info);
     testSupport.doOnCreate(POD, p -> schedulePodUpdates((V1Pod) p));
-    testSupport.addComponent(
+    testSupport.addToPacket(
             ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-            PodAwaiterStepFactory.class,
             watcher);
   }
 

@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import oracle.kubernetes.operator.DomainProcessorImpl;
@@ -38,10 +39,12 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.MatcherAssert;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.ILLEGAL_CLUSTER_SERVICE_NAME_LENGTH;
 import static oracle.kubernetes.common.logging.MessageKeys.ILLEGAL_EXTERNAL_SERVICE_NAME_LENGTH;
 import static oracle.kubernetes.common.logging.MessageKeys.ILLEGAL_SERVER_SERVICE_NAME_LENGTH;
@@ -76,6 +79,9 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class TopologyValidationStepTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String ADMIN_SERVER = "admin-server";
   private static final String MANAGED_SERVER1 = "managed-server1";
   private static final String DYNAMIC_CLUSTER_NAME = "dyn-cluster-1";
@@ -128,7 +134,7 @@ class TopologyValidationStepTest {
         NO_AVAILABLE_PORT_TO_USE_FOR_REST, NO_CLUSTER_IN_DOMAIN, NO_MANAGED_SERVER_IN_DOMAIN,
         MONITORING_EXPORTER_CONFLICT_DYNAMIC_CLUSTER, MONITORING_EXPORTER_CONFLICT_SERVER);
     mementos.add(consoleControl);
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
 

@@ -26,6 +26,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.IntOrString;
@@ -99,10 +100,12 @@ import oracle.kubernetes.weblogic.domain.model.ManagedServer;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import org.hamcrest.MatcherAssert;
 import org.jetbrains.annotations.NotNull;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStub;
 import static java.util.logging.Level.INFO;
 import static oracle.kubernetes.common.logging.MessageKeys.ASYNC_NO_RETRY;
@@ -183,6 +186,9 @@ import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class DomainProcessorTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String ADMIN_NAME = "admin";
   private static final String CLUSTER = "cluster";
   private static final String CLUSTER2 = "cluster-2";
@@ -284,7 +290,7 @@ class DomainProcessorTest {
     consoleHandlerMemento = TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords, NOT_STARTING_DOMAINUID_THREAD).withLogLevel(Level.FINE);
     mementos.add(consoleHandlerMemento);
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(httpSupport.install());
     mementos.add(execFactoryFake.install());
     mementos.add(domainProcessorTestSupport.install());

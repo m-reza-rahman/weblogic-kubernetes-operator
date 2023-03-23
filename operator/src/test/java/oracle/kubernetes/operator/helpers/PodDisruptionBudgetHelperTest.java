@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1LabelSelector;
@@ -18,8 +19,6 @@ import io.kubernetes.client.openapi.models.V1OwnerReference;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Packet;
@@ -32,11 +31,12 @@ import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import org.hamcrest.Description;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.CLUSTER_PDB_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.CLUSTER_PDB_EXISTS;
 import static oracle.kubernetes.common.logging.MessageKeys.KUBERNETES_EVENT_ERROR;
@@ -62,6 +62,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 @SuppressWarnings("ConstantConditions")
 class PodDisruptionBudgetHelperTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   static final String DOMAIN_NAME = "domain1";
   static final String NS = "namespace";
@@ -78,7 +80,6 @@ class PodDisruptionBudgetHelperTest {
   };
   private static final TerminalStep terminalStep = new TerminalStep();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
 
@@ -94,7 +95,7 @@ class PodDisruptionBudgetHelperTest {
                 .collectLogMessages(logRecords, MESSAGE_KEYS)
                 .withLogLevel(Level.FINE)
                 .ignoringLoggedExceptions(ApiException.class));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
 
     WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport(DOMAIN_NAME);
     configSupport.addWlsCluster(TEST_CLUSTER, TEST_SERVER);
@@ -202,7 +203,6 @@ class PodDisruptionBudgetHelperTest {
 
   @Test
   void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_INTERNAL_ERROR);
 
     runPodDisruptionBudgetHelper();
@@ -213,8 +213,6 @@ class PodDisruptionBudgetHelperTest {
   @Test
   void onFailedRunWithConflictAndNoExistingPDB_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPdbCreateLogMessage());
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
 
     runPodDisruptionBudgetHelper();
@@ -229,8 +227,6 @@ class PodDisruptionBudgetHelperTest {
     consoleHandlerMemento.ignoreMessage(getPdbExistsLogMessage());
     V1PodDisruptionBudget existingPdb = createPDBModel(testSupport.getPacket());
     existingPdb.getMetadata().setNamespace(NS);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
     testSupport.defineResources(existingPdb);
 

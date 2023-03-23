@@ -16,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -43,10 +44,12 @@ import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.DOMAIN_ROLL_START;
 import static oracle.kubernetes.common.logging.MessageKeys.MANAGED_POD_REPLACED;
 import static oracle.kubernetes.common.logging.MessageKeys.ROLLING_SERVERS;
@@ -68,6 +71,8 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 
 class RollingHelperTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final String ADMIN_SERVER = "ADMIN_SERVER";
   private static final Integer ADMIN_PORT = 7001;
@@ -98,7 +103,7 @@ class RollingHelperTest {
     mementos.add(consoleHandlerMemento = TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords)
             .withLogLevel(Level.FINE));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TuningParametersStub.install());
     mementos.add(UnitTestHash.install());
 
@@ -110,9 +115,8 @@ class RollingHelperTest {
 
     testSupport.defineResources(domain);
     domainTopology = configSupport.createDomainConfig();
-    testSupport.addComponent(
+    testSupport.addToPacket(
         ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-        PodAwaiterStepFactory.class,
         new PassthroughPodAwaiterStepFactory());
 
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domainEventK8SObjects", domainEventObjects));

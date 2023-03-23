@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -33,7 +34,6 @@ import io.kubernetes.client.openapi.models.V1PodStatus;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
-import oracle.kubernetes.operator.helpers.RetryStrategyStub;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParameters;
@@ -62,10 +62,12 @@ import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
@@ -118,6 +120,9 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 abstract class DomainStatusUpdateTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
   private static final String NAME = UID;
@@ -130,12 +135,11 @@ abstract class DomainStatusUpdateTestBase {
   private final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
   private final DomainPresenceInfo info = new DomainPresenceInfo(domain);
   private List<String> liveServers;
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
 
   @BeforeEach
   void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger().ignoringLoggedExceptions(ApiException.class));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TuningParametersStub.install());
     mementos.add(ClientFactoryStub.install());
     mementos.add(SystemClockTestSupport.installClock());
@@ -1856,8 +1860,6 @@ abstract class DomainStatusUpdateTestBase {
     info.getDomain().getMetadata().setGeneration(2L);
     testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_UNAVAILABLE);
     testSupport.returnEmptyResultOnRead(DOMAIN, info.getDomainUid(), info.getNamespace());
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     updateDomainStatusInEndOfProcessing();
 
     assertThat(getRecordedDomain().getStatus().getObservedGeneration(), equalTo(2L));
@@ -1869,8 +1871,6 @@ abstract class DomainStatusUpdateTestBase {
 
     info.getDomain().getMetadata().setGeneration(2L);
     testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_UNAVAILABLE);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     updateDomainStatusInEndOfProcessing();
 
     assertThat(getRecordedDomain().getStatus().getObservedGeneration(), equalTo(2L));
@@ -1882,8 +1882,6 @@ abstract class DomainStatusUpdateTestBase {
 
     info.getDomain().getMetadata().setGeneration(2L);
     testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_NOT_FOUND);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     updateDomainStatusInEndOfProcessing();
 
     assertThat(getRecordedDomain().getStatus().getObservedGeneration(), not(equalTo(2L)));

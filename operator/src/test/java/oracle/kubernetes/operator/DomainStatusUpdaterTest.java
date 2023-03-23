@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Job;
@@ -27,10 +28,12 @@ import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.ABORTED_EVENT_ERROR;
 import static oracle.kubernetes.common.logging.MessageKeys.DOMAIN_FATAL_ERROR;
 import static oracle.kubernetes.common.logging.MessageKeys.DOMAIN_ROLL_START;
@@ -64,6 +67,9 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
  * tested by DomainStatusUpdateTestBase and its subclasses.
  */
 class DomainStatusUpdaterTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private static final String NAME = UID;
   private static final String ADMIN = "admin";
@@ -85,7 +91,7 @@ class DomainStatusUpdaterTest {
   void setUp() throws NoSuchFieldException {
     mementos.add(consoleHandlerMemento = TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords).ignoringLoggedExceptions(ApiException.class));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(ClientFactoryStub.install());
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());

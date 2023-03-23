@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -33,10 +34,12 @@ import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainFailureReason;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
@@ -136,6 +139,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 class EventHelperTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String OPERATOR_POD_NAME = "my-weblogic-operator-1234";
   private static final String OP_NS = "operator-namespace";
 
@@ -154,7 +160,6 @@ class EventHelperTest {
       = processor.createMakeRightOperation(info);
   private final String jobPodName = LegalNames.toJobIntrospectorName(UID);
   private final Collection<LogRecord> logRecords = new ArrayList<>();
-  private final OnConflictRetryStrategyStub retryStrategy = createStrictStub(OnConflictRetryStrategyStub.class);
   private TestUtils.ConsoleHandlerMemento loggerControl;
   private static final String WILL_NOT_RETRY =
       "The reported problem should be corrected, and the domain will not be retried "
@@ -163,7 +168,7 @@ class EventHelperTest {
   @BeforeEach
   void setUp() throws Exception {
     mementos.add(loggerControl = TestUtils.silenceOperatorLogger());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domains", presenceInfoMap));
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domainEventK8SObjects", domainEventObjects));
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "namespaceEventK8SObjects", nsEventObjects));
@@ -863,7 +868,6 @@ class EventHelperTest {
 
   @Test
   void whenNSWatchStoppedEventCreatedTwice_fail409OnReplace_eventCreatedOnceWithExpectedCount() {
-    testSupport.addRetryStrategy(retryStrategy);
     Step eventStep = createEventStep(new EventData(NAMESPACE_WATCHING_STOPPED).namespace(NS).resourceName(NS));
 
     testSupport.runSteps(eventStep);
@@ -881,7 +885,6 @@ class EventHelperTest {
 
   @Test
   void whenNSWatchStoppedEventCreatedTwice_fail503OnReplace_eventCreatedOnceWithExpectedCount() {
-    testSupport.addRetryStrategy(retryStrategy);
     Step eventStep = createEventStep(new EventData(NAMESPACE_WATCHING_STOPPED).namespace(NS).resourceName(NS));
 
     testSupport.runSteps(eventStep);
@@ -1002,7 +1005,6 @@ class EventHelperTest {
 
   @Test
   void whenClusterAvailableEventCreatedTwice_fail409OnReplace_eventCreatedOnceWithExpectedCount() {
-    testSupport.addRetryStrategy(retryStrategy);
     Step eventStep = EventHelper.createClusterResourceEventStep(new EventData(CLUSTER_AVAILABLE)
         .namespace(NS).resourceName(NS));
     testSupport.runSteps(eventStep);

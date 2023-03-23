@@ -9,19 +9,20 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_EXISTS;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_REPLACED;
@@ -33,11 +34,13 @@ import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CONFIG_MA
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class ConfigMapHelperTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String DOMAIN_NS = "namespace";
 
   private static final SemanticVersion PRODUCT_VERSION = new SemanticVersion(3, 0, 0);
@@ -45,7 +48,6 @@ class ConfigMapHelperTest {
   private static final SemanticVersion PRODUCT_VERSION_FUTURE = new SemanticVersion(3, 1, 0);
 
   private final V1ConfigMap defaultConfigMap = defineConfigMap(PRODUCT_VERSION);
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
   private final List<Memento> mementos = new ArrayList<>();
   private final List<LogRecord> logRecords = new ArrayList<>();
@@ -75,7 +77,7 @@ class ConfigMapHelperTest {
         TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, CM_CREATED, CM_EXISTS, CM_REPLACED)
             .withLogLevel(Level.FINE));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
   }
 
   @AfterEach
@@ -105,14 +107,12 @@ class ConfigMapHelperTest {
 
   @Test
   void whenNoConfigMap_retryOnFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(CONFIG_MAP, DOMAIN_NS, 401);
 
     Step scriptConfigMapStep = ConfigMapHelper.createScriptConfigMapStep(DOMAIN_NS, null);
     testSupport.runSteps(scriptConfigMapStep);
 
     testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
-    assertThat(retryStrategy.getConflictStep(), sameInstance(scriptConfigMapStep));
   }
 
   @Test

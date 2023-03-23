@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.custom.Quantity;
@@ -68,10 +69,12 @@ import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.DomainValidationTestBase;
 import oracle.kubernetes.weblogic.domain.model.ServerEnvVars;
 import org.hamcrest.Matcher;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createNiceStub;
 import static oracle.kubernetes.common.CommonConstants.COMPATIBILITY_MODE;
 import static oracle.kubernetes.common.CommonConstants.WLS_SHARED;
@@ -132,6 +135,8 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class JobHelperTest extends DomainValidationTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final String RAW_VALUE_1 = "find uid1 at $(DOMAIN_HOME)";
   private static final String END_VALUE_1 = "find uid1 at /u01/oracle/user_projects/domains";
@@ -197,14 +202,13 @@ class JobHelperTest extends DomainValidationTestBase {
         .withLogLevel(Level.FINE);
     mementos.add(consoleHandlerMemento);
     mementos.add(TuningParametersStub.install());
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(SystemClockTestSupport.installClock());
 
     domain.getSpec().setNodeName(null);
     testSupport.defineResources(domain);
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
-    testSupport.addComponent(JOBWATCHER_COMPONENT_NAME,
-          JobAwaiterStepFactory.class,
+    testSupport.addToPacket(JOBWATCHER_COMPONENT_NAME,
           createNiceStub(JobAwaiterStepFactory.class));
   }
 

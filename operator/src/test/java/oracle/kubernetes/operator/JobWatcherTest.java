@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobCondition;
 import io.kubernetes.client.openapi.models.V1JobStatus;
@@ -26,10 +27,12 @@ import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.JobWatcher.NULL_LISTENER;
@@ -44,6 +47,8 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 /** This test class verifies the behavior of the JobWatcher. */
 class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final BigInteger INITIAL_RESOURCE_VERSION = new BigInteger("234");
   private OffsetDateTime clock = SystemClock.now();
@@ -59,7 +64,7 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
   @BeforeEach
   public void setUp() throws Exception {
     super.setUp();
-    addMemento(testSupport.install());
+    addMemento(testSupport.install(wireMockRule));
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
 
   }

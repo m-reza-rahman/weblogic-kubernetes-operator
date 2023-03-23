@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -20,13 +21,18 @@ import org.glassfish.jersey.test.spi.TestContainerException;
 import org.glassfish.jersey.test.spi.TestContainerFactory;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.operator.http.rest.AuthenticationFilter.ACCESS_TOKEN_PREFIX;
 
 @SuppressWarnings("SameParameterValue")
 public class RestTestBase extends JerseyTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final String ACCESS_TOKEN = "dummy token";
 
   private final List<Memento> mementos = new ArrayList<>();
@@ -37,7 +43,7 @@ public class RestTestBase extends JerseyTest {
   @BeforeEach
   public void setupRestTest() throws Exception {
     setUp();
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(BaseTestUtils.silenceJsonPathLogger());
     mementos.add(TestUtils.silenceOperatorLogger());
   }

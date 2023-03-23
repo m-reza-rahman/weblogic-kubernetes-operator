@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.AdmissionregistrationV1ServiceReference;
@@ -40,12 +41,10 @@ import io.kubernetes.client.openapi.models.V1ValidatingWebhook;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.helpers.CrdHelperTestBase;
 import oracle.kubernetes.operator.helpers.HelmAccessStub;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
-import oracle.kubernetes.operator.helpers.OnConflictRetryStrategyStub;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
 import oracle.kubernetes.operator.http.BaseServer;
@@ -59,12 +58,14 @@ import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.hamcrest.junit.MatcherAssert;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.common.CommonConstants.SECRETS_WEBHOOK_CERT;
 import static oracle.kubernetes.common.CommonConstants.SECRETS_WEBHOOK_KEY;
@@ -122,6 +123,9 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class WebhookMainTest extends CrdHelperTestBase {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   public static final VersionInfo TEST_VERSION_INFO = new VersionInfo().major("1").minor("18").gitVersion("0");
   public static final KubernetesVersion TEST_VERSION = new KubernetesVersion(TEST_VERSION_INFO);
 
@@ -145,7 +149,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
   private final WebhookMain main = new WebhookMain(delegate);
   private static final InMemoryFileSystem inMemoryFileSystem = InMemoryFileSystem.createInstance();
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
-  private final OnConflictRetryStrategyStub retryStrategy = createStrictStub(OnConflictRetryStrategyStub.class);
 
   private final String testNamespace = "ns1";
   private final byte[] testCaBundle = new byte[] { (byte)0xe0, 0x4f, (byte)0xd0,
@@ -195,7 +198,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
             VALIDATING_WEBHOOK_CONFIGURATION_CREATED, VALIDATING_WEBHOOK_CONFIGURATION_REPLACED,
             CREATE_VALIDATING_WEBHOOK_CONFIGURATION_FAILED, REPLACE_VALIDATING_WEBHOOK_CONFIGURATION_FAILED,
             READ_VALIDATING_WEBHOOK_CONFIGURATION_FAILED));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TestStepFactory.install());
     mementos.add(HelmAccessStub.install());
     mementos.add(TuningParametersStub.install());
@@ -212,8 +215,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
     testValidatingWebhookConfig = new V1ValidatingWebhookConfiguration()
         .metadata(createNameOnlyMetadata())
         .addWebhooksItem(createValidatingWebhook());
-
-    testSupport.addRetryStrategy(retryStrategy);
   }
 
   @AfterEach

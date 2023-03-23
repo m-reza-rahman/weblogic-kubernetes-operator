@@ -14,6 +14,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.httpunit.Base64;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1Service;
@@ -35,10 +36,12 @@ import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.ServerHealth;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static com.meterware.simplestub.Stub.createStub;
 import static oracle.kubernetes.common.logging.MessageKeys.WLS_HEALTH_READ_FAILED;
 import static oracle.kubernetes.common.logging.MessageKeys.WLS_HEALTH_READ_FAILED_NO_HTTPCLIENT;
@@ -59,6 +62,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 class ReadHealthStepTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   // The log messages to be checked during this test
   private static final String[] LOG_KEYS = {
       WLS_HEALTH_READ_FAILED, WLS_HEALTH_READ_FAILED_NO_HTTPCLIENT
@@ -100,7 +106,7 @@ class ReadHealthStepTest {
         .collectLogMessages(logRecords, LOG_KEYS)
         .ignoringLoggedExceptions(CLASSCAST_EXCEPTION)
         .withLogLevel(Level.FINE));
-    mementos.add(testSupport.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(httpSupport.install());
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
