@@ -658,9 +658,9 @@ class ItVzCrossDomainTransaction {
         + " -X POST "
         + "https://%s/management/weblogic/latest/domainRuntime/deploymentManager/appDeploymentRuntimes/"
         + application + "/getState"
-        + "/ --resolve " + host + ":443:" + address, host);
+        + " --resolve " + host + ":443:" + address, host);
 
-    logger.info("curl command to check MDB state {0}", curlString);
+    logger.info("curl command to check MDB state {0}: ", curlString);
     testUntil(
         assertDoesNotThrow(() -> () -> exec(curlString, true).stdout().contains("STATE_ACTIVE")),
         logger,
