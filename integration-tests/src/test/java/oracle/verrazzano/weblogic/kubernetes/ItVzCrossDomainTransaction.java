@@ -112,7 +112,7 @@ class ItVzCrossDomainTransaction {
   private static String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
   private static String host1 = null;
   private static String address1 = null;
-  private final int replicaCount = 2;
+  private static int replicaCount = 2;
   private static final String ORACLEDBURLPREFIX = "oracledb.";
   private static String ORACLEDBSUFFIX = null;
   static String dbUrl;
@@ -153,14 +153,16 @@ class ItVzCrossDomainTransaction {
 
     updatePropertyFile();
     buildApplicationsAndDomainImages();
+    createVzDomain1();
+    createVzDomain2();
   }
 
   /**
    * Create a WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
    */
-  @Test
-  @DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
-  void testCreateVzDomain1() {
+  //@Test
+  //@DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
+  private static void createVzDomain1() {
 
     // admin/managed server name here should match with model yaml in MII_BASIC_WDT_MODEL_FILE
     /*final String adminServerPodName = domainUid1 + "-admin-server";
@@ -273,8 +275,8 @@ class ItVzCrossDomainTransaction {
     }
 
     // get istio gateway host and loadbalancer address
-    String host1 = getIstioHost(domain1Namespace);
-    String address1 = getLoadbalancerAddress();
+    host1 = getIstioHost(domain1Namespace);
+    address1 = getLoadbalancerAddress();
 
     // verify WebLogic console page is accessible through istio/loadbalancer
     String message = "Oracle WebLogic Server Administration Console";
@@ -288,9 +290,9 @@ class ItVzCrossDomainTransaction {
   /**
    * Create a WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
    */
-  @Test
-  @DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
-  void testCreateVzDomain2() {
+  //@Test
+  //@DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
+  private static void createVzDomain2() {
 
     createTestRepoSecret(domain2Namespace);
 
@@ -378,6 +380,7 @@ class ItVzCrossDomainTransaction {
   void testCrossDomainTranscatedMDB() {
 
     // No extra header info
+    logger.info("Is going to check MDB in domain with host {0}, address {1}", host1, address1);
     assertTrue(checkAppIsActive(host1, address1,
                  "", "mdbtopic","cluster-1",
                  ADMIN_USERNAME_DEFAULT,ADMIN_PASSWORD_DEFAULT),
