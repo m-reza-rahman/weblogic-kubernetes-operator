@@ -44,6 +44,7 @@ import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -64,6 +65,8 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.creat
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
@@ -89,8 +92,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("v8o")
 class ItVzCrossDomainTransaction {
 
-  //private static String domainNamespace = null;
-  //private final String domainUid = "domain1";
   private static LoggingFacade logger = null;
 
   private static String domain1Namespace = null;
@@ -102,13 +103,13 @@ class ItVzCrossDomainTransaction {
   private static int  domain1AdminServiceNodePort = -1;
   private static int  admin2ServiceNodePort = -1;
   private static String domain1AdminServerPodName = domainUid1 + "-admin-server";
-  private final String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
+  private static String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
   private static String domain2AdminServerPodName = domainUid2 + "-admin-server";
   private static String domain1AdminSecretName = domainUid1 + "-weblogic-credentials";
   private static  String domain2AdminSecretName = domainUid2 + "-weblogic-credentials";
   private static String domain1EncryptionSecretName = domainUid1 + "-encryptionsecret";
   private static String domain2EncryptionSecretName = domainUid2 + "-encryptionsecret";
-  private final String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
+  private static String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
   private final int replicaCount = 2;
   private static final String ORACLEDBURLPREFIX = "oracledb.";
   private static String ORACLEDBSUFFIX = null;
@@ -130,7 +131,7 @@ class ItVzCrossDomainTransaction {
   private static final String WDT_IMAGE_NAME2 = "domain2-cdxaction-wdt-image";
   private static final String PROPS_TEMP_DIR = RESULTS_ROOT + "/crossdomaintransactiontemp";
   private static final String WDT_MODEL_FILE_JMS = "model-cdt-jms.yaml";
-  private static final String WDT_MODEL_FILE_JDBC = "model-cdt-jdbc.yaml";
+  //private static final String WDT_MODEL_FILE_JDBC = "model-cdt-jdbc.yaml";
   private static final String WDT_MODEL_FILE_JMS2 = "model2-cdt-jms.yaml";
 
 
@@ -153,7 +154,7 @@ class ItVzCrossDomainTransaction {
   }
 
   /**
-   * Create a WebLogic domain Verrazzano WebLogicWorkload component in verrazzano.
+   * Create a WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
    */
   @Test
   @DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
@@ -234,7 +235,21 @@ class ItVzCrossDomainTransaction {
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(domain1AdminServerPodName)
-                                        .port(7001)))))))))));
+                                        .port(7001)),
+                                    new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/jmsservlet")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(domain1AdminServerPodName)
+                                        .port(7001)),
+                                    new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/mdbtopic")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(domainUid1 + "-cluster-" + "cluster1")
+                                        .port(8001)))))))))));
 
     logger.info(Yaml.dump(component));
     logger.info(Yaml.dump(application));
@@ -265,15 +280,11 @@ class ItVzCrossDomainTransaction {
     logger.info("domain1 admin consoleUrl is: {0}", consoleUrl);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
-    // verify sample running in cluster is accessible through istio/loadbalancer
-    /*message = "Hello World, you have reached server managed-server";
-    String appUrl = "https://" + host + "/sample-war/index.jsp --resolve " + host + ":443:" + address;
-    assertTrue(verifyVzApplicationAccess(appUrl, message), "Failed to get access to sample application");*/
 
   }
 
   /**
-   * Create a WebLogic domain Verrazzano WebLogicWorkload component in verrazzano.
+   * Create a WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
    */
   @Test
   @DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
@@ -358,11 +369,57 @@ class ItVzCrossDomainTransaction {
     logger.info("domain2 admin consoleUrl is: {0}", consoleUrl);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
-    // verify sample running in cluster is accessible through istio/loadbalancer
-    /*message = "Hello World, you have reached server managed-server";
-    String appUrl = "https://" + host + "/sample-war/index.jsp --resolve " + host + ":443:" + address;
-    assertTrue(verifyVzApplicationAccess(appUrl, message), "Failed to get access to sample application");*/
+  }
 
+  @Test
+  @DisplayName("Check cross domain transcated MDB communication ")
+  void testCrossDomainTranscatedMDB() {
+
+    // No extra header info
+    assertTrue(checkAppIsActive(domain1Namespace,
+                 "", "mdbtopic","cluster-1",
+                 ADMIN_USERNAME_DEFAULT,ADMIN_PASSWORD_DEFAULT),
+             "MDB application can not be activated on domain1/cluster");
+
+    logger.info("MDB application is activated on domain1/cluster");
+
+    String curlRequest = String.format("curl -v --show-error --noproxy '*' "
+            + "\"http://%s/jmsservlet/jmstest?"
+            + "url=t3://domain2-cluster-cluster-1.%s:8001&"
+            + "cf=jms.ClusterConnectionFactory&"
+            + "action=send&"
+            + "dest=jms/testCdtUniformTopic\"",
+           hostAndPort, domain2Namespace);
+
+    ExecResult result = null;
+    logger.info("curl command {0}", curlRequest);
+    result = assertDoesNotThrow(
+        () -> exec(curlRequest, true));
+    if (result.exitValue() == 0) {
+      logger.info("\n HTTP response is \n " + result.stdout());
+      logger.info("curl command returned {0}", result.toString());
+      assertTrue(result.stdout().contains("Sent (10) message"),
+          "Can not send message to remote Distributed Topic");
+    }
+
+    assertTrue(checkLocalQueue(),
+         "Expected number of message not found in Accounting Queue");
+  }
+
+  private boolean checkLocalQueue() {
+    String curlString = String.format("curl -v --show-error --noproxy '*' "
+            + "\"http://%s/jmsservlet/jmstest?"
+            + "url=t3://localhost:7001&"
+            + "action=receive&dest=jms.testAccountingQueue\"",
+            hostAndPort);
+
+    logger.info("curl command {0}", curlString);
+
+    testUntil(
+        () -> exec(new String(curlString), true).stdout().contains("Messages are distributed"),
+        logger,
+        "local queue to be updated");
+    return true;
   }
 
   private static void updatePropertyFile() {
@@ -572,5 +629,37 @@ class ItVzCrossDomainTransaction {
     assertTrue(domCreated, String.format("Create domain custom resource failed with ApiException "
         + "for %s in namespace %s", domainUid, domNamespace));
     return domain;
+  }
+
+  private static boolean checkAppIsActive(
+      String domainNamespace,
+      String headers,
+      String application,
+      String target,
+      String username,
+      String password
+  ) {
+
+    // get istio gateway host and loadbalancer address
+    String host = getIstioHost(domainNamespace);
+    String address = getLoadbalancerAddress();
+
+    String curlString = String.format("curl -v --show-error --noproxy '*' "
+        + "--user " + username + ":" + password + " " + headers
+        + " -H X-Requested-By:MyClient -H Accept:application/json "
+        + "-H Content-Type:application/json "
+        + " -d \"{ target: '" + target + "' }\" "
+        + " -X POST "
+        + "https://%s/management/weblogic/latest/domainRuntime/deploymentManager/appDeploymentRuntimes/"
+        + application + "/getState"
+        + "/ --resolve " + host + ":443:" + address, host);
+
+    logger.info("curl command to check MDB state {0}", curlString);
+    testUntil(
+        assertDoesNotThrow(() -> () -> exec(curlString, true).stdout().contains("STATE_ACTIVE")),
+        logger,
+        "Application {0} to be active",
+        application);
+    return true;
   }
 }
