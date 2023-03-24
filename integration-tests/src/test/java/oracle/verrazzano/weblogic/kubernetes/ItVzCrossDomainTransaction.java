@@ -162,36 +162,11 @@ class ItVzCrossDomainTransaction {
    */
   //@Test
   //@DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
-  private static void createVzDomain1() {
-
-    // admin/managed server name here should match with model yaml in MII_BASIC_WDT_MODEL_FILE
-    /*final String adminServerPodName = domainUid1 + "-admin-server";
-    final String managedServerPrefix = domainUid1 + "-managed-server";
-    final int replicaCount = 2;*/
+  private static void createVzDomain1() throws Exception {
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
     createTestRepoSecret(domain1Namespace);
-
-    // create secret for admin credentials
-    /*logger.info("Create secret for admin credentials");
-    String adminSecretName = "weblogic-credentials";
-    createSecretWithUsernamePassword(adminSecretName, domain1Namespace,
-            ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
-
-    // create encryption secret
-    logger.info("Create encryption secret");
-    String encryptionSecretName = "encryptionsecret";
-    createSecretWithUsernamePassword(encryptionSecretName, domain1Namespace,
-            "weblogicenc", "weblogicenc");*/
-
-    // create cluster object
-    //String clusterName = "cluster-1";
-
-    /*DomainResource domain = createDomainResource(domainUid1, domain1Namespace,
-        domain1Image,
-        domain1AdminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
-        domain1EncryptionSecretName, replicaCount, Arrays.asList(clusterName));*/
 
     // create the domain CR
     DomainResource domain = createDomainResource(domainUid1, domain1Namespace, domain1AdminSecretName,
@@ -240,14 +215,21 @@ class ItVzCrossDomainTransaction {
                                     .destination(new Destination()
                                         .host(domain1AdminServerPodName)
                                         .port(7001)),
-                                    new IngressRule()
+                                new IngressRule()
                                     .paths(Arrays.asList(new Path()
                                         .path("/jmsservlet")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(domain1AdminServerPodName)
                                         .port(7001)),
-                                    new IngressRule()
+                                new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/management")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(domain1AdminServerPodName)
+                                        .port(7001)),
+                                new IngressRule()
                                     .paths(Arrays.asList(new Path()
                                         .path("/mdbtopic")
                                         .pathType("Prefix")))
@@ -282,6 +264,8 @@ class ItVzCrossDomainTransaction {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host1 + "/console/login/LoginForm.jsp --resolve " + host1 + ":443:" + address1;
     logger.info("domain1 admin consoleUrl is: {0}", consoleUrl);
+    logger.info("DEBUGGING :leep for 5 mins");
+    Thread.sleep(300000);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
 
