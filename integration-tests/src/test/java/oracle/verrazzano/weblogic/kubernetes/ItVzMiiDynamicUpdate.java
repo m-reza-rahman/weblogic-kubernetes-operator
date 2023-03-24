@@ -13,6 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Yaml;
 import oracle.verrazzano.weblogic.ApplicationConfiguration;
@@ -69,6 +70,7 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAddress;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.setLabelToNamespace;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -102,11 +104,12 @@ class ItVzMiiDynamicUpdate {
    *             mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(1) List<String> namespaces) {
+  public static void initAll(@Namespaces(1) List<String> namespaces) throws ApiException {
     logger = getLogger();
     logger.info("Getting unique namespace for Domain");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
+    setLabelToNamespace(Arrays.asList(domainNamespace));
     createVzMiiDomain();
 
     // write sparse yaml to change target to file
