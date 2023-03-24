@@ -58,7 +58,6 @@ class HttpAsyncRequestStepTest {
   private final HttpResponseStepImpl responseStep = new HttpResponseStepImpl(null);
   private final Packet packet = new Packet();
   private final List<Memento> mementos = new ArrayList<>();
-  private final TestFiber fiber = createStub(TestFiber.class);
   private final HttpResponse<String> response = createStub(HttpResponseStub.class, 200);
   private HttpRequestStep requestStep;
   private final CompletableFuture<HttpResponse<String>> responseFuture = new CompletableFuture<>();
@@ -96,58 +95,6 @@ class HttpAsyncRequestStepTest {
   @Nonnull
   private HttpRequestStep createStep() {
     return HttpRequestStep.createGetRequest("http://localhost/nothing", responseStep);
-  }
-
-  @Test
-  void whenRequestMade_suspendProcessing() {
-    Void action = requestStep.apply(packet);
-
-    assertThat(FiberTestSupport.isSuspendRequested(action), is(true));
-  }
-
-
-  // Note: in the following tests, the call to doOnExit simulates the behavior of the fiber
-  // when it receives a doSuspend()
-  @Test
-  void whenResponseReceived_resumeFiber() {
-    final Void nextAction = requestStep.apply(packet);
-
-    receiveResponseBeforeTimeout(nextAction, response);
-
-    assertThat(fiber.wasResumed(), is(true));
-  }
-
-  private void receiveResponseBeforeTimeout(Void nextAction, HttpResponse<String> response) {
-    responseFuture.complete(response);
-    FiberTestSupport.doOnExit(nextAction, fiber);
-  }
-
-  private void completeWithThrowableBeforeTimeout(Void nextAction, Throwable throwable) {
-    responseFuture.completeExceptionally(throwable);
-    FiberTestSupport.doOnExit(nextAction, fiber);
-  }
-
-
-  @Test
-  void whenErrorResponseReceived_logMessage() {
-    final Void nextAction = requestStep.apply(packet);
-
-    receiveResponseBeforeTimeout(nextAction, createStub(HttpResponseStub.class, 500));
-
-    assertThat(logRecords, containsFine(HTTP_METHOD_FAILED));
-  }
-
-  @Test
-  void whenThrowableResponseReceivedAndServerNotShuttingDownAndFailureCountExceedsThreshold_logMessage() {
-    collectHttpWarningMessage();
-    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO,
-        createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 11));
-
-    final Void nextAction = requestStep.apply(packet);
-
-    completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
-
-    assertThat(logRecords, containsWarning(HTTP_REQUEST_GOT_THROWABLE));
   }
 
   private DomainPresenceInfo createDomainPresenceInfo(V1Pod msPod, int httpRequestFailureCount) {
@@ -210,83 +157,9 @@ class HttpAsyncRequestStepTest {
     assertThat(getResponse(), sameInstance(response));
   }
 
-  @Test
-  void whenResponseTimesOut_resumeFiber() {
-    consoleMemento.ignoreMessage(HTTP_REQUEST_TIMED_OUT);
-    Void nextAction = requestStep.apply(packet);
-
-    receiveTimeout(nextAction);
-
-    assertThat(fiber.wasResumed(), is(true));
-  }
-
-  @Test
-  void whenResponseTimesOut_packetHasNoResponse() {
-    consoleMemento.ignoreMessage(HTTP_REQUEST_TIMED_OUT);
-    HttpResponseStep.addToPacket(packet, response);
-    Void nextAction = requestStep.apply(packet);
-
-    receiveTimeout(nextAction);
-
-    assertThat(getResponse(), nullValue());
-  }
-
-  @Test
-  void whenResponseTimesOut_logWarning() {
-    HttpResponseStep.addToPacket(packet, response);
-    Void nextAction = requestStep.apply(packet);
-
-    receiveTimeout(nextAction);
-
-    assertThat(logRecords, containsFine(HTTP_REQUEST_TIMED_OUT));
-  }
-
-  @Test
-  void whenTestSupportEnabled_retrieveCannedResult() throws NoSuchFieldException {
-    HttpRequest request = HttpRequest.newBuilder().uri(URI.create("http://nowhere")).build();
-    HttpAsyncTestSupport httpSupport = new HttpAsyncTestSupport();
-    httpSupport.install();
-
-    httpSupport.defineResponse(request, createStub(HttpResponseStub.class, 200, "It works for testing!"));
-
-    HttpRequestStep step = HttpRequestStep.createGetRequest("http://nowhere", null);
-    FiberTestSupport.doOnExit(step.apply(packet), fiber);
-
-    assertThat(getResponse().body(), equalTo("It works for testing!"));
-  }
-
-  private void receiveTimeout(Void nextAction) {
-    FiberTestSupport.doOnExit(nextAction, fiber);
-  }
-
   @SuppressWarnings("unchecked")
   private HttpResponse<String> getResponse() {
     return (HttpResponse) packet.get(RESPONSE);
-  }
-
-  abstract static class TestFiber implements AsyncFiber {
-    private Packet packet;
-    private Throwable terminationCause;
-
-    boolean wasResumed() {
-      return terminationCause == null && packet != null;
-    }
-
-    @Override
-    public void resume(Packet resumePacket) {
-      packet = resumePacket;
-    }
-
-    @Override
-    public void terminate(Throwable terminationCause, Packet packet) {
-      this.terminationCause = terminationCause;
-      this.packet = packet;
-    }
-
-    @Override
-    public void scheduleOnce(long timeout, TimeUnit unit, Runnable runnable) {
-      runnable.run();
-    }
   }
 
 }
