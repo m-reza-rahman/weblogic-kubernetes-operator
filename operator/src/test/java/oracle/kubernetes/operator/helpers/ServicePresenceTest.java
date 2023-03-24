@@ -20,6 +20,7 @@ import io.kubernetes.client.util.Watch;
 import oracle.kubernetes.operator.DomainProcessorDelegate;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.LabelConstants;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.builders.WatchEvent;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.work.Packet;
@@ -32,7 +33,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static com.meterware.simplestub.Stub.createStrictStub;
-import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
@@ -84,7 +84,7 @@ class ServicePresenceTest {
     packet.put(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
     packet.put(CLUSTER_NAME, CLUSTER);
     packet.put(SERVER_NAME, SERVER);
-    packet.with(info);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, info);
   }
 
   private void disableMakeRightDomainProcessing() {

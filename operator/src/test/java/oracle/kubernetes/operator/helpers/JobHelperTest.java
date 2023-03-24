@@ -372,11 +372,15 @@ class JobHelperTest extends DomainValidationTestBase {
   }
 
   private V1JobSpec createJobSpec() {
-    return JobHelper.createJobSpec(new Packet().with(domainPresenceInfo));
+    Packet packet = new Packet();
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, domainPresenceInfo);
+    return JobHelper.createJobSpec(packet);
   }
 
   private V1Job createJob() {
-    return new JobStepContext(new Packet().with(domainPresenceInfo)).getJobModel();
+    Packet packet = new Packet();
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, domainPresenceInfo);
+    return new JobStepContext(packet).getJobModel();
   }
 
   @Test

@@ -382,7 +382,10 @@ class FailureRetryTest {
     @Nonnull
     @Override
     public Packet createPacket() {
-      return new Packet().with(info).with(this);
+      Packet packet = new Packet();
+      packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, info);
+      packet.put(ProcessingConstants.MAKE_RIGHT_DOMAIN_OPERATION, this);
+      return packet;
     }
 
     @Override

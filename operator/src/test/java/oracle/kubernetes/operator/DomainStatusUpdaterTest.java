@@ -15,6 +15,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobStatus;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import oracle.kubernetes.operator.calls.ClientFactoryStub;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.LegalNames;
@@ -92,7 +93,6 @@ class DomainStatusUpdaterTest {
     mementos.add(consoleHandlerMemento = TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords).ignoringLoggedExceptions(ApiException.class));
     mementos.add(testSupport.install(wireMockRule));
-    mementos.add(ClientFactoryStub.install());
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
 

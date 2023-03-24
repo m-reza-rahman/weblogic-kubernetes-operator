@@ -8,19 +8,22 @@ import java.util.List;
 import java.util.logging.LogRecord;
 import java.util.stream.Stream;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.VersionInfo;
-import oracle.kubernetes.operator.ClientFactoryStub;
+import oracle.kubernetes.operator.calls.ClientFactoryStub;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.utils.TestUtils;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static oracle.kubernetes.common.logging.MessageKeys.K8S_VERSION_CHECK;
 import static oracle.kubernetes.common.logging.MessageKeys.K8S_VERSION_CHECK_FAILURE;
 import static oracle.kubernetes.common.logging.MessageKeys.K8S_VERSION_TOO_LOW;
@@ -32,6 +35,8 @@ import static oracle.kubernetes.operator.helpers.VersionCheckTest.VersionMatcher
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class VersionCheckTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   // The log messages to be checked during this test
   private static final String[] LOG_KEYS = {
@@ -40,7 +45,7 @@ class VersionCheckTest {
   private final List<Memento> mementos = new ArrayList<>();
   private final List<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleControl;
-  private final CallTestSupport testSupport = new CallTestSupport();
+  private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
 
 
   private static Stream<Arguments> getTestParams() {
@@ -88,9 +93,8 @@ class VersionCheckTest {
   public void setUp() throws Exception {
     consoleControl = TestUtils.silenceOperatorLogger().collectLogMessages(logRecords, LOG_KEYS);
     mementos.add(consoleControl);
-    mementos.add(ClientFactoryStub.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TuningParametersStub.install());
-    mementos.add(testSupport.installSynchronousCallDispatcher());
   }
 
   @AfterEach

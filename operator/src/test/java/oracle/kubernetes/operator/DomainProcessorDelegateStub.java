@@ -5,7 +5,6 @@ package oracle.kubernetes.operator;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.models.V1Job;
@@ -23,7 +22,6 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.operator.JobWatcher.getFailedReason;
 import static oracle.kubernetes.operator.JobWatcher.isFailed;
-import static oracle.kubernetes.operator.ProcessingConstants.DELEGATE_COMPONENT_NAME;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
 
 /**
@@ -101,11 +99,6 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
   @Override
   public void runSteps(Packet packet, Step firstStep, Runnable completionCallback) {
     testSupport.runSteps(packet, firstStep);
-  }
-
-  @Override
-  public void addToPacket(Packet packet) {
-    packet.put(DELEGATE_COMPONENT_NAME, this);
   }
 
   @Override

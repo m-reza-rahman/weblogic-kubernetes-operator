@@ -9,18 +9,21 @@ import java.util.List;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ResourceRule;
 import io.kubernetes.client.openapi.models.V1SelfSubjectRulesReview;
 import io.kubernetes.client.openapi.models.V1SubjectRulesReviewStatus;
-import oracle.kubernetes.operator.ClientFactoryStub;
+import oracle.kubernetes.operator.calls.ClientFactoryStub;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Operation;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.utils.TestUtils;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.util.Collections.singletonList;
 import static oracle.kubernetes.common.logging.MessageKeys.DOMAIN_UID_UNIQUENESS_FAILED;
 import static oracle.kubernetes.common.logging.MessageKeys.PV_ACCESS_MODE_FAILED;
@@ -39,6 +42,8 @@ import static oracle.kubernetes.operator.helpers.AuthorizationProxy.Operation.WA
 import static org.hamcrest.MatcherAssert.assertThat;
 
 class HealthCheckHelperTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   // The log messages to be checked during this test
   private static final String[] LOG_KEYS = {
@@ -97,15 +102,14 @@ class HealthCheckHelperTest {
 
   private final List<Memento> mementos = new ArrayList<>();
   private final List<LogRecord> logRecords = new ArrayList<>();
-  private final CallTestSupport testSupport = new CallTestSupport();
+  private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
   private final AccessChecks accessChecks = new AccessChecks();
 
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(TuningParametersStub.install());
     mementos.add(TestUtils.silenceOperatorLogger().collectLogMessages(logRecords, LOG_KEYS));
-    mementos.add(ClientFactoryStub.install());
-    mementos.add(testSupport.installSynchronousCallDispatcher());
+    mementos.add(testSupport.install(wireMockRule));
   }
 
   @AfterEach

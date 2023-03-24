@@ -24,6 +24,7 @@ import io.kubernetes.client.util.Watch;
 import oracle.kubernetes.operator.DomainProcessorDelegateStub;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.DomainProcessorTestSetup;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.builders.WatchEvent;
 import oracle.kubernetes.operator.http.rest.ScanCacheStub;
 import oracle.kubernetes.operator.introspection.IntrospectionTestUtils;
@@ -117,7 +118,8 @@ class PodPresenceTest {
     packet.put(CLUSTER_NAME, CLUSTER);
     packet.put(SERVER_NAME, SERVER);
     packet.put(SERVER_SCAN, configSupport.createDomainConfig().getServerConfig(SERVER));
-    packet.with(processorDelegate).with(info);
+    packet.put(ProcessingConstants.DOMAIN_PROCESSOR, processorDelegate);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, info);
 
     numPodsDeleted = 0;
   }

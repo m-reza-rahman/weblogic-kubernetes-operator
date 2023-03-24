@@ -78,12 +78,9 @@ class HttpResponseStepTest {
 
   @Test
   void whenNoResponseProvided_skipProcessing() {
-    Void nextAction = responseStep.apply(new Packet());
+    responseStep.apply(new Packet());
 
     assertThat(responseStep.getSuccessResponse(), nullValue());
     assertThat(responseStep.getFailureResponse(), nullValue());
-    assertThat(nextAction.getNext(), sameInstance(terminalStep));
   }
-
-  // todo when response is failure, invoke onFailure
 }

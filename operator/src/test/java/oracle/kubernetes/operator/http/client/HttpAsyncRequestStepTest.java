@@ -40,6 +40,7 @@ import static oracle.kubernetes.common.utils.LogMatcher.containsFine;
 import static oracle.kubernetes.common.utils.LogMatcher.containsWarning;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
+import static oracle.kubernetes.operator.http.client.HttpResponseStep.RESPONSE;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -139,7 +140,8 @@ class HttpAsyncRequestStepTest {
   @Test
   void whenThrowableResponseReceivedAndServerNotShuttingDownAndFailureCountExceedsThreshold_logMessage() {
     collectHttpWarningMessage();
-    createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 11).addToPacket(packet);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO,
+        createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 11));
 
     final Void nextAction = requestStep.apply(packet);
 
@@ -167,7 +169,7 @@ class HttpAsyncRequestStepTest {
     collectHttpWarningMessage();
     DomainPresenceInfo info = createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 0);
     info.setServerPodBeingDeleted(MANAGED_SERVER1, true);
-    info.addToPacket(packet);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, info);
     final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
@@ -178,8 +180,8 @@ class HttpAsyncRequestStepTest {
   @Test
   void whenThrowableResponseReceivedAndPodHasDeletionTimestamp_dontLogMessage() {
     collectHttpWarningMessage();
-    createDomainPresenceInfo(new V1Pod()
-        .metadata(new V1ObjectMeta().deletionTimestamp(OffsetDateTime.now())), 0).addToPacket(packet);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO,
+      createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta().deletionTimestamp(OffsetDateTime.now())), 0));
     final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
@@ -190,7 +192,8 @@ class HttpAsyncRequestStepTest {
   @Test
   void whenThrowableResponseReceivedServerNotShuttingDownAndFailureCountLowerThanThreshold_dontLogMessage() {
     collectHttpWarningMessage();
-    createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 0).addToPacket(packet);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO,
+      createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 0));
     final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
@@ -258,7 +261,7 @@ class HttpAsyncRequestStepTest {
 
   @SuppressWarnings("unchecked")
   private HttpResponse<String> getResponse() {
-    return packet.getSpi(HttpResponse.class);
+    return (HttpResponse) packet.get(RESPONSE);
   }
 
   abstract static class TestFiber implements AsyncFiber {

@@ -3,34 +3,28 @@
 
 package oracle.kubernetes.operator.builders;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Queue;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
-import com.meterware.simplestub.StaticStubSupport;
-import io.kubernetes.client.openapi.ApiClient;
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
-import oracle.kubernetes.operator.ClientFactoryStub;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.NoopWatcherStarter;
-import oracle.kubernetes.operator.calls.Client;
+import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.net.HttpURLConnection.HTTP_ENTITY_TOO_LARGE;
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
@@ -42,30 +36,31 @@ import static oracle.kubernetes.operator.builders.EventMatcher.modifyEvent;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests watches created by the WatchBuilder, verifying that they are created with the correct query
  * URLs and handle responses correctly.
  */
 class WatchBuilderTest {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
   private static final String API_VERSION = "weblogic.oracle/" + KubernetesConstants.DOMAIN_VERSION;
   private static final String NAMESPACE = "testspace";
   private static final int INITIAL_RESOURCE_VERSION = 123;
   private static final String BOOKMARK_RESOURCE_VERSION = "456";
+
+  private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
+
   private int resourceVersion = INITIAL_RESOURCE_VERSION;
   private final List<Memento> mementos = new ArrayList<>();
 
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(TestUtils.silenceOperatorLogger());
-    mementos.add(ClientPoolStub.install());
-    mementos.add(ClientFactoryStub.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(StubWatchFactory.install());
     mementos.add(NoopWatcherStarter.install());
   }
@@ -150,30 +145,6 @@ class WatchBuilderTest {
   @SuppressWarnings("SameParameterValue")
   private Watch.Response<Object> createErrorResponse(int statusCode) {
     return WatchEvent.createErrorEvent(statusCode).toWatchResponse();
-  }
-
-  @Test
-  void afterWatchClosed_returnClientToPool() throws Exception {
-    DomainResource domain =
-        new DomainResource()
-            .withApiVersion(API_VERSION)
-            .withKind("Domain")
-            .withMetadata(createMetaData("domain1", NAMESPACE));
-    StubWatchFactory.addKubernetesApiResponses(createAddResponse(domain));
-
-    try (Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE)) {
-      domainWatch.next();
-    }
-
-    assertThat(ClientPoolStub.getPooledClients(), not(empty()));
-  }
-
-  @Test
-  void afterWatchError_closeDoesNotReturnClientToPool() throws ApiException {
-    Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
-    assertThrows(NoSuchElementException.class, domainWatch::next);
-
-    assertThat(ClientPoolStub.getPooledClients(), is(empty()));
   }
 
   @Test
@@ -268,23 +239,5 @@ class WatchBuilderTest {
 
   private String getNextResourceVersion() {
     return Integer.toString(resourceVersion++);
-  }
-
-  static class ClientPoolStub extends Client {
-    private static Queue<ApiClient> queue;
-
-    static Memento install() throws NoSuchFieldException {
-      queue = new ArrayDeque<>();
-      return StaticStubSupport.install(Client.class, "singleton", new ClientPoolStub());
-    }
-
-    static Collection<ApiClient> getPooledClients() {
-      return Collections.unmodifiableCollection(queue);
-    }
-
-    @Override
-    protected Queue<ApiClient> getQueue() {
-      return queue;
-    }
   }
 }

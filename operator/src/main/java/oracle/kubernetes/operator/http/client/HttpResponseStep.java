@@ -17,8 +17,8 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAUTHORIZED;
 
 public abstract class HttpResponseStep extends Step {
-  private static final String RESPONSE = "httpResponse";
-  private static final String THROWABLE = "httpThrowable";
+  public static final String RESPONSE = "httpResponse";
+  public static final String THROWABLE = "httpThrowable";
 
   private Consumer<HttpResponse<?>> callback;
 

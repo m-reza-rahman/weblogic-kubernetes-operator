@@ -38,7 +38,6 @@ import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.createTestDomain;
-import static oracle.kubernetes.operator.ProcessingConstants.DELEGATE_COMPONENT_NAME;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.POD;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -213,11 +212,6 @@ class StuckPodTest {
     @Override
     public void runSteps(Packet packet, Step firstStep,  Runnable completionAction) {
       testSupport.runSteps(packet, firstStep);
-    }
-
-    @Override
-    public void addToPacket(Packet packet) {
-      packet.put(DELEGATE_COMPONENT_NAME, this);
     }
 
     @Override

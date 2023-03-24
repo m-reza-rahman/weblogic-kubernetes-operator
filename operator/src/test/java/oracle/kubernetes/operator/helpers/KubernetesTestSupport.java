@@ -4,6 +4,7 @@
 package oracle.kubernetes.operator.helpers;
 
 import java.util.List;
+import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
@@ -34,6 +35,7 @@ import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
 import okhttp3.internal.http2.ErrorCode;
 import okhttp3.internal.http2.StreamResetException;
+import oracle.kubernetes.operator.calls.ClientFactoryStub;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -131,6 +133,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   @SuppressWarnings("unchecked")
   public <T> List<T> getResources(String resourceType) {
     // TODO
+    return null;
   }
 
   /**
@@ -159,8 +162,40 @@ public class KubernetesTestSupport extends FiberTestSupport {
     // TODO
   }
 
+  /**
+   * delete resources.
+   * @param resources resources.
+   * @param <T> type
+   */
+  @SafeVarargs
+  public final <T> void deleteResources(T... resources) {
+    for (T resource : resources) {
+      // TODO
+    }
+  }
+
   public void definePodLog(String name, String namespace, Object contents) {
     // TODO
+  }
+
+  /**
+   * Deletes the specified namespace and all resources in that namespace.
+   * @param namespaceName the name of the namespace to delete
+   */
+  public void deleteNamespace(String namespaceName) {
+    // TODO
+  }
+
+  public void doOnCreate(String resourceType, Consumer<?> consumer) {
+    // FIXME
+  }
+
+  public void doOnUpdate(String resourceType, Consumer<?> consumer) {
+    // FIXME
+  }
+
+  public void doOnDelete(String resourceType, Consumer<Integer> consumer) {
+    // FIXME
   }
 
   /**
@@ -291,17 +326,46 @@ public class KubernetesTestSupport extends FiberTestSupport {
     // TODO
   }
 
+  /**
+   * Specifies that status replacement operation should respond with a null result if it matches the specified
+   * conditions. Applies to domain resources.
+   *
+   * @param resourceType the type of resource
+   * @param name the name of the resource
+   * @param namespace the namespace containing the resource
+   */
+  public void returnEmptyResult(String resourceType, String name, String namespace) {
+    // TODO
+  }
+
+  /**
+   * Specifies that a read operation should respond with a null result if it matches the specified conditions.
+   * Applies to domain resources.
+   *
+   * @param resourceType the type of resource
+   * @param name the name of the resource
+   * @param namespace the namespace containing the resource
+   */
+  public void returnEmptyResultOnRead(String resourceType, String name, String namespace) {
+    // TODO
+  }
+
   private class KubernetesTestSupportMemento implements Memento {
+    Memento clientFactory;
 
     public KubernetesTestSupportMemento(WireMockRule rule) {
-      CallBuilder.setStepFactory(new AsyncRequestStepFactoryImpl());
-      CallBuilder.setCallDispatcher(new CallDispatcherImpl());
+      try {
+        clientFactory = ClientFactoryStub.install(rule);
+      } catch (NoSuchFieldException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Override
     public void revert() {
-      CallBuilder.resetStepFactory();
-      CallBuilder.resetCallDispatcher();
+      if (clientFactory != null) {
+        clientFactory.revert();
+      }
     }
 
     @Override

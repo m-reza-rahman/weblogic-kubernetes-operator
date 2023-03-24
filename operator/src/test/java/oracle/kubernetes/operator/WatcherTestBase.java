@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -15,15 +16,19 @@ import io.kubernetes.client.util.Watch;
 import oracle.kubernetes.common.utils.BaseTestUtils;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
 import oracle.kubernetes.operator.builders.WatchEvent;
+import oracle.kubernetes.operator.calls.ClientFactoryStub;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
+import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.tuning.FakeWatchTuning;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
+import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.net.HttpURLConnection.HTTP_GONE;
 import static oracle.kubernetes.operator.builders.EventMatcher.addEvent;
 import static oracle.kubernetes.operator.builders.EventMatcher.modifyEvent;
@@ -38,9 +43,14 @@ import static org.hamcrest.Matchers.hasEntry;
 /** Tests behavior of the Watcher class. */
 @SuppressWarnings("SameParameterValue")
 public abstract class WatcherTestBase extends ThreadFactoryTestBase implements AllWatchesClosedListener {
+  @Rule
+  public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
   private static final BigInteger NEXT_RESOURCE_VERSION = new BigInteger("214748364705");
   private static final BigInteger INITIAL_RESOURCE_VERSION = new BigInteger("214748364700");
   private static final String NAMESPACE = "testspace";
+
+  private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
 
   private final RuntimeException hasNextException = new RuntimeException(Watcher.HAS_NEXT_EXCEPTION_MESSAGE);
   private final List<Memento> mementos = new ArrayList<>();
@@ -78,7 +88,7 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
   public void setUp() throws Exception {
     mementos.add(configureOperatorLogger());
     mementos.add(StubWatchFactory.install());
-    mementos.add(ClientFactoryStub.install());
+    mementos.add(testSupport.install(wireMockRule));
     mementos.add(TuningParametersStub.install());
     mementos.add(TestStepFactory.install());
 
