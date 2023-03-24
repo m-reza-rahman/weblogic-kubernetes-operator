@@ -20,6 +20,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodStatus;
+import oracle.kubernetes.operator.calls.ClientFactoryStub;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
@@ -63,7 +64,6 @@ class ServerStatusReaderTest extends HttpUserAgentTest {
     mementos.add(execFactory.install());
     mementos.add(StaticStubSupport.install(ServerStatusReader.class, "stepFactory", stepFactory));
     mementos.add(TuningParametersStub.install());
-    mementos.add(ClientFactoryStub.install());
 
     testSupport.addDomainPresenceInfo(info);
   }

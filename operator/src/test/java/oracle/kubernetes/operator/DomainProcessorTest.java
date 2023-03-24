@@ -2487,7 +2487,9 @@ class DomainProcessorTest {
 
   /**/
   private V1Pod createServerPod(String serverName, String clusterName) {
-    Packet packet = new Packet().with(processorDelegate).with(originalInfo);
+    Packet packet = new Packet();
+    packet.put(ProcessingConstants.DOMAIN_PROCESSOR, processorDelegate);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, originalInfo);
     packet.put(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig);
 
     if (ADMIN_NAME.equals(serverName)) {

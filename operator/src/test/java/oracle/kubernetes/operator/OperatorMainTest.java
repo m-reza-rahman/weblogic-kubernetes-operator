@@ -1418,11 +1418,6 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     }
 
     @Override
-    public void addToPacket(Packet packet) {
-      packet.put(DELEGATE_COMPONENT_NAME, this);
-    }
-
-    @Override
     public DomainProcessor getDomainProcessor() {
       return createNiceStub(DomainProcessor.class);
     }
