@@ -26,6 +26,7 @@ import io.kubernetes.client.openapi.models.V1OwnerReference;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
+import io.kubernetes.client.openapi.models.V1StatusBuilder;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
@@ -450,13 +451,13 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
 
     runServiceHelper();
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test
   void whenServiceCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(SERVICE, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(SERVICE, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage(FAILURE_MESSAGE)
         .build());
@@ -470,7 +471,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
   @Test
   void whenServiceCreationFailsDueToUnprocessableEntityFailure_createFailedEventWithKubernetesReason() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(SERVICE, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(SERVICE, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage(FAILURE_MESSAGE)
         .build());
@@ -501,7 +502,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
   @Test
   void whenServiceCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(SERVICE, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(SERVICE, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage(FAILURE_MESSAGE)
         .build());

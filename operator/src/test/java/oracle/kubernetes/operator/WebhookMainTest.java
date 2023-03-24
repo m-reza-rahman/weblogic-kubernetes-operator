@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.AdmissionregistrationV1ServiceReference;
 import io.kubernetes.client.openapi.models.AdmissionregistrationV1WebhookClientConfig;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
@@ -410,7 +411,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
         not(containsInfo(VALIDATING_WEBHOOK_CONFIGURATION_CREATED).withParams(VALIDATING_WEBHOOK_NAME)));
     assertThat(logRecords,
         containsInfo(READ_VALIDATING_WEBHOOK_CONFIGURATION_FAILED).withParams(VALIDATING_WEBHOOK_NAME));
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test
@@ -521,7 +522,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
         not(containsInfo(VALIDATING_WEBHOOK_CONFIGURATION_CREATED).withParams(VALIDATING_WEBHOOK_NAME)));
     assertThat(logRecords,
         containsInfo(CREATE_VALIDATING_WEBHOOK_CONFIGURATION_FAILED).withParams(VALIDATING_WEBHOOK_NAME));
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test
@@ -605,7 +606,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
     logRecords.clear();
     assertThat(logRecords,
         not(containsInfo(REPLACE_VALIDATING_WEBHOOK_CONFIGURATION_FAILED).withParams(VALIDATING_WEBHOOK_NAME)));
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test

@@ -56,6 +56,7 @@ import io.kubernetes.client.openapi.models.V1Probe;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretKeySelector;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
+import io.kubernetes.client.openapi.models.V1StatusBuilder;
 import io.kubernetes.client.openapi.models.V1Toleration;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
@@ -1668,7 +1669,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   public void whenPodCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
-    testSupport.failOnCreate(POD, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(POD, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage("Test this failure")
         .build());
@@ -1681,7 +1682,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   public void whenPodCreationFailsDueToUnprocessableEntityFailure_createFailedKubernetesEvent() {
-    testSupport.failOnCreate(POD, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(POD, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage("Test this failure")
         .build());
@@ -1697,7 +1698,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenPodCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
-    testSupport.failOnCreate(POD, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(POD, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage("Test this failure")
         .build());
