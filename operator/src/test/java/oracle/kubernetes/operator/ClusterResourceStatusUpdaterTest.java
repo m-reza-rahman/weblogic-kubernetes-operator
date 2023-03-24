@@ -172,7 +172,7 @@ class ClusterResourceStatusUpdaterTest {
 
     updateClusterResourceStatus();
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test

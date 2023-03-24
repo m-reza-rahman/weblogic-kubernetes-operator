@@ -17,6 +17,7 @@ import io.kubernetes.client.openapi.models.V1LabelSelector;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1OwnerReference;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
+import io.kubernetes.client.openapi.models.V1StatusBuilder;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
@@ -207,7 +208,7 @@ class PodDisruptionBudgetHelperTest {
 
     runPodDisruptionBudgetHelper();
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test
@@ -240,7 +241,7 @@ class PodDisruptionBudgetHelperTest {
   @Test
   void whenPodDisruptionBudgetCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, new V1StatusBuilder()
             .withReason("FieldValueNotFound")
             .withMessage("Test this failure")
             .build());
@@ -254,7 +255,7 @@ class PodDisruptionBudgetHelperTest {
   @Test
   void whenPodDisruptionBudgetCreationFailsDueToUnprocessableEntityFailure_generateFailedEvent() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage("Test this failure")
         .build());
@@ -271,7 +272,7 @@ class PodDisruptionBudgetHelperTest {
   @Test
   void whenPodDisruptionBudgetCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, new V1StatusBuilder()
             .withReason("FieldValueNotFound")
             .withMessage("Test this failure")
             .build());

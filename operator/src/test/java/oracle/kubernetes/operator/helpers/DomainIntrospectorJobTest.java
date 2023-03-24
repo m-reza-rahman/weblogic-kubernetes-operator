@@ -42,6 +42,7 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
+import io.kubernetes.client.openapi.models.V1StatusBuilder;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.common.utils.SchemaConversionUtils;
@@ -1245,7 +1246,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenPodCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
-    testSupport.failOnCreate(JOB, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(JOB, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage("Test this failure")
         .build());
@@ -1258,7 +1259,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenPodCreationFailsDueToUnprocessableEntityFailure_generateFailedEvent() {
-    testSupport.failOnCreate(JOB, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(JOB, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage("Test this failure")
         .build());
@@ -1278,7 +1279,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenPodCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
-    testSupport.failOnCreate(JOB, NS, new UnrecoverableErrorBuilderImpl()
+    testSupport.failOnCreate(JOB, NS, new V1StatusBuilder()
         .withReason("FieldValueNotFound")
         .withMessage("Test this failure")
         .build());

@@ -31,6 +31,7 @@ import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
+import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
 import okhttp3.internal.http2.ErrorCode;
@@ -241,9 +242,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
    *
    * @param resourceType the type of resource
    * @param namespace the namespace containing the resource
-   * @param apiException the Kubernetes exception to associate with the failure
+   * @param status the Kubernetes status to associate with the failure
    */
-  public void failOnCreate(String resourceType, String namespace, ApiException apiException) {
+  public void failOnCreate(String resourceType, String namespace, V1Status status) {
     // TODO
   }
 
@@ -320,9 +321,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
    * @param resourceType the type of resource
    * @param name the name of the resource
    * @param namespace the namespace containing the resource
-   * @param apiException the kubernetes failure to associate with the failure
+   * @param status the status to associate with the failure
    */
-  public void failOnResource(@Nonnull String resourceType, String name, String namespace, ApiException apiException) {
+  public void failOnResource(@Nonnull String resourceType, String name, String namespace, V1Status status) {
     // TODO
   }
 
