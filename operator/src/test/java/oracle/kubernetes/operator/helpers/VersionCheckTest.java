@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.VersionInfo;
-import oracle.kubernetes.operator.calls.ClientFactoryStub;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.utils.TestUtils;
 import org.hamcrest.Description;

@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.utils.TestUtils;
 import org.junit.Rule;

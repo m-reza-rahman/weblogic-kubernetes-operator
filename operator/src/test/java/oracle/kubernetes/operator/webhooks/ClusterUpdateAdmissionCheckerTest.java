@@ -3,7 +3,7 @@
 
 package oracle.kubernetes.operator.webhooks;
 
-import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.webhooks.resource.ClusterUpdateAdmissionChecker;
 import org.junit.jupiter.api.Test;
 

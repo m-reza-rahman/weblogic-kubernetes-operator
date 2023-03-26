@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Service;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
 import org.junit.Rule;
@@ -15,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.SERVICE;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.SERVICE;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;

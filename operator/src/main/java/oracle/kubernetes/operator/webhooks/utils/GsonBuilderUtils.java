@@ -13,6 +13,7 @@ import com.google.gson.ToNumberPolicy;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.kubernetes.client.openapi.models.V1Scale;
 import oracle.kubernetes.operator.helpers.GsonOffsetDateTime;
 import oracle.kubernetes.operator.webhooks.model.AdmissionReview;
 import oracle.kubernetes.operator.webhooks.model.ConversionReviewModel;
@@ -62,8 +63,8 @@ public class GsonBuilderUtils {
     return getGsonBuilder().fromJson(resourceName, Scale.class);
   }
 
-  public static Map<String, Object> writeScaleToMap(Scale scale) {
-    return readMap(getGsonBuilder().toJson(scale, Scale.class));
+  public static Map<String, Object> writeScaleToMap(V1Scale scale) {
+    return readMap(getGsonBuilder().toJson(scale, V1Scale.class));
   }
 
   public static String writeMap(Map<String, Object> map) {

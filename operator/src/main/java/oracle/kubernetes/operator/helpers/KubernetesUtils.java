@@ -9,7 +9,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.kubernetes.client.common.KubernetesListObject;
-import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.models.V1ListMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import jakarta.json.JsonPatchBuilder;
@@ -88,30 +87,6 @@ public class KubernetesUtils {
       } else {
         patchBuilder.replace(encodedPath, entry.getValue());
       }
-    }
-  }
-
-  /**
-   * Returns the name of the resource, extracted from its metadata.
-   *
-   * @param resource a Kubernetes resource
-   * @return the name, if found
-   */
-  static String getResourceName(Object resource) {
-    return Optional.ofNullable(getResourceMetadata(resource)).map(V1ObjectMeta::getName).orElse(null);
-  }
-
-  /**
-   * Returns the metadata of the resource.
-   *
-   * @param resource a Kubernetes resource
-   * @return the metadata, if found; otherwise a newly created one.
-   */
-  static V1ObjectMeta getResourceMetadata(Object resource) {
-    if (resource instanceof KubernetesObject) {
-      return ((KubernetesObject) resource).getMetadata();
-    } else {
-      return new V1ObjectMeta();
     }
   }
 

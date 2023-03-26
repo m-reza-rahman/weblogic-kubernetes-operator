@@ -22,17 +22,21 @@ public class Client {
 
   private static final AtomicReference<ApiClient> singleton = new AtomicReference<>();
 
+  /**
+   * Get Kubernetes API client instance, creating if necessary.
+   * @return API client
+   */
   public static ApiClient getInstance() {
     return singleton.getAndUpdate(c -> {
       if (c != null) {
         return c;
       }
       try {
-      LOGGER.fine(MessageKeys.CREATING_API_CLIENT);
-      ApiClient client = factory.get();
-      Monitoring.installMetrics(client);
-      Configuration.setDefaultApiClient(client);
-      return client;
+        LOGGER.fine(MessageKeys.CREATING_API_CLIENT);
+        ApiClient client = factory.get();
+        Monitoring.installMetrics(client);
+        Configuration.setDefaultApiClient(client);
+        return client;
       } catch (IOException e) {
         LOGGER.warning(MessageKeys.EXCEPTION, e);
         throw new RuntimeException(e);

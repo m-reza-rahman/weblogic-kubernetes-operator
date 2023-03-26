@@ -7,7 +7,7 @@ import java.util.Collections;
 
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.operator.DomainSourceType;
-import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.webhooks.resource.ClusterUpdateAdmissionChecker;
 import oracle.kubernetes.operator.webhooks.resource.DomainUpdateAdmissionChecker;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;

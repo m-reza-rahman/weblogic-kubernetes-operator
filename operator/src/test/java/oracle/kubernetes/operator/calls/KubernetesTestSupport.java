@@ -1,15 +1,18 @@
 // Copyright (c) 2019, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator.helpers;
+package oracle.kubernetes.operator.calls;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.simplestub.Memento;
+import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
@@ -19,6 +22,7 @@ import io.kubernetes.client.openapi.models.V1JobList;
 import io.kubernetes.client.openapi.models.V1ListMeta;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1NamespaceList;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolume;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
@@ -36,12 +40,16 @@ import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
 import okhttp3.internal.http2.ErrorCode;
 import okhttp3.internal.http2.StreamResetException;
-import oracle.kubernetes.operator.calls.ClientFactoryStub;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 
 @SuppressWarnings("WeakerAccess")
 public class KubernetesTestSupport extends FiberTestSupport {
@@ -132,7 +140,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   @SuppressWarnings("unchecked")
-  public <T> List<T> getResources(String resourceType) {
+  public <T extends KubernetesObject> List<T> getResources(String resourceType) {
     // TODO
     return null;
   }
@@ -148,9 +156,19 @@ public class KubernetesTestSupport extends FiberTestSupport {
   public <T> T getResourceWithName(String resourceType, String name) {
     return (T)
         getResources(resourceType).stream()
-            .filter(o -> name.equals(KubernetesUtils.getResourceName(o)))
+            .filter(o -> name.equals(getResourceName(o)))
             .findFirst()
             .orElse(null);
+  }
+
+  private String getResourceName(KubernetesObject resource) {
+    return Optional.ofNullable(resource).map(KubernetesObject::getMetadata)
+        .map(V1ObjectMeta::getName).orElse(null);
+  }
+
+  private String getNamespace(KubernetesObject resource) {
+    return Optional.ofNullable(resource).map(KubernetesObject::getMetadata)
+        .map(V1ObjectMeta::getNamespace).orElse("default");
   }
 
   /**
@@ -159,8 +177,19 @@ public class KubernetesTestSupport extends FiberTestSupport {
    * @param <T> type
    */
   @SafeVarargs
-  public final <T> void defineResources(T... resources) {
-    // TODO
+  public final <T extends KubernetesObject> void defineResources(T... resources) {
+    JSON json = Client.getInstance().getJSON();
+    for (KubernetesObject ko : resources) {
+      RequestBuilder<?, ?> builder = RequestBuilder.lookupByType(ko.getClass());
+      String path =
+          "/apis/" + builder.getApiGroup() + "/" + builder.getApiVersion()
+              + "/namespaces/" + getNamespace(ko) + "/"
+              + builder.getResourcePlural() + "/" + getResourceName(ko);
+      stubFor(get(urlEqualTo(path))
+          .willReturn(aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withBody(json.serialize(ko))));
+    }
   }
 
   /**

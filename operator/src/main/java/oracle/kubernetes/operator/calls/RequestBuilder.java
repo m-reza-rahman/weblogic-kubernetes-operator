@@ -3,6 +3,8 @@
 
 package oracle.kubernetes.operator.calls;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 
 import io.kubernetes.client.common.KubernetesListObject;
@@ -49,6 +51,21 @@ import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
 public class RequestBuilder<A extends KubernetesObject, L extends KubernetesListObject> {
+  private static final Map<Class<? extends KubernetesObject>, RequestBuilder<?, ?>> REQUEST_BUILDER_MAP
+      = new HashMap<>();
+  private static final Map<Class<? extends KubernetesListObject>, RequestBuilder<?, ?>> REQUEST_BUILDER_LIST_MAP
+      = new HashMap<>();
+
+  @SuppressWarnings("unchecked")
+  static <X extends KubernetesObject> RequestBuilder<X, ?> lookupByType(Class<X> type) {
+    return (RequestBuilder<X, ?>) REQUEST_BUILDER_MAP.get(type);
+  }
+
+  @SuppressWarnings("unchecked")
+  static <X extends KubernetesListObject> RequestBuilder<?, X> lookupByListType(Class<X> type) {
+    return (RequestBuilder<?, X>) REQUEST_BUILDER_LIST_MAP.get(type);
+  }
+
   public static final RequestBuilder<DomainResource, DomainList> DOMAIN =
       new RequestBuilder<>(DomainResource.class, DomainList.class, "weblogic.oracle", "v9", "domains");
   public static final RequestBuilder<ClusterResource, ClusterList> CLUSTER =
@@ -105,6 +122,23 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
     this.resourcePlural = resourcePlural;
     this.apiTypeClass = apiTypeClass;
     this.apiListTypeClass = apiListTypeClass;
+
+    REQUEST_BUILDER_MAP.put(apiTypeClass, this);
+    if (!KubernetesListObject.class.equals(apiListTypeClass)) {
+      REQUEST_BUILDER_LIST_MAP.put(apiListTypeClass, this);
+    }
+  }
+
+  String getApiGroup() {
+    return apiGroup;
+  }
+
+  String getApiVersion() {
+    return apiVersion;
+  }
+
+  String getResourcePlural() {
+    return resourcePlural;
   }
 
   /**
