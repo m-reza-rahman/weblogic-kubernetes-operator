@@ -11,11 +11,11 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.CoreV1Event;
-import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.EVENT;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.EVENT;
 import static oracle.kubernetes.utils.OperatorUtils.joinListGrammatically;
 
 public class EventMatcher extends TypeSafeDiagnosingMatcher<KubernetesTestSupport> {

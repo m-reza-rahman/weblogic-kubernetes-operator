@@ -15,6 +15,7 @@ import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionVersion;
 import oracle.kubernetes.operator.KubernetesConstants;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
 import oracle.kubernetes.utils.TestUtils;

@@ -3,15 +3,12 @@
 
 package oracle.kubernetes.operator.http.client;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
@@ -23,8 +20,6 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
-import oracle.kubernetes.operator.work.AsyncFiber;
-import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
@@ -36,15 +31,11 @@ import static com.meterware.simplestub.Stub.createStub;
 import static oracle.kubernetes.common.logging.MessageKeys.HTTP_METHOD_FAILED;
 import static oracle.kubernetes.common.logging.MessageKeys.HTTP_REQUEST_GOT_THROWABLE;
 import static oracle.kubernetes.common.logging.MessageKeys.HTTP_REQUEST_TIMED_OUT;
-import static oracle.kubernetes.common.utils.LogMatcher.containsFine;
 import static oracle.kubernetes.common.utils.LogMatcher.containsWarning;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.http.client.HttpResponseStep.RESPONSE;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.typeCompatibleWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -128,7 +119,7 @@ class HttpAsyncRequestStepTest {
   void whenThrowableResponseReceivedAndPodHasDeletionTimestamp_dontLogMessage() {
     collectHttpWarningMessage();
     packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO,
-      createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta().deletionTimestamp(OffsetDateTime.now())), 0));
+        createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta().deletionTimestamp(OffsetDateTime.now())), 0));
     final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));
@@ -140,7 +131,7 @@ class HttpAsyncRequestStepTest {
   void whenThrowableResponseReceivedServerNotShuttingDownAndFailureCountLowerThanThreshold_dontLogMessage() {
     collectHttpWarningMessage();
     packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO,
-      createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 0));
+        createDomainPresenceInfo(new V1Pod().metadata(new V1ObjectMeta()), 0));
     final Void nextAction = requestStep.apply(packet);
 
     completeWithThrowableBeforeTimeout(nextAction, new Throwable("Test"));

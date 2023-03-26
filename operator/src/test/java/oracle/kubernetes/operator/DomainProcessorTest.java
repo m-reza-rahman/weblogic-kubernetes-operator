@@ -58,12 +58,12 @@ import io.kubernetes.client.openapi.models.V1ServiceSpec;
 import io.kubernetes.client.util.Watch.Response;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.AnnotationHelper;
 import oracle.kubernetes.operator.helpers.ClusterPresenceInfo;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
-import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.PodHelper;
@@ -146,6 +146,13 @@ import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SUSPENDING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.UNKNOWN_STATE;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.CONFIG_MAP;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.DOMAIN;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.EVENT;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.JOB;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.POD;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.SECRET;
+import static oracle.kubernetes.operator.calls.KubernetesTestSupport.SERVICE;
 import static oracle.kubernetes.operator.helpers.AffinityHelper.getDefaultAntiAffinity;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.CLUSTER_CHANGED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.CLUSTER_CREATED;
@@ -153,13 +160,6 @@ import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.CLUSTER_D
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_CHANGED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_CREATED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_DELETED;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CONFIG_MAP;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.DOMAIN;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.EVENT;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.JOB;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.POD;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.SECRET;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.SERVICE;
 import static oracle.kubernetes.operator.helpers.SecretHelper.PASSWORD_KEY;
 import static oracle.kubernetes.operator.helpers.SecretHelper.USERNAME_KEY;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIGMAP_NAME_SUFFIX;
@@ -1705,8 +1705,8 @@ class DomainProcessorTest {
   private void createJobPodAndSetCompletedStatus(V1Job job) {
     Map<String, String> labels = new HashMap<>();
     labels.put(LabelConstants.JOBNAME_LABEL, getJobName());
-    testSupport.defineResources(POD,
-            new V1Pod().metadata(new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS)));
+    testSupport.defineResources(
+        new V1Pod().metadata(new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS)));
     job.setStatus(createCompletedStatus());
   }
 

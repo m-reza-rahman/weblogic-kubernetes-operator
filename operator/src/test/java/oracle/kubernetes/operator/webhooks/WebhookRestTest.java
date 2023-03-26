@@ -19,11 +19,12 @@ import java.util.stream.Collectors;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
+import io.kubernetes.client.openapi.models.V1Scale;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.http.rest.RestConfig;
 import oracle.kubernetes.operator.http.rest.RestTestBase;
 import oracle.kubernetes.operator.http.rest.backend.RestBackend;
@@ -35,7 +36,6 @@ import oracle.kubernetes.operator.webhooks.model.ConversionRequest;
 import oracle.kubernetes.operator.webhooks.model.ConversionResponse;
 import oracle.kubernetes.operator.webhooks.model.ConversionReviewModel;
 import oracle.kubernetes.operator.webhooks.model.Result;
-import oracle.kubernetes.operator.webhooks.model.Scale;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import org.hamcrest.MatcherAssert;
@@ -121,8 +121,8 @@ class WebhookRestTest extends RestTestBase {
   private final ClusterResource existingCluster = createCluster();
   private final ClusterResource proposedCluster = createCluster();
   private final ClusterResource proposedCluster2 = createCluster(CLUSTER_NAME_2);
-  private final Scale invalidScale = createScale(CLUSTER_NAME_1, "10");
-  private final Scale validScale = createScale(CLUSTER_NAME_1, "2");
+  private final V1Scale invalidScale = createScale(CLUSTER_NAME_1, 10);
+  private final V1Scale validScale = createScale(CLUSTER_NAME_1, 2);
 
   private final ConversionReviewModel conversionReview = createConversionReview();
 
@@ -555,7 +555,7 @@ class WebhookRestTest extends RestTestBase {
     clusterReview.getRequest().setObject(writeClusterToMap(cluster));
   }
 
-  private void setProposedScale(Scale scale) {
+  private void setProposedScale(V1Scale scale) {
     scaleReview.getRequest().setObject(writeScaleToMap(scale));
   }
 
