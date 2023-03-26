@@ -69,7 +69,6 @@ import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
-import oracle.kubernetes.operator.http.client.HttpAsyncTestSupport;
 import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.http.rest.Scan;
 import oracle.kubernetes.operator.http.rest.ScanCache;
@@ -164,8 +163,6 @@ import static oracle.kubernetes.operator.helpers.SecretHelper.PASSWORD_KEY;
 import static oracle.kubernetes.operator.helpers.SecretHelper.USERNAME_KEY;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIGMAP_NAME_SUFFIX;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIG_DATA_NAME;
-import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.OK_RESPONSE;
-import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.createExpectedRequest;
 import static oracle.kubernetes.operator.tuning.TuningParameters.INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionMatcher.hasCondition;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.AVAILABLE;
@@ -186,6 +183,18 @@ import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class DomainProcessorTest {
+  public static final String OK_RESPONSE =
+      "{\n"
+          + "    \"overallHealthState\": {\n"
+          + "        \"state\": \"ok\",\n"
+          + "        \"subsystemName\": null,\n"
+          + "        \"partitionName\": null,\n"
+          + "        \"symptoms\": []\n"
+          + "    },\n"
+          + "    \"state\": \"RUNNING\",\n"
+          + "    \"activationTime\": 1556759105378\n"
+          + "}";
+
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
@@ -206,7 +215,6 @@ class DomainProcessorTest {
   public static final String NEW_DOMAIN_UID = "56789";
   static long uidNum = 0;
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
-  private final HttpAsyncTestSupport httpSupport = new HttpAsyncTestSupport();
   private final KubernetesExecFactoryFake execFactoryFake = new KubernetesExecFactoryFake();
   private final DomainNamespaces domainNamespaces = new DomainNamespaces(null);
 
@@ -291,7 +299,6 @@ class DomainProcessorTest {
           .collectLogMessages(logRecords, NOT_STARTING_DOMAINUID_THREAD).withLogLevel(Level.FINE);
     mementos.add(consoleHandlerMemento);
     mementos.add(testSupport.install(wireMockRule));
-    mementos.add(httpSupport.install());
     mementos.add(execFactoryFake.install());
     mementos.add(domainProcessorTestSupport.install());
     mementos.add(TuningParametersStub.install());

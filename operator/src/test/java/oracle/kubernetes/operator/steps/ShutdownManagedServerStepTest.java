@@ -32,7 +32,6 @@ import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
-import oracle.kubernetes.operator.http.client.HttpAsyncTestSupport;
 import oracle.kubernetes.operator.http.client.HttpRequestStep;
 import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.steps.ShutdownManagedServerStep.ShutdownManagedServerProcessing;
@@ -114,7 +113,6 @@ class ShutdownManagedServerStepTest {
   private final List<LogRecord> logRecords = new ArrayList<>();
   private final List<Memento> mementos = new ArrayList<>();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final HttpAsyncTestSupport httpSupport = new HttpAsyncTestSupport();
   private final TerminalStep terminalStep = new TerminalStep();
   private final Step shutdownConfiguredManagedServer = ShutdownManagedServerStep
       .createShutdownManagedServerStep(terminalStep, CONFIGURED_MANAGED_SERVER1, configuredManagedServer1);
@@ -140,7 +138,6 @@ class ShutdownManagedServerStepTest {
         .withLogLevel(Level.FINE));
 
     mementos.add(testSupport.install(wireMockRule));
-    mementos.add(httpSupport.install());
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
     mementos.add(UnitTestHash.install());

@@ -22,7 +22,6 @@ import io.kubernetes.client.openapi.models.V1ServiceBuilder;
 import oracle.kubernetes.operator.DomainProcessorTestSetup;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.http.client.HttpAsyncTestSupport;
 import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
@@ -51,8 +50,6 @@ import static oracle.kubernetes.operator.ProcessingConstants.REMAINING_SERVERS_H
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_NAME;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_STATE_MAP;
-import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.OK_RESPONSE;
-import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.createExpectedRequest;
 import static oracle.kubernetes.operator.steps.ReadHealthStep.OVERALL_HEALTH_FOR_SERVER_OVERLOADED;
 import static oracle.kubernetes.operator.steps.ReadHealthStep.OVERALL_HEALTH_NOT_AVAILABLE;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -62,6 +59,18 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
 class ReadHealthStepTest {
+  public static final String OK_RESPONSE =
+      "{\n"
+          + "    \"overallHealthState\": {\n"
+          + "        \"state\": \"ok\",\n"
+          + "        \"subsystemName\": null,\n"
+          + "        \"partitionName\": null,\n"
+          + "        \"symptoms\": []\n"
+          + "    },\n"
+          + "    \"state\": \"RUNNING\",\n"
+          + "    \"activationTime\": 1556759105378\n"
+          + "}";
+
   @Rule
   public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
 
@@ -84,7 +93,6 @@ class ReadHealthStepTest {
   private final List<LogRecord> logRecords = new ArrayList<>();
   private final List<Memento> mementos = new ArrayList<>();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final HttpAsyncTestSupport httpSupport = new HttpAsyncTestSupport();
   private final TerminalStep terminalStep = new TerminalStep();
   private final Step readHealthStep = ReadHealthStep.createReadHealthStep(terminalStep);
   private final Map<String, ServerHealth> serverHealthMap = new HashMap<>();
@@ -107,7 +115,6 @@ class ReadHealthStepTest {
         .ignoringLoggedExceptions(CLASSCAST_EXCEPTION)
         .withLogLevel(Level.FINE));
     mementos.add(testSupport.install(wireMockRule));
-    mementos.add(httpSupport.install());
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
 

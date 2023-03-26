@@ -8,13 +8,11 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
 
 import com.meterware.simplestub.Memento;
-import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.kubernetes.operator.ProcessingConstants;
@@ -51,8 +49,6 @@ class HttpAsyncRequestStepTest {
   private final List<Memento> mementos = new ArrayList<>();
   private final HttpResponse<String> response = createStub(HttpResponseStub.class, 200);
   private HttpRequestStep requestStep;
-  private final CompletableFuture<HttpResponse<String>> responseFuture = new CompletableFuture<>();
-  private final HttpRequestStep.FutureFactory futureFactory = r -> responseFuture;
   private final Collection<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleMemento;
 
@@ -60,9 +56,7 @@ class HttpAsyncRequestStepTest {
   public void setUp() throws NoSuchFieldException {
     mementos.add(consoleMemento = TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords, HTTP_METHOD_FAILED, HTTP_REQUEST_TIMED_OUT)
-          .withLogLevel(Level.FINE)
-          .ignoringLoggedExceptions(HttpRequestStep.HttpTimeoutException.class));
-    mementos.add(StaticStubSupport.install(HttpRequestStep.class, "factory", futureFactory));
+          .withLogLevel(Level.FINE));
     mementos.add(TuningParametersStub.install());
 
     requestStep = createStep();
