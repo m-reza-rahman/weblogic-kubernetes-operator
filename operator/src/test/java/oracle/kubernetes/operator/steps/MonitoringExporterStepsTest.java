@@ -30,7 +30,6 @@ import oracle.kubernetes.operator.DomainProcessorTestSetup;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.SecretHelper;
-import oracle.kubernetes.operator.http.client.HttpAsyncTestSupport;
 import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -86,7 +85,6 @@ class MonitoringExporterStepsTest {
 
   private final List<Memento> mementos = new ArrayList<>();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final HttpAsyncTestSupport httpSupport = new HttpAsyncTestSupport();
   private final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
   private final DomainPresenceInfo info = new DomainPresenceInfo(domain);
   private final WlsDomainConfig domainConfig =
@@ -103,7 +101,6 @@ class MonitoringExporterStepsTest {
   void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger());
     mementos.add(testSupport.install(wireMockRule));
-    mementos.add(httpSupport.install());
 
     configureDomain(domain).withMonitoringExporterConfiguration(NEW_CONFIGURATION);
     domainConfig.getServerConfigs().keySet().forEach(this::defineServerPresence);
