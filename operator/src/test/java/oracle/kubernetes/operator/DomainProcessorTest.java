@@ -3,8 +3,6 @@
 
 package oracle.kubernetes.operator;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -69,7 +67,6 @@ import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
-import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.http.rest.Scan;
 import oracle.kubernetes.operator.http.rest.ScanCache;
 import oracle.kubernetes.operator.http.rest.ScanCacheStub;
@@ -104,8 +101,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static com.meterware.simplestub.Stub.createStub;
 import static java.util.logging.Level.INFO;
 import static oracle.kubernetes.common.logging.MessageKeys.ASYNC_NO_RETRY;
 import static oracle.kubernetes.common.logging.MessageKeys.JOB_CREATED;
@@ -130,7 +130,6 @@ import static oracle.kubernetes.operator.EventTestUtils.containsEventWithLabels;
 import static oracle.kubernetes.operator.IntrospectorConfigMapConstants.INTROSPECTOR_CONFIG_MAP_NAME_SUFFIX;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTER_OBSERVED_GENERATION_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
@@ -273,20 +272,20 @@ class DomainProcessorTest {
     return new V1JobStatus();
   }
 
-  private static WlsDomainConfig createDomainConfig() {
+  private WlsDomainConfig createDomainConfig() {
     return createDomainConfig(Collections.singletonList(CLUSTER), new ArrayList<>());
   }
 
-  private static WlsDomainConfig createDomainConfig(List<String> clusterNames, List<String> independentServerNames) {
+  private WlsDomainConfig createDomainConfig(List<String> clusterNames, List<String> independentServerNames) {
     WlsDomainConfig wlsDomainConfig = new WlsDomainConfig(DOMAIN_NAME)
-            .withAdminServer(ADMIN_NAME, "domain1-admin-server", 7001);
+            .withAdminServer(ADMIN_NAME, "domain1-admin-server", wireMockRule.port());
     for (String serverName : independentServerNames) {
-      wlsDomainConfig.addWlsServer(serverName, "domain-" + serverName, 8001);
+      wlsDomainConfig.addWlsServer(serverName, "domain-" + serverName, wireMockRule.port());
     }
     for (String clusterName : clusterNames) {
       WlsClusterConfig clusterConfig = new WlsClusterConfig(clusterName);
       for (String serverName : getManagedServerNames(clusterName)) {
-        clusterConfig.addServerConfig(new WlsServerConfig(serverName, "domain1-" + serverName, 8001));
+        clusterConfig.addServerConfig(new WlsServerConfig(serverName, "domain1-" + serverName, wireMockRule.port()));
       }
       wlsDomainConfig.withCluster(clusterConfig);
     }
@@ -651,19 +650,14 @@ class DomainProcessorTest {
   }
 
   private void defineServerShutdownWithHttpOkResponse() {
-    httpSupport.defineResponse(createShutdownRequest(ADMIN_NAME, 7001),
-        createStub(HttpResponseStub.class, HTTP_OK, OK_RESPONSE));
-    IntStream.range(1, 3).forEach(idx -> httpSupport.defineResponse(
-        createShutdownRequest("cluster-managed-server" + idx, 8001),
-        createStub(HttpResponseStub.class, HTTP_OK, OK_RESPONSE)));
-  }
+    stubFor(post(urlEqualTo("http://test-domain-" + ADMIN_NAME + ".namespace:" + wireMockRule.port()))
+        .willReturn(aResponse()
+            .withBody(OK_RESPONSE)));
 
-  private HttpRequest createShutdownRequest(String serverName, int portNumber) {
-    String url = "http://test-domain-" + serverName + ".namespace:" + portNumber;
-    return HttpRequest.newBuilder()
-        .uri(URI.create(url + "/management/weblogic/latest/serverRuntime/shutdown"))
-        .POST(HttpRequest.BodyPublishers.noBody())
-        .build();
+    IntStream.range(1, 3).forEach(idx ->
+        stubFor(post(urlEqualTo("http://test-domain-" + "cluster-managed-server" + idx + ".namespace:" + wireMockRule.port()))
+        .willReturn(aResponse()
+            .withBody(OK_RESPONSE))));
   }
 
   private void setManagedServerState(DomainStatus status, String suspendingState) {
@@ -728,8 +722,8 @@ class DomainProcessorTest {
   }
 
   private void makePodsHealthy() {
-    defineOKResponse(ADMIN_NAME, 7001);
-    Arrays.stream(MANAGED_SERVER_NAMES).forEach(ms -> defineOKResponse(ms, 8001));
+    defineOKResponse(ADMIN_NAME, wireMockRule.port());
+    Arrays.stream(MANAGED_SERVER_NAMES).forEach(ms -> defineOKResponse(ms, wireMockRule.port()));
   }
 
   private void makePodsReady() {
@@ -752,8 +746,11 @@ class DomainProcessorTest {
 
   @SuppressWarnings("HttpUrlsUsage")
   private void defineOKResponse(@Nonnull String serverName, int port) {
-    final String url = "http://" + UID + "-" + serverName + "." + NS + ":" + port;
-    httpSupport.defineResponse(createExpectedRequest(url), createStub(HttpResponseStub.class, HTTP_OK, OK_RESPONSE));
+    final String url = "http://" + UID + "-" + serverName + "." + NS + ":" + port
+        + "/management/weblogic/latest/serverRuntime/search";
+    stubFor(post(urlEqualTo(url))
+        .willReturn(aResponse()
+            .withBody(OK_RESPONSE)));
   }
 
   private boolean isWlsServer(V1Pod pod) {
@@ -2268,7 +2265,7 @@ class DomainProcessorTest {
             + "        sslListenPort: 7104\n"
             + "  servers:\n"
             + "    - name: \"admin-server\"\n"
-            + "      listenPort: 7001\n"
+            + "      listenPort: " + wireMockRule.port() + "\n"
             + "      listenAddress: \"domain1-admin-server\"\n"
             + "      adminPort: 7099\n"
             + "    - name: \"server1\"\n"
@@ -2362,7 +2359,7 @@ class DomainProcessorTest {
         + "        sslListenPort: 7104\n"
         + "  servers:\n"
         + "    - name: \"admin-server\"\n"
-        + "      listenPort: 7001\n"
+        + "      listenPort: " + wireMockRule.port() + "\n"
         + "      listenAddress: \"domain1-admin-server\"\n"
         + "    - name: \"server1\"\n"
         + "      listenPort: 9003\n"
@@ -2389,7 +2386,7 @@ class DomainProcessorTest {
     assertThat(getContainerReadinessPort(runningPods,"test-domain-server2"), equalTo(8004));
     assertThat(getContainerReadinessPort(runningPods,"test-domain-managed-server1"), equalTo(7104));
     assertThat(getContainerReadinessPort(runningPods,"test-domain-managed-server2"), equalTo(7104));
-    assertThat(getContainerReadinessPort(runningPods,"test-domain-admin-server"), equalTo(7001));
+    assertThat(getContainerReadinessPort(runningPods,"test-domain-admin-server"), equalTo(wireMockRule.port()));
 
     // default  is not set
     assertThat(getContainerReadinessScheme(runningPods,"test-domain-server1"),

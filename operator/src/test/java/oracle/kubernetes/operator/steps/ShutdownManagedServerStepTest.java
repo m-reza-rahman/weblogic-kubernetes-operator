@@ -3,8 +3,6 @@
 
 package oracle.kubernetes.operator.steps;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -33,7 +31,6 @@ import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
 import oracle.kubernetes.operator.http.client.HttpRequestStep;
-import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.steps.ShutdownManagedServerStep.ShutdownManagedServerProcessing;
 import oracle.kubernetes.operator.steps.ShutdownManagedServerStep.ShutdownManagedServerResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
@@ -55,8 +52,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static com.meterware.simplestub.Stub.createStub;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static oracle.kubernetes.common.logging.MessageKeys.SERVER_SHUTDOWN_REST_FAILURE;
 import static oracle.kubernetes.common.logging.MessageKeys.SERVER_SHUTDOWN_REST_RETRY;
@@ -71,7 +73,6 @@ import static oracle.kubernetes.operator.ProcessingConstants.SERVER_NAME;
 import static oracle.kubernetes.operator.WebLogicConstants.ADMIN_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -95,7 +96,6 @@ class ShutdownManagedServerStepTest {
   private static final String ADMIN_NAME = "admin-server";
   private static final int ADMIN_PORT_NUM = 3456;
   private static final String MANAGED_SERVER1 = "managed-server1";
-  private static final int MANAGED_SERVER1_PORT_NUM = 8001;
   private static final String CONFIGURED_CLUSTER_NAME = "conf-cluster-1";
   private static final String CONFIGURED_MANAGED_SERVER1 = "conf-managed-server1";
   private static final String DYNAMIC_CLUSTER_NAME = "dyn-cluster-1";
@@ -103,6 +103,8 @@ class ShutdownManagedServerStepTest {
   private static final String DYNAMIC_MANAGED_SERVER2 = "dyn-managed-server2";
   private static final String RESPONSE = "httpResponse";
   private static final String SHUTDOWN_REQUEST_RETRY_COUNT = "shutdownRequestRetryCount";
+
+  private final int managedServer1PortNum = wireMockRule.port();
 
   private final V1Pod configuredManagedServer1 = defineManagedPod(CONFIGURED_MANAGED_SERVER1);
   private final V1Pod standaloneManagedServer1 = defineManagedPod(MANAGED_SERVER1);
@@ -128,7 +130,7 @@ class ShutdownManagedServerStepTest {
     WlsDomainConfigSupport configSupport =
         new WlsDomainConfigSupport(DOMAIN_NAME)
             .withWlsServer(ADMIN_NAME, ADMIN_PORT_NUM)
-            .withWlsServer(MANAGED_SERVER1, MANAGED_SERVER1_PORT_NUM)
+            .withWlsServer(MANAGED_SERVER1, managedServer1PortNum)
             .withWlsCluster(CONFIGURED_CLUSTER_NAME, CONFIGURED_MANAGED_SERVER1)
             .withDynamicWlsCluster(DYNAMIC_CLUSTER_NAME, DYNAMIC_MANAGED_SERVER1, DYNAMIC_MANAGED_SERVER2)
             .withAdminServerName(ADMIN_NAME);
@@ -174,26 +176,12 @@ class ShutdownManagedServerStepTest {
   }
 
   private void defineResponse(boolean gracefulShutdown, int status, String url) {
-    HttpRequest request = gracefulShutdown
-        ? createExpectedRequest(Objects.requireNonNullElse(
-            url, "http://127.0.0.1:7001"))
-        : createExpectedRequestForcedShutdown(Objects.requireNonNullElse(
-            url, "http://127.0.0.1:7001"));
-    httpSupport.defineResponse(request, createStub(HttpResponseStub.class, status, ""));
-  }
-
-  private HttpRequest createExpectedRequest(String url) {
-    return HttpRequest.newBuilder()
-        .uri(URI.create(url + "/management/weblogic/latest/serverRuntime/shutdown"))
-        .POST(HttpRequest.BodyPublishers.noBody())
-        .build();
-  }
-
-  private HttpRequest createExpectedRequestForcedShutdown(String url) {
-    return HttpRequest.newBuilder()
-        .uri(URI.create(url + "/management/weblogic/latest/serverRuntime/forceShutdown"))
-        .POST(HttpRequest.BodyPublishers.noBody())
-        .build();
+    url = url + (gracefulShutdown
+        ? "/management/weblogic/latest/serverRuntime/shutdown"
+        : "/management/weblogic/latest/serverRuntime/forceShutdown");
+    stubFor(post(urlEqualTo(url))
+        .willReturn(aResponse()
+            .withStatus(status)));
   }
 
   private V1Pod createPod(String serverName) {
@@ -229,7 +217,7 @@ class ShutdownManagedServerStepTest {
   void whenAuthorizedToInvokeShutdown_verifySecretSet() {
     selectServer(CONFIGURED_MANAGED_SERVER1, configuredServerService);
 
-    defineResponse(200, "http://test-domain-conf-managed-server1.namespace:7001");
+    defineResponse(200, "http://test-domain-conf-managed-server1.namespace:" + wireMockRule.port());
 
     // Validate not set before running steps
     assertThat(info.getWebLogicCredentialsSecret(), is(nullValue()));
@@ -245,7 +233,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_configuredClusterServer_verifySuccess() {
     selectServer(CONFIGURED_MANAGED_SERVER1, configuredServerService);
 
-    defineResponse(200, "http://test-domain-conf-managed-server1.namespace:7001");
+    defineResponse(200, "http://test-domain-conf-managed-server1.namespace:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownConfiguredManagedServer);
 
@@ -256,7 +244,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_configuredClusterServer_verifyFailure() {
     selectServer(CONFIGURED_MANAGED_SERVER1, configuredServerService);
 
-    defineResponse(404, "http://test-domain-conf-managed-server1.namespace:7001");
+    defineResponse(404, "http://test-domain-conf-managed-server1.namespace:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownConfiguredManagedServer);
 
@@ -278,7 +266,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_standaloneServer_verifyFailure() {
     selectServer(MANAGED_SERVER1, standaloneServerService);
 
-    defineResponse(404, "http://test-domain-managed-server1.namespace:7001");
+    defineResponse(404, "http://test-domain-managed-server1.namespace:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownStandaloneManagedServer);
 
@@ -289,7 +277,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_standaloneServer_DomainNotFound_verifyFailureAndRunNextStep() {
     selectServer(MANAGED_SERVER1, standaloneServerService);
 
-    defineResponse(404, "http://test-domain-managed-server1.namespace:7001");
+    defineResponse(404, "http://test-domain-managed-server1.namespace:" + wireMockRule.port());
     testSupport.failOnResource(KubernetesTestSupport.DOMAIN, UID, NS, HTTP_NOT_FOUND);
 
     testSupport.runSteps(shutdownStandaloneManagedServer);
@@ -302,7 +290,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_dynamicServer_verifySuccess() {
     selectServer(DYNAMIC_MANAGED_SERVER1, dynamicServerService);
 
-    defineResponse(200, "http://test-domain-dyn-managed-server1.namespace:7001");
+    defineResponse(200, "http://test-domain-dyn-managed-server1.namespace:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownDynamicManagedServer);
 
@@ -313,7 +301,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_dynamicServer_verifyFailure() {
     selectServer(DYNAMIC_MANAGED_SERVER1, dynamicServerService);
 
-    defineResponse(404, "http://test-domain-dyn-managed-server1.namespace:8001");
+    defineResponse(404, "http://test-domain-dyn-managed-server1.namespace:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownDynamicManagedServer);
 
@@ -325,11 +313,12 @@ class ShutdownManagedServerStepTest {
     selectServer(MANAGED_SERVER1, standaloneServerService);
     setForcedShutdownType(MANAGED_SERVER1);
 
-    defineResponse(false, 200, "http://test-domain-managed-server1.namespace:8001");
+    String url = "http://test-domain-managed-server1.namespace:" + wireMockRule.port();
+    defineResponse(false, 200, url);
 
     testSupport.runSteps(shutdownStandaloneManagedServer);
 
-    assertThat(httpSupport.getLastRequest().toString(), containsString("forceShutdown"));
+    verify(postRequestedFor(urlEqualTo(url + "/management/weblogic/latest/serverRuntime/forceShutdown")));
     assertThat(logRecords, containsFine(SERVER_SHUTDOWN_REST_SUCCESS));
   }
 
