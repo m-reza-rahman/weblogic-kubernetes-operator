@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,6 +64,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotR
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
+import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResourceWithNewReplicaCountAtSpecLevel;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
@@ -94,6 +96,7 @@ class ItVzMiiDynamicUpdate {
   static String workManagerName = "newWM";
   static Path pathToChangeTargetYaml = null;
   static Path pathToAddClusterYaml = null;
+  static final String configMapName = "dynamicupdate-test-configmap";
   static LoggingFacade logger = null;
 
   /**
@@ -139,6 +142,7 @@ class ItVzMiiDynamicUpdate {
         + "            ListenPort : 8001";
 
     assertDoesNotThrow(() -> Files.write(pathToAddClusterYaml, yamlToAddCluster.getBytes()));
+    createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Collections.emptyList());
   }
 
   /**
@@ -166,7 +170,7 @@ class ItVzMiiDynamicUpdate {
       pods.put(managedServerPrefix + i,
           getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
-    replaceConfigMapWithModelFiles(MiiDynamicUpdateHelper.configMapName, domainUid, domainNamespace,
+    replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
@@ -269,6 +273,7 @@ class ItVzMiiDynamicUpdate {
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
         encryptionSecretName, replicaCount, Arrays.asList(clusterName));
+    domain.spec().configuration().model().setConfigMap(configMapName);
 
     Component component = new Component()
         .apiVersion("core.oam.dev/v1alpha2")
