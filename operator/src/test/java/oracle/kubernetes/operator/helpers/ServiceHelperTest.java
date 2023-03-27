@@ -30,6 +30,7 @@ import io.kubernetes.client.openapi.models.V1StatusBuilder;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -448,7 +449,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
 
   @Test
   void onFailedRun_reportFailure() {
-    testSupport.failOnCreate(SERVICE, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.SERVICE, NS, HTTP_INTERNAL_ERROR, null);
 
     runServiceHelper();
 

@@ -23,6 +23,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.Certificates;
@@ -250,7 +251,7 @@ class CrdHelperTest extends CrdHelperTestBase {
   @ParameterizedTest
   @EnumSource(value = TestSubject.class)
   void whenNoCrd_retryOnFailureAndLogFailedMessageInOnFailureNoRetry(TestSubject testSubject) {
-    testSupport.failOnCreate(CUSTOM_RESOURCE_DEFINITION, null, HTTP_UNAUTHORIZED);
+    testSupport.failOnCreate(RequestBuilder.CRD, null, HTTP_UNAUTHORIZED, null);
 
     Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
     testSupport.runSteps(scriptCrdStep);
@@ -260,7 +261,7 @@ class CrdHelperTest extends CrdHelperTestBase {
   @ParameterizedTest
   @EnumSource(value = TestSubject.class)
   void whenNoCrd_proceedToNextStep(TestSubject testSubject) {
-    testSupport.failOnCreate(CUSTOM_RESOURCE_DEFINITION, null, HTTP_UNAUTHORIZED);
+    testSupport.failOnCreate(RequestBuilder.CRD, null, HTTP_UNAUTHORIZED, null);
 
     Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
     testSupport.runSteps(Step.chain(scriptCrdStep, terminalStep));

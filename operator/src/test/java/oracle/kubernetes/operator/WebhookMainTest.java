@@ -43,6 +43,7 @@ import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.CrdHelperTestBase;
 import oracle.kubernetes.operator.helpers.HelmAccessStub;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
@@ -487,7 +488,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
 
   @Test
   void whenValidatingWebhookCreatedAfterFailure504_logStartupFailedMessage() {
-    testSupport.failOnCreate(VALIDATING_WEBHOOK_CONFIGURATION, null, HTTP_GATEWAY_TIMEOUT);
+    testSupport.failOnCreate(RequestBuilder.VWC, null, HTTP_GATEWAY_TIMEOUT, null);
 
     testSupport.runSteps(main.createStartupSteps());
 
@@ -500,7 +501,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
 
   @Test
   void whenValidatingWebhookCreatedAfterFailure401_dontCreateIt() {
-    testSupport.failOnCreate(VALIDATING_WEBHOOK_CONFIGURATION, null, HTTP_UNAUTHORIZED);
+    testSupport.failOnCreate(RequestBuilder.VWC, null, HTTP_UNAUTHORIZED, null);
 
     testSupport.runSteps(main.createStartupSteps());
 
@@ -513,7 +514,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
 
   @Test
   void whenValidatingWebhookCreatedAfterFailure500_dontCreateIt() {
-    testSupport.failOnCreate(VALIDATING_WEBHOOK_CONFIGURATION, null, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.VWC, null, HTTP_INTERNAL_ERROR, null);
 
     testSupport.runSteps(main.createStartupSteps());
 

@@ -74,6 +74,7 @@ import oracle.kubernetes.operator.OverrideDistributionStrategy;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
@@ -1711,7 +1712,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenPodCreationFailsDueToQuotaExceeded_reportInDomainStatus() {
-    testSupport.failOnCreate(POD, NS, createQuotaExceededException());
+    testSupport.failOnCreate(RequestBuilder.POD, NS, HttpURLConnection.HTTP_FORBIDDEN, getQuotaExceededMessage());
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1721,7 +1722,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenPodCreationFailsDueToQuotaExceeded_generateFailedEvent() {
-    testSupport.failOnCreate(POD, NS, createQuotaExceededException());
+    testSupport.failOnCreate(RequestBuilder.POD, NS, HttpURLConnection.HTTP_FORBIDDEN, getQuotaExceededMessage());
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1732,17 +1733,13 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
             getLocalizedString(KUBERNETES_EVENT_ERROR)));
   }
 
-  private ApiException createQuotaExceededException() {
-    return new ApiException(HttpURLConnection.HTTP_FORBIDDEN, getQuotaExceededMessage());
-  }
-
   private String getQuotaExceededMessage() {
     return "pod " + getPodName() + " is forbidden: quota exceeded";
   }
 
   @Test
   void whenPodCreationFailsDueToQuotaExceeded_abortFiber() {
-    testSupport.failOnCreate(POD, NS, createQuotaExceededException());
+    testSupport.failOnCreate(RequestBuilder.POD, NS, HttpURLConnection.HTTP_FORBIDDEN, getQuotaExceededMessage());
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -2372,7 +2369,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenNoPod_onInternalError() {
-    testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.POD, NS, HTTP_INTERNAL_ERROR, null);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
     Step initialStep = stepFactory.createStepList(terminalStep);
@@ -2383,7 +2380,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenNoPod_generateFailedEvent() {
-    testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.POD, NS, HTTP_INTERNAL_ERROR, null);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
     Step initialStep = stepFactory.createStepList(terminalStep);

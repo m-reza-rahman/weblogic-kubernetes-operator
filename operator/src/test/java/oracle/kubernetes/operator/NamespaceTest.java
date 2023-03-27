@@ -21,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.HelmAccessStub;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
@@ -205,7 +206,7 @@ public class NamespaceTest {
     specifyDomainNamespaces(namespace);
 
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, CREATING_EVENT_FORBIDDEN);
-    testSupport.failOnCreate(KubernetesTestSupport.EVENT, namespace, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.EVENT, namespace, HTTP_FORBIDDEN, null);
     testSupport.runSteps(new DomainRecheck(delegate).createStartNamespaceBeforeStep(namespace));
 
     MatcherAssert.assertThat(logRecords,
@@ -232,7 +233,7 @@ public class NamespaceTest {
     specifyDomainNamespaces(namespace);
 
     loggerControl.collectLogMessages(logRecords, CREATING_EVENT_FORBIDDEN);
-    testSupport.failOnCreate(KubernetesTestSupport.EVENT, namespace, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.EVENT, namespace, HTTP_FORBIDDEN, null);
     testSupport.runSteps(new DomainRecheck(delegate).createStartNamespaceBeforeStep(namespace));
     testSupport.cancelFailures();
     testSupport.runSteps(createEventStep(delegate.domainNamespaces,

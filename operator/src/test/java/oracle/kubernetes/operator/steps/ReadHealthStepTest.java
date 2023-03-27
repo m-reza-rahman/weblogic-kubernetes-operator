@@ -3,17 +3,16 @@
 
 package oracle.kubernetes.operator.steps;
 
-import java.net.http.HttpRequest;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.annotation.Nonnull;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import com.meterware.httpunit.Base64;
 import com.meterware.simplestub.Memento;
@@ -39,8 +38,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
-import static com.meterware.simplestub.Stub.createStub;
 import static oracle.kubernetes.common.logging.MessageKeys.WLS_HEALTH_READ_FAILED;
 import static oracle.kubernetes.common.logging.MessageKeys.WLS_HEALTH_READ_FAILED_NO_HTTPCLIENT;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
@@ -157,9 +161,9 @@ class ReadHealthStepTest {
   }
 
   private void defineResponse(int status, String body, @Nonnull String url) {
-    httpSupport.defineResponse(
-        createExpectedRequest(url),
-        createStub(HttpResponseStub.class, status, body));
+    stubFor(post(urlEqualTo(url + "/management/weblogic/latest/serverRuntime/search"))
+        .willReturn(aResponse()
+            .withStatus(status)));
   }
 
 
@@ -225,15 +229,9 @@ class ReadHealthStepTest {
 
     testSupport.runSteps(readHealthStep);
 
-    assertThat(hasAuthenticationCredentials(httpSupport.getLastRequest()), is(true));
-  }
-
-  private boolean hasAuthenticationCredentials(HttpRequest request) {
-    return Objects.equals(getAuthorizationHeader(request), expectedAuthorizationHeader());
-  }
-
-  private String getAuthorizationHeader(HttpRequest request) {
-    return request.headers().firstValue("Authorization").orElse(null);
+    verify(postRequestedFor(urlEqualTo("http://admin-server.Test:3456"
+        + "/management/weblogic/latest/serverRuntime/search"))
+        .withHeader("Authorization", WireMock.equalTo(expectedAuthorizationHeader())));
   }
 
   private String expectedAuthorizationHeader() {
