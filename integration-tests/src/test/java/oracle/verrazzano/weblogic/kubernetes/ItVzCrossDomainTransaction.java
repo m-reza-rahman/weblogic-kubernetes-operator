@@ -46,6 +46,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -264,7 +265,7 @@ class ItVzCrossDomainTransaction {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host1 + "/console/login/LoginForm.jsp --resolve " + host1 + ":443:" + address1;
     logger.info("domain1 admin consoleUrl is: {0}", consoleUrl);
-    logger.info("DEBUGGING :leep for 5 mins");
+    logger.info("\n DEBUGGING :sleep for 5 mins");
     Thread.sleep(300000);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
@@ -358,6 +359,23 @@ class ItVzCrossDomainTransaction {
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
   }
+
+  /**
+   * Verify all server pods are running.
+   * Verify k8s services for all servers are created.
+   */
+  @BeforeEach
+  public void beforeEach() {
+    for (int i = 1; i <= replicaCount; i++) {
+      checkPodReadyAndServiceExists(domain2ManagedServerPrefix + i,
+            domainUid2, domain2Namespace);
+    }
+    for (int i = 1; i <= replicaCount; i++) {
+      checkPodReadyAndServiceExists(domain1ManagedServerPrefix + i,
+            domainUid1, domain1Namespace);
+    }
+  }
+
 
   @Test
   @DisplayName("Check cross domain transcated MDB communication ")
@@ -644,7 +662,7 @@ class ItVzCrossDomainTransaction {
         + application + "/getState"
         + " --resolve " + host + ":443:" + address, host);
 
-    logger.info("curl command to check MDB state {0}: ", curlString);
+    logger.info("curl command to check MDB state: {0} ", curlString);
     testUntil(
         assertDoesNotThrow(() -> () -> exec(curlString, true).stdout().contains("STATE_ACTIVE")),
         logger,
