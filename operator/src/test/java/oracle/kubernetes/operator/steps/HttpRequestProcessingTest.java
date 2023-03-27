@@ -11,7 +11,6 @@ import java.util.List;
 import com.meterware.simplestub.Memento;
 import oracle.kubernetes.operator.helpers.AuthorizationSource;
 import oracle.kubernetes.operator.http.client.HttpResponseStepImpl;
-import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.utils.SystemClock;
