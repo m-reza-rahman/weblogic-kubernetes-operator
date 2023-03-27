@@ -16,6 +16,7 @@ import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
@@ -109,7 +110,7 @@ class ConfigMapHelperTest {
 
   @Test
   void whenNoConfigMap_retryOnFailure() {
-    testSupport.failOnCreate(CONFIG_MAP, DOMAIN_NS, 401);
+    testSupport.failOnCreate(RequestBuilder.CM, DOMAIN_NS, 401, null);
 
     Step scriptConfigMapStep = ConfigMapHelper.createScriptConfigMapStep(DOMAIN_NS, null);
     testSupport.runSteps(scriptConfigMapStep);

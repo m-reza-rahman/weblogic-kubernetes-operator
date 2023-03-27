@@ -48,6 +48,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 
@@ -257,12 +258,19 @@ public class KubernetesTestSupport extends FiberTestSupport {
    * Specifies that a create operation should fail if it matches the specified conditions. Applies to
    * namespaced resources and replaces any existing failure checks.
    *
-   * @param resourceType the type of resource
+   * @param requestBuilder the request builder
    * @param namespace the namespace containing the resource
    * @param httpStatus the status to associate with the failure
+   * @param statusMessage the status message
    */
-  public void failOnCreate(String resourceType, String namespace, int httpStatus) {
-    // TODO
+  public void failOnCreate(RequestBuilder<?, ?> requestBuilder, String namespace,
+                           int httpStatus, String statusMessage) {
+    String url = "/api/" + requestBuilder.getApiVersion() + "/namespaces/"
+        + namespace + "/" + requestBuilder.getResourcePlural();
+    stubFor(post(urlEqualTo(url)).willReturn(
+        aResponse()
+            .withStatusMessage(statusMessage)
+            .withStatus(httpStatus)));
   }
 
   /**

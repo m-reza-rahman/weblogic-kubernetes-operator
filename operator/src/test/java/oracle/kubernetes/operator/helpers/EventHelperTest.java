@@ -29,6 +29,7 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.builders.WatchEvent;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Step;
@@ -577,7 +578,7 @@ class EventHelperTest {
   @Test
   void whenNSWatchStartedEventCreated_fail403OnCreate_foundExpectedLogMessage() {
     loggerControl.collectLogMessages(logRecords, CREATING_EVENT_FORBIDDEN);
-    testSupport.failOnCreate(EVENT, NS, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.EVENT, NS, HTTP_FORBIDDEN, null);
 
     runCreateNSWatchingStartedEventStep();
 
@@ -586,7 +587,7 @@ class EventHelperTest {
 
   @Test
   void whenNSWatchStartedEventCreated_fail403OnCreate_startManagingNSFailedEventGenerated() {
-    testSupport.failOnCreate(EVENT, NS, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.EVENT, NS, HTTP_FORBIDDEN, null);
 
     runCreateNSWatchingStartedEventStep();
 
@@ -597,7 +598,7 @@ class EventHelperTest {
 
   @Test
   void whenNSWatchStartedEventCreated_fail403OnCreate_startManagingNSFailedEventGeneratedWithExpectedMessage() {
-    testSupport.failOnCreate(EVENT, NS, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.EVENT, NS, HTTP_FORBIDDEN, null);
 
     runCreateNSWatchingStartedEventStep();
 
@@ -609,7 +610,7 @@ class EventHelperTest {
 
   @Test
   void whenNSWatchStartedEventCreated_fail403OnCreate_startManagingNSFailedEventGeneratedWithExpectedLabel() {
-    testSupport.failOnCreate(EVENT, NS, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.EVENT, NS, HTTP_FORBIDDEN, null);
 
     runCreateNSWatchingStartedEventStep();
     Map<String, String> expectedLabels = new HashMap<>();
@@ -622,7 +623,7 @@ class EventHelperTest {
 
   @Test
   void whenNSWatchStartedEventCreated_fail403OnCreate_startManagingNSFailedEventGeneratedWithExpectedNS() {
-    testSupport.failOnCreate(EVENT, NS, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.EVENT, NS, HTTP_FORBIDDEN, null);
 
     runCreateNSWatchingStartedEventStep();
 
@@ -716,7 +717,7 @@ class EventHelperTest {
   @Test
   void whenNSWatchStoppedEventCreated_fail403OnCreate_foundExpectedLogMessage() {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, CREATING_EVENT_FORBIDDEN);
-    testSupport.failOnCreate(EVENT, NS, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.EVENT, NS, HTTP_FORBIDDEN, null);
 
     testSupport.runSteps(createEventStep(new EventData(NAMESPACE_WATCHING_STOPPED).namespace(NS).resourceName(NS)));
 

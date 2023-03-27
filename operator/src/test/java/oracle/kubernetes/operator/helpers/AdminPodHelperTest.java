@@ -23,6 +23,7 @@ import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
@@ -241,7 +242,7 @@ class AdminPodHelperTest extends PodHelperTestBase {
   @Test
   void whenAdminPodReplacementFails() {
     initializeExistingPod(getIncompatiblePod());
-    testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.POD, NS, HTTP_INTERNAL_ERROR, null);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
     Step initialStep = stepFactory.createStepList(terminalStep);
@@ -254,7 +255,7 @@ class AdminPodHelperTest extends PodHelperTestBase {
   @Test
   void whenAdminPodReplacementFails_generateFailedEvent() {
     initializeExistingPod(getIncompatiblePod());
-    testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.POD, NS, HTTP_INTERNAL_ERROR, null);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
     Step initialStep = stepFactory.createStepList(terminalStep);

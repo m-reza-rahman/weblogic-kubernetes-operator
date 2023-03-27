@@ -21,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1StatusBuilder;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Packet;
@@ -205,7 +206,7 @@ class PodDisruptionBudgetHelperTest {
 
   @Test
   void onFailedRun_reportFailure() {
-    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.PDB, NS, HTTP_INTERNAL_ERROR, null);
 
     runPodDisruptionBudgetHelper();
 
@@ -215,7 +216,7 @@ class PodDisruptionBudgetHelperTest {
   @Test
   void onFailedRunWithConflictAndNoExistingPDB_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPdbCreateLogMessage());
-    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
+    testSupport.failOnCreate(RequestBuilder.PDB, NS, HTTP_CONFLICT, null);
 
     runPodDisruptionBudgetHelper();
 
@@ -229,7 +230,7 @@ class PodDisruptionBudgetHelperTest {
     consoleHandlerMemento.ignoreMessage(getPdbExistsLogMessage());
     V1PodDisruptionBudget existingPdb = createPDBModel(testSupport.getPacket());
     existingPdb.getMetadata().setNamespace(NS);
-    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
+    testSupport.failOnCreate(RequestBuilder.PDB, NS, HTTP_CONFLICT, null);
     testSupport.defineResources(existingPdb);
 
     runPodDisruptionBudgetHelper();

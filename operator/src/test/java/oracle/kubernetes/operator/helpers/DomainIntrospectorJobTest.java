@@ -53,6 +53,7 @@ import oracle.kubernetes.operator.JobWatcher;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
 import oracle.kubernetes.operator.calls.KubernetesTestSupport;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.http.rest.ScanCacheStub;
 import oracle.kubernetes.operator.introspection.IntrospectionTestUtils;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -353,7 +354,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenNoJob_onInternalError() {
-    testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.JOB, NS, HTTP_INTERNAL_ERROR, null);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -363,7 +364,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenNoJob_generateFailedEvent() {
-    testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnCreate(RequestBuilder.JOB, NS, HTTP_INTERNAL_ERROR, null);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -741,7 +742,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     consoleHandlerMemento.ignoreMessage(getJobDeletedMessageKey());
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
     defineCompletedIntrospection();
-    testSupport.failOnCreate(JOB, NS, HTTP_FORBIDDEN);
+    testSupport.failOnCreate(RequestBuilder.JOB, NS, HTTP_FORBIDDEN, null);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1400,7 +1401,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenJobCreateFailsWith409Error_JobIsCreated() {
-    testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_CONFLICT);
+    testSupport.failOnCreate(RequestBuilder.JOB, NS, HTTP_CONFLICT, null);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
