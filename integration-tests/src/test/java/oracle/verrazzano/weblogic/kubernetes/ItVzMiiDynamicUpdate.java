@@ -395,7 +395,7 @@ class ItVzMiiDynamicUpdate {
   static void createVzConfigmapComponent(List<String> modelFiles) {
 
     Map<String, String> labels = new HashMap<>();
-    labels.put("weblogic.domainUid", domainUid);
+    labels.put("weblogic.domainUID", domainUid);
     assertNotNull(configMapName, "ConfigMap name cannot be null");
     logger.info("Create ConfigMap {0} that contains model files {1}",
         configMapName, modelFiles);
