@@ -28,12 +28,12 @@ public class Workload implements KubernetesObject {
   @ApiModelProperty("The Workload meta-data. Must include the name and namespace.")
   private V1ObjectMeta metadata = new V1ObjectMeta();
 
+  @ApiModelProperty("Configmap data of the Workload.")
+  Map<String, String> data = new HashMap<>();
+  
   @ApiModelProperty("The specification of the Workload. Required.")
   private WorkloadSpec spec = new WorkloadSpec();
   
-  @ApiModelProperty("Configmap data of the Workload.")
-  Map<String, String> data = new HashMap<>();
-
   public Workload apiVersion(String apiVersion) {
     this.apiVersion = apiVersion;
     return this;
