@@ -416,9 +416,11 @@ class ItVzMiiDynamicUpdate {
                 .kind("ConfigMap")
                 .metadata(new V1ObjectMeta()
                     .labels(labels)
-                    .name(configMapName))
+                    .name(configMapName)
+                    .namespace(domainNamespace))
                 .data(data)));
     logger.info("Deploying configmap component");
+    logger.info(Yaml.dump(component));
     assertDoesNotThrow(() -> createComponent(component));
   }
 
