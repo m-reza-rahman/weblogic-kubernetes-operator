@@ -275,7 +275,7 @@ class ItVzMiiDynamicUpdate {
     String clusterName = "cluster-1";
     
     //createVzConfigmapComponent(Collections.emptyList());
-    //createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
+    createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
 
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
