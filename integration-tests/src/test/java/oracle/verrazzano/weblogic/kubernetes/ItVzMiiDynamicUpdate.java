@@ -412,6 +412,7 @@ class ItVzMiiDynamicUpdate {
             .namespace(domainNamespace))
         .spec(new ComponentSpec()
             .workLoad(new Workload()
+                .apiVersion("v1")
                 .kind("ConfigMap")
                 .metadata(new V1ObjectMeta()
                     .labels(labels)
