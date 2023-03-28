@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -275,7 +274,8 @@ class ItVzMiiDynamicUpdate {
     // create cluster object
     String clusterName = "cluster-1";
     
-    createVzConfigmapComponent(Collections.emptyList());
+    //createVzConfigmapComponent(Collections.emptyList());
+    createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
 
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
@@ -422,6 +422,7 @@ class ItVzMiiDynamicUpdate {
     logger.info("Deploying configmap component");
     logger.info(Yaml.dump(component));
     assertDoesNotThrow(() -> createComponent(component));
+    assertDoesNotThrow(() -> logger.info(Yaml.dump(Kubernetes.listComponents(domainNamespace))));
   }
 
   static void deleteVzConfigmapComponent(String name, String namespace) throws ApiException {
