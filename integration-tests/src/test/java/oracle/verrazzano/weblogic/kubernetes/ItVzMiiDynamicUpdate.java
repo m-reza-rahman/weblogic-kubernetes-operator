@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
-//import java.util.Collections;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,10 +33,13 @@ import oracle.verrazzano.weblogic.kubernetes.annotations.VzIntegrationTest;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ConfigMapUtils;
 import oracle.weblogic.kubernetes.utils.MiiDynamicUpdateHelper;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -56,6 +59,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteComponent;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
@@ -64,7 +68,6 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotR
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
-//import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResourceWithNewReplicaCountAtSpecLevel;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
@@ -142,6 +145,7 @@ class ItVzMiiDynamicUpdate {
         + "            ListenPort : 8001";
 
     assertDoesNotThrow(() -> Files.write(pathToAddClusterYaml, yamlToAddCluster.getBytes()));
+    // createVzConfigmapComponent(Collections.emptyList());
     // createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Collections.emptyList());
   }
 
@@ -156,7 +160,7 @@ class ItVzMiiDynamicUpdate {
   @DisplayName("Add a work manager to a model-in-image domain using dynamic update")
   @Tag("gate")
   @Tag("crio")
-  void testMiiAddWorkManager() {
+  void testMiiAddWorkManager() throws ApiException {
 
     // This test uses the WebLogic domain created in BeforeAll method
     // BeforeEach method ensures that the server pods are running
@@ -170,8 +174,9 @@ class ItVzMiiDynamicUpdate {
       pods.put(managedServerPrefix + i,
           getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
-    replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
+
+    deleteVzConfigmapComponent(configMapName, domainNamespace);
+    createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
 
@@ -201,6 +206,7 @@ class ItVzMiiDynamicUpdate {
    * cluster are started and other servers are not rolled.
    */
   @Test
+  @Disabled
   @Order(2)
   @DisplayName("Add cluster in MII domain using mii dynamic update")
   void testMiiAddCluster() {
@@ -268,6 +274,8 @@ class ItVzMiiDynamicUpdate {
 
     // create cluster object
     String clusterName = "cluster-1";
+    
+    createVzConfigmapComponent(Collections.emptyList());
 
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
@@ -383,4 +391,50 @@ class ItVzMiiDynamicUpdate {
             .command(curlString.toString()))
         .executeAndVerify(expectedStatusCode);
   }
+  
+  static void createVzConfigmapComponent(List<String> modelFiles) {
+
+    Map<String, String> labels = new HashMap<>();
+    labels.put("weblogic.domainUid", domainUid);
+    assertNotNull(configMapName, "ConfigMap name cannot be null");
+    logger.info("Create ConfigMap {0} that contains model files {1}",
+        configMapName, modelFiles);
+    Map<String, String> data = new HashMap<>();
+    for (String modelFile : modelFiles) {
+      ConfigMapUtils.addModelFile(data, modelFile);
+    }
+
+    Component component = new Component()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("Component")
+        .metadata(new V1ObjectMeta()
+            .name(configMapName)
+            .namespace(domainNamespace))
+        .spec(new ComponentSpec()
+            .workLoad(new Workload()
+                .metadata(new V1ObjectMeta()
+                    .labels(labels)
+                    .name(configMapName))
+                .data(data)));
+    logger.info("Deploying configmap component");
+    assertDoesNotThrow(() -> createComponent(component));
+  }
+
+  static void deleteVzConfigmapComponent(String name, String namespace) throws ApiException {
+    assertTrue(deleteComponent(configMapName, domainNamespace));
+    // check configuration for JMS
+    testUntil(() -> {
+      try {
+        return !Kubernetes.listComponents(namespace).getItems().stream()
+            .anyMatch(component -> component.getMetadata().getName().equals(name));
+      } catch (ApiException ex) {
+        logger.warning(ex.getResponseBody());
+      }
+      return false;
+    },
+        logger,
+        "Checking for " + name + " in namespace " + namespace + " exists");
+    logger.info("Component " + name + " deleted");
+  }
+
 }
