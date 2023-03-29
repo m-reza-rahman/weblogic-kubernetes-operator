@@ -371,10 +371,10 @@ class ItVzCrossDomainTransaction {
   @DisplayName("Check cross domain transcated MDB communication ")
   void testCrossDomainTranscatedMDB() {
 
-    logger.info("Is going to check if testCdtUniformTopic in domain2 exists");
+    logger.info("Is going to check if TestCdtJmsModule in domain2 exists");
     testUntil(
         () -> checkSystemResourceConfiguration(domain2Namespace, "JMSSystemResources",
-            "testCdtUniformTopic", "200"),
+            "TestCdtJmsModule", "200"),
         logger,
         "Checking for testCdtUniformTopic in JMSSystemResources resourceName exists");
     logger.info("Found the testCdtUniformTopic configuration");
