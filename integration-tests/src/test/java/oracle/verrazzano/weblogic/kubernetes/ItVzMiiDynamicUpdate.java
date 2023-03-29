@@ -180,6 +180,34 @@ class ItVzMiiDynamicUpdate {
         + "            MaxThreadsConstraint:\n"
         + "              SampleMaxThreads:\n"
         + "                Count: 10";
+    String addcluster = "apiVersion: core.oam.dev/v1alpha2\n"
+        + "kind: Component\n"
+        + "metadata:\n"
+        + "  name: " + configMapName + "\n"
+        + "  namespace: " + domainNamespace + "\n"
+        + "spec:\n"
+        + "  workload:\n"
+        + "    apiVersion: v1\n"
+        + "    kind: ConfigMap\n"
+        + "    metadata:\n"
+        + "      labels:\n"
+        + "        weblogic.domainUID: " + domainUid + "\n"
+        + "      name: " + configMapName + "\n"
+        + "    data:\n"
+        + "      wdt_cluster.yaml: |\n"
+        + "        topology:\n"
+        + "          Cluster:\n"
+        + "            \"Cluster2\":\n"
+        + "              DynamicServers:\n"
+        + "                ServerTemplate: \"Cluster2Template\"\n"
+        + "                ServerNamePrefix: \"ManagedServer\"\n"
+        + "                DynamicClusterSize: 5\n"
+        + "                MaxDynamicClusterSize: 5\n"
+        + "                CalculatedListenPorts: false\n"
+        + "          ServerTemplate:\n"
+        + "            \"Cluster1Template\":\n"
+        + "              Cluster: \"Cluster2\"\n"
+        + "              ListenPort: 9001\n";
     pathToWmYaml = Paths.get(WORK_DIR + "/wm.yaml");
     assertDoesNotThrow(() -> Files.write(pathToWmYaml, addcluster.getBytes()));
     createVzMiiDomain();
@@ -503,34 +531,5 @@ class ItVzMiiDynamicUpdate {
         "Checking for " + name + " in namespace " + namespace + " exists");
     logger.info("Component " + name + " deleted");
   }
-
-  static String addcluster = "apiVersion: core.oam.dev/v1alpha2\n"
-      + "kind: Component\n"
-      + "metadata:\n"
-      + "  name: " + configMapName + "\n"
-      + "  namespace: " + domainNamespace + "\n"
-      + "spec:\n"
-      + "  workload:\n"
-      + "    apiVersion: v1\n"
-      + "    kind: ConfigMap\n"
-      + "    metadata:\n"
-      + "      labels:\n"
-      + "        weblogic.domainUID: " + domainUid + "\n"
-      + "      name: " + configMapName + "\n"
-      + "    data:\n"
-      + "      wdt_cluster.yaml: |\n"
-      + "        topology:\n"
-      + "          Cluster:\n"
-      + "            \"Cluster2\":\n"
-      + "              DynamicServers:\n"
-      + "                ServerTemplate: \"Cluster2Template\"\n"
-      + "                ServerNamePrefix: \"ManagedServer\"\n"
-      + "                DynamicClusterSize: 5\n"
-      + "                MaxDynamicClusterSize: 5\n"
-      + "                CalculatedListenPorts: false\n"
-      + "          ServerTemplate:\n"
-      + "            \"Cluster1Template\":\n"
-      + "              Cluster: \"Cluster2\"\n"
-      + "              ListenPort: 9001\n";
 
 }
