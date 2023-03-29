@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -314,11 +315,29 @@ class ItVzMiiDynamicUpdate {
     //createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
     String command = KUBERNETES_CLI + " apply -f " + pathToWmYaml;
     logger.info("command {0} ", command);
+    assertDoesNotThrow(() -> logger.info(Files.readString(pathToWmYaml)));
     ExecResult result = assertDoesNotThrow(() -> exec(command, true));
     logger.info(String.valueOf(result.exitValue()));
     logger.info(result.stdout());
     logger.info(result.stderr());
     assertEquals(0, result.exitValue(), "Failed to create config map");
+
+    testUntil(new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        try {
+          return !Kubernetes.listComponents(domainNamespace).getItems().stream()
+              .anyMatch(component -> component.getMetadata().getName().equals(configMapName));
+        } catch (ApiException ex) {
+          logger.warning(ex.getResponseBody());
+        }
+        return false;
+      }
+    },
+        logger,
+        "Checking for " + configMapName + " in namespace " + domainNamespace + " exists");
+
+    assertDoesNotThrow(() -> logger.info(Yaml.dump(Kubernetes.listComponents(domainNamespace))));
 
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
