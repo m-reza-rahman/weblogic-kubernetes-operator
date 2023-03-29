@@ -205,7 +205,7 @@ class ItVzMiiDynamicUpdate {
         + "                MaxDynamicClusterSize: 5\n"
         + "                CalculatedListenPorts: false\n"
         + "          ServerTemplate:\n"
-        + "            \"Cluster1Template\":\n"
+        + "            \"Cluster2Template\":\n"
         + "              Cluster: \"Cluster2\"\n"
         + "              ListenPort: 9001\n";
     pathToWmYaml = Paths.get(WORK_DIR + "/wm.yaml");
