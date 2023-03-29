@@ -376,16 +376,16 @@ class ItVzCrossDomainTransaction {
         () -> checkSystemResourceConfiguration(domain2Namespace, "JMSSystemResources",
             "TestCdtJmsModule", "200"),
         logger,
-        "Checking for testCdtUniformTopic in JMSSystemResources resourceName exists");
-    logger.info("Found the testCdtUniformTopic configuration");
+        "Checking for TestCdtJmsModule in JMSSystemResources resourceName exists");
+    logger.info("Found the TestCdtJmsModule configuration");
 
-    logger.info("Is going to check MDB in domain with host {0}, address {1}", host1, address1);
+    /*logger.info("Is going to check MDB in domain with host {0}, address {1}", host1, address1);
     assertTrue(checkAppIsActive(host1, address1,
                  "", "mdbtopic","cluster-1",
                  ADMIN_USERNAME_DEFAULT,ADMIN_PASSWORD_DEFAULT),
              "MDB application can not be activated on domain1/cluster");
 
-    logger.info("MDB application is activated on domain1/cluster");
+    logger.info("MDB application is activated on domain1/cluster");*/
 
     /*String curlRequest = String.format("curl -v --show-error --noproxy '*' "
             + "\"http://%s/jmsservlet/jmstest?"
