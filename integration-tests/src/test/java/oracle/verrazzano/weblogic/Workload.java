@@ -31,6 +31,9 @@ public class Workload implements KubernetesObject {
   @ApiModelProperty("Configmap data of the Workload.")
   Map<String, String> data = new HashMap<>();
   
+  @ApiModelProperty("The specification of the Workload. Required.")
+  private WorkloadSpec spec = new WorkloadSpec();
+  
   public Workload apiVersion(String apiVersion) {
     this.apiVersion = apiVersion;
     return this;
@@ -82,6 +85,23 @@ public class Workload implements KubernetesObject {
     this.metadata = metadata;
   }
 
+  public Workload spec(WorkloadSpec spec) {
+    this.spec = spec;
+    return this;
+  }
+
+  public WorkloadSpec spec() {
+    return spec;
+  }
+
+  public WorkloadSpec getSpec() {
+    return spec;
+  }
+
+  public void setSpec(WorkloadSpec spec) {
+    this.spec = spec;
+  }
+  
   public Workload data(Map<String, String> data) {
     this.data = data;
     return this;
@@ -105,6 +125,7 @@ public class Workload implements KubernetesObject {
         .append("apiVersion", apiVersion)
         .append("kind", kind)
         .append("metadata", metadata)
+        .append("spec", spec)
         .append("data", data)
         .toString();
   }
@@ -115,6 +136,7 @@ public class Workload implements KubernetesObject {
         .append(metadata)
         .append(apiVersion)
         .append(kind)
+        .append(spec)
         .append(data)
         .toHashCode();
   }
@@ -133,6 +155,7 @@ public class Workload implements KubernetesObject {
         .append(metadata, rhs.metadata)
         .append(apiVersion, rhs.apiVersion)
         .append(kind, rhs.kind)
+        .append(spec, rhs.spec)
         .append(data, rhs.data)
         .isEquals();
   }

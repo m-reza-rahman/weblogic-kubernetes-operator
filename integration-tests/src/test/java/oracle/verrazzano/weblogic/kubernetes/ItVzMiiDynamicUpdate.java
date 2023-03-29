@@ -36,6 +36,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ConfigMapUtils;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.MiiDynamicUpdateHelper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -48,6 +49,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
@@ -67,6 +69,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotR
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
+import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResourceWithNewReplicaCountAtSpecLevel;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
@@ -77,6 +80,7 @@ import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAd
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.setLabelToNamespace;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -98,6 +102,7 @@ class ItVzMiiDynamicUpdate {
   static String workManagerName = "newWM";
   static Path pathToChangeTargetYaml = null;
   static Path pathToAddClusterYaml = null;
+  static Path pathToWmYaml = null;
   static final String configMapName = "dynamicupdate-test-configmap";
   static LoggingFacade logger = null;
 
@@ -115,7 +120,7 @@ class ItVzMiiDynamicUpdate {
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
     setLabelToNamespace(Arrays.asList(domainNamespace));
-    createVzMiiDomain();
+    
 
     // write sparse yaml to change target to file
     pathToChangeTargetYaml = Paths.get(WORK_DIR + "/changetarget.yaml");
@@ -144,8 +149,39 @@ class ItVzMiiDynamicUpdate {
         + "            ListenPort : 8001";
 
     assertDoesNotThrow(() -> Files.write(pathToAddClusterYaml, yamlToAddCluster.getBytes()));
-    // createVzConfigmapComponent(Collections.emptyList());
-    // createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Collections.emptyList());
+    
+    String configmap = "apiVersion: core.oam.dev/v1alpha2\n"
+        + "kind: Component\n"
+        + "metadata:\n"
+        + "  name: " + configMapName + "\n"
+        + "  namespace: " + domainNamespace + "\n"
+        + "spec:\n"
+        + "  workload:\n"
+        + "    apiVersion: v1\n"
+        + "    kind: ConfigMap\n"
+        + "    metadata:\n"
+        + "      labels:\n"
+        + "        weblogic.domainUID: " + domainUid + "\n"
+        + "      name: " + configMapName + "\n"
+        + "      namespace: " + domainNamespace + "\n"
+        + "    data:\n"
+        + "      model.config.wm.yaml: |\n"
+        + "        resources:\n"
+        + "          SelfTuning:\n"
+        + "            WorkManager:\n"
+        + "              newWM:\n"
+        + "                Target: 'cluster-1'\n"
+        + "                MinThreadsConstraint: 'SampleMinThreads'\n"
+        + "                MaxThreadsConstraint: 'SampleMaxThreads'\n"
+        + "            MinThreadsConstraint:\n"
+        + "              SampleMinThreads:\n"
+        + "                Count: 1\n"
+        + "            MaxThreadsConstraint:\n"
+        + "              SampleMaxThreads:\n"
+        + "                Count: 10";
+    pathToWmYaml = Paths.get(WORK_DIR + "/wm.yaml");
+    assertDoesNotThrow(() -> Files.write(pathToWmYaml, configmap.getBytes()));
+    createVzMiiDomain();
   }
 
   /**
@@ -275,7 +311,14 @@ class ItVzMiiDynamicUpdate {
     String clusterName = "cluster-1";
     
     //createVzConfigmapComponent(Collections.emptyList());
-    createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
+    //createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
+    String command = KUBERNETES_CLI + " apply -f " + pathToWmYaml;
+    logger.info("command {0} ", command);
+    ExecResult result = assertDoesNotThrow(() -> exec(command, true));
+    logger.info(String.valueOf(result.exitValue()));
+    logger.info(result.stdout());
+    logger.info(result.stderr());
+    assertEquals(0, result.exitValue(), "Failed to create config map");
 
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
