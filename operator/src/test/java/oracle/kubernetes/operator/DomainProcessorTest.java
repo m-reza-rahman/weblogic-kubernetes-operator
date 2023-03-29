@@ -650,12 +650,12 @@ class DomainProcessorTest {
   }
 
   private void defineServerShutdownWithHttpOkResponse() {
-    stubFor(post(urlEqualTo("http://test-domain-" + ADMIN_NAME + ".namespace:" + wireMockRule.port()))
+    stubFor(post(urlEqualTo("http://test-domain-" + ADMIN_NAME + ".namespace.svc:" + wireMockRule.port()))
         .willReturn(aResponse()
             .withBody(OK_RESPONSE)));
 
     IntStream.range(1, 3).forEach(idx ->
-        stubFor(post(urlEqualTo("http://test-domain-" + "cluster-managed-server" + idx + ".namespace:" + wireMockRule.port()))
+        stubFor(post(urlEqualTo("http://test-domain-" + "cluster-managed-server" + idx + ".namespace.svc:" + wireMockRule.port()))
         .willReturn(aResponse()
             .withBody(OK_RESPONSE))));
   }
@@ -746,7 +746,7 @@ class DomainProcessorTest {
 
   @SuppressWarnings("HttpUrlsUsage")
   private void defineOKResponse(@Nonnull String serverName, int port) {
-    final String url = "http://" + UID + "-" + serverName + "." + NS + ":" + port
+    final String url = "http://" + UID + "-" + serverName + "." + NS + ".svc:" + port
         + "/management/weblogic/latest/serverRuntime/search";
     stubFor(post(urlEqualTo(url))
         .willReturn(aResponse()

@@ -217,7 +217,7 @@ class ShutdownManagedServerStepTest {
   void whenAuthorizedToInvokeShutdown_verifySecretSet() {
     selectServer(CONFIGURED_MANAGED_SERVER1, configuredServerService);
 
-    defineResponse(200, "http://test-domain-conf-managed-server1.namespace:" + wireMockRule.port());
+    defineResponse(200, "http://test-domain-conf-managed-server1.namespace.svc:" + wireMockRule.port());
 
     // Validate not set before running steps
     assertThat(info.getWebLogicCredentialsSecret(), is(nullValue()));
@@ -233,7 +233,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_configuredClusterServer_verifySuccess() {
     selectServer(CONFIGURED_MANAGED_SERVER1, configuredServerService);
 
-    defineResponse(200, "http://test-domain-conf-managed-server1.namespace:" + wireMockRule.port());
+    defineResponse(200, "http://test-domain-conf-managed-server1.namespace.svc:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownConfiguredManagedServer);
 
@@ -244,7 +244,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_configuredClusterServer_verifyFailure() {
     selectServer(CONFIGURED_MANAGED_SERVER1, configuredServerService);
 
-    defineResponse(404, "http://test-domain-conf-managed-server1.namespace:" + wireMockRule.port());
+    defineResponse(404, "http://test-domain-conf-managed-server1.namespace.svc:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownConfiguredManagedServer);
 
@@ -255,7 +255,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_standaloneServer_verifySuccess() {
     selectServer(MANAGED_SERVER1, standaloneServerService);
 
-    defineResponse(200, "http://test-domain-managed-server1.namespace:8001");
+    defineResponse(200, "http://test-domain-managed-server1.namespace.svc:8001");
 
     testSupport.runSteps(shutdownStandaloneManagedServer);
 
@@ -266,7 +266,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_standaloneServer_verifyFailure() {
     selectServer(MANAGED_SERVER1, standaloneServerService);
 
-    defineResponse(404, "http://test-domain-managed-server1.namespace:" + wireMockRule.port());
+    defineResponse(404, "http://test-domain-managed-server1.namespace.svc:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownStandaloneManagedServer);
 
@@ -277,7 +277,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_standaloneServer_DomainNotFound_verifyFailureAndRunNextStep() {
     selectServer(MANAGED_SERVER1, standaloneServerService);
 
-    defineResponse(404, "http://test-domain-managed-server1.namespace:" + wireMockRule.port());
+    defineResponse(404, "http://test-domain-managed-server1.namespace.svc:" + wireMockRule.port());
     testSupport.failOnResource(KubernetesTestSupport.DOMAIN, UID, NS, HTTP_NOT_FOUND);
 
     testSupport.runSteps(shutdownStandaloneManagedServer);
@@ -290,7 +290,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_dynamicServer_verifySuccess() {
     selectServer(DYNAMIC_MANAGED_SERVER1, dynamicServerService);
 
-    defineResponse(200, "http://test-domain-dyn-managed-server1.namespace:" + wireMockRule.port());
+    defineResponse(200, "http://test-domain-dyn-managed-server1.namespace.svc:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownDynamicManagedServer);
 
@@ -301,7 +301,7 @@ class ShutdownManagedServerStepTest {
   void whenInvokeShutdown_dynamicServer_verifyFailure() {
     selectServer(DYNAMIC_MANAGED_SERVER1, dynamicServerService);
 
-    defineResponse(404, "http://test-domain-dyn-managed-server1.namespace:" + wireMockRule.port());
+    defineResponse(404, "http://test-domain-dyn-managed-server1.namespace.svc:" + wireMockRule.port());
 
     testSupport.runSteps(shutdownDynamicManagedServer);
 
@@ -313,7 +313,7 @@ class ShutdownManagedServerStepTest {
     selectServer(MANAGED_SERVER1, standaloneServerService);
     setForcedShutdownType(MANAGED_SERVER1);
 
-    String url = "http://test-domain-managed-server1.namespace:" + wireMockRule.port();
+    String url = "http://test-domain-managed-server1.namespace.svc:" + wireMockRule.port();
     defineResponse(false, 200, url);
 
     testSupport.runSteps(shutdownStandaloneManagedServer);

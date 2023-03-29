@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.steps;
@@ -153,7 +153,7 @@ class ReadHealthStepTest {
   @Test
   void whenReadAdminServerHealth_decrementRemainingServers() {
     selectServer(ADMIN_NAME);
-    defineResponse(200, OK_RESPONSE, "http://" + ADMIN_NAME + ".Test:3456");
+    defineResponse(200, OK_RESPONSE, "http://" + ADMIN_NAME + ".Test.svc:3456");
 
     Packet packet = testSupport.runSteps(readHealthStep);
 
@@ -171,7 +171,7 @@ class ReadHealthStepTest {
   void whenReadConfiguredManagedServerHealth_decrementRemainingServers() {
     V1Service service = selectServer(CONFIGURED_MANAGED_SERVER1);
     configureServiceWithClusterName(CONFIGURED_CLUSTER_NAME, service);
-    defineResponse(200, OK_RESPONSE, "http://" + CONFIGURED_MANAGED_SERVER1 + ".Test:7001");
+    defineResponse(200, OK_RESPONSE, "http://" + CONFIGURED_MANAGED_SERVER1 + ".Test.svc:7001");
 
     Packet packet = testSupport.runSteps(readHealthStep);
 
@@ -185,7 +185,7 @@ class ReadHealthStepTest {
   void whenReadDynamicManagedServerHealth_decrementRemainingServers() {
     V1Service service = selectServer(DYNAMIC_MANAGED_SERVER1);
     configureServiceWithClusterName(DYNAMIC_CLUSTER_NAME, service);
-    defineResponse(200, OK_RESPONSE, "http://" + DYNAMIC_MANAGED_SERVER1 + ".Test:7001");
+    defineResponse(200, OK_RESPONSE, "http://" + DYNAMIC_MANAGED_SERVER1 + ".Test.svc:7001");
 
     Packet packet = testSupport.runSteps(readHealthStep);
 
@@ -196,7 +196,7 @@ class ReadHealthStepTest {
   void whenServerRunning_verifyServerHealth() {
     selectServer(MANAGED_SERVER1);
 
-    defineResponse(200, OK_RESPONSE, "http://" + MANAGED_SERVER1 + ".Test:8001");
+    defineResponse(200, OK_RESPONSE, "http://" + MANAGED_SERVER1 + ".Test.svc:8001");
 
     Packet packet = testSupport.runSteps(readHealthStep);
 
@@ -215,7 +215,7 @@ class ReadHealthStepTest {
   @Test
   void whenAdminPodIPNull_verifyServerHealth() {
     selectServer(ADMIN_NAME);
-    defineResponse(200, OK_RESPONSE, "http://admin-server.Test:3456");
+    defineResponse(200, OK_RESPONSE, "http://admin-server.Test.svc:3456");
 
     Packet packet = testSupport.runSteps(readHealthStep);
 
@@ -225,7 +225,7 @@ class ReadHealthStepTest {
   @Test
   void whenAdminPodIPNull_requestSendWithCredentials() {
     selectServer(ADMIN_NAME);
-    defineResponse(200, OK_RESPONSE, "http://admin-server.Test:3456");
+    defineResponse(200, OK_RESPONSE, "http://admin-server.Test.svc:3456");
 
     testSupport.runSteps(readHealthStep);
 
@@ -242,7 +242,7 @@ class ReadHealthStepTest {
   void whenServerOverloaded_verifyServerHealth() {
     selectServer(MANAGED_SERVER1);
 
-    defineResponse(500, "", "http://" + MANAGED_SERVER1 + ".Test:8001");
+    defineResponse(500, "", "http://" + MANAGED_SERVER1 + ".Test.svc:8001");
 
     Packet packet = testSupport.runSteps(readHealthStep);
 
@@ -255,7 +255,7 @@ class ReadHealthStepTest {
   void whenUnableToReadHealth_verifyNotAvailable() {
     selectServer(MANAGED_SERVER1);
 
-    defineResponse(404, "", "http://" + MANAGED_SERVER1 + ".Test:8001");
+    defineResponse(404, "", "http://" + MANAGED_SERVER1 + ".Test.svc:8001");
 
     Packet packet = testSupport.runSteps(readHealthStep);
 
@@ -404,7 +404,7 @@ class ReadHealthStepTest {
   void whenNotAuthorizedToReadHealth_verifySecretCleared() {
     selectServer(MANAGED_SERVER1);
 
-    defineResponse(403, "", "http://" + MANAGED_SERVER1 + ".Test:8001");
+    defineResponse(403, "", "http://" + MANAGED_SERVER1 + ".Test.svc:8001");
 
     testSupport.runSteps(readHealthStep);
 
@@ -412,7 +412,7 @@ class ReadHealthStepTest {
   }
 
   private void defineExpectedURLInResponse(String protocol, int port) {
-    defineResponse(200, OK_RESPONSE, protocol + "://dyn-managed-server2.Test:" + port);
+    defineResponse(200, OK_RESPONSE, protocol + "://dyn-managed-server2.Test.svc:" + port);
   }
 
   private boolean readServerHealthSucceeded(Packet packet) {
