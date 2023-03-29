@@ -325,8 +325,8 @@ class ItVzMiiDynamicUpdate {
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
         encryptionSecretName, replicaCount, Arrays.asList(clusterName));
     logger.info(Yaml.dump(domain));
-    domain.spec().configuration().model().setConfigMap(configMapName);
-    logger.info(Yaml.dump(domain));
+    //domain.spec().configuration().model().setConfigMap(configMapName);
+    //logger.info(Yaml.dump(domain));
 
     Component component = new Component()
         .apiVersion("core.oam.dev/v1alpha2")
