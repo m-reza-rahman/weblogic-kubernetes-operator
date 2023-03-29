@@ -339,6 +339,27 @@ class ItVzMiiDynamicUpdate {
     // create cluster object
     String clusterName = "cluster-1";
     
+    DomainResource domain = createDomainResource(domainUid, domainNamespace,
+        MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
+        adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
+        encryptionSecretName, replicaCount, Arrays.asList(clusterName));
+    logger.info(Yaml.dump(domain));
+    domain.spec().configuration().model().setConfigMap(configMapName);
+    logger.info(Yaml.dump(domain));
+
+    Component component = new Component()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("Component")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid)
+            .namespace(domainNamespace))
+        .spec(new ComponentSpec()
+            .workLoad(new Workload()
+                .apiVersion("oam.verrazzano.io/v1alpha1")
+                .kind("VerrazzanoWebLogicWorkload")
+                .spec(new WorkloadSpec()
+                    .template(domain))));
+    
     //createVzConfigmapComponent(Collections.emptyList());
     //createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
     String command = KUBERNETES_CLI + " apply -f " + pathToWmYaml;
@@ -366,27 +387,6 @@ class ItVzMiiDynamicUpdate {
         "Checking for " + configMapName + " in namespace " + domainNamespace + " exists");
 
     assertDoesNotThrow(() -> logger.info(Yaml.dump(Kubernetes.listComponents(domainNamespace))));
-
-    DomainResource domain = createDomainResource(domainUid, domainNamespace,
-        MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
-        adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
-        encryptionSecretName, replicaCount, Arrays.asList(clusterName));
-    logger.info(Yaml.dump(domain));
-    domain.spec().configuration().model().setConfigMap(configMapName);
-    logger.info(Yaml.dump(domain));
-
-    Component component = new Component()
-        .apiVersion("core.oam.dev/v1alpha2")
-        .kind("Component")
-        .metadata(new V1ObjectMeta()
-            .name(domainUid)
-            .namespace(domainNamespace))
-        .spec(new ComponentSpec()
-            .workLoad(new Workload()
-                .apiVersion("oam.verrazzano.io/v1alpha1")
-                .kind("VerrazzanoWebLogicWorkload")
-                .spec(new WorkloadSpec()
-                    .template(domain))));
 
     Map<String, String> keyValueMap = new HashMap<>();
     keyValueMap.put("version", "v1.0.0");
