@@ -106,6 +106,7 @@ class ItVzMiiDynamicUpdate {
   static Path pathToWmYaml = null;
   static final String configMapName = "dynamicupdate-test-configmap";
   static LoggingFacade logger = null;
+  static String configmapcomponentname = "comp-" + configMapName;
 
   /**
    *
@@ -183,7 +184,7 @@ class ItVzMiiDynamicUpdate {
     String addcluster = "apiVersion: core.oam.dev/v1alpha2\n"
         + "kind: Component\n"
         + "metadata:\n"
-        + "  name: " + configMapName + "\n"
+        + "  name: " + configmapcomponentname + "\n"
         + "  namespace: " + domainNamespace + "\n"
         + "spec:\n"
         + "  workload:\n"
@@ -339,6 +340,35 @@ class ItVzMiiDynamicUpdate {
     // create cluster object
     String clusterName = "cluster-1";
     
+    //createVzConfigmapComponent(Collections.emptyList());
+    //createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
+    String command = KUBERNETES_CLI + " apply -f " + pathToWmYaml;
+    logger.info("command {0} ", command);
+    assertDoesNotThrow(() -> logger.info(Files.readString(pathToWmYaml)));
+    ExecResult result = assertDoesNotThrow(() -> exec(command, true));
+    logger.info(String.valueOf(result.exitValue()));
+    logger.info(result.stdout());
+    logger.info(result.stderr());
+    assertEquals(0, result.exitValue(), "Failed to create config map");
+
+    testUntil(new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        try {
+          return Kubernetes.listComponents(domainNamespace).getItems().stream()
+              .anyMatch(component -> component.getMetadata().getName().equals(configmapcomponentname));
+        } catch (ApiException ex) {
+          logger.warning(ex.getResponseBody());
+        }
+        return false;
+      }
+    },
+        logger,
+        "Checking for " + configMapName + " in namespace " + domainNamespace + " exists");
+
+    assertDoesNotThrow(() -> logger.info(Yaml.dump(Kubernetes.listComponents(domainNamespace))));
+
+    
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
@@ -360,34 +390,6 @@ class ItVzMiiDynamicUpdate {
                 .spec(new WorkloadSpec()
                     .template(domain))));
     
-    //createVzConfigmapComponent(Collections.emptyList());
-    //createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
-    String command = KUBERNETES_CLI + " apply -f " + pathToWmYaml;
-    logger.info("command {0} ", command);
-    assertDoesNotThrow(() -> logger.info(Files.readString(pathToWmYaml)));
-    ExecResult result = assertDoesNotThrow(() -> exec(command, true));
-    logger.info(String.valueOf(result.exitValue()));
-    logger.info(result.stdout());
-    logger.info(result.stderr());
-    assertEquals(0, result.exitValue(), "Failed to create config map");
-
-    testUntil(new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        try {
-          return Kubernetes.listComponents(domainNamespace).getItems().stream()
-              .anyMatch(component -> component.getMetadata().getName().equals(configMapName));
-        } catch (ApiException ex) {
-          logger.warning(ex.getResponseBody());
-        }
-        return false;
-      }
-    },
-        logger,
-        "Checking for " + configMapName + " in namespace " + domainNamespace + " exists");
-
-    assertDoesNotThrow(() -> logger.info(Yaml.dump(Kubernetes.listComponents(domainNamespace))));
-
     Map<String, String> keyValueMap = new HashMap<>();
     keyValueMap.put("version", "v1.0.0");
     keyValueMap.put("description", "My vz wls application");
@@ -400,31 +402,34 @@ class ItVzMiiDynamicUpdate {
             .namespace(domainNamespace)
             .annotations(keyValueMap))
         .spec(new ApplicationConfigurationSpec()
-            .components(Arrays.asList(new Components()
-                .componentName(domainUid)
-                .traits(Arrays.asList(new IngressTraits()
-                    .trait(new IngressTrait()
-                        .apiVersion("oam.verrazzano.io/v1alpha1")
-                        .kind("IngressTrait")
-                        .metadata(new V1ObjectMeta()
-                            .name("mydomain-ingress")
-                            .namespace(domainNamespace))
-                        .spec(new IngressTraitSpec()
-                            .ingressRules(Arrays.asList(
-                                new IngressRule()
-                                    .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
-                                        .path("/console")
-                                        .pathType("Prefix")))
-                                    .destination(new Destination()
-                                        .host(adminServerPodName)
-                                        .port(7001)),
-                                new IngressRule()
-                                    .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
-                                        .path("/sample-war")
-                                        .pathType("Prefix")))
-                                    .destination(new Destination()
-                                        .host(domainUid + "-cluster-" + clusterName)
-                                        .port(8001)))))))))));
+            .components(Arrays.asList(
+                new Components()
+                    .componentName(domainUid)
+                    .traits(Arrays.asList(new IngressTraits()
+                        .trait(new IngressTrait()
+                            .apiVersion("oam.verrazzano.io/v1alpha1")
+                            .kind("IngressTrait")
+                            .metadata(new V1ObjectMeta()
+                                .name("mydomain-ingress")
+                                .namespace(domainNamespace))
+                            .spec(new IngressTraitSpec()
+                                .ingressRules(Arrays.asList(
+                                    new IngressRule()
+                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                            .path("/console")
+                                            .pathType("Prefix")))
+                                        .destination(new Destination()
+                                            .host(adminServerPodName)
+                                            .port(7001)),
+                                    new IngressRule()
+                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                            .path("/sample-war")
+                                            .pathType("Prefix")))
+                                        .destination(new Destination()
+                                            .host(domainUid + "-cluster-" + clusterName)
+                                            .port(8001)))))))),
+                new Components()
+                    .componentName(configmapcomponentname))));
 
     logger.info(Yaml.dump(component));
     logger.info(Yaml.dump(application));
