@@ -42,6 +42,8 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
@@ -114,16 +116,7 @@ class ItVzCrossDomainTransaction {
   private static String host1 = null;
   private static String address1 = null;
   private static int replicaCount = 2;
-  private static final String ORACLEDBURLPREFIX = "oracledb.";
-  private static String ORACLEDBSUFFIX = null;
-  static String dbUrl;
-  static int dbNodePort;
-  private static String domain1AdminExtSvcRouteHost = null;
-  private static String domain2AdminExtSvcRouteHost = null;
-  private static String adminExtSvcRouteHost = null;
-  private static String hostAndPort = null;
-  private static String dbPodIP = null;
-  private static int dbPort = 1521;
+  private static String clusterName = "cluster-1";
 
   private static final String WDT_MODEL_FILE_DOMAIN1 = "model-crossdomaintransaction-domain1.yaml";
   private static final String WDT_MODEL_FILE_DOMAIN2 = "model-crossdomaintransaction-domain2.yaml";
@@ -156,13 +149,9 @@ class ItVzCrossDomainTransaction {
     buildApplicationsAndDomainImages();
     createVzDomain1();
     createVzDomain2();
+
   }
 
-  /**
-   * Create a WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
-   */
-  //@Test
-  //@DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
   private static void createVzDomain1() throws Exception {
 
     // Create the repo secret to pull the image
@@ -265,18 +254,12 @@ class ItVzCrossDomainTransaction {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host1 + "/console/login/LoginForm.jsp --resolve " + host1 + ":443:" + address1;
     logger.info("domain1 admin consoleUrl is: {0}", consoleUrl);
-    logger.info("\n DEBUGGING :sleep for 10 mins");
-    Thread.sleep(600000);
+    //logger.info("\n DEBUGGING :sleep for 5 mins");
+    //Thread.sleep(300000);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
-
 
   }
 
-  /**
-   * Create a WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
-   */
-  //@Test
-  //@DisplayName("Create model in image domain and verify services and pods are created and ready in verrazzano.")
   private static void createVzDomain2() {
 
     createTestRepoSecret(domain2Namespace);
@@ -388,7 +371,14 @@ class ItVzCrossDomainTransaction {
   @DisplayName("Check cross domain transcated MDB communication ")
   void testCrossDomainTranscatedMDB() {
 
-    // No extra header info
+    logger.info("Is going to check if testCdtUniformTopic in domain2 exists");
+    testUntil(
+        () -> checkSystemResourceConfiguration(domain2Namespace, "JMSSystemResources",
+            "testCdtUniformTopic", "200"),
+        logger,
+        "Checking for testCdtUniformTopic in JMSSystemResources resourceName exists");
+    logger.info("Found the testCdtUniformTopic configuration");
+
     logger.info("Is going to check MDB in domain with host {0}, address {1}", host1, address1);
     assertTrue(checkAppIsActive(host1, address1,
                  "", "mdbtopic","cluster-1",
@@ -397,13 +387,22 @@ class ItVzCrossDomainTransaction {
 
     logger.info("MDB application is activated on domain1/cluster");
 
-    String curlRequest = String.format("curl -v --show-error --noproxy '*' "
+    /*String curlRequest = String.format("curl -v --show-error --noproxy '*' "
             + "\"http://%s/jmsservlet/jmstest?"
             + "url=t3://domain2-cluster-cluster-1.%s:8001&"
             + "cf=jms.ClusterConnectionFactory&"
             + "action=send&"
             + "dest=jms/testCdtUniformTopic\"",
-           hostAndPort, domain2Namespace);
+           hostAndPort, domain2Namespace);*/
+
+    String curlRequest = String.format("curl -v --show-error --noproxy '*' "
+            + "\"https://%s/jmsservlet/jmstest?"
+            + "url=t3://domain2-cluster-cluster-1.%s:8001&"
+            + "cf=jms.ClusterConnectionFactory&"
+            + "action=send&"
+            + "dest=jms/testCdtUniformTopic\""
+            + " --resolve " + host1 + ":443:" + address1,
+            host1, domain2Namespace);
 
     ExecResult result = null;
     logger.info("curl command {0}", curlRequest);
@@ -421,11 +420,18 @@ class ItVzCrossDomainTransaction {
   }
 
   private boolean checkLocalQueue() {
-    String curlString = String.format("curl -v --show-error --noproxy '*' "
+    /*String curlString = String.format("curl -v --show-error --noproxy '*' "
             + "\"http://%s/jmsservlet/jmstest?"
             + "url=t3://localhost:7001&"
             + "action=receive&dest=jms.testAccountingQueue\"",
-            hostAndPort);
+            hostAndPort);*/
+
+    String curlString = String.format("curl -v --show-error --noproxy '*' "
+            + "\"http://%s/jmsservlet/jmstest?"
+            + "url=t3://localhost:7001&"
+            + "action=receive&dest=jms.testAccountingQueue\""
+            + " --resolve " + host1 + ":443:" + address1,
+            host1);
 
     logger.info("curl command {0}", curlString);
 
@@ -676,5 +682,31 @@ class ItVzCrossDomainTransaction {
         "Application {0} to be active",
         application);
     return true;
+  }
+
+  private static boolean checkSystemResourceConfiguration(String namespace, String resourcesType,
+      String resourcesName, String expectedStatusCode) {
+    // get istio gateway host and loadbalancer address
+    String host = getIstioHost(namespace);
+    String address = getLoadbalancerAddress();
+
+    StringBuffer curlString = new StringBuffer("status=$(curl -k --user ");
+    curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" https://" + host)
+        .append("/management/weblogic/latest/domainConfig")
+        .append("/")
+        .append(resourcesType)
+        .append("/")
+        .append(resourcesName)
+        .append("/ --resolve " + host + ":443:" + address)
+        .append(" --silent --show-error ")
+        .append(" -o /dev/null ")
+        .append(" -w %{http_code});")
+        .append("echo ${status}");
+    logger.info("checkSystemResource: curl command {0}", new String(curlString));
+    return Command
+        .withParams(new CommandParams()
+            .command(curlString.toString()))
+        .executeAndVerify(expectedStatusCode);
   }
 }
