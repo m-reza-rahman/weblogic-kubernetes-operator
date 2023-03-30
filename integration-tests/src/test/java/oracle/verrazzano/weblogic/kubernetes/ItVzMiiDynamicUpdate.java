@@ -61,6 +61,7 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
+import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewRestartVersion;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteComponent;
@@ -252,6 +253,9 @@ class ItVzMiiDynamicUpdate {
     //verifyIntrospectorRuns(domainUid, domainNamespace);
     introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
     logger.info("Patched domain resource with introspectVersion {0}", introspectVersion);
+    
+    String restartVersion = patchDomainResourceWithNewRestartVersion(domainUid, domainNamespace);
+    logger.info("Restarted domain resource with restartVersion {0}", restartVersion);
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
