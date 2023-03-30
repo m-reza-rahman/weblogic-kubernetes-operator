@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -245,6 +246,8 @@ class ItVzMiiDynamicUpdate {
     createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
+    logger.info("Sleeping for 30 minutes");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(30));
 
     verifyIntrospectorRuns(domainUid, domainNamespace);
 
