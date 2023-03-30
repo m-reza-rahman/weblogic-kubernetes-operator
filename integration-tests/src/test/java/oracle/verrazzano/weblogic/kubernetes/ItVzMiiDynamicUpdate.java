@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -240,7 +241,7 @@ class ItVzMiiDynamicUpdate {
           getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    deleteVzConfigmapComponent(configMapName, domainNamespace);
+    deleteVzConfigmapComponent(configmapcomponentname, domainNamespace);
     createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
@@ -340,7 +341,7 @@ class ItVzMiiDynamicUpdate {
     // create cluster object
     String clusterName = "cluster-1";
     
-    //createVzConfigmapComponent(Collections.emptyList());
+    createVzConfigmapComponent(Collections.emptyList());
     //createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
     String command = KUBERNETES_CLI + " apply -f " + pathToWmYaml;
     logger.info("command {0} ", command);
@@ -491,9 +492,9 @@ class ItVzMiiDynamicUpdate {
 
     Map<String, String> labels = new HashMap<>();
     labels.put("weblogic.domainUID", domainUid);
-    assertNotNull(configMapName, "ConfigMap name cannot be null");
-    logger.info("Create ConfigMap {0} that contains model files {1}",
-        configMapName, modelFiles);
+    assertNotNull(configmapcomponentname, "ConfigMap component name cannot be null");
+    logger.info("Create ConfigMap component {0} that contains model files {1}",
+        configmapcomponentname, modelFiles);
     Map<String, String> data = new HashMap<>();
     for (String modelFile : modelFiles) {
       ConfigMapUtils.addModelFile(data, modelFile);
@@ -503,7 +504,7 @@ class ItVzMiiDynamicUpdate {
         .apiVersion("core.oam.dev/v1alpha2")
         .kind("Component")
         .metadata(new V1ObjectMeta()
-            .name(configMapName)
+            .name(configmapcomponentname)
             .namespace(domainNamespace))
         .spec(new ComponentSpec()
             .workLoad(new Workload()
@@ -511,8 +512,7 @@ class ItVzMiiDynamicUpdate {
                 .kind("ConfigMap")
                 .metadata(new V1ObjectMeta()
                     .labels(labels)
-                    .name(configMapName)
-                    .namespace(domainNamespace))
+                    .name(configMapName))
                 .data(data)));
     logger.info("Deploying configmap component");
     logger.info(Yaml.dump(component));
@@ -521,7 +521,7 @@ class ItVzMiiDynamicUpdate {
   }
 
   static void deleteVzConfigmapComponent(String name, String namespace) throws ApiException {
-    assertTrue(deleteComponent(configMapName, domainNamespace));
+    assertTrue(deleteComponent(configmapcomponentname, domainNamespace));
     // check configuration for JMS
     testUntil(() -> {
       try {
