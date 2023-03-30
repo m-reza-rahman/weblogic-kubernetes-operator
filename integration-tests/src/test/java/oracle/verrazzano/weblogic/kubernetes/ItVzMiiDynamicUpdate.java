@@ -14,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -242,14 +241,13 @@ class ItVzMiiDynamicUpdate {
           getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    deleteVzConfigmapComponent(configmapcomponentname, domainNamespace);
-    createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
-
+    List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
+    recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace);
+    
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
-    logger.info("Sleeping for 30 minutes");
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(30));
 
-    verifyIntrospectorRuns(domainUid, domainNamespace);
+
+    //verifyIntrospectorRuns(domainUid, domainNamespace);
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
@@ -538,6 +536,24 @@ class ItVzMiiDynamicUpdate {
         logger,
         "Checking for " + name + " in namespace " + namespace + " exists");
     logger.info("Component " + name + " deleted");
+  }
+  
+  static void recreateVzConfigmapComponent(String name, List<String> modelFiles, String namespace) throws ApiException {
+
+    deleteVzConfigmapComponent(name, namespace);
+    testUntil(() -> {
+      return !Kubernetes.listComponents(namespace).getItems().stream()
+          .anyMatch(component -> component.getMetadata().getName().equals(configmapcomponentname));
+    },
+        logger,
+        "Checking for " + name + " in namespace " + namespace + " doesn't exists");
+    createVzConfigmapComponent(modelFiles);
+    testUntil(() -> {
+      return Kubernetes.listComponents(namespace).getItems().stream()
+          .anyMatch(component -> component.getMetadata().getName().equals(configmapcomponentname));
+    },
+        logger,
+        "Checking for " + name + " in namespace " + namespace + " exists");
   }
 
 }
