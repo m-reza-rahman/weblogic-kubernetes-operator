@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -246,7 +247,7 @@ class ItVzMiiDynamicUpdate {
     
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
 
-
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
     //verifyIntrospectorRuns(domainUid, domainNamespace);
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
@@ -419,6 +420,13 @@ class ItVzMiiDynamicUpdate {
                                     new IngressRule()
                                         .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
                                             .path("/console")
+                                            .pathType("Prefix")))
+                                        .destination(new Destination()
+                                            .host(adminServerPodName)
+                                            .port(7001)),
+                                    new IngressRule()
+                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                            .path("/management")
                                             .pathType("Prefix")))
                                         .destination(new Destination()
                                             .host(adminServerPodName)
