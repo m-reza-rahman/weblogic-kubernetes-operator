@@ -246,9 +246,12 @@ class ItVzMiiDynamicUpdate {
     recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace);
     
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
+    logger.info("Patched domain resource with introspectVersion {0}", introspectVersion);
 
     assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
     //verifyIntrospectorRuns(domainUid, domainNamespace);
+    introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
+    logger.info("Patched domain resource with introspectVersion {0}", introspectVersion);
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
