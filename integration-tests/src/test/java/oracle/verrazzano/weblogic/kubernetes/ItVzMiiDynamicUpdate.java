@@ -223,6 +223,8 @@ class ItVzMiiDynamicUpdate {
     assertDoesNotThrow(() -> recreateVzConfigmapComponent(configmapcomponentname,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml",
             pathToAddClusterYaml.toString()), domainNamespace));
+    
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
 
     // change replica to have the servers running in the newly added cluster
     assertTrue(patchDomainResourceWithNewReplicaCountAtSpecLevel(
