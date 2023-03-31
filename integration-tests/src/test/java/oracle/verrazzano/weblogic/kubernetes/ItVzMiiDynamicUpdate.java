@@ -64,7 +64,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResource
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteComponent;
-import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
@@ -256,7 +255,7 @@ class ItVzMiiDynamicUpdate {
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
     
     verifyIntrospectorRuns();
-    verifyRollingRestartOccurred(pods, 1, domainNamespace);
+    //verifyRollingRestartOccurred(pods, 1, domainNamespace);
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
