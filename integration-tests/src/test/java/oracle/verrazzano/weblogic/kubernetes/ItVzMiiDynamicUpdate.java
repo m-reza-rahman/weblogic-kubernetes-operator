@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -246,6 +247,8 @@ class ItVzMiiDynamicUpdate {
 
     List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
     recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace);
+    
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
 
     logger.info("Before introspectversion patching");
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
