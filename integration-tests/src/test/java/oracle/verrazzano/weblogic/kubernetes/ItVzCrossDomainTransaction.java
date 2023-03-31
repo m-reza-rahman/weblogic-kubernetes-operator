@@ -627,7 +627,10 @@ class ItVzCrossDomainTransaction {
                     .name("JAVA_OPTIONS")
                     .value("-Dweblogic.transaction.EnableInstrumentedTM=true -Dweblogic.StdoutDebugEnabled=false"
                         + "-Dweblogic.debug.DebugJTAXA=true "
-                        + "-Dweblogic.debug.DebugJTA2PC=true"))
+                        + "-Dweblogic.debug.DebugJTA2PC=true"
+                        + "-Dweblogic.debug.DebugJNDI=true"
+                        + "-Dweblogic.debug.DebugJNDIFactories=true"
+                        + "-Dweblogic.debug.DebugJNDIResolution=true"))
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
