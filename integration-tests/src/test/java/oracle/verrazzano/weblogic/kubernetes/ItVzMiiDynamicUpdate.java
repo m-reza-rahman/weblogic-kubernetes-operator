@@ -14,7 +14,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -65,9 +64,9 @@ import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResource
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteComponent;
+import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
@@ -75,7 +74,10 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResourceWithNewReplicaCountAtSpecLevel;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -245,10 +247,6 @@ class ItVzMiiDynamicUpdate {
 
     List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
     recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace);
-    
-    
-    logger.info("Waiting for 5 minutes");
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
 
     logger.info("Before introspectversion patching");
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
@@ -256,23 +254,19 @@ class ItVzMiiDynamicUpdate {
     logger.info("Patched domain resource with introspectVersion {0}", introspectVersion);
     logger.info("After introspectversion patching");
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
-
-    //logger.info("Waiting for 30 minutes");
-    //assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(30));
+    
+    verifyIntrospectorRuns();
+    verifyRollingRestartOccurred(pods, 1, domainNamespace);
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
         + serverName
         + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
         + "/workManagerRuntimes/" + workManagerName;
-    String uri1 = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
-        + serverName
-        + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
-        + "/workManagerRuntimes/";
 
     // check configuration for JMS
     testUntil(
-        () -> checkSystemResourceConfiguration(domainNamespace, uri1, "200"),
+        () -> checkSystemResourceConfiguration(domainNamespace, uri, "200"),
         logger,
         "Checking for " + workManagerName + " in workManagerRuntimes exists");
     logger.info("Found the " + workManagerName + " configuration");
@@ -321,7 +315,7 @@ class ItVzMiiDynamicUpdate {
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
 
     // Verifying introspector pod is created, runs and deleted
-    verifyIntrospectorRuns(domainUid, domainNamespace);
+    verifyIntrospectorRuns();
 
     // check the servers are started in newly added cluster and the server services and pods are ready
     for (int i = 1; i <= replicaCount; i++) {
@@ -578,4 +572,13 @@ class ItVzMiiDynamicUpdate {
         "Checking for " + name + " in namespace " + namespace + " exists");
   }
 
+  
+  //verify the introspector pod is created and run
+  private void verifyIntrospectorRuns() {
+    //verify the introspector pod is created and runs
+    logger.info("Verifying introspector pod is created, runs and deleted");
+    String introspectPodName = getIntrospectJobName(domainUid);
+    checkPodExists(introspectPodName, domainUid, domainNamespace);
+    checkPodDoesNotExist(introspectPodName, domainUid, domainNamespace);
+  }
 }
