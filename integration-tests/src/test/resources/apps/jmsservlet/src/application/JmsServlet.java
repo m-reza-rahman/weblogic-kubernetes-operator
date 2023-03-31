@@ -50,6 +50,8 @@ public class JmsServlet extends HttpServlet {
 
      try {
 
+      out.println("In the servlet JmsServlet!!");
+
       action  = request.getParameter("action");
       out.println("Action ["+action+"]");
 
