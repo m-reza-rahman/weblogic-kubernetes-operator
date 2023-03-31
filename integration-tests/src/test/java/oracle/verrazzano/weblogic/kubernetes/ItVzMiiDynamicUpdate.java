@@ -62,7 +62,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
-import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewRestartVersion;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteComponent;
@@ -258,12 +257,14 @@ class ItVzMiiDynamicUpdate {
     logger.info("After introspectversion patching");
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
 
-    logger.info("Before restartVersion patching");
-    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
-    String restartVersion = patchDomainResourceWithNewRestartVersion(domainUid, domainNamespace);
-    logger.info("Restarted domain resource with restartVersion {0}", restartVersion);
-    logger.info("After restartVersion patching");
-    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace))); 
+    //logger.info("Before restartVersion patching");
+    //logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
+    //String restartVersion = patchDomainResourceWithNewRestartVersion(domainUid, domainNamespace);
+    //logger.info("Restarted domain resource with restartVersion {0}", restartVersion);
+    //logger.info("After restartVersion patching");
+    //logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
+    logger.info("Waiting for 30 minutes");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(30));
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
