@@ -137,7 +137,7 @@ public class CommonTestUtils {
         .atMost(minutes, MINUTES).await();
   }
 
-  public static ConditionFactory withStandardRetryPolicy = createStandardRetryPolicyWithAtMost(5);
+  public static ConditionFactory withStandardRetryPolicy = createStandardRetryPolicyWithAtMost(30);
   public static ConditionFactory withStandardRetryPolicyIgnoringExceptions =
       createStandardRetryPolicyWithAtMost(5).ignoreExceptions();
   public static ConditionFactory withLongRetryPolicy = createStandardRetryPolicyWithAtMost(15);

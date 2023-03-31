@@ -60,6 +60,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewRestartVersion;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
@@ -246,16 +247,23 @@ class ItVzMiiDynamicUpdate {
     List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
     recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace);
     
+    
+    logger.info("Waiting for 5 minutes");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
+
+    logger.info("Before introspectversion patching");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
     logger.info("Patched domain resource with introspectVersion {0}", introspectVersion);
+    logger.info("After introspectversion patching");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
 
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
-    //verifyIntrospectorRuns(domainUid, domainNamespace);
-    introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
-    logger.info("Patched domain resource with introspectVersion {0}", introspectVersion);
-    
+    logger.info("Before restartVersion patching");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
     String restartVersion = patchDomainResourceWithNewRestartVersion(domainUid, domainNamespace);
     logger.info("Restarted domain resource with restartVersion {0}", restartVersion);
+    logger.info("After restartVersion patching");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace))); 
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"

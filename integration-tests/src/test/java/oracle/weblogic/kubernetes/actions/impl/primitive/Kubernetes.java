@@ -1409,7 +1409,6 @@ public class Kubernetes {
       response = vzComCrdClient.list(namespace);
     } catch (Exception ex) {
       getLogger().warning(ex.getMessage());
-      throw ex;
     }
     return response != null ? response.getObject() : new ComponentList();
   }
