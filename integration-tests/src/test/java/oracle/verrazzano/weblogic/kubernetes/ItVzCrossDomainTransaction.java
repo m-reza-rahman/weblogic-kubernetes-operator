@@ -424,12 +424,15 @@ class ItVzCrossDomainTransaction {
             + "action=receive&dest=jms.testAccountingQueue\"",
             hostAndPort);*/
 
-    String curlString = String.format("curl -v --show-error --noproxy '*' "
-            + "\"http://%s/jmsservlet/jmstest?"
+    String curlString = String.format("curl -k --user "
+            + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
+            + " https://%s/jmsservlet/jmstest?"
             + "url=t3://localhost:7001&"
-            + "action=receive&dest=jms.testAccountingQueue\""
-            + " --resolve " + host1 + ":443:" + address1,
+            + "action=receive&dest=jms.testAccountingQueue"
+            + " --resolve " + host1 + ":443:" + address1
+            + " --silent --show-error",
             host1);
+
 
     logger.info("curl command {0}", curlString);
 
