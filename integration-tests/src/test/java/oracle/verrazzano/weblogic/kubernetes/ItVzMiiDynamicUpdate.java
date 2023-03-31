@@ -262,10 +262,14 @@ class ItVzMiiDynamicUpdate {
         + serverName
         + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
         + "/workManagerRuntimes/" + workManagerName;
+    String uri1 = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
+        + serverName
+        + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
+        + "/workManagerRuntimes/";
 
     // check configuration for JMS
     testUntil(
-        () -> checkSystemResourceConfiguration(domainNamespace, uri, "200"),
+        () -> checkSystemResourceConfiguration(domainNamespace, uri1, "200"),
         logger,
         "Checking for " + workManagerName + " in workManagerRuntimes exists");
     logger.info("Found the " + workManagerName + " configuration");
