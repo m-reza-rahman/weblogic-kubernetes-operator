@@ -254,8 +254,8 @@ class ItVzCrossDomainTransaction {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host1 + "/console/login/LoginForm.jsp --resolve " + host1 + ":443:" + address1;
     logger.info("domain1 admin consoleUrl is: {0}", consoleUrl);
-    logger.info("\n DEBUGGING :sleep for 5 mins");
-    Thread.sleep(600000);
+    //logger.info("\n DEBUGGING :sleep for 5 mins");
+    //Thread.sleep(600000);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
   }
@@ -406,6 +406,8 @@ class ItVzCrossDomainTransaction {
 
     ExecResult result = null;
     logger.info("curl command {0}", curlRequest);
+    logger.info("curl command error {0}", result.stdout());
+    logger.info("curl command returned {0}", result.toString());
     result = assertDoesNotThrow(
         () -> exec(curlRequest, true));
     if (result.exitValue() == 0) {
