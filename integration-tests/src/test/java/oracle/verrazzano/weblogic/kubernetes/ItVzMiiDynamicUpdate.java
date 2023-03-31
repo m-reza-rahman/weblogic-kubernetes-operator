@@ -257,14 +257,8 @@ class ItVzMiiDynamicUpdate {
     logger.info("After introspectversion patching");
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
 
-    //logger.info("Before restartVersion patching");
-    //logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
-    //String restartVersion = patchDomainResourceWithNewRestartVersion(domainUid, domainNamespace);
-    //logger.info("Restarted domain resource with restartVersion {0}", restartVersion);
-    //logger.info("After restartVersion patching");
-    //logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
-    logger.info("Waiting for 30 minutes");
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(30));
+    //logger.info("Waiting for 30 minutes");
+    //assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(30));
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
