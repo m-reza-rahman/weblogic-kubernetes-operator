@@ -387,29 +387,25 @@ class ItVzCrossDomainTransaction {
 
     logger.info("MDB application is activated on domain1/cluster");*/
 
-    /*String curlRequest = String.format("curl -v --show-error --noproxy '*' "
-            + "\"http://%s/jmsservlet/jmstest?"
-            + "url=t3://domain2-cluster-cluster-1.%s:8001&"
-            + "cf=jms.ClusterConnectionFactory&"
-            + "action=send&"
-            + "dest=jms/testCdtUniformTopic\"",
-           hostAndPort, domain2Namespace);*/
 
-    String curlRequest = String.format("curl -v --show-error --noproxy '*' "
-            + "\"https://%s/jmsservlet/jmstest?"
+    String curlRequest = String.format("curl -k --user "
+            + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
+            + " https://%s/jmsservlet/jmstest?"
             + "url=t3://domain2-cluster-cluster-1.%s:8001&"
             + "cf=jms.ClusterConnectionFactory&"
             + "action=send&"
-            + "dest=jms/testCdtUniformTopic\""
-            + " --resolve " + host1 + ":443:" + address1,
+            + "dest=jms/testCdtUniformTopic"
+            + " --resolve " + host1 + ":443:" + address1
+            + " --silent --show-error",
             host1, domain2Namespace);
 
     ExecResult result = null;
     logger.info("curl command {0}", curlRequest);
-    logger.info("curl command error {0}", result.stdout());
-    logger.info("curl command returned {0}", result.toString());
     result = assertDoesNotThrow(
         () -> exec(curlRequest, true));
+    logger.info("curl command error {0}", result.stdout());
+    logger.info("curl command error {0}", result.stderr());
+    logger.info("curl command returned {0}", result.toString());
     if (result.exitValue() == 0) {
       logger.info("\n HTTP response is \n " + result.stdout());
       logger.info("curl command returned {0}", result.toString());
