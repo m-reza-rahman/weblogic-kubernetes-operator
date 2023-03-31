@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.ApiException;
@@ -35,14 +34,10 @@ import oracle.verrazzano.weblogic.kubernetes.annotations.VzIntegrationTest;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ConfigMapUtils;
-import oracle.weblogic.kubernetes.utils.ExecResult;
-import oracle.weblogic.kubernetes.utils.MiiDynamicUpdateHelper;
+import oracle.weblogic.kubernetes.utils.VerrazzanoUtils;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -51,8 +46,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
@@ -64,15 +59,11 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomReso
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
-import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteComponent;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
-import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResourceWithNewReplicaCountAtSpecLevel;
@@ -84,9 +75,7 @@ import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAddress;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.setLabelToNamespace;
-import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -99,19 +88,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("v8o")
 class ItVzMiiDynamicUpdate {
 
-  private static String domainNamespace = null;
-  private static final String domainUid = "vz-mii-dynamic-update";
-  // admin/managed server name here should match with model yaml in MII_BASIC_WDT_MODEL_FILE
-  static final String adminServerPodName = domainUid + "-admin-server";
-  static final String managedServerPrefix = domainUid + "-managed-server";
+  static String domainNamespace = null;
+  static final String domainUid = "vz-mii-dynamic-update";
+  static final String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
+  static final String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
   static final int replicaCount = 2;
   static String workManagerName = "newWM";
-  static Path pathToChangeTargetYaml = null;
   static Path pathToAddClusterYaml = null;
-  static Path pathToWmYaml = null;
-  static final String configMapName = "dynamicupdate-test-configmap";
-  static LoggingFacade logger = null;
+  static final String configMapName = "du-test-configmap";  
   static String configmapcomponentname = "comp-" + configMapName;
+  static LoggingFacade logger = null;
 
   /**
    *
@@ -127,16 +113,6 @@ class ItVzMiiDynamicUpdate {
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
     setLabelToNamespace(Arrays.asList(domainNamespace));
-    
-
-    // write sparse yaml to change target to file
-    pathToChangeTargetYaml = Paths.get(WORK_DIR + "/changetarget.yaml");
-    String yamlToChangeTarget = "appDeployments:\n"
-        + "  Application:\n"
-        + "    myear:\n"
-        + "      Target: 'cluster-1,admin-server'";
-
-    assertDoesNotThrow(() -> Files.write(pathToChangeTargetYaml, yamlToChangeTarget.getBytes()));
 
     // write sparse yaml to file
     pathToAddClusterYaml = Paths.get(WORK_DIR + "/addcluster.yaml");
@@ -156,66 +132,6 @@ class ItVzMiiDynamicUpdate {
         + "            ListenPort : 8001";
 
     assertDoesNotThrow(() -> Files.write(pathToAddClusterYaml, yamlToAddCluster.getBytes()));
-    
-    String configmap = "apiVersion: core.oam.dev/v1alpha2\n"
-        + "kind: Component\n"
-        + "metadata:\n"
-        + "  name: " + configMapName + "\n"
-        + "  namespace: " + domainNamespace + "\n"
-        + "spec:\n"
-        + "  workload:\n"
-        + "    apiVersion: v1\n"
-        + "    kind: ConfigMap\n"
-        + "    metadata:\n"
-        + "      labels:\n"
-        + "        weblogic.domainUID: " + domainUid + "\n"
-        + "      name: " + configMapName + "\n"
-        + "      namespace: " + domainNamespace + "\n"
-        + "    data:\n"
-        + "      model.config.wm.yaml: |\n"
-        + "        resources:\n"
-        + "          SelfTuning:\n"
-        + "            WorkManager:\n"
-        + "              newWM:\n"
-        + "                Target: 'cluster-1'\n"
-        + "                MinThreadsConstraint: 'SampleMinThreads'\n"
-        + "                MaxThreadsConstraint: 'SampleMaxThreads'\n"
-        + "            MinThreadsConstraint:\n"
-        + "              SampleMinThreads:\n"
-        + "                Count: 1\n"
-        + "            MaxThreadsConstraint:\n"
-        + "              SampleMaxThreads:\n"
-        + "                Count: 10";
-    String addcluster = "apiVersion: core.oam.dev/v1alpha2\n"
-        + "kind: Component\n"
-        + "metadata:\n"
-        + "  name: " + configmapcomponentname + "\n"
-        + "  namespace: " + domainNamespace + "\n"
-        + "spec:\n"
-        + "  workload:\n"
-        + "    apiVersion: v1\n"
-        + "    kind: ConfigMap\n"
-        + "    metadata:\n"
-        + "      labels:\n"
-        + "        weblogic.domainUID: " + domainUid + "\n"
-        + "      name: " + configMapName + "\n"
-        + "    data:\n"
-        + "      wdt_cluster.yaml: |\n"
-        + "        topology:\n"
-        + "          Cluster:\n"
-        + "            \"Cluster2\":\n"
-        + "              DynamicServers:\n"
-        + "                ServerTemplate: \"Cluster2Template\"\n"
-        + "                ServerNamePrefix: \"ManagedServer\"\n"
-        + "                DynamicClusterSize: 5\n"
-        + "                MaxDynamicClusterSize: 5\n"
-        + "                CalculatedListenPorts: false\n"
-        + "          ServerTemplate:\n"
-        + "            \"Cluster2Template\":\n"
-        + "              Cluster: \"Cluster2\"\n"
-        + "              ListenPort: 9001\n";
-    pathToWmYaml = Paths.get(WORK_DIR + "/wm.yaml");
-    assertDoesNotThrow(() -> Files.write(pathToWmYaml, addcluster.getBytes()));
     createVzMiiDomain();
   }
 
@@ -246,7 +162,7 @@ class ItVzMiiDynamicUpdate {
     }
 
     List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
-    recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace);
+    assertDoesNotThrow(() -> recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace));
     
     assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
 
@@ -284,7 +200,6 @@ class ItVzMiiDynamicUpdate {
    * cluster are started and other servers are not rolled.
    */
   @Test
-  @Disabled
   @Order(2)
   @DisplayName("Add cluster in MII domain using mii dynamic update")
   void testMiiAddCluster() {
@@ -304,9 +219,10 @@ class ItVzMiiDynamicUpdate {
 
     // Replace contents of an existing configMap with cm config and application target as
     // there are issues with removing them, WDT-535
-    replaceConfigMapWithModelFiles(MiiDynamicUpdateHelper.configMapName, domainUid, domainNamespace,
+
+    assertDoesNotThrow(() -> recreateVzConfigmapComponent(configmapcomponentname,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml",
-            pathToAddClusterYaml.toString()), withStandardRetryPolicy);
+            pathToAddClusterYaml.toString()), domainNamespace));
 
     // change replica to have the servers running in the newly added cluster
     assertTrue(patchDomainResourceWithNewReplicaCountAtSpecLevel(
@@ -353,35 +269,9 @@ class ItVzMiiDynamicUpdate {
     // create cluster object
     String clusterName = "cluster-1";
     
-    createVzConfigmapComponent(Collections.emptyList());
-    //createVzConfigmapComponent(Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"));
-    String command = KUBERNETES_CLI + " apply -f " + pathToWmYaml;
-    logger.info("command {0} ", command);
-    assertDoesNotThrow(() -> logger.info(Files.readString(pathToWmYaml)));
-    ExecResult result = assertDoesNotThrow(() -> exec(command, true));
-    logger.info(String.valueOf(result.exitValue()));
-    logger.info(result.stdout());
-    logger.info(result.stderr());
-    assertEquals(0, result.exitValue(), "Failed to create config map");
-
-    testUntil(new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        try {
-          return Kubernetes.listComponents(domainNamespace).getItems().stream()
-              .anyMatch(component -> component.getMetadata().getName().equals(configmapcomponentname));
-        } catch (ApiException ex) {
-          logger.warning(ex.getResponseBody());
-        }
-        return false;
-      }
-    },
-        logger,
-        "Checking for " + configMapName + " in namespace " + domainNamespace + " exists");
-
-    assertDoesNotThrow(() -> logger.info(Yaml.dump(Kubernetes.listComponents(domainNamespace))));
-
-    
+    VerrazzanoUtils.createVzConfigmapComponent(configmapcomponentname, configMapName, 
+        domainNamespace, domainUid, Collections.emptyList());
+   
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
@@ -451,9 +341,6 @@ class ItVzMiiDynamicUpdate {
                 new Components()
                     .componentName(configmapcomponentname))));
 
-    logger.info(Yaml.dump(component));
-    logger.info(Yaml.dump(application));
-
     logger.info("Deploying components");
     assertDoesNotThrow(() -> createComponent(component));
     logger.info("Deploying application");
@@ -469,20 +356,6 @@ class ItVzMiiDynamicUpdate {
           managedServerPrefix + i, domainNamespace);
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
-
-    // get istio gateway host and loadbalancer address
-    String host = getIstioHost(domainNamespace);
-    String address = getLoadbalancerAddress();
-
-    // verify WebLogic console page is accessible through istio/loadbalancer
-    String message = "Oracle WebLogic Server Administration Console";
-    String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
-    assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
-
-    // verify sample running in cluster is accessible through istio/loadbalancer
-    message = "Hello World, you have reached server managed-server";
-    String appUrl = "https://" + host + "/sample-war/index.jsp --resolve " + host + ":443:" + address;
-    assertTrue(verifyVzApplicationAccess(appUrl, message), "Failed to get access to sample application");
 
   }
 
@@ -507,71 +380,11 @@ class ItVzMiiDynamicUpdate {
         .executeAndVerify(expectedStatusCode);
   }
   
-  static void createVzConfigmapComponent(List<String> modelFiles) {
 
-    Map<String, String> labels = new HashMap<>();
-    labels.put("weblogic.domainUID", domainUid);
-    assertNotNull(configmapcomponentname, "ConfigMap component name cannot be null");
-    logger.info("Create ConfigMap component {0} that contains model files {1}",
-        configmapcomponentname, modelFiles);
-    Map<String, String> data = new HashMap<>();
-    for (String modelFile : modelFiles) {
-      ConfigMapUtils.addModelFile(data, modelFile);
-    }
-
-    Component component = new Component()
-        .apiVersion("core.oam.dev/v1alpha2")
-        .kind("Component")
-        .metadata(new V1ObjectMeta()
-            .name(configmapcomponentname)
-            .namespace(domainNamespace))
-        .spec(new ComponentSpec()
-            .workLoad(new Workload()
-                .apiVersion("v1")
-                .kind("ConfigMap")
-                .metadata(new V1ObjectMeta()
-                    .labels(labels)
-                    .name(configMapName))
-                .data(data)));
-    logger.info("Deploying configmap component");
-    logger.info(Yaml.dump(component));
-    assertDoesNotThrow(() -> createComponent(component));
-    assertDoesNotThrow(() -> logger.info(Yaml.dump(Kubernetes.listComponents(domainNamespace))));
-  }
-
-  static void deleteVzConfigmapComponent(String name, String namespace) throws ApiException {
-    assertTrue(deleteComponent(configmapcomponentname, domainNamespace));
-    // check configuration for JMS
-    testUntil(() -> {
-      try {
-        return !Kubernetes.listComponents(namespace).getItems().stream()
-            .anyMatch(component -> component.getMetadata().getName().equals(name));
-      } catch (ApiException ex) {
-        logger.warning(ex.getResponseBody());
-      }
-      return false;
-    },
-        logger,
-        "Checking for " + name + " in namespace " + namespace + " exists");
-    logger.info("Component " + name + " deleted");
-  }
-  
-  static void recreateVzConfigmapComponent(String name, List<String> modelFiles, String namespace) throws ApiException {
-
-    deleteVzConfigmapComponent(name, namespace);
-    testUntil(() -> {
-      return !Kubernetes.listComponents(namespace).getItems().stream()
-          .anyMatch(component -> component.getMetadata().getName().equals(configmapcomponentname));
-    },
-        logger,
-        "Checking for " + name + " in namespace " + namespace + " doesn't exists");
-    createVzConfigmapComponent(modelFiles);
-    testUntil(() -> {
-      return Kubernetes.listComponents(namespace).getItems().stream()
-          .anyMatch(component -> component.getMetadata().getName().equals(configmapcomponentname));
-    },
-        logger,
-        "Checking for " + name + " in namespace " + namespace + " exists");
+  static void recreateVzConfigmapComponent(String componentName, List<String> modelFiles, String namespace)
+      throws ApiException {
+    VerrazzanoUtils.deleteVzConfigmapComponent(componentName, namespace);
+    VerrazzanoUtils.createVzConfigmapComponent(componentName, configMapName, namespace, domainUid, modelFiles);
   }
 
   
