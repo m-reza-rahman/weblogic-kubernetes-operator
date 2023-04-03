@@ -161,10 +161,15 @@ class ItVzMiiDynamicUpdate {
           getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
+    logger.info("Sleeping for 2 minute");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(2));
+    
     List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
     assertDoesNotThrow(() -> recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace));
     
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
+    logger.info("Sleeping for 2 minute");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(2));
+    
 
     logger.info("Before introspectversion patching");
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
@@ -175,6 +180,9 @@ class ItVzMiiDynamicUpdate {
     
     verifyIntrospectorRuns();
     //verifyRollingRestartOccurred(pods, 1, domainNamespace);
+    
+    logger.info("Sleeping for 2 minute");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(2));
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
