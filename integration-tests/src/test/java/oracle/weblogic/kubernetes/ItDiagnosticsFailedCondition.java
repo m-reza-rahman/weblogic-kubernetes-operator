@@ -43,6 +43,7 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.ItMiiDomainModelInPV.buildMIIandPushToRepo;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
@@ -57,6 +58,7 @@ import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -226,10 +228,13 @@ class ItDiagnosticsFailedCondition {
    * type: Failed, status: true
    * type: Available, status: false
    * type: Completed, status: false
+   * Also patch the domain with non-existing webLogicCredentialsSecret.
+   * Verify the domain status condition reason DomainInvalid exists.
    */
   @Test
-  @DisplayName("Test domain status condition with replicas set to more than available in cluster")
-  void testReplicasTooHigh() {
+  @DisplayName("Test domain status condition with replicas set to more than available in cluster"
+      + " and non-existing webLogicCredentialsSecret name")
+  void testReplicasTooHighAndNonExistingAdminSecret() {
     boolean testPassed = false;
     String domainName = getDomainName();
     String clusterResName = getClusterResName(domainName);
@@ -265,6 +270,15 @@ class ItDiagnosticsFailedCondition {
       assertTrue(patchClusterCustomResource(clusterResName, domainNamespace,
           patch, V1Patch.PATCH_FORMAT_JSON_PATCH), "Failed to patch cluster");
 
+      logger.info("Checking for admin server pod is up and running");
+      checkPodReadyAndServiceExists(domainName + "-" + ADMIN_SERVER_NAME_BASE, domainName, domainNamespace);
+
+      // verify all the managed servers are up and running
+      logger.info("Checking managed server pods were up and running");
+      for (int i = 1; i <= replicaCount; i++) {
+        checkPodReadyAndServiceExists(domainName + "-" + MANAGED_SERVER_NAME_BASE + i, domainName, domainNamespace);
+      }
+
       patchStr = "[{\"op\": \"replace\", "
           + "\"path\": \"/spec/webLogicCredentialsSecret/name\", \"value\": \"weblogic-credentials-foo\"}]";
       logger.info("PatchStr for domainHome: {0}", patchStr);
@@ -278,19 +292,6 @@ class ItDiagnosticsFailedCondition {
           "waiting for domain status condition reason DomainInvalid exists"
       );
 
-      patchStr
-          = "["
-          + "{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": 2}"
-          + "]";
-      patch = new V1Patch(patchStr);
-      logger.info("Patching cluster resource using patch string {0} ", patchStr);
-      assertTrue(patchClusterCustomResource(clusterResName, domainNamespace,
-          patch, V1Patch.PATCH_FORMAT_JSON_PATCH), "Failed to patch cluster");
-      testUntil(
-          domainStatusReasonMatches(domainName, domainNamespace, "DomainInvalid"),
-          getLogger(),
-          "waiting for domain status condition reason DomainInvalid exists"
-      );
       testPassed = true;
     } finally {
       if (!testPassed) {
