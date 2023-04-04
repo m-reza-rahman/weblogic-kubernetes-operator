@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -30,6 +32,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_APP_RESPONSE_V1;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsRunning;
@@ -141,11 +144,14 @@ class ItMiiDynamicUpdatePart1 {
   @DisplayName("Add a work manager to a model-in-image domain using dynamic update")
   @Tag("gate")
   @Tag("crio")
-  void testMiiAddWorkManager() {
+  void testMiiAddWorkManager() throws ApiException {
 
     // This test uses the WebLogic domain created in BeforeAll method
     // BeforeEach method ensures that the server pods are running
 
+    logger.info("Before configmap creation and Before introspectversion patching");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, helper.domainNamespace)));  
+    
     LinkedHashMap<String, OffsetDateTime> pods = new LinkedHashMap<>();
 
     // get the creation time of the admin server pod before patching
@@ -159,8 +165,14 @@ class ItMiiDynamicUpdatePart1 {
     replaceConfigMapWithModelFiles(MiiDynamicUpdateHelper.configMapName, domainUid, helper.domainNamespace,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
 
+    logger.info("After configmap creation and Before introspectversion patching");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, helper.domainNamespace)));
+    
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, helper.domainNamespace);
 
+    logger.info("After introspectversion patching");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, helper.domainNamespace))); 
+    
     verifyIntrospectorRuns(domainUid, helper.domainNamespace);
 
     testUntil(
@@ -171,6 +183,8 @@ class ItMiiDynamicUpdatePart1 {
         "work manager configuration to be updated.");
     logger.info("Found new work manager configuration");
 
+    logger.info("After ntrospector runs");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, helper.domainNamespace)));    
     verifyPodsNotRolled(helper.domainNamespace, pods);
 
     verifyPodIntrospectVersionUpdated(pods.keySet(), introspectVersion, helper.domainNamespace);
