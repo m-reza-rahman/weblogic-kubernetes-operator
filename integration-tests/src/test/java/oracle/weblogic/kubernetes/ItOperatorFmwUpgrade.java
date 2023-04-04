@@ -221,13 +221,13 @@ class ItOperatorFmwUpgrade {
   }
 
   /**
-   * Operator upgrade from 4.0.3 to current with a FMW Domain.
+   * Operator upgrade from 4.0.5 to current with a FMW Domain.
    */
   @Tag("oke-sequential")
   @Test
-  @DisplayName("Upgrade Operator from 4.0.3 to current")
-  void testOperatorFmwUpgradeFrom403ToCurrent() {
-    installAndUpgradeOperator("4.0.3", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 4.0.5 to current")
+  void testOperatorFmwUpgradeFrom405ToCurrent() {
+    installAndUpgradeOperator("4.0.5", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
