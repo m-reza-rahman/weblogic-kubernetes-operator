@@ -57,10 +57,12 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
@@ -71,6 +73,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
+import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
@@ -346,8 +349,8 @@ class ItVzCrossDomainTransaction {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
     logger.info("domain2 admin consoleUrl is: {0}", consoleUrl);
-    logger.info("\n DEBUGGING :sleep for 5 mins");
-    Thread.sleep(7200000);
+    //logger.info("\n DEBUGGING :sleep for 5 mins");
+    //Thread.sleep(7200000);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
   }
@@ -598,6 +601,21 @@ class ItVzCrossDomainTransaction {
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(domain2Image);
 
+    //TODO add authorization policy on domain2
+    Map<String, String> templateMap  = new HashMap<>();
+    templateMap.put("SERVICE_NAMESPACE", domain1Namespace);
+    templateMap.put("SERVICE_PORT", "8001");
+
+    java.nio.file.Path svcYamlSrc = Paths.get(RESOURCE_DIR, "authpolicy", "authpolicy.domain2.yaml");
+    java.nio.file.Path svcYmlTarget = assertDoesNotThrow(
+        () -> generateFileFromTemplate(svcYamlSrc.toString(),
+            "vzcrossdomaintransactiontemp/authpolicy.domain2.yaml", templateMap));
+    logger.info("Generated authorization policy file path is {0}", svcYmlTarget);
+
+    boolean deployRes = deployAuthorizationPolicy(svcYmlTarget, domain2Namespace);
+    assertTrue(deployRes, "Could not deploy authorization policy on domain2}");
+
+
   }
 
   private static DomainResource createDomainResource(String domainUid, String domNamespace, String adminSecretName,
@@ -714,5 +732,22 @@ class ItVzCrossDomainTransaction {
         .withParams(new CommandParams()
             .command(curlString.toString()))
         .executeAndVerify(expectedStatusCode);
+  }
+
+  public static boolean deployAuthorizationPolicy(java.nio.file.Path configPath, String namespace) {
+    LoggingFacade logger = getLogger();
+    ExecResult result = null;
+    StringBuffer deployAuthorizationPolicy = null;
+    deployAuthorizationPolicy = new StringBuffer(KUBERNETES_CLI + " -n " + namespace + " apply -f ");
+    deployAuthorizationPolicy.append(configPath);
+    logger.info("deployAuthorizationPolicy: " + KUBERNETES_CLI + " command {0}", new String(deployAuthorizationPolicy));
+    try {
+      result = exec(new String(deployAuthorizationPolicy), true);
+    } catch (Exception ex) {
+      logger.info("Exception in deployAuthorizationPolicy () {0}", ex);
+      return false;
+    }
+    logger.info("deployAuthorizationPolicy: " + KUBERNETES_CLI + " returned {0}", result.toString());
+    return !(result.stdout().contains("Error"));
   }
 }
