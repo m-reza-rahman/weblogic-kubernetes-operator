@@ -254,13 +254,13 @@ class ItVzCrossDomainTransaction {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host1 + "/console/login/LoginForm.jsp --resolve " + host1 + ":443:" + address1;
     logger.info("domain1 admin consoleUrl is: {0}", consoleUrl);
-    logger.info("\n DEBUGGING :sleep for 5 mins");
-    Thread.sleep(7200000);
+    //logger.info("\n DEBUGGING :sleep for 5 mins");
+    //Thread.sleep(7200000);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
   }
 
-  private static void createVzDomain2() {
+  private static void createVzDomain2() throws Exception {
 
     createTestRepoSecret(domain2Namespace);
 
@@ -346,6 +346,8 @@ class ItVzCrossDomainTransaction {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
     logger.info("domain2 admin consoleUrl is: {0}", consoleUrl);
+    logger.info("\n DEBUGGING :sleep for 5 mins");
+    Thread.sleep(7200000);
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
   }
