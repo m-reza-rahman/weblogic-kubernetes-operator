@@ -78,6 +78,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.configMapExist;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapFromFiles;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
@@ -254,7 +255,9 @@ class ItDiagnosticsFailedCondition {
       testUntil(
           domainStatusReasonMatches(domainName, domainNamespace, "ReplicasTooHigh"),
           getLogger(),
-          "waiting for domain status condition reason ReplicasTooHigh exists"
+          "waiting for domain status condition reason ReplicasTooHigh exists for domain {0} in namespace {1}",
+          domainName,
+          domainNamespace
       );
 
       // Need to patch the cluster first, otherwise the domain can not be patched
@@ -287,9 +290,12 @@ class ItDiagnosticsFailedCondition {
       assertTrue(patchDomainCustomResource(domainName, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
           "patchDomainCustomResource failed");
       testUntil(
+          withLongRetryPolicy,
           domainStatusReasonMatches(domainName, domainNamespace, "DomainInvalid"),
           getLogger(),
-          "waiting for domain status condition reason DomainInvalid exists"
+          "waiting for domain status condition reason DomainInvalid exists for domain {0} in namespace {1}",
+          domainName,
+          domainNamespace
       );
 
       testPassed = true;

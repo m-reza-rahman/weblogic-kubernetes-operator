@@ -608,6 +608,12 @@ public class TestAssertions {
           && !domain.getStatus().getConditions().isEmpty()) {
         boolean match = domain.getStatus().getConditions().stream()
             .anyMatch(condition -> condition.getReason() != null && condition.getReason().contains(statusReason));
+        if (!match) {
+          for (DomainCondition condition : domain.getStatus().getConditions()) {
+            logger.info("domain condition status reason for domain {0} in namespace {1} is {2}",
+                domainUid, namespace, condition.getReason());
+          }
+        }
         return match;
       } else {
         if (domain == null) {
