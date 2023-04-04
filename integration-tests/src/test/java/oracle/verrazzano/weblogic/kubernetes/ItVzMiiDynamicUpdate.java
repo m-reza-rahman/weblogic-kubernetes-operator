@@ -160,9 +160,9 @@ class ItVzMiiDynamicUpdate {
       pods.put(managedServerPrefix + i,
           getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
-
-    logger.info("Sleeping for 2 minute");
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(2));
+    
+    logger.info("Before configmap creation");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
     
     List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
     assertDoesNotThrow(() -> recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace));
@@ -170,19 +170,26 @@ class ItVzMiiDynamicUpdate {
     logger.info("Sleeping for 2 minute");
     assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(2));
     
-
-    logger.info("Before introspectversion patching");
-    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
-    String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
+    logger.info("After configmap creation and Before introspectversion patching");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));  
+    
+    String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);    
     logger.info("Patched domain resource with introspectVersion {0}", introspectVersion);
+
     logger.info("After introspectversion patching");
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
     
     verifyIntrospectorRuns();
     //verifyRollingRestartOccurred(pods, 1, domainNamespace);
     
-    logger.info("Sleeping for 2 minute");
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(2));
+    logger.info("Right after introspector runs");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));    
+    
+    logger.info("Sleeping for 5 minute");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(5));
+    
+    logger.info("After 5 minutes of introspector finished running");
+    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));    
 
     String serverName = MANAGED_SERVER_NAME_BASE + "1";
     String uri = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
