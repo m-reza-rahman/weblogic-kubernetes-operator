@@ -607,11 +607,11 @@ class ItVzCrossDomainTransaction {
     //TODO add authorization policy on domain2
     Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("TARGET_NAMESPACE", domain2Namespace);
-    //templateMap.put("SOURCE_NAMESPACE", domain1Namespace);
-    //templateMap.put("SERVICE_PORT", "8001");
+    templateMap.put("SOURCE_NAMESPACE", domain1Namespace);
+    templateMap.put("SERVICE_PORT", "8001");
 
-    //java.nio.file.Path svcYamlSrc = Paths.get(RESOURCE_DIR, "authpolicy", "authpolicy-template.yaml");
-    java.nio.file.Path svcYamlSrc = Paths.get(RESOURCE_DIR, "authpolicy", "authpolicy-allowall-template.yaml");
+    java.nio.file.Path svcYamlSrc = Paths.get(RESOURCE_DIR, "authpolicy", "authpolicy-template.yaml");
+    //java.nio.file.Path svcYamlSrc = Paths.get(RESOURCE_DIR, "authpolicy", "authpolicy-allowall-template.yaml");
     java.nio.file.Path svcYmlTarget = assertDoesNotThrow(
         () -> generateFileFromTemplate(svcYamlSrc.toString(),
             "vzcrossdomaintransactiontemp/authpolicy.yaml", templateMap));

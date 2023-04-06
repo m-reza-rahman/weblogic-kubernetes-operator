@@ -7,6 +7,5 @@ metadata:
   name: allow-all
   namespace: TARGET_NAMESPACE
 spec:
-  action: ALLOW
   rules:
     - {}

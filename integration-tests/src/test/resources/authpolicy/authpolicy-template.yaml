@@ -12,7 +12,7 @@ spec:
     - from:
         - source:
             namespaces: ["SOURCE_NAMESPACE"]
-            principals: ["cluster.local/ns/SOURCE_NAMESPACE"]
+            principals: ["cluster.local/ns/SOURCE_NAMESPACE/default"]
       to:
         - operation:
             ports: ["SERVICE_PORT"]
