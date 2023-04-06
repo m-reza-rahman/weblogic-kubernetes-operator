@@ -334,7 +334,7 @@ class ItVzDBOperator {
                                             .port(7001)),
                                     new IngressRule()
                                         .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
-                                            .path("/management")
+                                            .path("/em")
                                             .pathType("Prefix")))
                                         .destination(new Destination()
                                             .host(fmwAdminServerPodName)
