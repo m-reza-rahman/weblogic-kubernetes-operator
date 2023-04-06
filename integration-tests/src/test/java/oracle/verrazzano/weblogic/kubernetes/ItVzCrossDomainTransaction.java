@@ -374,7 +374,7 @@ class ItVzCrossDomainTransaction {
 
   @Test
   @DisplayName("Check cross domain transcated MDB communication ")
-  void testCrossDomainTranscatedMDB() {
+  void testCrossDomainTranscatedMDB() throws Exception {
 
     logger.info("Is going to check if TestCdtJmsModule in domain2 exists");
     testUntil(
@@ -383,6 +383,9 @@ class ItVzCrossDomainTransaction {
         logger,
         "Checking for TestCdtJmsModule in JMSSystemResources resourceName exists");
     logger.info("Found the TestCdtJmsModule configuration");
+
+    //logger.info("\n DEBUGGING :sleep for 5 mins");
+    //Thread.sleep(7200000);
 
     /*logger.info("Is going to check MDB in domain with host {0}, address {1}", host1, address1);
     assertTrue(checkAppIsActive(host1, address1,
@@ -603,16 +606,17 @@ class ItVzCrossDomainTransaction {
 
     //TODO add authorization policy on domain2
     Map<String, String> templateMap  = new HashMap<>();
-    templateMap.put("SERVICE_NAMESPACE", domain1Namespace);
+    templateMap.put("TARGET_NAMESPACE", domain2Namespace);
+    templateMap.put("SOURCE_NAMESPACE", domain1Namespace);
     templateMap.put("SERVICE_PORT", "8001");
 
-    java.nio.file.Path svcYamlSrc = Paths.get(RESOURCE_DIR, "authpolicy", "authpolicy.domain2.yaml");
+    java.nio.file.Path svcYamlSrc = Paths.get(RESOURCE_DIR, "authpolicy", "authpolicy-template.yaml");
     java.nio.file.Path svcYmlTarget = assertDoesNotThrow(
         () -> generateFileFromTemplate(svcYamlSrc.toString(),
             "vzcrossdomaintransactiontemp/authpolicy.domain2.yaml", templateMap));
     logger.info("Generated authorization policy file path is {0}", svcYmlTarget);
 
-    boolean deployRes = deployAuthorizationPolicy(svcYmlTarget, domain2Namespace);
+    boolean deployRes = deployAuthorizationPolicy(svcYmlTarget);
     assertTrue(deployRes, "Could not deploy authorization policy on domain2}");
 
 
@@ -734,13 +738,13 @@ class ItVzCrossDomainTransaction {
         .executeAndVerify(expectedStatusCode);
   }
 
-  public static boolean deployAuthorizationPolicy(java.nio.file.Path configPath, String namespace) {
+  public static boolean deployAuthorizationPolicy(java.nio.file.Path configPath) {
     LoggingFacade logger = getLogger();
     ExecResult result = null;
     StringBuffer deployAuthorizationPolicy = null;
-    deployAuthorizationPolicy = new StringBuffer(KUBERNETES_CLI + " -n " + namespace + " apply -f ");
+    deployAuthorizationPolicy = new StringBuffer(KUBERNETES_CLI + " apply -f ");
     deployAuthorizationPolicy.append(configPath);
-    logger.info("deployAuthorizationPolicy: " + KUBERNETES_CLI + " command {0}", new String(deployAuthorizationPolicy));
+    logger.info("deploy AuthorizationPolicy: " + KUBERNETES_CLI + " command {0}", new String(deployAuthorizationPolicy));
     try {
       result = exec(new String(deployAuthorizationPolicy), true);
     } catch (Exception ex) {

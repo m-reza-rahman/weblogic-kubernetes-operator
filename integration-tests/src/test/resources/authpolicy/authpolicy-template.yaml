@@ -1,0 +1,18 @@
+# Copyright (c) 2023, Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: t3-policy
+  namespace: TARGET_NAMESPACE
+spec:
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces: SOURCE_NAMESPACE
+            principals: cluster.local/ns/SOURCE_NAMESPACE
+      to:
+        - operation:
+            ports: ["SERVICE_PORT"]
