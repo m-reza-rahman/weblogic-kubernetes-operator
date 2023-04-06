@@ -170,7 +170,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "Image", "FromModel" })
   void testOperatorWlsUpgradeFrom338ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom338ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "3.3.8", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator(domainType, "3.3.8", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -181,7 +181,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "Image", "FromModel" })
   void testOperatorWlsUpgradeFrom343ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom343ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "3.4.3", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator(domainType, "3.4.3", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -192,7 +192,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "Image", "FromModel" })
   void testOperatorWlsUpgradeFrom344ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom344ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "3.4.4", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator(domainType, "3.4.4", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -204,7 +204,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "Image", "FromModel" })
   void testOperatorWlsUpgradeFrom405ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom405ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.0.5", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator(domainType, "4.0.5", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -216,7 +216,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "Image", "FromModel" })
   void testOperatorWlsUpgradeFrom404ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom404ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.0.4", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator(domainType, "4.0.4", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -351,8 +351,7 @@ class ItOperatorWlsUpgrade {
 
   private void installDomainResource(
       String domainType,
-      String domainVersion,
-      String externalServiceNameSuffix) {
+      String domainVersion) {
 
     logger.info("Default Domain API version {0}", DOMAIN_API_VERSION);
     logger.info("Domain API version selected {0}", domainVersion);
@@ -360,21 +359,17 @@ class ItOperatorWlsUpgrade {
             domainUid, domainNamespace);
 
     // create WLS domain and verify
-    createWlsDomainAndVerifyByDomainYaml(domainType, domainNamespace, externalServiceNameSuffix);
+    createWlsDomainAndVerifyByDomainYaml(domainType, domainNamespace);
 
   }
 
-  // Since Operator version 3.1.0 the service pod prefix has been changed
-  // from -external to -ext e.g.
-  // domain1-adminserver-ext  NodePort    10.96.46.242   30001:30001/TCP
   private void installAndUpgradeOperator(String domainType,
-      String operatorVersion, String domainVersion,
-      String externalServiceNameSuffix) {
+      String operatorVersion, String domainVersion) {
 
     installOldOperator(operatorVersion,opNamespace,domainNamespace);
 
     // create WLS domain and verify
-    installDomainResource(domainType, domainVersion, externalServiceNameSuffix);
+    installDomainResource(domainType, domainVersion);
 
     // upgrade to current operator
     upgradeOperatorAndVerify(opNamespace, domainNamespace);
@@ -465,8 +460,7 @@ class ItOperatorWlsUpgrade {
   }
 
   private void createWlsDomainAndVerify(String domainType,
-        String domainNamespace, String domainVersion,
-        String externalServiceNameSuffix) {
+        String domainNamespace, String domainVersion) {
 
     createSecrets();
 
@@ -483,7 +477,8 @@ class ItOperatorWlsUpgrade {
     checkDomainStarted(domainUid, domainNamespace);
     logger.info("Getting node port for default channel");
     int serviceNodePort = assertDoesNotThrow(() -> getServiceNodePort(
-        domainNamespace, getExternalServicePodName(adminServerPodName, externalServiceNameSuffix), "default"),
+        domainNamespace, 
+        getExternalServicePodName(adminServerPodName, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX), "default"),
         "Getting admin server node port failed");
     logger.info("Validating WebLogic admin server access by login to console");
     verifyAdminConsoleAccessible(domainNamespace, K8S_NODEPORT_HOST,
@@ -665,10 +660,9 @@ class ItOperatorWlsUpgrade {
    * KUBERNETES_CLI and verify the domain is created
    * @param domainType either domain in image(Image) or model in image (FromModel)
    * @param domainNamespace namespace in which to create domain
-   * @param externalServiceNameSuffix suffix of externalServiceName
    */
   private void createWlsDomainAndVerifyByDomainYaml(String domainType,
-      String domainNamespace, String externalServiceNameSuffix) {
+      String domainNamespace) {
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
@@ -725,17 +719,18 @@ class ItOperatorWlsUpgrade {
             .command(KUBERNETES_CLI + " create -f " + destDomainYaml))
         .execute(), KUBERNETES_CLI + " create failed");
 
-    verifyDomain(domainUid, domainNamespace, externalServiceNameSuffix);
+    verifyDomain(domainUid, domainNamespace);
 
   }
 
-  private void verifyDomain(String domainUidString, String domainNamespace, String externalServiceNameSuffix) {
+  private void verifyDomain(String domainUidString, String domainNamespace) {
 
     checkDomainStarted(domainUid, domainNamespace);
 
     logger.info("Getting node port for default channel");
     int serviceNodePort = assertDoesNotThrow(() -> getServiceNodePort(
-        domainNamespace, getExternalServicePodName(adminServerPodName, externalServiceNameSuffix), "default"),
+        domainNamespace, 
+        getExternalServicePodName(adminServerPodName, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX), "default"),
         "Getting admin server node port failed");
     logger.info("Got node port {0} for default channel for domainNameSpace {1}", serviceNodePort, domainNamespace);
 

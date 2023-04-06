@@ -45,7 +45,6 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
-import static oracle.weblogic.kubernetes.TestConstants.DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
@@ -199,7 +198,7 @@ class ItOperatorFmwUpgrade {
   @Test
   @DisplayName("Upgrade Operator from 3.3.8 to current")
   void testOperatorFmwUpgradeFrom338ToCurrent() {
-    installAndUpgradeOperator("3.3.8", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator("3.3.8", "v8");
   }
 
   /**
@@ -208,7 +207,7 @@ class ItOperatorFmwUpgrade {
   @Test
   @DisplayName("Upgrade Operator from 3.4.3 to current")
   void testOperatorFmwUpgradeFrom343ToCurrent() {
-    installAndUpgradeOperator("3.4.3", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator("3.4.3", "v8");
   }
 
   /**
@@ -217,7 +216,7 @@ class ItOperatorFmwUpgrade {
   @Test
   @DisplayName("Upgrade Operator from 3.4.4 to current")
   void testOperatorFmwUpgradeFrom344ToCurrent() {
-    installAndUpgradeOperator("3.4.4", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator("3.4.4", "v8");
   }
 
   /**
@@ -227,7 +226,7 @@ class ItOperatorFmwUpgrade {
   @Test
   @DisplayName("Upgrade Operator from 4.0.5 to current")
   void testOperatorFmwUpgradeFrom405ToCurrent() {
-    installAndUpgradeOperator("4.0.5", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator("4.0.5", "v8");
   }
 
   /**
@@ -237,12 +236,11 @@ class ItOperatorFmwUpgrade {
   @Test
   @DisplayName("Upgrade Operator from 4.0.4 to current")
   void testOperatorFmwUpgradeFrom404ToCurrent() {
-    installAndUpgradeOperator("4.0.4", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator("4.0.4","v8");
   }
 
   private void installAndUpgradeOperator(
-         String operatorVersion, String domainVersion,
-         String externalServiceNameSuffix) {
+         String operatorVersion, String domainVersion) {
 
     // install operator with older release
     HelmParams opHelmParams = installOperator(operatorVersion);
@@ -251,7 +249,7 @@ class ItOperatorFmwUpgrade {
     createFmwDomainAndVerify(domainVersion);
 
     // upgrade to current operator
-    upgradeOperatorAndVerify(externalServiceNameSuffix);
+    upgradeOperatorAndVerify();
   }
 
   private HelmParams installOperator(String operatorVersion) {
@@ -275,7 +273,7 @@ class ItOperatorFmwUpgrade {
     return opHelmParams;
   }
 
-  private void upgradeOperatorAndVerify(String externalServiceNameSuffix) {
+  private void upgradeOperatorAndVerify() {
     String opServiceAccount = opNamespace + "-sa";
     String appName = "testwebapp.war";
 
