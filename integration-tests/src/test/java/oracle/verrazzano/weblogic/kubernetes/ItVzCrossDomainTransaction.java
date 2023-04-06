@@ -613,7 +613,7 @@ class ItVzCrossDomainTransaction {
     java.nio.file.Path svcYamlSrc = Paths.get(RESOURCE_DIR, "authpolicy", "authpolicy-template.yaml");
     java.nio.file.Path svcYmlTarget = assertDoesNotThrow(
         () -> generateFileFromTemplate(svcYamlSrc.toString(),
-            "vzcrossdomaintransactiontemp/authpolicy.domain2.yaml", templateMap));
+            "vzcrossdomaintransactiontemp/authpolicy.yaml", templateMap));
     logger.info("Generated authorization policy file path is {0}", svcYmlTarget);
 
     boolean deployRes = deployAuthorizationPolicy(svcYmlTarget);
