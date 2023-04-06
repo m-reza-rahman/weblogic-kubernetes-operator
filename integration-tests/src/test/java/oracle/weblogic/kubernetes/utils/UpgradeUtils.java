@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -44,7 +44,7 @@ public class UpgradeUtils {
   /**
    * Install a released WebLogic Kubernates Operator Version.
    */
-  public static void installOldOperator(String operatorVersion, String opNamespace, String domainNamespace) {
+  public static void installOldOperator(String operatorVersion, String opNamespace, String... domainNamespace) {
     logger = getLogger();
     assertNotNull(opNamespace, "Operator Namespace is null");
     assertNotNull(opNamespace, "Domain Namespace is null");
@@ -55,7 +55,7 @@ public class UpgradeUtils {
   }
 
   private static HelmParams installOperator(String operatorVersion,
-      String opNamespace, String domainNamespace) {
+      String opNamespace, String... domainNamespace) {
     // delete existing CRD if any
     cleanUpCRD();
 
