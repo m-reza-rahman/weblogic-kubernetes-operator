@@ -117,6 +117,46 @@ public class UpgradeUtils {
     checkDomainStatus(domainNamespace,domainUid);
   }
 
+  /**
+   * upgrade to operator to current version.
+   * It does not check domain status 
+   */
+  public static void upgradeOperatorToCurrent(String opNamespace) {
+    String latestOperatorImageName = getOperatorImageName();
+    HelmParams upgradeHelmParams = new HelmParams()
+            .releaseName(OPERATOR_RELEASE_NAME)
+            .namespace(opNamespace)
+            .chartDir(OPERATOR_CHART_DIR)
+            .repoUrl(null)
+            .chartVersion(null)
+            .chartName(null);
+
+    // build operator chart values
+    OperatorParams opParams = new OperatorParams()
+            .helmParams(upgradeHelmParams)
+            .image(latestOperatorImageName)
+            .externalRestEnabled(true);
+
+    assertTrue(upgradeAndVerifyOperator(opNamespace, opParams),
+            String.format("Failed to upgrade operator in namespace %s", opNamespace));
+
+    // check operator image name after upgrade
+    logger.info("Checking image name in operator container ");
+    testUntil(
+            assertDoesNotThrow(() -> getOpContainerImageName(opNamespace),
+              "Exception while getting the operator image name"),
+            logger,
+            "Checking operator image name in namespace {0} after upgrade",
+            opNamespace);
+
+    // check CRD version is updated
+    logger.info("Checking CRD version");
+    testUntil(
+          checkCrdVersion(),
+          logger,
+          "the CRD version to be updated to current");
+  }
+
   private static Callable<Boolean> getOpContainerImageName(String namespace) {
     return () -> {
       String imageName = getOperatorContainerImageName(namespace);
