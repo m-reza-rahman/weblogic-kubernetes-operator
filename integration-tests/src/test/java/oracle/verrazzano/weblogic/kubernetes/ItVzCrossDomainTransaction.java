@@ -744,7 +744,8 @@ class ItVzCrossDomainTransaction {
     StringBuffer deployAuthorizationPolicy = null;
     deployAuthorizationPolicy = new StringBuffer(KUBERNETES_CLI + " apply -f ");
     deployAuthorizationPolicy.append(configPath);
-    logger.info("deploy AuthorizationPolicy: " + KUBERNETES_CLI + " command {0}", new String(deployAuthorizationPolicy));
+    logger.info("deploy AuthorizationPolicy: " + KUBERNETES_CLI + " command {0}",
+        new String(deployAuthorizationPolicy));
     try {
       result = exec(new String(deployAuthorizationPolicy), true);
     } catch (Exception ex) {
