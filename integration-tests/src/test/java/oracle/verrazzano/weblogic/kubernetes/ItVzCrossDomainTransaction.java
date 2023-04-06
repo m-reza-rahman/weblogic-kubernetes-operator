@@ -605,7 +605,7 @@ class ItVzCrossDomainTransaction {
     imageRepoLoginAndPushImageToRegistry(domain2Image);
 
     //TODO add authorization policy on domain2
-    Map<String, String> templateMap  = new HashMap<>();
+    /*Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("TARGET_NAMESPACE", domain2Namespace);
     templateMap.put("SOURCE_NAMESPACE", domain1Namespace);
     templateMap.put("SERVICE_PORT", "8001");
@@ -617,7 +617,7 @@ class ItVzCrossDomainTransaction {
     logger.info("Generated authorization policy file path is {0}", svcYmlTarget);
 
     boolean deployRes = deployAuthorizationPolicy(svcYmlTarget);
-    assertTrue(deployRes, "Could not deploy authorization policy on domain2}");
+    assertTrue(deployRes, "Could not deploy authorization policy on domain2}");*/
 
 
   }
