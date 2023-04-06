@@ -146,9 +146,9 @@ class ItOperatorMultiWlsUpgrade {
    * Operator upgrade from 4.0.5 to current.
    */
   @Test
-  @DisplayName("Upgrade Operator from 4.0.5 to current")
-  void testOperatorWlsUpgradeFrom405ToCurrent(String domainType) {
-    logger.info("Starting test testOperatorWlsUpgradeFrom405ToCurrent with domain type {0}", domainType);
+  @DisplayName("Upgrade Operator from 4.0.5 to current with Muktiple Domains")
+  void testOperatorMultiWlsUpgradeFrom405ToCurrent() {
+    logger.info("Starting test testOperatorMultiWlsUpgradeFrom405ToCurrent");
     installAndUpgradeOperator("4.0.5", OLD_DOMAIN_VERSION);
   }
 
