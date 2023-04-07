@@ -148,13 +148,6 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
           logger.severe("Failed to cleanup the download directory " + DOWNLOAD_DIR, ioe);
         }
 
-        //Install cert-manager for Database installation through DB operator
-        String certManager = CERT_MANAGER;
-        CommandParams params = new CommandParams().defaults();
-        params.command(KUBERNETES_CLI + " apply -f " + certManager);
-        boolean response = Command.withParams(params).execute();
-        assertTrue(response, "Failed to install cert manager");
-
         // Only the first thread will enter this block.
         logger.info("Building Images before any integration test classes are run");
         context.getRoot().getStore(GLOBAL).put("BuildSetup", this);
