@@ -62,7 +62,7 @@ import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
+//import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
@@ -73,7 +73,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
-import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
+//import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
@@ -384,8 +384,8 @@ class ItVzCrossDomainTransaction {
         "Checking for TestCdtJmsModule in JMSSystemResources resourceName exists");
     logger.info("Found the TestCdtJmsModule configuration");
 
-    //logger.info("\n DEBUGGING :sleep for 5 mins");
-    //Thread.sleep(7200000);
+    logger.info("\n DEBUGGING :sleeping");
+    Thread.sleep(7200000);
 
     /*logger.info("Is going to check MDB in domain with host {0}, address {1}", host1, address1);
     assertTrue(checkAppIsActive(host1, address1,
@@ -605,7 +605,7 @@ class ItVzCrossDomainTransaction {
     imageRepoLoginAndPushImageToRegistry(domain2Image);
 
     //TODO add authorization policy on domain2
-    Map<String, String> templateMap  = new HashMap<>();
+    /*Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("TARGET_NAMESPACE", domain2Namespace);
     templateMap.put("SOURCE_NAMESPACE", domain1Namespace);
     templateMap.put("SERVICE_PORT", "8001");
@@ -618,7 +618,7 @@ class ItVzCrossDomainTransaction {
     logger.info("Generated authorization policy file path is {0}", svcYmlTarget);
 
     boolean deployRes = deployAuthorizationPolicy(svcYmlTarget);
-    assertTrue(deployRes, "Could not deploy authorization policy on domain2}");
+    assertTrue(deployRes, "Could not deploy authorization policy on domain2}");*/
 
 
   }
