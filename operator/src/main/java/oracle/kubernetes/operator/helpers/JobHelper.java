@@ -499,7 +499,6 @@ public class JobHelper {
     }
 
     class DeleteDomainIntrospectorJobStep extends Step {
-
       @Override
       public Void apply(Packet packet) {
         logJobDeleted(getDomainUid(), getNamespace(), getJobName(), packet);
@@ -880,12 +879,16 @@ public class JobHelper {
 
     packet.remove(ProcessingConstants.INTROSPECTOR_JOB_FAILURE_LOGGED);
     if (domainIntrospectorJob != null
-            && !JobWatcher.isComplete(domainIntrospectorJob)) {
+        && hasStatusAndCondition(domainIntrospectorJob) && !JobWatcher.isComplete(domainIntrospectorJob)) {
       logIntrospectorFailure(packet, domainIntrospectorJob);
     }
     packet.remove(ProcessingConstants.JOB_POD_NAME);
 
     LOGGER.fine(getJobDeletedMessageKey(), domainUid, namespace, jobName);
+  }
+
+  private static boolean hasStatusAndCondition(V1Job job) {
+    return job.getStatus() != null && job.getStatus().getConditions() != null;
   }
 
   static String getJobDeletedMessageKey() {
