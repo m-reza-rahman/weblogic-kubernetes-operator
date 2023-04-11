@@ -41,14 +41,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_USERNAME;
-import static oracle.weblogic.kubernetes.TestConstants.CERT_MANAGER;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
@@ -99,8 +97,6 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.imageExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
-import static oracle.weblogic.kubernetes.utils.IstioUtils.installIstio;
-import static oracle.weblogic.kubernetes.utils.IstioUtils.uninstallIstio;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.awaitility.Awaitility.with;
@@ -283,7 +279,6 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         isInitializationSuccessful = true;
         if ((!OKD && !OCNE) || (OCNE && !assertDoesNotThrow(() -> Namespace.exists("istio-system")))) {
           logger.info("Installing istio before any test suites are run");
-          installIstio();
         }
       } finally {
         // Initialization is done. Release all waiting other threads. The latch is now disabled so
@@ -327,7 +322,6 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     } else {
       if (!OKD && !OCNE) {
         logger.info("Uninstall istio after all test suites are run");
-        uninstallIstio();
       }
       if (!OKD && !OKE_CLUSTER && !OCNE) {
         logger.info("Delete istio-system namespace after all test suites are run");
@@ -369,14 +363,6 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
           deleteImageOcir(token, image);
         }
       }
-    }
-
-    //delete certificate manager
-    String certManager = CERT_MANAGER;
-    CommandParams params = new CommandParams().defaults();
-    params.command(KUBERNETES_CLI + " delete -f " + certManager);
-    if (!Command.withParams(params).execute()) {
-      logger.warning("Failed to uninstall cert manager");
     }
 
     for (Handler handler : logger.getUnderlyingLogger().getHandlers()) {
