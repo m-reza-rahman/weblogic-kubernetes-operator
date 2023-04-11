@@ -250,7 +250,7 @@ class ItMiiDomain {
           MII_APP_RESPONSE_V1 + i);
     }
 
-    logger.info("All the servers in Domain {0} are running and application is available", domainUid);
+    logger.info("All the servers in Domain {0} are running and application is available", domainUid);  
 
   }
 
