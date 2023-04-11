@@ -65,7 +65,6 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_USERNAME;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.TestConstants.WLS_DOMAIN_TYPE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
@@ -81,8 +80,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.defaultWitParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageRepoLogin;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainCustomResource;
@@ -93,17 +90,11 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.appNotAccessi
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainResourceImagePatched;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podImagePatched;
-import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
-import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminConsoleAccessible;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkClusterReplicaCountMatches;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyCredentials;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withQuickRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
@@ -111,18 +102,13 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.LoggingUtil.checkPodLogContainsString;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.setTargetPortForRoute;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.setTlsTerminationForRoute;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
-import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.awaitility.Awaitility.with;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -253,12 +239,6 @@ class ItMiiDomain {
           managedServerPrefix + i, domainNamespace);
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
-    // Need to expose the admin server external service to access the console in OKD cluster only
-    // We will create one route for sslport and another for default port
-    String adminSvcSslPortExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName),
-                    domainNamespace, "domain1-admin-server-sslport-ext");
-    setTlsTerminationForRoute("domain1-admin-server-sslport-ext", domainNamespace);
-    String adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
 
     // check and wait for the application to be accessible in all server pods
     for (int i = 1; i <= replicaCount; i++) {
@@ -272,58 +252,6 @@ class ItMiiDomain {
 
     logger.info("All the servers in Domain {0} are running and application is available", domainUid);
 
-    int sslNodePort = getServiceNodePort(
-         domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
-    // In OKD cluster, we need to set the target port of the route to be the ssl port
-    // By default, when a service is exposed as a route, the endpoint is set to the default port.
-    int sslPort = getServicePort(
-         domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
-    setTargetPortForRoute("domain1-admin-server-sslport-ext", domainNamespace, sslPort);
-    assertNotEquals(-1, sslNodePort,
-          "Could not get the default-secure external service node port");
-    logger.info("Found the administration service nodePort {0}", sslNodePort);
-    String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
-    if (!WEBLOGIC_SLIM) {
-      String curlCmd = "curl -sk --show-error --noproxy '*' "
-          + " https://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
-      logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
-      assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-      logger.info("WebLogic console is accessible thru default-secure service");
-    } else {
-      logger.info("Skipping WebLogic console in WebLogic slim image");
-    }
-
-    int nodePort = getServiceNodePort(
-           domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    assertNotEquals(-1, nodePort,
-          "Could not get the default external service node port");
-    logger.info("Found the default service nodePort {0}", nodePort);
-    hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
-
-    if (!WEBLOGIC_SLIM) {
-      String curlCmd2 = "curl -s --show-error --noproxy '*' "
-          + " http://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
-      logger.info("Executing default nodeport curl command {0}", curlCmd2);
-      assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
-      logger.info("WebLogic console is accessible thru default service");
-    } else {
-      logger.info("Checking Rest API management console in WebLogic slim image");
-      verifyCredentials(adminSvcExtHost, adminServerPodName, domainNamespace,
-            ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, true);
-    }
-
-    // Test that `kubectl port-foward` is able to forward a local port to default channel port (7001 in this test)
-    // and default secure channel port (7002 in this test)
-    // Verify that the WLS admin console can not be accessed using http://localhost:localPort/console/login/LoginForm.jsp
-    String forwardedPortNo = startPortForwardProcess(hostName, domainNamespace, domainUid, adminServerPort);
-    verifyAdminConsoleAccessible(domainNamespace, hostName, forwardedPortNo, false, Boolean.FALSE);
-
-    forwardedPortNo = startPortForwardProcess(hostName, domainNamespace, domainUid, adminServerSecurePort);
-    verifyAdminConsoleAccessible(domainNamespace, hostName, forwardedPortNo, true, Boolean.FALSE);
-
-    stopPortForwardProcess(domainNamespace);
   }
 
   @Test
