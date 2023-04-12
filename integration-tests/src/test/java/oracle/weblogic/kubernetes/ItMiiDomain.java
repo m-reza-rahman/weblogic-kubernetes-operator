@@ -270,6 +270,8 @@ class ItMiiDomain {
       logger.info("Skipping WebLogic console in WebLogic slim image");
     }
 
+    logger.info("All the servers in Domain {0} are running and application is available", domainUid); 
+
   }
 
   @Test
