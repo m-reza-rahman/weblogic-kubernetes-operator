@@ -430,6 +430,11 @@ public interface TestConstants {
   public static final String METRICS_SERVER_YAML =
       "https://github.com/kubernetes-sigs/metrics-server/releases/download/metrics-server-helm-chart-3.8.2/components.yaml";
   
+  // PCA testing
+  //If loadbalancer access only
+  public static final boolean LOADBALANCER_ACCESS_ONLY = 
+      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.lb.only", "true"));
+  
   // verrazzano related constants
   public static final String VZ_INGRESS_NS = "ingress-nginx";
   public static final String VZ_SYSTEM_NS = "verrazzano-system";

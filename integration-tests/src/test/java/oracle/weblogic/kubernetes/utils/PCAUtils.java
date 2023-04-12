@@ -21,6 +21,7 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.getService;
+import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -116,4 +117,37 @@ public class PCAUtils {
       logger.severe(ex.getMessage());
     }
   }
+  
+  /**
+   * Verify the server MBEAN configuration through rest API.
+   *
+   * @param hostAndPort LB host and port
+   * @param managedServer name of the managed server
+   * @return true if MBEAN is found otherwise false
+   *
+   */
+  public static boolean checkManagedServerConfiguration(String hostAndPort, String managedServer) {
+    LoggingFacade logger = getLogger();
+    ExecResult result;
+    logger.info("url = {0}", hostAndPort);
+    StringBuffer checkCluster = new StringBuffer("status=$(curl -sk --user weblogic:welcome1 ");
+    checkCluster.append("https://" + hostAndPort)
+        .append("/management/tenant-monitoring/servers/")
+        .append(managedServer)
+        .append(" --silent --show-error ")
+        .append(" -o /dev/null")
+        .append(" -w %{http_code});")
+        .append("echo ${status}");
+    logger.info("checkManagedServerConfiguration: curl command {0}",
+        new String(checkCluster));
+    try {
+      result = exec(new String(checkCluster), true);
+    } catch (Exception ex) {
+      logger.info("Exception in checkManagedServerConfiguration() {0}", ex);
+      return false;
+    }
+    logger.info("checkManagedServerConfiguration: curl command returned {0}", result.toString());
+    return result.stdout().equals("200");
+  }
+
 }
