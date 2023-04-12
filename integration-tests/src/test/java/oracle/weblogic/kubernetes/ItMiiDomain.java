@@ -105,6 +105,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.LoggingUtil.checkPodLogContainsString;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.createTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerIP;
 import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerPort;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
@@ -253,6 +254,8 @@ class ItMiiDomain {
           "sample-war/index.jsp",
           MII_APP_RESPONSE_V1 + i);
     }
+    
+    createTraefikIngressRoutingRules(domainNamespace, domainUid);
 
     logger.info("All the servers in Domain {0} are running and application is available", domainUid);
     String loadBalancerIP = assertDoesNotThrow(() -> getLoadBalancerIP("traefik", "traefik-operator"));
