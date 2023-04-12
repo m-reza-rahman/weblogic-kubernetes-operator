@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -50,6 +51,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DEFAULT_EXTERNAL_REST_IDENTITY_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.LOADBALANCER_ACCESS_ONLY;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -92,6 +94,9 @@ import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTlsTerminationForRoute;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.upgradeAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerIP;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerPort;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
@@ -145,6 +150,7 @@ class ItUsabilityOperatorHelmChart {
   private boolean isDomain1Running = false;
   private boolean isDomain2Running = false;
   private String adminSvcExtRouteHost = null;
+  private static String hostAndPort = null; //only PCA
 
   private static LoggingFacade logger = null;
 
@@ -1257,24 +1263,50 @@ class ItUsabilityOperatorHelmChart {
    **/
   private boolean checkManagedServerConfiguration(String domainNamespace, String domainUid) {
     ExecResult result;
-    String adminServerPodName = domainUid + adminServerPrefix;
     String managedServer = "managed-server1";
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
-    StringBuilder checkCluster = new StringBuilder("status=$(curl --user ")
-        .append(ADMIN_USERNAME_DEFAULT)
-        .append(":")
-        .append(ADMIN_PASSWORD_DEFAULT)
-        .append(" ")
-        .append("http://")
-        .append(hostAndPort)
-        .append("/management/tenant-monitoring/servers/")
-        .append(managedServer)
-        .append(" --silent --show-error ")
-        .append(" -o /dev/null")
-        .append(" -w %{http_code});")
-        .append("echo ${status}");
+    if (LOADBALANCER_ACCESS_ONLY) {
+      createTraefikIngressRoutingRules(domainNamespace, domainUid);
+      String loadBalancerIP = assertDoesNotThrow(() -> getLoadBalancerIP("traefik", "traefik-operator"));
+      int port = assertDoesNotThrow(() -> getLoadBalancerPort("traefik", "traefik-operator", "web"));
+      hostAndPort = loadBalancerIP + ":" + port;
+      assertDoesNotThrow(() -> TimeUnit.SECONDS.sleep(30));
+    } else {
+      String adminServerPodName = domainUid + adminServerPrefix;
+      int adminServiceNodePort
+          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+      hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
+    }
+
+    StringBuilder checkCluster;
+    if (LOADBALANCER_ACCESS_ONLY) {
+      checkCluster = new StringBuilder("status=$(curl -sk --user ")
+          .append(ADMIN_USERNAME_DEFAULT)
+          .append(":")
+          .append(ADMIN_PASSWORD_DEFAULT)
+          .append(" ")
+          .append("https://")
+          .append(hostAndPort)
+          .append("/management/tenant-monitoring/servers/")
+          .append(managedServer)
+          .append(" --silent --show-error ")
+          .append(" -o /dev/null")
+          .append(" -w %{http_code});")
+          .append("echo ${status}");
+    } else {
+      checkCluster = new StringBuilder("status=$(curl --user ")
+          .append(ADMIN_USERNAME_DEFAULT)
+          .append(":")
+          .append(ADMIN_PASSWORD_DEFAULT)
+          .append(" ")
+          .append("http://")
+          .append(hostAndPort)
+          .append("/management/tenant-monitoring/servers/")
+          .append(managedServer)
+          .append(" --silent --show-error ")
+          .append(" -o /dev/null")
+          .append(" -w %{http_code});")
+          .append("echo ${status}");
+    }
     logger.info("checkManagedServerConfiguration: curl command {0}", new String(checkCluster));
     try {
       result = exec(new String(checkCluster), true);
