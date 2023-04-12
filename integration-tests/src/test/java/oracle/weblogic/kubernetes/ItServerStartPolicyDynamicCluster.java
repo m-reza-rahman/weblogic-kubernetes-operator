@@ -10,6 +10,7 @@ import java.util.concurrent.Callable;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.PCAUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,11 +22,15 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static oracle.weblogic.kubernetes.TestConstants.LOADBALANCER_ACCESS_ONLY;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodRestarted;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkClusterReplicaCountMatches;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerIP;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerPort;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchServerStartPolicy;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkIsPodRestarted;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDeleted;
@@ -81,6 +86,7 @@ class ItServerStartPolicyDynamicCluster {
   private static final String samplePath = "sample-testing-dynamic-cluster";
   private static final String dynamicClusterResourceName = DYNAMIC_CLUSTER;
   private static final String configuredClusterResourceName = CONFIG_CLUSTER;
+  private static String hostAndPort = null; //only PCA
 
   /**
    * Install Operator.
@@ -105,6 +111,12 @@ class ItServerStartPolicyDynamicCluster {
 
     // In OKD environment, the node port cannot be accessed directly. Have to create an ingress
     ingressHost = createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
+    if (LOADBALANCER_ACCESS_ONLY) {
+      createTraefikIngressRoutingRules(domainNamespace, domainUid);
+      String loadBalancerIP = assertDoesNotThrow(() -> getLoadBalancerIP("traefik", "traefik-operator"));
+      int port = assertDoesNotThrow(() -> getLoadBalancerPort("traefik", "traefik-operator", "web"));
+      hostAndPort = loadBalancerIP + ":" + port;
+    }    
   }
 
   /**
@@ -125,18 +137,33 @@ class ItServerStartPolicyDynamicCluster {
     }
 
     // Check configured cluster configuration is available
-    boolean isServerConfigured =
-        checkManagedServerConfiguration(ingressHost, "config-cluster-server1", domainNamespace, adminServerPodName);
-    assertTrue(isServerConfigured,
-        "Could not find managed server from configured cluster");
-    logger.info("Found managed server from configured cluster");
+    if (LOADBALANCER_ACCESS_ONLY) {
+      boolean isServerConfigured
+          = PCAUtils.checkManagedServerConfiguration(hostAndPort, "config-cluster-server1");
+      assertTrue(isServerConfigured,
+          "Could not find managed server from configured cluster");
+      logger.info("Found managed server from configured cluster");
 
-    // Check standalone server configuration is available
-    boolean isStandaloneServerConfigured =
-        checkManagedServerConfiguration(ingressHost, "standalone-managed", domainNamespace, adminServerPodName);
-    assertTrue(isStandaloneServerConfigured,
-        "Could not find standalone managed server from configured cluster");
-    logger.info("Found standalone managed server configuration");
+      // Check standalone server configuration is available
+      boolean isStandaloneServerConfigured
+          = PCAUtils.checkManagedServerConfiguration(hostAndPort, "standalone-managed");
+      assertTrue(isStandaloneServerConfigured,
+          "Could not find standalone managed server from configured cluster");
+      logger.info("Found standalone managed server configuration");
+    } else {
+      boolean isServerConfigured
+          = checkManagedServerConfiguration(ingressHost, "config-cluster-server1", domainNamespace, adminServerPodName);
+      assertTrue(isServerConfigured,
+          "Could not find managed server from configured cluster");
+      logger.info("Found managed server from configured cluster");
+
+      // Check standalone server configuration is available
+      boolean isStandaloneServerConfigured
+          = checkManagedServerConfiguration(ingressHost, "standalone-managed", domainNamespace, adminServerPodName);
+      assertTrue(isStandaloneServerConfigured,
+          "Could not find standalone managed server from configured cluster");
+      logger.info("Found standalone managed server configuration");
+    }
   }
 
   /**
