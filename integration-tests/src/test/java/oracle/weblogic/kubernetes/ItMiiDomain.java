@@ -65,6 +65,7 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_USERNAME;
+import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.TestConstants.WLS_DOMAIN_TYPE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
@@ -90,6 +91,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.appNotAccessi
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainResourceImagePatched;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podImagePatched;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkClusterReplicaCountMatches;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
@@ -103,6 +105,8 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.LoggingUtil.checkPodLogContainsString;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerIP;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerPort;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -250,7 +254,21 @@ class ItMiiDomain {
           MII_APP_RESPONSE_V1 + i);
     }
 
-    logger.info("All the servers in Domain {0} are running and application is available", domainUid);  
+    logger.info("All the servers in Domain {0} are running and application is available", domainUid);
+    String loadBalancerIP = assertDoesNotThrow(() -> getLoadBalancerIP("traefik", "traefik-operator"));
+    int port = assertDoesNotThrow(() -> getLoadBalancerPort("traefik", "traefik-operator", "web"));
+    String hostAndPort = loadBalancerIP + ":" + port;
+
+    if (!WEBLOGIC_SLIM) {
+      String curlCmd = "curl -sk --show-error --noproxy '*' "
+          + " https://" + hostAndPort
+          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+      logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
+      assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
+      logger.info("WebLogic console is accessible thru default-secure service");
+    } else {
+      logger.info("Skipping WebLogic console in WebLogic slim image");
+    }
 
   }
 
