@@ -24,3 +24,10 @@ spec:
       name: @domainuid@-admin-server
       namespace: @NS@
       port: 7001
+  - kind: Rule
+    match: PathPrefix(`/management`)
+    services:
+    - kind: Service
+      name: @domainuid@-admin-server
+      namespace: @NS@
+      port: 7001      
