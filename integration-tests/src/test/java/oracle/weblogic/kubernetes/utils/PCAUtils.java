@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.models.V1LoadBalancerIngress;
 import io.kubernetes.client.openapi.models.V1Service;
@@ -104,10 +105,21 @@ public class PCAUtils {
           .replaceAll("@domainuid@", domainUid)
           .getBytes(StandardCharsets.UTF_8));
       logger.info(Files.readString(dstFile));
-    });   
-    String command = KUBERNETES_CLI + " create -f " + dstFile;
+    });
+
+    String command = KUBERNETES_CLI + " delete -f " + dstFile;
     logger.info("Running {0}", command);
     ExecResult result;
+    try {
+      result = ExecCommand.exec(command, true);
+    } catch (IOException | InterruptedException ex) {
+      logger.info(ex.getMessage());
+    }
+    assertDoesNotThrow(() -> TimeUnit.SECONDS.sleep(10));
+
+    command = KUBERNETES_CLI + " create -f " + dstFile;
+    logger.info("Running {0}", command);
+
     try {
       result = ExecCommand.exec(command, true);
       String response = result.stdout().trim();
