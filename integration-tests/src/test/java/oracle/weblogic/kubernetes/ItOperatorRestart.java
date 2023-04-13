@@ -21,6 +21,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_PATCH;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_PATCH;
+import static oracle.weblogic.kubernetes.TestConstants.LOADBALANCER_ACCESS_ONLY;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -34,12 +35,16 @@ import static oracle.weblogic.kubernetes.actions.TestActions.stopOperator;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isOperatorPodRestarted;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.operatorIsReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReturnedCode;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyCredentials;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerIP;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerPort;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.checkPodRestartVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainWithNewSecretAndVerify;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
@@ -70,6 +75,7 @@ class ItOperatorRestart {
   private static int replicaCount = 2;
   private static LoggingFacade logger = null;
   private static String ingressHost = null; //only used for OKD
+  private static String hostAndPort = null; //only PCA
 
   /**
    * Perform initialization for all the tests in this class.
@@ -105,6 +111,12 @@ class ItOperatorRestart {
         adminServerPodName,
         managedServerPrefix,
         replicaCount);
+    if (LOADBALANCER_ACCESS_ONLY) {
+      createTraefikIngressRoutingRules(domainNamespace, domainUid);
+      String loadBalancerIP = assertDoesNotThrow(() -> getLoadBalancerIP("traefik", "traefik-operator"));
+      int port = assertDoesNotThrow(() -> getLoadBalancerPort("traefik", "traefik-operator", "web"));
+      hostAndPort = loadBalancerIP + ":" + port;
+    }
   }
 
   /**
@@ -261,10 +273,36 @@ class ItOperatorRestart {
     ingressHost = createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
 
     logger.info("Check that before patching current credentials are valid and new credentials are not");
-    verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
-        ADMIN_PASSWORD_DEFAULT, VALID);
-    verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH,
-        ADMIN_PASSWORD_PATCH, INVALID);
+    if (LOADBALANCER_ACCESS_ONLY) {
+      String managedServer = "managed-server1";
+
+      StringBuffer cmdString = new StringBuffer()
+          .append("curl -sk --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+          .append(" https://" + hostAndPort)
+          .append("/management/tenant-monitoring/servers/" + managedServer)
+          .append(" --silent --show-error")
+          .append(" -o /dev/null")
+          .append(" -w %{http_code}");
+
+      assertTrue(callWebAppAndWaitTillReturnedCode(cmdString.toString(), "200", 10));
+      logger.info("Got the correct http status code for valid credentials");
+
+      cmdString = new StringBuffer()
+          .append("curl -sk --user " + ADMIN_USERNAME_PATCH + ":" + ADMIN_PASSWORD_PATCH)
+          .append(" https://" + hostAndPort)
+          .append("/management/tenant-monitoring/servers/" + managedServer)
+          .append(" --silent --show-error")
+          .append(" -o /dev/null")
+          .append(" -w %{http_code}");
+
+      assertTrue(callWebAppAndWaitTillReturnedCode(cmdString.toString(), "401", 10));
+      logger.info("Got the correct http status code for invalid credentials");
+    } else {
+      verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
+          ADMIN_PASSWORD_DEFAULT, VALID);
+      verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH,
+          ADMIN_PASSWORD_PATCH, INVALID);
+    }
 
     // create a new secret for admin credentials
     logger.info("Create a new secret that contains new WebLogic admin credentials");
@@ -308,13 +346,39 @@ class ItOperatorRestart {
 
     // check if the new credentials are valid and the old credentials are not valid any more
     logger.info("Check that after patching current credentials are not valid and new credentials are");
-    verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
-        ADMIN_PASSWORD_DEFAULT, INVALID);
-    verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH,
-        ADMIN_PASSWORD_PATCH, VALID);
+    if (LOADBALANCER_ACCESS_ONLY) {
+      String managedServer = "managed-server1";
 
-    logger.info("Domain {0} in namespace {1} is fully started after changing WebLogic credentials secret",
-        domainUid, domainNamespace);
+      StringBuffer cmdString = new StringBuffer()
+          .append("curl -sk --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+          .append(" https://" + hostAndPort)
+          .append("/management/tenant-monitoring/servers/" + managedServer)
+          .append(" --silent --show-error")
+          .append(" -o /dev/null")
+          .append(" -w %{http_code}");
+
+      assertTrue(callWebAppAndWaitTillReturnedCode(cmdString.toString(), "401", 10));
+      logger.info("Got the correct http status code for valid credentials");
+
+      cmdString = new StringBuffer()
+          .append("curl -sk --user " + ADMIN_USERNAME_PATCH + ":" + ADMIN_PASSWORD_PATCH)
+          .append(" https://" + hostAndPort)
+          .append("/management/tenant-monitoring/servers/" + managedServer)
+          .append(" --silent --show-error")
+          .append(" -o /dev/null")
+          .append(" -w %{http_code}");
+
+      assertTrue(callWebAppAndWaitTillReturnedCode(cmdString.toString(), "200", 10));
+      logger.info("Got the correct http status code for invalid credentials");
+    } else {
+      verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
+          ADMIN_PASSWORD_DEFAULT, INVALID);
+      verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH,
+          ADMIN_PASSWORD_PATCH, VALID);
+
+      logger.info("Domain {0} in namespace {1} is fully started after changing WebLogic credentials secret",
+          domainUid, domainNamespace);
+    }
   }
 
   private void restartOperatorAndVerify() {
