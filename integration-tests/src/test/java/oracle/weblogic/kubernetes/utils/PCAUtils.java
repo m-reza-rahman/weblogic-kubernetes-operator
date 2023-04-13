@@ -103,7 +103,8 @@ public class PCAUtils {
       Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", domainNamespace)
           .replaceAll("@domainuid@", domainUid)
           .getBytes(StandardCharsets.UTF_8));
-    });
+      logger.info(Files.readString(dstFile));
+    });   
     String command = KUBERNETES_CLI + " create -f " + dstFile;
     logger.info("Running {0}", command);
     ExecResult result;
