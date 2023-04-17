@@ -21,6 +21,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.CommonMiiTestUtils;
+import oracle.weblogic.kubernetes.utils.PCAUtils;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +36,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_F
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
+import static oracle.weblogic.kubernetes.TestConstants.LOADBALANCER_ACCESS_ONLY;
 import static oracle.weblogic.kubernetes.TestConstants.MII_AUXILIARY_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -91,6 +93,7 @@ import static oracle.weblogic.kubernetes.utils.K8sEvents.checkDomainEventContain
 import static oracle.weblogic.kubernetes.utils.LoggingUtil.checkPodLogContainsString;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.createTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResource;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
@@ -175,6 +178,7 @@ class ItMiiAuxiliaryImage {
   private static String encryptionSecretName = "encryptionsecret";
   private static String opNamespace = null;
   private static String operatorPodName = null;
+  private static String hostAndPort = null;
 
   /**
    * Install Operator. Create a domain using multiple auxiliary images.
@@ -281,6 +285,9 @@ class ItMiiAuxiliaryImage {
       logger.info("admin svc host = {0}", adminSvcExtHostDomain1);
     }
 
+    if (LOADBALANCER_ACCESS_ONLY) {
+      createTraefikIngressRoutingRules(domainNamespace, domainUid1);
+    }
     // check configuration for JMS
     checkConfiguredJMSresouce(domainNamespace, adminServerPodNameDomain1, adminSvcExtHostDomain1);
   }
@@ -939,6 +946,11 @@ class ItMiiAuxiliaryImage {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+    
+    
+    if (LOADBALANCER_ACCESS_ONLY) {            
+      createTraefikIngressRoutingRules(domainNamespace, domainUid);
+    }
 
     assertFalse(checkSystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort, "JMSSystemResources",
         "TestClusterJmsModule2", "200"), "Model files from second AI are not ignored");
@@ -1245,6 +1257,10 @@ class ItMiiAuxiliaryImage {
     //create router for admin service on OKD in wdtDomainNamespace
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), wdtDomainNamespace);
     logger.info("admin svc host = {0}", adminSvcExtHost);
+    
+    if (LOADBALANCER_ACCESS_ONLY) {            
+      createTraefikIngressRoutingRules(wdtDomainNamespace, domainUid);
+    }
 
     // check configuration for DataSource in the running domain
     int adminServiceNodePort
@@ -1395,15 +1411,24 @@ class ItMiiAuxiliaryImage {
   }
 
   private static void checkConfiguredJMSresouce(String domainNamespace, String adminServerPodName,
-                                                String adminSvcExtHost) {
-    verifyConfiguredSystemResource(domainNamespace, adminServerPodName, adminSvcExtHost,
-        "JMSSystemResources", "TestClusterJmsModule2", "200");
+      String adminSvcExtHost) {
+    if (LOADBALANCER_ACCESS_ONLY) {
+      PCAUtils.checkSystemResourceConfiguration("JMSSystemResources", "TestClusterJmsModule2", "200");
+    } else {
+      verifyConfiguredSystemResource(domainNamespace, adminServerPodName, adminSvcExtHost,
+          "JMSSystemResources", "TestClusterJmsModule2", "200");
+    }
   }
 
   private void checkConfiguredJDBCresouce(String domainNamespace, String adminServerPodName, String adminSvcExtHost) {
-    verifyConfiguredSystemResouceByPath(domainNamespace, adminServerPodName, adminSvcExtHost,
-        "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-        "jdbc:oracle:thin:@\\/\\/localhost:7001\\/dbsvc");
+    if (LOADBALANCER_ACCESS_ONLY) {
+      PCAUtils.checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+          "jdbc:oracle:thin:@\\/\\/localhost:7001\\/dbsvc");
+    } else {
+      verifyConfiguredSystemResouceByPath(domainNamespace, adminServerPodName, adminSvcExtHost,
+          "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+          "jdbc:oracle:thin:@\\/\\/localhost:7001\\/dbsvc");
+    }
   }
 
   private DomainResource createDomainResourceWithAuxiliaryImage(

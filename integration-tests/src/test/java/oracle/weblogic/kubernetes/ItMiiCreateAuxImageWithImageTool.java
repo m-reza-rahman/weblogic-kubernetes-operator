@@ -17,6 +17,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.CommonMiiTestUtils;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import oracle.weblogic.kubernetes.utils.PCAUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -30,6 +31,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.LOADBALANCER_ACCESS_ONLY;
 import static oracle.weblogic.kubernetes.TestConstants.MII_APP_RESPONSE_V1;
 import static oracle.weblogic.kubernetes.TestConstants.MII_AUXILIARY_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
@@ -59,6 +61,7 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.createTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
@@ -82,8 +85,8 @@ class ItMiiCreateAuxImageWithImageTool {
   private static String domainNamespace = null;
 
   private static LoggingFacade logger = null;
-  private String domain1Uid = "domain1";
-  private String domain2Uid = "domain2";
+  private static String domain1Uid = "domain1";
+  private static String domain2Uid = "domain2";
   private static String miiImageTag = "new" + MII_BASIC_IMAGE_TAG;
   private static String miiImage = MII_AUXILIARY_IMAGE_NAME + ":" + miiImageTag;
   private final int replicaCount = 1;
@@ -128,6 +131,11 @@ class ItMiiCreateAuxImageWithImageTool {
             .srcDirList(Collections.singletonList(MII_BASIC_APP_NAME))
             .appName(MII_BASIC_APP_NAME)),
         String.format("Failed to create app archive for %s", MII_BASIC_APP_NAME));
+    
+    if (LOADBALANCER_ACCESS_ONLY) {
+      createTraefikIngressRoutingRules(domainNamespace, domain1Uid);
+      createTraefikIngressRoutingRules(domainNamespace, domain2Uid);
+    }
   }
 
   /**
@@ -512,27 +520,36 @@ class ItMiiCreateAuxImageWithImageTool {
    * Check Configured JMS Resource.
    *
    * @param domainNamespace domain namespace
-   * @param adminServerPodName  admin server pod name
+   * @param adminServerPodName admin server pod name
    * @param adminSvcExtHost admin server external host
    */
   private static void checkConfiguredJMSresouce(String domainNamespace, String adminServerPodName,
-                                               String adminSvcExtHost) {
-    verifyConfiguredSystemResource(domainNamespace, adminServerPodName, adminSvcExtHost,
-        "JMSSystemResources", "TestClusterJmsModule2", "200");
+      String adminSvcExtHost) {
+    if (LOADBALANCER_ACCESS_ONLY) {
+      PCAUtils.checkSystemResourceConfiguration("JMSSystemResources", "TestClusterJmsModule2", "200");
+    } else {
+      verifyConfiguredSystemResource(domainNamespace, adminServerPodName, adminSvcExtHost,
+          "JMSSystemResources", "TestClusterJmsModule2", "200");
+    }
   }
 
   /**
    * Check Configured JDBC Resource.
    *
    * @param domainNamespace domain namespace
-   * @param adminServerPodName  admin server pod name
+   * @param adminServerPodName admin server pod name
    * @param adminSvcExtHost admin server external host
    */
   public static void checkConfiguredJDBCresouce(String domainNamespace, String adminServerPodName,
-                                                String adminSvcExtHost) {
+      String adminSvcExtHost) {
 
-    verifyConfiguredSystemResouceByPath(domainNamespace, adminServerPodName, adminSvcExtHost,
-        "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-        "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
+    if (LOADBALANCER_ACCESS_ONLY) {
+      PCAUtils.checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+          "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
+    } else {
+      verifyConfiguredSystemResouceByPath(domainNamespace, adminServerPodName, adminSvcExtHost,
+          "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+          "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
+    }
   }
 }
