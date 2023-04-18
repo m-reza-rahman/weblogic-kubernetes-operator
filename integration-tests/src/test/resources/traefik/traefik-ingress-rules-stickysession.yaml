@@ -9,8 +9,6 @@ metadata:
   name: @domain1uid@-http-ingress-rule
   namespace: @NS@
 spec:
-  entryPoints:
-    - web
   routes:
     - kind: Rule
       match: Host(`@domain1uid@.@NS@.cluster-1.test`)
