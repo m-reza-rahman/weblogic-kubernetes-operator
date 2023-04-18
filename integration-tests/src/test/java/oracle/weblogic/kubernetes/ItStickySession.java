@@ -475,7 +475,7 @@ class ItStickySession {
         String loadBalancerIP = assertDoesNotThrow(() -> getLoadBalancerIP("traefik", "traefik-operator"));
         int port = assertDoesNotThrow(() -> getLoadBalancerPort("traefik", "traefik-operator", "web"));
         String hostAndPort = loadBalancerIP + ":" + port;
-        curlCmd.append(" -H 'host: ")
+        curlCmd.append(" -sk -H 'host: ")
             .append(hostName)
             .append("' https://")
             .append(hostAndPort)
