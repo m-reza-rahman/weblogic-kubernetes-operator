@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -400,6 +401,8 @@ class ItStickySession {
     String serverName = httpAttrInfo.get(serverNameAttr);
     String sessionId = httpAttrInfo.get(sessionIdAttr);
     String countStr = httpAttrInfo.get(countAttr);
+    
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(30));
 
     // verify that the HTTP response data are not null
     assertAll("Check that WebLogic server and session vars is not null or empty",
