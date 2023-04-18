@@ -67,6 +67,8 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushI
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerIP;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerPort;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -129,7 +131,11 @@ class ItStickySession {
     // get a unique Traefik namespace
     logger.info("Get a unique namespace for Traefik");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    traefikNamespace = namespaces.get(0);
+    if (LOADBALANCER_ACCESS_ONLY) {
+      traefikNamespace = "traefik";
+    } else {
+      traefikNamespace = namespaces.get(0);
+    }
 
     // get a unique operator namespace
     logger.info("Get a unique namespace for operator");
@@ -186,7 +192,7 @@ class ItStickySession {
   @DisplayName("Create a Traefik ingress resource and verify that two HTTP connections are sticky to the same server")
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testSameSessionStickinessUsingTraefik() {
-    final String ingressServiceName = traefikHelmParams.getReleaseName();
+    String ingressServiceName = LOADBALANCER_ACCESS_ONLY ? "traefik-operator" : traefikHelmParams.getReleaseName();
     final String channelName = "web";
 
     // create Traefik ingress resource
@@ -465,16 +471,29 @@ class ItStickySession {
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
-      String hostAndPort = getHostAndPort(hostName, servicePort);
-
-      curlCmd.append("--noproxy '*' -H 'host: ")
-          .append(hostName)
-          .append("' http://")
-          .append(hostAndPort)
-          .append("/")
-          .append(curlUrlPath)
-          .append(headerOption)
-          .append(httpHeaderFile);
+      if (LOADBALANCER_ACCESS_ONLY) {
+        String loadBalancerIP = assertDoesNotThrow(() -> getLoadBalancerIP("traefik", "traefik-operator"));
+        int port = assertDoesNotThrow(() -> getLoadBalancerPort("traefik", "traefik-operator", "web"));
+        String hostAndPort = loadBalancerIP + ":" + port;
+        curlCmd.append(" -H 'host: ")
+            .append(hostName)
+            .append("' https://")
+            .append(hostAndPort)
+            .append("/")
+            .append(curlUrlPath)
+            .append(headerOption)
+            .append(httpHeaderFile);
+      } else {
+        String hostAndPort = getHostAndPort(hostName, servicePort);
+        curlCmd.append("--noproxy '*' -H 'host: ")
+            .append(hostName)
+            .append("' http://")
+            .append(hostAndPort)
+            .append("/")
+            .append(curlUrlPath)
+            .append(headerOption)
+            .append(httpHeaderFile);
+      }
     } else {
       //use cluster service to build the curl command to run in admin pod
       // save the cookie file to /u01 in order to run the test on openshift env
