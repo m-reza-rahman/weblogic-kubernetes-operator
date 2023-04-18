@@ -347,22 +347,31 @@ class ItMiiAuxiliaryImage {
             .modelArchiveFiles(archiveList);
     createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImage3Tag, witParams);
 
-    //create router for admin service on OKD
-    if (adminSvcExtHostDomain1 == null) {
-      adminSvcExtHostDomain1 = createRouteForOKD(getExternalServicePodName(adminServerPodNameDomain1), domainNamespace);
-      logger.info("admin svc host = {0}", adminSvcExtHostDomain1);
+    if (LOADBALANCER_ACCESS_ONLY) {
+      testUntil(
+          () -> PCAUtils
+              .checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+                  "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"), logger, "jdbc url to match{0}",
+          "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
+    } else {
+      //create router for admin service on OKD
+      if (adminSvcExtHostDomain1 == null) {
+        adminSvcExtHostDomain1 = createRouteForOKD(getExternalServicePodName(adminServerPodNameDomain1), 
+            domainNamespace);
+        logger.info("admin svc host = {0}", adminSvcExtHostDomain1);
+      }
+
+      // check configuration for DataSource in the running domain
+      int adminServiceNodePort
+          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodNameDomain1), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      assertTrue(checkSystemResourceConfig(adminSvcExtHostDomain1, adminServiceNodePort,
+          "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+          "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
+          "Can't find expected URL configuration for DataSource");
+
+      logger.info("Found the DataResource configuration");
     }
-
-    // check configuration for DataSource in the running domain
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodNameDomain1), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertTrue(checkSystemResourceConfig(adminSvcExtHostDomain1, adminServiceNodePort,
-        "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-        "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
-        "Can't find expected URL configuration for DataSource");
-
-    logger.info("Found the DataResource configuration");
 
     // get the map with server pods and their original creation timestamps
     Map<String, OffsetDateTime> podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace, adminServerPodNameDomain1,
@@ -1258,24 +1267,32 @@ class ItMiiAuxiliaryImage {
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), wdtDomainNamespace);
     logger.info("admin svc host = {0}", adminSvcExtHost);
     
-    if (LOADBALANCER_ACCESS_ONLY) {            
+    if (LOADBALANCER_ACCESS_ONLY) {
       createTraefikIngressRoutingRules(wdtDomainNamespace, domainUid);
     }
 
     // check configuration for DataSource in the running domain
-    int adminServiceNodePort
-        = getServiceNodePort(wdtDomainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    testUntil(
-        () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
-            "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-            "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
-        logger,
-        "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} has the right value",
-        adminSvcExtHost,
-        adminServiceNodePort,
-        "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams");
-    logger.info("Found the DataResource configuration");
+    if (LOADBALANCER_ACCESS_ONLY) {
+      testUntil(
+          () -> PCAUtils
+              .checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+                  "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"), logger, "jdbc url to match{0}",
+          "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(wdtDomainNamespace, getExternalServicePodName(adminServerPodName), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      testUntil(
+          () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
+              "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+              "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
+          logger,
+          "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} has the right value",
+          adminSvcExtHost,
+          adminServiceNodePort,
+          "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams");
+      logger.info("Found the DataResource configuration");
+    }
     //check WDT version in the image equals the  provided WDT_TEST_VERSION
     assertDoesNotThrow(() -> {
       String wdtVersion = checkWDTVersion(wdtDomainNamespace,
@@ -1301,17 +1318,26 @@ class ItMiiAuxiliaryImage {
         + "or wdt was not updated after patching with auxiliary image");
 
     // check configuration for DataSource in the running domain
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    testUntil(
-        () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
-            "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-            "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
-        logger,
-        "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} has the right value",
-        adminSvcExtHost,
-        adminServiceNodePort,
-        "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams");
-    logger.info("Found the DataResource configuration");
+    if (LOADBALANCER_ACCESS_ONLY) {
+      testUntil(
+          () -> PCAUtils
+              .checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+                  "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"), logger, "jdbc url to match{0}",
+          "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
+    } else {
+      int adminServiceNodePort = -1;
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      testUntil(
+          () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
+              "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+              "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
+          logger,
+          "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} has the right value",
+          adminSvcExtHost,
+          adminServiceNodePort,
+          "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams");
+      logger.info("Found the DataResource configuration");
+    }
 
   }
 

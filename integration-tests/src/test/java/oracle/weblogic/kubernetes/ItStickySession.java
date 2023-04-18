@@ -46,6 +46,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.LOADBALANCER_ACCESS_ONLY;
 import static oracle.weblogic.kubernetes.TestConstants.LOGS_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -141,7 +142,7 @@ class ItStickySession {
     domainNamespace = namespaces.get(2);
 
     // install and verify Traefik
-    if (!OKD) {
+    if (!OKD && !LOADBALANCER_ACCESS_ONLY) {
       traefikHelmParams =
           installAndVerifyTraefik(traefikNamespace, 0, 0);
     }
@@ -466,7 +467,7 @@ class ItStickySession {
 
       String hostAndPort = getHostAndPort(hostName, servicePort);
 
-      curlCmd.append(" --noproxy '*' -H 'host: ")
+      curlCmd.append("--noproxy '*' -H 'host: ")
           .append(hostName)
           .append("' http://")
           .append(hostAndPort)
