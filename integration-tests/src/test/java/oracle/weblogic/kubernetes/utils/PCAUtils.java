@@ -219,9 +219,9 @@ public class PCAUtils {
 
     logger.info("hostAndPort = {0} ", hostAndPort);
 
-    StringBuffer curlString = new StringBuffer("curl --user ");
+    StringBuffer curlString = new StringBuffer("curl -sk --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + hostAndPort)
+        .append(" https://" + hostAndPort)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesPath)

@@ -17,7 +17,6 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.CommonMiiTestUtils;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-import oracle.weblogic.kubernetes.utils.PCAUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -61,6 +60,8 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.checkSystemResourceConfigByValue;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.checkSystemResourceConfiguration;
 import static oracle.weblogic.kubernetes.utils.PCAUtils.createTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -526,7 +527,7 @@ class ItMiiCreateAuxImageWithImageTool {
   private static void checkConfiguredJMSresouce(String domainNamespace, String adminServerPodName,
       String adminSvcExtHost) {
     if (LOADBALANCER_ACCESS_ONLY) {
-      PCAUtils.checkSystemResourceConfiguration("JMSSystemResources", "TestClusterJmsModule2", "200");
+      checkSystemResourceConfiguration("JMSSystemResources", "TestClusterJmsModule2", "200");
     } else {
       verifyConfiguredSystemResource(domainNamespace, adminServerPodName, adminSvcExtHost,
           "JMSSystemResources", "TestClusterJmsModule2", "200");
@@ -544,7 +545,7 @@ class ItMiiCreateAuxImageWithImageTool {
       String adminSvcExtHost) {
 
     if (LOADBALANCER_ACCESS_ONLY) {
-      PCAUtils.checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+      checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
           "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
     } else {
       verifyConfiguredSystemResouceByPath(domainNamespace, adminServerPodName, adminSvcExtHost,
