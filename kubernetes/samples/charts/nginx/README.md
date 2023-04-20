@@ -45,7 +45,7 @@ $ kubectl exec -it $POD_NAME -n nginx -- /nginx-ingress-controller --version
 ```
 > **NOTE**: All the generated Kubernetes resources of the NGINX operator have names controlled by the NGINX Helm chart. In our case, we use `releaseName` of `nginx-operator`.
 
-Once the installation is complete, you can check the NGINX LoadBalancer status
+Once the installation is complete, you can check the NGINX ingress status
 
 ```shell
 $ kubectl -n nginx get services
@@ -87,7 +87,7 @@ Now you can send requests to different WebLogic domains with the unique NGINX en
 ```shell
 # Get the ingress controller service nodeport values
 # HOSTNAME is your Kubernetes cluster address
-# See installation section for how to access the LoadBalancer
+# See installation section for how to access the ingress
 $ export LB_PORT=$(kubectl -n nginx get service nginx-operator-ingress-nginx-controller -o jsonpath='{.spec.ports[?(@.name=="http")].nodePort}')
 $ curl -H 'host: domain1.org' http://${HOSTNAME}:${LB_PORT}/testwebapp/
 $ curl -H 'host: domain2.org' http://${HOSTNAME}:${LB_PORT}/testwebapp/
