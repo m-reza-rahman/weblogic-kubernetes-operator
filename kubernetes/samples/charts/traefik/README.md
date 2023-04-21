@@ -29,7 +29,7 @@ NAME               TYPE           CLUSTER-IP    EXTERNAL-IP     PORT(S)         
 traefik-operator   LoadBalancer   10.96.x.y    129.x.y.z   80:30518/TCP,443:30144/TCP   4m49s
 ```
 
-If the `EXTERNAL-IP` column shows `<pending>`, you can access the Traefik load balancer through your Kubernetes cluster address and nodeports `30518/30144`.  For example, `http://<k8s cluster address>:30518/myappurl` or `https://<k8s cluster address>:30144/myappurl`.  If the `EXTERNAL-IP` column shows a real IP address, then you can also access the load balancer through that IP address that is the external Load balancer address without specifying the port value. For example,  `http://129.x.y.z/myappurl` or `https://129.x.y.z/myappurl`
+If the `EXTERNAL-IP` column shows `<pending>`, you can access the Traefik ingress through your Kubernetes cluster address and nodeports `30518/30144`.  For example, `http://<k8s cluster address>:30518/myappurl` or `https://<k8s cluster address>:30144/myappurl`.  If the `EXTERNAL-IP` column shows a real IP address, then you can also access the ingress through the IP address that is the external load balancer address without specifying the port value. For example,  `http://129.x.y.z/myappurl` or `https://129.x.y.z/myappurl`
 
 ## Configure Traefik as a load balancer for WebLogic domains
 This section describes how to use Traefik to handle traffic to backend WebLogic domains.
