@@ -18,7 +18,7 @@ You can also install the Traefik operator with a custom `values.yaml` file. For 
 $ helm install traefik-operator traefik/traefik --namespace traefik --values values.yaml
 ```
 
-After the installation is complete, you can check the Traefik ingress status
+After the installation is complete, you can check the Traefik ingress status:
 
 ```shell
 $ kubectl -n traefik get services

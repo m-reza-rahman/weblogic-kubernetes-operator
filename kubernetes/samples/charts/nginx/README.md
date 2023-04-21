@@ -45,7 +45,7 @@ $ kubectl exec -it $POD_NAME -n nginx -- /nginx-ingress-controller --version
 ```
 > **NOTE**: All the generated Kubernetes resources of the NGINX operator have names controlled by the NGINX Helm chart. In our case, we use `releaseName` of `nginx-operator`.
 
-After the installation is complete, you can check the NGINX ingress status
+After the installation is complete, you can check the NGINX ingress status:
 
 ```shell
 $ kubectl -n nginx get services
