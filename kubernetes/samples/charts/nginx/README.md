@@ -45,7 +45,7 @@ $ kubectl exec -it $POD_NAME -n nginx -- /nginx-ingress-controller --version
 ```
 > **NOTE**: All the generated Kubernetes resources of the NGINX operator have names controlled by the NGINX Helm chart. In our case, we use `releaseName` of `nginx-operator`.
 
-Once the installation is complete, you can check the NGINX ingress status
+After the installation is complete, you can check the NGINX ingress status
 
 ```shell
 $ kubectl -n nginx get services
@@ -58,7 +58,7 @@ service/nginx-operator-ingress-nginx-controller             LoadBalancer   10.10
 service/nginx-operator-ingress-nginx-controller-admission   ClusterIP      10.109.12.133   <none>        443/TCP                      11m
 ```
 
-If the `EXTERNAL-IP` column shows `<pending>`, you can access the NGINX ingress through your Kubernetes cluster address and nodeports `31470/32465`.  For example, `http://<k8s cluster address>:31470/myappurl` or `https://<k8s cluster address>:32465/myappurl`.  If the `EXTERNAL-IP` column shows a real IP address, then you can also access the ingress through the IP address that is the external load balancer address without specifying the port value. For example,  `http://<ip address>/myappurl` or `https://<ip address>/myappurl`
+If the `EXTERNAL-IP` column shows `<pending>`, you can access the NGINX ingress through your Kubernetes cluster address and nodeports `31470/32465`.  For example, `http://<k8s cluster address>:31470/myappurl` or `https://<k8s cluster address>:32465/myappurl`.  If the `EXTERNAL-IP` column shows a real IP address, then you can also access the ingress through the IP address that is the external load balancer address without specifying the port value. For example,  `http://<ip address>/myappurl` or `https://<ip address>/myappurl`.
 
 
 ## Configure NGINX as a load balancer for WebLogic domains
