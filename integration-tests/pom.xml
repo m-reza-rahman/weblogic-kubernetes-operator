@@ -500,7 +500,7 @@
         </profile>
 
         <profile>
-            <id>wko-okd-wls-mrg</id>
+            <id>wko-okd-wls-mrg1</id>
             <properties>
                 <skipITs>false</skipITs>
                 <includes-failsafe>
@@ -519,6 +519,16 @@
                   **/ItMiiSampleWlsAux,
                   **/ItMiiSampleWlsMain,
                   **/ItOperatorRestart,
+                  **/ItMiiClusterResource
+                </includes-failsafe>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>wko-okd-wls-mrg2</id>
+            <properties>
+                <skipITs>false</skipITs>
+                <includes-failsafe>
                   **/ItPodsShutdownOption,
                   **/ItPodTemplates,
                   **/ItProductionSecureMode,
