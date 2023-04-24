@@ -289,7 +289,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         }
         
         //install webhook to prevent every operator installation trying to update crd
-        installWebHookOnlyOperator();
+        installWebHookOnlyOperator("DomainOnPvSimplification=true");
 
         // set initialization success to true, not counting the istio installation as not all tests use istio
         isInitializationSuccessful = true;
@@ -619,4 +619,34 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         "null" // domainNamespace
     );
   }
+
+  private OperatorParams installWebHookOnlyOperator(String featureGates) {
+    // recreate WebHook namespace
+    deleteNamespace(webhookNamespace);
+    assertDoesNotThrow(() -> new Namespace().name(webhookNamespace).create());
+    String webhookSa = webhookNamespace + "-sa";
+    getLogger().info("Installing webhook only operator in namespace {0}", webhookNamespace);
+    opHelmParams
+        = new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
+            .namespace(webhookNamespace)
+            .chartDir(OPERATOR_CHART_DIR);
+    return installAndVerifyOperator(
+        webhookNamespace, // webhook namespace
+        webhookSa, //webhook service account
+        false, // with REST api enabled
+        0, // externalRestHttpPort
+        opHelmParams, // operator helm parameters
+        null, // elasticsearchHost
+        false, // ElkintegrationEnabled
+        false, // createLogStashconfigmap
+        null, // domainspaceSelectionStrategy
+        null, // domainspaceSelector
+        true, // enableClusterRolebinding
+        "INFO", // webhook pod log level
+        featureGates, //featureGates of the enabled operator feature
+        true, // webhookOnly
+        "null" // domainNamespace
+    );
+  }
+
 }
