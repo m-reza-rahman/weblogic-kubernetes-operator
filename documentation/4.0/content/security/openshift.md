@@ -74,69 +74,6 @@ group, and that the group read, write and execute permissions are set (enabled):
 * For WebLogic Server and Fusion Middleware Infrastructure images, `/u01` (or the ultimate parent directory of your
   Oracle Home and domain if you put them in different locations).
 
-#### Create a custom Security Context Constraint
-
-For most use cases, customers should use OpenShift's default `restricted` security context constraint. If you do need to
-create and use a custom security context constraint, this section describes the settings necessary to be compatible with
-the operator and pods for WebLogic Server instances.
-
-To create a custom security context constraint, create a YAML file with the following
-content.  This example assumes that your OpenShift project is called `weblogic` and
-that the service account you will use to run the operator and domains
-is called `weblogic-operator`.  You should change these
-in the `groups` and `users` sections to match your environment.
-
-```yaml
-kind: SecurityContextConstraints
-apiVersion: v1
-metadata:
-  name: uid1000
-allowHostDirVolumePlugin: false
-allowHostIPC: false
-allowHostNetwork: false
-allowHostPID: false
-allowHostPorts: false
-allowPrivilegeEscalation: true
-allowPrivilegedContainer: false
-fsGroup:
-  type: MustRunAs
-groups:
-- system:serviceaccounts:weblogic
-readOnlyRootFilesystem: false
-requiredDropCapabilities:
-- KILL
-- MKNOD
-- SETUID
-- SETGID
-runAsUser:
-  type: MustRunAs
-  uid: 1000
-seLinuxContext:
-  type: MustRunAs
-supplementalGroups:
-  type: RunAsAny
-users:
-- system:serviceaccount:weblogic:weblogic-operator
-volumes:
-- configMap
-- downwardAPI
-- emptyDir
-- persistentVolumeClaim
-- projected
-- secret
-```
-
-Assuming you called that file `uid1000.yaml`, you can create the security context constraint
-using the following command:
-
-```shell
-$ oc create -f uid1000.yaml
-```
-
-After you have created the security context constraint, you can install the WebLogic Kubernetes Operator.
-Make sure you use the same service account to which you granted permission in the security
-context constraint (`weblogic-operator` in the preceding example).  The operator will then run
-with UID 1000, and any WebLogic domain it creates will also run with UID 1000.
 
 {{% notice note %}}
 For additional information about OpenShift requirements and the operator,
