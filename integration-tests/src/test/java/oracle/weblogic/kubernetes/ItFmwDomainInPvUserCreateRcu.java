@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 @DisplayName("Test to create a JRF domain in persistent volume")
 @IntegrationTest
-public class ItJrfDomainInPvUserCreateRcu {
+public class ItFmwDomainInPvUserCreateRcu {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
@@ -81,7 +81,6 @@ public class ItJrfDomainInPvUserCreateRcu {
   private static final String adminServerPodName = domainUid + "-" + adminServerName;
   private static final String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
   private static final int managedServerPort = 8001;
-  //private static final String modelFile = "model-singleclusterdomain-sampleapp-jrf.yaml";
   private static final String miiAuxiliaryImage1Tag = "jrf1" + MII_BASIC_IMAGE_TAG;
   private final String adminSecretName = domainUid + "-weblogic-credentials";
   private final String rcuaccessSecretName = domainUid + "-rcu-credentials";
@@ -90,7 +89,6 @@ public class ItJrfDomainInPvUserCreateRcu {
   private final String opsswalletfileSecretName = domainUid + "-opss-wallet-file-secret";
   private static final int replicaCount = 1;
 
-  private final String wdtCreateDomainScript = "setup_wdt.sh";
   private final String fmwModelFilePrefix = "model-fmwdomain-onpv-wdt";
   private final String fmwModelFile = fmwModelFilePrefix + ".yaml";
 
@@ -183,12 +181,6 @@ public class ItJrfDomainInPvUserCreateRcu {
         "weblogicenc",
         "weblogicenc"),
         String.format("createSecret failed for %s", encryptionSecretName));
-
-
-    // create RCU credential secret
-    /*logger.info("RCU credential secret");
-    createRcuSecretWithUsernamePassword(rcuaccessSecretName, domainNamespace,
-        RCUSCHEMAUSERNAME, RCUSCHEMAPASSWORD, RCUSYSUSERNAME, RCUSYSPASSWORD);*/
 
     // create RCU access secret
     logger.info("Creating RCU access secret: {0}, with prefix: {1}, dbUrl: {2}, schemapassword: {3})",
