@@ -10,7 +10,6 @@ wdt_download_url="https://github.com/oracle/weblogic-deploy-tooling/releases/lat
 wit_download_url="https://github.com/oracle/weblogic-image-tool/releases/latest"
 wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
 maven_profile_name="v8o"
-VZ_INSTALL_TIMEOUT=${VZ_INSTALL_TIMEOUT:-30}
 skip_tests=false
 
 # usage - display the help for this script
