@@ -74,14 +74,6 @@ group, and that the group read, write and execute permissions are set (enabled):
 * For WebLogic Server and Fusion Middleware Infrastructure images, `/u01` (or the ultimate parent directory of your
   Oracle Home and domain if you put them in different locations).
 
-If your OpenShift environment has a different default security context constraint,
-you may need to configure OpenShift to allow use of UID 1000 by creating
-a security context constraint.  Oracle recommends that you define
-a custom security context constraint that has just the permissions that are required
-and apply that to WebLogic pods.  Oracle does not recommend using the built-in `anyuid`
-Security Context Constraint, because it provides more permissions
-than are needed, and is therefore less secure.
-
 #### Create a custom Security Context Constraint
 
 For most use cases, customers should use OpenShift's default `restricted` security context constraint. If you do need to
@@ -150,4 +142,3 @@ with UID 1000, and any WebLogic domain it creates will also run with UID 1000.
 For additional information about OpenShift requirements and the operator,
 see [OpenShift]({{<relref  "/introduction/platforms/environments#openshift">}}).
 {{% /notice %}}
-
