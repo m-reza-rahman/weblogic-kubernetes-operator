@@ -543,6 +543,7 @@ public class OperatorUtils {
    * @param domainNamespaceSelector the label or expression value to manage namespaces
    * @param enableClusterRoleBinding operator cluster role binding
    * @param loggingLevel logging level of operator
+   * @param featureGates the name of featureGates
    * @param webhookOnly boolean indicating install webHookOnly operator
    * @param domainNamespace the list of the domain namespaces which will be managed by the operator
    * @return the operator Helm installation parameters
