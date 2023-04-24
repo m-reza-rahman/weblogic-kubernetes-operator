@@ -91,7 +91,7 @@ public class VerrazzanoUtils {
    * @return true if expected message is in returned page, otherwise false
    */
   public static boolean verifyVzApplicationAccess(String url, String message) {
-    String curlCmd = "curl -sk " + url;
+    String curlCmd = "env no_proxy=.nip.io curl -sk " + url;
     logger.info("curl command {0}", curlCmd);
     ExecResult result = assertDoesNotThrow(() -> exec(curlCmd, true));
     logger.info(String.valueOf(result.exitValue()));
