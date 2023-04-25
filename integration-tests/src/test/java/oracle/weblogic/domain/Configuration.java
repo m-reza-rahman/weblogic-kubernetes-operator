@@ -213,12 +213,6 @@ public class Configuration {
     this.introspectorJobActiveDeadlineSeconds = introspectorJobActiveDeadlineSeconds;
   }
 
-  /**
-   * Adds configuration for initializing domain on PV configuration to the DomainSpec.
-   *
-   * @param initializeDomainOnPV The configuration for initializing domain on PV to be added to this DomainSpec
-   * @return this object
-   */
   public Configuration initializeDomainOnPV(InitializeDomainOnPV initializeDomainOnPV) {
     this.initializeDomainOnPV = initializeDomainOnPV;
     return this;

@@ -3,7 +3,6 @@
 
 package oracle.weblogic.kubernetes.utils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +19,6 @@ import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
-import oracle.weblogic.domain.AuxiliaryImage;
 import oracle.weblogic.domain.Channel;
 import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.CreateIfNotExists;
@@ -388,12 +386,12 @@ public class FmwUtils {
             .failureRetryLimitMinutes(FAILURE_RETRY_LIMIT_MINUTES)
             .serverPod(new ServerPod()
                 .addVolumesItem(new V1Volume()
-                    .name("weblogic-domain-storage-volume") 
+                    .name("weblogic-domain-storage-volume")
                     .persistentVolumeClaim(new V1PersistentVolumeClaimVolumeSource()
                         .claimName(pvcName)))
                 .addVolumeMountsItem(new V1VolumeMount()
                     .mountPath("/shared")
-                    .name("weblogic-domain-storage-volume")) //TODO
+                    .name("weblogic-domain-storage-volume"))
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
                     .value("-Dweblogic.StdoutDebugEnabled=false"))
@@ -409,7 +407,7 @@ public class FmwUtils {
                         .channelName("default")
                         .nodePort(0))))
             .configuration(new Configuration()
-                /* might turn on to test later
+                /* might turn on later to test
                 .opss(new Opss()
                     .walletPasswordSecret(opssWalletPasswordSecretName))
                 .model(new Model()
@@ -443,46 +441,6 @@ public class FmwUtils {
                         )))));
 
     return domain;
-  }
-
-  public static DomainCreationImage getDomainCreationImage(String image) {
-    return new DomainCreationImage().image(image);
-  }
-
-  /**
-   * Get the list of DomainCreationImage.
-   * @param auxiliaryImagePath  auxiliary image path //TODO
-   * @param auxiliaryImages The names of the auxiliary images that are used to create domain
-   * @return A list of DomainCreationImage
-   */
-  public static  List<DomainCreationImage> getDomainCreationImages(String auxiliaryImagePath,
-                                                                   String...auxiliaryImages) {
-    /*List<DomainCreationImage> auxiliaryImageList = new ArrayList<>();
-    Arrays.stream(images).forEach(image -> auxiliaryImageList.add(getDomainCreationImage(image)));
-    return auxiliaryImageList;*/
-
-    int index = 0;
-    for (String cmImageName: auxiliaryImages) {
-      getLogger().info("Debug: setup WDT install home");
-
-      AuxiliaryImage auxImage = new AuxiliaryImage()
-          .image(cmImageName).imagePullPolicy(IMAGE_PULL_POLICY);
-      //Only add the sourceWDTInstallHome and sourceModelHome for the first aux image.
-      if (index == 0) {
-        auxImage.sourceWDTInstallHome(auxiliaryImagePath + "/weblogic-deploy")
-            .sourceModelHome(auxiliaryImagePath + "/models");
-        getLogger().info("add the sourceWDTInstallHome and sourceModelHome for the first aux image");
-      }
-      index++;
-    }
-
-    List<DomainCreationImage> auxiliaryImageList = new ArrayList<>();
-    Arrays.stream(auxiliaryImages).forEach(auxiliaryImage ->
-        auxiliaryImageList.add(getDomainCreationImage(auxiliaryImage)));
-
-    getLogger().info("Got the aux image for domain on pv");
-    return auxiliaryImageList;
-
   }
 
 }
