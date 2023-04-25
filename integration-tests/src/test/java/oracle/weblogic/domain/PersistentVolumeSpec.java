@@ -59,6 +59,15 @@ public class PersistentVolumeSpec {
     return this;
   }
 
+  public PersistentVolumeSpec persistentVolumeReclaimPolicy(String persistentVolumeReclaimPolicy) {
+    this.persistentVolumeReclaimPolicy = persistentVolumeReclaimPolicy;
+    return this;
+  }
+
+  public String persistentVolumeReclaimPolicy() {
+    return persistentVolumeReclaimPolicy;
+  }
+
   public String getPersistentVolumeReclaimPolicy() {
     return persistentVolumeReclaimPolicy;
   }
@@ -67,22 +76,38 @@ public class PersistentVolumeSpec {
     this.persistentVolumeReclaimPolicy = persistentVolumeReclaimPolicy;
   }
 
+  public PersistentVolumeSpec storageClassName(String storageClassName) {
+    this.storageClassName = storageClassName;
+    return this;
+  }
+
+  public String storageClassName() {
+    return storageClassName;
+  }
+
   public String getStorageClassName() {
     return storageClassName;
   }
 
-  public PersistentVolumeSpec storageClassName(String storageClassName) {
+  public void setStorageClassName(String storageClassName) {
     this.storageClassName = storageClassName;
+  }
+
+  public PersistentVolumeSpec volumeMode(String volumeMode) {
+    this.volumeMode = volumeMode;
     return this;
+  }
+
+  public String volumeMode() {
+    return volumeMode;
   }
 
   public String getVolumeMode() {
     return volumeMode;
   }
 
-  public PersistentVolumeSpec volumeMode(String volumeMode) {
+  public void setVolumeMode(String volumeMode) {
     this.volumeMode = volumeMode;
-    return this;
   }
 
   @Override

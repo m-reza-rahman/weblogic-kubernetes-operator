@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -31,7 +32,6 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
-import static oracle.weblogic.kubernetes.actions.impl.primitive.Image.getImageEnvVar;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -89,7 +89,8 @@ public class ItFmwDomainInPvUserCreateRcu {
   private final String opsswalletfileSecretName = domainUid + "-opss-wallet-file-secret";
   private static final int replicaCount = 1;
 
-  private final String fmwModelFilePrefix = "model-fmwdomain-onpv-wdt";
+  //private final String fmwModelFilePrefix = "model-fmwdomain-onpv-wdt";
+  private final String fmwModelFilePrefix = "model-fmwdomainonpv-rcu-wdt";
   private final String fmwModelFile = fmwModelFilePrefix + ".yaml";
 
   /**
@@ -129,7 +130,6 @@ public class ItFmwDomainInPvUserCreateRcu {
         String.format("Failed to create RCU schema for prefix %s in the namespace %s with "
             + "dbUrl %s, dbListenerPost %s", RCUSCHEMAPREFIX, dbNamespace, dbUrl, dbListenerPort));
 
-    //installAndVerifyOperator(opNamespace, domainNamespace);
     // install operator with DomainOnPvSimplification=true"
     HelmParams opHelmParams =
         new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
@@ -156,9 +156,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     final String pvcName = getUniqueName(domainUid + "-pvc-");
     final int t3ChannelPort = getNextFreePort();
     // create a model property file
-    File fmwModelPropFile = createWdtPropertyFile(t3ChannelPort);
-    //TODO debug
-    logger.info("fmwModelPropFile is: " + fmwModelPropFile.toPath().toString());
+    File fmwModelPropFile = createWdtPropertyFile();
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
@@ -225,7 +223,7 @@ public class ItFmwDomainInPvUserCreateRcu {
         domainUid, domainNamespace, adminSecretName,
         TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, rcuaccessSecretName,
         opsswalletpassSecretName,
-        pvName, pvcName, domainCreationImage);
+        pvName, pvcName, Collections.singletonList(domainCreationImage));
 
     // Set the inter-pod anti-affinity for the domain custom resource
     setPodAntiAffinity(domain);
@@ -237,34 +235,14 @@ public class ItFmwDomainInPvUserCreateRcu {
     verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
   }
 
-  private File createWdtPropertyFile(int t3ChannelPort) {
-    //get ENV variable from the image
-    assertNotNull(getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "ORACLE_HOME"),
-        "envVar ORACLE_HOME from image is null");
-    oracle_home = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "ORACLE_HOME");
-    logger.info("ORACLE_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, oracle_home);
-    assertNotNull(getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "JAVA_HOME"),
-        "envVar JAVA_HOME from image is null");
-    java_home = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "JAVA_HOME");
-    logger.info("JAVA_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, java_home);
+  private File createWdtPropertyFile() {
 
-    // create wlst property file object
     Properties p = new Properties();
-    //p.setProperty("oracleHome", oracle_home); //default $ORACLE_HOME
-    //p.setProperty("javaHome", java_home); //default $JAVA_HOME
     p.setProperty("rcuDb", dbUrl);
     p.setProperty("rcuSchemaPrefix", RCUSCHEMAPREFIX);
     p.setProperty("rcuSchemaPassword", RCUSCHEMAPASSWORD);
     p.setProperty("adminUsername", ADMIN_USERNAME_DEFAULT);
     p.setProperty("adminPassword", ADMIN_PASSWORD_DEFAULT);
-    /*p.setProperty("domainName", domainUid);
-    p.setProperty("adminServerName", adminServerName);
-    p.setProperty("productionModeEnabled", "true");
-    p.setProperty("clusterName", clusterName);
-    p.setProperty("managedServerNameBase", managedServerNameBase);
-    p.setProperty("t3ChannelPort", Integer.toString(t3ChannelPort));
-    p.setProperty("t3PublicAddress", K8S_NODEPORT_HOST);
-    p.setProperty("managedServerPort", Integer.toString(managedServerPort));*/
 
     // create a model property file
     File domainPropertiesFile = assertDoesNotThrow(() ->

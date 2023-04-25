@@ -15,8 +15,6 @@ import io.kubernetes.client.openapi.models.V1HostPathVolumeSource;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
-//import io.kubernetes.client.openapi.models.V1PersistentVolumeSpec;
-//import io.kubernetes.client.openapi.models.V1StorageClass;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
@@ -350,8 +348,7 @@ public class FmwUtils {
    * @param encryptionSecretName name of encryption secret
    * @param rcuAccessSecretName name of RCU access secret
    * @param opssWalletPasswordSecretName name of opss wallet password secret
-   * @param domainCreationImage names including tags, image contains the domain model, application archive if any
-   *        and WDT installation files
+   * @param domainCreationImages list of domainCreationImage
    * @param pvName name of persistent volume
    * @param pvcName name of persistent volume claim
    * @return Domain WebLogic domain
@@ -360,7 +357,7 @@ public class FmwUtils {
       String domainUid, String domainNamespace, String adminSecretName,
       String repoSecretName, String encryptionSecretName, String rcuAccessSecretName,
       String opssWalletPasswordSecretName, String pvName, String pvcName,
-      DomainCreationImage domainCreationImage) {
+      List<DomainCreationImage> domainCreationImages) {
 
     Map<String, Quantity> capacity = new HashMap<>();
     capacity.put("storage", Quantity.fromString("10Gi"));
@@ -412,14 +409,15 @@ public class FmwUtils {
                         .channelName("default")
                         .nodePort(0))))
             .configuration(new Configuration()
-                /*.opss(new Opss()
+                /* might turn on to test later
+                .opss(new Opss()
                     .walletPasswordSecret(opssWalletPasswordSecretName))
                 .model(new Model()
                     .domainType("JRF")
                     .runtimeEncryptionSecret(encryptionSecretName))*/
                 .addSecretsItem(rcuAccessSecretName)
                 .introspectorJobActiveDeadlineSeconds(3000L)
-                .withInitializeDomainOnPv(new InitializeDomainOnPV()
+                .initializeDomainOnPV((new InitializeDomainOnPV()
                     .persistentVolume(new PersistentVolume()
                         .metadata(new V1ObjectMeta()
                             .name(pvName))
@@ -439,10 +437,10 @@ public class FmwUtils {
                     .domain(new DomainOnPV()
                         .createMode(CreateIfNotExists.DOMAIN)
                         .domainType(DomainOnPVType.JRF)
-                        .domainCreationImages(Arrays.asList(domainCreationImage))
+                        .domainCreationImages(domainCreationImages)
                         .opss(new Opss()
                             .walletPasswordSecret(opssWalletPasswordSecretName))
-                        ))));
+                        )))));
 
     return domain;
   }

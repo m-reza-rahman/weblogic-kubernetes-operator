@@ -361,6 +361,46 @@ public class OperatorUtils {
    * @param withExternalRestAPI whether to use REST API
    * @param externalRestHttpsPort the node port allocated for the external operator REST HTTPS interface
    * @param opHelmParams the Helm parameters to install operator
+   * @param elasticSearchHost Elasticsearchhost
+   * @param elkIntegrationEnabled true to enable ELK Stack, false otherwise
+   * @param createLogStashConfigMap boolean indicating creating logstash
+   * @param domainNamespaceSelectionStrategy SelectLabel, RegExp or List, value to tell the operator
+   *                                  how to select the set of namespaces that it will manage
+   * @param domainNamespaceSelector the label or expression value to manage namespaces
+   * @param enableClusterRoleBinding operator cluster role binding
+   * @param loggingLevel logging level of operator
+   * @param webhookOnly boolean indicating install webHookOnly operator
+   * @param domainNamespace the list of the domain namespaces which will be managed by the operator
+   * @return the operator Helm installation parameters
+   */
+  public static OperatorParams installAndVerifyOperator(String opNamespace,
+                                                        String opServiceAccount,
+                                                        boolean withExternalRestAPI,
+                                                        int externalRestHttpsPort,
+                                                        HelmParams opHelmParams,
+                                                        String elasticSearchHost,
+                                                        boolean elkIntegrationEnabled,
+                                                        boolean createLogStashConfigMap,
+                                                        String domainNamespaceSelectionStrategy,
+                                                        String domainNamespaceSelector,
+                                                        boolean enableClusterRoleBinding,
+                                                        String loggingLevel,
+                                                        boolean webhookOnly,
+                                                        String... domainNamespace) {
+    return installAndVerifyOperator(opNamespace, opServiceAccount, withExternalRestAPI, externalRestHttpsPort,
+        opHelmParams, elasticSearchHost, elkIntegrationEnabled, createLogStashConfigMap,
+        domainNamespaceSelectionStrategy, domainNamespaceSelector, enableClusterRoleBinding, loggingLevel, null,
+        webhookOnly, domainNamespace);
+  }
+
+  /**
+   * Install WebLogic operator and wait up to five minutes until the operator pod is ready.
+   *
+   * @param opNamespace the operator namespace in which the operator will be installed
+   * @param opServiceAccount the service account name for operator
+   * @param withExternalRestAPI whether to use REST API
+   * @param externalRestHttpsPort the node port allocated for the external operator REST HTTPS interface
+   * @param opHelmParams the Helm parameters to install operator
    * @param elasticSearchHost Elasticsearchhost 
    * @param elkIntegrationEnabled true to enable ELK Stack, false otherwise
    * @param createLogStashConfigMap boolean indicating creating logstash
@@ -369,6 +409,7 @@ public class OperatorUtils {
    * @param domainNamespaceSelector the label or expression value to manage namespaces
    * @param enableClusterRoleBinding operator cluster role binding
    * @param loggingLevel logging level of operator
+   * @param featureGates new feature gates string
    * @param webhookOnly boolean indicating install webHookOnly operator 
    * @param domainNamespace the list of the domain namespaces which will be managed by the operator
    * @return the operator Helm installation parameters
@@ -385,6 +426,7 @@ public class OperatorUtils {
                                                         String domainNamespaceSelector,
                                                         boolean enableClusterRoleBinding,
                                                         String loggingLevel,
+                                                        String featureGates,
                                                         boolean webhookOnly,
                                                         String... domainNamespace) {
     String operatorImage;
@@ -476,184 +518,8 @@ public class OperatorUtils {
       opParams.kubernetesPlatform("OpenShift");
     }
 
-    // install operator
-    logger.info("Installing operator in namespace {0}", opNamespace);
-    assertTrue(installOperator(opParams),
-        String.format("Failed to install operator in namespace %s", opNamespace));
-    logger.info("Operator installed in namespace {0}", opNamespace);
-
-    // list Helm releases matching operator release name in operator namespace
-    logger.info("Checking operator release {0} status in namespace {1}",
-        OPERATOR_RELEASE_NAME, opNamespace);
-    assertTrue(isHelmReleaseDeployed(OPERATOR_RELEASE_NAME, opNamespace),
-        String.format("Operator release %s is not in deployed status in namespace %s",
-            OPERATOR_RELEASE_NAME, opNamespace));
-    logger.info("Operator release {0} status is deployed in namespace {1}",
-        OPERATOR_RELEASE_NAME, opNamespace);
-
-    // wait for the operator to be ready
-    if (webhookOnly) {
-      logger.info("Wait for the operator webhook pod is ready in namespace {0}", opNamespace);
-      testUntil(
-          withLongRetryPolicy,
-          assertDoesNotThrow(() -> operatorWebhookIsReady(opNamespace),
-              "operatorWebhookIsReady failed with ApiException"),
-          logger,
-          "operator webhook to be running in namespace {0}",
-          opNamespace);
-    } else {
-      logger.info("Wait for the operator pod is ready in namespace {0}", opNamespace);
-      testUntil(
-          withLongRetryPolicy,
-          assertDoesNotThrow(() -> operatorIsReady(opNamespace),
-              "operatorIsReady failed with ApiException"),
-          logger,
-          "operator to be running in namespace {0}",
-          opNamespace);
-    }
-
-    if (withExternalRestAPI) {
-      logger.info("Wait for the operator external service in namespace {0}", opNamespace);
-      testUntil(
-          withLongRetryPolicy,
-          assertDoesNotThrow(() -> operatorRestServiceRunning(opNamespace),
-            "operator external service is not running"),
-          logger,
-          "operator external service in namespace {0}",
-          opNamespace);
-      createRouteForOKD("external-weblogic-operator-svc", opNamespace);
-      setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
-    }
-    return opParams;
-  }
-
-  /**
-   * Install WebLogic operator and wait up to five minutes until the operator pod is ready.
-   *
-   * @param opNamespace the operator namespace in which the operator will be installed
-   * @param opServiceAccount the service account name for operator
-   * @param withExternalRestAPI whether to use REST API
-   * @param externalRestHttpsPort the node port allocated for the external operator REST HTTPS interface
-   * @param opHelmParams the Helm parameters to install operator
-   * @param elasticSearchHost Elasticsearchhost
-   * @param elkIntegrationEnabled true to enable ELK Stack, false otherwise
-   * @param createLogStashConfigMap boolean indicating creating logstash
-   * @param domainNamespaceSelectionStrategy SelectLabel, RegExp or List, value to tell the operator
-   *                                  how to select the set of namespaces that it will manage
-   * @param domainNamespaceSelector the label or expression value to manage namespaces
-   * @param enableClusterRoleBinding operator cluster role binding
-   * @param loggingLevel logging level of operator
-   * @param featureGates the name of featureGates
-   * @param webhookOnly boolean indicating install webHookOnly operator
-   * @param domainNamespace the list of the domain namespaces which will be managed by the operator
-   * @return the operator Helm installation parameters
-   */
-  public static OperatorParams installAndVerifyOperator(String opNamespace,
-                                                        String opServiceAccount,
-                                                        boolean withExternalRestAPI,
-                                                        int externalRestHttpsPort,
-                                                        HelmParams opHelmParams,
-                                                        String elasticSearchHost,
-                                                        boolean elkIntegrationEnabled,
-                                                        boolean createLogStashConfigMap,
-                                                        String domainNamespaceSelectionStrategy,
-                                                        String domainNamespaceSelector,
-                                                        boolean enableClusterRoleBinding,
-                                                        String loggingLevel,
-                                                        String featureGates,
-                                                        boolean webhookOnly,
-                                                        String... domainNamespace) {
-    String operatorImage;
-    LoggingFacade logger = getLogger();
-
-    // Create a service account for the unique opNamespace
-    logger.info("Creating service account");
-    assertDoesNotThrow(() -> createServiceAccount(new V1ServiceAccount()
-        .metadata(new V1ObjectMeta()
-            .namespace(opNamespace)
-            .name(opServiceAccount))));
-    logger.info("Created service account: {0}", opServiceAccount);
-
-    operatorImage = getOperatorImageName();
-
-    assertFalse(operatorImage.isEmpty(), "operator image name can not be empty");
-    logger.info("operator image name {0}", operatorImage);
-
-    // Create registry secret in the operator namespace to pull the image from repository
-    // this secret is used only for non-kind cluster
-    logger.info("Creating registry secret in namespace {0}", opNamespace);
-    createTestRepoSecret(opNamespace);
-
-    // map with secret
-    Map<String, Object> secretNameMap = new HashMap<>();
-    secretNameMap.put("name", TEST_IMAGES_REPO_SECRET_NAME);
-
-    // operator chart values to override
-    OperatorParams opParams = new OperatorParams()
-        .helmParams(opHelmParams)
-        .imagePullSecrets(secretNameMap)
-        .domainNamespaces(Arrays.asList(domainNamespace))
-        .javaLoggingLevel(loggingLevel)
-        .serviceAccount(opServiceAccount);
-
-    if (webhookOnly) {
-      opParams.webHookOnly(webhookOnly);
-    }
-
     if (featureGates != null) {
       opParams.featureGates(featureGates);
-    }
-
-    if (domainNamespaceSelectionStrategy != null) {
-      opParams.domainNamespaceSelectionStrategy(domainNamespaceSelectionStrategy);
-    } else if (domainNamespace.length > 0) {
-      opParams.domainNamespaceSelectionStrategy("List");
-    }
-
-    // use default image in chart when repoUrl is set, otherwise use latest/current branch operator image
-    if (opHelmParams.getRepoUrl() == null)  {
-      opParams.image(operatorImage);
-    }
-
-    // enable ELK Stack
-    if (elkIntegrationEnabled) {
-      if (!createLogStashConfigMap) {
-        opParams.createLogStashConfigMap(createLogStashConfigMap);
-      }
-      logger.info("Choosen LOGSTASH_IMAGE {0}", LOGSTASH_IMAGE);
-      opParams.elkIntegrationEnabled(elkIntegrationEnabled);
-      opParams.elasticSearchHost(elasticSearchHost);
-      opParams.elasticSearchPort(ELASTICSEARCH_HTTP_PORT);
-      opParams.javaLoggingLevel(JAVA_LOGGING_LEVEL_VALUE);
-      opParams.logStashImage(LOGSTASH_IMAGE);
-    }
-
-    if (withExternalRestAPI) {
-      // create externalRestIdentitySecret
-      assertTrue(createExternalRestIdentitySecret(opNamespace, DEFAULT_EXTERNAL_REST_IDENTITY_SECRET_NAME),
-          "failed to create external REST identity secret");
-      opParams
-          .restEnabled(true)
-          .externalRestEnabled(true)
-          .externalRestHttpsPort(externalRestHttpsPort)
-          .externalRestIdentitySecret(DEFAULT_EXTERNAL_REST_IDENTITY_SECRET_NAME);
-    }
-    // operator chart values to override
-    if (enableClusterRoleBinding) {
-      opParams.enableClusterRoleBinding(enableClusterRoleBinding);
-    }
-    if (domainNamespaceSelectionStrategy != null) {
-      opParams.domainNamespaceSelectionStrategy(domainNamespaceSelectionStrategy);
-      if (domainNamespaceSelectionStrategy.equalsIgnoreCase("LabelSelector")) {
-        opParams.domainNamespaceLabelSelector(domainNamespaceSelector);
-      } else if (domainNamespaceSelectionStrategy.equalsIgnoreCase("RegExp")) {
-        opParams.domainNamespaceRegExp(domainNamespaceSelector);
-      }
-    }
-
-    // If running on OKD cluster, we need to specify the target
-    if (OKD) {
-      opParams.kubernetesPlatform("OpenShift");
     }
 
     // install operator

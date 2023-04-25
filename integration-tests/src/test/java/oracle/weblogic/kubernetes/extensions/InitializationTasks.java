@@ -593,31 +593,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
   String webhookNamespace = "ns-webhook";
 
   private OperatorParams installWebHookOnlyOperator() {
-    // recreate WebHook namespace
-    deleteNamespace(webhookNamespace);
-    assertDoesNotThrow(() -> new Namespace().name(webhookNamespace).create());
-    String webhookSa = webhookNamespace + "-sa";
-    getLogger().info("Installing webhook only operator in namespace {0}", webhookNamespace);
-    opHelmParams
-        = new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
-            .namespace(webhookNamespace)
-            .chartDir(OPERATOR_CHART_DIR);
-    return installAndVerifyOperator(
-        webhookNamespace, // webhook namespace
-        webhookSa, //webhook service account
-        false, // with REST api enabled
-        0, // externalRestHttpPort
-        opHelmParams, // operator helm parameters
-        null, // elasticsearchHost
-        false, // ElkintegrationEnabled
-        false, // createLogStashconfigmap
-        null, // domainspaceSelectionStrategy
-        null, // domainspaceSelector
-        true, // enableClusterRolebinding
-        "INFO", // webhook pod log level
-        true, // webhookOnly
-        "null" // domainNamespace
-    );
+    return installWebHookOnlyOperator(null);
   }
 
   private OperatorParams installWebHookOnlyOperator(String featureGates) {

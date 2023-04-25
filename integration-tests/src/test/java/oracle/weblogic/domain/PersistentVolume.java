@@ -3,8 +3,6 @@
 
 package oracle.weblogic.domain;
 
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.swagger.annotations.ApiModelProperty;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -18,22 +16,14 @@ public class PersistentVolume {
    * More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
    */
   @SuppressWarnings("common-java:DuplicatedBlocks")
-  @SerializedName("metadata")
-  @Expose
-  //@Valid
   @ApiModelProperty("The PersistentVolume metadata. Must include the `name` field. Required.")
-  //@NotNull
   private V1ObjectMeta metadata;
 
   /**
    * PersistentVolumeSpec is a description of a persistent volume.
    */
-  @SerializedName("spec")
-  @Expose
-  //@Valid
   @ApiModelProperty("The specification of a persistent volume for `Domain on PV` domain. Required."
       + " This section provides a subset of fields in standard Kubernetes PersistentVolume specifications.")
-  //@NotNull
   private PersistentVolumeSpec spec;
 
   public V1ObjectMeta getMetadata() {

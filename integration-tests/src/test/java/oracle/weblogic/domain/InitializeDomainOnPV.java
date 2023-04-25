@@ -35,8 +35,8 @@ public class InitializeDomainOnPV {
   DomainOnPV domain;
 
   /** Whether to wait for PVC to be bound before proceeding to create the domain. Default is true. */
-  @ApiModelProperty("Specifies whether the operator will wait for the PersistentVolumeClaim to be bound before "
-      + "proceeding with the domain creation. Defaults to true.")
+  @ApiModelProperty("Specifies whether the operator will wait for the PersistentVolumeClaim to be bound before"
+      + " proceeding with the domain creation. Defaults to true.")
   Boolean waitForPvcToBind;
 
   public PersistentVolume getPersistentVolume() {

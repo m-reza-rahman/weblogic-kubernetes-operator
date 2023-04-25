@@ -48,7 +48,6 @@ public class Configuration {
   @ApiModelProperty("Rollback the changes if the update require domain restart.")
   private Boolean rollBackIfRestartRequired = false;
 
-
   @ApiModelProperty("Configuration to initialize a WebLogic Domain on persistent volume (`Domain on PV`) and initialize"
       + " related resources such as a persistent volume and a persistent volume claim. If specified, the operator will"
       + " perform these one-time initialization steps only if the domain and resources do not already exist."
@@ -214,24 +213,27 @@ public class Configuration {
     this.introspectorJobActiveDeadlineSeconds = introspectorJobActiveDeadlineSeconds;
   }
 
-
-  public InitializeDomainOnPV getInitializeDomainOnPV() {
-    return initializeDomainOnPV;
-  }
-
-  public void setInitializeDomainOnPV(InitializeDomainOnPV initializeDomainOnPV) {
-    this.initializeDomainOnPV = initializeDomainOnPV;
-  }
-
   /**
    * Adds configuration for initializing domain on PV configuration to the DomainSpec.
    *
    * @param initializeDomainOnPV The configuration for initializing domain on PV to be added to this DomainSpec
    * @return this object
    */
-  public Configuration withInitializeDomainOnPv(InitializeDomainOnPV initializeDomainOnPV) {
+  public Configuration initializeDomainOnPV(InitializeDomainOnPV initializeDomainOnPV) {
     this.initializeDomainOnPV = initializeDomainOnPV;
     return this;
+  }
+
+  public InitializeDomainOnPV initializeDomainOnPV() {
+    return this.initializeDomainOnPV;
+  }
+
+  public InitializeDomainOnPV getInitializeDomainOnPV() {
+    return this.initializeDomainOnPV;
+  }
+
+  public void setInitializeDomainOnPV(InitializeDomainOnPV initializeDomainOnPV) {
+    this.initializeDomainOnPV = initializeDomainOnPV;
   }
 
   @Override
