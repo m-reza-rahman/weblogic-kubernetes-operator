@@ -388,7 +388,7 @@ public class FmwUtils {
             .failureRetryLimitMinutes(FAILURE_RETRY_LIMIT_MINUTES)
             .serverPod(new ServerPod()
                 .addVolumesItem(new V1Volume()
-                    .name("weblogic-domain-storage-volume") //TODO
+                    .name("weblogic-domain-storage-volume") 
                     .persistentVolumeClaim(new V1PersistentVolumeClaimVolumeSource()
                         .claimName(pvcName)))
                 .addVolumeMountsItem(new V1VolumeMount()
