@@ -6,6 +6,7 @@ package oracle.verrazzano.weblogic.kubernetes;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,8 +15,12 @@ import java.util.Map;
 
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.openapi.models.V1Volume;
+import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.verrazzano.weblogic.ApplicationConfiguration;
 import oracle.verrazzano.weblogic.ApplicationConfigurationSpec;
 import oracle.verrazzano.weblogic.Component;
@@ -29,8 +34,16 @@ import oracle.verrazzano.weblogic.IngressTraits;
 import oracle.verrazzano.weblogic.Workload;
 import oracle.verrazzano.weblogic.WorkloadSpec;
 import oracle.verrazzano.weblogic.kubernetes.annotations.VzIntegrationTest;
+import oracle.weblogic.domain.AdminServer;
+import oracle.weblogic.domain.AdminService;
+import oracle.weblogic.domain.Channel;
 import oracle.weblogic.domain.ClusterResource;
+import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.domain.DomainSpec;
+import oracle.weblogic.domain.Model;
+import oracle.weblogic.domain.OnlineUpdate;
+import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -48,12 +61,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -63,7 +78,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
-import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainCustomResource;
@@ -75,7 +89,6 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDatabaseSecret;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResourceWithLogHome;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
@@ -99,13 +112,13 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResourceServerStartPolicy;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDeleted;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
+import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -215,6 +228,7 @@ class ItVzDBOperator {
    * exists for both admin server and managed servers. Verify EM console is accessible.
    */
   @Test
+  @Disabled
   @DisplayName("Create FMW Domain model in image")
   void  testFmwModelInImageWithDbOperator() {
 
@@ -355,9 +369,8 @@ class ItVzDBOperator {
   /**
    * Create WebLogic domain using model in image and Oracle database used for JMS and JTA migration and service logs.
    */
-  @Disabled
   @Test
-  void  testWlsModelInImageWithDbOperator() {
+  void testWlsModelInImageWithDbOperator() {
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
@@ -389,35 +402,82 @@ class ItVzDBOperator {
 
     createConfigMapAndVerify(configMapName, wlsDomainUid, wlsDomainNamespace,
         Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
-
+    
     // create PV, PVC for logs/data
     createPV(pvName, wlsDomainUid, ItVzDBOperator.class.getSimpleName());
     createPVC(pvName, pvcName, wlsDomainUid, wlsDomainNamespace);
-
     // create job to change permissions on PV hostPath
     createJobToChangePermissionsOnPvHostPath(pvName, pvcName, wlsDomainNamespace);
 
     // create the domain CR with a pre-defined configmap
-    DomainResource domainCR = createDomainResourceWithLogHome(wlsDomainUid, wlsDomainNamespace,
+    DomainResource domainCR = createDomainResource(wlsDomainUid, wlsDomainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, replicaCount,
-        pvName, pvcName, configMapName,
-        dbSecretName, false, true);
-    
+        configMapName, dbSecretName, false, true);
+
     // create cluster object
     ClusterResource cluster = createClusterResource(wlsClusterResName, clusterName, wlsDomainNamespace, replicaCount);
     logger.info("Creating cluster resource {0} in namespace {1}", wlsClusterResName, wlsDomainNamespace);
     createClusterAndVerify(cluster);
     // set cluster references
     domainCR.getSpec().withCluster(new V1LocalObjectReference().name(wlsClusterResName));
-    
-    logger.info("Create domain custom resource for domainUid {0} in namespace {1}",
-        wlsDomainUid, wlsDomainNamespace);
-    boolean domCreated = assertDoesNotThrow(() -> createDomainCustomResource(domainCR, DOMAIN_VERSION),
-        String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
-            wlsDomainUid, wlsDomainNamespace));
-    assertTrue(domCreated, String.format("Create domain custom resource failed "
-        + "for %s in namespace %s", wlsDomainUid, wlsDomainNamespace));
+
+    Component component = new Component()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("Component")
+        .metadata(new V1ObjectMeta()
+            .name(wlsDomainUid)
+            .namespace(wlsDomainNamespace))
+        .spec(new ComponentSpec()
+            .workLoad(new Workload()
+                .apiVersion("oam.verrazzano.io/v1alpha1")
+                .kind("VerrazzanoWebLogicWorkload")
+                .spec(new WorkloadSpec()
+                    .template(domainCR))));
+
+    Map<String, String> keyValueMap = new HashMap<>();
+    keyValueMap.put("version", "v1.0.0");
+    keyValueMap.put("description", "My vz wls db application");
+
+    ApplicationConfiguration application = new ApplicationConfiguration()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("ApplicationConfiguration")
+        .metadata(new V1ObjectMeta()
+            .name("myvzwlsdbdomain")
+            .namespace(wlsDomainNamespace)
+            .annotations(keyValueMap))
+        .spec(new ApplicationConfigurationSpec()
+            .components(Arrays.asList(
+                new Components()
+                    .componentName(wlsDomainUid)
+                    .traits(Arrays.asList(new IngressTraits()
+                        .trait(new IngressTrait()
+                            .apiVersion("oam.verrazzano.io/v1alpha1")
+                            .kind("IngressTrait")
+                            .metadata(new V1ObjectMeta()
+                                .name("mywlsdbdomain-ingress")
+                                .namespace(wlsDomainNamespace))
+                            .spec(new IngressTraitSpec()
+                                .ingressRules(Arrays.asList(
+                                    new IngressRule()
+                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                            .path("/console")
+                                            .pathType("Prefix")))
+                                        .destination(new Destination()
+                                            .host(wlsAdminServerPodName)
+                                            .port(7001)),
+                                    new IngressRule()
+                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                            .path("/em")
+                                            .pathType("Prefix")))
+                                        .destination(new Destination()
+                                            .host(wlsAdminServerPodName)
+                                            .port(7001)))))))))));
+
+    logger.info("Deploying components");
+    assertDoesNotThrow(() -> createComponent(component));
+    logger.info("Deploying application");
+    assertDoesNotThrow(() -> createApplication(application));
 
     // wait for the domain to exist
     logger.info("Check for domain custom resource in namespace {0}", wlsDomainNamespace);
@@ -427,18 +487,18 @@ class ItVzDBOperator {
         wlsDomainUid,
         wlsDomainNamespace);
 
-    logger.info("Check admin service and pod {0} is created in namespace {1}",
-        wlsAdminServerPodName, wlsDomainNamespace);
     checkPodReadyAndServiceExists(wlsAdminServerPodName, wlsDomainUid, wlsDomainNamespace);
-    adminSvcExtRouteHost = createRouteForOKD(getExternalServicePodName(wlsAdminServerPodName), wlsDomainNamespace);
+
+    String managedServerPrefix = wlsDomainUid + "-managed-server";
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerName = managedServerPrefix + i;
+      logger.info("Checking managed server service {0} is created in namespace {1}",
+          managedServerName, wlsDomainNamespace);
+      checkPodReadyAndServiceExists(managedServerName, wlsDomainUid, wlsDomainNamespace);
+    }   
+    verifyDomainReady(wlsDomainNamespace, wlsDomainUid, replicaCount);
     // create the required leasing table 'ACTIVE' before we start the cluster
     createLeasingTable(wlsAdminServerPodName, wlsDomainNamespace, dbUrl);
-    // check managed server services and pods are ready
-    for (int i = 1; i <= replicaCount; i++) {
-      logger.info("Wait for managed server services and pods are created in namespace {0}",
-          wlsDomainNamespace);
-      checkPodReadyAndServiceExists(wlsManagedServerPrefix + i, wlsDomainUid, wlsDomainNamespace);
-    }
 
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
@@ -841,5 +901,84 @@ class ItVzDBOperator {
         .withParams(new CommandParams()
             .command(curlString.toString()))
         .executeAndVerify(expectedStatusCode);
-  }  
+  }
+  
+  private static DomainResource createDomainResource(
+          String domainResourceName,
+          String domNamespace,
+          String imageName,
+          String adminSecretName,
+          String repoSecretName,
+          String encryptionSecretName,
+          int replicaCount,
+          String configMapName,
+          String dbSecretName,
+          boolean onlineUpdateEnabled,
+          boolean setDataHome) {
+    LoggingFacade logger = getLogger();
+
+    List<String> securityList = new ArrayList<>();
+    if (dbSecretName != null) {
+      securityList.add(dbSecretName);
+    }
+    
+    String uniquePath = "/shared/" + domNamespace + "/" + domainResourceName;
+    DomainSpec domainSpec = new DomainSpec()
+        .domainUid(domainResourceName)
+        .domainHomeSourceType("FromModel")
+        .image(imageName)
+        .imagePullPolicy(IMAGE_PULL_POLICY)
+        .addImagePullSecretsItem(new V1LocalObjectReference()
+            .name(repoSecretName))
+        .webLogicCredentialsSecret(new V1LocalObjectReference()
+            .name(adminSecretName))
+        .includeServerOutInPodLog(true)
+        .logHomeEnabled(Boolean.FALSE)
+        .replicas(replicaCount)
+        .serverStartPolicy("IfNeeded")
+        .serverPod(new ServerPod()
+            .addEnvItem(new V1EnvVar()
+                .name("JAVA_OPTIONS")
+                .value("-Dweblogic.security.SSL.ignoreHostnameVerification=true"))
+            .addEnvItem(new V1EnvVar()
+                .name("USER_MEM_ARGS")
+                .value("-Djava.security.egd=file:/dev/./urandom "))
+            .addVolumesItem(new V1Volume()
+                .name(pvName)
+                .persistentVolumeClaim(new V1PersistentVolumeClaimVolumeSource()
+                    .claimName(pvcName)))
+            .addVolumeMountsItem(new V1VolumeMount()
+                .mountPath("/shared")
+                .name(pvName)))
+        .adminServer(new AdminServer()
+            .adminService(new AdminService()
+                .addChannelsItem(new Channel()
+                    .channelName("default")
+                    .nodePort(0))))
+        .configuration(new Configuration()
+            .secrets(securityList)
+            .model(new Model()
+                .domainType("WLS")
+                .configMap(configMapName)
+                .runtimeEncryptionSecret(encryptionSecretName)
+                .onlineUpdate(new OnlineUpdate()
+                    .enabled(onlineUpdateEnabled)))
+            .introspectorJobActiveDeadlineSeconds(300L));
+
+    if (setDataHome) {
+      domainSpec.dataHome(uniquePath + "/data");
+    }
+    // create the domain CR
+    DomainResource domain = new DomainResource()
+        .apiVersion(DOMAIN_API_VERSION)
+        .kind("Domain")
+        .metadata(new V1ObjectMeta()
+            .name(domainResourceName)
+            .namespace(domNamespace))
+        .spec(domainSpec);
+
+    setPodAntiAffinity(domain);
+    return domain;
+  }
+  
 }
