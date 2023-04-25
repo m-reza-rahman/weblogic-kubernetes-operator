@@ -205,7 +205,7 @@ public class JobStepContext extends BasePodStepContext {
   }
 
 
-  // ----------------------- step methods ------------------------------
+  // ------------------------- step methods ------------------------------
 
   List<V1Volume> getAdditionalVolumes() {
     List<V1Volume> volumes = getDomain().getSpec().getAdditionalVolumes();
