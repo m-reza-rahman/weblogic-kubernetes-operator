@@ -1171,10 +1171,10 @@ class JobHelperTest extends DomainValidationTestBase {
                     .map(V1Container::getEnv).orElse(Collections.emptyList()).stream()
                     .map(V1EnvVar::getName)
                     .collect(Collectors.toList()),
-            hasItems("DOMAIN_HOME", "DH_DEFAULT_UGID"));
+            hasItems("DOMAIN_HOME", "DOMAIN_HOME_ON_PV_DEFAULT_UGID"));
 
     assertThat(podSpec.getInitContainers().get(0).getEnv(),
-            hasEnvVar("DH_DEFAULT_UGID", "2000:0"));
+            hasEnvVar("DOMAIN_HOME_ON_PV_DEFAULT_UGID", "2000:0"));
 
   }
 
@@ -1198,10 +1198,10 @@ class JobHelperTest extends DomainValidationTestBase {
                     .map(V1Container::getEnv).orElse(Collections.emptyList()).stream()
                     .map(V1EnvVar::getName)
                     .collect(Collectors.toList()),
-            hasItems("DOMAIN_HOME", "DH_DEFAULT_UGID"));
+            hasItems("DOMAIN_HOME", "DOMAIN_HOME_ON_PV_DEFAULT_UGID"));
 
     assertThat(podSpec.getInitContainers().get(0).getEnv(),
-            hasEnvVar("DH_DEFAULT_UGID", "1000:1000"));
+            hasEnvVar("DOMAIN_HOME_ON_PV_DEFAULT_UGID", "1000:1000"));
 
   }
 
@@ -1226,10 +1226,10 @@ class JobHelperTest extends DomainValidationTestBase {
                     .map(V1Container::getEnv).orElse(Collections.emptyList()).stream()
                     .map(V1EnvVar::getName)
                     .collect(Collectors.toList()),
-            hasItems("DOMAIN_HOME", "DH_DEFAULT_UGID"));
+            hasItems("DOMAIN_HOME", "DOMAIN_HOME_ON_PV_DEFAULT_UGID"));
 
     assertThat(podSpec.getInitContainers().get(0).getEnv(),
-            hasEnvVar("DH_DEFAULT_UGID", "1000:0"));
+            hasEnvVar("DOMAIN_HOME_ON_PV_DEFAULT_UGID", "1000:0"));
 
   }
 
@@ -1255,10 +1255,10 @@ class JobHelperTest extends DomainValidationTestBase {
                     .map(V1Container::getEnv).orElse(Collections.emptyList()).stream()
                     .map(V1EnvVar::getName)
                     .collect(Collectors.toList()),
-            hasItems("DOMAIN_HOME", "DH_DEFAULT_UGID"));
+            hasItems("DOMAIN_HOME", "DOMAIN_HOME_ON_PV_DEFAULT_UGID"));
 
     assertThat(podSpec.getInitContainers().get(0).getEnv(),
-            hasEnvVar("DH_DEFAULT_UGID", "2000:0"));
+            hasEnvVar("DOMAIN_HOME_ON_PV_DEFAULT_UGID", "2000:0"));
 
   }
 
