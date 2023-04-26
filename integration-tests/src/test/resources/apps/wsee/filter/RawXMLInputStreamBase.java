@@ -3,14 +3,14 @@
 
 package saml.sendervouches.filter;
 
-import java.io.*;
-import java.util.*;
-import javax.servlet.*;
-import javax.servlet.http.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.ResourceBundle;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
+import javax.servlet.http.HttpServletRequest;
 
-public class RawXMLInputStreamBase extends ServletInputStream
-{
-
+public class RawXMLInputStreamBase extends ServletInputStream {
   // The response with which this servlet output stream is associated.
   protected HttpServletRequest request = null;
 
@@ -26,56 +26,55 @@ public class RawXMLInputStreamBase extends ServletInputStream
   public static String bottom = null;
   public static int count = 0;
   public static String testResultDir = null;
-  static
-  {
-    try
-    {
+
+  static {
+    try {
       ResourceBundle resource = ResourceBundle.getBundle("RawXML");
-      if ( resource != null)
-      {
+      if (resource != null) {
         top = (String)resource.getObject("rawXMLTop");
         bottom = (String)resource.getObject("rawXMLBottom");
         testResultDir = (String)resource.getObject("test.result.dir");
-
       }
     } catch (Exception ne) {
       ne.printStackTrace();
     }
+  }
 
-   }
-   public RawXMLInputStreamBase(HttpServletRequest req)
-   {
-     super();
-   }
+  public RawXMLInputStreamBase(HttpServletRequest req) {
+    super();
+  }
 
-   public boolean isRawXML()
-   {
-     return isRawXML;
-   }
+  public boolean isRawXML() {
+    return isRawXML;
+  }
 
-   public int read() throws IOException {
-     return  bais.read();
-   }
+  public int read() throws IOException {
+    return bais.read();
+  }
 
-   public int read(byte[] b) throws IOException {
-     return bais.read(b, 0, b.length);
-   }
+  public int read(byte[] b) throws IOException {
+    return bais.read(b, 0, b.length);
+  }
 
-   public int read(byte[] b, int off, int len) throws IOException {
-     return bais.read(b, off, len);
-   }
+  public int read(byte[] b, int off, int len) throws IOException {
+    return bais.read(b, off, len);
+  }
 
-   public void trace(String data)
-   {
-     System.out.println("RawXMLInputStreamBase: " + data);
-   }
+  public void trace(String data) {
+    System.out.println("RawXMLInputStreamBase: " + data);
+  }
 
-   public boolean isFinished() {return false;}
-   public boolean isReady() {return false;}
-   public void setReadListener(ReadListener readListener) {
-     throw new IllegalStateException("Not Supported");
-   }
+  public boolean isFinished() {
+    return false;
+  }
 
+  public boolean isReady() {
+    return false;
+  }
+
+  public void setReadListener(ReadListener readListener) {
+    throw new IllegalStateException("Not Supported");
+  }
 }
 
 

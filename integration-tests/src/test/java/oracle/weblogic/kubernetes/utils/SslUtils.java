@@ -1,4 +1,4 @@
-// Copyright (c) 2021,2023, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -28,7 +28,6 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -38,7 +37,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.actions.TestActions.listPods;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Command.defaultCommandParams;
 import static oracle.weblogic.kubernetes.utils.JobUtils.createJobAndWaitUntilComplete;
-import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createfixPVCOwnerContainer;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -78,13 +76,21 @@ public class SslUtils {
 
     // Copy the scripts to RESULTS_ROOT
     assertDoesNotThrow(() -> Files.copy(
-            Paths.get(RESOURCE_DIR, "bash-scripts", "generate-selfsign-jks.sh"),
-            Paths.get(uniquePath, "generate-selfsign-jks.sh"),
+            Paths.get(RESOURCE_DIR, "bash-scripts", script),
+            Paths.get(uniquePath, script),
             StandardCopyOption.REPLACE_EXISTING),
-        "Copy generate-selfsign-jks.sh to RESULTS_ROOT failed");
+        "Copy " + script + " to RESULTS_ROOT failed");
   }
 
-  public static synchronized V1Container createKeyStoreDirContainer(String pvName, String mountPath, String keyStorePath) {
+  /**
+   * Generate container to create KeyStore directory in specified pv.
+   * @param pvName  pv name
+   * @param keyStorePath keystore path
+   * @param mountPath pv mount path
+   */
+  public static synchronized V1Container createKeyStoreDirContainer(String pvName,
+                                                                    String mountPath,
+                                                                    String keyStorePath) {
     String argCommand = "mkdir -p " + mountPath + "/" + keyStorePath;
 
     V1Container container = new V1Container()
@@ -101,60 +107,6 @@ public class SslUtils {
             .runAsGroup(0L)
             .runAsUser(0L));
     return container;
-  }
-
-  public static void createJobToCreateKeyStoreOnPvHostPath(String pvName, String pvcName, String namespace, String keystorePath) {
-    LoggingFacade logger = getLogger();
-
-    if (!OKD) {
-      logger.info("Running Kubernetes job to create keystore");
-      V1Job jobBody = new V1Job()
-          .metadata(
-              new V1ObjectMeta()
-                  .name("add-keystore-onpv-job-" + pvName) // name of the job
-                  .namespace(namespace))
-          .spec(new V1JobSpec()
-              .backoffLimit(0) // try only once
-              .template(new V1PodTemplateSpec()
-                  .spec(new V1PodSpec()
-                      .restartPolicy("Never")
-                      .addContainersItem(
-                          createKeyStoreDirContainer(pvName,
-                              "/shared", keystorePath)) // mounted under /shared inside pod
-                      .volumes(Arrays.asList(
-                          new V1Volume()
-                              .name(pvName)
-                              .persistentVolumeClaim(
-                                  new V1PersistentVolumeClaimVolumeSource()
-                                      .claimName(pvcName))))
-                      .imagePullSecrets(Arrays.asList(
-                          new V1LocalObjectReference()
-                              .name(TEST_IMAGES_REPO_SECRET_NAME)))))); // this secret is used only for non-kind cluster
-
-      String jobName = createJobAndWaitUntilComplete(jobBody, namespace);
-
-      // check job status and fail test if the job failed
-      V1Job job = assertDoesNotThrow(() -> getJob(jobName, namespace),
-          "Getting the job failed");
-      if (job != null) {
-        V1JobCondition jobCondition = job.getStatus().getConditions().stream().filter(
-                v1JobCondition -> "Failed".equals(v1JobCondition.getType()))
-            .findAny()
-            .orElse(null);
-        if (jobCondition != null) {
-          logger.severe("Job {0} failed to create keystores dir on PV hostpath", jobName);
-          List<V1Pod> pods = assertDoesNotThrow(() -> listPods(
-                  namespace, "job-name=" + jobName).getItems(),
-              "Listing pods failed");
-          if (!pods.isEmpty()) {
-            String podLog = assertDoesNotThrow(() -> getPodLog(pods.get(0).getMetadata().getName(), namespace),
-                "Failed to get pod log");
-            logger.severe(podLog);
-            fail("failed to create keystores dir on PV hostpath job failed");
-          }
-        }
-      }
-    }
   }
 
   /**

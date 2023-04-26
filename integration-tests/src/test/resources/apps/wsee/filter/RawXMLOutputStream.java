@@ -3,12 +3,17 @@
 
 package saml.sendervouches.filter;
 
-import javax.servlet.*;
-import javax.servlet.http.*;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import javax.servlet.http.HttpServletResponse;
 
 public class RawXMLOutputStream extends RawXMLOutputStreamBase {
 
+  /**
+   * Constructor for RawXMLOutputStream.
+   * @param response servlet response
+   * @throws IOException exception
+   */
   public RawXMLOutputStream(HttpServletResponse response) throws IOException {
     super(response);
     closed = false;

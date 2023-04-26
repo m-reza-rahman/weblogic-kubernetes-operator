@@ -3,12 +3,13 @@
 
 package saml.sendervouches.filter;
 
-import javax.servlet.*;
-import javax.servlet.http.*;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletResponse;
 
-public class RawXMLOutputStreamBase extends ServletOutputStream
-{
+
+public class RawXMLOutputStreamBase extends ServletOutputStream {
 
   // The response with which this servlet output stream is associated.
   protected HttpServletResponse response = null;
@@ -29,10 +30,13 @@ public class RawXMLOutputStreamBase extends ServletOutputStream
   protected int count = 0;
 
 
-
-  public RawXMLOutputStreamBase (HttpServletResponse response)
-                            throws IOException
-  {
+  /**
+   * Constructor for RawXMLOutputStreamBase.
+   * @param response servlet response
+   * @throws IOException excption
+   */
+  public RawXMLOutputStreamBase(HttpServletResponse response)
+                            throws IOException {
     super();
     closed = false;
     commit = false;
@@ -42,50 +46,56 @@ public class RawXMLOutputStreamBase extends ServletOutputStream
     this.baos = new ByteArrayOutputStream();
   }
 
+  /**
+   * Convert to String.
+   * @return string
+   */
+  public String toString() {
+    return this.baos.toString();
+  }
 
-	public String toString()
-	{
-		return this.baos.toString();
-	}
-
-  public void write(int b) throws IOException
-  {
-    if (closed)
-    {
+  /**
+   * Implement write.
+   * @param b bytes
+   * @throws IOException exception
+   */
+  public void write(int b) throws IOException {
+    if (closed) {
       throw new IOException("Cannot write to a closed output stream");
     }
     baos.write(b);
   }
 
-  // Close this output stream, causing any buffered data to be flushed and
-  // any further output data to throw an IOException.
+  /**
+   * Close this output stream, causing any buffered data to be flushed and.
+   * any further output data to throw an IOException.
+   */
   public void close() throws IOException {
 
-    if (closed)
-    {
+    if (closed) {
       throw new IOException("This output stream has already been closed");
     }
-    if (baos!=null)
-    {
+    if (baos != null) {
       baos.close();
     }
     closed = true;
   }
 
-  public ServletOutputStream getCopiedStream()throws IOException
-  {
+  /**
+   * Copy servlet stream.
+   * @return servlet output stream
+   * @throws IOException exception
+   */
+  public ServletOutputStream getCopiedStream()throws IOException {
 
-    if (baos!=null)
-    {
+    if (baos != null) {
       baos.writeTo(output);
     }
-
     return output;
   }
 
 
-  private void trace(String data)
-  {
+  private void trace(String data) {
     System.out.println("RawXMLOutputStreamBase: " + data);
   }
 

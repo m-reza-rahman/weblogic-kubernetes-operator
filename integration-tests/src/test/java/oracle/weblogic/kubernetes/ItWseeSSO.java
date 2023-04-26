@@ -106,8 +106,8 @@ class ItWseeSSO {
   private static String nginxNamespace = null;
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
-  private final static String WDT_MODEL_FILE_SENDER = "model.wsee1.yaml";
-  private final static String WDT_MODEL_FILE_RECEIVER = "model.wsee2.yaml";
+  private static String WDT_MODEL_FILE_SENDER = "model.wsee1.yaml";
+  private static String WDT_MODEL_FILE_RECEIVER = "model.wsee2.yaml";
   private String receiverURI = null;
   private String senderURI = null;
   final String domain1Uid = "mywseedomain1";
@@ -333,7 +333,6 @@ class ItWseeSSO {
 
     // create job to change permissions on PV hostPath
     createJobToChangePermissionsOnPvHostPath(pvName, pvcName, domainNamespace);
-    //createJobToCreateKeyStoreOnPvHostPath(pvName, pvcName, domainNamespace, domainUid + "/keystores");
 
     copyKeyStores(domainNamespace, keyStoresPath.toString(), jksMountPath, pvName, pvcName);
 
@@ -346,8 +345,10 @@ class ItWseeSSO {
         pvName, pvcName, configMapName,
         null,
         "-Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.wsee.verbose=*"
-            + " -Dweblogic.xml.crypto.wss.verbose=true -Dweblogic.xml.crypto.wss.verbose=true -Dweblogic.xml.crypto.wss.verbose=true "
-            + " -Dweblogic.xml.crypto.encrypt.verbose=true -Dweblogic.xml.crypto.dsig.verbose=true"
+            + " -Dweblogic.xml.crypto.wss.verbose=true -Dweblogic.xml.crypto.wss.verbose=true "
+            + " -Dweblogic.xml.crypto.wss.verbose=true "
+            + " -Dweblogic.xml.crypto.encrypt.verbose=true "
+            + " -Dweblogic.xml.crypto.dsig.verbose=true"
             + " -Dweblogic.xml.crypto.wss.verbose=true"
             + " -Dweblogic.debug.DebugSecuritySAMLService=true"
             + "      -Dweblogic.debug.DebugSecuritySAMLCredMap=true"
@@ -374,9 +375,9 @@ class ItWseeSSO {
             + "      -Dweblogic.wsee.jaxws.tubeline.standard.StandardTubelineDeploymentListener.dump=true"
             + "      -Dweblogic.wsee.verbose.timestamp=true"
             + "      -Dweblogic.wsee.verbose.threadstamp=true"
-            + "       -Dweblogic.xml.crypto.wss.verbose=true"
-            + "        -Dweblogic.xml.crypto.wss.debug=true"
-            + "       -Dweblogic.wsee.security.WssHandler=true"
+            + "      -Dweblogic.xml.crypto.wss.verbose=true"
+            + "      -Dweblogic.xml.crypto.wss.debug=true"
+            + "      -Dweblogic.wsee.security.WssHandler=true"
             + "      -Dweblogic.wsee.verbose=*,weblogic.wsee.security.wssp.handlers.*=FINER"
             + "      -Dweblogic.debug.DebugSecuritySAML2Lib=true",
         false, false);
@@ -398,7 +399,11 @@ class ItWseeSSO {
     }
   }
 
-  private static void copyKeyStores(String domainNamespace, String keyStoresPath, String jksMountPath, String pvName, String pvcName) {
+  private static void copyKeyStores(String domainNamespace,
+                                    String keyStoresPath,
+                                    String jksMountPath,
+                                    String pvName,
+                                    String pvcName) {
 
     logger.info("Setting up WebLogic pod to access PV");
     V1Pod pvPod = setupWebLogicPod(domainNamespace, pvName, pvcName, "/shared");
@@ -513,7 +518,10 @@ class ItWseeSSO {
         "Wait for client to invoke wsee");
   }
 
-  private boolean callPythonScript(String domainUid, String domainNS, String scriptName, String param) throws Exception {
+  private boolean callPythonScript(String domainUid,
+                                   String domainNS,
+                                   String scriptName,
+                                   String param) throws Exception {
     // copy python script and callpyscript.sh to Admin Server pod
     String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
     V1Pod adminPod = Kubernetes.getPod(domainNS, null, adminServerPodName);
