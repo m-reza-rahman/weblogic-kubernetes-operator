@@ -43,7 +43,6 @@ import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
-import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -51,17 +50,15 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Test to create a JRF domain in persistent volume.
+ * Test to create a FMW domain on PV with DomainOnPvSimplification feature when user pre-creates RCU.
  */
-@DisplayName("Test to create a JRF domain in persistent volume")
+@DisplayName("Test for initializeDomainOnPV when user per-creates RCU")
 @IntegrationTest
 public class ItFmwDomainInPvUserCreateRcu {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
   private static String dbNamespace = null;
-  private static String oracle_home = null;
-  private static String java_home = null;
 
   private static final String RCUSCHEMAPREFIX = "jrfdomainpv";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
@@ -89,7 +86,6 @@ public class ItFmwDomainInPvUserCreateRcu {
   private final String opsswalletfileSecretName = domainUid + "-opss-wallet-file-secret";
   private static final int replicaCount = 1;
 
-  //private final String fmwModelFilePrefix = "model-fmwdomain-onpv-wdt";
   private final String fmwModelFilePrefix = "model-fmwdomainonpv-rcu-wdt";
   private final String fmwModelFile = fmwModelFilePrefix + ".yaml";
 
@@ -145,13 +141,13 @@ public class ItFmwDomainInPvUserCreateRcu {
   }
 
   /**
-   * User creates RCU, Operate creates PV/PVC and JRF domain
+   * User creates RCU, Operate creates PV/PVC and FMW domain
    * Verify Pod is ready and service exists for both admin server and managed servers.
    * Verify EM console is accessible.
    */
   @Test
-  @DisplayName("Create a FMW domainon on PV using WDT")
-  void testJrfDomainOnPvUsing() {
+  @DisplayName("Create a FMW domain on PV when user per-creates RCU")
+  void testFmwDomainOnPvUserCreatesRCU() {
     final String pvName = getUniqueName(domainUid + "-pv-");
     final String pvcName = getUniqueName(domainUid + "-pvc-");
     final int t3ChannelPort = getNextFreePort();
@@ -212,21 +208,15 @@ public class ItFmwDomainInPvUserCreateRcu {
     DomainCreationImage domainCreationImage =
         new DomainCreationImage().image(MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImage1Tag);
 
-    // admin/managed server name here should match with model yaml
-    final String auxiliaryImagePath = "/auxiliary";
     String clusterName = "cluster-1";
 
     // create a domain custom resource configuration object
     logger.info("Creating domain custom resource");
-
     DomainResource domain = createDomainResourceSimplifyJrfPv(
         domainUid, domainNamespace, adminSecretName,
         TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, rcuaccessSecretName,
         opsswalletpassSecretName,
         pvName, pvcName, Collections.singletonList(domainCreationImage));
-
-    // Set the inter-pod anti-affinity for the domain custom resource
-    setPodAntiAffinity(domain);
 
     // create a domain custom resource and verify domain is created
     createDomainAndVerify(domain, domainNamespace);
