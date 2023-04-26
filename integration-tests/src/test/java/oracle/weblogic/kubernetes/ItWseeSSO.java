@@ -8,9 +8,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
 import java.util.List;
 
 import io.kubernetes.client.openapi.ApiException;
@@ -196,8 +194,8 @@ class ItWseeSSO {
   }
 
   /**
-   * Deploy webservices apps on domain1(sender), domain2(reciever)
-   * A java client makes a call to webservice , deployed on domain1 (sender)
+   * Deploy webservices apps on domain1(sender), domain2(reciever).
+   * A standalone client makes a call to webservice , deployed on domain1 (sender)
    * and provide username/password to invoke via sso webservice on domain2 (receiver)
    * with attached SAML sender-vouches policy
    */

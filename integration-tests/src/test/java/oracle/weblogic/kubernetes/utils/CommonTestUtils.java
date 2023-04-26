@@ -909,8 +909,12 @@ public class CommonTestUtils {
    * @param args       arguments to the java command
    * @return true if the client ran successfully
    */
-  public static Callable<Boolean> runClientInsidePodVerifyResult(String podName, String namespace, String javaClientLocation,
-                                                     String javaClientClass, String expectedResult, String... args) {
+  public static Callable<Boolean> runClientInsidePodVerifyResult(String podName,
+                                                                 String namespace,
+                                                                 String javaClientLocation,
+                                                                 String javaClientClass,
+                                                                 String expectedResult,
+                                                                 String... args) {
     final LoggingFacade logger = getLogger();
 
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
