@@ -94,10 +94,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify the JMS and WLDF system resources are overridden with values from override files")
 @IntegrationTest
-@Tag("olcne")
 @Tag("oke-parallel")
 @Tag("kind-parallel")
-@Tag("okd-wls-mrg")
 class ItWseeSSO {
 
   private static String opNamespace = null;
@@ -130,8 +128,6 @@ class ItWseeSSO {
   static Path wseeServiceAppPath;
   static Path wseeServiceRefAppPath;
   static Path wseeServiceRefStubsPath;
-  String overridecm = "configoverride-cm";
-  LinkedHashMap<String, OffsetDateTime> podTimestamps;
 
   private static LoggingFacade logger = null;
 
@@ -139,7 +135,8 @@ class ItWseeSSO {
    * Assigns unique namespaces for operator and domains.
    * Pulls WebLogic image if running tests in Kind cluster.
    * Installs operator.
-   * Creates and starts a WebLogic domains with wsee sender receiver apps and saml policy.
+   * Creates and starts a WebLogic domains
+   * Builds sender and receiver webservices applications
    *
    * @param namespaces injected by JUnit
    */
@@ -199,15 +196,13 @@ class ItWseeSSO {
   }
 
   /**
-   * Test JMS and WLDF system resources configurations are overridden dynamically when domain resource
-   * is updated with overridesConfigMap property. After the override verifies the system resources properties
-   * are overridden as per the values set.
-   * 1. Creates a config override map containing JMS and WLDF override files
-   * 2. Patches the domain with new configmap override and introspect version
-   * 3. Verifies the introspector is run and resource config is updated
+   * Deploy webservices apps on domain1(sender), domain2(reciever)
+   * A java client makes a call to webservice , deployed on domain1 (sender)
+   * and provide username/password to invoke via sso webservice on domain2 (receiver)
+   * with attached SAML sender-vouches policy
    */
   @Test
-  @DisplayName("Test Wsee connect")
+  @DisplayName("Test Wsee connect with sso")
   void testInvokeWsee() {
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName, domain2Namespace, domain2Uid, wseeServiceAppPath);
@@ -225,19 +220,8 @@ class ItWseeSSO {
     assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
             "setupPKI.py", K8S_NODEPORT_HOST + " " + serviceNodePort),
         "Failed to run python script setupPKI.py");
-    String destLocation1 = "/u01/WseeClient.java";
-    assertDoesNotThrow(() -> copyFileToPod(domain1Namespace,
-        adminServerPodName1, "",
-        Paths.get(RESOURCE_DIR, "wsee", "WseeClient.java"),
-        Paths.get(destLocation1)));
-    String destLocation2 = "/u01/EchoServiceRefStubs.jar";
-    assertDoesNotThrow(() -> copyFileToPod(domain1Namespace,
-        adminServerPodName1, "",
-        wseeServiceRefStubsPath,
-        Paths.get(destLocation2)));
-    runJavacInsidePod(adminServerPodName1, domain1Namespace, destLocation1, destLocation2);
 
-    runClientOnAdminPod();
+    buildRunClientOnPod();
   }
 
   private String checkWSDLAccess(String domainNamespace, String domainUid,
@@ -311,8 +295,7 @@ class ItWseeSSO {
             Paths.get(RESULTS_ROOT, modelFileName),
             java.nio.file.StandardCopyOption.REPLACE_EXISTING),
         "Copy mii.ssl.yaml to RESULTS_ROOT failed");
-    //String uniquePath = "/shared/" + domainUid + "/keystores";
-    String uniquePath = "/shared";
+
     String jksMountPath = "/shared/" + domainNamespace + "/" + domainUid + "/keystores";
     assertDoesNotThrow(() ->
         replaceStringInFile(get(RESULTS_ROOT, modelFileName).toString(),
@@ -496,7 +479,20 @@ class ItWseeSSO {
   }
 
   // Run standalone client to get initial context using t3s cluster url
-  private void runClientOnAdminPod() {
+  private void buildRunClientOnPod() {
+    String destLocation1 = "/u01/WseeClient.java";
+    assertDoesNotThrow(() -> copyFileToPod(domain1Namespace,
+        "weblogic-pod-" + domain1Namespace, "",
+        Paths.get(RESOURCE_DIR, "wsee", "WseeClient.java"),
+        Paths.get(destLocation1)));
+    String destLocation2 = "/u01/EchoServiceRefStubs.jar";
+    assertDoesNotThrow(() -> copyFileToPod(domain1Namespace,
+        "weblogic-pod-" + domain1Namespace, "",
+        wseeServiceRefStubsPath,
+        Paths.get(destLocation2)));
+    runJavacInsidePod("weblogic-pod-" + domain1Namespace, domain1Namespace, destLocation1, destLocation2);
+    logger.info("Setting up WebLogic pod to access PV");
+
     assertDoesNotThrow(() -> copyFileToPod(domain1Namespace,
             adminServerPodName1, "",
             Paths.get(keyStoresPath.toString(), "certrec.pem"),
@@ -510,7 +506,7 @@ class ItWseeSSO {
     extOpts.append(" /u01/certrec.pem");
 
     testUntil(
-        runClientInsidePodVerifyResult(adminServerPodName1, domain1Namespace,
+        runClientInsidePodVerifyResult("weblogic-pod-" + domain1Namespace, domain1Namespace,
             "/u01:/u01/EchoServiceRefStubs.jar", " WseeClient",
             "echoSignedSamlV20Token11 'Hi, world!'...",
             extOpts.toString()),
@@ -577,7 +573,7 @@ class ItWseeSSO {
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(namespace);
 
-    final String podName = "weblogic-pv-pod-" + namespace;
+    final String podName = "weblogic-pod-" + namespace;
     V1PodSpec podSpec = new V1PodSpec()
         .containers(Arrays.asList(
             new V1Container()
