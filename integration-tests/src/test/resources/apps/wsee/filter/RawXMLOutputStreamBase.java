@@ -4,6 +4,7 @@
 package saml.sendervouches.filter;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServletResponse;

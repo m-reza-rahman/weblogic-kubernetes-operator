@@ -3,8 +3,8 @@
 
 package saml.sendervouches.filter;
 
-import javax.io.CharArrayWriter;
-import javax.io.PrintWriter;
+import java.io.CharArrayWriter;
+import java.io.PrintWriter;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
