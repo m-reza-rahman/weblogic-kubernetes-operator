@@ -106,6 +106,9 @@ def kind_k8s_map = [
     ]
 ]
 def _kind_image = null
+CRON_SETTINGS = '''10 21 * * * % MAVEN_PROFILE_NAME=kind-parallel
+                   20 21 * * * % MAVEN_PROFILE_NAME=kind-sequential''' : ""
+
 
 pipeline {
     agent { label 'large' }
@@ -114,7 +117,7 @@ pipeline {
     }
     triggers {
         // timer trigger for "nightly build"
-        cron('35 19 * * *')
+        parameterizedCron(CRON_SETTINGS)
     }
 
     tools {
@@ -534,6 +537,7 @@ EOF
                     }
                     steps {
                         script {
+                            currentBuild.description = "${env.BRANCH_NAME} ${MAVEN_PROFILE_NAME}"
                             def res = 0
                             res = sh(script: '''
                                     if [ -z "${IT_TEST}" ] && [ "${MAVEN_PROFILE_NAME}" = "integration-tests" ]; then
