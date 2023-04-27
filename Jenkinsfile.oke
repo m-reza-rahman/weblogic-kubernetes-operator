@@ -18,15 +18,6 @@ pipeline {
         ocir_host = "${env.WKT_OCIR_HOST}"
         wko_tenancy = "${env.WKT_TENANCY}"
         ocir_creds = 'wkt-ocir-creds'
-        #github_url = "${env.GIT_URL}"
-        #github_creds = 'ecnj_github'
-        #ocr_username_creds = 'OCR username'
-        #ocr_password_creds = 'OCR Password'
-        #ocir_registry_creds = 'ocir-server'
-        #ocir_email_creds = 'ocir-email'
-        #ocir_username_creds = 'ocir-username'
-        #ocir_password_creds = 'ocir-token'
-        #image_pull_secret_weblogic_creds = 'image-pull-secret-weblogic'
         terraform_property_file = 'tvarsFile'
         ocipk_file = 'oci_pk_file'
         wkobuild_oci_config = 'wkobuild_profile_oci_config_file'
