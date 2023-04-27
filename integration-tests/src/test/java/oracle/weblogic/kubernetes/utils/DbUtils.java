@@ -31,6 +31,8 @@ import io.kubernetes.client.openapi.models.V1LabelSelector;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectFieldSelector;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1PersistentVolume;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeSpec;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodList;
@@ -62,6 +64,7 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.awaitility.core.ConditionFactory;
 
 import static io.kubernetes.client.util.Yaml.dump;
+import static java.nio.file.Files.createDirectories;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -72,14 +75,17 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_OPERATOR_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.ORACLE_DB_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.ORACLE_RCU_SECRET_MOUNT_PATH;
 import static oracle.weblogic.kubernetes.TestConstants.ORACLE_RCU_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.ORACLE_RCU_SECRET_VOLUME;
+import static oracle.weblogic.kubernetes.TestConstants.PV_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.DOWNLOAD_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.createPersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.createSecret;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.listServices;
@@ -87,18 +93,22 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
 import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.getPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.addSccToDBSvcAccount;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.setVolumeSource;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.awaitility.Awaitility.with;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Utility class to start DB service and RCU schema.
@@ -752,7 +762,7 @@ public class DbUtils {
     replaceStringInFile(operatorYamlDestFile.toString(), "oracle-database-operator-system", namespace);
     replaceStringInFile(operatorYamlDestFile.toString(), "container-registry-secret", TEST_IMAGES_REPO_SECRET_NAME);
     replaceStringInFile(operatorYamlDestFile.toString(),
-        "container-registry.oracle.com/database/operator:0.2.0", DB_OPERATOR_IMAGE);
+        "container-registry.oracle.com/database/operator:0.2.1", DB_OPERATOR_IMAGE);
     createTestRepoSecret(namespace);
     createBaseRepoSecret(namespace);
 
@@ -807,8 +817,7 @@ public class DbUtils {
       String namespace) throws ApiException, IOException {
 
     LoggingFacade logger = getLogger();
-    final String DB_IMAGE_19C = DB_IMAGE_NAME + ":" + DB_19C_IMAGE_TAG;
-    String hostPath = Paths.get(WORK_DIR, namespace, "oracledatabase").toString();
+    final String DB_IMAGE_19C = DB_IMAGE_NAME + ":" + DB_19C_IMAGE_TAG;    
     String secretName = "db-password";
     String secretKey = "password";
     Map<String, String> secretMap = new HashMap<>();
@@ -822,7 +831,9 @@ public class DbUtils {
 
     createTestRepoSecret(namespace);
 
-    createHostPathProvisioner(namespace, hostPath);
+    //createHostPathProvisioner(namespace, hostPath);
+    final String pvName = getUniqueName(dbName + "-pv");
+    createPV(pvName);
 
     Path dbYaml = Paths.get(DOWNLOAD_DIR, namespace, "oracledb.yaml");
     Files.createDirectories(dbYaml.getParent());
@@ -835,7 +846,10 @@ public class DbUtils {
     replaceStringInFile(dbYaml.toString(), "secretKey:", "secretKey: " + secretKey);
     replaceStringInFile(dbYaml.toString(), "pullFrom:", "pullFrom: " + DB_IMAGE_19C);
     replaceStringInFile(dbYaml.toString(), "pullSecrets:", "pullSecrets: " + BASE_IMAGES_REPO_SECRET_NAME);
-    replaceStringInFile(dbYaml.toString(), "storageClass: \"oci-bv\"", "storageClass: dboperatorsc");
+    replaceStringInFile(dbYaml.toString(), "storageClass: \"oci-bv\"", "storageClass: \"\"");
+    replaceStringInFile(dbYaml.toString(), "accessMode: \"ReadWriteOnce\"", "accessMode: \"ReadWriteMany\"");
+    replaceStringInFile(dbYaml.toString(), "volumeName: \"\"", "volumeName: \"" + pvName + "\"");
+    
 
     logger.info("Creating Oracle database using yaml file\n {0}", Files.readString(dbYaml));
     CommandParams params = new CommandParams().defaults();
@@ -889,6 +903,47 @@ public class DbUtils {
     PodUtils.checkPodDoesNotExist(dbName, null, namespace);
   }
 
+
+  /**
+   * Create a persistent volume.
+   *
+   * @param pvName name of the persistent volume to create
+   */
+  public static void createPV(String pvName) {
+
+    LoggingFacade logger = getLogger();
+
+    logger.info("creating persistent volume {0}", pvName);
+     
+    // when tests are running in local box the PV directories need to exist
+    if (!OKE_CLUSTER && !OKD) {
+      try {
+        pvHostPath = Files.createDirectories(Paths.get(
+            PV_ROOT, pvName));
+        logger.info("Creating PV directory host path {0}", pvHostPath);
+        deleteDirectory(pvHostPath.toFile());
+        createDirectories(pvHostPath);
+      } catch (IOException ioex) {
+        logger.severe(ioex.getMessage());
+        fail("Create persistent volume host path failed");
+      }
+    }
+
+    V1PersistentVolume v1pv = new V1PersistentVolume()
+        .spec(new V1PersistentVolumeSpec()
+            .addAccessModesItem("ReadWriteMany")
+            .volumeMode("Filesystem")
+            .putCapacityItem("storage", Quantity.fromString("50Gi"))
+            .persistentVolumeReclaimPolicy("Recycle")
+            .accessModes(Arrays.asList("ReadWriteMany")))
+        .metadata(new V1ObjectMeta()
+            .name(pvName));
+    setVolumeSource(pvHostPath, v1pv);
+    boolean success = assertDoesNotThrow(() -> createPersistentVolume(v1pv),
+        "Failed to create persistent volume");
+    assertTrue(success, "PersistentVolume creation failed");
+  }
+  
   // create hostpath-provisioner for persistent volume creation.
   private static void createHostPathProvisioner(String namespace, String hostPath) throws ApiException, IOException {
     Path hpYamlFileTemplate = Paths.get(RESOURCE_DIR, "storageclass", "hostpath-provisioner.yaml");
