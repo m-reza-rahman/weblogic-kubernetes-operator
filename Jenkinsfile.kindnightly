@@ -318,6 +318,7 @@ pipeline {
             stages {
                 stage('Workaround JENKINS-41929 Parameters bug') {
                     steps {
+                        currentBuild.description = "${GIT_BRANCH} ${MAVEN_PROFILE_NAME}"
                         echo 'Initialize parameters as environment variables due to https://issues.jenkins-ci.org/browse/JENKINS-41929'
                         evaluate """${def script = ""; params.each { k, v -> script += "env.${k} = '''${v}'''\n" }; return script}"""
                     }
@@ -537,7 +538,6 @@ EOF
                     }
                     steps {
                         script {
-                            currentBuild.description = "${env.BRANCH_NAME} ${MAVEN_PROFILE_NAME}"
                             def res = 0
                             res = sh(script: '''
                                     if [ -z "${IT_TEST}" ] && [ "${MAVEN_PROFILE_NAME}" = "integration-tests" ]; then
@@ -554,7 +554,7 @@ EOF
                         sh '''
                             export PATH=${runtime_path}
                             export KUBECONFIG=${kubeconfig_file}
-                            export IT_TEST=ItInitContainers
+                            #export IT_TEST=ItInitContainers
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
                             K8S_NODEPORT_HOST=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
@@ -563,7 +563,7 @@ EOF
                             elif [ -n "${IT_TEST}" ]; then
                                 echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
                                 MAVEN_PROFILE_NAME="integration-tests"
-                                echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dit.test=\"${IT_TEST}\"" > ${WORKSPACE}/.mvn/maven.config
                             fi
                             echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
                             echo "-Dwko.it.result.root=\"${result_root}\""                                               >> ${WORKSPACE}/.mvn/maven.config
