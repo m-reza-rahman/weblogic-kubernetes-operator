@@ -8,20 +8,6 @@ domainInfo:
 topology:
   Name: "saml-domain-sender"
   AdminServerName: "admin-server"
-  #Server:
-    #"admin-server":
-      #KeyStores: 'CustomIdentityAndCustomTrust'
-      #CustomTrustKeyStorePassPhraseEncrypted: 'changeit'
-      #CustomIdentity1KeyStorePassPhraseEncrypted: 'changeit'
-      #CustomIdentity1KeyStoreFileName: '/shared/Identity1KeyStore.jks'
-      #CustomTrustKeyStoreFileName: '/shared/TrustKeyStore.jks'
-      #SSL:
-        #Enabled: true
-        #ListenPort: 7002
-        #ServerPrivateKeyAlias: 'mykeysen'
-        #ServerPrivateKeyPassPhraseEncrypted: 'changeit'
-        #UseServerCerts: true
-        #IdentityAndTrustLocations: KeyStores
 
   ServerTemplate:
     "cluster-1-template":
@@ -51,12 +37,6 @@ topology:
       user_d1:
         Password: password1
         GroupMemberOf: [ AppMonitors, Administrators ]
-      user_d2:
-        Password: password2
-        GroupMemberOf: [ AppMonitors ]
-      user_d3:
-        Password: password3
-        GroupMemberOf: [ AppMonitors ]
 
   WebserviceSecurity:
     'default_wss':

@@ -8,17 +8,6 @@ domainInfo:
 topology:
   Name: "saml-domain-receiver"
   AdminServerName: "admin-server"
-#  Server:
-#    "admin-server":
-#      KeyStores: 'CustomIdentityAndCustomTrust'
-#      CustomTrustKeyStorePassPhraseEncrypted: 'changeit'
-#      CustomIdentity2KeyStorePassPhraseEncrypted: 'changeit'
-#      CustomIdentity2KeyStoreFileName: '/shared/Identity2KeyStore.jks'
-#      CustomTrustKeyStoreFileName: '/shared/TrustKeyStore.jks'
-#     SSL:
-#        Enabled: true
-#        ListenPort: 7002
-#        TwoWaySSLEnabled: true
 
   Security:
     Group:
@@ -28,12 +17,6 @@ topology:
       user_d1:
         Password: password1
         GroupMemberOf: [ AppMonitors, Administrators ]
-      user_d2:
-        Password: password2
-        GroupMemberOf: [ AppMonitors ]
-      user_d3:
-        Password: password3
-        GroupMemberOf: [ AppMonitors ]
 
   WebserviceSecurity:
     'default_wss':
@@ -106,7 +89,6 @@ topology:
             DefaultAuthenticator:
               ControlFlag:  'SUFFICIENT'
               MinimumPasswordLength: 4
-            # see /SecurityConfiguration/Realm/AuthenticationProvider/SAML2IdentityAsserter
 
         Authorizer:
           XACMLAuthorizer:

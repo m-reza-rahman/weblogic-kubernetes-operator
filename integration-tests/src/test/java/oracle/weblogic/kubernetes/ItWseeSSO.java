@@ -88,9 +88,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test with webservices ans SSO with two domains.
+ * Test with webservices and SSO with two domains.
  */
-@DisplayName("Verify the JMS and WLDF system resources are overridden with values from override files")
+@DisplayName("Verify that client can communicate with webservices with SSO")
 @IntegrationTest
 @Tag("oke-parallel")
 @Tag("kind-parallel")
@@ -166,9 +166,9 @@ class ItWseeSSO {
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+      logger.info("NGINX http node port: {0}", nodeportshttp);
 
     }
-    logger.info("NGINX http node port: {0}", nodeportshttp);
     keyStoresPath = Paths.get(RESULTS_ROOT, "mydomainwsee", "keystores");
     assertDoesNotThrow(() -> deleteDirectory(keyStoresPath.toFile()));
     assertDoesNotThrow(() -> Files.createDirectories(keyStoresPath));
@@ -225,26 +225,7 @@ class ItWseeSSO {
   private String checkWSDLAccess(String domainNamespace, String domainUid,
                                  String adminSvcExtHost,
                                  String appURI) {
-    /*
-    String uri = null;
-    if (!OKD) {
-      String ingressClassName = nginxHelmParams.getIngressClassName();
-      Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
-      clusterNameMsPortMap.put(clusterName, managedServerPort);
-      ingressHost1List
-          = createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
-          false, ingressClassName, false, 0);
-      uri = String.format("http://%s:%s/%s",K8S_NODEPORT_HOST,nodeportshttp,appURI);
-      logger.info("uri = {0} ", uri);
-      // Need to expose the admin server external service to access the console in OKD cluster only
-    } else {
-      String clusterService = domainUid + "-cluster-cluster-1";
-      String hostName = createRouteForOKD(clusterService, domainNamespace);
-      logger.info("hostName = {0} ", hostName);
-      uri = String.format("http://%s/%s",hostName,appURI);
-    }
 
-    */
     String adminServerPodName = domainUid + "-" + adminServerName;
     int serviceNodePort = assertDoesNotThrow(()
             -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
