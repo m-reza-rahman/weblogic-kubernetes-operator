@@ -912,6 +912,7 @@ public class DbUtils {
   public static void createPV(String pvName) {
 
     LoggingFacade logger = getLogger();
+    Path pvHostPath = null;
 
     logger.info("creating persistent volume {0}", pvName);
      
