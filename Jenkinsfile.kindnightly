@@ -107,7 +107,7 @@ def kind_k8s_map = [
 ]
 def _kind_image = null
 CRON_SETTINGS = '''10 21 * * * % MAVEN_PROFILE_NAME=kind-parallel
-                   20 21 * * * % MAVEN_PROFILE_NAME=kind-sequential''' 
+                   20 21 * * * % MAVEN_PROFILE_NAME=kind-sequential'''
 
 
 pipeline {
@@ -156,7 +156,7 @@ pipeline {
         )
         string(name: 'IT_TEST',
                description: 'Comma separated list of individual It test classes to be run e.g., ItParameterizedDomain, ItMiiUpdateDomainConfig, ItMiiDynamicUpdate*, ItMiiMultiMode',
-               defaultValue: 'ItInitContainers'
+               defaultValue: ''
         )
         choice(name: 'KIND_VERSION',
                description: 'Kind version.',
@@ -554,6 +554,7 @@ EOF
                         sh '''
                             export PATH=${runtime_path}
                             export KUBECONFIG=${kubeconfig_file}
+                            export IT_TEST=ItInitContainers
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
                             K8S_NODEPORT_HOST=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
