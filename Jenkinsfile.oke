@@ -94,9 +94,10 @@ pipeline {
         string(name: 'WIT_DOWNLOAD_URL',
                description: 'URL to download WIT.',
                defaultValue: 'https://github.com/oracle/weblogic-image-tool/releases/latest'
+        )
         string(name: 'REPO_REGISTRY',
                description: '',
-               defaultValue: 'phx.ocir.io'
+               defaultValue: "${env.WKT_OCIR_HOST}"
         )
         choice(name: 'BASE_IMAGES_REPO',
                choices: ["${env.WKT_OCIR_HOST}", 'container-registry.oracle.com'],
