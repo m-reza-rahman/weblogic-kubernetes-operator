@@ -139,7 +139,7 @@ pipeline {
     }
     triggers {
         // timer trigger for "nightly build"
-        cron('TZ=America/New_York\n25 13 * * *')
+        cron('22 18 * * *')
     }
 
 
