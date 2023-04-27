@@ -3,27 +3,30 @@
 //
 
 pipeline {
-    agent { label 'VM.Standard2.8' }
+    agent { label 'large' }
     options {
         timeout(time: 1800, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
 
     tools {
-        maven 'maven-3.8.5'
-        jdk 'OpenJDK 17.0.2'
+        maven 'maven-3.8.7'
+        jdk 'jdk17'
     }
 
     environment {
-        github_url = "${env.GIT_URL}"
-        github_creds = 'ecnj_github'
-        ocr_username_creds = 'OCR username'
-        ocr_password_creds = 'OCR Password'
-        ocir_registry_creds = 'ocir-server'
-        ocir_email_creds = 'ocir-email'
-        ocir_username_creds = 'ocir-username'
-        ocir_password_creds = 'ocir-token'
-        image_pull_secret_weblogic_creds = 'image-pull-secret-weblogic'
+        ocir_host = "${env.WKT_OCIR_HOST}"
+        wko_tenancy = "${env.WKT_TENANCY}"
+        ocir_creds = 'wkt-ocir-creds'
+        #github_url = "${env.GIT_URL}"
+        #github_creds = 'ecnj_github'
+        #ocr_username_creds = 'OCR username'
+        #ocr_password_creds = 'OCR Password'
+        #ocir_registry_creds = 'ocir-server'
+        #ocir_email_creds = 'ocir-email'
+        #ocir_username_creds = 'ocir-username'
+        #ocir_password_creds = 'ocir-token'
+        #image_pull_secret_weblogic_creds = 'image-pull-secret-weblogic'
         terraform_property_file = 'tvarsFile'
         ocipk_file = 'oci_pk_file'
         wkobuild_oci_config = 'wkobuild_profile_oci_config_file'
@@ -106,16 +109,16 @@ pipeline {
                defaultValue: 'phx.ocir.io'
         )
         choice(name: 'BASE_IMAGES_REPO',
-               choices: ['phx.ocir.io', 'container-registry.oracle.com'],
+               choices: ["${env.WKT_OCIR_HOST}", 'container-registry.oracle.com'],
                description: 'Repository to pull the base images. Make sure to modify the image names if you are modifying this parameter value.'
         )
         string(name: 'TEST_IMAGES_REPO',
                description: '',
-               defaultValue: 'phx.ocir.io'
+               defaultValue: "${env.WKT_OCIR_HOST}"
         )
         string(name: 'WEBLOGIC_IMAGE_NAME',
                description: 'WebLogic base image name. Default is the image name in OCIR. Use middleware/weblogic for OCR.',
-               defaultValue: 'weblogick8s/test-images/weblogic'
+               defaultValue: 'test-images/weblogic'
         )
         string(name: 'WEBLOGIC_IMAGE_TAG',
                description: '12.2.1.3  (12.2.1.3-ol7) , 12.2.1.3-dev  (12.2.1.3-dev-ol7), 12.2.1.3-ol8, 12.2.1.3-dev-ol8, 12.2.1.4,  12.2.1.4-dev(12.2.1.4-dev-ol7) , 12.2.1.4-slim(12.2.1.4-slim-ol7), 12.2.1.4-ol8, 12.2.1.4-dev-ol8, 12.2.1.4-slim-ol8, 14.1.1.0-11-ol7, 14.1.1.0-dev-11-ol7, 14.1.1.0-slim-11-ol7, 14.1.1.0-8-ol7, 14.1.1.0-dev-8-ol7, 14.1.1.0-slim-8-ol7, 14.1.1.0-11-ol8, 14.1.1.0-dev-11-ol8, 14.1.1.0-slim-11-ol8, 14.1.1.0-8-ol8, 14.1.1.0-dev-8-ol8, 14.1.1.0-slim-8-ol8',
@@ -123,7 +126,7 @@ pipeline {
         )
         string(name: 'FMWINFRA_IMAGE_NAME',
                description: 'FWM Infra image name. Default is the image name in OCIR. Use middleware/fmw-infrastructure for OCR.',
-               defaultValue: 'weblogick8s/test-images/fmw-infrastructure'
+               defaultValue: 'test-images/fmw-infrastructure'
         )
         string(name: 'FMWINFRA_IMAGE_TAG',
                description: 'FWM Infra image tag',
@@ -131,7 +134,7 @@ pipeline {
         )
         string(name: 'DB_IMAGE_NAME',
                description: 'Oracle DB image name. Default is the image name in OCIR, use database/enterprise for OCR.',
-               defaultValue: 'weblogick8s/test-images/database/enterprise'
+               defaultValue: 'test-images/database/enterprise'
         )
         string(name: 'DB_IMAGE_TAG',
                description: 'Oracle DB image tag',
@@ -184,21 +187,6 @@ pipeline {
                     }
                 }
 
-                // Use explicit checkout so that we can clean up the workspace.
-                // Cannot use skipDefaultCheckout option since we want to use
-                // the GIT_COMMIT environment variable to make sure that we are
-                // checking out the exactly commit that triggered the build.
-                //
-                stage('GitHub Checkout') {
-                    steps {
-                        sh "sudo rm -rf ${WORKSPACE}/*"
-                        sh "sudo rm -rf ${WORKSPACE}/.mvn"
-                        checkout([$class: 'GitSCM', branches: [[name: "${GIT_COMMIT}"]],
-                                  doGenerateSubmoduleConfigurations: false,
-                                  extensions: [], submoduleCfg: [],
-                                  userRemoteConfigs: [[credentialsId: "${github_creds}", url: "${github_url}"]]])
-                    }
-                }
 
                 // Creating terraform property file.
 
@@ -283,8 +271,10 @@ EOF
                 }
 
                 stage('Build WebLogic Kubernetes Operator') {
+
                     steps {
-                        sh "mvn -DtrimStackTrace=false clean install"
+                        withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
+                                                    sh "mvn -DtrimStackTrace=false clean install"
                     }
                 }
 
@@ -316,7 +306,9 @@ EOF
                     steps {
                         sh '''
                             export PATH=${runtime_path}
-                            curl -Lo "helm.tar.gz" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/helm%2Fhelm-v${HELM_VERSION}.tar.gz"
+                            oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
+                                                            --name=helm/helm-v${HELM_VERSION}.tar.gz --file=helm.tar.gz \
+                                                            --auth=instance_principal
                             tar zxf helm.tar.gz
                             mv linux-amd64/helm ${WORKSPACE}/bin/helm
                             rm -rf linux-amd64
@@ -332,7 +324,9 @@ EOF
                     steps {
                         sh '''
                             export PATH=${runtime_path}
-                            curl -Lo "${WORKSPACE}/bin/kubectl" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/kubectl%2Fkubectl-v${KUBECTL_VERSION}"
+                            oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
+                                                            --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
+                                                            --auth=instance_principal
                             chmod +x ${WORKSPACE}/bin/kubectl
                             kubectl version --client=true
                         '''
@@ -450,6 +444,19 @@ EOF
 
                     }
                     steps {
+                         script {
+                             def res = 0
+                             res = sh(script: '''
+                                     if [ -z "${IT_TEST}" ] && [ "${MAVEN_PROFILE_NAME}" = "integration-tests" ]; then
+                                        echo 'ERROR: All tests cannot be run with integration-tests profile'
+                                        exit 1
+                                     fi
+                                 ''', returnStatus: true)
+                             if (res != 0 ) {
+                                 currentBuild.result = 'ABORTED'
+                                 error('Profile/ItTests Validation Failed')
+                             }
+                         }
                         sh '''
                             export PATH=${runtime_path}
                             export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
@@ -487,9 +494,11 @@ EOF
                             echo "Using NFS Server ${NFS_SERVER}"
                             export NO_PROXY="${K8S_NODEPORT_HOST}"
 
-                            if [ "${IT_TEST}" = '**/It*' ] && [ "${MAVEN_PROFILE_NAME}" = "integration-tests" ]; then
-                                echo "-Dit.test=\"${IT_TEST}, !ItExternalRmiTunneling, !ItMiiSampleWlsMain, !ItSamples, !ItLBTwoDomainsApache, !ItLBTwoDomainsNginx, !ItLBTwoDomainsTraefik, !ItTwoDomainsManagedByTwoOperators, !ItMiiSample, !ItMonitoringExporter*, !ItAuxV8DomainImplicitUpgrade, !ItOperatorWlsUpgrade, !ItFmwDomainInPVUsingWDT, !ItFmwDynamicDomainInPV, !ItDedicatedMode, !ItT3Channel, !ItOperatorFmwUpgrade, !ItMiiSampleFmwMain\"" >> ${WORKSPACE}/.mvn/maven.config
-                            elif [ ! -z "${IT_TEST}" ]; then
+                            if [ "${MAVEN_PROFILE_NAME}" == "oke-sequential" ]; then
+                                PARALLEL_RUN='false'
+                            elif [ -n "${IT_TEST}" ]; then
+                                echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
+                                MAVEN_PROFILE_NAME="integration-tests"
                                 echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
                             fi
                             echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
