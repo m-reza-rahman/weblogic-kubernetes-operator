@@ -301,14 +301,14 @@ pipeline {
 
     stages {
         stage('Filter unwanted branches') {
-            when {
+            /* when {
                 anyOf {
                     branch 'owls108340'
                     branch 'main'
                     branch 'release/4.0'
                     branch 'release/3.4'
                 }
-            }
+            } */
             stages {
                 stage('Workaround JENKINS-41929 Parameters bug') {
                     steps {
