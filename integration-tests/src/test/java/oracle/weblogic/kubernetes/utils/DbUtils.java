@@ -758,11 +758,12 @@ public class DbUtils {
     Files.createDirectories(operatorYamlDestFile.getParent());
     Files.deleteIfExists(operatorYamlDestFile);
     FileUtils.copy(operatorYamlSrcFile, operatorYamlDestFile);
-    replaceStringInFile(operatorYamlDestFile.toString(), "replicas: 3", "replicas: 1");
+    replaceStringInFile(operatorYamlDestFile.toString(), "replicas: 3", "replicas: 1");    
     replaceStringInFile(operatorYamlDestFile.toString(), "oracle-database-operator-system", namespace);
     replaceStringInFile(operatorYamlDestFile.toString(), "container-registry-secret", TEST_IMAGES_REPO_SECRET_NAME);
     replaceStringInFile(operatorYamlDestFile.toString(),
         "container-registry.oracle.com/database/operator:0.2.1", DB_OPERATOR_IMAGE);
+    replaceStringInFile(operatorYamlDestFile.toString(), "imagePullPolicy: Always", "imagePullPolicy: IfNotPresent");
     createTestRepoSecret(namespace);
     createBaseRepoSecret(namespace);
 
