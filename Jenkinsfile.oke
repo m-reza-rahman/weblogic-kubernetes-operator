@@ -430,7 +430,7 @@ EOF
                                  currentBuild.result = 'ABORTED'
                                  error('Profile/ItTests Validation Failed')
                              }
-                         }
+                        }
                         sh '''
                             export PATH=${runtime_path}
                             export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
