@@ -204,6 +204,12 @@ class ItVzDBOperator {
     assertNotNull(namespaces.get(2), "Namespace is null");
     wlsDomainNamespace = namespaces.get(2);
     
+    // create PV, PVC for logs/data
+    createPV(pvName, wlsDomainUid, ItVzDBOperator.class.getSimpleName());
+    createPVC(pvName, pvcName, wlsDomainUid, wlsDomainNamespace);
+    // create job to change permissions on PV hostPath
+    createJobToChangePermissionsOnPvHostPath(pvName, pvcName, wlsDomainNamespace);    
+    
     setLabelToNamespace(Arrays.asList(wlsDomainNamespace, fmwDomainNamespace));    
 
     // Create the repo secret to pull the image
@@ -403,11 +409,7 @@ class ItVzDBOperator {
     createConfigMapAndVerify(configMapName, wlsDomainUid, wlsDomainNamespace,
         Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
     
-    // create PV, PVC for logs/data
-    createPV(pvName, wlsDomainUid, ItVzDBOperator.class.getSimpleName());
-    createPVC(pvName, pvcName, wlsDomainUid, wlsDomainNamespace);
-    // create job to change permissions on PV hostPath
-    createJobToChangePermissionsOnPvHostPath(pvName, pvcName, wlsDomainNamespace);
+
 
     // create the domain CR with a pre-defined configmap
     DomainResource domainCR = createDomainResource(wlsDomainUid, wlsDomainNamespace,
