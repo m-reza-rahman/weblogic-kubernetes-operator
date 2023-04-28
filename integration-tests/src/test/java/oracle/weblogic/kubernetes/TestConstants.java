@@ -52,7 +52,7 @@ public interface TestConstants {
   public static final String OPERATOR_CHART_DIR =
       "../kubernetes/charts/weblogic-operator";
   public static final String IMAGE_NAME_OPERATOR =
-      getNonEmptySystemProperty("wko.it.image.name.operator", "oracle/weblogic-kubernetes-operator");
+      getNonEmptySystemProperty("wko.it.image.name.operator", "/oracle/weblogic-kubernetes-operator");
   public static final String OPERATOR_SERVICE_NAME = "internal-weblogic-operator-svc";
   public static final String OPERATOR_GITHUB_CHART_REPO_URL =
       "https://oracle.github.io/weblogic-kubernetes-operator/charts";
