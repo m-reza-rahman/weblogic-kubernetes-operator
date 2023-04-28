@@ -266,6 +266,7 @@ EOF
                     steps {
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
                                                     sh "mvn -DtrimStackTrace=false clean install"
+                        }
                     }
                 }
 
