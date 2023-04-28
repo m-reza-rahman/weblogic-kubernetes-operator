@@ -846,7 +846,8 @@ public class DbUtils {
     replaceStringInFile(dbYaml.toString(), "secretKey:", "secretKey: " + secretKey);
     replaceStringInFile(dbYaml.toString(), "pullFrom:", "pullFrom: " + DB_IMAGE_19C);
     replaceStringInFile(dbYaml.toString(), "pullSecrets:", "pullSecrets: " + BASE_IMAGES_REPO_SECRET_NAME);
-    replaceStringInFile(dbYaml.toString(), "storageClass: \"oci-bv\"", "storageClass: \"\"");
+    replaceStringInFile(dbYaml.toString(), "storageClass: \"oci-bv\"",
+        "storageClass: \"weblogic-domain-storage-class\"");
     replaceStringInFile(dbYaml.toString(), "accessMode: \"ReadWriteOnce\"", "accessMode: \"ReadWriteMany\"");
     replaceStringInFile(dbYaml.toString(), "volumeName: \"\"", "volumeName: \"" + pvName + "\"");
     
@@ -934,7 +935,7 @@ public class DbUtils {
         .spec(new V1PersistentVolumeSpec()
             .addAccessModesItem("ReadWriteMany")
             .volumeMode("Filesystem")
-            .putCapacityItem("storage", Quantity.fromString("50Gi"))
+            .putCapacityItem("storage", Quantity.fromString("100Gi"))
             .persistentVolumeReclaimPolicy("Recycle")
             .accessModes(Arrays.asList("ReadWriteMany")))
         .metadata(new V1ObjectMeta()
