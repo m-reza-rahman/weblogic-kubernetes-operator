@@ -1110,7 +1110,7 @@ public class CommonMiiTestUtils {
       V1Job jobBody = new V1Job()
           .metadata(
               new V1ObjectMeta()
-                  .name("change-permissions-onpv-job-" + pvName) // name of the job
+                  .name("pv-job-" + pvName) // name of the job
                   .namespace(namespace))
           .spec(new V1JobSpec()
               .backoffLimit(0) // try only once
