@@ -1,4 +1,4 @@
-// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2012, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 def kind_k8s_map = [
@@ -147,10 +147,10 @@ pipeline {
 
     parameters {
         choice(name: 'MAVEN_PROFILE_NAME',
-                description: 'Profile to use in mvn command to run the tests.  Possible values are kind-parallel (the default), kind-sequential and integration-tests.  Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                description: 'Profile to use in mvn command to run the tests.  Possible values are kind-sequential (the default), kind-parallel and integration-tests.  Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                 choices: [
-                        'kind-parallel',
                         'kind-sequential',
+                        'kind-parallel',
                         'integration-tests'
                 ]
         )
@@ -306,15 +306,7 @@ pipeline {
     }
 
     stages {
-        stage('Filter unwanted branches') {
-            /* when {
-                anyOf {
-                    branch 'owls108340'
-                    branch 'main'
-                    branch 'release/4.0'
-                    branch 'release/3.4'
-                }
-            } */
+        stage('Prepare the environment and run integration tests') {
             stages {
                 stage('Workaround JENKINS-41929 Parameters bug') {
                     steps {
@@ -554,7 +546,6 @@ EOF
                         sh '''
                             export PATH=${runtime_path}
                             export KUBECONFIG=${kubeconfig_file}
-                            #export IT_TEST=ItInitContainers
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
                             K8S_NODEPORT_HOST=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
