@@ -306,15 +306,7 @@ pipeline {
     }
 
     stages {
-        stage('Filter unwanted branches') {
-            /* when {
-                anyOf {
-                    branch 'owls108340'
-                    branch 'main'
-                    branch 'release/4.0'
-                    branch 'release/3.4'
-                }
-            } */
+        stage('Prepare the environment and run integration tests') {
             stages {
                 stage('Workaround JENKINS-41929 Parameters bug') {
                     steps {
@@ -554,7 +546,6 @@ EOF
                         sh '''
                             export PATH=${runtime_path}
                             export KUBECONFIG=${kubeconfig_file}
-                            #export IT_TEST=ItInitContainers
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
                             K8S_NODEPORT_HOST=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
