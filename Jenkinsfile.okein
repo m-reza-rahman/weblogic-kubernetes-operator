@@ -346,7 +346,7 @@ EOF
 
                             chmod 777 ${WORKSPACE}/oci/config
                             export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
-                            export OCI_CLI_PROFILE=${oci_config_profile}
+                            export OCI_CLI_PROFILE=${oci_profile}
                             echo 'Create a OKE cluster ${CLUSTER_NAME}'
 
                             cp -rf ${terraform_script_dir_name}/*.tf ${WORKSPACE}/terraform/.
@@ -386,7 +386,7 @@ EOF
                         sh '''
                         export KUBECONFIG=${kubeconfig_file}
                         export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
-                        export OCI_CLI_PROFILE=WKOBUILD
+                        export OCI_CLI_PROFILE=${oci_profile}
                         export PATH=${runtime_path}
                         compartment_ocid=`oci iam compartment list --all --compartment-id-in-subtree=true | jq -r ".data[] | select(.name == \"${compartmentName}\") | .id"`
                         echo "creating storage class to setup OFSS ..."
@@ -548,7 +548,7 @@ EOF
                         export PATH="${WORKSPACE}/bin:${PATH}"
                         export KUBECONFIG=${kubeconfig_file}
                         export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
-                        export OCI_CLI_PROFILE=WKOBUILD
+                        export OCI_CLI_PROFILE=${oci_profile}
                         echo 'Remove old OKE cluster (if any)...'
 
                         if [ -f "$OCI_PROP_FILE" ] && [ -f "${WORKSPACE}/terraform/oke.delete.sh" ]; then
