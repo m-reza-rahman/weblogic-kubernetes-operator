@@ -545,6 +545,18 @@ EOF
                             }
                         }
 
+                        withCredentials([
+                             string(credentialsId: "${wko_files_bucket_token}", variable: 'WKO_BUCKET_TOKEN')
+                        ]) {
+                            sh '''
+                                if [ -z $WIT_DOWNLOAD_URL ]; then
+                                    export WIT_DOWNLOAD_URL='https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/imagetool-main.zip'
+                                fi
+                                if [ -z $WDT_DOWNLOAD_URL ]; then
+                                    export WDT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/weblogic-deploy-main.zip"
+                                fi
+                            '''
+                        }
                         sh '''
                             export PATH=${runtime_path}
                             export KUBECONFIG=${kubeconfig_file}
@@ -588,10 +600,10 @@ EOF
                             cat "${WORKSPACE}/.mvn/maven.config"
                             cp "${WORKSPACE}/.mvn/maven.config" "${result_root}"
                         '''
+
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
                             withCredentials([
-                                usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS'),
-                                string(credentialsId: "${wko_files_bucket_token}", variable: 'WKO_BUCKET_TOKEN')
+                                usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS')
                             ]) {
                                 sh '''
                                     export PATH=${runtime_path}
@@ -602,12 +614,6 @@ EOF
                                     export TEST_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
-                                    if [ -z $WIT_DOWNLOAD_URL ]; then
-                                        export WIT_DOWNLOAD_URL='https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/imagetool-main.zip'
-                                    fi
-                                    if [ -z $WDT_DOWNLOAD_URL ]; then
-                                        export WDT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/weblogic-deploy-main.zip"
-                                    fi
                                     if ! time mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/kindtest.log"; then
                                         echo "integration-tests failed"
                                         exit 1
