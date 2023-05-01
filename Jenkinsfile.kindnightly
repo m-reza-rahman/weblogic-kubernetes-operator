@@ -550,7 +550,7 @@ EOF
                         ]) {
                             sh '''
                                 if [ -z $WIT_DOWNLOAD_URL ]; then
-                                    export WIT_DOWNLOAD_URL='https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/imagetool-main.zip'
+                                    export WIT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/imagetool-main.zip"
                                 fi
                                 if [ -z $WDT_DOWNLOAD_URL ]; then
                                     export WDT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/weblogic-deploy-main.zip"
