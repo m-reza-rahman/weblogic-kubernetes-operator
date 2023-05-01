@@ -589,7 +589,7 @@ EOF
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
                             withCredentials([
                                 [usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS')],
-                                [string(credentialsId: "${wko-system-test-files-bucket-par-token}", variable: 'WKO_BUCKET_TOKEN']
+                                [string(credentialsId: "${wko-system-test-files-bucket-par-token}", variable: 'WKO_BUCKET_TOKEN')]
                             ]) {
                                 sh '''
                                     export PATH=${runtime_path}
