@@ -494,6 +494,8 @@ class ItVzDBOperator {
         wlsDomainNamespace);
 
     checkPodReadyAndServiceExists(wlsAdminServerPodName, wlsDomainUid, wlsDomainNamespace);
+    // create the required leasing table 'ACTIVE' before we start the cluster
+    createLeasingTable(wlsAdminServerPodName, wlsDomainNamespace, dbUrl);    
 
     String managedServerPrefix = wlsDomainUid + "-managed-server";
     for (int i = 1; i <= replicaCount; i++) {
@@ -503,8 +505,7 @@ class ItVzDBOperator {
       checkPodReadyAndServiceExists(managedServerName, wlsDomainUid, wlsDomainNamespace);
     }   
     verifyDomainReady(wlsDomainNamespace, wlsDomainUid, replicaCount);
-    // create the required leasing table 'ACTIVE' before we start the cluster
-    createLeasingTable(wlsAdminServerPodName, wlsDomainNamespace, dbUrl);
+
 
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
