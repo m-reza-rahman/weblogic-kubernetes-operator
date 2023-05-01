@@ -196,6 +196,8 @@ pipeline {
                         FINGERPRINT = credentials("${wkobuild_cert_fingerprint}")
                         USER_OCID = credentials("${wkobuild_user_ocid}")
                         WKOBUILD_PUBLIC_CERT = credentials("${wkotest_ssh_pubcert}")
+                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                      
                     }
                     steps {
 
@@ -208,6 +210,9 @@ pipeline {
                         }
 
                         sh '''
+                        export PATH=${runtime_path}
+                        export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
+                        export OCI_CLI_PROFILE=${oci_profile}
                         TENANCY_OCID=`oci iam compartment list --raw-output --query "data[?contains(\"compartment-id\",'.tenancy.')].\"compartment-id\" | [0]"`
 
                         COMPARTMENT_OCID=`oci iam compartment list --all --compartment-id-in-subtree=true | jq -r ".data[] | select(.name == \"${compartmentName}\") | .id"`
