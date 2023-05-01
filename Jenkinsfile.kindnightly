@@ -245,11 +245,11 @@ pipeline {
                defaultValue: "3"
         )
         string(name: 'WDT_DOWNLOAD_URL',
-               description: "URL to download WDT. Leave it empty to use the default value https://objectstorage.${env.WKT_REGION}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${env.WKT_TENANCY}/b/wko-system-test-files/o/weblogic-deploy-main.zip",
+               description: "URL to download WDT. Leave it empty to use the default value https://objectstorage.${env.WKT_REGION}.oraclecloud.com/p/<TOKEN>/n/${env.WKT_TENANCY}/b/wko-system-test-files/o/weblogic-deploy-main.zip",
                defaultValue: ""
         )
         string(name: 'WIT_DOWNLOAD_URL',
-               description: "URL to download WIT. Leave it empty to use the default value https://objectstorage.${env.WKT_REGION}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${env.WKT_TENANCY}/b/wko-system-test-files/o/imagetool-main.zip",
+               description: "URL to download WIT. Leave it empty to use the default value https://objectstorage.${env.WKT_REGION}.oraclecloud.com/p/<TOKEN>/n/${env.WKT_TENANCY}/b/wko-system-test-files/o/imagetool-main.zip",
                defaultValue: ""
         )
         string(name: 'TEST_IMAGES_REPO',
