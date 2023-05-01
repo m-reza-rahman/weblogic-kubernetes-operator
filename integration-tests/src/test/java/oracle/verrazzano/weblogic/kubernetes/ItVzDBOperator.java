@@ -50,6 +50,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.FmwUtils;
+import oracle.weblogic.kubernetes.utils.VerrazzanoUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -97,7 +98,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
@@ -404,18 +404,20 @@ class ItVzDBOperator {
     assertDoesNotThrow(() -> createDatabaseSecret(dbSecretName,
         "sys as sysdba", "Oradoc_db1", cpUrl, wlsDomainNamespace),
         String.format("createSecret failed for %s", dbSecretName));
-    String configMapName = "jdbc-jms-recovery-configmap";
-
-    createConfigMapAndVerify(configMapName, wlsDomainUid, wlsDomainNamespace,
-        Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
     
-
+    String configMapName = "jdbc-jms-recovery-configmap";
+    //createConfigMapAndVerify(configMapName, wlsDomainUid, wlsDomainNamespace, 
+    //    Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
+    String configmapcomponentname = "comp-" + configMapName;
+    VerrazzanoUtils.createVzConfigmapComponent(configmapcomponentname, configMapName, wlsDomainNamespace,
+        wlsDomainUid, Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
 
     // create the domain CR with a pre-defined configmap
     DomainResource domainCR = createDomainResource(wlsDomainUid, wlsDomainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, replicaCount,
         configMapName, dbSecretName, false, true);
+    domainCR.spec().configuration().model().setConfigMap(configMapName);
 
     // create cluster object
     ClusterResource cluster = createClusterResource(wlsClusterResName, clusterName, wlsDomainNamespace, replicaCount);
@@ -474,7 +476,9 @@ class ItVzDBOperator {
                                             .pathType("Prefix")))
                                         .destination(new Destination()
                                             .host(wlsAdminServerPodName)
-                                            .port(7001)))))))))));
+                                            .port(7001)))))))), 
+                new Components()
+                    .componentName(configmapcomponentname))));
 
     logger.info("Deploying components");
     assertDoesNotThrow(() -> createComponent(component));
@@ -935,7 +939,7 @@ class ItVzDBOperator {
         .webLogicCredentialsSecret(new V1LocalObjectReference()
             .name(adminSecretName))
         .includeServerOutInPodLog(true)
-        .logHomeEnabled(Boolean.FALSE)
+        .logHomeEnabled(Boolean.TRUE)
         .replicas(replicaCount)
         .serverStartPolicy("IfNeeded")
         .serverPod(new ServerPod()
