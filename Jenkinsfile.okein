@@ -201,19 +201,20 @@ pipeline {
                     }
                     steps {
 
-                        withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
-                                                file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
-                                                sh "mkdir -p ${WORKSPACE}/oci"
-                                                sh "cp -rf $OCI_CONFIG_FILE ${WORKSPACE}/oci/."
-                                                sh "sed -e \"s:@WORKSPACE@:${WORKSPACE}:g\" \"\$OCI_CONFIG_FILE\" > ${WORKSPACE}/oci/config"
+                        withCredentials([file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
+
+
                                                 sh "mkdir -p ${WORKSPACE}/terraform"
-                                                sh "cp -rf $OCI_SIGNING_KEY ${WORKSPACE}/terraform/oci_api_key.pem"
+                                                sh "cp \"\$OCI_SIGNING_KEY\" ${WORKSPACE}/terraform/oci_api_key.pem"
                                                 sh " ls -al ${WORKSPACE}/terraform/*"
                                                 sh "chmod 666 ${WORKSPACE}/terraform/oci_api_key.pem"
                         }
 
                         sh '''
-                        export PATH=${runtime_path}
+                        mkdir -p ${WORKSPACE}/oci
+                        cp -rf ${oci_config_file} ${WORKSPACE}/oci/config
+                        chmod 777 ${WORKSPACE}/oci/config
+                        sed -i -e "s:@WORKSPACE@:${WORKSPACE}:g" ${WORKSPACE}/oci/config
                         export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
                         cat ${OCI_CLI_CONFIG_FILE}
                         export OCI_CLI_PROFILE=${oci_profile}
