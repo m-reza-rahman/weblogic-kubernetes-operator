@@ -29,7 +29,7 @@ pipeline {
         wkobuild_cert_fingerprint = 'wkotestcert_fingerprint'
         wkobuild_user_ocid = 'wkotest-user-ocid'
 
-        wko_oke_test_sshpubcert = 'OKE_PUB_CERT'
+        wkotest_ssh_pubcert = 'wkotest_ssh_pubcert'
         oke_test_ssh_pk = 'wkotest_ssh_pk'
 
         OKE_CLUSTER='true'
