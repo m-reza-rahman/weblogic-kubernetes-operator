@@ -598,7 +598,7 @@ EOF
                                 cat "${WORKSPACE}/.mvn/maven.config"
                                 cp "${WORKSPACE}/.mvn/maven.config" "${result_root}"
                             '''
-
+                        }
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
                             withCredentials([
                                 usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS')
