@@ -201,12 +201,14 @@ pipeline {
                     }
                     steps {
 
-                        withCredentials([file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
+                        withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
+                                                file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
+                                                sh "mkdir -p ${WORKSPACE}/oci"
+                                                sh "sed -e \"s:@WORKSPACE@:${WORKSPACE}:g\" \"\$OCI_CONFIG_FILE\" > ${WORKSPACE}/oci/config"
                                                 sh "mkdir -p ${WORKSPACE}/terraform"
                                                 sh "cp -rf \$OCI_SIGNING_KEY ${WORKSPACE}/terraform/oci_api_key.pem"
                                                 sh " ls -al ${WORKSPACE}/terraform/*"
                                                 sh "chmod 666 ${WORKSPACE}/terraform/oci_api_key.pem"
-
                         }
 
                         sh '''
@@ -339,12 +341,7 @@ EOF
 
                     }
                     steps {
-                        withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
-                                         file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
-                            sh "mkdir -p ${WORKSPACE}/oci"
-                            sh "sed -e \"s:__jenkins_home__:${WORKSPACE}:g\" \"\$OCI_CONFIG_FILE\" > ${WORKSPACE}/oci/config"
-                            sh "cp \"\$OCI_SIGNING_KEY\" ${WORKSPACE}/oci/oci-signing-key.pem"
-                        }
+
                         sh '''
                             export PATH=${runtime_path}
                             export KUBECONFIG=${KUBECONFIG}
