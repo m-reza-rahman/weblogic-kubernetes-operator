@@ -128,6 +128,7 @@ pipeline {
     environment {
         ocir_host = "${env.WKT_OCIR_HOST}"
         wko_tenancy = "${env.WKT_TENANCY}"
+        wko_region = "${env.WKT_REGION}"
         ocir_creds = 'wkt-ocir-creds'
         wko_files_bucket_token = 'wko-system-test-files-bucket-par-token'
 
@@ -602,10 +603,10 @@ EOF
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
                                     if [ -z $WIT_DOWNLOAD_URL ]; then
-                                        export WIT_DOWNLOAD_URL="https://objectstorage.${env.WKT_REGION}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${env.WKT_TENANCY}/b/wko-system-test-files/o/imagetool-main.zip"
+                                        export WIT_DOWNLOAD_URL='https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/imagetool-main.zip'
                                     fi
                                     if [ -z $WDT_DOWNLOAD_URL ]; then
-                                        export WDT_DOWNLOAD_URL="https://objectstorage.${env.WKT_REGION}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${env.WKT_TENANCY}/b/wko-system-test-files/o/weblogic-deploy-main.zip"
+                                        export WDT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/weblogic-deploy-main.zip"
                                     fi
                                     if ! time mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/kindtest.log"; then
                                         echo "integration-tests failed"
