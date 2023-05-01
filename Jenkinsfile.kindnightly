@@ -129,7 +129,7 @@ pipeline {
         ocir_host = "${env.WKT_OCIR_HOST}"
         wko_tenancy = "${env.WKT_TENANCY}"
         ocir_creds = 'wkt-ocir-creds'
-        wko_bucket_token='wko-system-test-files-bucket-par-token'
+        wko_files_bucket_token = 'wko-system-test-files-bucket-par-token'
 
         outdir = "${WORKSPACE}/staging"
         result_root = "${outdir}/wl_k8s_test_results"
@@ -590,7 +590,7 @@ EOF
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
                             withCredentials([
                                 [usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS')],
-                                [string(credentialsId: "${wko-bucket-token}", variable: 'WKO_BUCKET_TOKEN')]
+                                [string(credentialsId: "${wko_files_bucket_token}", variable: 'WKO_BUCKET_TOKEN')]
                             ]) {
                                 sh '''
                                     export PATH=${runtime_path}
