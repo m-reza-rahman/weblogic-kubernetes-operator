@@ -204,9 +204,10 @@ pipeline {
                         withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
                                                 file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
                                                 sh "mkdir -p ${WORKSPACE}/oci"
+                                                sh "cp -rf $OCI_CONFIG_FILE ${WORKSPACE}/oci/."
                                                 sh "sed -e \"s:@WORKSPACE@:${WORKSPACE}:g\" \"\$OCI_CONFIG_FILE\" > ${WORKSPACE}/oci/config"
                                                 sh "mkdir -p ${WORKSPACE}/terraform"
-                                                sh "cp -rf \$OCI_SIGNING_KEY ${WORKSPACE}/terraform/oci_api_key.pem"
+                                                sh "cp -rf $OCI_SIGNING_KEY ${WORKSPACE}/terraform/oci_api_key.pem"
                                                 sh " ls -al ${WORKSPACE}/terraform/*"
                                                 sh "chmod 666 ${WORKSPACE}/terraform/oci_api_key.pem"
                         }
