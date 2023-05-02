@@ -258,9 +258,10 @@ pipeline {
 
                         sh '''
                         TENANCY_OCID=$(grep -Po '(?<=tenancy=).*' ${jenkins_home_directory}/.oci/config)
-                        export USER_OCID=$(grep -Po '(?<=user=).*' ${jenkins_home_directory}/.oci/config)
+                        USER_OCID=$(grep -Po '(?<=user=).*' ${jenkins_home_directory}/.oci/config)
                         echo "${TENANCY_OCID}"
-                        export WKT_TENANCY_OCID = ${TENANCY_OCID}
+                        export WKT_TENANCY_OCID=${TENANCY_OCID}
+                        export WKT_USER_OCID=${USER_OCID}
                         mkdir -p ${WORKSPACE}/terraform
                         mkdir -p ${WORKSPACE}/oci
                         cat ${jenkins_home_directory}/.oci/config
@@ -305,7 +306,7 @@ pipeline {
 
 cat > $OCI_PROP_FILE <<EOF
 
-user.ocid=${USER_OCID}
+user.ocid=${WKT_USER_OCID}
 okeclustername=${OKE_CLUSTER_NAME}
 tfvars.filename=${OKE_CLUSTER_NAME}
 region=${wko_region}
