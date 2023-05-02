@@ -738,7 +738,7 @@ class ItVzDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkJtaRecoveryServiceRuntime(String managedServer, String recoveryService, String active) {
-        // get istio gateway host and loadbalancer address
+    // get istio gateway host and loadbalancer address
     String host = getIstioHost(wlsDomainNamespace);
     String address = getLoadbalancerAddress();
     
