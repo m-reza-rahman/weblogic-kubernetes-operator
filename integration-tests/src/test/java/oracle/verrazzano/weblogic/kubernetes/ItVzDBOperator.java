@@ -531,7 +531,7 @@ class ItVzDBOperator {
     // build the standalone JMS Client on Admin pod
     String destLocation = "/u01/JmsSendReceiveClient.java";
     assertDoesNotThrow(() -> copyFileToPod(wlsDomainNamespace,
-        wlsAdminServerPodName, "",
+        wlsAdminServerPodName, "weblogic-server",
         Paths.get(RESOURCE_DIR, "jms", "JmsSendReceiveClient.java"),
         Paths.get(destLocation)));
     runJavacInsidePod(wlsAdminServerPodName, wlsDomainNamespace, destLocation);
