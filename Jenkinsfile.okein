@@ -222,6 +222,7 @@ pipeline {
                         mkdir -p ${WORKSPACE}/.ssh
                         cd ${WORKSPACE}/.ssh
                         ssh-keygen -b 2048 -t rsa -q  -f ${wkotest_ssh_pk} -N ""
+                        chmod 600 ${wkotest_ssh_pk}
                         #cp -rf ${oci_config_file} ${WORKSPACE}/oci/config
                         #chmod 777 ${WORKSPACE}/oci/config
                         #sed -i -e "s:@WORKSPACE@:${WORKSPACE}:g" ${WORKSPACE}/oci/config
@@ -420,7 +421,7 @@ EOF
                 stage('Run integration tests') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
-                        OKE_SSH_PRIVATE_KEY = "${wkotest_ssh_pk}"
+                        //OKE_SSH_PRIVATE_KEY = "${wkotest_ssh_pk}"
                         clusterName = "${CLUSTER_NAME}"
                         FSS_DIR = "/oketest1,/oketest2,/oketest3,/oketest4,/oketest5,/oketest6,/oketest7,/oketest8,/oketest9,/oketest10,/oketest11,/oketest12,/oketest13,/oketest14,/oketest15"
 
@@ -445,8 +446,8 @@ EOF
                             export OCI_CLI_PROFILE=${oci_profile}
                             compartment_ocid=${compartment_id}
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
-                            cp ${OKE_SSH_PRIVATE_KEY} ${WORKSPACE}/rsaokepk
-                            chmod 600 ${WORKSPACE}/rsaokepk
+                            #cp ${OKE_SSH_PRIVATE_KEY} ${WORKSPACE}/rsaokepk
+                            #chmod 600 ${WORKSPACE}/rsaokepk
                             touch ${WORKSPACE}/.mvn/maven.config
                             export KUBECONFIG=${kubeconfig_file}
                             NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
@@ -461,8 +462,8 @@ EOF
                             echo "second node external IP ${NODE_IP}"
                             export NODE_IP=${NODE_IP}
                             echo "expand disk volume for nodes"
-                            ssh -o StrictHostKeyChecking=no -i ${WORKSPACE}/rsaokepk opc@${K8S_NODEPORT_HOST} 'sudo /usr/libexec/oci-growfs -y'
-                            ssh -o StrictHostKeyChecking=no -i ${WORKSPACE}/rsaokepk opc@${NODE_IP} 'sudo /usr/libexec/oci-growfs -y'
+                            ssh -o StrictHostKeyChecking=no -i ${wkotest_ssh_pk} opc@${K8S_NODEPORT_HOST} 'sudo /usr/libexec/oci-growfs -y'
+                            ssh -o StrictHostKeyChecking=no -i ${wkotest_ssh_pk} opc@${NODE_IP} 'sudo /usr/libexec/oci-growfs -y'
                             mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
                             mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
