@@ -218,6 +218,7 @@ pipeline {
 
 
                         sh '''
+                        mkdir -p ${WORKSPACE}/terraform
                         mkdir -p ${WORKSPACE}/oci
 
                         mkdir -p ${WORKSPACE}/.ssh
