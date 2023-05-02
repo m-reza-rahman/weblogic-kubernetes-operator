@@ -122,6 +122,7 @@ import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAddress;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.setLabelToNamespace;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -461,19 +462,19 @@ class ItVzDBOperator {
                             .spec(new IngressTraitSpec()
                                 .ingressRules(Arrays.asList(
                                     new IngressRule()
-                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
-                                            .path("/management")
-                                            .pathType("Prefix")))
+                                        .paths(Arrays.asList(
+                                            new oracle.verrazzano.weblogic.Path()
+                                                .path("/management")
+                                                .pathType("Prefix"),
+                                            new oracle.verrazzano.weblogic.Path()
+                                                .path("/console")
+                                                .pathType("Prefix"),
+                                            new oracle.verrazzano.weblogic.Path()
+                                                .path("/em")
+                                                .pathType("Prefix")))
                                         .destination(new Destination()
                                             .host(wlsAdminServerPodName)
-                                            .port(7001)),
-                                    new IngressRule()
-                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
-                                            .path("/em")
-                                            .pathType("Prefix")))
-                                        .destination(new Destination()
-                                            .host(wlsAdminServerPodName)
-                                            .port(7001)))))))), 
+                                            .port(7001)))))))),
                 new Components()
                     .componentName(configmapcomponentname))));
 
@@ -502,6 +503,15 @@ class ItVzDBOperator {
       checkPodReadyAndServiceExists(managedServerName, wlsDomainUid, wlsDomainNamespace);
     }
 
+    // get istio gateway host and loadbalancer address
+    String host = getIstioHost(wlsDomainNamespace);
+    String address = getLoadbalancerAddress();    
+
+    // verify WebLogic console page is accessible through istio/loadbalancer
+    String message = "Oracle WebLogic Server Administration Console";
+    String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
+    assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
+    
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
   }
@@ -682,7 +692,7 @@ class ItVzDBOperator {
         .append(managedServer)
         .append("/JMSRuntime/JMSServers/")
         .append(jmsServer)
-        .append(" " + host + ":443:" + address)
+        .append("/ --resolve " + host + ":443:" + address)
         .append(" --silent --show-error ")
         .append(" -o /dev/null")
         .append(" -w %{http_code});")
@@ -715,7 +725,7 @@ class ItVzDBOperator {
         .append(managedServer)
         .append("/persistentStoreRuntimes/")
         .append(storeName)
-        .append(" " + host + ":443:" + address)
+        .append("/ --resolve " + host + ":443:" + address)
         .append(" --silent --show-error ")
         .append(" -o /dev/null")
         .append(" -w %{http_code});")
@@ -751,7 +761,7 @@ class ItVzDBOperator {
         .append("/JTARuntime/recoveryRuntimeMBeans/")
         .append(recoveryService)
         .append("?fields=active&links=none\"")
-        .append(" " + host + ":443:" + address)
+        .append("/ --resolve " + host + ":443:" + address)
         .append(" --show-error ");
     logger.info("checkJtaRecoveryServiceRuntime: curl command {0}", new String(curlString));
     testUntil(
