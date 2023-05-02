@@ -17,6 +17,7 @@ pipeline {
     environment {
         ocir_host = "${env.WKT_OCIR_HOST}"
         wko_tenancy = "${env.WKT_TENANCY}"
+        wko_region = "${env.WKT_REGION}"
         compartment_id = "${env.WKT_TEST_COMPARTMENT_ID}"
         ocir_creds = 'wkt-ocir-creds'
         oci_profile = 'DEFAULT'
@@ -51,7 +52,7 @@ pipeline {
         CLUSTER_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'parcluster' : 'seqcluster'}"
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
         MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-parallel' : 'oke-sequential'}"
-        availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'VPGL:PHX-AD-3' : 'VPGL:PHX-AD-2'}"
+        availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-3' : 'mFEn:PHX-AD-2'}"
         PARALLEL_RUN = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? true : false}"
     }
 
@@ -256,6 +257,9 @@ pipeline {
 
 
                         sh '''
+                        TENANCY_OCID=`oci iam compartment list --auth=instance_principal --raw-output --query "data[?contains(\"compartment-id\",'.tenancy.')].\"compartment-id\" | [0]"`
+                        echo ${TENANCY_OCID}
+                        export WKT_TENANCY_OCID = ${TENANCY_OCID}
                         mkdir -p ${WORKSPACE}/terraform
                         mkdir -p ${WORKSPACE}/oci
                         cat ${jenkins_home_directory}/.oci/config
@@ -303,7 +307,7 @@ cat > $OCI_PROP_FILE <<EOF
 user.ocid=${USER_OCID}
 okeclustername=${OKE_CLUSTER_NAME}
 tfvars.filename=${OKE_CLUSTER_NAME}
-region=us-phoenix-1
+region=${wko_region}
 tenancy.ocid=${WKT_TENANCY_OCID}
 compartment.ocid=${COMPARTMENT_OCID}
 compartment.name=${compartmentName}
@@ -366,6 +370,7 @@ EOF
                             #chmod 777 ${WORKSPACE}/oci/config
                             export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
                             export OCI_CLI_PROFILE=${oci_profile}
+                            export TF_VAR_config_file_profile=${OCI_CLI_CONFIG_FILE}
                             echo 'Create a OKE cluster ${CLUSTER_NAME}'
 
                             cp -rf ${terraform_script_dir_name}/*.tf ${WORKSPACE}/terraform/.
