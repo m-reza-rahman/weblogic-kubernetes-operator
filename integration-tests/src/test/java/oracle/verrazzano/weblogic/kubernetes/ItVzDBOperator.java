@@ -784,7 +784,7 @@ class ItVzDBOperator {
     assertDoesNotThrow(() -> Files.write(ddlFile, ddlString.getBytes()));
     String destLocation = "/u01/leasing.ddl";
     assertDoesNotThrow(() -> copyFileToPod(namespace,
-        wlPodName, "",
+        wlPodName, "weblogic-server",
         Paths.get(WORK_DIR, "leasing.ddl"),
         Paths.get(destLocation)));
 
