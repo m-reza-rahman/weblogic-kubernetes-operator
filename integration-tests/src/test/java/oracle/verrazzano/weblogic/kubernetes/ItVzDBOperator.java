@@ -462,7 +462,7 @@ class ItVzDBOperator {
                                 .ingressRules(Arrays.asList(
                                     new IngressRule()
                                         .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
-                                            .path("/console")
+                                            .path("/management")
                                             .pathType("Prefix")))
                                         .destination(new Destination()
                                             .host(wlsAdminServerPodName)
