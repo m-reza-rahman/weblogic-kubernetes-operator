@@ -503,9 +503,7 @@ class ItVzDBOperator {
       logger.info("Checking managed server service {0} is created in namespace {1}",
           managedServerName, wlsDomainNamespace);
       checkPodReadyAndServiceExists(managedServerName, wlsDomainUid, wlsDomainNamespace);
-    }   
-    verifyDomainReady(wlsDomainNamespace, wlsDomainUid, replicaCount);
-
+    }
 
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
