@@ -21,7 +21,8 @@ pipeline {
         oci_profile = 'DEFAULT'
         oci_config_file_creds = 'wkotest_oci_config_file'
         oci_signing_key_creds = 'wkotest-oci-signingkey'
-
+        tenacy_ocid = 'WKT_TENANCY_OCID'
+        compartment_id = 'WKT_TEST_COMPARTMENT_OCID'
 
         terraform_property_file = 'tvarsFile'
         compartmentName='test'
@@ -38,8 +39,8 @@ pipeline {
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root = "${outdir}/k8s-pvroot"
         oci_config_file = credentials("${oci_config_file_creds}")
-        WKT_TENANCY_OCID = credentials("${WKT_TENANCY_OCID}")
-        WKT_TEST_COMPARTMENT_OCID = credentials("${WKT_TEST_COMPARTMENT_OCID}")
+        WKT_TENANCY_OCID = credentials("${tenacy_ocid}")
+        WKT_TEST_COMPARTMENT_OCID = credentials("${compartment_id}")
         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
