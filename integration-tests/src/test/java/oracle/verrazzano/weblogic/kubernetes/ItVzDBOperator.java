@@ -685,7 +685,7 @@ class ItVzDBOperator {
     String address = getLoadbalancerAddress();
 
     ExecResult result = null;
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
+    StringBuffer curlString = new StringBuffer("status=$(curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
     curlString.append("https://" + host)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
@@ -718,7 +718,7 @@ class ItVzDBOperator {
     String address = getLoadbalancerAddress();
     
     ExecResult result = null;
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
+    StringBuffer curlString = new StringBuffer("status=$(curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
     curlString.append("https://" + host)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
@@ -753,7 +753,7 @@ class ItVzDBOperator {
     String address = getLoadbalancerAddress();
     
     ExecResult result = null;
-    StringBuffer curlString = new StringBuffer("curl --user "
+    StringBuffer curlString = new StringBuffer("curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
     curlString.append("\"https://" + host)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
@@ -905,7 +905,7 @@ class ItVzDBOperator {
     String host = getIstioHost(namespace);
     String address = getLoadbalancerAddress();
 
-    StringBuffer curlString = new StringBuffer("status=$(curl -k --user ");
+    StringBuffer curlString = new StringBuffer("status=$(curl -sk --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" https://" + host)
         .append(uri)
