@@ -211,6 +211,7 @@ pipeline {
                         withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
                                                         file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
                                            sh "mkdir -p ${jenkins_home_directory}/.oci"
+                                           sh "chmod ${jenkins_home_directory}/.oci"
                                            sh "sed -e \"s:__jenkins_home__:${jenkins_home_directory}:g\" \"\$OCI_CONFIG_FILE\" > ${jenkins_home_directory}/.oci/config"
                                            sh "cp \"\$OCI_SIGNING_KEY\" ${jenkins_home_directory}/.oci/oci-signing-key.pem"
                                        }
@@ -563,13 +564,17 @@ EOF
                     sh '''
                         export PATH="${WORKSPACE}/bin:${PATH}"
                         export KUBECONFIG=${kubeconfig_file}
-                        export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
-                        export OCI_CLI_PROFILE=${oci_profile}
+
+                        #export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
+                        #export OCI_CLI_PROFILE=${oci_profile}
                         echo 'Remove old OKE cluster (if any)...'
 
                         if [ -f "$OCI_PROP_FILE" ] && [ -f "${WORKSPACE}/terraform/oke.delete.sh" ]; then
                             ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
                         fi
+                        rm -f ${jenkins_home_directory}/.oci/config
+                        rm -f ${jenkins_home_directory}/.oci/oci-signing-key.pem
+                        rm -f ${WORKSPACE}/.ssh/*
 
                     '''
                 }
