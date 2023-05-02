@@ -257,8 +257,8 @@ pipeline {
 
 
                         sh '''
-                        TENANCY_OCID=$(grep -Po '(?<=tenancy=).*' ${jenkins_home_directory}/.oci/config
-                        export USER_OCID=$(grep -Po '(?<=user=).*' ${jenkins_home_directory}/.oci/config
+                        TENANCY_OCID=$(grep -Po '(?<=tenancy=).*' ${jenkins_home_directory}/.oci/config)
+                        export USER_OCID=$(grep -Po '(?<=user=).*' ${jenkins_home_directory}/.oci/config)
                         echo "${TENANCY_OCID}"
                         export WKT_TENANCY_OCID = ${TENANCY_OCID}
                         mkdir -p ${WORKSPACE}/terraform
