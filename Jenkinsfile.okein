@@ -198,8 +198,8 @@ pipeline {
                         NODE_SHAPE="VM.Standard2.24"
                         IMAGE_ID="${IMAGE_ID}"
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
-                        FINGERPRINT = wkobuild_cert_fingerprint'
-                        USER_OCID = 'wkobuild_user_ocid'}")'
+                        FINGERPRINT = 'wkobuild_cert_fingerprint'
+                        USER_OCID = 'wkobuild_user_ocid'
                         WKOBUILD_PUBLIC_CERT = 'wkotest_ssh_pubcert'
                         //FINGERPRINT = credentials("${wkobuild_cert_fingerprint}")
                         //USER_OCID = credentials("${wkobuild_user_ocid}")
