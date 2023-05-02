@@ -801,7 +801,7 @@ class ItVzDBOperator {
     ecmd.append(" -p Oradoc_db1");
     ecmd.append(" /u01/leasing.ddl");
     ExecResult execResult = assertDoesNotThrow(() -> execCommand(namespace, wlPodName,
-        null, true, "/bin/sh", "-c", ecmd.toString()));
+        "weblogic-server", true, "/bin/sh", "-c", ecmd.toString()));
     assertEquals(0, execResult.exitValue(), "Could not create the Leasing Table");
   }
 
