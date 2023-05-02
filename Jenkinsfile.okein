@@ -188,7 +188,45 @@ pipeline {
                         '''
                     }
                 }
+                stage('Make Workspace bin directory') {
+                    steps {
+                        sh "mkdir -m777 -p ${WORKSPACE}/bin"
+                    }
+                }
+                stage('Install Helm') {
+                    environment {
+                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                    }
+                    steps {
+                        sh '''
+                            export PATH=${runtime_path}
+                            oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
+                                --name=helm/helm-v${HELM_VERSION}.tar.gz --file=helm.tar.gz
 
+                                #\ --auth=instance_principal --debug
+                            tar zxf helm.tar.gz
+                            mv linux-amd64/helm ${WORKSPACE}/bin/helm
+                            rm -rf linux-amd64
+                            helm version
+                        '''
+                    }
+                }
+
+                stage ('Install kubectl') {
+                    environment {
+                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                    }
+                    steps {
+                        sh '''
+                            export PATH=${runtime_path}
+                            oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
+                                                            --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
+                                                            --auth=instance_principal
+                            chmod +x ${WORKSPACE}/bin/kubectl
+                            kubectl version --client=true
+                        '''
+                    }
+                }
 
                 // Creating terraform property file.
 
@@ -208,6 +246,7 @@ pipeline {
 
                     }
                     steps {
+
                         withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
                                                         file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
                                            sh "mkdir -p ${jenkins_home_directory}/.oci"
@@ -297,44 +336,7 @@ EOF
                     }
                 }
 
-                stage('Make Workspace bin directory') {
-                    steps {
-                        sh "mkdir -m777 -p ${WORKSPACE}/bin"
-                    }
-                }
-                stage('Install Helm') {
-                    environment {
-                        runtime_path = "${WORKSPACE}/bin:${PATH}"
-                    }
-                    steps {
-                        sh '''
-                            export PATH=${runtime_path}
-                            oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
-                                --name=helm/helm-v${HELM_VERSION}.tar.gz --file=helm.tar.gz \
-                                --auth=instance_principal --debug
-                            tar zxf helm.tar.gz
-                            mv linux-amd64/helm ${WORKSPACE}/bin/helm
-                            rm -rf linux-amd64
-                            helm version
-                        '''
-                    }
-                }
 
-                stage ('Install kubectl') {
-                    environment {
-                        runtime_path = "${WORKSPACE}/bin:${PATH}"
-                    }
-                    steps {
-                        sh '''
-                            export PATH=${runtime_path}
-                            oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
-                                                            --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
-                                                            --auth=instance_principal
-                            chmod +x ${WORKSPACE}/bin/kubectl
-                            kubectl version --client=true
-                        '''
-                    }
-                }
 
                 stage('Preparing Integration Test Environment') {
                     steps {
