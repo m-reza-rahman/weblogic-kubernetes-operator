@@ -202,7 +202,7 @@ pipeline {
                             export PATH=${runtime_path}
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
                                 --name=helm/helm-v${HELM_VERSION}.tar.gz --file=helm.tar.gz \
-                                --auth=instance_principal 
+                                --auth=instance_principal
                             tar zxf helm.tar.gz
                             mv linux-amd64/helm ${WORKSPACE}/bin/helm
                             rm -rf linux-amd64
@@ -258,7 +258,7 @@ pipeline {
                         sh '''
                         mkdir -p ${WORKSPACE}/terraform
                         mkdir -p ${WORKSPACE}/oci
-
+                        cat ${jenkins_home_directory}/.oci/config
                         mkdir -p ${WORKSPACE}/.ssh
                         cd ${WORKSPACE}/.ssh
                         ssh-keygen -b 2048 -t rsa -q  -f wkotestkey -N ""
@@ -266,7 +266,7 @@ pipeline {
                         #cp -rf ${oci_config_file} ${WORKSPACE}/oci/config
                         #chmod 777 ${WORKSPACE}/oci/config
                         #sed -i -e "s:@WORKSPACE@:${WORKSPACE}:g" ${WORKSPACE}/oci/config
-                        #export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
+                        #export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
                         #cat ${OCI_CLI_CONFIG_FILE}
                         #export OCI_CLI_PROFILE=${oci_profile}
 
@@ -308,7 +308,7 @@ tenancy.ocid=${WKT_TENANCY_OCID}
 compartment.ocid=${COMPARTMENT_OCID}
 compartment.name=${compartmentName}
 ociapi.pubkey.fingerprint=${FINGERPRINT}
-ocipk.path=${WORKSPACE}/terraform/oci_api_key.pem
+ocipk.path=${jenkins_home_directory}/.oci/oci-signing-key.pem
 vcn.cidr.prefix=${VCN_CIDR_PREFIX}
 vcn.cidr=${VCN_CIDR_PREFIX}.0.0/16
 nodepool.shape=${NODE_SHAPE}
@@ -364,8 +364,8 @@ EOF
 
 
                             #chmod 777 ${WORKSPACE}/oci/config
-                            #export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
-                            #export OCI_CLI_PROFILE=${oci_profile}
+                            export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
+                            export OCI_CLI_PROFILE=${oci_profile}
                             echo 'Create a OKE cluster ${CLUSTER_NAME}'
 
                             cp -rf ${terraform_script_dir_name}/*.tf ${WORKSPACE}/terraform/.
@@ -404,7 +404,7 @@ EOF
                     steps {
                         sh '''
                         export KUBECONFIG=${kubeconfig_file}
-                        export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
+                        export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
                         export OCI_CLI_PROFILE=${oci_profile}
                         export PATH=${runtime_path}
                         compartment_ocid=${compartment_id}
@@ -445,7 +445,7 @@ EOF
                         }
                         sh '''
                             export PATH=${runtime_path}
-                            export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
+                            export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
                             export OCI_CLI_PROFILE=${oci_profile}
                             compartment_ocid=${compartment_id}
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
