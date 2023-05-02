@@ -41,7 +41,7 @@ pipeline {
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root = "${outdir}/k8s-pvroot"
         
-        #WKT_TENANCY_OCID = credentials("${tenacy_ocid}")
+        //WKT_TENANCY_OCID = credentials("${tenacy_ocid}")
         WKT_TENANCY_OCID = 'tbd'
         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
 
