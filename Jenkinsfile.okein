@@ -311,7 +311,7 @@ EOF
                             export PATH=${runtime_path}
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
                                 --name=helm/helm-v${HELM_VERSION}.tar.gz --file=helm.tar.gz \
-                                --auth=instance_principal
+                                --auth=instance_principal --debug
                             tar zxf helm.tar.gz
                             mv linux-amd64/helm ${WORKSPACE}/bin/helm
                             rm -rf linux-amd64
