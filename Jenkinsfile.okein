@@ -40,9 +40,9 @@ pipeline {
         outdir = "${WORKSPACE}/staging"
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root = "${outdir}/k8s-pvroot"
-        oci_config_file = credentials("${oci_config_file_creds}")
-        WKT_TENANCY_OCID = credentials("${tenacy_ocid}")
-        WKT_TEST_COMPARTMENT_OCID = credentials("${compartment_id}")
+        
+        #WKT_TENANCY_OCID = credentials("${tenacy_ocid}")
+        WKT_TENANCY_OCID = 'tbd'
         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
@@ -223,7 +223,7 @@ pipeline {
                         #export OCI_CLI_PROFILE=${oci_profile}
 
 
-                        COMPARTMENT_OCID=${WKT_TEST_COMPARTMENT_OCID}
+                        COMPARTMENT_OCID=${compartment_id}
                         export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
 
                         echo 'Set env vars needed for integration tests...'
@@ -338,7 +338,7 @@ EOF
                 stage('Create OKE cluster') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
-                        oci_config_file = credentials("${oci_config_file_creds}")
+                        
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
                         CLUSTER_NAME="${CLUSTER_NAME}"
                         KUBECONFIG ="${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
@@ -396,7 +396,7 @@ EOF
                         export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
                         export OCI_CLI_PROFILE=${oci_profile}
                         export PATH=${runtime_path}
-                        compartment_ocid=${WKT_TEST_COMPARTMENT_OCID}
+                        compartment_ocid=${compartment_id}
                         echo "creating storage class to setup OFSS ..."
                         echo "getting MountTarget ID"
                         mount_target_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`
@@ -436,7 +436,7 @@ EOF
                             export PATH=${runtime_path}
                             export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
                             export OCI_CLI_PROFILE=${oci_profile}
-                            compartment_ocid=${WKT_TEST_COMPARTMENT_OCID}
+                            compartment_ocid=${compartment_id}
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             cp ${OKE_SSH_PRIVATE_KEY} ${WORKSPACE}/rsaokepk
                             chmod 600 ${WORKSPACE}/rsaokepk
