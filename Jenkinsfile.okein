@@ -32,8 +32,8 @@ pipeline {
         wkobuild_cert_fingerprint = 'wkotestcert_fingerprint'
         wkobuild_user_ocid = 'wkotest-user-ocid'
 
-        wkotest_ssh_pubcert = '${WORKSPACE}/.ssh/wkotestkey.pub'
-        wkotest_ssh_pk = '${WORKSPACE}/.ssh/wkotestkey'
+        wkotest_ssh_pubcert = "${WORKSPACE}/.ssh/wkotestkey.pub"
+        wkotest_ssh_pk = "${WORKSPACE}/.ssh/wkotestkey"
 
         OKE_CLUSTER='true'
 
