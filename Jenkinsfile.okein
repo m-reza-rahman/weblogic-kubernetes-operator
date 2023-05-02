@@ -257,7 +257,7 @@ pipeline {
 
 
                         sh '''
-                        TENANCY_OCID=`oci iam compartment list --auth=instance_principal --raw-output --query "data[?contains(\"compartment-id\",'.tenancy.')].\"compartment-id\" | [0]"`
+                        TENANCY_OCID=`oci iam compartment list  --raw-output --query "data[?contains(\"compartment-id\",'.tenancy.')].\"compartment-id\" | [0]"`
                         echo "${TENANCY_OCID}"
                         export WKT_TENANCY_OCID = ${TENANCY_OCID}
                         mkdir -p ${WORKSPACE}/terraform
