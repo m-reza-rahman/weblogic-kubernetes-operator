@@ -17,12 +17,14 @@ pipeline {
     environment {
         ocir_host = "${env.WKT_OCIR_HOST}"
         wko_tenancy = "${env.WKT_TENANCY}"
+        compartment_id = "${env.WKT_TEST_COMPARTMENT_ID}"
         ocir_creds = 'wkt-ocir-creds'
         oci_profile = 'DEFAULT'
-        oci_config_file_creds = 'wkotest_oci_config_file'
-        oci_signing_key_creds = 'wkotest-oci-signingkey'
-        tenacy_ocid = 'WKT_TENANCY_OCID'
-        compartment_id = 'WKT_TEST_COMPARTMENT_OCID'
+        jenkins_user = sh(returnStdout: true, script: "id -nu").trim()
+        jenkins_home_directory = sh(returnStdout: true, script: "getent passwd ${jenkins_user} | cut -d: -f6").trim()
+        oci_profile = 'DEFAULT'
+        oci_config_file_creds = 'wkt-oci-config-file'
+        oci_signing_key_creds = 'wkt-oci-signing-key'
 
         terraform_property_file = 'tvarsFile'
         compartmentName='test'
@@ -203,24 +205,22 @@ pipeline {
 
                     }
                     steps {
+                        withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
+                                                        file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
+                                           sh "mkdir -p ${jenkins_home_directory}/.oci"
+                                           sh "sed -e \"s:__jenkins_home__:${jenkins_home_directory}:g\" \"\$OCI_CONFIG_FILE\" > ${jenkins_home_directory}/.oci/config"
+                                           sh "cp \"\$OCI_SIGNING_KEY\" ${jenkins_home_directory}/.oci/oci-signing-key.pem"
+                                       }
 
-                        withCredentials([file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
-
-
-                                                sh "mkdir -p ${WORKSPACE}/terraform"
-                                                sh "cp \"\$OCI_SIGNING_KEY\" ${WORKSPACE}/terraform/oci_api_key.pem"
-                                                sh " ls -al ${WORKSPACE}/terraform/*"
-                                                sh "chmod 666 ${WORKSPACE}/terraform/oci_api_key.pem"
-                        }
 
                         sh '''
                         mkdir -p ${WORKSPACE}/oci
-                        cp -rf ${oci_config_file} ${WORKSPACE}/oci/config
-                        chmod 777 ${WORKSPACE}/oci/config
-                        sed -i -e "s:@WORKSPACE@:${WORKSPACE}:g" ${WORKSPACE}/oci/config
-                        export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
-                        cat ${OCI_CLI_CONFIG_FILE}
-                        export OCI_CLI_PROFILE=${oci_profile}
+                        #cp -rf ${oci_config_file} ${WORKSPACE}/oci/config
+                        #chmod 777 ${WORKSPACE}/oci/config
+                        #sed -i -e "s:@WORKSPACE@:${WORKSPACE}:g" ${WORKSPACE}/oci/config
+                        #export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
+                        #cat ${OCI_CLI_CONFIG_FILE}
+                        #export OCI_CLI_PROFILE=${oci_profile}
 
 
                         COMPARTMENT_OCID=${WKT_TEST_COMPARTMENT_OCID}
@@ -352,9 +352,9 @@ EOF
                             export KUBECONFIG=${KUBECONFIG}
 
 
-                            chmod 777 ${WORKSPACE}/oci/config
-                            export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
-                            export OCI_CLI_PROFILE=${oci_profile}
+                            #chmod 777 ${WORKSPACE}/oci/config
+                            #export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
+                            #export OCI_CLI_PROFILE=${oci_profile}
                             echo 'Create a OKE cluster ${CLUSTER_NAME}'
 
                             cp -rf ${terraform_script_dir_name}/*.tf ${WORKSPACE}/terraform/.
