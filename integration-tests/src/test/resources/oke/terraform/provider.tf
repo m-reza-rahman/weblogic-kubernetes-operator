@@ -10,6 +10,13 @@ variable "region" {
   default = "us-phoenix-1"
 }
 
+variable "tenancy_ocid" {
+}
+
+variable "user_ocid" {
+}
+
+
 terraform {
     required_providers {
         oci = {

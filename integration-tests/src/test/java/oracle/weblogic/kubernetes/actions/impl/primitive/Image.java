@@ -4,11 +4,11 @@
 package oracle.weblogic.kubernetes.actions.impl.primitive;
 
 
-import java.util.Base64;
-
 import com.google.gson.JsonObject;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+
+import java.util.Base64;
 
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
@@ -26,7 +26,7 @@ public class Image {
    * @return true if successful
    */
   public static boolean login(String registryName, String username, String password) {
-    String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p \"%s\"",
+    String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p '%s'",
         registryName, username, password);
     return Command
         .withParams(new CommandParams()
