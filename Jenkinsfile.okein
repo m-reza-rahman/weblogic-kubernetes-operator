@@ -222,7 +222,7 @@ pipeline {
 
                         mkdir -p ${WORKSPACE}/.ssh
                         cd ${WORKSPACE}/.ssh
-                        ssh-keygen -b 2048 -t rsa -q  -f ${wkotest_ssh_pk} -N ""
+                        ssh-keygen -b 2048 -t rsa -q  -f wkotestkey -N ""
                         chmod 600 ${wkotest_ssh_pk}
                         #cp -rf ${oci_config_file} ${WORKSPACE}/oci/config
                         #chmod 777 ${WORKSPACE}/oci/config
