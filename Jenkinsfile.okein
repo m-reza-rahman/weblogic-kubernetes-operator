@@ -259,6 +259,7 @@ pipeline {
                         sh '''
                         TENANCY_OCID=$(grep -Po '(?<=tenancy=).*' ${jenkins_home_directory}/.oci/config)
                         USER_OCID=$(grep -Po '(?<=user=).*' ${jenkins_home_directory}/.oci/config)
+                        FINGERPRINT=$(grep -Po '(?<=fingerprint=).*' ${jenkins_home_directory}/.oci/config)
                         echo "${TENANCY_OCID}"
                         export WKT_TENANCY_OCID=${TENANCY_OCID}
                         export WKT_USER_OCID=${USER_OCID}
@@ -373,7 +374,7 @@ EOF
                             #chmod 777 ${WORKSPACE}/oci/config
                             export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
                             export OCI_CLI_PROFILE=${oci_profile}
-                            export TF_VAR_config_file_profile=${OCI_CLI_CONFIG_FILE}
+
                             echo 'Create a OKE cluster ${CLUSTER_NAME}'
 
                             cp -rf ${terraform_script_dir_name}/*.tf ${WORKSPACE}/terraform/.
