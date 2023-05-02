@@ -63,7 +63,7 @@ pipeline {
                defaultValue: ''
         )
 
-        string(name: 'KUBE_VERSION',
+        string(name: 'OKE_KUBE_VERSION',
                description: 'kube version for oke cluster',
                defaultValue: '1.25.4'
         )
@@ -320,7 +320,7 @@ vcn.cidr.prefix=${VCN_CIDR_PREFIX}
 vcn.cidr=${VCN_CIDR_PREFIX}.0.0/16
 nodepool.shape=${NODE_SHAPE}
 nodepool.imagename=${IMAGE_ID}
-k8s.version=v${KUBE_VERSION}
+k8s.version=v${OKE_KUBE_VERSION}
 nodepool.ssh.pubkey=${ssh_pubkey}
 terraform.installdir=${WORKSPACE}/terraform/terraforminstall
 EOF
