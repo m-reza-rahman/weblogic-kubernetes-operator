@@ -258,7 +258,7 @@ pipeline {
 
                         sh '''
                         TENANCY_OCID=`oci iam compartment list --auth=instance_principal --raw-output --query "data[?contains(\"compartment-id\",'.tenancy.')].\"compartment-id\" | [0]"`
-                        echo ${TENANCY_OCID}
+                        echo "${TENANCY_OCID}"
                         export WKT_TENANCY_OCID = ${TENANCY_OCID}
                         mkdir -p ${WORKSPACE}/terraform
                         mkdir -p ${WORKSPACE}/oci
@@ -323,7 +323,8 @@ terraform.installdir=${WORKSPACE}/terraform/terraforminstall
 EOF
 
                         ##################
-
+                        echo "prop files "
+                        cat $OCI_PROP_FILE
                         cp -rf ${WORKSPACE}/kubernetes/samples/scripts/terraform/template.tfvars ${WORKSPACE}/terraform/.
                         mkdir -p ${WORKSPACE}/terraform/terraforminstall
                         '''
