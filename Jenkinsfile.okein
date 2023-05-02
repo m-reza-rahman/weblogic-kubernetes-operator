@@ -32,8 +32,8 @@ pipeline {
         wkobuild_cert_fingerprint = 'wkotestcert_fingerprint'
         wkobuild_user_ocid = 'wkotest-user-ocid'
 
-        wkotest_ssh_pubcert = 'wkotest_ssh_pubcert'
-        oke_test_ssh_pk = 'wkotest_ssh_pk'
+        wkotest_ssh_pubcert = '${WORKSPACE}/.ssh/wkotestkey.pub'
+        wkotest_ssh_pk = '${WORKSPACE}/.ssh/wkotestkey'
 
         OKE_CLUSTER='true'
 
@@ -200,7 +200,7 @@ pipeline {
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
                         FINGERPRINT = 'wkobuild_cert_fingerprint'
                         USER_OCID = 'wkobuild_user_ocid'
-                        WKOBUILD_PUBLIC_CERT = 'wkotest_ssh_pubcert'
+                        WKOBUILD_PUBLIC_CERT = ${wkotest_ssh_pubcert}
                         //FINGERPRINT = credentials("${wkobuild_cert_fingerprint}")
                         //USER_OCID = credentials("${wkobuild_user_ocid}")
                         //WKOBUILD_PUBLIC_CERT = credentials("${wkotest_ssh_pubcert}")
@@ -218,6 +218,10 @@ pipeline {
 
                         sh '''
                         mkdir -p ${WORKSPACE}/oci
+
+                        mkdir -p ${WORKSPACE}/.ssh
+                        cd ${WORKSPACE}/.ssh
+                        ssh-keygen -b 2048 -t rsa -q  -f ${wkotest_ssh_pk} -N ""
                         #cp -rf ${oci_config_file} ${WORKSPACE}/oci/config
                         #chmod 777 ${WORKSPACE}/oci/config
                         #sed -i -e "s:@WORKSPACE@:${WORKSPACE}:g" ${WORKSPACE}/oci/config
@@ -248,7 +252,7 @@ pipeline {
 
                         #export IMAGE_TAG_WEBLOGIC="12.2.1.4"
                         #export IMAGE_TAG_FMWINFRA="12.2.1.4"
-                        ssh_pubkey=`cat ${WKOBUILD_PUBLIC_CERT}`
+                        ssh_pubkey=`cat ${wkotest_ssh_pubcert}`
 
                         #################
                         echo "Generating property file oci.prop for terraform scripts"
@@ -416,7 +420,7 @@ EOF
                 stage('Run integration tests') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
-                        OKE_SSH_PRIVATE_KEY = credentials("${oke_test_ssh_pk}")
+                        OKE_SSH_PRIVATE_KEY = "${wkotest_ssh_pk}"
                         clusterName = "${CLUSTER_NAME}"
                         FSS_DIR = "/oketest1,/oketest2,/oketest3,/oketest4,/oketest5,/oketest6,/oketest7,/oketest8,/oketest9,/oketest10,/oketest11,/oketest12,/oketest13,/oketest14,/oketest15"
 
