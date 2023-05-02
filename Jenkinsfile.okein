@@ -38,6 +38,8 @@ pipeline {
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root = "${outdir}/k8s-pvroot"
         oci_config_file = credentials("${oci_config_file_creds}")
+        WKT_TENANCY_OCID = credentials("${WKT_TENANCY_OCID}")
+        WKT_TEST_COMPARTMENT_OCID = credentials("${WKT_TEST_COMPARTMENT_OCID}")
         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
@@ -218,9 +220,9 @@ pipeline {
                         export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
                         cat ${OCI_CLI_CONFIG_FILE}
                         export OCI_CLI_PROFILE=${oci_profile}
-                        TENANCY_OCID=`oci iam compartment list --raw-output --query "data[?contains(\"compartment-id\",'.tenancy.')].\"compartment-id\" | [0]"`
 
-                        COMPARTMENT_OCID=`oci iam compartment list --all --compartment-id-in-subtree=true | jq -r ".data[] | select(.name == \"${compartmentName}\") | .id"`
+
+                        COMPARTMENT_OCID=${WKT_TEST_COMPARTMENT_OCID}
                         export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
 
                         echo 'Set env vars needed for integration tests...'
@@ -253,7 +255,7 @@ user.ocid=${USER_OCID}
 okeclustername=${OKE_CLUSTER_NAME}
 tfvars.filename=${OKE_CLUSTER_NAME}
 region=us-phoenix-1
-tenancy.ocid=${TENANCY_OCID}
+tenancy.ocid=${WKT_TENANCY_OCID}
 compartment.ocid=${COMPARTMENT_OCID}
 compartment.name=${compartmentName}
 ociapi.pubkey.fingerprint=${FINGERPRINT}
@@ -393,7 +395,7 @@ EOF
                         export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
                         export OCI_CLI_PROFILE=${oci_profile}
                         export PATH=${runtime_path}
-                        compartment_ocid=`oci iam compartment list --all --compartment-id-in-subtree=true | jq -r ".data[] | select(.name == \"${compartmentName}\") | .id"`
+                        compartment_ocid=${WKT_TEST_COMPARTMENT_OCID}
                         echo "creating storage class to setup OFSS ..."
                         echo "getting MountTarget ID"
                         mount_target_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`
@@ -433,7 +435,7 @@ EOF
                             export PATH=${runtime_path}
                             export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
                             export OCI_CLI_PROFILE=${oci_profile}
-                            compartment_ocid=`oci iam compartment list --all --compartment-id-in-subtree=true | jq -r ".data[] | select(.name == \"${compartmentName}\") | .id"`
+                            compartment_ocid=${WKT_TEST_COMPARTMENT_OCID}
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             cp ${OKE_SSH_PRIVATE_KEY} ${WORKSPACE}/rsaokepk
                             chmod 600 ${WORKSPACE}/rsaokepk
