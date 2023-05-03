@@ -95,6 +95,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
@@ -178,6 +179,10 @@ class ItVzDBOperator {
   private final Path domainLifecycleSamplePath = Paths.get(samplePath + "/scripts/domain-lifecycle");
   private final String fmwClusterResName = fmwDomainUid + "-" + clusterName;
   private final String wlsClusterResName = wlsDomainUid + "-" + clusterName;
+  
+  final String forardHostName = "localhost";
+  final int adminServerPort = 7001;
+  String forwardedPortNo;
 
   /**
    * Start DB service and create RCU schema.
@@ -534,6 +539,8 @@ class ItVzDBOperator {
    * Verify JMS/JTA Service is migrated to an available active server.
    */
   private void testMiiJmsJtaServiceMigration() {
+
+    forwardedPortNo = startPortForwardProcess(forardHostName, wlsDomainNamespace, wlsDomainUid, adminServerPort);
     
     // build the standalone JMS Client on Admin pod
     String destLocation = "/u01/JmsSendReceiveClient.java";
@@ -680,19 +687,15 @@ class ItVzDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkJmsServerRuntime(String jmsServer, String managedServer) {
-    // get istio gateway host and loadbalancer address
-    String host = getIstioHost(wlsDomainNamespace);
-    String address = getLoadbalancerAddress();
 
     ExecResult result = null;
     StringBuffer curlString = new StringBuffer("status=$(curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("https://" + host)
+    curlString.append("http://" + forardHostName + ":" + forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JMSRuntime/JMSServers/")
-        .append(jmsServer)
-        .append("/ --resolve " + host + ":443:" + address)
+        .append(jmsServer)        
         .append(" --silent --show-error ")
         .append(" -o /dev/null")
         .append(" -w %{http_code});")
@@ -713,19 +716,15 @@ class ItVzDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkStoreRuntime(String storeName, String managedServer) {
-    // get istio gateway host and loadbalancer address
-    String host = getIstioHost(wlsDomainNamespace);
-    String address = getLoadbalancerAddress();
-    
+   
     ExecResult result = null;
     StringBuffer curlString = new StringBuffer("status=$(curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("https://" + host)
+    curlString.append("http://" + forardHostName + ":" + forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/persistentStoreRuntimes/")
-        .append(storeName)
-        .append("/ --resolve " + host + ":443:" + address)
+        .append(storeName)        
         .append(" --silent --show-error ")
         .append(" -o /dev/null")
         .append(" -w %{http_code});")
@@ -748,20 +747,16 @@ class ItVzDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkJtaRecoveryServiceRuntime(String managedServer, String recoveryService, String active) {
-    // get istio gateway host and loadbalancer address
-    String host = getIstioHost(wlsDomainNamespace);
-    String address = getLoadbalancerAddress();
     
     ExecResult result = null;
     StringBuffer curlString = new StringBuffer("curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("\"https://" + host)
+    curlString.append("http://" + forardHostName + ":" + forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JTARuntime/recoveryRuntimeMBeans/")
         .append(recoveryService)
         .append("?fields=active&links=none\"")
-        .append("/ --resolve " + host + ":443:" + address)
         .append(" --show-error ");
     logger.info("checkJtaRecoveryServiceRuntime: curl command {0}", new String(curlString));
     testUntil(
