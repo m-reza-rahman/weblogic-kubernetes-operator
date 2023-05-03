@@ -46,6 +46,7 @@ import oracle.weblogic.domain.OnlineUpdate;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
@@ -646,6 +647,7 @@ class ItVzDBOperator {
     if (!SKIP_CLEANUP) {
       deleteOracleDB(dbNamespace, dbName);
       uninstallDBOperator(dbNamespace);
+      Kubernetes.deletePv(pvName);
     }
   }
 
