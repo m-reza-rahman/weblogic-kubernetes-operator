@@ -408,8 +408,6 @@ class ItVzDBOperator {
         String.format("createSecret failed for %s", dbSecretName));
     
     String configMapName = "jdbc-jms-recovery-configmap";
-    //createConfigMapAndVerify(configMapName, wlsDomainUid, wlsDomainNamespace, 
-    //    Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
     String configmapcomponentname = "comp-" + configMapName;
     VerrazzanoUtils.createVzConfigmapComponent(configmapcomponentname, configMapName, wlsDomainNamespace,
         wlsDomainUid, Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
@@ -788,8 +786,7 @@ class ItVzDBOperator {
         wlPodName, "weblogic-server",
         Paths.get(WORK_DIR, "leasing.ddl"),
         Paths.get(destLocation)));
-
-    //String cpUrl = "jdbc:oracle:thin:@//" + K8S_NODEPORT_HOST + ":"
+    
     String cpUrl = "jdbc:oracle:thin:@//" + dbUrl;
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
     StringBuffer ecmd = new StringBuffer("java -cp ");

@@ -833,8 +833,7 @@ public class DbUtils {
     assertTrue(secretCreated, String.format("create secret failed for %s", secretName));
 
     createTestRepoSecret(namespace);
-
-    //createHostPathProvisioner(namespace, hostPath);
+    
     final String pvName = getUniqueName(dbName + "-pv");
     createPV(pvName);
 
@@ -918,8 +917,7 @@ public class DbUtils {
     assertTrue(secretCreated, String.format("create secret failed for %s", secretName));
 
     createTestRepoSecret(namespace);
-
-    //createHostPathProvisioner(namespace, hostPath);
+    
     final String pvName = getUniqueName(dbName + "-pv");
     createPV(pvName);
 
