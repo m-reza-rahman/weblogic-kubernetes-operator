@@ -747,7 +747,7 @@ class ItVzDBOperator {
     ExecResult result = null;
     StringBuffer curlString = new StringBuffer("curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + forardHostName + ":" + forwardedPortNo)
+    curlString.append("\"http://" + forardHostName + ":" + forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JTARuntime/recoveryRuntimeMBeans/")

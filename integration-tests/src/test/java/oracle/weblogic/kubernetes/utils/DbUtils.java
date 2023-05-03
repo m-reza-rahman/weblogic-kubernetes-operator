@@ -71,7 +71,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DB_19C_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_PREBUILT_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DB_OPERATOR_IMAGE;
+import static oracle.weblogic.kubernetes.TestConstants.DB_PREBUILT_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -890,6 +892,90 @@ public class DbUtils {
     return dbUrl;
   }
 
+  /**
+   * Create Oracle database using Oracle Database Operator.
+   * @param dbName name of the database
+   * @param sysPassword Oracle database admin password
+   * @param namespace namespace in which to create Oracle Database
+   * @return database url
+   * @throws ApiException when fails to create various database artifacts
+   * @throws IOException when fails to open database yaml file
+   */
+  public static String createOraclePrebuiltDBUsingOperator(String dbName, String sysPassword,
+      String namespace) throws ApiException, IOException {
+
+    LoggingFacade logger = getLogger();
+    final String DB_PREBUILT_IMAGE = DB_PREBUILT_IMAGE_NAME + ":" + DB_IMAGE_PREBUILT_TAG;    
+    String secretName = "db-password";
+    String secretKey = "password";
+    Map<String, String> secretMap = new HashMap<>();
+    secretMap.put(secretKey, sysPassword);
+    boolean secretCreated = assertDoesNotThrow(() -> createSecret(new V1Secret()
+        .metadata(new V1ObjectMeta()
+            .name(secretName)
+            .namespace(namespace))
+        .stringData(secretMap)), "Create secret failed with ApiException");
+    assertTrue(secretCreated, String.format("create secret failed for %s", secretName));
+
+    createTestRepoSecret(namespace);
+
+    //createHostPathProvisioner(namespace, hostPath);
+    final String pvName = getUniqueName(dbName + "-pv");
+    createPV(pvName);
+
+    Path dbYaml = Paths.get(DOWNLOAD_DIR, namespace, "oracledb.yaml");
+    Files.createDirectories(dbYaml.getParent());
+    Files.deleteIfExists(dbYaml);
+    FileUtils.copy(Paths.get(RESOURCE_DIR, "dboperator", "singleinstancedatabase.yaml"), dbYaml);
+
+    replaceStringInFile(dbYaml.toString(), "name: DB_IMAGE_PREBUILT_TAG", "name: " + dbName);
+    replaceStringInFile(dbYaml.toString(), "namespace: default", "namespace: " + namespace);
+    replaceStringInFile(dbYaml.toString(), "pullFrom: container-registry.oracle.com/database/express:latest", 
+        "pullFrom: " + DB_PREBUILT_IMAGE);
+    replaceStringInFile(dbYaml.toString(), "pullSecrets:", "pullSecrets: " + BASE_IMAGES_REPO_SECRET_NAME);
+    replaceStringInFile(dbYaml.toString(), "storageClass: \"oci-bv\"",
+        "storageClass: \"weblogic-domain-storage-class\"");
+    replaceStringInFile(dbYaml.toString(), "accessMode: \"ReadWriteOnce\"", "accessMode: \"ReadWriteMany\"");
+    replaceStringInFile(dbYaml.toString(), "volumeName: \"\"", "volumeName: \"" + pvName + "\"");
+    
+
+    logger.info("Creating Oracle database using yaml file\n {0}", Files.readString(dbYaml));
+    CommandParams params = new CommandParams().defaults();
+    params.command(KUBERNETES_CLI + " create -f " + dbYaml.toString());
+    boolean response = Command.withParams(params).execute();
+    assertTrue(response, "Failed to create Oracle database");
+
+    checkServiceExists(dbName, namespace);
+
+    ConditionFactory withLongRetryPolicy = with().pollDelay(2, SECONDS)
+        .and().with().pollInterval(10, SECONDS)
+        .atMost(25, MINUTES).await();
+
+    // wait for the pod to be ready
+    logger.info("Wait for the database {0} pod to be ready in namespace {1}", dbName, namespace);
+    testUntil(withLongRetryPolicy,
+        assertDoesNotThrow(()
+            -> podIsReady(namespace, null, dbName), "Checking for database pod ready threw exception"),
+        logger, "Waiting for database {0} to be ready in namespace {1}", dbName, namespace);
+
+    String command = KUBERNETES_CLI + " get singleinstancedatabase -n "
+        + namespace + " " + dbName + " -o=jsonpath='{.status.pdbConnectString}'";
+
+    getLogger().info("Running {0}", command);
+    String dbUrl;
+    try {
+      ExecResult result = ExecCommand.exec(command, true);
+      dbUrl = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+      return null;
+    }
+    return dbUrl;
+  }
+  
   /**
    * Delete Oracle database created by operator.
    * @param namespace namespace in which DB is running.
