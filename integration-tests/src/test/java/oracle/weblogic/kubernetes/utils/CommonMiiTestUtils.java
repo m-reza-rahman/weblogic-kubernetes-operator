@@ -1106,7 +1106,7 @@ public class CommonMiiTestUtils {
     LoggingFacade logger = getLogger();
 
     if (!OKD) {
-      logger.info("Running Kubernetes job to create domain");
+      logger.info("Running Kubernetes job to change permission on hostpath");
       V1Job jobBody = new V1Job()
           .metadata(
               new V1ObjectMeta()

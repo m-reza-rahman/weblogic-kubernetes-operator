@@ -507,16 +507,14 @@ class ItVzDBOperator {
           managedServerName, wlsDomainNamespace);
       checkPodReadyAndServiceExists(managedServerName, wlsDomainUid, wlsDomainNamespace);
     }
-
-    // get istio gateway host and loadbalancer address
-    String host = getIstioHost(wlsDomainNamespace);
-    String address = getLoadbalancerAddress();    
+    
+    forwardedPortNo = startPortForwardProcess(forardHostName, wlsDomainNamespace, wlsDomainUid, adminServerPort);
 
     // verify WebLogic console page is accessible through istio/loadbalancer
     String message = "Oracle WebLogic Server Administration Console";
-    String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
+    String consoleUrl = "http://" + forardHostName + ":" + forwardedPortNo + "/console/login/LoginForm.jsp";
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
-    
+
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
   }
@@ -539,8 +537,6 @@ class ItVzDBOperator {
    * Verify JMS/JTA Service is migrated to an available active server.
    */
   private void testMiiJmsJtaServiceMigration() {
-
-    forwardedPortNo = startPortForwardProcess(forardHostName, wlsDomainNamespace, wlsDomainUid, adminServerPort);
     
     // build the standalone JMS Client on Admin pod
     String destLocation = "/u01/JmsSendReceiveClient.java";
