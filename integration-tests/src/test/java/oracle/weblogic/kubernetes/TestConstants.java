@@ -409,11 +409,11 @@ public interface TestConstants {
   public static final String ORACLE_DB_SECRET_NAME = "oracle-db-secret";
 
   // Oracle database operator constants
-  public static final String ORACLE_DB_OPERATOR_RELEASE_LATEST = "release/0.2.0";
+  public static final String ORACLE_DB_OPERATOR_RELEASE_LATEST = "release/0.2.1";
   public static final String ORACLE_DB_OPERATOR_RELEASE =
       getNonEmptySystemProperty("wko.it.oracle.db.operator.release", ORACLE_DB_OPERATOR_RELEASE_LATEST);
   public static final String DB_OPERATOR_IMAGE = BASE_IMAGES_REPO + "/" + BASE_IMAGES_TENANCY
-      + "/test-images/database/operator:0.2.0";
+      + "/test-images/database/operator:0.2.1";
   public static final String CERT_MANAGER
       = "https://github.com/jetstack/cert-manager/releases/latest/download/cert-manager.yaml";
   public static final String DB_OPERATOR_YAML_URL = "https://raw.githubusercontent.com/"
