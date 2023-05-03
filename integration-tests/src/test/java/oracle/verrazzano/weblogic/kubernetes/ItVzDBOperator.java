@@ -54,7 +54,6 @@ import oracle.weblogic.kubernetes.utils.FmwUtils;
 import oracle.weblogic.kubernetes.utils.VerrazzanoUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Tag;
@@ -238,7 +237,6 @@ class ItVzDBOperator {
    * exists for both admin server and managed servers. Verify EM console is accessible.
    */
   @Test
-  @Disabled
   @DisplayName("Create FMW Domain model in image")
   void  testFmwModelInImageWithDbOperator() {
 
