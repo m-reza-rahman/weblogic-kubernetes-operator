@@ -125,9 +125,14 @@ public interface TestConstants {
 
   // Get DB_IMAGE_NAME/DB_IMAGE_TAG from env var, if its not provided and
   // if base images repo is OCIR use OCIR default image values
-  public static final String DB_IMAGE_NAME = BASE_IMAGES_REPO + "/" + BASE_IMAGES_TENANCY + "/"
-      + getNonEmptySystemProperty("wko.it.db.image.name", DB_IMAGE_NAME_DEFAULT);
+  public static final String DB_IMAGE_NAME
+      = BASE_IMAGES_REPO + "/" + getNonEmptySystemProperty("wko.it.db.image.name",
+          DB_IMAGE_NAME_DEFAULT);
+  public static final String DB_PREBUILT_IMAGE_NAME
+      = BASE_IMAGES_REPO + "/" + getNonEmptySystemProperty("wko.it.db.prebuilt.image.name",
+          "container-registry.oracle.com/database/express");
   public static final String DB_IMAGE_TAG = getNonEmptySystemProperty("wko.it.db.image.tag", DB_IMAGE_TAG_DEFAULT);
+  public static final String DB_IMAGE_PREBUILT_TAG = getNonEmptySystemProperty("wko.it.db.image.tag", "18.4.0-xe");
 
   // WebLogic Base Image with Japanese Locale
   public static final String LOCALE_IMAGE_NAME = TEST_IMAGES_REPO + "/" + TEST_IMAGES_TENANCY + "/test-images/weblogic";
