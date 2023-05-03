@@ -80,6 +80,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
+import static oracle.weblogic.kubernetes.actions.TestActions.patchClusterCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Command.defaultCommandParams;
@@ -607,7 +608,7 @@ class ItVzDBOperator {
 
     // Restart the managed server(2) to make sure the JTA Recovery Service is
     // migrated back to original hosting server
-    restartManagedServer("managed-server2");
+    startManagedServer();
     assertTrue(checkJtaRecoveryServiceRuntime("managed-server2",
         "managed-server2", "true"),
         "JTARecoveryService@managed-server2 is not on managed-server2 after restart");
@@ -651,16 +652,16 @@ class ItVzDBOperator {
   }
 
   // Restart the managed-server
-  private void restartManagedServer(String serverName) {
-    String commonParameters = " -d " + wlsDomainUid + " -n " + wlsDomainNamespace;
-    boolean result;
-    CommandParams params = new CommandParams().defaults();
-    String script = "startServer.sh";
-    params.command("sh "
-        + Paths.get(domainLifecycleSamplePath.toString(), "/" + script).toString()
-        + commonParameters + " -s " + serverName);
-    result = Command.withParams(params).execute();
-    assertTrue(result, "Failed to execute script " + script);
+  private void startManagedServer() {
+    String patchStr
+        = "["
+        + "{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": 2}"
+        + "]";
+    V1Patch patch = new V1Patch(patchStr);
+    logger.info("Patching cluster resource using patch string {0} ", patchStr);
+
+    assertTrue(patchClusterCustomResource(wlsClusterResName, wlsDomainNamespace,
+        patch, V1Patch.PATCH_FORMAT_JSON_PATCH), "Failed to patch cluster");
     checkPodReadyAndServiceExists(wlsManagedServerPrefix + "2", wlsDomainUid, wlsDomainNamespace);
   }
 
