@@ -97,6 +97,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
@@ -120,8 +121,6 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
-import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAddress;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.setLabelToNamespace;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -180,9 +179,9 @@ class ItVzDBOperator {
   private final String fmwClusterResName = fmwDomainUid + "-" + clusterName;
   private final String wlsClusterResName = wlsDomainUid + "-" + clusterName;
   
-  final String forardHostName = "localhost";
+  static final String forwardHostName = "localhost";
   final int adminServerPort = 7001;
-  String forwardedPortNo;
+  static String forwardedPortNo;
 
   /**
    * Start DB service and create RCU schema.
@@ -366,11 +365,14 @@ class ItVzDBOperator {
     assertDoesNotThrow(() -> createComponent(component));
     logger.info("Deploying application");
     assertDoesNotThrow(() -> createApplication(application));
+    forwardedPortNo = startPortForwardProcess(forwardHostName, fmwDomainNamespace, fmwDomainUid, adminServerPort);
 
     verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
-    verifyEMconsoleAccess(fmwDomainNamespace, "/em", "200");
+    verifyEMconsoleAccess("/em", "200");
     //Reuse the same RCU schema to restart JRF domain
     testReuseRCUschemaToRestartDomain();
+    
+    stopPortForwardProcess(fmwDomainNamespace);
 
   }
 
@@ -505,15 +507,17 @@ class ItVzDBOperator {
       checkPodReadyAndServiceExists(managedServerName, wlsDomainUid, wlsDomainNamespace);
     }
     
-    forwardedPortNo = startPortForwardProcess(forardHostName, wlsDomainNamespace, wlsDomainUid, adminServerPort);
+    forwardedPortNo = startPortForwardProcess(forwardHostName, wlsDomainNamespace, wlsDomainUid, adminServerPort);
 
     // verify WebLogic console page is accessible through istio/loadbalancer
     String message = "Oracle WebLogic Server Administration Console";
-    String consoleUrl = "http://" + forardHostName + ":" + forwardedPortNo + "/console/login/LoginForm.jsp";
+    String consoleUrl = "http://" + forwardHostName + ":" + forwardedPortNo + "/console/login/LoginForm.jsp";
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
 
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
+    
+    stopPortForwardProcess(wlsDomainNamespace);
   }
 
   /**
@@ -684,7 +688,7 @@ class ItVzDBOperator {
     ExecResult result = null;
     StringBuffer curlString = new StringBuffer("status=$(curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + forardHostName + ":" + forwardedPortNo)
+    curlString.append("http://" + forwardHostName + ":" + forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JMSRuntime/JMSServers/")
@@ -713,7 +717,7 @@ class ItVzDBOperator {
     ExecResult result = null;
     StringBuffer curlString = new StringBuffer("status=$(curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + forardHostName + ":" + forwardedPortNo)
+    curlString.append("http://" + forwardHostName + ":" + forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/persistentStoreRuntimes/")
@@ -744,7 +748,7 @@ class ItVzDBOperator {
     ExecResult result = null;
     StringBuffer curlString = new StringBuffer("curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("\"http://" + forardHostName + ":" + forwardedPortNo)
+    curlString.append("\"http://" + forwardHostName + ":" + forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JTARuntime/recoveryRuntimeMBeans/")
@@ -887,21 +891,17 @@ class ItVzDBOperator {
     return patchDomainCustomResource(fmwDomainUid, fmwDomainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH);
   }
 
-  private static boolean verifyEMconsoleAccess(String namespace, String uri, String expectedStatusCode) {
-    // get istio gateway host and loadbalancer address
-    String host = getIstioHost(namespace);
-    String address = getLoadbalancerAddress();
+  private static boolean verifyEMconsoleAccess(String uri, String expectedStatusCode) {
 
     StringBuffer curlString = new StringBuffer("status=$(curl -sk --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" https://" + host)
+        .append(" http://" + forwardHostName + ":" + forwardedPortNo)
         .append(uri)
-        .append("/ --resolve " + host + ":443:" + address)
         .append(" --silent --show-error ")
         .append(" -o /dev/null ")
         .append(" -w %{http_code});")
         .append("echo ${status}");
-    logger.info("checkSystemResource: curl command {0}", new String(curlString));
+    logger.info("check em console: curl command {0}", new String(curlString));
     return Command
         .withParams(new CommandParams()
             .command(curlString.toString()))
