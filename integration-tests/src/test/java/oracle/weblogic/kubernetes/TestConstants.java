@@ -96,6 +96,7 @@ public interface TestConstants {
   public static final String FMWINFRA_IMAGE_NAME_DEFAULT = "test-images/fmw-infrastructure";
   public static final String FMWINFRA_IMAGE_TAG_DEFAULT = "12.2.1.4";
   public static final String DB_IMAGE_NAME_DEFAULT = "test-images/database/enterprise";
+  public static final String DB_PREBUILT_IMAGE_NAME_DEFAULT = "test-images/database/express";
   public static final String DB_IMAGE_TAG_DEFAULT = "12.2.0.1-slim";
 
   // repository to push the domain images created during test execution
@@ -125,11 +126,10 @@ public interface TestConstants {
 
   // Get DB_IMAGE_NAME/DB_IMAGE_TAG from env var, if its not provided and
   // if base images repo is OCIR use OCIR default image values
-  public static final String DB_IMAGE_NAME = BASE_IMAGES_REPO + "/" + BASE_IMAGES_TENANCY + "/" 
+  public static final String DB_IMAGE_NAME = BASE_IMAGES_REPO + "/" + BASE_IMAGES_TENANCY + "/"
       + getNonEmptySystemProperty("wko.it.db.image.name", DB_IMAGE_NAME_DEFAULT);
-  public static final String DB_PREBUILT_IMAGE_NAME
-      = BASE_IMAGES_REPO + "/" + getNonEmptySystemProperty("wko.it.db.prebuilt.image.name",
-          "container-registry.oracle.com/database/express");
+  public static final String DB_PREBUILT_IMAGE_NAME = BASE_IMAGES_REPO + BASE_IMAGES_TENANCY + "/" 
+      + getNonEmptySystemProperty("wko.it.db.prebuilt.image.name", DB_PREBUILT_IMAGE_NAME_DEFAULT);
   public static final String DB_IMAGE_TAG = getNonEmptySystemProperty("wko.it.db.image.tag", DB_IMAGE_TAG_DEFAULT);
   public static final String DB_IMAGE_PREBUILT_TAG = getNonEmptySystemProperty("wko.it.db.image.tag", "18.4.0-xe");
 
