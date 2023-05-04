@@ -249,11 +249,11 @@ pipeline {
                defaultValue: "3"
         )
         string(name: 'WDT_DOWNLOAD_URL',
-               description: "URL to download WDT. Leave it empty to use the default value https://objectstorage.${env.WKT_REGION}.oraclecloud.com/p/<TOKEN>/n/${env.WKT_TENANCY}/b/wko-system-test-files/o/weblogic-deploy-main.zip",
+               description: "URL to download WDT. Leave it empty to use the default value, which is the latest nightly build from WDT's main branch",
                defaultValue: ""
         )
         string(name: 'WIT_DOWNLOAD_URL',
-               description: "URL to download WIT. Leave it empty to use the default value https://objectstorage.${env.WKT_REGION}.oraclecloud.com/p/<TOKEN>/n/${env.WKT_TENANCY}/b/wko-system-test-files/o/imagetool-main.zip",
+               description: "URL to download WIT. Leave it empty to use the default value, which is the latest nightly build from WIT's main branch",
                defaultValue: ""
         )
         string(name: 'TEST_IMAGES_REPO',
@@ -553,10 +553,10 @@ EOF
                         ]) {
                             sh '''
                                 if [ -z $WIT_DOWNLOAD_URL ]; then
-                                    export WIT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/imagetool-main.zip"
+                                    WIT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/imagetool-main.zip"
                                 fi
                                 if [ -z $WDT_DOWNLOAD_URL ]; then
-                                    export WDT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/weblogic-deploy-main.zip"
+                                    WDT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/weblogic-deploy-main.zip"
                                 fi
 
                                 export PATH=${runtime_path}
