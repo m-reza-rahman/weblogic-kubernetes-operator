@@ -154,7 +154,9 @@ pipeline {
                 choices: [
                         'kind-sequential',
                         'kind-parallel',
-                        'integration-tests'
+                        'integration-tests',
+                        'toolkits-srg',
+                        'wls-srg'
                 ]
         )
         string(name: 'IT_TEST',
