@@ -778,6 +778,7 @@ public class DomainStatusUpdater {
           boolean isCompleted = isProcessingCompleted();
           conditionList.add(new DomainCondition(COMPLETED).withStatus(isCompleted));
           if (isCompleted && this.status.hasConditionWithType(FAILED)) {
+            LOGGER.info("XXX isCompleted true but has Failure condition");
             this.status.removeConditionsWithType(FAILED);
           }
           conditionList.add(createAvailableCondition());

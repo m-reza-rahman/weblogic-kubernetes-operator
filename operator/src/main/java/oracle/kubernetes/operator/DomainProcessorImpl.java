@@ -831,6 +831,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
           return;
         }
 
+        LOGGER.info("XX cluster changed ", cluster.getMetadata().getName(), info.getDomainUid());
         LOGGER.fine(MessageKeys.WATCH_CLUSTER, cluster.getMetadata().getName(), info.getDomainUid());
         createMakeRightOperationForClusterEvent(CLUSTER_CHANGED, cluster, info.getDomainUid()).execute();
         createMakeRightOperation(info)
@@ -912,6 +913,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private void handleModifiedDomain(DomainResource domain) {
     LOGGER.fine(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
+    LOGGER.info("XXX Domain changed", domain.getDomainUid());
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
         .withEventData(new EventData(DOMAIN_CHANGED))
