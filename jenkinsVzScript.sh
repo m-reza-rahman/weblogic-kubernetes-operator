@@ -121,7 +121,7 @@ export JAVA_HOME=$WORKSPACE/jdk/jdk-17.0.5
 cd $WORKSPACE
 
 echo "Info: Run tests.."
-sh -x ./vztest.sh -t "${IT_TEST}" -v ${KUBE_VERSION} -p ${PARALLEL_RUN} -d ${WDT_DOWNLOAD_URL} -i ${WIT_DOWNLOAD_URL} -x ${NUMBER_OF_THREADS} -m ${MAVEN_PROFILE_NAME}
+sh -x ./vztest.sh -t "${IT_TEST}" -v ${KUBECTL_VERSION} -p ${PARALLEL_RUN} -d ${WDT_DOWNLOAD_URL} -i ${WIT_DOWNLOAD_URL} -x ${NUMBER_OF_THREADS} -m ${MAVEN_PROFILE_NAME}
 
 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
 journalctl --utc --dmesg --system --since "$start_time" > "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results/journalctl-compute.out"

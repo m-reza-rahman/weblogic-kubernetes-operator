@@ -115,7 +115,7 @@ pipeline {
                    '0.15.0'
                ]
         )
-        choice(name: 'KUBE_VERSION',
+        choice(name: 'KUBECTL_VERSION',
                description: 'Kubernetes version. Supported values depend on the Kind version. Kind 0.18.0: 1.26, 1.26.3, 1.25, 1.25.8, 1.24, 1.24.12, 1.23, 1.23.17, 1.22, 1.22.17, 1.21, and 1.21.14. Kind 0.17.0: 1.25, 1.25.3, 1.24, 1.24.7, 1.23, 1.23.13, 1.22, 1.22.15, 1.21, 1.21.14, 1.20, and 1.20.15. Kind 0.16.0: 1.25, 1.25.2, 1.24, 1.24.6, 1.23, 1.23.12, 1.22, 1.22.15, 1.21, 1.21.14, 1.20, and 1.20.15. Kind 0.15.0: 1.25, 1.25.0, 1.24, 1.24.4, 1.23, 1.23.10, 1.22, 1.22.13, 1.21, 1.21.14, 1.20, and 1.20.15. Kind 0.13.0 and 0.14.0: 1.24, 1.24.0, 1.23, 1.23.6, 1.22, 1.22.9, 1.21, 1.21.12, 1.20, 1.20.15, Kind 0.12.0: 1.23, 1.23.4, 1.22, 1.22.7, 1.21, 1.21.10, 1.20, 1.20.15. Kind 0.11.1: 1.23, 1.23.3, 1.22, 1.22.5, 1.21, 1.21.1, 1.20, 1.20.7, 1.19, 1.19.11.',
                choices: [
                     // The first item in the list is the default value...
@@ -158,10 +158,6 @@ pipeline {
                     '1.19.11',
                     '1.19'
                ]
-        )
-        string(name: 'KUBECTL_VERSION',
-               description: 'kubectl version',
-               defaultValue: '1.25.4'
         )
         string(name: 'HELM_VERSION',
                description: 'Helm version',
@@ -283,7 +279,7 @@ pipeline {
                         '''
                         script {
                             def knd = params.KIND_VERSION
-                            def k8s = params.KUBE_VERSION
+                            def k8s = params.KUBECTL_VERSION
                             if (knd != null && k8s != null) {
                                 def k8s_map = kind_k8s_map.get(knd)
                                 if (k8s_map != null) {
@@ -296,7 +292,7 @@ pipeline {
                                 }
                             } else {
                                 currentBuild.result = 'ABORTED'
-                                error('KIND_VERSION or KUBE_VERSION were null')
+                                error('KIND_VERSION or KUBECTL_VERSION were null')
                             }
                             echo "Kind Image = ${_kind_image}"
                         }
