@@ -434,10 +434,12 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private void logStartingDomain(DomainPresenceInfo presenceInfo) {
     LOGGER.fine(MessageKeys.PROCESSING_DOMAIN, presenceInfo.getDomainUid());
+    LOGGER.info("XXX go ahead starting or rechecking domain", presenceInfo.getDomainUid());
   }
 
   private void logNotStartingDomain(DomainPresenceInfo info) {
     LOGGER.fine(MessageKeys.NOT_STARTING_DOMAINUID_THREAD, info.getDomainUid());
+    LOGGER.info("XXX nothing changed and no need to recheck the domain", info.getDomainUid());
   }
 
   @Override
@@ -831,6 +833,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
           return;
         }
 
+        LOGGER.info("XX cluster changed ", cluster.getMetadata().getName(), info.getDomainUid());
         LOGGER.fine(MessageKeys.WATCH_CLUSTER, cluster.getMetadata().getName(), info.getDomainUid());
         createMakeRightOperationForClusterEvent(CLUSTER_CHANGED, cluster, info.getDomainUid()).execute();
         createMakeRightOperation(info)
@@ -912,6 +915,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private void handleModifiedDomain(DomainResource domain) {
     LOGGER.fine(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
+    LOGGER.info("XXX Domain changed", domain.getDomainUid());
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
         .withEventData(new EventData(DOMAIN_CHANGED))

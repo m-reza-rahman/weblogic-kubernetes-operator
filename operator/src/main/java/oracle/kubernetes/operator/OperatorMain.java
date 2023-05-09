@@ -351,6 +351,8 @@ public class OperatorMain extends BaseMain {
       lastFullRecheck.set(now);
     }
 
+    LOGGER.info("XX createDomainRecheckSteps fullRecheck = " + isFullRecheck);
+
     final DomainRecheck domainRecheck = new DomainRecheck(mainDelegate, isFullRecheck);
     return Step.chain(
         domainRecheck.createOperatorNamespaceReview(),
