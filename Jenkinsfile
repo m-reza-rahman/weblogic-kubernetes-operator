@@ -279,7 +279,7 @@ pipeline {
                         '''
                         script {
                             def knd = params.KIND_VERSION
-                            def k8s = ${params.KUBECTL_VERSION}
+                            def k8s = params.KUBECTL_VERSION
                             if (knd != null && k8s != null) {
                                 def k8s_map = kind_k8s_map.get(knd)
                                 if (k8s_map != null) {
@@ -350,7 +350,7 @@ pipeline {
                         sh '''
                             export PATH=${runtime_path}
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
-                                --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
+                                --name=kubectl/kubectl-v${params.KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
                                 --auth=instance_principal
                             chmod +x ${WORKSPACE}/bin/kubectl
                             kubectl version --client=true
