@@ -279,7 +279,7 @@ pipeline {
                         '''
                         script {
                             def knd = params.KIND_VERSION
-                            def k8s = params.KUBECTL_VERSION
+                            def k8s = ${params.KUBECTL_VERSION}
                             if (knd != null && k8s != null) {
                                 def k8s_map = kind_k8s_map.get(knd)
                                 if (k8s_map != null) {
