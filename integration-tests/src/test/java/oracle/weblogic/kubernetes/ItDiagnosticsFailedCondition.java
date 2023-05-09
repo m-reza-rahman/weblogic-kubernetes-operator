@@ -286,12 +286,12 @@ class ItDiagnosticsFailedCondition {
   }
 
   /**
-   * Test domain status condition with the domain credentials secret that does not exist.
+   * Test domain status condition after the domain credentials secret is changed to a secret that does not exist.
    * Verify that the Failed condition with a failure reason of DomainInvalid is generated.
    */
   @Test
   @DisplayName("Test domain status condition with nonexisting domain credentials secret")
-  void testNonExistingDomainCredentials() {
+  void testDomainChangedToNonExistingDomainCredentialsSecret() {
     boolean testPassed = false;
     String domainName = getDomainName();
     String clusterResName = getClusterResName(domainName);
@@ -357,8 +357,8 @@ class ItDiagnosticsFailedCondition {
    * Verify that the Failed condition with a failure reason of DomainInvalid is generated.
    */
   @Test
-  @DisplayName("Test domain status condition with replicas set to more than available in cluster")
-  void testReplicasTooHighAndWrongCredentials() {
+  @DisplayName("Test domain status condition with replicas reduced from a value that is more than available in cluster")
+  void testReplicasTooHighFollowedWithDomainChangedWithWrongCredentialsSecret() {
     boolean testPassed = false;
     String domainName = getDomainName();
     String clusterResName = getClusterResName(domainName);
