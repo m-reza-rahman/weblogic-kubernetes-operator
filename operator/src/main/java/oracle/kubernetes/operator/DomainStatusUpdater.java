@@ -774,12 +774,12 @@ public class DomainStatusUpdater {
 
         public Conditions(DomainStatus status) {
           this.status = status != null ? status : new DomainStatus();
-          LOGGER.info("XXX initial status =" + status);
+          LOGGER.info("XXX initial conditions =" + status.getConditions());
           this.clusterChecks = createClusterChecks();
           boolean isCompleted = isProcessingCompleted();
           conditionList.add(new DomainCondition(COMPLETED).withStatus(isCompleted));
           if (isCompleted && this.status.hasConditionWithType(FAILED)) {
-            LOGGER.info("XXX isCompleted true but has Failure condition: status =" + status);
+            LOGGER.info("XXX isCompleted true but has Failure condition: conditions =" + status.getConditions());
             this.status.removeConditionsWithType(FAILED);
           }
           conditionList.add(createAvailableCondition());
