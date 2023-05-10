@@ -115,8 +115,8 @@ pipeline {
                    '0.15.0'
                ]
         )
-        choice(name: 'KUBECTL_VERSION',
-               description: 'kubectl version. Supported values depend on the Kind version. Kind 0.18.0: 1.26, 1.26.3, 1.25, 1.25.8, 1.24, 1.24.12, 1.23, 1.23.17, 1.22, 1.22.17, 1.21, and 1.21.14. Kind 0.17.0: 1.25, 1.25.3, 1.24, 1.24.7, 1.23, 1.23.13, 1.22, 1.22.15, 1.21, 1.21.14, 1.20, and 1.20.15. Kind 0.16.0: 1.25, 1.25.2, 1.24, 1.24.6, 1.23, 1.23.12, 1.22, 1.22.15, 1.21, 1.21.14, 1.20, and 1.20.15. Kind 0.15.0: 1.25, 1.25.0, 1.24, 1.24.4, 1.23, 1.23.10, 1.22, 1.22.13, 1.21, 1.21.14, 1.20, and 1.20.15 ',
+        choice(name: 'KUBE_VERSION',
+               description: 'kubernates version. Supported values depend on the Kind version. Kind 0.18.0: 1.26, 1.26.3, 1.25, 1.25.8, 1.24, 1.24.12, 1.23, 1.23.17, 1.22, 1.22.17, 1.21, and 1.21.14. Kind 0.17.0: 1.25, 1.25.3, 1.24, 1.24.7, 1.23, 1.23.13, 1.22, 1.22.15, 1.21, 1.21.14, 1.20, and 1.20.15. Kind 0.16.0: 1.25, 1.25.2, 1.24, 1.24.6, 1.23, 1.23.12, 1.22, 1.22.15, 1.21, 1.21.14, 1.20, and 1.20.15. Kind 0.15.0: 1.25, 1.25.0, 1.24, 1.24.4, 1.23, 1.23.10, 1.22, 1.22.13, 1.21, 1.21.14, 1.20, and 1.20.15 ',
                choices: [
                     // The first item in the list is the default value...
                     '1.26.3',
@@ -277,7 +277,7 @@ pipeline {
                         '''
                         script {
                             def knd = params.KIND_VERSION
-                            def k8s = params.KUBECTL_VERSION
+                            def k8s = params.KUBE_VERSION
                             if (knd != null && k8s != null) {
                                 def k8s_map = kind_k8s_map.get(knd)
                                 if (k8s_map != null) {
@@ -290,7 +290,7 @@ pipeline {
                                 }
                             } else {
                                 currentBuild.result = 'ABORTED'
-                                error('KIND_VERSION or KUBECTL_VERSION were null')
+                                error('KIND_VERSION or KUBE_VERSION were null')
                             }
                             echo "Kind Image = ${_kind_image}"
                         }
@@ -343,13 +343,13 @@ pipeline {
                 stage ('Install kubectl') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
-                        KUBECTL_VERSION = "${params.KUBECTL_VERSION}"
+                        KUBE_VERSION = "${params.KUBE_VERSION}"
                     }
                     steps {
                         sh '''
                             export PATH=${runtime_path}
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
-                                --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
+                                --name=kubectl/kubectl-v${KUBE_VERSION} --file=${WORKSPACE}/bin/kubectl \
                                 --auth=instance_principal
                             chmod +x ${WORKSPACE}/bin/kubectl
                             kubectl version --client=true
