@@ -5,7 +5,7 @@
 # This script checks for the below required environment variables on Jenkins and runs the integration tests
 # APACHE_MAVEN_HOME
 # HELM_VERSION
-# KUBECTL_VERSION
+# KUBE_VERSION
 # KIND_VERSION
 # IT_TEST
 # WDT_DOWNLOAD_URL
@@ -58,7 +58,7 @@ echo "WORKSPACE ${WORKSPACE}"
 checkEnvVars  \
    APACHE_MAVEN_HOME  \
    HELM_VERSION  \
-   KUBECTL_VERSION \
+   KUBE_VERSION \
    KIND_VERSION  \
    IT_TEST  \
    WDT_DOWNLOAD_URL  \
@@ -90,9 +90,9 @@ helm version
 
 KCLI="kubectl" # this string has a deliberate exclusion in the 'validateCLI.sh' validation check for direct use of the k8s cli
 echo "Info: Set up ${KCLI}..."
-curl -Lo "${WORKSPACE}/bin/${KCLI}" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/${KCLI}%2F${KCLI}-v${KUBECTL_VERSION}"
+curl -Lo "${WORKSPACE}/bin/${KCLI}" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/${KCLI}%2F${KCLI}-v${KUBE_VERSION}"
 chmod +x ${WORKSPACE}/bin/${KCLI}
-${KCLI} version --client=true
+${KCLI} version --client=true -o yaml
 
 echo 'Info: Set up kind...'
 curl -Lo "${WORKSPACE}/bin/kind" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/kind%2Fkind-v${KIND_VERSION}"
@@ -127,7 +127,7 @@ helm repo add stable https://charts.helm.sh/stable --force-update
 helm repo update
 
 echo "Info: Run tests.."
-sh -x ./kindtest.sh -t "${IT_TEST}" -v ${KUBECTL_VERSION} -p ${PARALLEL_RUN} -d ${WDT_DOWNLOAD_URL} -i ${WIT_DOWNLOAD_URL} -x ${NUMBER_OF_THREADS} -m ${MAVEN_PROFILE_NAME}
+sh -x ./kindtest.sh -t "${IT_TEST}" -v ${KUBE_VERSION} -p ${PARALLEL_RUN} -d ${WDT_DOWNLOAD_URL} -i ${WIT_DOWNLOAD_URL} -x ${NUMBER_OF_THREADS} -m ${MAVEN_PROFILE_NAME}
 
 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
 journalctl --utc --dmesg --system --since "$start_time" > "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results/journalctl-compute.out"
