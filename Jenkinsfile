@@ -350,7 +350,7 @@ pipeline {
                         sh '''
                             export PATH=${runtime_path}
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
-                                --name=kubectl/kubectl-v${params.KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
+                                --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
                                 --auth=instance_principal
                             chmod +x ${WORKSPACE}/bin/kubectl
                             kubectl version --client=true
