@@ -75,7 +75,7 @@ captureLogs() {
 k8s_version_string=$($KUBERNETES_CLI version --client -o json|jq -rj '.clientVersion|.gitVersion')
 # Remove the first character from version string e.g. v1.24.0
 k8s_version=${k8s_version_string#?}
-k8s_version="1.21"
+#k8s_version="1.21"
 
 kind_name="kind"
 if [[ -z "${WORKSPACE}" ]]; then
@@ -131,7 +131,7 @@ versionprop() {
 }
 
 kind_version=$(kind version)
-kind_series="0.18.0"
+#kind_series="0.18.0"
 case "${kind_version}" in
   "kind v0.15."*)
     kind_series="0.15.0"
