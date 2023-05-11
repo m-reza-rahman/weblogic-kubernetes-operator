@@ -287,12 +287,10 @@ class DomainResourcesValidation {
   private void activateDomain(DomainProcessor dp, DomainPresenceInfo info) {
     info.setPopulated(true);
     EventItem eventItem = getEventItem(info);
-    dp.createMakeRightOperation(info).withExplicitRecheck();
     if (eventItem != null) {
       dp.createMakeRightOperation(info).withExplicitRecheck()
           .withEventData(new EventData(eventItem)).interrupt().execute();
     }
-
   }
 
   private EventItem getEventItem(DomainPresenceInfo info) {
@@ -329,11 +327,9 @@ class DomainResourcesValidation {
 
   private void createAndExecuteMakeRightOperation(
       DomainProcessor dp, ClusterResource cluster, EventItem eventItem, String domainUid) {
-    MakeRightClusterOperation makeRight = dp.createMakeRightOperationForClusterEvent(
-        eventItem, cluster, domainUid).withExplicitRecheck();
     if (eventItem != null) {
-      makeRight.interrupt();
+      dp.createMakeRightOperationForClusterEvent(
+          eventItem, cluster, domainUid).withExplicitRecheck().interrupt().execute();
     }
-    makeRight.execute();
   }
 }
