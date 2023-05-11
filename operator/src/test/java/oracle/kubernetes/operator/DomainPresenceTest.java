@@ -466,7 +466,6 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
     V1Pod pod = createPodResource(UID1, NS, "admin");
     testSupport.defineResources(pod);
     pod.getMetadata().getLabels().remove(SERVERNAME_LABEL);
-    //dp.domains.computeIfAbsent(NS, k -> new ConcurrentHashMap<>()).put(UID1, info);
 
     testSupport.addComponent("DP", DomainProcessor.class, dp);
     testSupport.runSteps(domainNamespaces.readExistingResources(NS, dp));
