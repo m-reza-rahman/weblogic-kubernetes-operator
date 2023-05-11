@@ -231,11 +231,10 @@ class DomainResourcesValidation {
     DomainPresenceInfo cachedInfo = getDomainPresenceInfoMap().get(domain.getDomainUid());
     if (cachedInfo == null) {
       newDomainNames.add(domain.getDomainUid());
-      getOrComputeDomainPresenceInfo(domain.getDomainUid()).setDomain(domain);
     } else if (domain.isGenerationChanged(cachedInfo.getDomain())) {
       modifiedDomainNames.add(domain.getDomainUid());
-      getOrComputeDomainPresenceInfo(domain.getDomainUid()).setDomain(domain);
     }
+    getOrComputeDomainPresenceInfo(domain.getDomainUid()).setDomain(domain);
   }
 
   private void addClusterList(ClusterList list) {
@@ -288,11 +287,12 @@ class DomainResourcesValidation {
   private void activateDomain(DomainProcessor dp, DomainPresenceInfo info) {
     info.setPopulated(true);
     EventItem eventItem = getEventItem(info);
-    MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info);
+    dp.createMakeRightOperation(info).withExplicitRecheck();
     if (eventItem != null) {
-      makeRight.withEventData(new EventData(eventItem)).interrupt().withExplicitRecheck();
+      dp.createMakeRightOperation(info).withExplicitRecheck()
+          .withEventData(new EventData(eventItem)).interrupt().execute();
     }
-    makeRight.execute();
+
   }
 
   private EventItem getEventItem(DomainPresenceInfo info) {
@@ -330,9 +330,9 @@ class DomainResourcesValidation {
   private void createAndExecuteMakeRightOperation(
       DomainProcessor dp, ClusterResource cluster, EventItem eventItem, String domainUid) {
     MakeRightClusterOperation makeRight = dp.createMakeRightOperationForClusterEvent(
-        eventItem, cluster, domainUid);
+        eventItem, cluster, domainUid).withExplicitRecheck();
     if (eventItem != null) {
-      makeRight.interrupt().withExplicitRecheck();
+      makeRight.interrupt();
     }
     makeRight.execute();
   }
