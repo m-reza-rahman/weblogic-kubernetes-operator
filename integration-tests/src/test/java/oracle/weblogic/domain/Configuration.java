@@ -14,7 +14,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 public class Configuration {
 
   @ApiModelProperty("Model in image model files and properties.")
-  private Model model;
+  public Model model;
 
   @ApiModelProperty("Configuration for OPSS security.")
   private Opss opss;
