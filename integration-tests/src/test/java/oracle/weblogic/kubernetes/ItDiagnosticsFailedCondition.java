@@ -37,7 +37,6 @@ import oracle.weblogic.kubernetes.utils.FmwUtils;
 import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import oracle.weblogic.kubernetes.utils.PodUtils;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -227,12 +226,139 @@ class ItDiagnosticsFailedCondition {
    * type: Failed, status: true
    * type: Available, status: false
    * type: Completed, status: false
-   * Disabled due to bug.
+   * Then fix the replicas and verify that the following conditions are generated
+   * type: Failed, status: false
+   * type: Available, status: true
+   * type: Completed, status: true
    */
-  @Disabled
   @Test
   @DisplayName("Test domain status condition with replicas set to more than available in cluster")
   void testReplicasTooHigh() {
+    boolean testPassed = false;
+    String domainName = getDomainName();
+    String clusterResName = getClusterResName(domainName);
+    String image = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
+
+    logger.info("Creating domain resource with replicas=100");
+    DomainResource domain = createDomainResource(domainName, domainNamespace, adminSecretName,
+        BASE_IMAGES_REPO_SECRET_NAME, encryptionSecretName, 100, image, clusterResName);
+
+    try {
+      logger.info("Creating domain");
+      createDomainAndVerify(domain, domainNamespace);
+
+      //check the desired completed, available and failed statuses
+      checkStatus(domainName, "False", "False", "True");
+
+      testUntil(
+          domainStatusReasonMatches(domainName, domainNamespace, "ReplicasTooHigh"),
+          getLogger(),
+          "waiting for domain status condition reason ReplicasTooHigh exists"
+      );
+
+      // Need to patch the cluster first, otherwise the domain can not be patched
+      // You will get this error:
+      // the replica count of cluster 'cluster-1' would exceed the cluster size '5' when patching the domain
+      String patchStr
+          = "["
+          + "{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": 2}"
+          + "]";
+      V1Patch patch = new V1Patch(patchStr);
+      logger.info("Patching cluster resource using patch string {0} ", patchStr);
+
+      assertTrue(patchClusterCustomResource(clusterResName, domainNamespace,
+          patch, V1Patch.PATCH_FORMAT_JSON_PATCH), "Failed to patch cluster");
+
+      //check the desired completed, available and failed statuses
+      checkStatus(domainName, "True", "True", null);
+      testPassed = true;
+    } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }
+      if (assertDoesNotThrow(() -> domainExists(domainName, DOMAIN_VERSION, domainNamespace).call())) {
+        deleteDomainResource(domainNamespace, domainName);
+      }
+      if (assertDoesNotThrow(() -> clusterExists(clusterResName, CLUSTER_VERSION, domainNamespace).call())) {
+        deleteClusterCustomResource(clusterResName, domainNamespace);
+      }
+    }
+  }
+
+  /**
+   * Test domain status condition after the domain credentials secret is changed to a secret that does not exist.
+   * Verify that the Failed condition with a failure reason of DomainInvalid is generated.
+   */
+  @Test
+  @DisplayName("Test domain status condition with nonexisting domain credentials secret")
+  void testDomainChangedToNonExistingDomainCredentialsSecret() {
+    boolean testPassed = false;
+    String domainName = getDomainName();
+    String clusterResName = getClusterResName(domainName);
+    String image = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
+
+    logger.info("Creating domain resource with replicas=2");
+    DomainResource domain = createDomainResource(domainName, domainNamespace, adminSecretName,
+        BASE_IMAGES_REPO_SECRET_NAME, encryptionSecretName, 2, image, clusterResName);
+
+    try {
+      logger.info("Creating domain");
+      createDomainAndVerify(domain, domainNamespace);
+
+      //check the desired completed, available and failed statuses
+      checkStatus(domainName, "True", "True", null);
+
+      String patchStr = "[{\"op\": \"replace\", "
+          + "\"path\": \"/spec/webLogicCredentialsSecret/name\", \"value\": \"weblogic-credentials-foo\"}]";
+      logger.info("PatchStr for domainHome: {0}", patchStr);
+
+      V1Patch patch = new V1Patch(patchStr);
+      assertTrue(patchDomainCustomResource(domainName, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
+          "patchDomainCustomResource failed");
+      testUntil(
+          domainStatusReasonMatches(domainName, domainNamespace, "DomainInvalid"),
+          getLogger(),
+          "waiting for domain status condition reason DomainInvalid exists"
+      );
+
+      //check the desired completed, available and failed statuses
+      checkStatus(domainName, "False", "True", "True");
+
+      // correct the secret name
+      patchStr = "[{\"op\": \"replace\", "
+          + "\"path\": \"/spec/webLogicCredentialsSecret/name\", \"value\": \"weblogic-credentials\"}]";
+      logger.info("PatchStr for domainHome: {0}", patchStr);
+
+      patch = new V1Patch(patchStr);
+      assertTrue(patchDomainCustomResource(domainName, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
+          "patchDomainCustomResource failed");
+
+      //check the desired completed, available and failed statuses
+      checkStatus(domainName, "True", "True", null);
+
+      testPassed = true;
+    } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }
+      if (assertDoesNotThrow(() -> domainExists(domainName, DOMAIN_VERSION, domainNamespace).call())) {
+        deleteDomainResource(domainNamespace, domainName);
+      }
+      if (assertDoesNotThrow(() -> clusterExists(clusterResName, CLUSTER_VERSION, domainNamespace).call())) {
+        deleteClusterCustomResource(clusterResName, domainNamespace);
+      }
+    }
+  }
+
+  /**
+   * Test domain status condition with replicas set to more than maximum size of the WebLogic cluster created.
+   * Then the replicas is fixed on the cluster resource, and the domain credential secret is replaced with
+   * a non-existing secret name without waiting for the cluster patch to complete.
+   * Verify that the Failed condition with a failure reason of DomainInvalid is generated.
+   */
+  @Test
+  @DisplayName("Test domain status condition with replicas reduced from a value that is more than available in cluster")
+  void testReplicasTooHighFollowedWithDomainChangedWithWrongCredentialsSecret() {
     boolean testPassed = false;
     String domainName = getDomainName();
     String clusterResName = getClusterResName(domainName);
@@ -281,19 +407,6 @@ class ItDiagnosticsFailedCondition {
           "waiting for domain status condition reason DomainInvalid exists"
       );
 
-      patchStr
-          = "["
-          + "{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": 2}"
-          + "]";
-      patch = new V1Patch(patchStr);
-      logger.info("Patching cluster resource using patch string {0} ", patchStr);
-      assertTrue(patchClusterCustomResource(clusterResName, domainNamespace,
-          patch, V1Patch.PATCH_FORMAT_JSON_PATCH), "Failed to patch cluster");
-      testUntil(
-          domainStatusReasonMatches(domainName, domainNamespace, "DomainInvalid"),
-          getLogger(),
-          "waiting for domain status condition reason DomainInvalid exists"
-      );
       testPassed = true;
     } finally {
       if (!testPassed) {
