@@ -306,7 +306,7 @@ class ItVzMiiDynamicUpdate {
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
         encryptionSecretName, replicaCount, Arrays.asList(clusterName));
-    domain.spec().configuration().model().onlineUpdate(new OnlineUpdate().enabled(Boolean.TRUE));
+    domain.spec().configuration().model().setOnlineUpdate(new OnlineUpdate().enabled(Boolean.TRUE));
     logger.info(Yaml.dump(domain));
     domain.spec().configuration().model().setConfigMap(configMapName);
     logger.info(Yaml.dump(domain));
