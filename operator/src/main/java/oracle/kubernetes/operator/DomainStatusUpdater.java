@@ -282,7 +282,8 @@ public class DomainStatusUpdater {
    * @param message a fuller description of the problem
    */
   public static Step createDomainInvalidFailureSteps(String message) {
-    return new FailureStep(DOMAIN_INVALID, message).removingOldFailures(DOMAIN_INVALID);
+    return Step.chain(new FailureStep(DOMAIN_INVALID, message).removingOldFailures(DOMAIN_INVALID),
+        new RegisterDomainResourceInfoStep());
   }
 
   /**
@@ -1615,6 +1616,15 @@ public class DomainStatusUpdater {
       boolean shouldSkipUpdate(Packet packet) {
         return false;
       }
+    }
+  }
+
+  static class RegisterDomainResourceInfoStep extends Step {
+    @Override
+    public NextAction apply(Packet packet) {
+      Optional.ofNullable(packet.getSpi(MakeRightExecutor.class))
+          .ifPresent(executor -> executor.registerDomainPresenceInfo(packet.getSpi(DomainPresenceInfo.class)));
+      return doNext(packet);
     }
   }
 }

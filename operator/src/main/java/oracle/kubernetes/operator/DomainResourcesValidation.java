@@ -32,6 +32,8 @@ import oracle.kubernetes.operator.helpers.EventHelper.EventItem;
 import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -58,6 +60,8 @@ class DomainResourcesValidation {
   private final Set<String> newClusterNames = new HashSet<>();
   private final Set<String> modifiedDomainNames = new HashSet<>();
   private final Set<String> newDomainNames = new HashSet<>();
+
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
   DomainResourcesValidation(String namespace, DomainProcessor processor) {
     this.namespace = namespace;
@@ -288,6 +292,8 @@ class DomainResourcesValidation {
     info.setPopulated(true);
     EventItem eventItem = getEventItem(info);
     if (eventItem != null) {
+      LOGGER.info("XXX activateDomain: executing makeright for " + info.getDomainUid()
+          + " eventItem = " + eventItem.getReason());
       dp.createMakeRightOperation(info).withExplicitRecheck()
           .withEventData(new EventData(eventItem)).interrupt().execute();
     }
