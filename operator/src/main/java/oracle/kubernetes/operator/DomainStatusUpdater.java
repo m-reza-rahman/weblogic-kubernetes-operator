@@ -609,7 +609,7 @@ public class DomainStatusUpdater {
       super();
       this.hasEventData = hasEventData;
     }
-    
+
     @Override
     void modifyStatus(DomainStatus status) {
       if (status.getConditions().isEmpty()) {
