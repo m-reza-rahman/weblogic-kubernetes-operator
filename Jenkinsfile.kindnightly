@@ -116,7 +116,7 @@ pipeline {
     }
     triggers {
         // timer trigger for "nightly build"
-        parameterizedCron(CRON_SETTINGS : '')
+        parameterizedCron(CRON_SETTINGS)
     }
 
     tools {
