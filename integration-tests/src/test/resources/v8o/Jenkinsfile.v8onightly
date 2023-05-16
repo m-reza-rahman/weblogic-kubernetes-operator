@@ -146,7 +146,7 @@ pipeline {
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
         OPERATOR_URL="https://objectstorage.us-phoenix-1.oraclecloud.com/n/stevengreenberginc/b/verrazzano-builds/o/master/operator.yaml"
-        VZ_INSTALL_TIMEOUT="30"        
+        VZ_INSTALL_TIMEOUT="60"        
     }
 
     parameters {
@@ -586,23 +586,20 @@ spec:
 EOF
                            done=1
                            elapsed_time=0
-                           #while [ $done -ne 0 ] && [ $elapsed_time -lt $VZ_INSTALL_TIMEOUT ]
-                           while [ $elapsed_time -lt 3600 ]
+                           while [ $done -ne 0 ] && [ $elapsed_time -lt $VZ_INSTALL_TIMEOUT ]                           
                            do
-                             #install_status=$(kubectl wait --timeout=30m --for=condition=InstallComplete verrazzano/admin)
-                             #echo $install_status
-                             #if echo "$install_status" | grep -q 'condition met'; then
-                               #echo "verrazzano installation complete"
-                               #echo "It took $elapsed_time minutes to complete verrazzano installation"
-                               #done=0
-                             #else
-                               #elapsed_time=$((elapsed_time + 3))
-                               #echo "verrazzano installtion is not complete"
-                             #fi
+                             install_status=$(kubectl wait --timeout=30m --for=condition=InstallComplete verrazzano/admin)
+                             echo $install_status
+                             if echo "$install_status" | grep -q 'condition met'; then
+                               echo "verrazzano installation complete"
+                               echo "It took $elapsed_time minutes to complete verrazzano installation"
+                               done=0
+                             else
+                               elapsed_time=$((elapsed_time + 30))
+                               echo "verrazzano installtion is not complete"
+                             fi
                              kubectl get all -A
                              kubectl get events -A --sort-by=.lastTimestamp
-                             sleep 180
-                             elapsed_time=$((elapsed_time + 180))
                            done
                         '''
                     }
