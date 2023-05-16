@@ -146,7 +146,7 @@ pipeline {
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
         OPERATOR_URL="https://objectstorage.us-phoenix-1.oraclecloud.com/n/stevengreenberginc/b/verrazzano-builds/o/master/operator.yaml"
-        VZ_INSTALL_TIMEOUT="30"
+        VZ_INSTALL_TIMEOUT="30"        
     }
 
     parameters {
@@ -529,6 +529,7 @@ EOF
                     }
                     steps {
                         sh '''
+                            export PATH=${runtime_path}
                             kubectl apply -f ${OPERATOR_URL} || exit 1
                             kubectl -n verrazzano-install rollout status deployment/verrazzano-platform-operator
                             kubectl apply -f - <<EOF
