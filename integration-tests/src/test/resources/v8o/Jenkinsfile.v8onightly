@@ -567,7 +567,7 @@ EOF
                            elapsed_time=0
                            while [ $done -ne 0 ] && [ $elapsed_time -lt $VZ_INSTALL_TIMEOUT ]
                            do
-                             install_status=$($KA wait --timeout=3m --for=condition=InstallComplete verrazzano/admin)
+                             install_status=$(kubectl wait --timeout=3m --for=condition=InstallComplete verrazzano/admin)
                              echo $install_status
                              if echo "$install_status" | grep -q 'condition met'; then
                                echo "verrazzano installation complete"
