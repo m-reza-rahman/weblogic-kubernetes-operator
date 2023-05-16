@@ -530,6 +530,7 @@ EOF
                     steps {
                         sh '''
                             export PATH=${runtime_path}
+                            export KUBECONFIG=${kubeconfig_file}
                             kubectl apply -f ${OPERATOR_URL} || exit 1
                             kubectl -n verrazzano-install rollout status deployment/verrazzano-platform-operator
                             kubectl apply -f - <<EOF
