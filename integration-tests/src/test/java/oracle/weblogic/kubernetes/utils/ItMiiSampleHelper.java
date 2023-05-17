@@ -17,20 +17,19 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_REPO;
-import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_DOWNLOAD_URL;
@@ -42,6 +41,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeSta
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.upgradeAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -121,6 +121,7 @@ public class ItMiiSampleHelper {
     envMap.put("TRAEFIK_NAMESPACE", traefikNamespace);
     envMap.put("TRAEFIK_HTTP_NODEPORT", "0"); // 0-->dynamically choose the np
     envMap.put("TRAEFIK_HTTPS_NODEPORT", "0"); // 0-->dynamically choose the np
+    envMap.put("TRAEFIK_NAME", TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3));
     envMap.put("WORKDIR", miiSampleWorkDir);
     envMap.put("BASE_IMAGE_NAME", WEBLOGIC_IMAGE_TO_USE_IN_SPEC
         .substring(0, WEBLOGIC_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":")));
@@ -147,6 +148,8 @@ public class ItMiiSampleHelper {
 
     // install traefik using the mii sample script
     execTestScriptAndAssertSuccess(DomainType.WLS, "-traefik", "Traefik deployment failure");
+    //Helm upgrade traefik and verify traefik pod is ready
+    upgradeAndVerifyTraefik(traefikNamespace);
 
     logger.info("Setting up image registry secrets");
     // Create the repo secret to pull the domain image
@@ -273,10 +276,11 @@ public class ItMiiSampleHelper {
     envMap.put("MODEL_DIR", "model-images/model-in-image__" + domainType + "-v1");
 
     if (domainType.equals(DomainType.JRF)) {
-      String dbImageName = (KIND_REPO != null
-          ? KIND_REPO + DB_IMAGE_NAME.substring(BASE_IMAGES_REPO.length() + 1) : DB_IMAGE_NAME);
-      String jrfBaseImageName = (KIND_REPO != null
-          ? KIND_REPO + FMWINFRA_IMAGE_NAME.substring(BASE_IMAGES_REPO.length() + 1) : FMWINFRA_IMAGE_NAME);
+      String dbImageName = DB_IMAGE_TO_USE_IN_SPEC
+          .substring(0, DB_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":"));
+      String jrfBaseImageName = FMWINFRA_IMAGE_TO_USE_IN_SPEC
+          .substring(0, FMWINFRA_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":"));
+
       String dbNamespace = envMap.get("dbNamespace");
 
       envMap.put("DB_IMAGE_NAME", dbImageName);
@@ -288,6 +292,11 @@ public class ItMiiSampleHelper {
       envMap.put("DB_NAMESPACE", dbNamespace);
       envMap.put("DB_IMAGE_PULL_SECRET", TestConstants.BASE_IMAGES_REPO_SECRET_NAME); //ocr/ocir secret
       envMap.put("INTROSPECTOR_DEADLINE_SECONDS", "600"); // introspector needs more time for JRF
+
+      logger.info("dbImageName used for JRF domain is: {0}, imageTag is: {1}", dbImageName, DB_IMAGE_TAG);
+      logger.info("jrfBaseImageName used for JRF domain is: {0}, imageTag is: {1}",
+          jrfBaseImageName, FMWINFRA_IMAGE_TAG);
+
       if (OKE_CLUSTER) {
         String output = inspectImage(jrfBaseImageName, FMWINFRA_IMAGE_TAG);
         assertNotNull(output, String.format("Can't inspect image %s:%s", jrfBaseImageName, FMWINFRA_IMAGE_TAG));
