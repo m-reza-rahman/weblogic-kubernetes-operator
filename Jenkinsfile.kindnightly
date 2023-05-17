@@ -110,7 +110,7 @@ CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=kind-parallel'''
 
 
 pipeline {
-    agent { label 'VM.Standard2.8' }
+    agent { label 'large' }
     options {
         timeout(time: 800, unit: 'MINUTES')
     }
