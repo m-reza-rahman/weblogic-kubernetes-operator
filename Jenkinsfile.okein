@@ -261,7 +261,7 @@ pipeline {
                         USER_OCID=$(grep -Po '(?<=user=).*' ${jenkins_home_directory}/.oci/config)
                         FINGERPRINT=$(grep -Po '(?<=fingerprint=).*' ${jenkins_home_directory}/.oci/config)
                         VCN_OCID=$(oci network vcn list --compartment-id=ocid1.compartment.oc1..aaaaaaaapezmdp2gyz57osorhmjug7e5rqqudnlipxpubpdgydfd2mckn72q | jq -r '.data[] | .id')
-                        echo "${TENANCY_OCID}"
+                        PUB_SUBNET_OCID=test=`oci network subnet list --compartment-id=ocid1.compartment.oc1..aaaaaaaapezmdp2gyz57osorhmjug7e5rqqudnlipxpubpdgydfd2mckn72q  | jq '.data[] | select(."display-name" == "Public-Subnet-wktiso1")|.id'`
                         export WKT_TENANCY_OCID=${TENANCY_OCID}
                         export WKT_USER_OCID=${USER_OCID}
                         mkdir -p ${WORKSPACE}/terraform
@@ -314,12 +314,14 @@ tfvars.filename=${OKE_CLUSTER_NAME}
 region=${wko_region}
 tenancy.ocid=${WKT_TENANCY_OCID}
 compartment.ocid=${COMPARTMENT_OCID}
+sub.compartment.ocid=${SUB_COMPARTMENT_OCID}
 compartment.name=${compartmentName}
 ociapi.pubkey.fingerprint=${FINGERPRINT}
 ocipk.path=${jenkins_home_directory}/.oci/oci-signing-key.pem
 vcn.cidr.prefix=${VCN_CIDR_PREFIX}
 vcn.cidr=${VCN_CIDR_PREFIX}.0.0/16
 vcn.ocid=${VCN_OCID}
+pub.subnet.ocid=${PUB_SUBNET_OCID}
 nodepool.shape=${NODE_SHAPE}
 nodepool.imagename=${IMAGE_ID}
 k8s.version=v${OKE_KUBE_VERSION}
