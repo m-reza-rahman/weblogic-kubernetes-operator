@@ -37,6 +37,8 @@ import io.kubernetes.client.openapi.models.V1Service;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.WebLogicConstants;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.processing.EffectiveClusterSpec;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
@@ -66,6 +68,7 @@ import static oracle.kubernetes.operator.helpers.PodHelper.isNotAdminServer;
  * including the scan and the Pods and Services for servers.
  */
 public class DomainPresenceInfo extends ResourcePresenceInfo {
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
   private static final String COMPONENT_KEY = "dpi";
   private final String domainUid;
@@ -171,6 +174,9 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
   }
 
   private boolean isNewerThan(DomainPresenceInfo cachedInfo) {
+    LOGGER.info("XXX cachedInfo meta = "
+        + cachedInfo.getDomain().getMetadata() + " livInfo meta = " + getDomain().getMetadata());
+
     return getDomain() == null
         || !KubernetesUtils.isFirstNewer(cachedInfo.getDomain().getMetadata(), getDomain().getMetadata());
   }

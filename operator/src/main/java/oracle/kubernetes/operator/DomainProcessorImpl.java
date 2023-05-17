@@ -387,10 +387,12 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       return true;
     } else if (liveInfo.isFromOutOfDateEvent(operation, cachedInfo)
         || liveInfo.isDomainProcessingHalted(cachedInfo)) {
+      LOGGER.info("XXX shouldCOntinue false: out of order event");
       return false;
     } else if (operation.isExplicitRecheck() || liveInfo.isDomainGenerationChanged(cachedInfo)) {
       return true;
     } else {
+      LOGGER.info("XXX shouldContinue false: no spec change");
       cachedInfo.setDomain(liveInfo.getDomain());
       return false;
     }

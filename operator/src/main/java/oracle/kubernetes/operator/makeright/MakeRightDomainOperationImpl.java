@@ -214,10 +214,10 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   public Step createSteps() {
     final List<Step> result = new ArrayList<>();
 
+    result.add(new UpdateDomainResourceInfoStep(liveInfo));
     if (deleting || domainHasDeletionTimestamp()) {
       result.add(new StartPlanStep(liveInfo, createDomainDownPlan()));
     } else {
-      result.add(new UpdateDomainResourceInfoStep(liveInfo));
       result.add(getCreateEventStep());
       result.add(new DomainProcessorImpl.PopulatePacketServerMapsStep());
       result.add(createStatusInitializationStep(hasEventData()));
