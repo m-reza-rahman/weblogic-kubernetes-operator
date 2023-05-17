@@ -231,8 +231,8 @@ pipeline {
                defaultValue: '3.11.2'
         )
         booleanParam(name: 'PARALLEL_RUN',
-                     description: 'Runs tests in parallel. Default is true, test classes run in parallel.',
-                     defaultValue: true
+                     description: 'Runs tests in parallel. Default is false, test classes run in parallel.',
+                     defaultValue: false
         )
         string(name: 'NUMBER_OF_THREADS',
                description: 'Number of threads to run the classes in parallel, default is 3.',
