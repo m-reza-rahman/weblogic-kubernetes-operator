@@ -436,7 +436,7 @@ class ItFmwDomainInPVSimplified {
           clusterName, domainNamespace, replicaCount);
       createClusterAndVerify(cluster);
     }
-    domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterName));
+    domain.getSpec().withCluster(new V1LocalObjectReference().name(domainUid + "-" + clusterName));
 
     return domain;
   }
