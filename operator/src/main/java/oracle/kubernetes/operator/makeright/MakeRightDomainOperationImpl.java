@@ -61,6 +61,7 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECT_REQUESTED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_DELETED;
+import static oracle.kubernetes.operator.helpers.EventHelper.createEventStep;
 
 /**
  * A factory which creates and executes steps to align the cached domain status with the value read from Kubernetes.
@@ -213,14 +214,13 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   public Step createSteps() {
     final List<Step> result = new ArrayList<>();
 
-    result.add(Optional.ofNullable(eventData).map(EventHelper::createEventStep).orElse(null));
-    result.add(new DomainProcessorImpl.PopulatePacketServerMapsStep());
-    if (hasEventData()) {
-      result.add(createStatusInitializationStep());
-    }
     if (deleting || domainHasDeletionTimestamp()) {
       result.add(new StartPlanStep(liveInfo, createDomainDownPlan()));
     } else {
+      result.add(new UpdateDomainResourceInfoStep(liveInfo));
+      result.add(getCreateEventStep());
+      result.add(new DomainProcessorImpl.PopulatePacketServerMapsStep());
+      result.add(createStatusInitializationStep(hasEventData()));
       result.add(createListClusterResourcesStep(getNamespace()));
       result.add(createDomainValidationStep(getDomain()));
       result.add(new StartPlanStep(liveInfo, createDomainUpPlan(liveInfo)));
@@ -260,12 +260,8 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   private Step createDomainDownPlan() {
-    Step eventStep = null;
-    if (Optional.ofNullable(eventData).map(e -> e.getItem() != DOMAIN_DELETED).orElse(true)) {
-      eventStep = EventHelper.createEventStep(new EventData(DOMAIN_DELETED));
-    }
     return Step.chain(
-        eventStep,
+        createEventStep(new EventData(DOMAIN_DELETED)),
         new DeleteDomainStep(),
         new UnregisterStatusUpdaterStep(),
         new UnregisterEventK8SObjectsStep());
@@ -307,10 +303,15 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
       domainUpStrategy = Step.chain(initializePvPvcStep(), domainUpStrategy);
     }
 
-    Step introspectionAndDomainPresenceSteps = Step.chain(ConfigMapHelper.readExistingIntrospectorConfigMap(),
+    Step introspectionAndDomainPresenceSteps = Step.chain(
+        ConfigMapHelper.readExistingIntrospectorConfigMap(),
         DomainPresenceStep.createDomainPresenceStep(domainUpStrategy, managedServerStrategy));
 
     return new UpHeadStep(introspectionAndDomainPresenceSteps);
+  }
+
+  private Step getCreateEventStep() {
+    return Optional.ofNullable(eventData).map(EventHelper::createEventStep).orElse(null);
   }
 
   static Step domainIntrospectionSteps() {
@@ -410,6 +411,27 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
   }
 
+  class UpdateDomainResourceInfoStep extends Step {
+
+    private final DomainPresenceInfo info;
+
+    UpdateDomainResourceInfoStep(DomainPresenceInfo info) {
+      super();
+      this.info = info;
+    }
+
+    @Override
+    public NextAction apply(Packet packet) {
+      if (deleting) {
+        executor.unregisterDomainPresenceInfo(info);
+      } else {
+        executor.registerDomainPresenceInfo(info);
+      }
+      return doNext(packet);
+    }
+  }
+
+
   class StartPlanStep extends Step {
 
     private final DomainPresenceInfo info;
@@ -421,12 +443,6 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
     @Override
     public NextAction apply(Packet packet) {
-      if (deleting) {
-        executor.unregisterDomainPresenceInfo(info);
-      } else {
-        executor.registerDomainPresenceInfo(info);
-      }
-
       return doNext(getNextSteps(), packet);
     }
 

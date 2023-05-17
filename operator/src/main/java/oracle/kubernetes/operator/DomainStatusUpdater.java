@@ -201,9 +201,10 @@ public class DomainStatusUpdater {
   /**
    * Creates an asynchronous step to initialize the domain status, if needed, to indicate that the operator has
    * seen the domain and is now working on it.
+   * @param hasEventData true if the make right operation is associated with an event.
    */
-  public static Step createStatusInitializationStep() {
-    return new StatusInitializationStep();
+  public static Step createStatusInitializationStep(boolean hasEventData) {
+    return new StatusInitializationStep(hasEventData);
   }
 
   /**
@@ -604,11 +605,20 @@ public class DomainStatusUpdater {
 
   public static class StatusInitializationStep extends DomainStatusUpdaterStep {
 
+    private final boolean hasEventData;
+
+    public StatusInitializationStep(boolean hasEventData) {
+      super();
+      this.hasEventData = hasEventData;
+    }
+
     @Override
     void modifyStatus(DomainStatus status) {
       if (status.getConditions().isEmpty()) {
-        status.addCondition(new DomainCondition(COMPLETED).withStatus(false));
-        status.addCondition(new DomainCondition(AVAILABLE).withStatus(false));
+        if (hasEventData) {
+          status.addCondition(new DomainCondition(COMPLETED).withStatus(false));
+          status.addCondition(new DomainCondition(AVAILABLE).withStatus(false));
+        }
       } else {
         status.markFailuresForRemoval(KUBERNETES);
         status.removeMarkedFailures();
