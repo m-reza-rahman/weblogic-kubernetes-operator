@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -177,8 +178,8 @@ class ItVzMiiDynamicUpdate {
     List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
     assertDoesNotThrow(() -> recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace));
     
-    logger.info("After configmap creation and Before introspectversion patching");
-    logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));  
+    logger.info("Waiting for 2 minutes");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(2));
     
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);    
     logger.info("Patched domain resource with introspectVersion {0}", introspectVersion);
@@ -233,6 +234,9 @@ class ItVzMiiDynamicUpdate {
     assertDoesNotThrow(() -> recreateVzConfigmapComponent(configmapcomponentname,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml",
             pathToAddClusterYaml.toString()), domainNamespace));
+    
+    logger.info("Waiting for 2 minutes");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(2));
 
     // change replica to have the servers running in the newly added cluster
     assertTrue(patchDomainResourceWithNewReplicaCountAtSpecLevel(
@@ -287,7 +291,6 @@ class ItVzMiiDynamicUpdate {
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
         encryptionSecretName, replicaCount, Arrays.asList(clusterName));
     domain.spec().configuration().model().setOnlineUpdate(new OnlineUpdate().enabled(Boolean.TRUE));
-    logger.info(Yaml.dump(domain));
     domain.spec().configuration().model().setConfigMap(configMapName);
     logger.info(Yaml.dump(domain));
 
