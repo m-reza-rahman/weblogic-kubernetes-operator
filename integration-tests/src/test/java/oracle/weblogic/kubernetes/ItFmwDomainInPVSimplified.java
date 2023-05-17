@@ -107,7 +107,6 @@ class ItFmwDomainInPVSimplified {
   private static String dbUrl = null;
   private static LoggingFacade logger = null;
   private static String DOMAINHOMEPREFIX = null;
-  private static final String domainUid = "jrfonpv-simplified";
   private static final String clusterName = "cluster-1";
   private static final int replicaCount = 2;
 
@@ -169,6 +168,7 @@ class ItFmwDomainInPVSimplified {
   @Test
   @DisplayName("Create a FMW domainon on PV using WDT")
   void testFmwDomainOnPVUsingWdt() {
+    String domainUid = "jrfonpv-simplified";
     final String pvName = getUniqueName(domainUid + "-pv-");
     final String pvcName = getUniqueName(domainUid + "-pvc-");
     final int t3ChannelPort = getNextFreePort();
@@ -180,7 +180,7 @@ class ItFmwDomainInPVSimplified {
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create a model property file
-    File fmwModelPropFile = createWdtPropertyFile();
+    File fmwModelPropFile = createWdtPropertyFile("jrfonpv-simplified1", RCUSCHEMAPREFIX + "1");
 
     // create domainCreationImage
     String domainCreationImageName = DOMAIN_IMAGES_REPO + "jrf-domain-on-pv-image";
@@ -230,16 +230,17 @@ class ItFmwDomainInPVSimplified {
     verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
   }
 
-  private File createWdtPropertyFile() {
+  private File createWdtPropertyFile(String domainName, String rcuSchemaPrefix) {
 
     // create property file used with domain model file
     Properties p = new Properties();
     p.setProperty("rcuDb", dbUrl);
-    p.setProperty("rcuSchemaPrefix", RCUSCHEMAPREFIX);
+    p.setProperty("rcuSchemaPrefix", rcuSchemaPrefix);
     p.setProperty("rcuSchemaPassword", RCUSCHEMAPASSWORD);
     p.setProperty("rcuSysPassword", RCUSYSPASSWORD);
     p.setProperty("adminUsername", ADMIN_USERNAME_DEFAULT);
     p.setProperty("adminPassword", ADMIN_PASSWORD_DEFAULT);
+    p.setProperty("domainName", domainName);
 
     // create a model property file
     File domainPropertiesFile = assertDoesNotThrow(() ->
