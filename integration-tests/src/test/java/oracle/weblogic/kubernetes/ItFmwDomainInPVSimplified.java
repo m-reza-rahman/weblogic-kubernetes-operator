@@ -209,7 +209,38 @@ class ItFmwDomainInPVSimplified {
         String.format("createSecret failed for %s", opsswalletpassSecretName));
 
     // create a domain resource
+    Map<String, Quantity> pvCapacity = new HashMap<>();
+    pvCapacity.put("storage", new Quantity("10Gi"));
+
+    Map<String, Quantity> pvcRequest = new HashMap<>();
+    pvcRequest.put("storage", new Quantity("10Gi"));
+
     logger.info("Creating domain custom resource");
+    Configuration configuration = new Configuration()
+                .initializeDomainOnPV(new InitializeDomainOnPV()
+                    .persistentVolume(new PersistentVolume()
+                        .metadata(new V1ObjectMeta()
+                            .name(pvName))
+                        .spec(new PersistentVolumeSpec()
+                            .storageClassName(storageClassName)
+                            .capacity(pvCapacity)
+                            .persistentVolumeReclaimPolicy("Retain")
+                            .hostPath(new V1HostPathVolumeSource()
+                                .path(getHostPath(pvName, this.getClass().getSimpleName())))))
+                    .persistentVolumeClaim(new PersistentVolumeClaim()
+                        .metadata(new V1ObjectMeta()
+                            .name(pvcName))
+                        .spec(new PersistentVolumeClaimSpec()
+                            .storageClassName(storageClassName)
+                            .resources(new V1ResourceRequirements()
+                                .requests(pvcRequest))))
+                    .domain(new DomainOnPV()
+                        .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
+                        .domainCreationImages(Collections.singletonList(domainCreationImage))
+                        .domainType(DomainOnPVType.JRF)
+                        .opss(new Opss()
+                            .walletPasswordSecret(opsswalletpassSecretName))));
+
     DomainResource domain = createDomainResourceOnPv(
             domainUid,
             domainNamespace,
@@ -220,8 +251,7 @@ class ItFmwDomainInPVSimplified {
             DOMAINHOMEPREFIX,
             replicaCount,
             t3ChannelPort,
-            Collections.singletonList(domainCreationImage),
-            opsswalletpassSecretName);
+            configuration);
 
     // Set the inter-pod anti-affinity for the domain custom resource
     setPodAntiAffinity(domain);
@@ -251,7 +281,7 @@ class ItFmwDomainInPVSimplified {
     // create FMW domain credential secret
     createSecretWithUsernamePassword(wlSecretName, domainNamespace,
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
-    
+
     // create persistent volume and persistent volume claim for domain
     createPV(pvName, domainUid, this.getClass().getSimpleName());
     createPVC(pvName, pvcName, domainUid, domainNamespace);
@@ -284,18 +314,27 @@ class ItFmwDomainInPVSimplified {
 
     // create a domain resource
     logger.info("Creating domain custom resource");
+    Configuration configuration = 
+                new Configuration()
+                .initializeDomainOnPV(new InitializeDomainOnPV()
+                    .domain(new DomainOnPV()
+                        .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
+                        .domainCreationImages(Collections.singletonList(domainCreationImage))
+                        .domainType(DomainOnPVType.JRF)
+                        .opss(new Opss()
+                            .walletPasswordSecret(opsswalletpassSecretName))));
+
     DomainResource domain = createDomainResourceOnPv(
             domainUid,
             domainNamespace,
             wlSecretName,
             clusterName,
+            pvName,
+            pvcName,
             DOMAINHOMEPREFIX,
             replicaCount,
             t3ChannelPort,
-            Collections.singletonList(domainCreationImage),
-            opsswalletpassSecretName,
-            pvName,
-            pvcName);
+            configuration);
 
     // Set the inter-pod anti-affinity for the domain custom resource
     setPodAntiAffinity(domain);
@@ -341,14 +380,7 @@ class ItFmwDomainInPVSimplified {
                                                   String domainInHomePrefix,
                                                   int replicaCount,
                                                   int t3ChannelPort,
-                                                  List<DomainCreationImage> domainCreationImages,
-                                                  String walletPasswordSecret) {
-
-    Map<String, Quantity> pvCapacity = new HashMap<>();
-    pvCapacity.put("storage", new Quantity("10Gi"));
-
-    Map<String, Quantity> pvcRequest = new HashMap<>();
-    pvcRequest.put("storage", new Quantity("10Gi"));
+                                                  Configuration configuration) {
 
     // create a domain custom resource configuration object
     DomainResource domain = new DomainResource()
@@ -397,113 +429,10 @@ class ItFmwDomainInPVSimplified {
                     .addChannelsItem(new Channel()
                         .channelName("T3Channel")
                         .nodePort(t3ChannelPort))))
-            .configuration(new Configuration()
-                .initializeDomainOnPV(new InitializeDomainOnPV()
-                    .persistentVolume(new PersistentVolume()
-                        .metadata(new V1ObjectMeta()
-                            .name(pvName))
-                        .spec(new PersistentVolumeSpec()
-                            .storageClassName(storageClassName)
-                            .capacity(pvCapacity)
-                            .persistentVolumeReclaimPolicy("Retain")
-                            .hostPath(new V1HostPathVolumeSource()
-                                .path(getHostPath(pvName, this.getClass().getSimpleName())))))
-                    .persistentVolumeClaim(new PersistentVolumeClaim()
-                        .metadata(new V1ObjectMeta()
-                            .name(pvcName))
-                        .spec(new PersistentVolumeClaimSpec()
-                            .storageClassName(storageClassName)
-                            .resources(new V1ResourceRequirements()
-                                .requests(pvcRequest))))
-                    .domain(new DomainOnPV()
-                        .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
-                        .domainCreationImages(domainCreationImages)
-                        .domainType(DomainOnPVType.JRF)
-                        .opss(new Opss()
-                            .walletPasswordSecret(walletPasswordSecret))))));
-
+            .configuration(configuration));
     // create cluster resource for the domain
     if (!Cluster.doesClusterExist(clusterName, CLUSTER_VERSION, domainNamespace)) {
-      ClusterResource cluster = createClusterResource(clusterName,
-          clusterName, domainNamespace, replicaCount);
-      createClusterAndVerify(cluster);
-    }
-    domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterName));
-
-    return domain;
-  }
-
-  private DomainResource createDomainResourceOnPv(String domainUid,
-                                                  String domNamespace,
-                                                  String adminSecretName,
-                                                  String clusterName,
-                                                  String domainInHomePrefix,
-                                                  int replicaCount,
-                                                  int t3ChannelPort,
-                                                  List<DomainCreationImage> domainCreationImages,
-                                                  String walletPasswordSecret,
-                                                  String pvName,
-                                                  String pvcName) {
-
-    // create a domain custom resource configuration object
-    DomainResource domain = new DomainResource()
-        .apiVersion(DOMAIN_API_VERSION)
-        .kind("Domain")
-        .metadata(new V1ObjectMeta()
-            .name(domainUid)
-            .namespace(domNamespace))
-        .spec(new DomainSpec()
-            .domainUid(domainUid)
-            .domainHome(domainInHomePrefix + domainUid)
-            .domainHomeSourceType("PersistentVolume")
-            .image(FMWINFRA_IMAGE_TO_USE_IN_SPEC)
-            .imagePullPolicy(IMAGE_PULL_POLICY)
-            .imagePullSecrets(Collections.singletonList(
-                new V1LocalObjectReference()
-                    .name(BASE_IMAGES_REPO_SECRET_NAME)))
-            .webLogicCredentialsSecret(new V1LocalObjectReference()
-                .name(adminSecretName))
-            .includeServerOutInPodLog(true)
-            .logHomeEnabled(Boolean.TRUE)
-            .logHome("/shared/" + domNamespace + "/logs/" + domainUid)
-            .dataHome("")
-            .serverStartPolicy("IfNeeded")
-            .failureRetryIntervalSeconds(FAILURE_RETRY_INTERVAL_SECONDS)
-            .failureRetryLimitMinutes(FAILURE_RETRY_LIMIT_MINUTES)
-            .serverPod(new ServerPod() //serverpod
-                .addEnvItem(new V1EnvVar()
-                    .name("JAVA_OPTIONS")
-                    .value("-Dweblogic.StdoutDebugEnabled=false"))
-                .addEnvItem(new V1EnvVar()
-                    .name("USER_MEM_ARGS")
-                    .value("-Djava.security.egd=file:/dev/./urandom"))
-                .addVolumesItem(new V1Volume()
-                    .name(pvName)
-                    .persistentVolumeClaim(new V1PersistentVolumeClaimVolumeSource()
-                        .claimName(pvcName)))
-                .addVolumeMountsItem(new V1VolumeMount()
-                    .mountPath("/shared")
-                    .name(pvName)))
-            .adminServer(new AdminServer() //admin server
-                .adminService(new AdminService()
-                    .addChannelsItem(new Channel()
-                        .channelName("default")
-                        .nodePort(0))
-                    .addChannelsItem(new Channel()
-                        .channelName("T3Channel")
-                        .nodePort(t3ChannelPort))))
-            .configuration(new Configuration()
-                .initializeDomainOnPV(new InitializeDomainOnPV()
-                    .domain(new DomainOnPV()
-                        .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
-                        .domainCreationImages(domainCreationImages)
-                        .domainType(DomainOnPVType.JRF)
-                        .opss(new Opss()
-                            .walletPasswordSecret(walletPasswordSecret))))));
-
-    // create cluster resource for the domain
-    if (!Cluster.doesClusterExist(clusterName, CLUSTER_VERSION, domainNamespace)) {
-      ClusterResource cluster = createClusterResource(clusterName,
+      ClusterResource cluster = createClusterResource(domainUid + "-" + clusterName,
           clusterName, domainNamespace, replicaCount);
       createClusterAndVerify(cluster);
     }
