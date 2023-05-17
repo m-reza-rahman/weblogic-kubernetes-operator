@@ -31,7 +31,7 @@ public class DomainStatusNoConditionMatcher extends TypeSafeDiagnosingMatcher<Do
     return this;
   }
 
-  DomainStatusNoConditionMatcher withReason(@Nonnull DomainFailureReason reason) {
+  public DomainStatusNoConditionMatcher withReason(@Nonnull DomainFailureReason reason) {
     unexpectedReason = reason;
     return this;
   }

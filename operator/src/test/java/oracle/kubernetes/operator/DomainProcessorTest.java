@@ -1556,7 +1556,7 @@ class DomainProcessorTest {
     testSupport.addDomainPresenceInfo(newInfo);
     testSupport.runSteps(DomainStatusUpdater.createStatusInitializationStep(false));
 
-    assertThat(newInfo.getDomain().getStatus(), hasNoCondition(FAILED));
+    assertThat(newInfo.getDomain().getStatus(), hasNoCondition(FAILED).withReason(KUBERNETES));
   }
 
   @Test
