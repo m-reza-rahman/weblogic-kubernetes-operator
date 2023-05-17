@@ -495,9 +495,9 @@ public class LoggingExporter {
               "/bin/sh", "-c", cmd));
       assertNotNull(statusLine, "curl command returns null");
 
-      logger.info("Status.stdout() ###{0}### for index ***{1}***", statusLine.stdout(), indexRegex);
-      logger.info("Status.stderr() ###{0}###  for index ***{1}***", statusLine.stderr(), indexRegex);
-      logger.info("Status.toString() ###{0}### for index ***{1}***", statusLine.toString(), indexRegex);
+      logger.info("Status.stdout(): ###{0}### for index ***{1}***", statusLine.stdout(), indexRegex);
+      logger.info("Status.stderr(): ###{0}###  for index ***{1}***", statusLine.stderr(), indexRegex);
+      logger.info("Status.toString(): ###{0}### for index ***{1}***", statusLine.toString(), indexRegex);
       if (null != statusLine.stdout() && !statusLine.stdout().isEmpty()) {
         break;
       }
