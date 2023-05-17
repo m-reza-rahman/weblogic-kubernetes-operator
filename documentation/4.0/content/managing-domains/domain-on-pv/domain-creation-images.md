@@ -3,7 +3,7 @@ title = "Domain creation images"
 date = 2019-02-23T16:45:16-05:00
 weight = 25
 pre = "<b> </b>"
-description = "Domain creation images are used to supply the WDT artifacts for Domain on PV."
+description = "Domain creation images supply the WDT artifacts for Domain on PV."
 +++
 
 {{< table_of_contents >}}
@@ -13,10 +13,10 @@ description = "Domain creation images are used to supply the WDT artifacts for D
 Domain creation images are used for supplying model files, variable files,
 application archive files, and WebLogic Deploy Tooling (WDT) installation files when deploying a domain using
 a Domain on PV model.  You will distribute model files, application archives, and the
-WebLogic Deploy Tooling executable using these images.  Operator will use the WDT tool and artifacts to
+WebLogic Deploy Tooling executable using these images.  Then, the operator uses WDT and WDT artifacts to
 manage the domain.
 
-**Note:**  These images are _only_ used for creating the domain, and will not be used to update the domain.
+**Note:**  These images are _only_ used for creating the domain and will not be used to update the domain.
 
 ### Configuration
 
@@ -28,7 +28,7 @@ otherwise.
 If image pull secrets are required for pulling the images, then the secrets must be referenced using `domain.spec.imagePullSecrets`.
 
 Also, optionally, you can configure the [source locations](#source-locations) of the WebLogic Deploy Tooling model
-and installation files in the image using the `sourceModelHome` and `sourceWDTInstallHome` fields, described in the following
+and installation files in the image using the `sourceModelHome` and `sourceWDTInstallHome` fields, as described in this
 [section](#source-locations).
 
 - For details about each field, see the [References](#references).
@@ -102,7 +102,7 @@ spec:
 
 #### Example 2: Source locations
 
-This example is same as Example 1 except that it specifies the source locations for the WebLogic Deploy Tooling model and installation files.
+This example is the same as Example 1, except that it specifies the source locations for the WebLogic Deploy Tooling model and installation files.
 
 ```
 spec:

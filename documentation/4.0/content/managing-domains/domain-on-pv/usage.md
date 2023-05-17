@@ -84,8 +84,8 @@ The image layout follows this directory structure:
 
 You can create your own image using your familiar method or use the [WebLogic Image Tool (WIT)](https://github.com/oracle/weblogic-image-tool).
 
-For example, using WIT, because the file structure is the same as an [Auxiliary Image]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}) that's used in the Model in Image domain home type, you can
-use the same command `createAuxImage`.
+For example, because the file structure is the same as an [Auxiliary Image]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}) that's used in the Model in Image domain home type, you can
+use the same WIT command `createAuxImage`.
 
 ```
 $ imagetool.sh createAuxImage --wdtArchive /home/acme/myapp/wdt/myapp.zip \
@@ -141,7 +141,7 @@ persistent storage in the Kubernetes environment. You can either use an existing
 for you.
 
 The specifications of `PersistentVolume` and `PersistentVolumeClaim` are environment specific and often require information
-from your Kubernetes cluster administrator. See [PV and PVC in different environments](#references).
+from your Kubernetes cluster administrator. See [Persistent Storage](#references) in different environments.
 
 For example, if you specify the specification of the `Persistent Volume` and `Persistent Volume Claim` in the domain resource YAML file,  
 then the operator will create the `PV` and `PVC`, and mount the persistent volume to the `/share` directory.
