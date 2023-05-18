@@ -150,6 +150,10 @@ pipeline {
     }
 
     parameters {
+        string(name: 'BRANCH',
+               description: 'The branch to run the tests on',
+               defaultValue: 'main'
+        )
         choice(name: 'BUCKET_NAME',
                 description: 'Verrazzano buildto use.',
                 choices: [
