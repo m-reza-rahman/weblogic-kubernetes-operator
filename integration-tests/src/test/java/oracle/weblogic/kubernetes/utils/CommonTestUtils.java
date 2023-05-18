@@ -1785,7 +1785,6 @@ public class CommonTestUtils {
    * @return the image name and tag
    */
   public static String getKindRepoImageForSpec(String kindRepo, String imageName, String imageTag, int prefixLength) {
-    getLogger().info("kindRepo: {0}, imageName:{1}, imageTag{2}, prefixLength:{3}");
     String result = imageName + ":" + imageTag;
     if (kindRepo != null && kindRepo.length() > 0) {
       String imageNoPrefix = result.substring(prefixLength);
@@ -1794,7 +1793,6 @@ public class CommonTestUtils {
       }
       result = kindRepo + "/" + imageNoPrefix;
     }
-    getLogger().info(result);
     return result;
   }
 

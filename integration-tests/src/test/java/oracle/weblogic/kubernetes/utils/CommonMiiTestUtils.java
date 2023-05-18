@@ -30,7 +30,6 @@ import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
-import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.AuxiliaryImage;
@@ -1178,7 +1177,6 @@ public class CommonMiiTestUtils {
                       .imagePullSecrets(Arrays.asList(
                           new V1LocalObjectReference()
                               .name(TEST_IMAGES_REPO_SECRET_NAME)))))); // this secret is used only for non-kind cluster
-      logger.info(Yaml.dump(jobBody));
 
       String jobName = createJobAndWaitUntilComplete(jobBody, namespace);
 

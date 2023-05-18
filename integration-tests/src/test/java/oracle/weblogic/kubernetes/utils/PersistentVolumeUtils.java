@@ -26,7 +26,6 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeSpec;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
-import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static java.nio.file.Files.createDirectories;
@@ -318,7 +317,6 @@ public class PersistentVolumeUtils {
         .securityContext(new V1SecurityContext()
             .runAsGroup(0L)
             .runAsUser(0L));
-    getLogger().info(Yaml.dump(container));
     return container;
   }
 
