@@ -604,10 +604,9 @@ public class DomainStatusUpdater {
   }
 
   public static class StatusInitializationStep extends DomainStatusUpdaterStep {
-
     private final boolean hasEventData;
 
-    public StatusInitializationStep(boolean hasEventData) {
+    StatusInitializationStep(boolean hasEventData) {
       super();
       this.hasEventData = hasEventData;
     }
