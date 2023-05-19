@@ -25,8 +25,6 @@ import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Installer;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.assertions.impl.Deployment;
@@ -38,7 +36,6 @@ import static oracle.weblogic.kubernetes.TestConstants.BUSYBOX_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HTTP_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
@@ -48,6 +45,7 @@ import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.isPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
+//import static oracle.weblogic.kubernetes.utils.LoggingExporterUtils.verifyLoggingExporterReady;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -561,7 +559,7 @@ public class LoggingExporter {
     int i = 0;
     ExecResult statusLine = null;
 
-    String cmd1 = k8sExecCmdPrefixBuff
+    String cmd1 = new StringBuffer("curl http://")
         .append(elasticSearchHost)
         .append(":")
         .append(ELASTICSEARCH_HTTP_PORT)
@@ -573,12 +571,14 @@ public class LoggingExporter {
     assertNotNull(statusLine, "curl command returns null");
     logger.info("1.1 Status.toString(): {0} ###{1}### for index ***{2}***", "\n",statusLine.toString(), indexRegex);
 
+    /*
     CommandParams params = new CommandParams().defaults();
     String cmd2 = KUBERNETES_CLI + " get pods --all-namespaces";
     logger.info("==1.2 Command to get logging exporter status line {0}", cmd2);
     params.command(cmd2);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
     logger.info("1.2 result.toString(): {0} @@@{1}@@@ for index !!!{2}!!!", "\n",result.toString(), indexRegex);
+    */
 
     logger.info("==2. Command to get logging exporter status line {0}", cmd);
     statusLine = assertDoesNotThrow(() -> execCommand(opNamespace, operatorPodName, null, true,

@@ -62,6 +62,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_TYPE;
+import static oracle.weblogic.kubernetes.TestConstants.LOGSTASH_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
@@ -223,8 +224,12 @@ class ItElasticLoggingFluentd {
     Map<String, String> kibanaMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null,
         KIBANA_INDEX_KEY);
 
+    Map<String, String> logstachMap =
+        verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, LOGSTASH_INDEX_KEY);
+
     // merge testVarMap and kibanaMap
     testVarMap.putAll(kibanaMap);
+    testVarMap.putAll(logstachMap);
   }
 
   /**
@@ -270,6 +275,28 @@ class ItElasticLoggingFluentd {
   @Test
   @DisplayName("Use Fluentd to send log information to Elasticsearch and verify")
   void testFluentdQuery() {
+    // get Operator pod name
+    String operatorPodName = assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
+    assertTrue(operatorPodName != null && !operatorPodName.isEmpty(), "Failed to get Operator pad name");
+
+    //http://elasticsearch.ns-lkutsi.svc.cluster.local:9200/logstash-2023.05.19-000001/_count?q=level:INFO
+    String indexName = testVarMap.get("logstash");
+    String cmd = new StringBuffer("curl  --connect-timeout 5 --max-time 5 -X GET http://")
+        .append(elasticSearchHost)
+        .append(":")
+        .append(ELASTICSEARCH_HTTP_PORT)
+        .append("/")
+        .append(indexName)
+        .append("/_count?q=level:INFO")
+        .toString();
+    logger.info("======== Exec command {0} in Operator pod {1}", cmd, operatorPodName);
+
+    ExecResult execResult = assertDoesNotThrow(
+        () -> execCommand(opNamespace, operatorPodName, null, true,
+            "/bin/sh", "-c", cmd));
+    assertNotNull(execResult, "curl command returns null");
+    logger.info("======== Search query returns execResult.toString: " + execResult.toString());
+
     // verify Fluentd query results
     withStandardRetryPolicy.untilAsserted(
         () -> assertTrue(queryAndVerify(),
