@@ -308,22 +308,5 @@ public class ItFmwDomainInPvUserCreateRcu {
     hostPVPath = createPVHostPathDir(pvName, className);
     return hostPVPath.toString();
   }
-
-  /**
-   * Shutdown the domain by setting serverStartPolicy as "Never".
-   */
-  private void shutdownDomain() {
-    patchDomainResourceServerStartPolicy("/spec/serverStartPolicy", "Never", domainNamespace, domainUid);
-    logger.info("Domain is patched to stop entire WebLogic domain");
-
-    // make sure all the server pods are removed after patch
-    checkPodDeleted(adminServerPodName, domainUid, domainNamespace);
-    for (int i = 1; i <= replicaCount; i++) {
-      checkPodDeleted(managedServerPodNamePrefix + i, domainUid, domainNamespace);
-    }
-
-    logger.info("Domain shutdown success");
-
-  }
-
+  
 }
