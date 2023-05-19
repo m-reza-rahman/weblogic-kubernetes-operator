@@ -222,23 +222,6 @@ class ItElasticLoggingFluentd {
     String operatorPodName = assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
     assertTrue(operatorPodName != null && !operatorPodName.isEmpty(), "Failed to get Operator pad name");
 
-    //http://elasticsearch.ns-lkutsi.svc.cluster.local:9200/logstash-2023.05.19-000001/_count?q=level:INFO
-    String indexName = testVarMap.get("logstash");
-    String cmd = new StringBuffer("curl  --connect-timeout 5 --max-time 5 -X GET http://")
-        .append(elasticSearchHost)
-        .append(":")
-        .append(ELASTICSEARCH_HTTP_PORT)
-        .append("/")
-        .append(indexName)
-        .append("/_count?q=level:INFO")
-        .toString();
-    logger.info("======== Exec command {0} in Operator pod {1}", cmd, operatorPodName);
-    ExecResult execResult = assertDoesNotThrow(
-        () -> execCommand(opNamespace, operatorPodName, null, true,
-            "/bin/sh", "-c", cmd));
-    assertNotNull(execResult, "curl command returns null");
-    logger.info("======== Search logstash returns execResult.toString: " + execResult.toString());
-
     //curl http://elasticsearch.ns-qcgpyp.svc.cluster.local:9200/_cat/nodes
     String cmd1 = new StringBuffer("curl  --connect-timeout 5 --max-time 5 -X GET http://")
         .append(elasticSearchHost)
@@ -247,7 +230,7 @@ class ItElasticLoggingFluentd {
         .append("/_cat/nodes")
         .toString();
     logger.info("======== Exec command {0} in Operator pod {1}", cmd1, operatorPodName);
-    execResult = assertDoesNotThrow(
+    ExecResult execResult = assertDoesNotThrow(
         () -> execCommand(opNamespace, operatorPodName, null, true,
             "/bin/sh", "-c", cmd1));
     assertNotNull(execResult, "curl command returns null");
@@ -267,6 +250,24 @@ class ItElasticLoggingFluentd {
         INTROSPECTOR_INDEX_KEY));
     testVarMap.putAll(verifyLoggingExporterReady(opNamespace, elasticSearchNs, null,
         KIBANA_INDEX_KEY));
+
+    //http://elasticsearch.ns-lkutsi.svc.cluster.local:9200/logstash-2023.05.19-000001/_count?q=level:INFO
+    String indexName = testVarMap.get("logstash");
+    String cmd = new StringBuffer("curl  --connect-timeout 5 --max-time 5 -X GET http://")
+        .append(elasticSearchHost)
+        .append(":")
+        .append(ELASTICSEARCH_HTTP_PORT)
+        .append("/")
+        .append(indexName)
+        .append("/_count?q=level:INFO")
+        .toString();
+    logger.info("======== Exec command {0} in Operator pod {1}", cmd, operatorPodName);
+    execResult = assertDoesNotThrow(
+        () -> execCommand(opNamespace, operatorPodName, null, true,
+          "/bin/sh", "-c", cmd));
+    assertNotNull(execResult, "curl command returns null");
+    logger.info("======== Search logstash returns execResult.toString: " + execResult.toString());
+
     testVarMap.putAll(verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, FLUENTD_INDEX_KEY));
     /*
     Map<String, String> kibanaMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null,
