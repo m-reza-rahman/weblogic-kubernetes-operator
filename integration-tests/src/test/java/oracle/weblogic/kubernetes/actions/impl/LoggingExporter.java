@@ -25,6 +25,8 @@ import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Installer;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.assertions.impl.Deployment;
@@ -36,6 +38,7 @@ import static oracle.weblogic.kubernetes.TestConstants.BUSYBOX_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HTTP_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
@@ -571,14 +574,40 @@ public class LoggingExporter {
     assertNotNull(statusLine, "curl command returns null");
     logger.info("1.1 Status.toString(): {0} ###{1}### for index ***{2}***", "\n",statusLine.toString(), indexRegex);
 
-    /*
     CommandParams params = new CommandParams().defaults();
     String cmd2 = KUBERNETES_CLI + " get pods --all-namespaces";
     logger.info("==1.2 Command to get logging exporter status line {0}", cmd2);
     params.command(cmd2);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
     logger.info("1.2 result.toString(): {0} @@@{1}@@@ for index !!!{2}!!!", "\n",result.toString(), indexRegex);
-    */
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " get pods --namespace=kube-system -l k8s-app=kube-dns";
+    logger.info("==1.3 Command to verify that the DNS pod is running: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("1.3 result.toString(): {0} @{1}@ for index !{2}!", "\n",result.toString(), indexRegex);
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " logs --namespace=kube-system -l k8s-app=kube-dns";
+    logger.info("==1.4 Command to see logs for the DNS containers: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("1.4 result.toString(): {0} @{1}@ for index !{2}!", "\n",result.toString(), indexRegex);
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " get svc --namespace=kube-system";
+    logger.info("==1.5 Command to verify that the DNS service is up: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("1.5 result.toString(): {0} @{1}@ for index !{2}!", "\n",result.toString(), indexRegex);
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " get endpoints kube-dns --namespace=kube-system";
+    logger.info("==1.6 Command to verify that DNS endpoints are exposed: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("1.6 result.toString(): {0} @{1}@ for index !{2}!", "\n",result.toString(), indexRegex);
 
     logger.info("==2. Command to get logging exporter status line {0}", cmd);
     statusLine = assertDoesNotThrow(() -> execCommand(opNamespace, operatorPodName, null, true,
