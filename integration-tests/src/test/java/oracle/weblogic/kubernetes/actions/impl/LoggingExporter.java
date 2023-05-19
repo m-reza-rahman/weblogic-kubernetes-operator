@@ -571,7 +571,6 @@ public class LoggingExporter {
     statusLine = assertDoesNotThrow(() -> execCommand(opNamespace, operatorPodName, null, true,
         "/bin/sh", "-c", cmd1));
     assertNotNull(statusLine, "curl command returns null");
-
     logger.info("1.1 Status.toString(): {0} ###{1}### for index ***{2}***", "\n",statusLine.toString(), indexRegex);
 
     CommandParams params = new CommandParams().defaults();

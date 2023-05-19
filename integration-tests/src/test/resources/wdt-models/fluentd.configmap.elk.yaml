@@ -6,7 +6,7 @@
 </match>
 <source>
       @type tail
-      @log_level debug
+      @log_level trace
       path "#{ENV['LOG_PATH']}"
       pos_file /tmp/server.log.pos
       read_from_head true
@@ -49,25 +49,25 @@
 </source>
 <match "#{ENV['DOMAIN_UID']}">
       @type elasticsearch
-      @log_level debug
+      @log_level trace
       host "#{ENV['ELASTICSEARCH_HOST']}"
       port "#{ENV['ELASTICSEARCH_PORT']}"
       index_name "#{ENV['DOMAIN_UID']}"
       type_name fluentd
       logstash_format true
       logstash_prefix fluentd
-      #include_tag_key true
-      #tag_key @log_name
+      include_tag_key true
+      tag_key @log_name
 </match>
 <match "#{ENV['DOMAIN_UID']}-introspector">
 @type elasticsearch
-@log_level debug
+@log_level trace
 host "#{ENV['ELASTICSEARCH_HOST']}"
 port "#{ENV['ELASTICSEARCH_PORT']}"
 index_name "#{ENV['DOMAIN_UID']}"
 type_name introspectord
 logstash_format true
 logstash_prefix introspectord
-  #include_tag_key true
-  #tag_key @log_name
+include_tag_key true
+tag_key @log_name
 </match>
