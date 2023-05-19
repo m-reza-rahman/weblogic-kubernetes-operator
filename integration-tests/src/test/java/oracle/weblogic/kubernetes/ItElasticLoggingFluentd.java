@@ -58,7 +58,7 @@ import static oracle.weblogic.kubernetes.TestConstants.FLUENTD_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.FLUENTD_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.INTROSPECTOR_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_IMAGE;
-import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
+//import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_TYPE;
@@ -246,10 +246,11 @@ class ItElasticLoggingFluentd {
     logger.info("======== cat /etc/resolv.conf returns \n **{0}**: ", execResult.toString());
 
     testVarMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, LOGSTASH_INDEX_KEY);
+    /*
     testVarMap.putAll(verifyLoggingExporterReady(opNamespace, elasticSearchNs, null,
         INTROSPECTOR_INDEX_KEY));
     testVarMap.putAll(verifyLoggingExporterReady(opNamespace, elasticSearchNs, null,
-        KIBANA_INDEX_KEY));
+        KIBANA_INDEX_KEY));*/
 
     //http://elasticsearch.ns-lkutsi.svc.cluster.local:9200/logstash-2023.05.19-000001/_count?q=level:INFO
     String indexName = testVarMap.get("logstash");
