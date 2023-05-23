@@ -486,7 +486,11 @@ EOF
                     }
                     steps {
                         script {
-                            currentBuild.description = "${GIT_BRANCH} ${MAVEN_PROFILE_NAME}"
+                            if (env.JOB_NAME == 'wko-kind-weekly') {
+                                currentBuild.description = "${WEBLOGIC_IMAGE_NAME}:${WEBLOGIC_IMAGE_TAG}"
+                            } else {
+                                currentBuild.description = "${GIT_BRANCH} ${MAVEN_PROFILE_NAME}"
+                            }
                             def res = 0
                             res = sh(script: '''
                                     if [ -z "${IT_TEST}" ] && [ "${MAVEN_PROFILE_NAME}" = "integration-tests" ]; then
