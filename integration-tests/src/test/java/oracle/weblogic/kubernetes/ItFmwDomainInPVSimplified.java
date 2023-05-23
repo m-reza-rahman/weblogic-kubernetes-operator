@@ -328,8 +328,10 @@ class ItFmwDomainInPVSimplified {
                             .storageClassName(storageClassName)
                             .capacity(pvCapacity)
                             .persistentVolumeReclaimPolicy("Retain")
+                            /*.hostPath(new V1HostPathVolumeSource()
+                                .path(getHostPath(pvName, this.getClass().getSimpleName())))))*/
                             .hostPath(new V1HostPathVolumeSource()
-                                .path(getHostPath(pvName, this.getClass().getSimpleName())))))
+                                .path("/share"))))
                     .persistentVolumeClaim(new PersistentVolumeClaim()
                         .metadata(new V1ObjectMeta()
                             .name(pvcName))
