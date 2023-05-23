@@ -97,11 +97,11 @@ pipeline {
         )
         string(name: 'WDT_DOWNLOAD_URL',
                description: 'URL to download WDT.',
-               defaultValue: 'https://github.com/oracle/weblogic-deploy-tooling/releases/latest'
+               //defaultValue: 'https://github.com/oracle/weblogic-deploy-tooling/releases/latest'
         )
         string(name: 'WIT_DOWNLOAD_URL',
                description: 'URL to download WIT.',
-               defaultValue: 'https://github.com/oracle/weblogic-image-tool/releases/latest'
+               //defaultValue: 'https://github.com/oracle/weblogic-image-tool/releases/latest'
         )
         string(name: 'REPO_REGISTRY',
                description: '',
@@ -394,8 +394,8 @@ EOF
                             chmod 777 ${WORKSPACE}/terraform/*.sh
                             mkdir -p ${WORKSPACE}/terraform/terraforminstall
                             sh ${WORKSPACE}/terraform/oke.create.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
-                            export okeclustername=\"${CLUSTER_NAME}\"
-                            clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+                            
+                            clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"${${CLUSTER_NAME}}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
                             echo "clusterIp : $clusterIP"
                             clusterPublicIP=${clusterIP:1:-6}
                             echo " clusterPublicIP : ${clusterPublicIP}"
