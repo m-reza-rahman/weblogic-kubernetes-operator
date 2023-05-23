@@ -262,7 +262,7 @@ pipeline {
                         wkt_compartment_ocid=$(oci iam compartment list --compartment-id-in-subtree true --all | jq --arg compname "$compname" '.data[] | select(."name"==$compname)' | jq -r ."id")
                         vcn_ocid=$(oci network vcn list --compartment-id=${wkt_compartment_ocid}| jq -r '.data[] | .id')
                         pub_subnet_ocid=$(oci network subnet list --compartment-id=${wkt_compartment_ocid}  | jq '.data[] | select(."display-name" == "Public-Subnet-wktiso1")' | jq -r ."id")
-                        private_subnet_ocid=$(oci network subnet list --compartment-id=${wkt_compartment_ocid}  | jq '.data[] | select(."display-name" == "Private-Subnet-wktiso1")| jq -r ."id")
+                        private_subnet_ocid=$(oci network subnet list --compartment-id=${wkt_compartment_ocid}  | jq '.data[] | select(."display-name" == "Private-Subnet-wktiso1")' | jq -r ."id")
                         export WKT_TENANCY_OCID=${TENANCY_OCID}
                         export WKT_USER_OCID=${USER_OCID}
                         mkdir -p ${WORKSPACE}/terraform
