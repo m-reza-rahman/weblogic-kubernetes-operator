@@ -43,6 +43,8 @@ import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.steps.DeleteDomainStep;
 import oracle.kubernetes.operator.steps.ManagedServersUpStep;
@@ -68,6 +70,8 @@ import static oracle.kubernetes.operator.helpers.EventHelper.createEventStep;
  */
 public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainPresenceInfo>
     implements MakeRightDomainOperation {
+
+  public static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
   private boolean deleting;
   private boolean inspectionRun;
@@ -154,6 +158,9 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
   @Override
   public void execute() {
+    if (isExplicitRecheck()) {
+      LOGGER.info("XXX execute: isRetry " + liveInfo.isPopulated());
+    }
     executor.runMakeRight(this);
   }
 

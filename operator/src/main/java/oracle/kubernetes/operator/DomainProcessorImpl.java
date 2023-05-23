@@ -417,6 +417,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private boolean isRetryOnFailure(DomainPresenceInfo info) {
+    LOGGER.info("XXX isRetryOnFailure: " + !info.isPopulated());
     return !info.isPopulated();
   }
 
@@ -1074,6 +1075,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     private void scheduleRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
       final MakeRightDomainOperation retry = operation.createRetry(domainPresenceInfo);
+      LOGGER.info("XXX scheduleRetry: in " + delayUntilNextRetry(domainPresenceInfo) + " seconds");
       gate.getExecutor().schedule(retry::execute, delayUntilNextRetry(domainPresenceInfo), TimeUnit.SECONDS);
     }
     
