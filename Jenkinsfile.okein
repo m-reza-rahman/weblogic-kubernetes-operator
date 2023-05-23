@@ -41,9 +41,7 @@ pipeline {
         outdir = "${WORKSPACE}/staging"
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root = "${outdir}/k8s-pvroot"
-        
-        //WKT_TENANCY_OCID = credentials("${tenacy_ocid}")
-        WKT_TENANCY_OCID = 'tbd'
+
         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
@@ -65,16 +63,16 @@ pipeline {
 
         string(name: 'OKE_KUBE_VERSION',
                description: 'kube version for oke cluster',
-               defaultValue: '1.25.4'
+               defaultValue: '1.26.2'
         )
         string(name: 'IMAGE_ID',
                        description: 'oci image id for node pool, find image OCID for your region from https://docs.oracle.com/iaas/images/',
                        //defaultValue7.6: 'ocid1.image.oc1.phx.aaaaaaaancucg25pze6m52agxwxmmfszvsdnhp3kvim53pts2tw6mik4xtha'
-                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaancq36l7q4fqwznqhnp626wuekkq7twk2em5ysyd65bd4xho72tmq'
+                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaaaizmtmozeudeeuq7o5ir7dkl2bkxbbb3tgomshqbqn6jpomrsjz'
                 )
         string(name: 'KUBECTL_VERSION',
                        description: 'kubectl version',
-                       defaultValue: '1.25.4'
+                       defaultValue: '1.26.2'
                 )
         string(name: 'HELM_VERSION',
                description: 'Helm version',
@@ -233,7 +231,7 @@ pipeline {
                 stage('Setup terraform property file  ') {
                     environment {
                         OKE_CLUSTER_NAME="${CLUSTER_NAME}"
-                        NODE_SHAPE="VM.Standard2.24"
+                        NODE_SHAPE="VM.Standard.E3.Flex"
                         IMAGE_ID="${IMAGE_ID}"
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
                         FINGERPRINT = 'wkobuild_cert_fingerprint'
@@ -260,8 +258,11 @@ pipeline {
                         TENANCY_OCID=$(grep -Po '(?<=tenancy=).*' ${jenkins_home_directory}/.oci/config)
                         USER_OCID=$(grep -Po '(?<=user=).*' ${jenkins_home_directory}/.oci/config)
                         FINGERPRINT=$(grep -Po '(?<=fingerprint=).*' ${jenkins_home_directory}/.oci/config)
-                        VCN_OCID=$(oci network vcn list --compartment-id=ocid1.compartment.oc1..aaaaaaaapezmdp2gyz57osorhmjug7e5rqqudnlipxpubpdgydfd2mckn72q | jq -r '.data[] | .id')
-                        PUB_SUBNET_OCID=test=`oci network subnet list --compartment-id=ocid1.compartment.oc1..aaaaaaaapezmdp2gyz57osorhmjug7e5rqqudnlipxpubpdgydfd2mckn72q  | jq '.data[] | select(."display-name" == "Public-Subnet-wktiso1")|.id'`
+                        compname="wkt"
+                        wkt_compartment_ocid=$(oci iam compartment list --compartment-id-in-subtree true --all | jq --arg compname "$compname" '.data[] | select(."name"==$compname)' | jq -r ."id")
+                        vcn_ocid=$(oci network vcn list --compartment-id=${wkt_compartment_ocid}| jq -r '.data[] | .id')
+                        pub_subnet_ocid=$(oci network subnet list --compartment-id=${wkt_compartment_ocid}  | jq '.data[] | select(."display-name" == "Public-Subnet-wktiso1")' | jq -r ."id")
+                        private_subnet_ocid=$(oci network subnet list --compartment-id=${wkt_compartment_ocid}  | jq '.data[] | select(."display-name" == "Private-Subnet-wktiso1")| jq -r ."id")
                         export WKT_TENANCY_OCID=${TENANCY_OCID}
                         export WKT_USER_OCID=${USER_OCID}
                         mkdir -p ${WORKSPACE}/terraform
@@ -286,11 +287,12 @@ pipeline {
 
 
                         export OKE_CLUSTER="true"
-                        if [ ${MAVEN_PROFILE_NAME} = 'oke-parallel' ]; then
-                           VCN_CIDR_PREFIX="10.4"
-                        else
-                           VCN_CIDR_PREFIX="10.3"
-                        fi
+                        #if [ ${MAVEN_PROFILE_NAME} = 'oke-parallel' ]; then
+                        #   VCN_CIDR_PREFIX="10.196"
+                        #else
+                        #   VCN_CIDR_PREFIX="10.196"
+                        #fi
+                        VCN_CIDR_PREFIX="10.196"
                         export VCN_CIDR_PREFIX=${VCN_CIDR_PREFIX}
 
                         export OKE_CLUSTER_NAME=${OKE_CLUSTER_NAME}
@@ -314,14 +316,15 @@ tfvars.filename=${OKE_CLUSTER_NAME}
 region=${wko_region}
 tenancy.ocid=${WKT_TENANCY_OCID}
 compartment.ocid=${COMPARTMENT_OCID}
-sub.compartment.ocid=${SUB_COMPARTMENT_OCID}
+sub.compartment.ocid=${wkt_compartment_ocid}
 compartment.name=${compartmentName}
 ociapi.pubkey.fingerprint=${FINGERPRINT}
 ocipk.path=${jenkins_home_directory}/.oci/oci-signing-key.pem
 vcn.cidr.prefix=${VCN_CIDR_PREFIX}
-vcn.cidr=${VCN_CIDR_PREFIX}.0.0/16
-vcn.ocid=${VCN_OCID}
-pub.subnet.ocid=${PUB_SUBNET_OCID}
+vcn.cidr=${VCN_CIDR_PREFIX}.1.0/24
+vcn.ocid=${vcn_ocid}
+pub.subnet.ocid=${pub_subnet_ocid}
+private.subnet.ocid=${private_subnet_ocid}
 nodepool.shape=${NODE_SHAPE}
 nodepool.imagename=${IMAGE_ID}
 k8s.version=v${OKE_KUBE_VERSION}
@@ -365,7 +368,7 @@ EOF
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
                         CLUSTER_NAME="${CLUSTER_NAME}"
                         KUBECONFIG ="${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
-                        terraform_script_dir_name = "${WORKSPACE}/integration-tests/src/test/resources/oke/terraform/"
+                        terraform_script_dir_name = "${WORKSPACE}/integration-tests/src/test/resources/oke/terraform/okeint"
 
                     }
                     steps {
@@ -381,16 +384,25 @@ EOF
 
                             echo 'Create a OKE cluster ${CLUSTER_NAME}'
 
-                            cp -rf ${terraform_script_dir_name}/*.tf ${WORKSPACE}/terraform/.
-                            if [ "${MAVEN_PROFILE_NAME}" = 'oke-parallel' ]; then
-                                cp -rf ${terraform_script_dir_name}/twoclusters/mount_target.tf ${WORKSPACE}/terraform/.
-                                cp -rf ${terraform_script_dir_name}/twoclusters/file_system.tf ${WORKSPACE}/terraform/.
-                            fi
-                            cp -rf ${WORKSPACE}/kubernetes/samples/scripts/terraform/template.tfvars ${WORKSPACE}/terraform/.
-                            cp -rf ${WORKSPACE}/kubernetes/samples/scripts/terraform/*.sh ${WORKSPACE}/terraform/.
+                            cp -rf ${terraform_script_dir_name}/*.* ${WORKSPACE}/terraform/.
+                            #if [ "${MAVEN_PROFILE_NAME}" = 'oke-parallel' ]; then
+                            #    cp -rf ${terraform_script_dir_name}/twoclusters/mount_target.tf ${WORKSPACE}/terraform/.
+                            #    cp -rf ${terraform_script_dir_name}/twoclusters/file_system.tf ${WORKSPACE}/terraform/.
+                            #fi
+                            #cp -rf ${WORKSPACE}/kubernetes/samples/scripts/terraform/template.tfvars ${WORKSPACE}/terraform/.
+                            #cp -rf ${WORKSPACE}/kubernetes/samples/scripts/terraform/*.sh ${WORKSPACE}/terraform/.
                             chmod 777 ${WORKSPACE}/terraform/*.sh
                             mkdir -p ${WORKSPACE}/terraform/terraforminstall
                             sh ${WORKSPACE}/terraform/oke.create.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
+                            export okeclustername=\"${CLUSTER_NAME}\
+                            clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+                            echo "clusterIp : $clusterIP"
+                            clusterPublicIP=${clusterIP:1:-6}
+                            echo " clusterPublicIP : ${clusterPublicIP}"
+                            export NO_PROXY=$NO_PROXY,${clusterPublicIP}
+                            echo "NO_PROXY:" $NO_PROXY
+
+
                             export SERVICE_ACCOUNT_NAME=${CLUSTER_NAME}-sa
                             ${KUBERNETES_CLI:-kubectl} -n kube-system create serviceaccount ${SERVICE_ACCOUNT_NAME}
                             ${KUBERNETES_CLI:-kubectl} create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:${SERVICE_ACCOUNT_NAME}
@@ -424,7 +436,13 @@ EOF
                         echo "creating storage class to setup OFSS ..."
                         echo "getting MountTarget ID"
                         mount_target_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`
-
+                        export okeclustername=\"${CLUSTER_NAME}\
+                        clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+                        echo "clusterIp : $clusterIP"
+                        clusterPublicIP=${clusterIP:1:-6}
+                        echo " clusterPublicIP : ${clusterPublicIP}"
+                        export NO_PROXY=$NO_PROXY,${clusterPublicIP}
+                        echo "NO_PROXY:" $NO_PROXY
                         echo "Creating Storage Class to mount OFSS"
                         export MOUNT_TARGET_ID=${mount_target_id}
                         sed -i 's@%MOUNT_TARGET_ID%@'"$MOUNT_TARGET_ID"'@' ${WORKSPACE}/integration-tests/src/test/resources/oke/ofss.yaml
@@ -466,6 +484,13 @@ EOF
                             #chmod 600 ${WORKSPACE}/rsaokepk
                             touch ${WORKSPACE}/.mvn/maven.config
                             export KUBECONFIG=${kubeconfig_file}
+                            export okeclustername=\"${CLUSTER_NAME}\
+                            clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+                            echo "clusterIp : $clusterIP"
+                            clusterPublicIP=${clusterIP:1:-6}
+                            echo " clusterPublicIP : ${clusterPublicIP}"
+                            export NO_PROXY=$NO_PROXY,${clusterPublicIP}
+                            echo "NO_PROXY:" $NO_PROXY
                             NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
                             if [ -z "${NODE_IP}" ]; then
                                     echo "retry get node ip ";
