@@ -474,88 +474,97 @@ EOF
                                  error('Profile/ItTests Validation Failed')
                              }
                         }
-                        sh '''
-                            export PATH=${runtime_path}
-                            export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
-                            export OCI_CLI_PROFILE=${oci_profile}
-                            compartment_ocid=${compartment_id}
-                            mkdir -m777 -p "${WORKSPACE}/.mvn"
-                            #cp ${OKE_SSH_PRIVATE_KEY} ${WORKSPACE}/rsaokepk
-                            #chmod 600 ${WORKSPACE}/rsaokepk
-                            touch ${WORKSPACE}/.mvn/maven.config
-                            export KUBECONFIG=${kubeconfig_file}
-                            export okeclustername=\"${CLUSTER_NAME}\
-                            clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
-                            echo "clusterIp : $clusterIP"
-                            clusterPublicIP=${clusterIP:1:-6}
-                            echo " clusterPublicIP : ${clusterPublicIP}"
-                            export NO_PROXY=$NO_PROXY,${clusterPublicIP}
-                            echo "NO_PROXY:" $NO_PROXY
-                            NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
-                            if [ -z "${NODE_IP}" ]; then
-                                    echo "retry get node ip ";
-                              sleep 15;
-                              NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
-                            fi
+                        withCredentials([
+                             string(credentialsId: "${wko_files_bucket_token}", variable: 'WKO_BUCKET_TOKEN')
+                        ]) {
+                            sh '''
+                                if [ -z $WIT_DOWNLOAD_URL ]; then
+                                    WIT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/imagetool-main.zip"
+                                fi
+                                if [ -z $WDT_DOWNLOAD_URL ]; then
+                                    WDT_DOWNLOAD_URL="https://objectstorage.${wko_region}.oraclecloud.com/p/${WKO_BUCKET_TOKEN}/n/${wko_tenancy}/b/wko-system-test-files/o/weblogic-deploy-main.zip"
+                                fi
 
-                            export K8S_NODEPORT_HOST=${NODE_IP}
-                            NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| head -n2 | tail -n1`
-                            echo "second node external IP ${NODE_IP}"
-                            export NODE_IP=${NODE_IP}
-                            echo "expand disk volume for nodes"
-                            ssh -o StrictHostKeyChecking=no -i ${wkotest_ssh_pk} opc@${K8S_NODEPORT_HOST} 'sudo /usr/libexec/oci-growfs -y'
-                            ssh -o StrictHostKeyChecking=no -i ${wkotest_ssh_pk} opc@${NODE_IP} 'sudo /usr/libexec/oci-growfs -y'
-                            mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
+                                export PATH=${runtime_path}
+                                export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
+                                export OCI_CLI_PROFILE=${oci_profile}
+                                compartment_ocid=${compartment_id}
+                                mkdir -m777 -p "${WORKSPACE}/.mvn"
+                                touch ${WORKSPACE}/.mvn/maven.config
+                                export KUBECONFIG=${kubeconfig_file}
+                                export okeclustername=\"${CLUSTER_NAME}\
+                                clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+                                echo "clusterIp : $clusterIP"
+                                clusterPublicIP=${clusterIP:1:-6}
+                                echo " clusterPublicIP : ${clusterPublicIP}"
+                                export NO_PROXY=$NO_PROXY,${clusterPublicIP}
+                                echo "NO_PROXY:" $NO_PROXY
+                                NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
+                                if [ -z "${NODE_IP}" ]; then
+                                        echo "retry get node ip ";
+                                  sleep 15;
+                                  NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
+                                fi
 
-                            mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
+                                export K8S_NODEPORT_HOST=${NODE_IP}
+                                NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| head -n2 | tail -n1`
+                                echo "second node external IP ${NODE_IP}"
+                                export NODE_IP=${NODE_IP}
+                                #echo "expand disk volume for nodes"
+                                #ssh -o StrictHostKeyChecking=no -i ${wkotest_ssh_pk} opc@${K8S_NODEPORT_HOST} 'sudo /usr/libexec/oci-growfs -y'
+                                #ssh -o StrictHostKeyChecking=no -i ${wkotest_ssh_pk} opc@${NODE_IP} 'sudo /usr/libexec/oci-growfs -y'
+                                mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
-                            if [ -z "${mt_private_ip}" ]; then
-                               echo "Mount Target was not setup properly , clean up Kubernetes cluster"
-                               sh ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
-                               exit -1
-                            fi
-                            export NFS_SERVER=$mt_private_ip
-                            export FSS_DIR=${FSS_DIR}
-                            echo "Using NFS Server ${NFS_SERVER}"
-                            export NO_PROXY="${K8S_NODEPORT_HOST}"
+                                mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
 
-                            if [ "${MAVEN_PROFILE_NAME}" == "oke-sequential" ]; then
-                                PARALLEL_RUN='false'
-                            elif [ -n "${IT_TEST}" ]; then
-                                echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
-                                MAVEN_PROFILE_NAME="integration-tests"
-                                echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
-                            fi
-                            echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.result.root=\"${result_root}\""                                               >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.pv.root=\"${pv_root}\""                                                       >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.k8s.nodeport.host=\"${K8S_NODEPORT_HOST}\""                                   >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.kind.repo=\"localhost:${registry_port}\""                                     >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.istio.version=\"${ISTIO_VERSION}\""                                           >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-DPARALLEL_CLASSES=\"${PARALLEL_RUN}\""                                                >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-DNUMBER_OF_THREADS=\"${NUMBER_OF_THREADS}\""                                          >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.wdt.download.url=\"${WDT_DOWNLOAD_URL}\""                                     >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.wit.download.url=\"${WIT_DOWNLOAD_URL}\""                                     >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.base.images.repo=\"${BASE_IMAGES_REPO}\""                                     >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.base.images.tenancy=\"${wko_tenancy}\""                                       >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.test.images.repo=\"${TEST_IMAGES_REPO}\""                                     >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.test.images.tenancy=\"${wko_tenancy}\""                                       >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.weblogic.image.name=\"${WEBLOGIC_IMAGE_NAME}\""                               >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.weblogic.image.tag=\"${WEBLOGIC_IMAGE_TAG}\""                                 >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.fmwinfra.image.name=\"${FMWINFRA_IMAGE_NAME}\""                               >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.fmwinfra.image.tag=\"${FMWINFRA_IMAGE_TAG}\""                                 >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.db.image.name=\"${DB_IMAGE_NAME}\""                                           >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.db.image.tag=\"${DB_IMAGE_TAG}\""                                             >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.monitoring.exporter.branch=\"${MONITORING_EXPORTER_BRANCH}\""                 >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.monitoring.exporter.webapp.version=\"${MONITORING_EXPORTER_WEBAPP_VERSION}\"" >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.prometheus.chart.version=\"${PROMETHEUS_CHART_VERSION}\""                     >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.grafana.chart.version=\"${GRAFANA_CHART_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
-                            echo "-Dwko.it.collect.logs.on.success=\"${COLLECT_LOGS_ON_SUCCESS}\""                       >> ${WORKSPACE}/.mvn/maven.config
+                                if [ -z "${mt_private_ip}" ]; then
+                                   echo "Mount Target was not setup properly , clean up Kubernetes cluster"
+                                   sh ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
+                                   exit -1
+                                fi
+                                export NFS_SERVER=$mt_private_ip
+                                export FSS_DIR=${FSS_DIR}
+                                echo "Using NFS Server ${NFS_SERVER}"
+                                #export NO_PROXY="${K8S_NODEPORT_HOST}"
 
-                            echo "${WORKSPACE}/.mvn/maven.config contents:"
-                            cat "${WORKSPACE}/.mvn/maven.config"
-                            cp "${WORKSPACE}/.mvn/maven.config" "${result_root}"
-                        '''
+                                if [ "${MAVEN_PROFILE_NAME}" == "oke-sequential" ]; then
+                                    PARALLEL_RUN='false'
+                                elif [ -n "${IT_TEST}" ]; then
+                                    echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
+                                    MAVEN_PROFILE_NAME="integration-tests"
+                                    echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
+                                fi
+                                echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.result.root=\"${result_root}\""                                               >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.pv.root=\"${pv_root}\""                                                       >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.k8s.nodeport.host=\"${K8S_NODEPORT_HOST}\""                                   >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.kind.repo=\"localhost:${registry_port}\""                                     >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.istio.version=\"${ISTIO_VERSION}\""                                           >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-DPARALLEL_CLASSES=\"${PARALLEL_RUN}\""                                                >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-DNUMBER_OF_THREADS=\"${NUMBER_OF_THREADS}\""                                          >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.wdt.download.url=\"${WDT_DOWNLOAD_URL}\""                                     >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.wit.download.url=\"${WIT_DOWNLOAD_URL}\""                                     >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.base.images.repo=\"${BASE_IMAGES_REPO}\""                                     >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.base.images.tenancy=\"${wko_tenancy}\""                                       >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.test.images.repo=\"${TEST_IMAGES_REPO}\""                                     >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.test.images.tenancy=\"${wko_tenancy}\""                                       >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.weblogic.image.name=\"${WEBLOGIC_IMAGE_NAME}\""                               >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.weblogic.image.tag=\"${WEBLOGIC_IMAGE_TAG}\""                                 >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.fmwinfra.image.name=\"${FMWINFRA_IMAGE_NAME}\""                               >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.fmwinfra.image.tag=\"${FMWINFRA_IMAGE_TAG}\""                                 >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.db.image.name=\"${DB_IMAGE_NAME}\""                                           >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.db.image.tag=\"${DB_IMAGE_TAG}\""                                             >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.monitoring.exporter.branch=\"${MONITORING_EXPORTER_BRANCH}\""                 >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.monitoring.exporter.webapp.version=\"${MONITORING_EXPORTER_WEBAPP_VERSION}\"" >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.prometheus.chart.version=\"${PROMETHEUS_CHART_VERSION}\""                     >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.grafana.chart.version=\"${GRAFANA_CHART_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.collect.logs.on.success=\"${COLLECT_LOGS_ON_SUCCESS}\""                       >> ${WORKSPACE}/.mvn/maven.config
+
+                                echo "${WORKSPACE}/.mvn/maven.config contents:"
+                                cat "${WORKSPACE}/.mvn/maven.config"
+                                cp "${WORKSPACE}/.mvn/maven.config" "${result_root}"
+                            '''
+                        }
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
                             withCredentials([
                                 usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS')
