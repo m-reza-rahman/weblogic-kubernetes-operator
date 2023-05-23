@@ -976,6 +976,11 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
     return spec.getDomainCreationConfigMap();
   }
 
+  public boolean hasRetriableFailure() {
+    return Optional.ofNullable(getStatus()).map(DomainStatus::getConditions)
+        .orElse(Collections.emptyList()).stream().anyMatch(c -> c.isRetriableFailure());
+  }
+
   class PrivateDomainApiImpl implements PrivateDomainApi {
 
     @Override

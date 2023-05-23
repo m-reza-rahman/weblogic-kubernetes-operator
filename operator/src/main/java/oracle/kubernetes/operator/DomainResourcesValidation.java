@@ -37,7 +37,6 @@ import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
-import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import org.jetbrains.annotations.NotNull;
 
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.CLUSTER_CHANGED;
@@ -291,14 +290,9 @@ class DomainResourcesValidation {
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
     if (eventItem != null) {
       makeRight.withEventData(new EventData(eventItem)).interrupt().execute();
-    } else if (!hasRetriableFailure(info)) {
+    } else if (!info.hasRetriableFailure()) {
       makeRight.execute();
     }
-  }
-
-  private boolean hasRetriableFailure(DomainPresenceInfo cachedInfo) {
-    return Optional.ofNullable(cachedInfo.getDomain()).map(DomainResource::getStatus).map(DomainStatus::getConditions)
-        .orElse(Collections.emptyList()).stream().anyMatch(c -> c.isRetriableFailure());
   }
 
   private EventItem getEventItem(DomainPresenceInfo info) {

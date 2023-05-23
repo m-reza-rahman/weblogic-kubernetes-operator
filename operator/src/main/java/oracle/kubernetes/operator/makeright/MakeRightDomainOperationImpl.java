@@ -214,7 +214,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   public Step createSteps() {
     final List<Step> result = new ArrayList<>();
 
-    result.add(new UpdateDomainResourceInfoStep(liveInfo));
+    result.add(new UpdateDomainPresenceInfoStep(liveInfo));
     if (deleting || domainHasDeletionTimestamp()) {
       result.add(new StartPlanStep(liveInfo, createDomainDownPlan()));
     } else {
@@ -410,11 +410,11 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
   }
 
-  class UpdateDomainResourceInfoStep extends Step {
+  class UpdateDomainPresenceInfoStep extends Step {
 
     private final DomainPresenceInfo info;
 
-    UpdateDomainResourceInfoStep(DomainPresenceInfo info) {
+    UpdateDomainPresenceInfoStep(DomainPresenceInfo info) {
       super();
       this.info = info;
     }
