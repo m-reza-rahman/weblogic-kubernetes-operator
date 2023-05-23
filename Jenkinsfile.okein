@@ -394,7 +394,7 @@ EOF
                             chmod 777 ${WORKSPACE}/terraform/*.sh
                             mkdir -p ${WORKSPACE}/terraform/terraforminstall
                             sh ${WORKSPACE}/terraform/oke.create.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
-                            
+
                             clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"${${CLUSTER_NAME}}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
                             echo "clusterIp : $clusterIP"
                             clusterPublicIP=${clusterIP:1:-6}
@@ -436,8 +436,8 @@ EOF
                         echo "creating storage class to setup OFSS ..."
                         echo "getting MountTarget ID"
                         mount_target_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`
-                        export okeclustername=\"${CLUSTER_NAME}\
-                        clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+
+                        clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"${CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
                         echo "clusterIp : $clusterIP"
                         clusterPublicIP=${clusterIP:1:-6}
                         echo " clusterPublicIP : ${clusterPublicIP}"
@@ -492,8 +492,8 @@ EOF
                                 mkdir -m777 -p "${WORKSPACE}/.mvn"
                                 touch ${WORKSPACE}/.mvn/maven.config
                                 export KUBECONFIG=${kubeconfig_file}
-                                export okeclustername=\"${CLUSTER_NAME}\
-                                clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+
+                                clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"${CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
                                 echo "clusterIp : $clusterIP"
                                 clusterPublicIP=${clusterIP:1:-6}
                                 echo " clusterPublicIP : ${clusterPublicIP}"
