@@ -413,12 +413,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private boolean shouldContinueExplicitRecheck(MakeRightDomainOperation operation, DomainPresenceInfo info) {
-    return operation.isExplicitRecheck() && (!info.hasRetriableFailure() || isRetryOnFailure(info));
-  }
-
-  private boolean isRetryOnFailure(DomainPresenceInfo info) {
-    LOGGER.info("XXX isRetryOnFailure: " + !info.isPopulated());
-    return !info.isPopulated();
+    return operation.isExplicitRecheck() && (!info.hasRetriableFailure() || operation.isRetryOnFailure());
   }
 
   private boolean isNewDomain(DomainPresenceInfo cachedInfo) {

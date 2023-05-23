@@ -75,6 +75,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
   private boolean deleting;
   private boolean inspectionRun;
+  private boolean retryOnFailure;
 
   /**
    * Create the operation.
@@ -98,7 +99,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   @Override
   public MakeRightDomainOperation createRetry(@Nonnull DomainPresenceInfo presenceInfo) {
     presenceInfo.setPopulated(false);
-    return cloneWith(presenceInfo).withExplicitRecheck();
+    return cloneWith(presenceInfo).withExplicitRecheck().retryOnFailure();
   }
 
   /**
@@ -147,6 +148,12 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   @Override
+  public MakeRightDomainOperation retryOnFailure() {
+    this.retryOnFailure = true;
+    return this;
+  }
+
+  @Override
   public boolean isDeleting() {
     return deleting;
   }
@@ -157,9 +164,14 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   @Override
+  public boolean isRetryOnFailure() {
+    return retryOnFailure;
+  }
+
+  @Override
   public void execute() {
     if (isExplicitRecheck()) {
-      LOGGER.info("XXX execute: isRetry " + liveInfo.isPopulated());
+      LOGGER.info("XXX execute: isRetry " + isRetryOnFailure());
     }
     executor.runMakeRight(this);
   }

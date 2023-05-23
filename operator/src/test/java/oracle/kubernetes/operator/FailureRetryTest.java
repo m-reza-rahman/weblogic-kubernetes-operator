@@ -371,6 +371,16 @@ class FailureRetryTest {
     }
 
     @Override
+    public MakeRightDomainOperation retryOnFailure() {
+      return this;
+    }
+
+    @Override
+    public boolean isRetryOnFailure() {
+      return true;
+    }
+
+    @Override
     public void execute() {
       executor.runMakeRight(this);
     }
