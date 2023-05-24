@@ -1918,12 +1918,22 @@ abstract class DomainStatusUpdateTestBase {
       }
 
       @Override
+      public MakeRightDomainOperation retryOnFailure() {
+        return null;
+      }
+
+      @Override
       public boolean hasEventData() {
         return false;
       }
 
       @Override
       public boolean isDeleting() {
+        return false;
+      }
+
+      @Override
+      public boolean isRetryOnFailure() {
         return false;
       }
 
