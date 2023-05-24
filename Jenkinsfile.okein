@@ -20,6 +20,8 @@ pipeline {
         wko_region = "${env.WKT_REGION}"
         compartment_id = "${env.WKT_TEST_COMPARTMENT_ID}"
         ocir_creds = 'wkt-ocir-creds'
+        wko_files_bucket_token = 'wko-system-test-files-bucket-par-token'
+
         oci_profile = 'DEFAULT'
         jenkins_user = sh(returnStdout: true, script: "id -nu").trim()
         jenkins_home_directory = sh(returnStdout: true, script: "getent passwd ${jenkins_user} | cut -d: -f6").trim()
@@ -596,7 +598,6 @@ EOF
                                 export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
                                 export OCI_CLI_PROFILE=${oci_profile}
                                 mkdir -m777 -p ${result_root}/kubelogs
-
                                 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 sudo mv -f ${result_root}/* "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
