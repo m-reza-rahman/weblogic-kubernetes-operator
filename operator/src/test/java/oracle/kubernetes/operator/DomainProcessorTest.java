@@ -424,6 +424,28 @@ class DomainProcessorTest {
   }
 
   @Test
+  void whenDomainWithRetriableFailureAndPopulated_dontContinueProcessing() {
+    originalInfo.setPopulated(true);
+    processor.registerDomainPresenceInfo(originalInfo);
+    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
+
+    processor.createMakeRightOperation(originalInfo).withExplicitRecheck().execute();
+
+    assertThat(logRecords, containsFine(NOT_STARTING_DOMAINUID_THREAD));
+  }
+
+  @Test
+  void whenDomainWithRetriableFailureAndRetryOnFailure_continueProcess() {
+    originalInfo.setPopulated(false);
+    processor.registerDomainPresenceInfo(originalInfo);
+    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
+
+    processor.createMakeRightOperation(originalInfo).withExplicitRecheck().retryOnFailure().execute();
+
+    assertThat(logRecords, not(containsFine(NOT_STARTING_DOMAINUID_THREAD)));
+  }
+
+  @Test
   void whenDomainChangedSpecNewer_setWillInterrupt() {
     processor.registerDomainPresenceInfo(originalInfo);
 
