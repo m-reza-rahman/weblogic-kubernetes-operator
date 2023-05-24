@@ -413,7 +413,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private boolean shouldContinueExplicitRecheck(MakeRightDomainOperation operation, DomainPresenceInfo info) {
-    return operation.isExplicitRecheck() && (!info.hasRetriableFailure() || operation.isRetryOnFailure());
+    return operation.isExplicitRecheck() && (info.hasNoRetriableFailure() || operation.isRetryOnFailure());
   }
 
   private boolean isNewDomain(DomainPresenceInfo cachedInfo) {
@@ -648,7 +648,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private String getPhase(@Nonnull V1PersistentVolumeClaim pvc) {
-    return Optional.ofNullable(pvc).map(V1PersistentVolumeClaim::getStatus)
+    return Optional.of(pvc).map(V1PersistentVolumeClaim::getStatus)
         .map(V1PersistentVolumeClaimStatus::getPhase).orElse(null);
   }
 

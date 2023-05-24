@@ -976,9 +976,9 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
     return spec.getDomainCreationConfigMap();
   }
 
-  public boolean hasRetriableFailure() {
+  public boolean hasNoRetriableFailure() {
     return Optional.ofNullable(getStatus()).map(DomainStatus::getConditions)
-        .orElse(Collections.emptyList()).stream().anyMatch(c -> c.isRetriableFailure());
+        .orElse(Collections.emptyList()).stream().noneMatch(DomainCondition::isRetriableFailure);
   }
 
   class PrivateDomainApiImpl implements PrivateDomainApi {
@@ -1580,7 +1580,7 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
 
     private V1Secret findSecret(List<V1Secret> secrets, String name, String namespace) {
       Optional<V1Secret> secret = secrets.stream().filter(s -> isSpecifiedSecret(s, name, namespace)).findFirst();
-      return secret.isPresent() ? secret.get() : null;
+      return secret.orElse(null);
     }
 
     private void addMissingModelConfigMap(KubernetesResourceLookup resourceLookup) {

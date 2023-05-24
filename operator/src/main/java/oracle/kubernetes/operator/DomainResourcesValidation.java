@@ -290,7 +290,7 @@ class DomainResourcesValidation {
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
     if (eventItem != null) {
       makeRight.withEventData(new EventData(eventItem)).interrupt().execute();
-    } else if (!info.hasRetriableFailure()) {
+    } else if (info.hasNoRetriableFailure()) {
       makeRight.execute();
     }
   }
