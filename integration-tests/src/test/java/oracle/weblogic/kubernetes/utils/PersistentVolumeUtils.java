@@ -204,6 +204,7 @@ public class PersistentVolumeUtils {
       String fssDir = FSS_DIR[new Random().nextInt(FSS_DIR.length)];
       LoggingFacade logger = getLogger();
       logger.info("Using FSS PV directory {0}", fssDir);
+      logger.info("Using NFS_SERVER  {0}", NFS_SERVER);
       v1pv.getSpec()
               .storageClassName("oci-fss")
               .nfs(new V1NFSVolumeSource()
