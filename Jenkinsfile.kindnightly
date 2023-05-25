@@ -250,7 +250,7 @@ pipeline {
         )
         string(name: 'PROMETHEUS_CHART_VERSION',
                description: '',
-               defaultValue: '15.2.0'
+               defaultValue: '17.0.0'
         )
         string(name: 'GRAFANA_CHART_VERSION',
                description: '',
