@@ -1944,7 +1944,11 @@ abstract class DomainStatusUpdateTestBase {
 
       @Override
       public void setInspectionRun() {
+      }
 
+      @Override
+      public EventHelper.EventData getEventData() {
+        return null;
       }
 
       @Override

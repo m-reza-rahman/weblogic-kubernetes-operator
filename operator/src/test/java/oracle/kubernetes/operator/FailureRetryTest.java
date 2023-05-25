@@ -371,8 +371,18 @@ class FailureRetryTest {
     }
 
     @Override
+    public boolean isDeleting() {
+      return false;
+    }
+
+    @Override
     public MakeRightDomainOperation retryOnFailure() {
       return this;
+    }
+
+    @Override
+    public EventHelper.EventData getEventData() {
+      return null;
     }
 
     @Override

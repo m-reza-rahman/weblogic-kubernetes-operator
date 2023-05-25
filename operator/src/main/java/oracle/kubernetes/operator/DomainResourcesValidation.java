@@ -272,8 +272,7 @@ class DomainResourcesValidation {
   private static void removeStrandedDomainPresenceInfo(DomainProcessor dp, DomainPresenceInfo info) {
     info.setDeleting(true);
     info.setPopulated(true);
-    dp.createMakeRightOperation(info).withExplicitRecheck().forDeletion().withEventData(new EventData(
-        EventItem.DOMAIN_DELETED)).execute();
+    dp.createMakeRightOperation(info).withExplicitRecheck().forDeletion().execute();
   }
 
   private Stream<DomainPresenceInfo> getActiveDomainPresenceInfos() {
@@ -290,7 +289,7 @@ class DomainResourcesValidation {
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
     if (eventItem != null) {
       makeRight.withEventData(new EventData(eventItem)).interrupt().execute();
-    } else if (info.hasNoRetriableFailure()) {
+    } else if (!info.hasRetriableFailure()) {
       makeRight.execute();
     }
   }

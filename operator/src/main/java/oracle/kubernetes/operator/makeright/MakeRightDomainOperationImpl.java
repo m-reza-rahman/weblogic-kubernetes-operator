@@ -73,7 +73,6 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
   public static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
-  private boolean deleting;
   private boolean inspectionRun;
   private boolean retryOnFailure;
 

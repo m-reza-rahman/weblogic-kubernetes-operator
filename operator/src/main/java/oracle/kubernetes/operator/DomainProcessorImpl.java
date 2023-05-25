@@ -385,10 +385,14 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     final DomainPresenceInfo cachedInfo = getExistingDomainPresenceInfo(liveInfo);
     if (isNewDomain(cachedInfo)) {
       return true;
-    } else if (liveInfo.isFromOutOfDateEvent(operation, cachedInfo)
-        || liveInfo.isDomainProcessingHalted(cachedInfo)) {
+    } else if (liveInfo.isFromOutOfDateEvent(operation, cachedInfo)) {
       return false;
-    } else if (shouldContinueExplicitRecheck(operation, liveInfo) || liveInfo.isDomainGenerationChanged(cachedInfo)) {
+    } else if (isDeleting(operation)) {
+      return true;
+    } else if (liveInfo.isDomainProcessingHalted(cachedInfo)
+        || hasRetriableFailureNonRetryingOperation(operation, liveInfo)) {
+      return false;
+    } else if (operation.isExplicitRecheck() || liveInfo.isDomainGenerationChanged(cachedInfo)) {
       return true;
     } else {
       cachedInfo.setDomain(liveInfo.getDomain());
@@ -398,7 +402,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private boolean shouldContinue(MakeRightClusterOperation operation, ClusterPresenceInfo liveInfo) {
     final ClusterPresenceInfo cachedInfo = getExistingClusterPresenceInfo(liveInfo);
-    if (hasDeletedClusterEventData(operation)) {
+    if (isDeleting(operation)) {
       return findClusterPresenceInfo(liveInfo.getNamespace(), liveInfo.getResourceName());
     } else if (isNewCluster(cachedInfo)) {
       return true;
@@ -412,8 +416,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
   }
 
-  private boolean shouldContinueExplicitRecheck(MakeRightDomainOperation operation, DomainPresenceInfo info) {
-    return operation.isExplicitRecheck() && (info.hasNoRetriableFailure() || operation.isRetryOnFailure());
+  private boolean hasRetriableFailureNonRetryingOperation(MakeRightDomainOperation operation, DomainPresenceInfo info) {
+    return info.hasRetriableFailure() && !operation.isRetryOnFailure();
   }
 
   private boolean isNewDomain(DomainPresenceInfo cachedInfo) {
@@ -428,11 +432,15 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     return Optional.ofNullable(clusters.get(namespace)).orElse(Collections.emptyMap()).get(clusterName) != null;
   }
 
-  private boolean hasDeletedClusterEventData(MakeRightClusterOperation operation) {
+  private boolean isDeleting(MakeRightClusterOperation operation) {
     return EventItem.CLUSTER_DELETED == getEventItem(operation);
   }
 
-  private EventItem getEventItem(MakeRightClusterOperation operation) {
+  private boolean isDeleting(MakeRightDomainOperation operation) {
+    return operation.isDeleting() || EventItem.DOMAIN_DELETED == getEventItem(operation);
+  }
+
+  private EventItem getEventItem(MakeRightOperation operation) {
     return Optional.ofNullable(operation.getEventData()).map(EventData::getItem).orElse(null);
   }
 
