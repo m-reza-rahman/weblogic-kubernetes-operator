@@ -268,7 +268,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     //delete the rcu pod
     assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
               "Got exception while deleting server " + "rcu");
-    checkPodDoesNotExist("rcu", domainUid1, dbNamespace);
+    checkPodDoesNotExist("rcu", null, dbNamespace);
 
   }
 

@@ -103,6 +103,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.setVolumeSource;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.awaitility.Awaitility.with;
@@ -120,6 +121,7 @@ public class DbUtils {
   private static final String CREATE_REPOSITORY_SCRIPT = "createRepository.sh";
   private static final String RCUTYPE = "fmw";
   private static final String RCUPODNAME = "rcu";
+  //private static final String RCUPODNAMEPREFIX = "rcu";
   private static final String SYSUSERNAME = "sys";
   private static final String SYSPASSWORD = "Oradoc_db1";
   private static final String RCUPASSWORD = "Oradoc_db1";
@@ -377,8 +379,11 @@ public class DbUtils {
       throws ApiException {
     LoggingFacade logger = getLogger();
 
+    //before create pod ensure rcu pod does not exist
+    checkPodDoesNotExist(RCUPODNAME, null, dbNamespace);
+
     Map<String, String> labels = new HashMap<>();
-    labels.put("ruc", "rcu");
+    labels.put("rcu", "rcu");
 
     V1Pod podBody = new V1Pod()
         .apiVersion("v1")
@@ -804,7 +809,7 @@ public class DbUtils {
     String dbOpPodName = "oracle-database-operator-controller-manager";
     getLogger().info("Wait for the database operator {0} pod to be ready in namespace {1}",
         dbOpPodName, namespace);
-    PodUtils.checkPodDoesNotExist(dbOpPodName, null, namespace);
+    checkPodDoesNotExist(dbOpPodName, null, namespace);
   }
 
   /**
@@ -986,7 +991,7 @@ public class DbUtils {
     assertTrue(response, "Failed to delete Oracle database");
     getLogger().info("Wait for the database {0} pod to be deleted in namespace {1}",
         dbName, namespace);
-    PodUtils.checkPodDoesNotExist(dbName, null, namespace);
+    checkPodDoesNotExist(dbName, null, namespace);
   }
 
 
