@@ -41,6 +41,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.deletePod;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.addSccToDBSvcAccount;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -56,6 +57,7 @@ import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -84,11 +86,10 @@ public class ItFmwDomainInPvUserCreateRcu {
   private static String dbUrl = null;
   private static LoggingFacade logger = null;
   private static String DOMAINHOMEPREFIX = null;
-  private static final String domainUid1 = "domainonpv-userrcu1";
+  private static final String domainUid1 = "jrfdomainonpv-userrcu1";
   private static final String miiAuxiliaryImage1Tag = "jrf1" + MII_BASIC_IMAGE_TAG;
   private final String adminSecretName1 = domainUid1 + "-weblogic-credentials";
   private final String rcuaccessSecretName1 = domainUid1 + "-rcu-credentials";
-  //private final String encryptionSecretName = domainUid1 + "-encryptionsecret";
   private final String opsswalletpassSecretName1 = domainUid1 + "-opss-wallet-password-secret";
   private final String opsswalletfileSecretName1 = domainUid1 + "-opss-wallet-file-secret";
   private static final int replicaCount = 1;
@@ -99,7 +100,7 @@ public class ItFmwDomainInPvUserCreateRcu {
   private Path hostPVPath = null;
   /*TODO private static String pvName = null;
   private static String pvcName = null;*/
-  private static DomainCreationImage domainCreationImage = null;
+  private static DomainCreationImage domainCreationImage1 = null;
 
   /**
    * Assigns unique namespaces for DB, operator and domain.
@@ -134,16 +135,6 @@ public class ItFmwDomainInPvUserCreateRcu {
     assertDoesNotThrow(() -> setupDB(DB_IMAGE_TO_USE_IN_SPEC, dbNamespace, getNextFreePort(), dbListenerPort),
         String.format("Failed to setup DB in the namespace %s with dbUrl %s, dbListenerPost %s",
             dbNamespace, dbUrl, dbListenerPort));
-
-    //DOMAINHOMEPREFIX = "/shared/" + domainNamespace + "/domains/";
-    // TODO start DB and create RCU schema
-    /*logger.info("Start DB and create RCU schema for namespace: {0}, dbListenerPort: {1}, RCU prefix: {2}, "
-            + "dbUrl: {3}, dbImage: {4},  fmwImage: {5} ", dbNamespace, dbListenerPort, RCUSCHEMAPREFIX, dbUrl,
-        DB_IMAGE_TO_USE_IN_SPEC, FMWINFRA_IMAGE_TO_USE_IN_SPEC);
-    assertDoesNotThrow(() -> setupDBandRCUschema(DB_IMAGE_TO_USE_IN_SPEC, FMWINFRA_IMAGE_TO_USE_IN_SPEC,
-        RCUSCHEMAPREFIX, dbNamespace, getNextFreePort(), dbUrl, dbListenerPort),
-        String.format("Failed to create RCU schema for prefix %s in the namespace %s with "
-            + "dbUrl %s, dbListenerPost %s", RCUSCHEMAPREFIX, dbNamespace, dbUrl, dbListenerPort));*/
 
     // install operator with DomainOnPvSimplification=true"
     HelmParams opHelmParams =
@@ -196,18 +187,9 @@ public class ItFmwDomainInPvUserCreateRcu {
         ADMIN_PASSWORD_DEFAULT),
         String.format("createSecret failed for %s", adminSecretName1));
 
-    // create encryption secret
-    /*logger.info("Create encryption secret");
-    assertDoesNotThrow(() -> createSecretWithUsernamePassword(
-        encryptionSecretName,
-        domainNamespace,
-        "weblogicenc",
-        "weblogicenc"),
-        String.format("createSecret failed for %s", encryptionSecretName));*/
-
     // create RCU access secret
     logger.info("Creating RCU access secret: {0}, with prefix: {1}, dbUrl: {2}, schemapassword: {3})",
-        rcuaccessSecretName1, RCUSCHEMAPREFIX, RCUSCHEMAPASSWORD, dbUrl);
+        rcuaccessSecretName1, RCUSCHEMAPREFIX + "1", RCUSCHEMAPASSWORD, dbUrl);
     assertDoesNotThrow(() -> createRcuAccessSecret(
         rcuaccessSecretName1,
         domainNamespace,
@@ -235,22 +217,22 @@ public class ItFmwDomainInPvUserCreateRcu {
             .modelFiles(modelList)
             .modelVariableFiles(modelProList);
     createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImage1Tag, witParams);
-    domainCreationImage =
+    domainCreationImage1 =
         new DomainCreationImage().image(MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImage1Tag);
 
     // create a domain custom resource configuration object
-    logger.info("Creating domain custom resource with pvName: {0}, hostPath: {1}", pvName, pvHostPath);
+    logger.info("Creating domain custom resource with pvName: {0}", pvName);
     DomainResource domain = createDomainResourceSimplifyJrfPv(
         domainUid1, domainNamespace, adminSecretName1,
         TEST_IMAGES_REPO_SECRET_NAME,
         rcuaccessSecretName1,
         opsswalletpassSecretName1, null,
-        pvName, pvcName, Collections.singletonList(domainCreationImage));
+        pvName, pvcName, Collections.singletonList(domainCreationImage1));
 
     // create a domain custom resource and verify domain is created
     createDomainAndVerify(domain, domainNamespace);
 
-    // verify that all servers are ready and EM console is accessible
+    // verify that all servers are ready
     verifyDomainReady(domainNamespace, domainUid1, replicaCount, "nosuffix");
   }
 
@@ -285,7 +267,7 @@ public class ItFmwDomainInPvUserCreateRcu {
         TEST_IMAGES_REPO_SECRET_NAME,
         rcuaccessSecretName1,
         opsswalletpassSecretName1, opsswalletfileSecretName1,
-        pvName, pvcName, Collections.singletonList(domainCreationImage));
+        pvName, pvcName, Collections.singletonList(domainCreationImage1));
     // create a domain custom resource and verify domain is created
     createDomainAndVerify(domain, domainNamespace);
 
@@ -294,6 +276,10 @@ public class ItFmwDomainInPvUserCreateRcu {
 
     // delete the domain
     deleteDomainResource(domainNamespace, domainUid1);
+    //delete the rcu pod
+    assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
+              "Got exception while deleting server " + "rcu");
+    checkPodDoesNotExist("rcu", domainUid1, dbNamespace);
 
   }
 
@@ -305,6 +291,90 @@ public class ItFmwDomainInPvUserCreateRcu {
   @Order(3)
   @DisplayName("Create a FMW domain on PV with multiple images when user per-creates RCU")
   void testFmwDomainOnPvUserCreatesRCUMultiImages() {
+    String domainUid = "jrfdomainonpv-userrcu3";
+    String adminSecretName = domainUid + "-weblogic-credentials";
+    String rcuaccessSecretName = domainUid + "-rcu-credentials";
+    String opsswalletpassSecretName = domainUid + "-opss-wallet-password-secret";
+    //String opsswalletfileSecretName = domainUid3 + "-opss-wallet-file-secret";
+    final String pvName = getUniqueName(domainUid + "-pv-");
+    final String pvcName = getUniqueName(domainUid + "-pvc-");
+
+    //create RCU schema
+    assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX + "3",
+        dbUrl, dbNamespace),"create RCU schema failed");
+
+    // create a model property file
+    File fmwModelPropFile = createWdtPropertyFile(domainUid, RCUSCHEMAPREFIX + "3");
+
+    // Create the repo secret to pull the image
+    // this secret is used only for non-kind cluster
+    createTestRepoSecret(domainNamespace);
+
+    // create secret for admin credentials
+    logger.info("Create secret for admin credentials");
+    assertDoesNotThrow(() -> createSecretWithUsernamePassword(
+        adminSecretName,
+        domainNamespace,
+        ADMIN_USERNAME_DEFAULT,
+        ADMIN_PASSWORD_DEFAULT),
+        String.format("createSecret failed for %s", adminSecretName));
+
+    // create RCU access secret
+    logger.info("Creating RCU access secret: {0}, with prefix: {1}, dbUrl: {2}, schemapassword: {3})",
+        rcuaccessSecretName, RCUSCHEMAPREFIX + "3", RCUSCHEMAPASSWORD, dbUrl);
+    assertDoesNotThrow(() -> createRcuAccessSecret(
+        rcuaccessSecretName,
+        domainNamespace,
+        RCUSCHEMAPREFIX + "3",
+        RCUSCHEMAPASSWORD,
+        dbUrl),
+        String.format("createSecret failed for %s", rcuaccessSecretName));
+
+    logger.info("Create OPSS wallet password secret");
+    assertDoesNotThrow(() -> createOpsswalletpasswordSecret(
+        opsswalletpassSecretName,
+        domainNamespace,
+        ADMIN_PASSWORD_DEFAULT),
+        String.format("createSecret failed for %s", opsswalletpassSecretName));
+
+    List<String> modelList = new ArrayList<>();
+    modelList.add(MODEL_DIR + "/" + fmwModelFile);
+    List<String> modelProList = new ArrayList<>();
+    modelProList.add(fmwModelPropFile.toPath().toString());
+    String miiAuxiliaryImageTag = "jrf3" + MII_BASIC_IMAGE_TAG;
+    WitParams witParams =
+        new WitParams()
+            .modelImageName(MII_AUXILIARY_IMAGE_NAME)
+            .modelImageTag(miiAuxiliaryImageTag)
+            .modelFiles(modelList)
+            .modelVariableFiles(modelProList);
+    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImageTag, witParams);
+    DomainCreationImage domainCreationImage =
+        new DomainCreationImage().image(MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImageTag);
+    List<DomainCreationImage> domainCreationImages = new ArrayList<>();
+    domainCreationImages.add(domainCreationImage);
+
+    // create a domain custom resource configuration object
+    logger.info("Creating domain custom resource with pvName: {0}", pvName);
+    DomainResource domain = createDomainResourceSimplifyJrfPv(
+        domainUid, domainNamespace, adminSecretName,
+        TEST_IMAGES_REPO_SECRET_NAME,
+        rcuaccessSecretName,
+        opsswalletpassSecretName, null,
+        pvName, pvcName, domainCreationImages);
+
+    // create a domain custom resource and verify domain is created
+    createDomainAndVerify(domain, domainNamespace);
+
+    // verify that all servers are ready
+    verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
+
+    // delete the domain
+    deleteDomainResource(domainNamespace, domainUid);
+    //delete the rcu pod
+    assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
+              "Got exception while deleting server " + "rcu");
+    checkPodDoesNotExist("rcu", domainUid, dbNamespace);
 
   }
 
