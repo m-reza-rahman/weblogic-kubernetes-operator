@@ -121,7 +121,6 @@ public class DbUtils {
   private static final String CREATE_REPOSITORY_SCRIPT = "createRepository.sh";
   private static final String RCUTYPE = "fmw";
   private static final String RCUPODNAME = "rcu";
-  //private static final String RCUPODNAMEPREFIX = "rcu";
   private static final String SYSUSERNAME = "sys";
   private static final String SYSPASSWORD = "Oradoc_db1";
   private static final String RCUPASSWORD = "Oradoc_db1";
