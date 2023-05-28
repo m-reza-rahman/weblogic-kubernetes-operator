@@ -329,6 +329,7 @@ public class ItMiiSampleHelper {
     if (args.contains("update3")) {
       String imageName = (domainType.equals(DomainType.WLS))
           ? getModelImageName(testClassName + "-wlsv2") : getModelImageName(testClassName + "-jrfv2");
+      imageName = DOMAIN_IMAGES_PREFIX + imageName;
       envMap.put("MODEL_IMAGE_NAME", imageName);
       String decoration = (envMap.get("DO_AI") != null && envMap.get("DO_AI").equalsIgnoreCase("true"))  ? "AI-" : "";
       envMap.put("MODEL_IMAGE_TAG", MII_BASIC_IMAGE_TAG + "-" + domainType + "-" + decoration + "v2");
