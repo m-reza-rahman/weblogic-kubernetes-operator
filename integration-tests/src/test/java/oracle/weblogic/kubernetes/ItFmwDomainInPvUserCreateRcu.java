@@ -324,22 +324,7 @@ public class ItFmwDomainInPvUserCreateRcu {
         domainNamespace,
         ADMIN_PASSWORD_DEFAULT),
         String.format("createSecret failed for %s", opsswalletpassSecretName));
-
-    /*List<String> modelList = new ArrayList<>();
-    modelList.add(MODEL_DIR + "/" + fmwModelFile);
-    List<String> modelProList = new ArrayList<>();
-    modelProList.add(fmwModelPropFile.toPath().toString());
-    String miiAuxiliaryImageTag = "jrf3" + MII_BASIC_IMAGE_TAG;
-    WitParams witParams =
-        new WitParams()
-            .modelImageName(MII_AUXILIARY_IMAGE_NAME)
-            .modelImageTag(miiAuxiliaryImageTag)
-            .modelFiles(modelList)
-            .modelVariableFiles(modelProList);
-    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImageTag, witParams);
-    DomainCreationImage domainCreationImage =
-        new DomainCreationImage().image(MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImageTag);*/
-
+    
     DomainCreationImage domainCreationImage1 = createImage(fmwModelFile,fmwModelPropFile,"jrf3");
 
     // image2 with model files for jms config
@@ -354,8 +339,6 @@ public class ItFmwDomainInPvUserCreateRcu {
             .modelFiles(modelList)
             .wdtVersion("NONE");
     createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImageTag, witParams);
-    //DomainCreationImage domainCreationImage2 = createImage("model.jms2.yaml",fmwModelPropFile,"jrf3jms");
-    //domainCreationImage2.sourceWDTInstallHome("None");
     DomainCreationImage domainCreationImage2 = new DomainCreationImage().image(MII_AUXILIARY_IMAGE_NAME
         + ":" + miiAuxiliaryImageTag);
     List<DomainCreationImage> domainCreationImages = new ArrayList<>();
@@ -386,11 +369,11 @@ public class ItFmwDomainInPvUserCreateRcu {
     checkConfiguredJMSresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
 
     // delete the domain
-    //TODO deleteDomainResource(domainNamespace, domainUid);
+    deleteDomainResource(domainNamespace, domainUid);
     //delete the rcu pod
-    /*assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
+    assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
               "Got exception while deleting server " + "rcu");
-    checkPodDoesNotExist("rcu", domainUid, dbNamespace);*/
+    checkPodDoesNotExist("rcu", null, dbNamespace);
 
   }
 
