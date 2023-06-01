@@ -111,6 +111,14 @@ pipeline {
                description: '',
                defaultValue: "${env.WKT_OCIR_HOST}"
         )
+        string(name: 'NODE_SHAPE',
+                       description: '',
+                       defaultValue: "VM.Standard.E3.Flex"
+        )
+        string(name: 'BRANCH',
+                       description: '',
+                       defaultValue: "okejen"
+        )
         choice(name: 'BASE_IMAGES_REPO',
                choices: ["${env.WKT_OCIR_HOST}", 'container-registry.oracle.com'],
                description: 'Repository to pull the base images. Make sure to modify the image names if you are modifying this parameter value.'
@@ -235,7 +243,7 @@ pipeline {
                 stage('Setup terraform property file  ') {
                     environment {
                         OKE_CLUSTER_NAME="${CLUSTER_NAME}"
-                        NODE_SHAPE="VM.Standard.E3.Flex"
+                        NODE_SHAPE="${NODE_SHAPE}"
                         IMAGE_ID="${IMAGE_ID}"
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
                         FINGERPRINT = 'wkobuild_cert_fingerprint'
