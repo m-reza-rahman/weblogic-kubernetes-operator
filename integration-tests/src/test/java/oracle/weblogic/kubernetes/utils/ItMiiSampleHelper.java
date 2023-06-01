@@ -21,7 +21,6 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
-import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
@@ -81,7 +80,7 @@ public class ItMiiSampleHelper {
   }
 
   private String getModelImageName(String suffix) {
-    return new StringBuffer(DOMAIN_IMAGES_REPO)
+    return new StringBuffer(DOMAIN_IMAGES_PREFIX)
         .append("mii-")
         .append(suffix).toString();
   }
@@ -269,7 +268,6 @@ public class ItMiiSampleHelper {
   public void callInitialUseCase(String testClassName) {
     String imageName = (domainType.equals(DomainType.WLS))
         ? getModelImageName(testClassName + "-wlsv1") : getModelImageName(testClassName + "-jrfv1");
-    imageName = DOMAIN_IMAGES_PREFIX + imageName;
     previousTestSuccessful = true;
     envMap.put("MODEL_IMAGE_NAME", imageName);
     String decoration = (envMap.get("DO_AI") != null && envMap.get("DO_AI").equalsIgnoreCase("true"))  ? "AI-" : "";
@@ -329,7 +327,6 @@ public class ItMiiSampleHelper {
     if (args.contains("update3")) {
       String imageName = (domainType.equals(DomainType.WLS))
           ? getModelImageName(testClassName + "-wlsv2") : getModelImageName(testClassName + "-jrfv2");
-      imageName = DOMAIN_IMAGES_PREFIX + imageName;
       envMap.put("MODEL_IMAGE_NAME", imageName);
       String decoration = (envMap.get("DO_AI") != null && envMap.get("DO_AI").equalsIgnoreCase("true"))  ? "AI-" : "";
       envMap.put("MODEL_IMAGE_TAG", MII_BASIC_IMAGE_TAG + "-" + domainType + "-" + decoration + "v2");
