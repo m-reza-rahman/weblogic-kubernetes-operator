@@ -30,6 +30,8 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.BUSYBOX_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.BUSYBOX_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HTTP_PORT;
+import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_IMAGE;
+import static oracle.weblogic.kubernetes.TestConstants.KIBANA_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.LOGSTASH_INDEX_KEY;
@@ -63,12 +65,9 @@ import static org.junit.jupiter.api.Assertions.fail;
  * 4. Verify that Elasticsearch collects data from Operator logs and
  *       stores them in its repository correctly.
  */
-@DisplayName("Automate ELK Stack sample to test to use Elasticsearch API to query Operator logs")
+@DisplayName("ELK Stack sample to test to use Elasticsearch API to query Operator logs")
 @IntegrationTest
-@Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
-@Tag("okd-wls-mrg")
 class ItElasticLoggingSample {
   // constants for namespaces
   private static String domainNamespace = null;
@@ -113,9 +112,16 @@ class ItElasticLoggingSample {
     assertDoesNotThrow(() -> Files.copy(sourceELKConfigFilePath, destELKConfigFilePath,
         StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
 
+    // reploce the location for busybox image
     assertDoesNotThrow(() -> replaceStringInFile(destELKConfigFilePath.toString(),
         "busybox", BUSYBOX_IMAGE + ":" + BUSYBOX_TAG),
             "Failed to replace String: " + BUSYBOX_IMAGE + ":" + BUSYBOX_TAG);
+
+    // reploce the location for ELK stack image
+    assertDoesNotThrow(() -> replaceStringInFile(destELKConfigFilePath.toString(),
+        "elasticsearch:7.8.1", ELASTICSEARCH_IMAGE),"Failed to replace String: " + ELASTICSEARCH_IMAGE);
+    assertDoesNotThrow(() -> replaceStringInFile(destELKConfigFilePath.toString(),
+        "kibana:7.8.1", KIBANA_IMAGE),"Failed to replace String: " + KIBANA_IMAGE);
 
     // install and verify Elasticsearch and Kibana;
     elasticSearchHost = "elasticsearch." + elasticSearchNs + ".svc.cluster.local";
