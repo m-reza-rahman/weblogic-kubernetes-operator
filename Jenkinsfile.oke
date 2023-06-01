@@ -113,6 +113,14 @@ pipeline {
                description: '',
                defaultValue: 'phx.ocir.io'
         )
+        string(name: 'NODE_SHAPE',
+                       description: '',
+                       defaultValue: 'VM.Standard2.24'
+                )
+        string(name: 'BRANCH',
+                       description: '',
+                       defaultValue: 'okeextfix'
+                )
         string(name: 'WEBLOGIC_IMAGE_NAME',
                description: 'WebLogic base image name. Default is the image name in OCIR. Use middleware/weblogic for OCR.',
                defaultValue: 'test-images/weblogic'
@@ -205,7 +213,7 @@ pipeline {
                 stage('Setup terraform property file  ') {
                     environment {
                         OKE_CLUSTER_NAME="${CLUSTER_NAME}"
-                        NODE_SHAPE="VM.Standard2.24"
+                        NODE_SHAPE="${NODE_SHAPE}"
                         IMAGE_ID="${IMAGE_ID}"
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
                         TVARS_FILE = credentials("${terraform_property_file}")
