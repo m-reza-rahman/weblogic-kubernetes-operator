@@ -400,11 +400,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
   }
 
-  private boolean isExplicitRecheckWithoutRetriableFailure(
-      MakeRightDomainOperation operation, DomainPresenceInfo info) {
-    return operation.isExplicitRecheck() && !hasRetriableFailureNonRetryingOperation(operation, info);
-  }
-
   private boolean shouldContinue(MakeRightClusterOperation operation, ClusterPresenceInfo liveInfo) {
     final ClusterPresenceInfo cachedInfo = getExistingClusterPresenceInfo(liveInfo);
     if (isDeleting(operation)) {
@@ -419,6 +414,11 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       cachedInfo.setCluster(liveInfo.getCluster());
       return false;
     }
+  }
+  
+  private boolean isExplicitRecheckWithoutRetriableFailure(
+      MakeRightDomainOperation operation, DomainPresenceInfo info) {
+    return operation.isExplicitRecheck() && !hasRetriableFailureNonRetryingOperation(operation, info);
   }
 
   private boolean hasRetriableFailureNonRetryingOperation(MakeRightDomainOperation operation, DomainPresenceInfo info) {
