@@ -66,8 +66,12 @@ server:
     type: NodePort
     nodePort: 30500
   securityContext:
-    runAsUser: 0
-    runAsNonRoot: false
+    fsGroup: 65534
+    runAsGroup: 65534
+    runAsNonRoot: true
+    runAsUser: 65534
+    #runAsUser: 1000
+    #runAsNonRoot: true
 
   global:
     evaluation_interval: 1m
