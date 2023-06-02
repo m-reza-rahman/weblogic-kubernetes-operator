@@ -66,8 +66,14 @@ server:
     type: NodePort
     nodePort: 30500
   securityContext:
+<<<<<<< HEAD
     runAsUser: 0
     runAsNonRoot: false
+=======
+    runAsGroup: 65534
+    runAsNonRoot: true
+    runAsUser: 1000
+>>>>>>> 7324c10...  fixed owner
 
   global:
     evaluation_interval: 1m
