@@ -31,7 +31,7 @@ resource "oci_containerengine_node_pool" "tfsample_node_pool" {
   }
   node_shape_config {
       #Optional
-      memory_in_gbs = 200.0
+      memory_in_gbs = 192.0
       ocpus = 3.0
   }
   # Optional
