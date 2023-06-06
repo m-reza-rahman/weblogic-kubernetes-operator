@@ -69,6 +69,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.deletePod;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
@@ -87,6 +88,7 @@ import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOpe
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVHostPathDir;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -465,6 +467,10 @@ class ItFmwDomainInPVSimplified {
     deleteDomainResource(domainNamespace, domainUid);
     // delete the cluster
     deleteClusterCustomResourceAndVerify(domainUid + "-" + clusterName,  domainNamespace);
+    //delete the rcu pod
+    assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
+              "Got exception while deleting server " + "rcu");
+    checkPodDoesNotExist("rcu", null, dbNamespace);
   }
 
   /**
@@ -712,6 +718,10 @@ class ItFmwDomainInPVSimplified {
     deleteDomainResource(domainNamespace, domainUid);
     // delete the cluster
     deleteClusterCustomResourceAndVerify(domainUid + "-" + clusterName,  domainNamespace);
+    //delete the rcu pod
+    assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
+              "Got exception while deleting server " + "rcu");
+    checkPodDoesNotExist("rcu", null, dbNamespace);
   }
 
   private File createWdtPropertyFile(String domainName, String rcuSchemaPrefix) {
