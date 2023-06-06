@@ -35,6 +35,7 @@ import oracle.weblogic.domain.DomainOnPVType;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.InitializeDomainOnPV;
+import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.Opss;
 import oracle.weblogic.domain.PersistentVolume;
 import oracle.weblogic.domain.PersistentVolumeClaim;
@@ -636,7 +637,9 @@ class ItFmwDomainInPVSimplified {
     createAndPushAuxiliaryImage(domainCreationImageName2, MII_BASIC_IMAGE_TAG, witParams);
 
     DomainCreationImage domainCreationImage2 =
-        new DomainCreationImage().image(domainCreationImageName2 + ":" + MII_BASIC_IMAGE_TAG);
+        new DomainCreationImage()
+            .image(domainCreationImageName2 + ":" + MII_BASIC_IMAGE_TAG)
+            .sourceWDTInstallHome("none");
 
     List<DomainCreationImage> domainCreationImages = new ArrayList<>();
     domainCreationImages.add(domainCreationImage1);
