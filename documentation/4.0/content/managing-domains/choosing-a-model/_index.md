@@ -21,7 +21,7 @@ When using the operator to start WebLogic Server instances from a domain, you ha
    - Supply a WebLogic installation in an image and supply a WebLogic configuration in one of three ways:
      - As WDT model YAML file supplied in separate
        [auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
-     - As WebLogic Deployment Tool (WDT) model YAML file layered on the WebLogic installation image. **NOTE**: Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) will be deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ Auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
+     - As WebLogic Deployment Tool (WDT) model YAML file layered on the WebLogic installation image. **NOTE**: Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) will be deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
      - As WDT model YAML file in a Kubernetes ConfigMap.
    - Supply WebLogic applications in one of two ways:
      - In auxiliary images.
