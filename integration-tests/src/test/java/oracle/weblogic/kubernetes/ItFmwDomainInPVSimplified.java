@@ -639,7 +639,7 @@ class ItFmwDomainInPVSimplified {
     DomainCreationImage domainCreationImage2 =
         new DomainCreationImage()
             .image(domainCreationImageName2 + ":" + MII_BASIC_IMAGE_TAG)
-            .sourceWDTInstallHome("none");
+            .sourceWDTInstallHome("None");
 
     List<DomainCreationImage> domainCreationImages = new ArrayList<>();
     domainCreationImages.add(domainCreationImage1);
