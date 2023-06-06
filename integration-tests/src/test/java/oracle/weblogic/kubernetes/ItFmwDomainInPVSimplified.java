@@ -35,7 +35,6 @@ import oracle.weblogic.domain.DomainOnPVType;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.InitializeDomainOnPV;
-import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.Opss;
 import oracle.weblogic.domain.PersistentVolume;
 import oracle.weblogic.domain.PersistentVolumeClaim;
