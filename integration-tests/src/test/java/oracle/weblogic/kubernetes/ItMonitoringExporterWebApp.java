@@ -74,6 +74,7 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAc
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPvAndPvc;
+import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createfixPVCOwnerContainer;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -213,7 +214,11 @@ class ItMonitoringExporterWebApp {
     if (!OKD) {
       logger.info("create pv and pvc for monitoring");
       assertDoesNotThrow(() -> createPvAndPvc(prometheusReleaseName, monitoringNS, labels, className));
+      createfixPVCOwnerContainer("pv-test" + prometheusReleaseName, "/data");
+      createfixPVCOwnerContainer("pv-test" + prometheusReleaseName, "/etc/config");
       assertDoesNotThrow(() -> createPvAndPvc("alertmanager" + releaseSuffix, monitoringNS, labels, className));
+      createfixPVCOwnerContainer("pv-test" + "alertmanager" + releaseSuffix, "/data");
+      createfixPVCOwnerContainer("pv-test" + "alertmanager" + releaseSuffix, "/etc/config");
       assertDoesNotThrow(() -> createPvAndPvc(grafanaReleaseName, monitoringNS, labels, className));
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
     }
