@@ -363,10 +363,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     String operatorPodName =
         assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
     verifyPodWithExpectedErrorMsg(expectedErrorMsg, operatorPodName, opNamespace);
-
-    // verify that all servers are ready
-    //verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
-
+    
     // delete the domain
     deleteDomainResource(domainNamespace, domainUid);
     //delete the rcu pod
