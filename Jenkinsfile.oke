@@ -55,16 +55,16 @@ pipeline {
 
         string(name: 'KUBE_VERSION',
                description: 'kube version for oke cluster',
-               defaultValue: '1.25.4'
+               defaultValue: '1.26.2'
         )
         string(name: 'IMAGE_ID',
                        description: 'oci image id for node pool, find image OCID for your region from https://docs.oracle.com/iaas/images/',
                        //defaultValue7.6: 'ocid1.image.oc1.phx.aaaaaaaancucg25pze6m52agxwxmmfszvsdnhp3kvim53pts2tw6mik4xtha'
-                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaancq36l7q4fqwznqhnp626wuekkq7twk2em5ysyd65bd4xho72tmq'
+                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaanubtknjwx3bra4zvi3kuwgkpiku2brdjjzj5eiv7pimmzfjka4dq'
                 )
         string(name: 'KUBECTL_VERSION',
                        description: 'kubectl version',
-                       defaultValue: '1.25.4'
+                       defaultValue: '1.26.2'
                 )
         string(name: 'HELM_VERSION',
                description: 'Helm version',
@@ -107,6 +107,14 @@ pipeline {
                description: '',
                defaultValue: "${env.WKT_OCIR_HOST}"
         )
+        string(name: 'NODE_SHAPE',
+                       description: '',
+                       defaultValue: 'VM.Standard.E3.Flex'
+                )
+        string(name: 'BRANCH',
+                       description: '',
+                       defaultValue: 'okeextfix'
+                )
         string(name: 'WEBLOGIC_IMAGE_NAME',
                description: 'WebLogic base image name. Default is the image name in OCIR. Use middleware/weblogic for OCR.',
                defaultValue: 'test-images/weblogic'
@@ -186,7 +194,7 @@ pipeline {
                 stage('Setup terraform property file  ') {
                     environment {
                         OKE_CLUSTER_NAME="${CLUSTER_NAME}"
-                        NODE_SHAPE="VM.Standard2.24"
+                        NODE_SHAPE="${NODE_SHAPE}"
                         IMAGE_ID="${IMAGE_ID}"
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
                         TVARS_FILE = credentials("${terraform_property_file}")
