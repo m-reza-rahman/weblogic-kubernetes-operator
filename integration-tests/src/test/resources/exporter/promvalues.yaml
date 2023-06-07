@@ -69,8 +69,18 @@ server:
     fsGroup: 65534
     runAsGroup: 65534
     runAsNonRoot: true
-    runAsUser: 65534
-
+    runAsUser: 1000
+  initContainers:
+    - name: prometheus-data-permission-fix
+      image: busybox
+      command: [ "/bin/chmod","-R","777", "/data" ]
+      volumeMounts:
+        - name: prometheus-data
+          mountPath: /data
+  volumes:
+    - name: prometheus-data
+      persistentVolumeClaim:
+        claimName: pvc-prometheus
 
   global:
     evaluation_interval: 1m
