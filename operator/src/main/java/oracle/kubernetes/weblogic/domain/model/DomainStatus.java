@@ -159,10 +159,14 @@ public class DomainStatus {
    * @return this object.
    */
   public DomainStatus addCondition(DomainCondition newCondition, boolean isInitDomainOnPV) {
+    LOGGER.info("XXX addCondition: newCondition: " + newCondition + " isRetriable: "
+        + isRetryableFailure(newCondition, isInitDomainOnPV));
     if (newCondition.isNotValid()) {
       throw new IllegalArgumentException("May not add condition " + newCondition);
     } else if (isRetryableFailure(newCondition, isInitDomainOnPV)) {
+      LOGGER.info("XXX addCondition: lastFailureTime before: " + lastFailureTime);
       lastFailureTime = newCondition.getLastTransitionTime();
+      LOGGER.info("XXX addCondition: lastFailureTime after: " + lastFailureTime);
     }
 
 
