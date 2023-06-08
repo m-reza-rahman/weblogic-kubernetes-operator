@@ -59,6 +59,7 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.copyF
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.exec;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
@@ -213,6 +214,7 @@ class ItMonitoringExporterWebApp {
     String className = "ItMonitoringExporterWebApp";
     if (!OKD) {
       logger.info("create pv and pvc for monitoring");
+      createBaseRepoSecret(monitoringNS);
       assertDoesNotThrow(() -> createPvAndPvc(prometheusReleaseName, monitoringNS, labels, className));
       String command = "chown -R 1000:1000 /data";
       createJobToChangePermissionsOnPvHostPath("pv-test" + prometheusReleaseName,
