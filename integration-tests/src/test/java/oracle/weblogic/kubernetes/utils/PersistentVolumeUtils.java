@@ -42,6 +42,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVol
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvNotExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
@@ -418,6 +419,22 @@ public class PersistentVolumeUtils {
           .storageClassName(nameSuffix);
     }
 
-    createPVPVCAndVerify(v1pv,v1pvc, labelSelector, namespace);
+    createPVPVCAndVerify(v1pv, v1pvc, labelSelector, namespace);
+    if (nameSuffix.contains("grafana") || nameSuffix.contains("prometheus")) {
+      String mountPath = "/data";
+      if (nameSuffix.contains("grafana")) {
+        mountPath = "/var/lib/grafana";
+      }
+      String argCommand = "chown -R 1000:1000 " + mountPath;
+      if (OKE_CLUSTER) {
+        argCommand = "chown 1000:1000 " + mountPath
+            + "/. && find "
+            + mountPath
+            + "/. -maxdepth 1 ! -name '.snapshot' ! -name '.' -print0 | xargs -r -0  chown -R 1000:1000";
+      }
+      createJobToChangePermissionsOnPvHostPath("pv-test" + nameSuffix,
+          "pvc-" + nameSuffix, namespace,
+          mountPath, argCommand);
+    }
   }
 }
