@@ -806,6 +806,7 @@ class ItFmwDomainInPVSimplified {
                     .name(pvcName))
                 .spec(new PersistentVolumeClaimSpec()
                     .storageClassName(storageClassName)
+                    .volumeName(pvName)
                     .resources(new V1ResourceRequirements()
                         .requests(pvcRequest))))
             .domain(new DomainOnPV()
