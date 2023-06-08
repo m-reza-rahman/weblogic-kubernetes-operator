@@ -174,7 +174,7 @@ class ItFmwDomainInPVSimplified {
   }
 
   /**
-   * Create a basic FMW domain on PV using simplified feature.
+   * Create a basic FMW domain on PV.
    * Operator will create PV/PVC/RCU/Domain.
    * Verify Pod is ready and service exists for both admin server and managed servers.
    */
@@ -279,12 +279,12 @@ class ItFmwDomainInPVSimplified {
   }
 
   /**
-   * Create a basic FMW domain on PV using simplified feature.
-   * User creates PV/PVC, operator creates RCU and domain
+   * Create a basic FMW domain on PV.
+   * User creates PV/PVC, operator creates RCU and domain.
    * Verify Pod is ready and service exists for both admin server and managed servers.
    */
   @Test
-  @DisplayName("Create a FMW domainon on PV. User creates PV/PVC and operator creates RCU and domain")
+  @DisplayName("Create a FMW domain on PV. User creates PV/PVC and operator creates RCU and domain")
   void testUserCreatesPvPvcOperatorCreatesRcuDomain() {
     String domainUid = "jrfonpv-simplified2";
     final String pvName = getUniqueName(domainUid + "-pv-");
@@ -367,12 +367,12 @@ class ItFmwDomainInPVSimplified {
   }
 
   /**
-   * Create a basic FMW domain on PV using simplified feature.
+   * Create a basic FMW domain on PV.
    * User creates PV/PVC and RCU schema, Operator creates domain
    * Verify Pod is ready and service exists for both admin server and managed servers.
    */
   @Test
-  @DisplayName("Create a FMW domainon on PV. User creates PV/PVC/RCU and operator creates domain")
+  @DisplayName("Create a FMW domain on PV. User creates PV/PVC/RCU and operator creates domain")
   void testUserCreatesPvPvcRcuOperatorCreatesDomain() {
     String domainUid = "jrfonpv-simplified3";
     final String pvName = getUniqueName(domainUid + "-pv-");
@@ -476,7 +476,7 @@ class ItFmwDomainInPVSimplified {
   }
 
   /**
-   * Create a basic WLS domain on PV using simplified feature.
+   * Create a basic WLS domain on PV.
    * Operator will create PV/PVC and WLS Domain.
    * Verify Pod is ready and service exists for both admin server and managed servers.
    */
@@ -579,7 +579,7 @@ class ItFmwDomainInPVSimplified {
   }
 
   /**
-   * Create a basic FMW domain on PV using simplified feature.
+   * Create a basic FMW domain on PV.
    * User creates RCU schema, Operator creates PV/PVC and JRF domain
    * The user creates multiple domain initialization images
    * Verify Pod is ready and service exists for both admin server and managed servers.
@@ -727,7 +727,7 @@ class ItFmwDomainInPVSimplified {
   }
 
   /**
-   * Create a basic FMW domain on PV using simplified feature.
+   * Create a basic FMW domain on PV.
    * User creates PV and RCU schema, Operator creates PVC and JRF domain
    * Verfiy PVC is created.
    * Verify Pod is ready and service exists for both admin server and managed servers.
