@@ -747,7 +747,8 @@ class ItFmwDomainInPVSimplified {
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create persistent volume for domain
-    createPV(pvName, domainUid, this.getClass().getSimpleName());
+    createPV(pvName, domainUid, this.getClass().getSimpleName(), storageClassName);
+
     // create RCU schema
     assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX + "5", dbUrl,
         dbNamespace), "create rcu schema failed");
@@ -984,6 +985,4 @@ class ItFmwDomainInPVSimplified {
     Path hostPVPath = createPVHostPathDir(pvName, className);
     return hostPVPath.toString();
   }
-
 }
-

@@ -202,6 +202,55 @@ public class PersistentVolumeUtils {
         pvName);
   }
 
+  /** Create a persistent volume.
+   * @param pvName name of the persistent volume to create
+   * @param domainUid domain UID
+   * @param className name of the class to call this method
+   * @param storageClassName name of the storage class
+   */
+  public static void createPV(String pvName, String domainUid, String className, String storageClassName) {
+
+    LoggingFacade logger = getLogger();
+
+    logger.info("deleting persistent volume pvName {0} if it exists", pvName);
+    deletePersistentVolume(pvName);
+    testUntil(
+        assertDoesNotThrow(() -> pvNotExists(pvName, null),
+            String.format("pvNotExists failedfor pv %s", pvName)), logger, "pv {0} to be deleted", pvName);
+
+    logger.info("creating persistent volume for pvName {0}, domainUid: {1}, className: {2}",
+        pvName, domainUid, className);
+    Path pvHostPath = null;
+    // when tests are running in local box the PV directories need to exist
+    if (!OKE_CLUSTER && !OKD) {
+      pvHostPath = createPVHostPathDir(pvName, className);
+    }
+
+    V1PersistentVolume v1pv = new V1PersistentVolume()
+        .spec(new V1PersistentVolumeSpec()
+            .storageClassName(storageClassName)
+            .addAccessModesItem("ReadWriteMany")
+            .volumeMode("Filesystem")
+            .putCapacityItem("storage", Quantity.fromString("5Gi"))
+            .persistentVolumeReclaimPolicy("Recycle")
+            .accessModes(Arrays.asList("ReadWriteMany")))
+        .metadata(new V1ObjectMeta()
+            .name(pvName)
+            .putLabelsItem("weblogic.resourceVersion", "domain-v2")
+            .putLabelsItem("weblogic.domainUid", domainUid));
+    setVolumeSource(pvHostPath, v1pv);
+    boolean success = assertDoesNotThrow(() -> createPersistentVolume(v1pv),
+        "Failed to create persistent volume");
+    assertTrue(success, "PersistentVolume creation failed");
+
+    testUntil(
+        assertDoesNotThrow(() -> pvExists(pvName, null),
+          String.format("pvExists failed with ApiException when checking pv %s", pvName)),
+        logger,
+        "persistent volume {0} exists",
+        pvName);
+  }
+
   public static void setVolumeSource(Path pvHostPath, V1PersistentVolume v1pv) {
     setVolumeSource(pvHostPath,v1pv, "weblogic-domain-storage-class");
   }
