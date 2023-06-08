@@ -216,11 +216,11 @@ class ItMonitoringExporterWebApp {
       assertDoesNotThrow(() -> createPvAndPvc(prometheusReleaseName, monitoringNS, labels, className));
       String command = "chown -R 1000:1000 /data";
       createJobToChangePermissionsOnPvHostPath("pv-test" + prometheusReleaseName,
-          "pv-test" + prometheusReleaseName, monitoringNS,
+          "pvc-test" + prometheusReleaseName, monitoringNS,
           "/data",
            command);
       createJobToChangePermissionsOnPvHostPath("pv-test" + prometheusReleaseName,
-          "pv-test" + prometheusReleaseName, monitoringNS,
+          "pvc-test" + prometheusReleaseName, monitoringNS,
           "/etc/config",
           "chown -R 1000:1000 /etc/config");
 
