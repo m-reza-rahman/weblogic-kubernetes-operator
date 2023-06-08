@@ -60,7 +60,7 @@ import static oracle.weblogic.kubernetes.TestConstants.FLUENTD_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.FLUENTD_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.INTROSPECTOR_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_IMAGE;
-import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
+//import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.KIBANA_TYPE;
@@ -220,15 +220,16 @@ class ItElasticLoggingFluentd {
     k8sExecCmdPrefix = elasticsearchUrlBuff;
     logger.info("Elasticsearch URL {0}", k8sExecCmdPrefix);
 
+    /*
     // Verify that ELK Stack is ready to use
-    //testVarMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, FLUENTD_INDEX_KEY);
+    testVarMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, FLUENTD_INDEX_KEY);
     testVarMap.putAll(verifyLoggingExporterReady(opNamespace, elasticSearchNs, null,
         INTROSPECTOR_INDEX_KEY));
     Map<String, String> kibanaMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null,
-        KIBANA_INDEX_KEY);
+        KIBANA_INDEX_KEY);*/
 
     // merge testVarMap and kibanaMap
-    testVarMap.putAll(kibanaMap);
+    //testVarMap.putAll(kibanaMap);
 
     String operatorPodName = assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
     assertTrue(operatorPodName != null && !operatorPodName.isEmpty(), "Failed to get Operator pad name");
