@@ -237,8 +237,18 @@ class ItMonitoringExporterWebApp {
           "chown -R 1000:1000 /etc/config");
       */
       assertDoesNotThrow(() -> createPvAndPvc("alertmanager" + releaseSuffix, monitoringNS, labels, className));
-
+      mountPath = "/var/lib/grafana";
+      argCommand = "chown -R 1000:1000 " + mountPath;
+      if (OKE_CLUSTER) {
+        argCommand = "chown 1000:1000 " + mountPath
+            + "/. && find "
+            + mountPath
+            + "/. -maxdepth 1 ! -name '.snapshot' ! -name '.' -print0 | xargs -r -0  chown -R 1000:1000";
+      }
       assertDoesNotThrow(() -> createPvAndPvc(grafanaReleaseName, monitoringNS, labels, className));
+      createJobToChangePermissionsOnPvHostPath("pv-test" + grafanaReleaseName,
+          "pvc-" + grafanaReleaseName, monitoringNS,
+          mountPath, argCommand);
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
     }
   }
