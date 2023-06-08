@@ -233,95 +233,182 @@ class ItElasticLoggingFluentd {
 
     String operatorPodName = assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
     assertTrue(operatorPodName != null && !operatorPodName.isEmpty(), "Failed to get Operator pad name");
+    logger.info("===== Operator pad name: {0}", operatorPodName);
 
     String elkPodName = assertDoesNotThrow(() -> getPodName(elasticSearchNs, "elasticsearch"),
-        "Can't find elasticsearch pod");
+        "Can't find elasticsearch pod name");
+    logger.info("===== Elasticsearch pod anme: {0}", elkPodName);
 
-    String cmd2 = "cat /etc/resolv.conf";
-    logger.info("======== Exec command {0}", cmd2);
+    /*
+    String cmd2GetResolvConf = "cat /etc/resolv.conf";
+    logger.info("======== Exec command {0}", cmd2GetResolvConf);
     ExecResult execResult = assertDoesNotThrow(
         () -> execCommand(opNamespace, operatorPodName, null, true,
-            "/bin/sh", "-c", cmd2));
+            "/bin/sh", "-c", cmd2GetResolvConf));
     assertNotNull(execResult, "curl command returns null");
     logger.info("======== cat /etc/resolv.conf in pod {0} returns {1}: ", operatorPodName, execResult.toString());
 
     execResult = assertDoesNotThrow(
         () -> execCommand(elasticSearchNs, elkPodName, null, true,
-            "/bin/sh", "-c", cmd2));
+            "/bin/sh", "-c", cmd2GetResolvConf));
     assertNotNull(execResult, "curl command returns null");
     logger.info("======== cat /etc/resolv.conf in pod {0} returns {1}: ", elkPodName, execResult.toString());
 
     execResult = assertDoesNotThrow(
         () -> execCommand(domainNamespace, adminServerPodName, null, true,
-            "/bin/sh", "-c", cmd2));
+            "/bin/sh", "-c", cmd2GetResolvConf));
     assertNotNull(execResult, "curl command returns null");
     logger.info("======== cat /etc/resolv.conf in pod {0} returns {1}: ", adminServerPodName, execResult.toString());
 
-    String cmd3 = "cat /etc/host.conf";
-    logger.info("======== Exec command {0}", cmd3);
+    String cmd2GetHostConf = "cat /etc/host.conf";
+    logger.info("======== Exec command {0}", cmd2GetHostConf);
     execResult = assertDoesNotThrow(
         () -> execCommand(opNamespace, operatorPodName, null, true,
-            "/bin/sh", "-c", cmd3));
+            "/bin/sh", "-c", cmd2GetHostConf));
     assertNotNull(execResult, "curl command returns null");
     logger.info("======== cat /etc/host.conf in pod {0} returns {1}: ", operatorPodName, execResult.toString());
 
     execResult = assertDoesNotThrow(
         () -> execCommand(elasticSearchNs, elkPodName, null, true,
-            "/bin/sh", "-c", cmd3));
+            "/bin/sh", "-c", cmd2GetHostConf));
     assertNotNull(execResult, "curl command returns null");
     logger.info("======== cat /etc/host.conf in pod {0} returns {1}: ", elkPodName, execResult.toString());
 
     execResult = assertDoesNotThrow(
         () -> execCommand(domainNamespace, adminServerPodName, null, true,
-            "/bin/sh", "-c", cmd3));
+            "/bin/sh", "-c", cmd2GetHostConf));
     assertNotNull(execResult, "curl command returns null");
     logger.info("======== cat /etc/host.conf in pod {0} returns {1}: ", adminServerPodName, execResult.toString());
 
     CommandParams params = new CommandParams().defaults();
-    String cmd = KUBERNETES_CLI + " logs pod/elk-domain1-admin-server -n " + domainNamespace + " -c fluentd";
-    logger.info("===== Command to get logs of fluentd {0}", cmd);
-    params.command(cmd);
+    String cmd2GetFluentLog= KUBERNETES_CLI + " logs pod/elk-domain1-admin-server -n " +
+    domainNamespace + " -c fluentd";
+    logger.info("===== Command to get logs of fluentd {0}", cmd2GetFluentLog);
+    params.command(cmd2GetFluentLog);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
     logger.info("===== result.toString() to get logs: {0}, {1}", "\n",result.toString());
 
     params = new CommandParams().defaults();
-    cmd = KUBERNETES_CLI + " describe pod/elk-domain1-admin-server -n " + domainNamespace;
-    logger.info("===== Command to get describe of admin pod {0}", cmd);
-    params.command(cmd);
+    String cmd2GetDescAdminPod = KUBERNETES_CLI + " describe pod/elk-domain1-admin-server -n " + domainNamespace;
+    logger.info("===== Command to get describe of admin pod {0}", cmd2GetDescAdminPod);
+    params.command(cmd2GetDescAdminPod);
     result = Command.withParams(params).executeAndReturnResult();
-    logger.info("===== result.toString() to get describe: {0}, {1}", "\n",result.toString());
+    logger.info("===== result.toString() to get describe: {0}, {1}", "\n",result.toString());*/
 
-    params = new CommandParams().defaults();
-    cmd = KUBERNETES_CLI + " get pod/" + elkPodName + " -n " + elasticSearchNs + " --template '{{.status.podIP}}'";
-    logger.info("===== Command to get elasticsearch podName {0}", cmd);
-    params.command(cmd);
-    result = Command.withParams(params).executeAndReturnResult();
-    logger.info("===== result.toString() to get elasticsearch podName: {0}, {1}", "\n",result.toString());
+    CommandParams params1 = new CommandParams().defaults();
+    String cmd2GetElkIp = KUBERNETES_CLI + " get pod/" + elkPodName + " -n "
+        + elasticSearchNs + " --template '{{.status.podIP}}'";
+    logger.info("===== Command to get elasticsearch podIP {0}", cmd2GetElkIp);
+    params1.command(cmd2GetElkIp);
+    ExecResult result = assertDoesNotThrow(() -> Command.withParams(params1).executeAndReturnResult());
+    String elkPodIpAddr = result.stdout();
+    logger.info("===== Elasticsearch podIP: {0}", elkPodIpAddr);
 
-    elasticsearchUrlBuff =
-        "curl http://" + result.stdout() + ":" + ELASTICSEARCH_HTTP_PORT;
-    k8sExecCmdPrefix = elasticsearchUrlBuff;
-    logger.info("======== Elasticsearch URL {0}", k8sExecCmdPrefix);
-
-    String cmd1 = new StringBuffer("curl http://")
-        .append(result.stdout())
+    String curlCmdUseDnsName = new StringBuffer("http://")
+        .append(elasticSearchHost)
         .append(":")
-        .append(ELASTICSEARCH_HTTP_PORT)
+        .append(ELASTICSEARCH_HTTP_PORT).toString();
+
+    String curlCmdUseElkIp = new StringBuffer("http://")
+        .append(elkPodIpAddr)
+        .append(":")
+        .append(ELASTICSEARCH_HTTP_PORT).toString();
+
+    String cmd2ExecInFluentdCont =
+        KUBERNETES_CLI + " exec -it pod/" + adminServerPodName + " -n "
+            + domainNamespace + " -c fluentd -- /bin/bash";
+
+    //curl -vk  http://192.168.1.10:9200
+    CommandParams params2 = new CommandParams().defaults();
+    String cmd2RunInFluentdCont = " -c \"curl -vk " + curlCmdUseElkIp + "\"";
+    String cmd2Exec = cmd2ExecInFluentdCont + cmd2RunInFluentdCont;
+    logger.info("===== Command to exec in fluentd container: {0}", cmd2Exec);
+    params2.command(cmd2Exec);
+    result = assertDoesNotThrow(() -> Command.withParams(params2).executeAndReturnResult());
+    logger.info("===== result.toString() to exec command in fluentd container : {0}, {1}",
+        cmd2Exec, result.toString());
+
+    //curl -vk http://elasticsearch.ns-cejxrm.svc.cluster.local:9200
+    CommandParams params3 = new CommandParams().defaults();
+    cmd2RunInFluentdCont = " -c \"curl -vk " + curlCmdUseDnsName + "\"";
+    cmd2Exec = cmd2ExecInFluentdCont + cmd2RunInFluentdCont;
+    logger.info("===== Command to exec in fluentd container: {0}", cmd2Exec);
+    params3.command(cmd2Exec);
+    result = assertDoesNotThrow(() -> Command.withParams(params3).executeAndReturnResult());
+    logger.info("===== result.toString() to exec command in fluentd container : {0}, {1}",
+        cmd2Exec, result.toString());
+
+    //curl -noproxy '*' -vk  http://192.168.1.10:9200
+    CommandParams params4 = new CommandParams().defaults();
+    cmd2RunInFluentdCont = " -c \"curl -noproxy '*' -vk " + curlCmdUseElkIp + "\"";
+    cmd2Exec = cmd2ExecInFluentdCont + cmd2RunInFluentdCont;
+    logger.info("===== Command to exec in fluentd container: {0}", cmd2Exec);
+    params4.command(cmd2Exec);
+    result = assertDoesNotThrow(() -> Command.withParams(params4).executeAndReturnResult());
+    logger.info("===== result.toString() to exec command in fluentd container : {0}, {1}",
+        cmd2Exec, result.toString());
+
+    //curl -noproxy '*' -vk http://elasticsearch.ns-cejxrm.svc.cluster.local:9200
+    CommandParams params5 = new CommandParams().defaults();
+    cmd2RunInFluentdCont = " -c \"curl -noproxy '*' -vk " + curlCmdUseDnsName + "\"";
+    cmd2Exec = cmd2ExecInFluentdCont + cmd2RunInFluentdCont;
+    logger.info("===== Command to exec in fluentd container: {0}", cmd2Exec);
+    params5.command(cmd2Exec);
+    result = assertDoesNotThrow(() -> Command.withParams(params5).executeAndReturnResult());
+    logger.info("===== result.toString() to exec command {0} in fluentd container : {1}",
+        cmd2Exec, result.toString());
+
+    String cmdUseElkIp = new StringBuffer("curl ")
+        .append(curlCmdUseElkIp)
         .append("/_cat/indices/*fluentd*").toString();
-    logger.info("+++++++++++ Command to get indeces {0}", cmd1);
+    logger.info("+++++++++++ Command to get fluentd index {0}", cmdUseElkIp);
+
+    String cmdUseElkDnsName = new StringBuffer("curl ")
+        .append(curlCmdUseDnsName)
+        .append("/_cat/indices/*fluentd*").toString();
+    logger.info("+++++++++++ Command to get fluentd index {0}", cmdUseElkIp);
+
+    withStandardRetryPolicy.untilAsserted(
+        () -> assertTrue(
+            execCommand(domainNamespace, adminServerPodName, null, true,
+                "/bin/sh", "-c", cmdUseElkIp).stdout().contains("fluentd"),
+            String.format("failed to get fluentd index in domain namespace and ELK namespace %s",
+                domainNamespace, elasticSearchNs)));
+
+    ExecResult indexNames =
+        assertDoesNotThrow(() -> execCommand(domainNamespace, adminServerPodName, null, true,
+            "/bin/sh", "-c", cmdUseElkIp));
+    assertNotNull(indexNames, "curl command returns null");
+    logger.info("+++++++++++ get fluentd index in pod: {0}, {1}, {2} using command:{3}",
+        "\n", indexNames.toString(), adminServerPodName, cmdUseElkIp);
 
     withStandardRetryPolicy.untilAsserted(
         () -> assertTrue(
             execCommand(opNamespace, operatorPodName, null, true,
-                "/bin/sh", "-c", cmd1).stdout().contains("fluentd"),
-            String.format("failed to get fluentd index in OP namespace and ELK namespace %s",
+                "/bin/sh", "-c", cmdUseElkIp).stdout().contains("fluentd"),
+            String.format("failed to get fluentd index in Operator namespace and ELK namespace %s",
                 opNamespace, elasticSearchNs)));
 
-    ExecResult indexNames =
+    indexNames =
         assertDoesNotThrow(() -> execCommand(opNamespace, operatorPodName, null, true,
-            "/bin/sh", "-c", cmd1));
+            "/bin/sh", "-c", cmdUseElkIp));
     assertNotNull(indexNames, "curl command returns null");
-    logger.info("+++++++++++ indexNames.toString() to get indeces: {0}, {1}", "\n",indexNames.toString());
+    logger.info("+++++++++++ get fluentd index in pod: {0}, {1}, {2} using command:{3}",
+        "\n", indexNames.toString(), operatorPodName, cmdUseElkIp);
+
+    withStandardRetryPolicy.untilAsserted(
+        () -> assertTrue(
+            execCommand(opNamespace, operatorPodName, null, true,
+                "/bin/sh", "-c", cmdUseElkDnsName).stdout().contains("fluentd"),
+            String.format("failed to get fluentd index in Operator namespace and ELK namespace %s",
+                opNamespace, elasticSearchNs)));
+
+    indexNames =
+        assertDoesNotThrow(() -> execCommand(opNamespace, operatorPodName, null, true,
+            "/bin/sh", "-c", cmdUseElkDnsName));
+    assertNotNull(indexNames, "curl command returns null");
+    logger.info("+++++++++++ get fluentd index in pod: {0}, {1}, {2} using command:{3}",
+        "\n", indexNames.toString(), operatorPodName, cmdUseElkDnsName);
 
     testVarMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, FLUENTD_INDEX_KEY);
   }
