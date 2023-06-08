@@ -211,6 +211,7 @@ public class PersistentVolumeUtils {
       String fssDir = FSS_DIR[new Random().nextInt(FSS_DIR.length)];
       LoggingFacade logger = getLogger();
       logger.info("Using FSS PV directory {0}", fssDir);
+      logger.info("Using NFS_SERVER  {0}", NFS_SERVER);
       v1pv.getSpec()
               .storageClassName("oci-fss")
               .nfs(new V1NFSVolumeSource()
@@ -320,13 +321,26 @@ public class PersistentVolumeUtils {
           + mountPath
           + "/. -maxdepth 1 ! -name '.snapshot' ! -name '.' -print0 | xargs -r -0  chown -R 1000:0";
     }
+    return createfixPVCOwnerContainer(pvName, mountPath, argCommand);
+  }
+
+  /**
+   * Create container to fix pvc owner for pod.
+   *
+   * @param pvName name of pv
+   * @param mountPath mounting path for pv
+   * @param command to run for ownership
+   * @return container object with required ownership based on OKE_CLUSTER variable value.
+   */
+  public static synchronized V1Container createfixPVCOwnerContainer(String pvName, String mountPath, String command) {
+
     V1Container container = new V1Container()
         .name("fix-pvc-owner") // change the ownership of the pv to opc:opc
         .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
         .imagePullPolicy(IMAGE_PULL_POLICY)
         .addCommandItem("/bin/sh")
         .addArgsItem("-c")
-        .addArgsItem(argCommand)
+        .addArgsItem(command)
         .volumeMounts(Arrays.asList(
             new V1VolumeMount()
                 .name(pvName)

@@ -58,6 +58,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.copyFileToPod;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.exec;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
@@ -213,7 +214,18 @@ class ItMonitoringExporterWebApp {
     if (!OKD) {
       logger.info("create pv and pvc for monitoring");
       assertDoesNotThrow(() -> createPvAndPvc(prometheusReleaseName, monitoringNS, labels, className));
+      String command = "chown -R 1000:1000 /data";
+      createJobToChangePermissionsOnPvHostPath("pv-test" + prometheusReleaseName,
+          "pv-test" + prometheusReleaseName, monitoringNS,
+          "/data",
+           command);
+      createJobToChangePermissionsOnPvHostPath("pv-test" + prometheusReleaseName,
+          "pv-test" + prometheusReleaseName, monitoringNS,
+          "/etc/config",
+          "chown -R 1000:1000 /etc/config");
+
       assertDoesNotThrow(() -> createPvAndPvc("alertmanager" + releaseSuffix, monitoringNS, labels, className));
+
       assertDoesNotThrow(() -> createPvAndPvc(grafanaReleaseName, monitoringNS, labels, className));
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
     }
