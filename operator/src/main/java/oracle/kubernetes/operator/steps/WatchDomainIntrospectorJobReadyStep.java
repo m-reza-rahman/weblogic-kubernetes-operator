@@ -7,6 +7,8 @@ import io.kubernetes.client.openapi.models.V1Job;
 import oracle.kubernetes.operator.JobAwaiterStepFactory;
 import oracle.kubernetes.operator.JobWatcher;
 import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -14,11 +16,12 @@ import oracle.kubernetes.operator.work.Step;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveFailuresStep;
 
 public class WatchDomainIntrospectorJobReadyStep extends Step {
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
   @Override
   public NextAction apply(Packet packet) {
     V1Job domainIntrospectorJob = (V1Job) packet.get(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB);
-
+    LOGGER.info("XXX WatchDomainIntrospectorJobReadyStep: hasNotCompleted: " + hasNotCompleted(domainIntrospectorJob));
     if (hasNotCompleted(domainIntrospectorJob)) {
       JobAwaiterStepFactory jw = packet.getSpi(JobAwaiterStepFactory.class);
       return doNext(jw.waitForReady(domainIntrospectorJob, createRemoveFailuresStep(getNext())), packet);

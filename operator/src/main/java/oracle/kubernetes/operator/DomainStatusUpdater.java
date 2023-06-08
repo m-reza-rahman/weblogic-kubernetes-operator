@@ -1430,6 +1430,7 @@ public class DomainStatusUpdater {
 
     @Override
     void modifyStatus(DomainStatus status) {
+      LOGGER.info("XXX RemoveSelectedFailuresStep: selectedReasons: " + selectedReasons);
       selectedReasons.forEach(status::markFailuresForRemoval);
       status.removeMarkedFailures();
     }
