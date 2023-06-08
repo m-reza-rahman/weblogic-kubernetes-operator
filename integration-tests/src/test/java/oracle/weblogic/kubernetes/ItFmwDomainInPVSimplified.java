@@ -747,7 +747,7 @@ class ItFmwDomainInPVSimplified {
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create persistent volume for domain
-    createPV(pvName, domainUid, this.getClass().getSimpleName(), storageClassName);
+    createPV(pvName, domainUid, this.getClass().getSimpleName());
 
     // create RCU schema
     assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX + "5", dbUrl,
@@ -806,8 +806,7 @@ class ItFmwDomainInPVSimplified {
                 .metadata(new V1ObjectMeta()
                     .name(pvcName))
                 .spec(new PersistentVolumeClaimSpec()
-                    .storageClassName(storageClassName)
-                    .volumeName(pvName)
+                    .storageClassName("weblogic-domain-storage-class")
                     .resources(new V1ResourceRequirements()
                         .requests(pvcRequest))))
             .domain(new DomainOnPV()
