@@ -320,7 +320,6 @@ class DomainResourcesValidation {
   }
 
   private void updateCluster(DomainProcessor dp, ClusterResource cluster, EventItem eventItem) {
-    cluster.getClusterName()
     List<DomainPresenceInfo> list =
         dp.getExistingDomainPresenceInfoForCluster(cluster.getNamespace(), getClusterName(cluster));
     if (list.isEmpty()) {
