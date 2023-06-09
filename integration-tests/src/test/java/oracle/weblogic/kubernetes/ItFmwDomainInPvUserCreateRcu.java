@@ -277,10 +277,9 @@ public class ItFmwDomainInPvUserCreateRcu {
   }
 
   /**
-   * The user provides opss.walletFileSecret that does not exist
-   * Verify the operator will proceed with normal domain creation. The operator will not
-   * try to mount the non-existing secret
-   * Verify Pod is ready and service exists for both admin server and managed servers.
+   * The user provides opss.walletFileSecret that does not exist.
+   * In this case the domain will not be created and operator will log message like
+   * "Domain xxx is not valid: OpssWalletFile secret 'xxx' not found in namespace xxx"
    */
   @Test
   @Order(3)
