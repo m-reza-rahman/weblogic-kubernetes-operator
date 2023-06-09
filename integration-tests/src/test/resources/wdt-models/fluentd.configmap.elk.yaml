@@ -56,10 +56,6 @@
       type_name fluentd
       logstash_format true
       logstash_prefix fluentd
-      key_name timestamp
-      types timestamp:time
-      suppress_type_name true
-      include_timestamp true
       #include_tag_key true
       #tag_key @log_name
 </match>
