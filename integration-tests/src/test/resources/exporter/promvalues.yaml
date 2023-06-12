@@ -66,19 +66,22 @@ server:
     type: NodePort
     nodePort: 30500
   securityContext:
-    fsGroup: 65534
-    runAsGroup: 65534
     runAsNonRoot: true
     runAsUser: 1000
   initContainers:
-    - name: prometheus-data-permission-fix
+    - command: [ "chown","-R","1000:1000","/data" ]
       image: busybox
-      command: [ "/bin/chmod","-R","777", "/data" ]
+      name: prometheus-data-permission-fix
       volumeMounts:
-        - name: prometheus-data
-          mountPath: /data
+        - mountPath: /data
+          name: storage-volume
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+        runAsGroup: 0
+
   volumes:
-    - name: prometheus-data
+    - name: storage-volume
       persistentVolumeClaim:
         claimName: pvc-prometheus
 

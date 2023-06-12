@@ -583,7 +583,7 @@ public class MonitoringUtils {
         BUSYBOX_IMAGE), "Failed to replace String ");
     assertDoesNotThrow(() -> replaceStringInFile(targetGrafanaFile.toString(),
         "busybox_tag",
-        BUSYBOX_TAG), "Failed to replace String ");
+        BUSYBOX_TAG), "Failed to replace String ");   
     if (!OKE_CLUSTER) {
       assertDoesNotThrow(() -> replaceStringInFile(targetGrafanaFile.toString(),
               "enabled: false", "enabled: true"));
