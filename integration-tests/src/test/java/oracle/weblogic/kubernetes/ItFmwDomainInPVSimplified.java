@@ -293,7 +293,7 @@ class ItFmwDomainInPVSimplified {
         adminServerPodName, managedServerPodNamePrefix, replicaCount);
 
     // update the domain with new base image
-    int index = FMWINFRA_IMAGE_TO_USE_IN_SPEC.indexOf(":");
+    int index = FMWINFRA_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":");
     String newImage = FMWINFRA_IMAGE_TO_USE_IN_SPEC.substring(0, index) + ":newtag";
     testUntil(
         tagImageAndPushIfNeeded(FMWINFRA_IMAGE_TO_USE_IN_SPEC, newImage),
