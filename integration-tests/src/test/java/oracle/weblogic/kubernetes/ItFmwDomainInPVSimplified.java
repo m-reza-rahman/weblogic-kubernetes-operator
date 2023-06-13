@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.V1Patch;
@@ -65,14 +66,19 @@ import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
-import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC_12213;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
+import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_PASSWORD;
+import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_USERNAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePod;
+import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
+import static oracle.weblogic.kubernetes.actions.TestActions.imageRepoLogin;
+import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
@@ -287,11 +293,19 @@ class ItFmwDomainInPVSimplified {
         adminServerPodName, managedServerPodNamePrefix, replicaCount);
 
     // update the domain with new base image
-    logger.info("patch the domain resource with new image {0}", FMWINFRA_IMAGE_TO_USE_IN_SPEC_12213);
+    int index = FMWINFRA_IMAGE_TO_USE_IN_SPEC.indexOf(":");
+    String newImage = FMWINFRA_IMAGE_TO_USE_IN_SPEC.substring(0, index) + ":newtag";
+    testUntil(
+        tagImageAndPushIfNeeded(FMWINFRA_IMAGE_TO_USE_IN_SPEC, newImage),
+        logger,
+        "tagImageAndPushIfNeeded for image {0} to be successful",
+        newImage);
+
+    logger.info("patch the domain resource with new image {0}", newImage);
     String patchStr
         = "["
         + "{\"op\": \"replace\", \"path\": \"/spec/image\", "
-        + "\"value\": \"" + FMWINFRA_IMAGE_TO_USE_IN_SPEC_12213 + "\"}"
+        + "\"value\": \"" + newImage + "\"}"
         + "]";
     logger.info("Updating domain configuration using patch string: {0}\n", patchStr);
     V1Patch patch = new V1Patch(patchStr);
@@ -1016,4 +1030,22 @@ class ItFmwDomainInPVSimplified {
     Path hostPVPath = createPVHostPathDir(pvName, className);
     return hostPVPath.toString();
   }
+
+  private Callable<Boolean> tagImageAndPushIfNeeded(String originalImage, String taggedImage) {
+    return (() -> {
+      boolean result = true;
+      result = result && imageTag(originalImage, taggedImage);
+      // push the image to a registry to make the test work in multi node cluster
+      logger.info("image repo login to registry {0}", TEST_IMAGES_REPO);
+      result = result && imageRepoLogin(TEST_IMAGES_REPO, TEST_IMAGES_REPO_USERNAME,
+          TEST_IMAGES_REPO_PASSWORD);
+      // push image
+      if (!DOMAIN_IMAGES_REPO.isEmpty()) {
+        logger.info("push image {0} to registry", taggedImage);
+        result = result && imagePush(taggedImage);
+      }
+      return result;
+    });
+  }
+
 }
