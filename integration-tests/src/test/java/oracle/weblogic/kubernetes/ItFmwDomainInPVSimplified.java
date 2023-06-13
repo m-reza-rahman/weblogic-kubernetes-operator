@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,6 +15,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource;
@@ -63,6 +65,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC_12213;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -70,7 +73,9 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePod;
+import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
+import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
@@ -91,12 +96,14 @@ import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVHostPathDir;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
+import static oracle.weblogic.kubernetes.utils.PodUtils.getPodsWithTimeStamps;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test to create a FMW domain in persistent volume with new simplified feature.
@@ -177,6 +184,7 @@ class ItFmwDomainInPVSimplified {
    * Create a basic FMW domain on PV.
    * Operator will create PV/PVC/RCU/Domain.
    * Verify Pod is ready and service exists for both admin server and managed servers.
+   * Update the base image in the domain spec, verify the domain is rolling-restarted.
    */
   @Test
   @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
@@ -271,6 +279,30 @@ class ItFmwDomainInPVSimplified {
 
     // verify that all servers are ready
     verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
+
+    // get the map with server pods and their original creation timestamps
+    String adminServerPodName = domainUid + "-admin-server";
+    String managedServerPodNamePrefix = domainUid + "-ms-";
+    Map<String, OffsetDateTime> podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace,
+        adminServerPodName, managedServerPodNamePrefix, replicaCount);
+
+    // update the domain with new base image
+    logger.info("patch the domain resource with new image {0}", FMWINFRA_IMAGE_TO_USE_IN_SPEC_12213);
+    String patchStr
+        = "["
+        + "{\"op\": \"replace\", \"path\": \"/spec/image\", "
+        + "\"value\": \"" + FMWINFRA_IMAGE_TO_USE_IN_SPEC_12213 + "\"}"
+        + "]";
+    logger.info("Updating domain configuration using patch string: {0}\n", patchStr);
+    V1Patch patch = new V1Patch(patchStr);
+    assertTrue(patchDomainCustomResource(domainUid, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
+        "Failed to patch domain");
+
+    // verify the server pods are rolling restarted and back to ready state
+    logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
+        domainUid, domainNamespace);
+    assertTrue(verifyRollingRestartOccurred(podsWithTimeStamps, 1, domainNamespace),
+        String.format("Rolling restart failed for domain %s in namespace %s", domainUid, domainNamespace));
 
     // delete the domain
     deleteDomainResource(domainNamespace, domainUid);
