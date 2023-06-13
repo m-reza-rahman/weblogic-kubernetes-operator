@@ -230,9 +230,9 @@ class DomainResourcesValidation {
 
   private void addDomain(DomainResource domain) {
     DomainPresenceInfo cachedInfo = getDomainPresenceInfoMap().get(domain.getDomainUid());
-    if (cachedInfo == null) {
+    if (cachedInfo == null && domain.getStatus() == null) {
       newDomainNames.add(domain.getDomainUid());
-    } else if (domain.isGenerationChanged(cachedInfo.getDomain())) {
+    } else if (cachedInfo == null || domain.isGenerationChanged(cachedInfo.getDomain())) {
       modifiedDomainNames.add(domain.getDomainUid());
     }
     getOrComputeDomainPresenceInfo(domain.getDomainUid()).setDomain(domain);
