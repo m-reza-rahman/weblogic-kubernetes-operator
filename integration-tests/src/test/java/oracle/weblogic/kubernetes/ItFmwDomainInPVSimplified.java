@@ -288,7 +288,7 @@ class ItFmwDomainInPVSimplified {
 
     // get the map with server pods and their original creation timestamps
     String adminServerPodName = domainUid + "-admin-server";
-    String managedServerPodNamePrefix = domainUid + "-ms-";
+    String managedServerPodNamePrefix = domainUid + "-managed-server";
     Map<String, OffsetDateTime> podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace,
         adminServerPodName, managedServerPodNamePrefix, replicaCount);
 
