@@ -54,6 +54,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.operatorIsReady;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.configMapExist;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapFromFiles;
@@ -297,9 +298,12 @@ class ItElasticLogging {
     String regex = ".*took\":(\\d+),.*hits\":\\{(.+)\\}";
     String queryCriteria = "/_search?q=type:weblogic-operator";
 
-    verifyCountsHitsInSearchResults(queryCriteria, regex, LOGSTASH_INDEX_KEY, false);
+    // verify results of query of type:weblogic-operator in Operator log
+    withLongRetryPolicy.untilAsserted(
+        () -> assertTrue(verifyCountsHitsInSearchResults(queryCriteria, regex, LOGSTASH_INDEX_KEY, false),
+            "Query Operator log info q=type:weblogic-operator failed"));
 
-    logger.info("Query Operator log info succeeded");
+    logger.info("Query Operator log info q=type:weblogic-operator succeeded");
   }
 
   /**
