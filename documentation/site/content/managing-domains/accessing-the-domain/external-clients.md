@@ -453,10 +453,10 @@ is sent from a source WebLogic Server to a target WebLogic Server in a different
 #### When is it necessary to configure RMI forwarding?
 
 RMI forwarding may be needed when transaction server participants are not able to establish
-connection with one another.
+connection directly with one another.
 
-For example, if a cross-domain transaction has failed, and messages such as the following can be found in
-the WebLogic server log files:
+For example, if a cross-domain transaction communication has failed, and messages such as the 
+following can be found in the WebLogic server log files:
 
 `<BEA-111015> <The commit operation for transaction BEA1-0000993203DB6CDB7DE9 timed out after 30 seconds.>`
 
@@ -481,7 +481,7 @@ WebLogic Server domain:
 - Set the `weblogic.rjvm.domain.proxy.<prefix>` Java system property to the URL of the proxy. `<prefix>`
   is typically the domain UID of the target WebLogic Server domain. Multiple Java system properties
   with different values of `<prefix>` can be specified.
-- For operator hosted WebLogic Server instances, you can set this property by including the system property in the `JAVA_OPTIONS`
+- For WebLogic Server domains running in Kubernetes managed by the operator, you can set this property by including the system property in the `JAVA_OPTIONS`
   [Domain environment variable]({{< relref "/managing-domains/domain-resource#jvm-memory-and-java-option-environment-variables" >}}) defined in the domain resource's `spec.serverPod.env` attribute.
 
 Patch 32408938 is required in each WebLogic Server that participates in cross-domain transactions, or that is the routing
@@ -490,7 +490,7 @@ destination of a proxy. The patch is available for WebLogic versions 12.2.1.3.0 
 
 For example, if the URL of the proxy for domain1 is t3://proxy-host:31234, specify
 Java system property `-Dweblogic.rjvm.domain.proxy.domain1=t3://proxy-host:31234`
-in WebLogic Server domain, domain2.
+in WebLogic Server domain2.
 A message originating from WebLogic Servers in domain2 that are addressed to the host name that starts
 with domain1, such as t3://domain1-managed-server1:8001, will be sent to the proxy at
 t3://proxy-host:31234. The proxy then routes the message to a WebLogic Server in domain2, and
