@@ -426,11 +426,12 @@ To enable an 'unknown host' source WebLogic Server to initiate EJB, JMS, or JTA 
 JTA transactions that span WebLogic Server domains are referred to as cross-domain transactions. The
 WebLogic Server Transaction Manager (TM) requires direct server-to-server communications with all
 other global transaction server participants. For a Kubernetes hosted WebLogic cluster, this
-requires each server in the cluster to be individually addressable, but this conflicts
+requires each server in the cluster to be individually addressable. This conflicts
 with the current operator requirement that a network channel in a cluster have the same port across
-all servers in the cluster.
+all servers in the cluster, and the fact that we use cluster service to load balance communication
+in the WebLogic Server cluster.
 
-##### RMI forwarding
+#### RMI forwarding
 
 RMI forwarding makes cross-domain transactions possible without requiring each server in a cluster
 to be individually addressable.
@@ -449,7 +450,7 @@ is sent from a source WebLogic Server to a target WebLogic Server in a different
    that WebLogic Server will forward the message to the intended recipient
    within the same WebLogic Server domain.
 
-##### When is it necessary to configure RMI forwarding?
+#### When is it necessary to configure RMI forwarding?
 
 RMI forwarding may be needed when transaction server participants are not able to establish
 connection with one another.
@@ -465,7 +466,7 @@ participants not being able to reach the transaction coordinator:
 
 `...<startPrepare FAILED javax.transaction.SystemException: Could not obtain coordinator at managed-server1+domain1-managed-server1:8001+domain1+t3+...`
 
-##### How to configure RMI forwarding
+#### How to configure RMI forwarding
 
 Configure a proxy for each WebLogic Server domain that is a participant in global transactions but
 is not reachable by all other global transaction participants, due to the listen addresses of
