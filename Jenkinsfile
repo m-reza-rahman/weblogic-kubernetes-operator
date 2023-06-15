@@ -62,7 +62,7 @@ def kind_k8s_map = [
 def _kind_image = null
 
 pipeline {
-    agent { label 'large' }
+    agent { label 'large-ol8' }
     options {
         timeout(time: 800, unit: 'MINUTES')
     }
