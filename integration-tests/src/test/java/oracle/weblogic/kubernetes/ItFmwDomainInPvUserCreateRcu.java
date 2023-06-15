@@ -504,11 +504,6 @@ public class ItFmwDomainInPvUserCreateRcu {
   @DisplayName("Create a FMW domain on PV with additional WDT config map when user per-creates RCU")
   void testFmwDomainOnPvUserCreatesRCUwdtConfigMap() {
 
-    /*TODO String domainUid = "jrfdomainonpv-userrcu4";
-    String adminSecretName4 = domainUid + "-weblogic-credentials";
-    String rcuaccessSecretName4 = domainUid + "-rcu-credentials";
-    String opsswalletpassSecretName4 = domainUid + "-opss-wallet-password-secret";*/
-
     final String pvName = getUniqueName(domainUid4 + "-pv-");
     final String pvcName = getUniqueName(domainUid4 + "-pvc-");
 
