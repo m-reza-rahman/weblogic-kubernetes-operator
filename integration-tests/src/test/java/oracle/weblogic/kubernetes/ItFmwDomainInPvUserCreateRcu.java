@@ -67,6 +67,7 @@ import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOpe
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodLogContains;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
+import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletFileSecretWithoutFile;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -113,6 +114,8 @@ public class ItFmwDomainInPvUserCreateRcu {
   private final String fmwModelFilePrefix = "model-fmwdomainonpv-rcu-wdt";
   private final String fmwModelFile = fmwModelFilePrefix + ".yaml";
   private static DomainCreationImage domainCreationImage1 = null;
+  private static List<DomainCreationImage> domainCreationImages4 = new ArrayList<>();
+  private static String configMapName = null;
 
   /**
    * Assigns unique namespaces for DB, operator and domain.
@@ -501,6 +504,11 @@ public class ItFmwDomainInPvUserCreateRcu {
   @DisplayName("Create a FMW domain on PV with additional WDT config map when user per-creates RCU")
   void testFmwDomainOnPvUserCreatesRCUwdtConfigMap() {
 
+    /*TODO String domainUid = "jrfdomainonpv-userrcu4";
+    String adminSecretName4 = domainUid + "-weblogic-credentials";
+    String rcuaccessSecretName4 = domainUid + "-rcu-credentials";
+    String opsswalletpassSecretName4 = domainUid + "-opss-wallet-password-secret";*/
+
     final String pvName = getUniqueName(domainUid4 + "-pv-");
     final String pvcName = getUniqueName(domainUid4 + "-pvc-");
 
@@ -542,12 +550,11 @@ public class ItFmwDomainInPvUserCreateRcu {
         ADMIN_PASSWORD_DEFAULT),
         String.format("createSecret failed for %s", opsswalletpassSecretName4));
 
-    DomainCreationImage domainCreationImage1 = createImage(fmwModelFile,fmwModelPropFile,"jrf4");
-    List<DomainCreationImage> domainCreationImages = new ArrayList<>();
-    domainCreationImages.add(domainCreationImage1);
+    DomainCreationImage domainCreationImage = createImage(fmwModelFile,fmwModelPropFile,"jrf4");
+    domainCreationImages4.add(domainCreationImage);
 
     logger.info("create WDT configMap with jms model");
-    String configMapName = "jmsconfigmap";
+    configMapName = "jmsconfigmap";
     createConfigMapAndVerify(
         configMapName, domainUid4, domainNamespace,
         Arrays.asList(MODEL_DIR + "/model.jms2.yaml"));
@@ -559,7 +566,7 @@ public class ItFmwDomainInPvUserCreateRcu {
         TEST_IMAGES_REPO_SECRET_NAME,
         rcuaccessSecretName4,
         opsswalletpassSecretName4, null,
-        pvName, pvcName, domainCreationImages, configMapName);
+        pvName, pvcName, domainCreationImages4, configMapName);
 
     createDomainAndVerify(domain, domainNamespace);
 
@@ -574,24 +581,22 @@ public class ItFmwDomainInPvUserCreateRcu {
     // check configuration for JMS
     checkConfiguredJMSresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
 
-    // delete the domain
-    //TODO deleteDomainResource(domainNamespace, domainUid);
-    //delete the rcu pod
-    /*TODO assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
-              "Got exception while deleting server " + "rcu");
-    checkPodDoesNotExist("rcu", null, dbNamespace);*/
-
   }
 
   /**
    * The user provides opss.walletFileSecret that is empty.
-   * In this case running opss-wallet.sh to restore the wallet file secret will return error
-   * "Error: Wallet file 'ewallet.p12' is empty"
+   * If "ewallet.p12" is an empty file, running opss-wallet.sh to restore the wallet file
+   * secret will fail and return "Error: Wallet file 'ewallet.p12' is empty"
+   * Create opss.walletFileSecret without entry with --from-file=walletFile to get an empty walletFileSecret
+   * The operator will not mount the secret but proceed with normal domain creation without error
    */
   @Test
   @Order(6)
   @DisplayName("Create a FMW domain on PV when user provide OPSS wallet file is empty")
   void testFmwDomainOnPvUserProvideEmptyOpss() {
+
+    final String pvName = getUniqueName(domainUid4 + "-pv-");
+    final String pvcName = getUniqueName(domainUid4 + "-pvc-");
 
     //create empty wallet file ewallet.p12
     try {
@@ -609,13 +614,45 @@ public class ItFmwDomainInPvUserCreateRcu {
     logger.info("restoreOpssWalletfileSecret returns msg: " + result.stdout());
     assertTrue(result.stdout().contains("Error: Wallet file 'ewallet.p12' is empty"));
 
-    //delete the wallet file ewallet.p12
+    //delete the empty wallet file ewallet.p12
     try {
       delete(new File("./ewallet.p12"));
       logger.info("Wallet file ewallet.p12 is deleted");
     } catch (IOException ioe) {
       logger.severe("Failed to delete file ewallet.p12", ioe);
     }
+
+    //create empty walletFileSecret
+    createOpsswalletFileSecretWithoutFile(opsswalletfileSecretName4, domainNamespace);
+    logger.info("Empty walletFile secret {0} is created in the namespace {1}",
+        opsswalletfileSecretName4, domainNamespace);
+
+    logger.info("Deleting domain custom resource with namespace: {0}, domainUid {1}", domainNamespace, domainUid4);
+    deleteDomainResource(domainNamespace, domainUid4);
+    try {
+      deleteDirectory(Paths.get("/share").toFile());
+    } catch (IOException ioe) {
+      logger.severe("Failed to cleanup directory /share", ioe);
+    }
+    logger.info("Creating domain custom resource with pvName: {0}", pvName);
+    DomainResource domain = createDomainResourceSimplifyJrfPv(
+        domainUid4, domainNamespace, adminSecretName4,
+        TEST_IMAGES_REPO_SECRET_NAME,
+        rcuaccessSecretName4,
+        opsswalletpassSecretName4, opsswalletfileSecretName4,
+        pvName, pvcName, domainCreationImages4, configMapName);
+
+    createDomainAndVerify(domain, domainNamespace);
+
+    // verify that all servers are ready
+    verifyDomainReady(domainNamespace, domainUid4, replicaCount, "nosuffix");
+
+    // delete the domain
+    deleteDomainResource(domainNamespace, domainUid4);
+    //delete the rcu pod
+    assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
+              "Got exception while deleting server " + "rcu");
+    checkPodDoesNotExist("rcu", null, dbNamespace);
 
   }
 

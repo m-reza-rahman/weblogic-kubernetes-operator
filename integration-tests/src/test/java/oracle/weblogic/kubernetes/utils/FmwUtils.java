@@ -493,36 +493,6 @@ public class FmwUtils {
   }
 
   /**
-   * Save the OPSS key wallet from a running JRF domain's introspector configmap to a file.
-   * @param namespace namespace where JRF domain exists
-   * @param domainUid unique domain Uid
-   * @param walletfileSecretName name of wallet file secret
-   * @return ExecResult result of running corresponding script
-   */
-  public static ExecResult saveOpssWalletfileSecret(String namespace, String domainUid,
-       String walletfileSecretName) {
-
-    logger = getLogger();
-    Path saveAndRestoreOpssPath =
-         Paths.get(RESOURCE_DIR, "bash-scripts", "opss-wallet.sh");
-    String script = saveAndRestoreOpssPath.toString();
-    logger.info("Script for saveAndRestoreOpss is {0)", script);
-
-    //save opss wallet file
-    String command1 = script + " -d " + domainUid + " -n " + namespace + " -s";
-    logger.info("Save wallet file command: {0}", command1);
-    ExecResult result =  Command.withParams(
-        defaultCommandParams()
-            .command(command1)
-            .saveResults(true)
-            .redirect(true))
-        .executeAndReturnResult();
-
-    return result;
-
-  }
-
-  /**
    * Restore the OPSS key wallet from a running JRF domain's introspector configmap to a file.
    * @param namespace namespace where JRF domain exists
    * @param domainUid unique domain Uid
@@ -539,11 +509,11 @@ public class FmwUtils {
     logger.info("Script for saveAndRestoreOpss is {0)", script);
 
     //restore opss wallet password secret
-    String command2 = script + " -d " + domainUid + " -n " + namespace + " -r" + " -ws " + walletfileSecretName;
-    logger.info("Restore wallet file command: {0}", command2);
+    String command = script + " -d " + domainUid + " -n " + namespace + " -r" + " -ws " + walletfileSecretName;
+    logger.info("Restore wallet file command: {0}", command);
     ExecResult result = Command.withParams(
           defaultCommandParams()
-            .command(command2)
+            .command(command)
             .saveResults(true)
             .redirect(true))
         .executeAndReturnResult();
