@@ -461,7 +461,7 @@ following can be found in the WebLogic server log files:
 `<BEA-111015> <The commit operation for transaction BEA1-0000993203DB6CDB7DE9 timed out after 30 seconds.>`
 
 With additional JTA debugging turned on using the Java system property `-Dweblogic.debug.DebugJTA2PC=true`,
-messages, such as the following, confirms that the failed transaction is caused by transaction
+messages, such as the following, confirm that the failed transaction is caused by transaction
 participants not being able to reach the transaction coordinator:
 
 `...<startPrepare FAILED javax.transaction.SystemException: Could not obtain coordinator at managed-server1+domain1-managed-server1:8001+domain1+t3+...`
@@ -469,8 +469,8 @@ participants not being able to reach the transaction coordinator:
 #### How to configure RMI forwarding
 
 Configure a proxy for each WebLogic Server domain that is a participant in global transactions but
-is not reachable by all other global transaction participants, due to the listen addresses of
-the WebLogic Servers in the domain cannot be resolved by the DNS from other participants.
+is not reachable by all other global transaction participants, because the listen addresses of
+the WebLogic Server instances in the domain cannot be resolved by the DNS from other participants.
 For example, if servers in domain1 cannot be reached from servers in domain2, configure a proxy
 for domain1 such that messages sent from servers in domain2 can be routed to servers in domain1
 through the proxy.
@@ -484,15 +484,15 @@ WebLogic Server domain:
 - For WebLogic Server domains running in Kubernetes managed by the operator, you can set this property by including the system property in the `JAVA_OPTIONS`
   [Domain environment variable]({{< relref "/managing-domains/domain-resource#jvm-memory-and-java-option-environment-variables" >}}) defined in the domain resource's `spec.serverPod.env` attribute.
 
-For example, if the URL of the proxy for domain1 is t3://proxy-host:31234, specify
+For example, if the URL of the proxy for domain1 is `t3://proxy-host:31234`, specify
 Java system property `-Dweblogic.rjvm.domain.proxy.domain1=t3://proxy-host:31234`
 in WebLogic Server domain2.
-A message originating from WebLogic Servers in domain2 that are addressed to the host name that starts
-with domain1, such as t3://domain1-managed-server1:8001, will be sent to the proxy at
-t3://proxy-host:31234. The proxy then routes the message to a WebLogic Server in domain2, and
-RMI forwarding will ensure that the message will reach WebLogic Server managed-server1 in domain domain1.
+A message originating from WebLogic Server instances in domain2 that are addressed to the host name that starts
+with domain1, such as `t3://domain1-managed-server1:8001`, will be sent to the proxy at
+`t3://proxy-host:31234`. The proxy then routes the message to a WebLogic Server instance in domain2, and
+RMI forwarding will ensure that the message will reach WebLogic Server managed-server1 in domain1.
 
-Patch 32408938 is required in each WebLogic Server that participates in cross-domain transactions, or that is the routing
+Patch 32408938 is required in each WebLogic Server instance that participates in cross-domain transactions, or that is the routing
 destination of a proxy. The patch is available for WebLogic versions 12.2.1.3.0 (PS3),
 12.2.1.4.0 (PS4), and 14.1.1.0.0, and is already included in the PSUs for these releases since July 2022.
 
