@@ -34,7 +34,7 @@ then
     mkdir $SCRIPTPATH/../documentation/charts
   fi
   mv -f $helm_package $SCRIPTPATH/../documentation/charts/
-  helm repo index $SCRIPTPATH/../documentation/charts/ --url https://oracle.github.io/weblogic-kubernetes-operator/charts
+  helm repo index $SCRIPTPATH/../documentation/charts/ --url https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/weekly-prelease-41/documentation/charts
 else
   rm $helm_package
 fi;
