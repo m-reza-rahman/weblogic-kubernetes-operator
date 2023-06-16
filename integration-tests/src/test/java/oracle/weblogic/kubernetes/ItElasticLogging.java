@@ -55,7 +55,6 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.operatorIsRea
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.configMapExist;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapFromFiles;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.replaceConfigMap;
@@ -280,7 +279,7 @@ class ItElasticLogging {
     String queryCriteria = "/_count?q=level:INFO";
 
     // verify log level query results
-    withStandardRetryPolicy.untilAsserted(
+    withLongRetryPolicy.untilAsserted(
         () -> assertTrue(verifyCountsHitsInSearchResults(queryCriteria, regex, LOGSTASH_INDEX_KEY, true),
             "Query logs of level=INFO failed"));
 
@@ -435,7 +434,7 @@ class ItElasticLogging {
 
   private void verifyServerRunningInSearchResults(String serverName) {
     String queryCriteria = "/_search?q=log:" + serverName;
-    withStandardRetryPolicy.untilAsserted(
+    withLongRetryPolicy.untilAsserted(
         () -> assertTrue(execSearchQuery(queryCriteria, LOGSTASH_INDEX_KEY).contains("RUNNING"),
           String.format("serverName %s is not RUNNING", serverName)));
 
@@ -543,7 +542,7 @@ class ItElasticLogging {
     }
 
     // wait for logstash config modified and verify
-    withStandardRetryPolicy.untilAsserted(
+    withLongRetryPolicy.untilAsserted(
         () -> assertTrue(copyConfigFromPodAndSearchForString(containerName, replaceStr),
             String.format("Failed to find search string %s", replaceStr)));
   }
