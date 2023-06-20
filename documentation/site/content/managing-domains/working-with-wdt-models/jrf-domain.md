@@ -79,7 +79,7 @@ For Domain on PV deployment, in the domain resource YAML file, you can provide t
                walletPasswordSecret: sample-domain1-opss-wallet-password-secret
 ```
 
-For Model in image deployment, in the domain resource YAML file, you can provide two secrets in the `opss` section:
+For Model in image deployment (Note: JRF support has been deprecated since operator version 4.10, use Domain on PV instead), in the domain resource YAML file, you can provide two secrets in the `opss` section:
 
 ```
      configuration:
@@ -94,11 +94,13 @@ For Model in image deployment, in the domain resource YAML file, you can provide
 encrypt the exported `OPSS wallet`.  You can create a Kubernetes secret with the key `walletPassword` containing the password.
 The password must be at least 8 alphanumeric characters with one special character.
 
+#### Download OPSS wallet and store in a Kubernetes secret
+
 After the domain is created, the operator will automatically export the `OPSS wallet` and
 store it in an introspector ConfigMap; the name of the ConfigMap follows the pattern `<domain uid>-weblogic-domain-introspect-cm`
 with key `ewallet.p12`.  You can export this file and put it in a safe place. We provide a
  [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh)
-for extracting this file and storing it in a Kubernetes `walletFileSecret`.
+for extracting this file and storing it in a Kubernetes `walletFileSecret`.  You should also save the wallet file in a safely backed up location outside of Kubernetes.
 
 For disaster recovery, in case you need to recreate the domain and reconnect with an existing RCU schema:
 

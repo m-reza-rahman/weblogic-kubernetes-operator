@@ -208,7 +208,7 @@ to specify any `persistentVolume` or `persistentVolumeClaim`  under the `intiali
 
 #### Domain information
 
-For JRF-based domains, before proceeding, please be sure to read this document, [JRF domains]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain.md">}}).
+**For JRF-based domains, before proceeding, please be sure to read this document**, [JRF domains]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain.md">}}).
 
 This is the section describing the WebLogic domain. For example:
 
@@ -241,6 +241,12 @@ spec:
 | `osss.walletPasswordSecret` | Password for extracting OPSS wallet encryption key for JRF domain.               | Kubernetes secret name with key `walletPassword`.                       | Y                                                                   |
 | `osss.walletFileSecret`     | Extracted OPSS wallet file.                                                        | Kubernetes secret name with key `walletFile`.                            | N (Only needed when recreating the domain during disaster recovery) |
 
+**After a JRF domain is successfully deployed, follow the next section** [Best Pracices](#best-practices) to download and back up the `OPSS wallet`.
+
+### Best Practices
+
+- If the domain is a JRF domain, it is a good idea to download and save the `OPSS wallet` in a safely backed up location immediately.  It is also a good practice to store this wallet in 
+a Kubernetes secret in the same namespace.   In case you need disaster recovery of the domain directory, the secret will be ready.  See [Disaster Recovery]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain.md#disaster-recovery-when-the-domain-home-directory-is-destroyed">}}).  
 
 ### Troubleshooting
 
