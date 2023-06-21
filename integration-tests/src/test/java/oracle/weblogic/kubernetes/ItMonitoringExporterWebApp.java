@@ -92,7 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("olcne")
 @Tag("oke-sequential")
-@Tag("kind-parallel")
+@Tag("kind-sequential")
 @Tag("okd-wls-mrg")
 class ItMonitoringExporterWebApp {
 
