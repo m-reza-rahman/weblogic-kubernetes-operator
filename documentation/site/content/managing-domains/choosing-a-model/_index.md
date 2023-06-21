@@ -25,13 +25,13 @@ When using the operator to start WebLogic Server instances from a domain, you ha
      - As WDT model YAML file in a Kubernetes ConfigMap.
    - Supply WebLogic applications in one of two ways:
      - In auxiliary images.
-     - Layered on the installation image (not recommended).
+     - Layered on the installation image. **NOTE**: Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) will be deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ Auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
    - Mutate the WebLogic configuration by supplying a new image and rolling,
      or [model updates]({{< relref "/managing-domains/model-in-image/runtime-updates.md" >}})
      supplied in a Kubernetes ConfigMap.
 
  - **[Domain in Image]({{< relref "/samples/domains/domain-home-in-image/_index.md" >}})**:
- **NOTE**: The Domain in Image domain home source type is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain in PV or Model in Image, depending on your needs.
+ **NOTE**: The Domain in Image domain home source type is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
    - Set the domain resource `domain.spec.domainHomeSourceType` attribute to `Image`.
    - Supply a WebLogic installation in an image and supply a WebLogic configuration as a domain home layered on this image.
    - Supply WebLogic applications layered on the installation image.
@@ -77,13 +77,11 @@ There are advantages for each domain home source type where Model in Image is th
 * Model in Image domains that _do not_ use auxiliary images:
 **NOTE**: Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) will be deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ Auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
 
-* Domain in Image domains (not recommended):
+* Domain in Image domains: **NOTE**: The Domain in Image domain home source type is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
   * [Create a custom image with your domain inside the image]({{< relref "/base-images/custom-images#create-a-custom-image-with-your-domain-inside-the-image" >}})
 
 * Domain on Persistent Volume (PV) domains:
   * [Understand Oracle Container Registry images]({{< relref "/base-images/ocr-images#understand-oracle-container-registry-images" >}})
   * [Obtain images from the Oracle Container Registry]({{< relref "/base-images/ocr-images#obtain-images-from-the-oracle-container-registry" >}})
   * [Create a custom image with patches applied]({{< relref "/base-images/custom-images#create-a-custom-image-with-patches-applied" >}})
-  * [Create a domain creation images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}})
-  * [Domain creation images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}})
- 
+  * [Domain creation images]({{< relref "/managing-domains/domain-on-pv/domain-creation-images.md" >}})

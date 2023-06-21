@@ -11,8 +11,8 @@ description = "Domain creation images supply the WDT model for Domain on PV."
 ### Introduction
 
 Domain creation images are used for supplying WebLogic Deploy Tooling (WDT) model files, WDT variables files,
-WDT application archive files (collectively known as WDT model files), and WDT installation files when deploying a domain using
-a Domain on PV model.  You distribute WDT model files and the
+WDT application archive files (collectively known as WDT model files), and the location of where the WebLogic Deploy Tooling software is installed (known as the WDT Home)
+when deploying a domain using a Domain on PV model.  You distribute WDT model files and the
 WDT executable using these images, then the operator uses them to
 manage the domain.
 
@@ -27,8 +27,8 @@ which defaults to `Always` if the `image` ends in `:latest` and `IfNotPresent`,
 otherwise.
 If image pull secrets are required for pulling the images, then the secrets must be referenced using `domain.spec.imagePullSecrets`.
 
-Also, optionally, you can configure the [source locations](#source-locations) of the WDT model
-and installation files in the image using the `sourceModelHome` and `sourceWDTInstallHome` fields, as described in this
+Also, optionally, you can configure the [source locations](#source-locations) of WDT model files and where the WebLogic Deploy Tooling software is installed 
+using the `sourceModelHome` and `sourceWDTInstallHome` fields, as described in this
 [section](#source-locations).
 
 - For details about each field, see the [References](#references).
@@ -48,11 +48,11 @@ and installation files in the image using the `sourceModelHome` and `sourceWDTIn
 
 Use the optional attributes, `sourceModelHome` and
 `sourceWdtInstallHome`, to specify non-default locations for the
-WDT model and installation files in your domain creation image(s).
+WDT model files and WDT Home in your domain creation image(s).
 Allowed values for `sourceModelHome` and `sourceWdtInstallHome`:
 - Unset - Defaults to `/auxiliary/models` and `/auxiliary/weblogic-deploy`, respectively.
-- Set to a path - Must point to an existing location containing WDT model and WDT installation files, respectively.
-- `None` - Indicates that the image has no WDT model files and installation files, respectively.
+- Set to a path - Must point to an existing location containing the WDT model files and WDT Home, respectively.
+- `None` - Indicates that the image has no WDT model files or WDT Home, respectively.
 
 If you set the `sourceModelHome` or `sourceWDTInstallHome` to `None` or,
 the source attributes are left unset and there are no files at the default locations,
@@ -100,7 +100,7 @@ spec:
 
 #### Example 2: Source locations
 
-This example is the same as Example 1, except that it specifies the source locations for the WDT model and installation files.
+This example is the same as Example 1, except that it specifies the source locations for the WDT model files and WDT Home.
 
 ```
 spec:
