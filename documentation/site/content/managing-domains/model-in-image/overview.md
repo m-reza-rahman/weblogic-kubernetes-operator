@@ -29,7 +29,7 @@ This feature is supported for standard WLS domains. For JRF domains, use [Domain
 ### WebLogic Deploy Tooling models
 
 WDT models are a convenient and simple alternative to WebLogic Scripting Tool (WLST)
-configuration scripts and templates.
+configuration scripts.
 They compactly define a WebLogic domain using YAML files and support including
 application archives in a ZIP file. For a description of the model format
 and its integration with Model in Image,

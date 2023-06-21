@@ -38,12 +38,12 @@ Model in Image requires an image with a WebLogic Server installation.
 ### Directory structure
 
 Model in Image requires the following directory structure in its pods for
-its (optional) WDT model files and (required) WDT binaries:
+its (optional) WDT model files and (required) WDT Home :
 
 | Domain resource attribute  | Contents                              | Default directory                                                                                                                                                                                                                                                                                                         |
 | -------------------------- | ------------------------------------- |---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `domain.spec.configuration.model.modelHome` | Zero or more model `.yaml`, `.properties`, and/or archive `.zip` files. | Optional. Location of the WDT model home, which can include model YAML files, `.properties` files, and application `.zip` archives. Defaults to `/u01/wdt/models` if no [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images.md" >}}) are configured, and to `/aux/models` otherwise. |
-| `domain.spec.configuration.model.wdtInstallHome` | Unzipped WDT installation binaries (required).  | Optional. Location of the WDT installation. Defaults to `/u01/wdt/weblogic-deploy` if no [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}) are configured, and to `/aux/weblogic-deploy` otherwise.                                                                          |
+| `domain.spec.configuration.model.wdtInstallHome` | Unzipped WDT installation (required).  | Optional. Location of the WDT Home. Defaults to `/u01/wdt/weblogic-deploy` if no [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}) are configured, and to `/aux/weblogic-deploy` otherwise.                                                                          |
 
 {{% notice note %}}
 If you set `modelHome` and `wdtInstallHome` to a non-default value,
@@ -51,7 +51,7 @@ then the operator will ignore WDT model and installation files
 that are copied from [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}).
 {{% /notice %}}
 
-### Supplying initial WDT model files and WDT installation
+### Supplying initial WDT model files and WDT Home
 
 Model in Image minimally requires an image with a WebLogic installation
 (see [WebLogic Server image](#weblogic-server-image)), plus access
@@ -85,15 +85,15 @@ There are multiple methods for supplying Model in Image WDT models files, WDT va
     a layer on top of your base image
     (where the base image includes your WebLogic installation).
 
+    **NOTE**: Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) will be deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
+
     Use either of the following methods.
 
     - _Manual image creation_ uses Docker commands to layer the WDT models files, described in the previous table,
       on top of your base image into a new image.
     - The _WebLogic Image Tool_ (WIT) has built-in options for layering WDT model files,
-      WDT binaries, WebLogic Server binaries, and WebLogic Server patches in an image.
+      WDT installation, WebLogic Server installation, and WebLogic Server patches in an image.
       See [Create a custom image with your model inside the image]({{< relref "/base-images/custom-images#create-a-custom-image-with-your-model-inside-the-image" >}}).
-
-      **NOTE**: Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) will be deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
 
   - Use a Persistent Volume Claim (PVC):
     This method is for advanced use cases only. Supply WDT model YAML, variables, or archive files
@@ -177,7 +177,7 @@ The following Domain fields are specific to Model in Image domains.
 | `configuration.model.domainType`             | Set the type of domain. `WLS` is the default. See [WDT Domain Types](https://oracle.github.io/weblogic-deploy-tooling/userguide/tools-config/domain_def/).                                                                                                                                                             |
 | `configuration.model.runtimeEncryptionSecret`| Required. All Model in Image domains must specify a runtime encryption secret. See [Required runtime encryption secret](#required-runtime-encryption-secret).                                                                                                                                                          |
 | `configuration.model.modelHome`              | Optional. Location of the WDT model home, which can include model YAML files, `.properties` files, and application `.zip` archives. Defaults to `/u01/wdt/models` if no [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}) are configured, and to `/aux/models` otherwise. |
-| `configuration.model.wdtInstallHome`         | Optional. Location of the WDT installation. Defaults to `/u01/wdt/weblogic-deploy` if no [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}) are configured, and to `/aux/weblogic-deploy` otherwise.                                                                       |
+| `configuration.model.wdtInstallHome`         | Optional. Location of the WDT Home . Defaults to `/u01/wdt/weblogic-deploy` if no [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}) are configured, and to `/aux/weblogic-deploy` otherwise.                                                                       |
 
 {{% notice note %}}
 If you set `modelHome` and `wdtInstallHome` to a non-default value,

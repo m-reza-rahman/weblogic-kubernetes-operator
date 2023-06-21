@@ -27,7 +27,7 @@ To use this feature, provide the following information:
 - [Volumes and VolumeMounts information](#volumes-and-volumemounts-information) - This follows the standard Kubernetes pod requirements for mounting persistent volumes.
 - [PersistentVolume and PersistentVolumeClaim](#persistent-volume-and-persistent-volume-claim) - This is environment specific and usually requires assistance from your administrator to provide the underlying details, such as `storageClass` or any permissions.
 - [Domain information](#domain-information) - This describes the domain type and whether the operator should create the RCU schema.
-- [Domain WDT models](#domain-creation-models) - This is where the WDT binaries, WDT model, WDT archive, and WDT variables files reside.
+- [Domain WDT models](#domain-creation-models) - This is where the WDT Home, WDT model, WDT archive, and WDT variables files reside.
 - [Optional WDT models ConfigMap](#optional-wdt-models-configmap) - Optional, WDT model, WDT variables files.
 - [Domain resource YAML file]({{< relref "/reference/domain-resource.md">}}) - This is for deploying the domain in WebLogic Kubernetes Operator.
 
@@ -65,7 +65,7 @@ Specify an image that describes the domain topology, resources, and applications
 |---------------------------|--------------------------------------------------------------------------------------|-------------------------------------------------------------------------|---------------------------------------------------------------------|
 | `domainCreationImages`      | WDT domain images.                                                                    | An array of images.                                                          | Y                                |
 
-In this image or images, you must provide the required WDT installer [binaries](https://github.com/oracle/weblogic-deploy-tooling/releases),
+In this image or images, you must provide the required WDT [installer](https://github.com/oracle/weblogic-deploy-tooling/releases),
 and also the WDT model files, WDT variables files, and WDT archive files.  The operator will use them to create the initial domain.  
 
 For additional options in `domainCreationImages`, use the following command to obtain the details.
@@ -77,7 +77,7 @@ kubectl explain domain.spec.configuration.initializeDomainOnPV.domain.domainCrea
 The image layout follows this directory structure:
 
 ```
-/auxiliary/weblogic-deploy - Extracted WebLogic Deploy Tooling installer file.
+/auxiliary/weblogic-deploy - The directory where the WebLogic Deploy Tooling software is installed.
 /auxiliary/models -  WDT model, WDT archive, and WDT variables files.
 ```
 
@@ -241,12 +241,12 @@ spec:
 | `osss.walletPasswordSecret` | Password for extracting OPSS wallet encryption key for JRF domain.               | Kubernetes secret name with key `walletPassword`.                       | Y                                                                   |
 | `osss.walletFileSecret`     | Extracted OPSS wallet file.                                                        | Kubernetes secret name with key `walletFile`.                            | N (Only needed when recreating the domain during disaster recovery) |
 
-**After a JRF domain is successfully deployed, follow the next section** [Best Pracices](#best-practices) to download and back up the `OPSS wallet`.
+**After a JRF domain is successfully deployed**: follow the next section [Best Practices](#best-practices) to download and back up the `OPSS wallet`.
 
 ### Best Practices
 
-- If the domain is a JRF domain, it is a good idea to download and save the `OPSS wallet` in a safely backed up location immediately.  It is also a good practice to store this wallet in 
-a Kubernetes secret in the same namespace.   In case you need disaster recovery of the domain directory, the secret will be ready.  See [Disaster Recovery]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain.md#disaster-recovery-when-the-domain-home-directory-is-destroyed">}}).  
+For a JRF domain, it is a best practice to download and save the `OPSS wallet` in a safely backed-up location _immediately_.  It is also highly recommended that you store this wallet in
+a Kubernetes secret in the same namespace.   In case you need to recover the domain directory, then the secret will be ready.  For details, see [Disaster Recovery]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain#disaster-recovery-when-the-domain-home-directory-is-destroyed">}}).  
 
 ### Troubleshooting
 

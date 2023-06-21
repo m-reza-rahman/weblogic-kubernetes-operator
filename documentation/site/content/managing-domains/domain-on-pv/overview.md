@@ -30,7 +30,7 @@ The `initializeDomainOnPv` section:
 
 The typical Domain on PV use case is for an application life cycle that requires persisting changes to the permanent file system.
 
-For example, you might use frameworks like Meta Data Service (MDS), Oracle Application Development Framework (ADF), or Oracle Service Bus (OSB).
+For example, you might use frameworks like Metadata Services (MDS), Oracle Application Development Framework (ADF), or Oracle Service Bus (OSB).
 These frameworks require a running domain and the lifecycle operations are persisted to the file system. Typically,
 after the initial domain is created, you use tools like Fusion Middleware Control, product-specific WLST functions,
 the WebLogic Server Administration Console, the WebLogic Remote Console, the Service Bus Console, or JDeveloper for lifecycle operations. The changes are managed by
@@ -39,7 +39,7 @@ these tools; the data and operations _cannot_ be described using WDT models.
 ### WebLogic Deploy Tooling models
 
 WDT models are a convenient and simple alternative to WLST
-configuration scripts and templates.
+configuration scripts.
 They compactly define a WebLogic domain using model files, variable properties files, and application archive files.
 For more information about the model format
 and its integration,

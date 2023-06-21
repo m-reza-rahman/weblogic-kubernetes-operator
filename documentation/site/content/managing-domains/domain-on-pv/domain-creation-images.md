@@ -27,7 +27,7 @@ which defaults to `Always` if the `image` ends in `:latest` and `IfNotPresent`,
 otherwise.
 If image pull secrets are required for pulling the images, then the secrets must be referenced using `domain.spec.imagePullSecrets`.
 
-Also, optionally, you can configure the [source locations](#source-locations) of WDT model files and the directory where the WebLogic Deploy Tooling software is installed
+Also, optionally, you can configure the [source locations](#source-locations) of WDT model files and WDT Home
 using the `sourceModelHome` and `sourceWDTInstallHome` fields, as described in this
 [section](#source-locations).
 
@@ -71,10 +71,10 @@ For example source locations, see [Configuration example 2](#example-2-source-lo
 If specifying multiple images with WDT model files in their respective `sourceModelHome`
 directories, then WDT model files are merged. Files from later images take precedence over files from earlier images.
 
-When specifying multiple images, ensure that only one of the images supplies a WDT installation location using
+When specifying multiple images, ensure that only one of the images supplies a WDT Home using
 `sourceWDTInstallHome`.
 {{% notice warning %}}
-If you provide more than one WDT installation home among multiple images,
+If you provide more than one WDT Home among multiple images,
 then the domain deployment will fail.
 Set `sourceWDTInstallHome` to `None`, or make sure there are no files in `/auxiliary/weblogic-deploy`,
 for all but one of your specified domain creation images.
