@@ -11,7 +11,7 @@ description = "Domain creation images supply the WDT model for Domain on PV."
 ### Introduction
 
 Domain creation images are used for supplying WebLogic Deploy Tooling (WDT) model files, WDT variables files,
-WDT application archive files (collectively known as WDT model files), and the location of where the WebLogic Deploy Tooling software is installed (known as the WDT Home)
+WDT application archive files (collectively known as WDT model files), and the directory where the WebLogic Deploy Tooling software is installed (known as the WDT Home)
 when deploying a domain using a Domain on PV model.  You distribute WDT model files and the
 WDT executable using these images, then the operator uses them to
 manage the domain.
@@ -27,7 +27,7 @@ which defaults to `Always` if the `image` ends in `:latest` and `IfNotPresent`,
 otherwise.
 If image pull secrets are required for pulling the images, then the secrets must be referenced using `domain.spec.imagePullSecrets`.
 
-Also, optionally, you can configure the [source locations](#source-locations) of WDT model files and where the WebLogic Deploy Tooling software is installed 
+Also, optionally, you can configure the [source locations](#source-locations) of WDT model files and the directory where the WebLogic Deploy Tooling software is installed
 using the `sourceModelHome` and `sourceWDTInstallHome` fields, as described in this
 [section](#source-locations).
 
