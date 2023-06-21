@@ -47,7 +47,7 @@ its (optional) WDT model files and (required) WDT Home :
 
 {{% notice note %}}
 If you set `modelHome` and `wdtInstallHome` to a non-default value,
-then the operator will ignore WDT model and installation files
+then the operator will ignore WDT model and WDT Home
 that are copied from [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}).
 {{% /notice %}}
 
@@ -181,7 +181,7 @@ The following Domain fields are specific to Model in Image domains.
 
 {{% notice note %}}
 If you set `modelHome` and `wdtInstallHome` to a non-default value,
-then the operator will ignore WDT model and installation files
+then the operator will ignore WDT model and WDT Home
 that are copied from [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}).
 {{% /notice %}}
 
