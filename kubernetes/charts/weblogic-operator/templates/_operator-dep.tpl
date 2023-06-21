@@ -89,6 +89,8 @@ spec:
           value: {{ int64 .javaLoggingFileSizeLimit | default 20000000 | quote }}
         - name: "JAVA_LOGGING_COUNT"
           value: {{ .javaLoggingFileCount | default 10 | quote }}
+        - name: "JVM_OPTIONS"
+          value: {{ .jvmOptions | default "-XshowSettings:vm -XX:MaxRAMPercentage=70" | quote }}
         {{- if .remoteDebugNodePortEnabled }}
         - name: "REMOTE_DEBUG_PORT"
           value: {{ .internalDebugHttpPort | quote }}
@@ -224,6 +226,9 @@ spec:
       serviceaccount: {{ .serviceAccount | quote }}
       {{- if .featureGates }}
       featureGates: {{ .featureGates | quote }}
+      {{- end }}
+      {{- if .domainNamespaceSelectionStrategy }}
+      domainNamespaceSelectionStrategy: {{ .domainNamespaceSelectionStrategy | quote }}
       {{- end }}
 ---
     # webhook does not exist or chart version is newer, create a new webhook
