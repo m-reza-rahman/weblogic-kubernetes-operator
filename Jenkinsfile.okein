@@ -52,7 +52,7 @@ pipeline {
 
         CLUSTER_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'parcluster' : 'seqcluster'}"
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
-        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-parallel' : 'oke-sequential'}"
+        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-parallel' : 'oke-gate'}"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
         PARALLEL_RUN = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? true : false}"
     }
@@ -299,11 +299,7 @@ pipeline {
 
 
                         export OKE_CLUSTER="true"
-                        #if [ ${MAVEN_PROFILE_NAME} = 'oke-parallel' ]; then
-                        #   VCN_CIDR_PREFIX="10.196"
-                        #else
-                        #   VCN_CIDR_PREFIX="10.196"
-                        #fi
+
                         VCN_CIDR_PREFIX="10.196"
                         export VCN_CIDR_PREFIX=${VCN_CIDR_PREFIX}
 
@@ -397,12 +393,7 @@ EOF
                             echo 'Create a OKE cluster ${CLUSTER_NAME}'
 
                             cp -rf ${terraform_script_dir_name}/*.* ${WORKSPACE}/terraform/.
-                            #if [ "${MAVEN_PROFILE_NAME}" = 'oke-parallel' ]; then
-                            #    cp -rf ${terraform_script_dir_name}/twoclusters/mount_target.tf ${WORKSPACE}/terraform/.
-                            #    cp -rf ${terraform_script_dir_name}/twoclusters/file_system.tf ${WORKSPACE}/terraform/.
-                            #fi
-                            #cp -rf ${WORKSPACE}/kubernetes/samples/scripts/terraform/template.tfvars ${WORKSPACE}/terraform/.
-                            #cp -rf ${WORKSPACE}/kubernetes/samples/scripts/terraform/*.sh ${WORKSPACE}/terraform/.
+
                             chmod 777 ${WORKSPACE}/terraform/*.sh
                             mkdir -p ${WORKSPACE}/terraform/terraforminstall
                             sh ${WORKSPACE}/terraform/oke.create.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
@@ -539,7 +530,7 @@ EOF
                                 echo "Using NFS Server ${NFS_SERVER}"
                                 #export NO_PROXY="${K8S_NODEPORT_HOST}"
 
-                                if [ "${MAVEN_PROFILE_NAME}" == "oke-sequential" ]; then
+                                if [ "${MAVEN_PROFILE_NAME}" == "oke-gate" ]; then
                                     PARALLEL_RUN='false'
                                 elif [ -n "${IT_TEST}" ]; then
                                     echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
