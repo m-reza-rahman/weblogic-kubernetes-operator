@@ -63,6 +63,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
@@ -1073,7 +1074,13 @@ public class CommonMiiTestUtils {
                                            boolean isSecureMode,
                                            String sslChannelName) {
     LoggingFacade logger = getLogger();
-
+    if (OKE_CLUSTER) {
+      return checkWeblogicMBeanInAdminPod(domainNamespace,
+          adminServerPodName,
+          resourcePath,
+          expectedStatusCode,
+          isSecureMode);
+    }
     int adminServiceNodePort;
     if (isSecureMode) {
       adminServiceNodePort =
@@ -1103,6 +1110,42 @@ public class CommonMiiTestUtils {
     return Command
         .withParams(new CommandParams()
             .command(curlString.toString()))
+        .executeAndVerify(expectedStatusCode);
+  }
+
+  /**
+   * Use REST APIs to check a runtime mbean from the WebLogic server inside admin pod.
+   *
+   * @param domainNamespace Kubernetes namespace that the domain is hosted
+   * @param adminServerPodName Name of the admin server pod to which the REST requests should be sent to
+   * @param resourcePath Path of the system resource to be used in the REST API call
+   * @param expectedStatusCode the expected response to verify
+   * @param isSecureMode whether use SSL
+   * @return true if the REST API reply contains the expected response
+   */
+  public static boolean checkWeblogicMBeanInAdminPod(String domainNamespace,
+                                                     String adminServerPodName,
+                                                     String resourcePath,
+                                                     String expectedStatusCode,
+                                                     boolean isSecureMode) {
+    String protocol = "http";
+    String port = "7001";
+    if (isSecureMode) {
+      protocol = "https";
+      port = "7002";
+    }
+    LoggingFacade logger = getLogger();
+    String curlString = String.format(
+        KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -k %s://"
+            + ADMIN_USERNAME_DEFAULT
+            + ":"
+            + ADMIN_PASSWORD_DEFAULT
+            + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
+    curlString = curlString + " --silent --show-error -o /dev/null -w %{http_code}); echo ${status}";
+    logger.info("checkSystemResource: curl command {0}", curlString);
+    return Command
+        .withParams(new CommandParams()
+            .command(curlString))
         .executeAndVerify(expectedStatusCode);
   }
 
