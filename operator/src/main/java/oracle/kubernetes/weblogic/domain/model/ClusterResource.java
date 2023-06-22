@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @since 4.0
  */
+@SuppressWarnings("JavadocLinkAsPlainText")
 @Description(
     "A Cluster resource describes the lifecycle options for all "
     + "of the Managed Server members of a WebLogic cluster, including Java "
@@ -90,7 +91,7 @@ public class ClusterResource implements KubernetesObject {
    */
   @Nullable
   public String getClusterResourceName() {
-    return metadata.getName();// FIXME
+    return getMetadata().getName();
   }
 
   /**
@@ -280,7 +281,7 @@ public class ClusterResource implements KubernetesObject {
   }
 
   public String getNamespace() {
-    return metadata.getNamespace();  // FIXME
+    return getMetadata().getNamespace();
   }
 
   public ClusterResource withReplicas(int i) {
