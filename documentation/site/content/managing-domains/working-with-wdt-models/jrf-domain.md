@@ -98,7 +98,7 @@ In the domain resource YAML file, you can provide two secrets in the `opss` sect
 
 `walletPasswordSecret` is required during initial deployment.  This secret contains the password used to
 encrypt the exported OPSS wallet.  You can create a Kubernetes secret with the key `walletPassword` containing the password.
-The password must be at least 8 alphanumeric characters with one special character.
+The password must have a minimum length of eight characters and contain alphabetic characters combined with numbers or special characters.
 
 In case the domain home directory is corrupted and not recoverable and you need to recreate the domain and reuse the existing RCU schema:
 
@@ -147,7 +147,7 @@ In the domain resource YAML file, you can provide two secrets in the `opss` sect
 
 `walletPasswordSecret` is required during initial deployment.  This secret contains the password used to
 encrypt the exported OPSS wallet.  You can create a Kubernetes secret with the key `walletPassword` containing the password.
-The password must be at least 8 alphanumeric characters with one special character.
+The password must have a minimum length of eight characters and contain alphabetic characters combined with numbers or special characters.
 
 In case the domain home directory is corrupted and you need to recreate the domain and reuse the existing RCU schema:
 
