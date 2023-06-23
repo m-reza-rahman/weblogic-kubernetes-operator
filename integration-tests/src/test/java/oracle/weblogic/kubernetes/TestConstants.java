@@ -171,7 +171,7 @@ public interface TestConstants {
 
   public static String K8S_NODEPORT_HOST = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
       assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
-  public static final String K8S_NODEPORT_HOSTNAME = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
+  public static String K8S_NODEPORT_HOSTNAME = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
         assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostName()));
   public static final String RESULTS_BASE = getNonEmptySystemProperty("wko.it.result.root",
       System.getProperty("java.io.tmpdir") + "/it-testsresults");

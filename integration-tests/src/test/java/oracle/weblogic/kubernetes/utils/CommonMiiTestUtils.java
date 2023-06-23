@@ -1141,7 +1141,7 @@ public class CommonMiiTestUtils {
             + ":"
             + ADMIN_PASSWORD_DEFAULT
             + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
-    curlString = curlString + " --silent --show-error -o /dev/null -w %{http_code}); echo ${status}";
+    curlString = curlString + " --silent --show-error -o /dev/null -w %{http_code}";
     logger.info("checkSystemResource: curl command {0}", curlString);
     return Command
         .withParams(new CommandParams()

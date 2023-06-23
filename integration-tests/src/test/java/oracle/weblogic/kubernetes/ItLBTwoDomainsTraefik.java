@@ -175,9 +175,15 @@ class ItLBTwoDomainsTraefik {
   @DisplayName("Verify Traefik path routing with HTTP protocol across two domains")
   void testTraefikPathRoutingAcrossDomains() {
     logger.info("Verifying Traefik path routing with HTTP protocol across two domains");
+    String lbExternalIP = K8S_NODEPORT_HOST;
+    if (OKE_CLUSTER) {
+      lbExternalIP = assertDoesNotThrow(() -> getLbExternalIp(traefikNamespace, traefikHelmParams.getReleaseName()));
+      assertNotNull(lbExternalIP, " externalIP was not created");
+    }
     for (String domainUid : domainUids) {
       verifyClusterLoadbalancing(domainUid, "", "http", getTraefikLbNodePort(false),
-          replicaCount, false, "/" + domainUid.substring(12).replace("-", ""));
+          replicaCount, false, "/" + domainUid.substring(12).replace("-", ""),
+          lbExternalIP);
     }
   }
 
@@ -206,11 +212,6 @@ class ItLBTwoDomainsTraefik {
 
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
     createTraefikIngressRoutingRules(domainNamespace);
-    if( OKE_CLUSTER) {
-      String lbExternalIP = assertDoesNotTrow(() -> getLbExternalIp(traefikNamespace, traefikHelmParams.getReleaseName()));
-      assertNotNull(lbExternalIP, " externalIP was not created");
-      K8S_NODEPORT_HOST = lbExternalIP;
-    }
   }
 
   private static void createTraefikIngressRoutingRules(String domainNamespace) {

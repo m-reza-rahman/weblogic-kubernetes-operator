@@ -654,6 +654,36 @@ public class CommonLBTestUtils {
                                           int replicaCount,
                                           boolean hostRouting,
                                           String locationString) {
+    verifyClusterLoadbalancing(domainUid,
+        ingressHostName,
+        protocol,
+        lbPort,
+        replicaCount,
+        hostRouting,
+        locationString,
+        K8S_NODEPORT_HOST);
+  }
+
+  /**
+   * Verify cluster load balancing with ClusterViewServlet app.
+   *
+   * @param domainUid uid of the domain in which the cluster exists
+   * @param ingressHostName ingress host name
+   * @param protocol protocol used to test, accepted value: http or https
+   * @param lbPort  load balancer service port
+   * @param replicaCount replica count of the managed servers in the cluster
+   * @param hostRouting whether it is a host base routing
+   * @param locationString location string in apache configuration or path prefix in path routing
+   * @param host hostname
+   */
+  public static void verifyClusterLoadbalancing(String domainUid,
+                                                String ingressHostName,
+                                                String protocol,
+                                                int lbPort,
+                                                int replicaCount,
+                                                boolean hostRouting,
+                                                String locationString,
+                                                String host) {
     // access application in managed servers through load balancer
     getLogger().info("Accessing the clusterview app through load balancer to verify all servers in cluster");
     String curlRequest;
@@ -662,13 +692,13 @@ public class CommonLBTestUtils {
               + "-H 'host: %s' %s://%s:%s/clusterview/ClusterViewServlet"
               + "\"?user=" + ADMIN_USERNAME_DEFAULT
               + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"",
-          ingressHostName, protocol, K8S_NODEPORT_HOST, lbPort);
+          ingressHostName, protocol, host, lbPort);
     } else {
       curlRequest = String.format("curl --show-error -ks --noproxy '*' "
               + "%s://%s:%s" + locationString + "/clusterview/ClusterViewServlet"
               + "\"?user=" + ADMIN_USERNAME_DEFAULT
               + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"",
-          protocol, K8S_NODEPORT_HOST, lbPort);
+          protocol, host, lbPort);
     }
 
     List<String> managedServers = new ArrayList<>();
