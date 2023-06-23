@@ -246,7 +246,49 @@ spec:
 ### Best Practices
 
 For a JRF domain, it is a best practice to download and save the `OPSS wallet` in a safely backed-up location _immediately_.  It is also highly recommended that you store this wallet in
-a Kubernetes secret in the same namespace.   In case you need to recover the domain directory, then the secret will be ready.  For details, see [Disaster Recovery]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain#disaster-recovery-when-the-domain-home-directory-is-destroyed">}}).  
+a Kubernetes secret in the same namespace.  In case you need to recover the domain directory, then the secret will be ready.  Here are the high level steps:
+
+1. Download and save the 'OPSS wallet' in a Kubernetes secret using [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh).
+
+```
+opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws jrf-wallet-file-secret 
+```
+
+2. Save the wallet file in a safe location outside of Kubernetes.
+3. Add the `opss.walletFileSecret` to the domain resource YAML under `configuration.initializeDomainOnPV.domain`
+
+```
+     ...
+     configuration:
+        initializeDomainOnPV:
+        ...
+           domain:
+              ...
+              opss:
+               walletFileSecret: jrf-wallet-file-secret
+               ... 
+```
+
+You can use a patch command to add it to the domain resource.
+
+```
+kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "add", "path" : "/spec/configuration/initializeDomainOnPV/domain/opss/walletFileSecret", "value" : "jrf-wallet-file-secret" }]'
+```
+
+In case the domain directory is corrupted and not recoverable
+
+1. Delete the domain home directory from the persistent volume.
+2. Add or replace the `domain.spec.introspectVersion` in the domain resource to a new value.  
+
+```
+kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "replace", "path" : "/spec/intropsectVersion", "value" : "15" }]'
+```
+
+The operator will create a new domain from the existing WDT models using the original RCU schema. This will not create a domain
+with all the updates to the domain made after the initial deployment, but you will be able to access the original RCU schema database without
+losing all its data.
+
+For details, see [Disaster Recovery]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain#disaster-recovery-when-the-domain-home-directory-is-destroyed-for-domain-on-pv-deployment">}}).  
 
 ### Troubleshooting
 
