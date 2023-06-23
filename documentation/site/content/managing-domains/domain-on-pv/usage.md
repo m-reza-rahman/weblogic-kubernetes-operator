@@ -244,6 +244,7 @@ spec:
 **After a JRF domain is successfully deployed**: follow the next section [Best Practices](#best-practices) to download and back up the OPSS wallet.
 
 ### Best Practices
+Use the information in the following sections to safeguard/recover your domain information in case of a domain directory corruption or disaster scenario.
 
 #### Download and save the OPSS wallet in a Kubernetes Secret
 After the domain is created, the operator automatically exports the OPSS wallet and stores it in an introspector ConfigMap; the name of the ConfigMap follows the pattern `<domain uid>-weblogic-domain-introspect-cm` with key `ewallet.p12`. Oracle recommends to save the OPSS wallet file in a safe backed up location __immediately__ after an initial JRF domain is created. In addition, you should make sure to store the wallet in a Kubernetes secret in the same namespace. This will allow the secret to be available when the domain needs to be recovered in a disaster scenario or if domain directory gets corrupted.
