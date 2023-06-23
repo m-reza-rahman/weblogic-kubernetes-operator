@@ -246,7 +246,26 @@ spec:
 ### Best Practices
 Use the information in the following sections to safeguard/recover your domain information in case of a domain directory corruption or disaster scenario.
 
-#### Download and save the OPSS wallet in a Kubernetes Secret
+#### Back up the JRF domain home directory and database
+
+Oracle recommends that you back up the domain home directory and database after the initial JRF domain is created, and periodically, making sure all the latest changes are backed up.
+
+A JRF domain has a one-to-one relationship with the RCU schema.  After a domain is created using a particular RCU schema,
+that schema cannot be reused by another domain and the same schema cannot be shared across different domains. Any attempts to
+create a new domain using the existing RCU schema will result in an error.
+
+{{% notice warning %}}
+If the domain home is not properly backed up, you can potentially lose existing data when the domain home is corrupted or deleted. 
+That's because recreating the domain requires dropping the existing RCU schema and creating a new RCU schema.
+{{% /notice %}}
+
+A Domain on PV domain configuration might get updated after its initial deployment. For example, you might have deployed
+ new applications, added custom OPSS keystores, and added OWSM policies etc. using WLST or console.
+In this case, the original WDT model files used to create the initial domain will not match the current state of the domain (the WDT model files are not the source of truth).
+Therefore, if you recreate the domain using the original WDT model files, you will lose all the subsequent updates. In order to preserve the domain updates, you should restore the domain from
+the backup copy of the domain home directory and connecting to the existing RCU schema from the database backup.
+
+#### Store the OPSS wallet in a Kubernetes Secret and update `opss.walletFileSecret` in domain resource 
 After the domain is created, the operator automatically exports the OPSS wallet and stores it in an introspector ConfigMap; the name of the ConfigMap follows the pattern `<domain uid>-weblogic-domain-introspect-cm` with key `ewallet.p12`. Oracle recommends to save the OPSS wallet file in a safe backed up location __immediately__ after an initial JRF domain is created. In addition, you should make sure to store the wallet in a Kubernetes secret in the same namespace. This will allow the secret to be available when the domain needs to be recovered in a disaster scenario or if domain directory gets corrupted.
 
 Following are the high level steps for storing the OPSS wallet in a Kubernetes secret.

@@ -37,7 +37,7 @@ domainInfo:
 
 Refer to [WebLogic Deploy Tooling Connect to a database](https://oracle.github.io/weblogic-deploy-tooling/userguide/database/connect-db/) for more information.
 
-### Importance of domain home directory backup
+#### Importance of domain home directory backup
 
 A JRF domain has a one-to-one relationship with the RCU schema.  After a domain is created using a particular RCU schema,
 that schema cannot be reused by another domain and the same schema cannot be shared across different domains.  Any attempts to
@@ -57,7 +57,7 @@ and, if you use the original models to create the domain again, then you will lo
 
 After the domain is created, the operator will automatically export the OPSS wallet and
 store it in an introspector ConfigMap; the name of the ConfigMap follows the pattern `<domain uid>-weblogic-domain-introspect-cm`
-with key `ewallet.p12`.  You can export this file and put it in a safe place. We provide a
+with key `ewallet.p12`.  You can export this file and put it in a safe place. The operator provides a
 [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh)
 for extracting this file and storing it in a Kubernetes `walletFileSecret`.  You should also save the wallet file in a safely backed up location outside of Kubernetes.
 
@@ -67,7 +67,7 @@ For example,
 opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws jrf-wallet-file-secret
 ```
 
-#### Disaster recovery when the domain home directory is destroyed for Domain on PV deployment
+#### Disaster recovery for Domain on PV deployment
 
 When a JRF domain is created, an encryption key OPSS wallet is stored in the file system where the domain home resides.
 This specific wallet key can be exported and used to create a new domain. But, allowing it to reuse the existing RCU schema,
@@ -122,9 +122,9 @@ with all the updates to the domain made after the initial deployment, but you wi
 losing all its data.
 
 
-#### Disaster recovery when the domain home directory is destroyed for Model in Image deployment
+#### Disaster recovery for Model in Image domains
 
-Note: JRF support has been deprecated since operator version 4.10, use Domain on PV instead.
+Note: JRF support in Model in Image has been deprecated since operator version 4.1.0, use the Domain on PV [domain home source type](({{< relref "/managing-domains/choosing-a-model/_index.md" >}})) instead.
 
 When a JRF domain is created, an encryption key OPSS wallet is stored in the file system where the domain home resides.
 This specific wallet key can be exported and used to create a new domain. But, allowing it to reuse the existing RCU schema,
