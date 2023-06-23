@@ -532,11 +532,13 @@ EOF
 
                                 if [ "${MAVEN_PROFILE_NAME}" == "oke-gate" ]; then
                                     PARALLEL_RUN='false'
-                                elif [ -n "${IT_TEST}" ]; then
+                                fi
+                                if [ -n "${IT_TEST}" ]; then
                                     echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
                                     MAVEN_PROFILE_NAME="integration-tests"
                                     echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
                                 fi
+
                                 echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.result.root=\"${result_root}\""                                               >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.pv.root=\"${pv_root}\""                                                       >> ${WORKSPACE}/.mvn/maven.config

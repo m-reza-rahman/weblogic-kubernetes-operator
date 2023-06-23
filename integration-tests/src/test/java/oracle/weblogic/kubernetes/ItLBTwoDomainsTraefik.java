@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @IntegrationTest
 @Tag("olcne")
 @Tag("oke-parallel")
+@Tag("oke-gate")
 @Tag("kind-parallel")
 class ItLBTwoDomainsTraefik {
 
