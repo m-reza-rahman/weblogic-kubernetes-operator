@@ -57,22 +57,21 @@ and, if you use the original models to create the domain again, then you will lo
 
 After the domain is created, the operator will automatically export the OPSS wallet and
 store it in an introspector ConfigMap; the name of the ConfigMap follows the pattern `<domain uid>-weblogic-domain-introspect-cm`
-with key `ewallet.p12`.  You can export this file and put it in a safe place. The operator provides a
+with the key `ewallet.p12`.  You can export this file and put it in a safe place. The operator provides a
 [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh)
 for extracting this file and storing it in a Kubernetes `walletFileSecret`.  You should also save the wallet file in a safely backed up location outside of Kubernetes.
 
 For example,
 
 ```
-opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws jrf-wallet-file-secret
+$ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws jrf-wallet-file-secret
 ```
 
 #### Disaster recovery for Domain on PV deployment
 
 When a JRF domain is created, an encryption key OPSS wallet is stored in the file system where the domain home resides.
-This specific wallet key can be exported and used to create a new domain. But, allowing it to reuse the existing RCU schema,
-without this specific wallet key, there is no way to reuse the original RCU schema.  Therefore, you should
-back up this encryption key for disaster recovery.
+This specific wallet key can be exported and used to create a new domain. There is no way to reuse the original RCU schema without this specific wallet key.
+Therefore, you should back up this encryption key for disaster recovery.
 
 After the operator created the JRF domain, it stores the OPSS wallet in a ConfigMap.
 You can extract and back it up in a safe location after the domain is created. See [Download and save the OPSS wallet](#download-opss-wallet-and-store-in-a-kubernetes-secret).
@@ -81,7 +80,7 @@ In the domain resource YAML file, you can provide two secrets in the `opss` sect
 
 ```
      ...
-     #  For domain on PV, opss settings are under `configuration.initializeDomainOnPV.domain.opss` 
+     #  For domain on PV, opss settings are under `configuration.initializeDomainOnPV.domain.opss`
      #  DO NOT specify it under `configuration`
      #
      configuration:
@@ -106,16 +105,16 @@ In case the domain home directory is corrupted and not recoverable and you need 
 2. Specify the `walletFileSecret` - A Kubernetes secret with the key `walletFile` containing the exported OPSS wallet
    file `ewallet.p12` that you have created earlier.
 
-For example,
-```
-  kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "add", "path" : "/spec/configuration/initializeDomainOnPV/domain/opss/walletFileSecret", "value" : "jrf-wallet-file-secret" }]'
-```
+   For example,
+   ```
+   $ kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "add", "path" : "/spec/configuration/initializeDomainOnPV/domain/opss/walletFileSecret", "value" : "jrf-wallet-file-secret" }]'
+   ```
 
 3. Update the `introspectVersion` in the domain resource.
 
-```
-kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "replace", "path" : "/spec/intropsectVersion", "value" : "15" }]'
-```
+   ```
+   $ kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "replace", "path" : "/spec/intropsectVersion", "value" : "15" }]'
+   ```
 
 The operator will create a new domain from the existing WDT models and reuse the original RCU schema. This will **not** create a domain
 with all the updates to the domain made after the initial deployment, but you will be able to access the original RCU schema database without
@@ -124,11 +123,10 @@ losing all its data.
 
 #### Disaster recovery for Model in Image domains
 
-Note: JRF support in Model in Image has been deprecated since operator version 4.1.0, use the Domain on PV [domain home source type](({{< relref "/managing-domains/choosing-a-model/_index.md" >}})) instead.
+Note: JRF support in Model in Image domains has been deprecated since operator version 4.1.0; use the Domain on PV [domain home source type](({{< relref "/managing-domains/choosing-a-model/_index.md" >}})) instead.
 
 When a JRF domain is created, an encryption key OPSS wallet is stored in the file system where the domain home resides.
-This specific wallet key can be exported and used to create a new domain. But, allowing it to reuse the existing RCU schema,
-without this specific wallet key, there is no way to reuse the original RCU schema.  Therefore, you should
+This specific wallet key can be exported and used to create a new domain. There is no way to reuse the original RCU schema without this specific wallet key. Therefore, you should
 back up this encryption key for disaster recovery.
 
 After the operator created the JRF domain, it stores the OPSS wallet in a ConfigMap.
@@ -154,15 +152,15 @@ In case the domain home directory is corrupted and you need to recreate the doma
 1. Specify the `walletFileSecret` - A Kubernetes secret with the key `walletFile` containing the exported OPSS wallet
    file `ewallet.p12` that you have created earlier.
 
-For example,
-```
-  kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "add", "path" : "/spec/configuration/initializeDomainOnPV/domain/opss/walletFileSecret", "value" : "jrf-wallet-file-secret" }]'
-```
+   For example,
+   ```
+     $ kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "add", "path" : "/spec/configuration/initializeDomainOnPV/domain/opss/walletFileSecret", "value" : "jrf-wallet-file-secret" }]'
+   ```
 
 2. Update the `introspectVersion` in the domain resource.
 
-```
-kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "replace", "path" : "/spec/intropsectVersion", "value" : "15" }]'
-```
+   ```
+   $ kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "replace", "path" : "/spec/intropsectVersion", "value" : "15" }]'
+   ```
 
-The operator will create a new domain from the existing WDT models and reuse the original RCU schema. 
+The operator will create a new domain from the existing WDT models and reuse the original RCU schema.
