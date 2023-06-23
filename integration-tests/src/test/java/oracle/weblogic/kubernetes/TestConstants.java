@@ -169,7 +169,7 @@ public interface TestConstants {
   public static final String IMAGE_TAG_OPERATOR_FOR_JENKINS =
       IMAGE_TAG_OPERATOR != null ? IMAGE_TAG_OPERATOR : SAFE_BRANCH_IMAGE_NAME + BUILD_ID;
 
-  public static final String K8S_NODEPORT_HOST = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
+  public static String K8S_NODEPORT_HOST = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
       assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
   public static final String K8S_NODEPORT_HOSTNAME = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
         assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostName()));
