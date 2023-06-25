@@ -499,7 +499,7 @@ public class ItFmwDomainInPvUserCreateRcu {
    */
   @Test
   @Order(7)
-  @DisplayName("Create a FMW domain on PV when user provide OPSS wallet file secret")
+  @DisplayName("Create a FMW domain on PV with provided OPSS wallet file secret")
   void testFmwDomainOnPVwithProvidedOpss() {
 
     final String pvName = getUniqueName(domainUid3 + "-pv-");
