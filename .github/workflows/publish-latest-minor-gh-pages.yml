@@ -4,7 +4,7 @@
 # Description
 #  Use Hugo to build static site and publish to gh-pages
 #
-name: "PublishLatestMinorGitHubPages"
+name: "PublishGitHubPages"
 
 on:
   push:
@@ -12,6 +12,8 @@ on:
       - release/4.0
     paths:
       - 'documentation/**'
+  schedule:
+    - cron: '15 3 * * *'
 
 defaults:
   run:
@@ -47,7 +49,7 @@ jobs:
           echo "Building documentation for latest minor version..."
           hugo -s site -d "$GITHUB_WORKSPACE/WORK" -b https://oracle.github.io/weblogic-kubernetes-operator
           echo "Copying static files into place..."
-          cp -R charts domains "$GITHUB_WORKSPACE/WORK"
+          cp -R domains "$GITHUB_WORKSPACE/WORK"
           cd $GITHUB_WORKSPACE/gh-pages
           find . -maxdepth 1 -mindepth 1 -not -name '[0-9]*' -not -name '.git*' -exec rm -Rf {} \;
           cp -R $GITHUB_WORKSPACE/WORK/* .
