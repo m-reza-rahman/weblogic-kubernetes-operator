@@ -38,7 +38,7 @@ This release was published on April 8, 2023. See the [operator prerequisites]({{
 
 #### Recent changes and known issues
 
-See the [Release Notes]({{< relref "release-notes.md" >}})  for recent changes to the operator and known issues.
+See the [Releases](https://github.com/oracle/weblogic-kubernetes-operator/releases) page for operator release notes and known issues.
 
 #### Operator earlier versions
 
