@@ -403,7 +403,7 @@ public class ItFmwDomainInPvUserCreateRcu {
    * Verify Pod is ready and service exists for both admin server and managed servers.
    */
   @Test
-  @Order(4)
+  @Order(6)
   @DisplayName("Create a FMW domain on PV with multiple images when user per-creates RCU")
   void testFmwDomainOnPvUserCreatesRCUMultiImages() {
 
@@ -498,7 +498,7 @@ public class ItFmwDomainInPvUserCreateRcu {
    * Verify Pod is ready and service exists for both admin server and managed servers.
    */
   @Test
-  @Order(5)
+  @Order(7)
   @DisplayName("Create a FMW domain on PV when user provide OPSS wallet file secret")
   void testFmwDomainOnPVwithProvidedOpss() {
 
@@ -546,7 +546,7 @@ public class ItFmwDomainInPvUserCreateRcu {
    * Verify Pod is ready and service exists for both admin server and managed servers.
    */
   @Test
-  @Order(6)
+  @Order(4)
   @DisplayName("Create a FMW domain on PV with additional WDT config map when user per-creates RCU")
   void testFmwDomainOnPvUserCreatesRCUwdtConfigMap() {
 
@@ -632,7 +632,7 @@ public class ItFmwDomainInPvUserCreateRcu {
    * The operator will not mount the secret but proceed with normal domain creation without error
    */
   @Test
-  @Order(7)
+  @Order(5)
   @DisplayName("Create a FMW domain on PV when user provide OPSS wallet file is empty")
   void testFmwDomainOnPvUserProvideEmptyOpss() {
 
