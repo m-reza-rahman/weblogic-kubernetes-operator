@@ -60,7 +60,7 @@ Error: release op2 failed: rolebindings.rbac.authorization.k8s.io "weblogic-oper
 To recover:
 
 - `helm delete --purge` the failed release.
-  - **NOTE**: This deletes the role binding in the domain namespace that was created by the first operator release, to give the operator access to the domain namespace.
+  - **NOTE:** This deletes the role binding in the domain namespace that was created by the first operator release, to give the operator access to the domain namespace.
 - `helm upgrade <old op release> weblogic-operator/weblogic-operator --values <old op custom-values.yaml>`
   - This recreates the role binding.
   - There might be intermittent failures in the operator for the period of time when the role binding was deleted.

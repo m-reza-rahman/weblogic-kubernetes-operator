@@ -4,7 +4,7 @@ You will need an Oracle account. The following steps will direct you to accept t
 
   - In a web browser, navigate to https://container-registry.oracle.com and log in using the Oracle Single Sign-On authentication service. If you do not already have SSO credentials, at the top of the page, click the **Sign In** link to create them.
   - The Oracle Container Registry provides a WebLogic 12.2.1.4 General Availability (GA) installation image that is used in this sample.
-  - **NOTE**: General Availability (GA) images are suitable for demonstration and development purposes _only_ where the environments are not available from the public Internet; they are **not
+  - **NOTE:** General Availability (GA) images are suitable for demonstration and development purposes _only_ where the environments are not available from the public Internet; they are **not
      acceptable for production use**. In production, you should always use CPU (patched) images
      from the OCR
      or create your images using the [WebLogic Image Tool](https://oracle.github.io/weblogic-image-tool/userguide/tools/create-image/)

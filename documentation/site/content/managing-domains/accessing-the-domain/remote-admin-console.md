@@ -24,7 +24,7 @@ The Remote Console is deployed as a standalone application, which can connect to
 You connect to the Remote Console and, when prompted, supply the WebLogic Server login credentials
 along with the URL of the WebLogic Server Administration Server's administration port to which you want to connect.
 
-**Notes:**  
+**NOTES:**  
   * An Administration Server administration port typically is the same as its default port unless either an SSL port or an administration port is configured and enabled.
   * If your domain home type is either [Domain in Image]({{< relref "/samples/domains/domain-home-in-image/_index.md" >}}) or [Model in Image]({{< relref "/samples/domains/model-in-image/_index.md" >}}), then do not use the WebLogic Remote Console to make changes to the WebLogic domain configuration because these changes are ephemeral and will be lost when servers restart. See [Choose a domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}).
 
@@ -43,7 +43,7 @@ To set up access to WebLogic Server domains running in Kubernetes using the Remo
 
 1. Install, configure, and start the Remote Console according to these [instructions](https://oracle.github.io/weblogic-remote-console/setup/).
 
-   **NOTE**: These instructions assume that you are installing and running the Remote Console externally to your Kubernetes cluster.
+   **NOTE:** These instructions assume that you are installing and running the Remote Console externally to your Kubernetes cluster.
 
 1. When you first launch the Remote Console, it will prompt you with a login dialog for a WebLogic Server Administration Server URL. To give the Remote Console access to an Administration Server running in Kubernetes, you can:
    * Use an [Administration Server `NodePort`](#use-an-administration-server-nodeport).
@@ -52,7 +52,7 @@ To set up access to WebLogic Server domains running in Kubernetes using the Remo
 
    * [Use a `kubectl port-forward` connection](#use-a-kubectl-port-forward-connection).
 
-   **Note**: If you want the Remote Console to use SSL to connect to the WebLogic Server Administration Server,
+   **NOTE:** If you want the Remote Console to use SSL to connect to the WebLogic Server Administration Server,
      then see [Connect to a WebLogic domain using SSL/TLS](https://oracle.github.io/weblogic-remote-console/userguide/advanced-settings/#ssl).
 
 

@@ -33,7 +33,7 @@ Model in Image requires an image with a WebLogic Server installation.
 
 - Or, you can manually build your own base image, as described in [Create a custom image with patches applied]({{< relref "/base-images/custom-images#create-a-custom-image-with-patches-applied" >}}). This is useful if you want your base images to include additional patches. Note that any 12.2.1.3 image must also include patch 29135930 (the pre-built images already contain this patch).
 
-  **NOTE**: As of December, 2022, Oracle will continue support of WebLogic Server 12.2.1.3, for six months _only_, for PSUs and security patches. CPU images for WebLogic Server 12.2.1.3 will be published in the January, 2023, and April, 2023, CPU cycles.
+  **NOTE:** As of December, 2022, Oracle will continue support of WebLogic Server 12.2.1.3, for six months _only_, for PSUs and security patches. CPU images for WebLogic Server 12.2.1.3 will be published in the January, 2023, and April, 2023, CPU cycles.
 
 ### Directory structure
 
@@ -85,7 +85,7 @@ There are multiple methods for supplying Model in Image WDT models files, WDT va
     a layer on top of your base image
     (where the base image includes your WebLogic installation).
 
-    **NOTE**: Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) will be deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
+    **NOTE:** Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) is deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
 
     Use either of the following methods.
 
@@ -136,7 +136,7 @@ See [Working with WDT model files]({{< relref "/managing-domains/working-with-wd
 
 Model in Image requires a runtime encryption secret with a secure `password` key. This secret is used by the operator to encrypt model and domain home files before it adds them to a runtime ConfigMap or log. You can safely change the `password`, at any time after you've fully shut down a domain, but it must remain the same for the life of a running domain. The runtime encryption secret that you create can be named anything, but note that it is a best practice to name and label secrets with their domain UID to help ensure that cleanup scripts can find and delete them.
 
-**NOTE**: Because the runtime encryption password does not need to be shared and needs to exist only for the life of a domain, you may want to use a password generator.
+**NOTE:** Because the runtime encryption password does not need to be shared and needs to exist only for the life of a domain, you may want to use a password generator.
 
 Example:
 
@@ -185,7 +185,7 @@ then the operator will ignore WDT model files and WDT Home
 that are copied from [Auxiliary Images]({{<relref "/managing-domains/model-in-image/auxiliary-images" >}}).
 {{% /notice %}}
 
-**Notes**:
+**NOTES:**
 
  - There are additional attributes that are common to all domain home source types, such as the `image` or `clusters` field. See the Domain Resource [schema](https://github.com/oracle/weblogic-kubernetes-operator/blob/{{< latestMinorVersion >}}/documentation/domains/Domain.md) and [documentation]({{< relref "/managing-domains/domain-resource.md" >}}) for a full list of Domain fields.
 

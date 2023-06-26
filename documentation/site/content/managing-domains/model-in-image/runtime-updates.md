@@ -42,7 +42,7 @@ the change requires entirely shutting domain the domain,
 applying the change, and finally restarting the domain. Full domain restarts are described in
 [Full domain restarts]({{< relref "/managing-domains/domain-lifecycle/startup/_index.md#full-domain-restarts">}}).
 
-**NOTE**: Supported and unsupported changes are described in these sections: [Supported updates](#supported-updates) and [Unsupported updates](#unsupported-updates).
+**NOTE:** Supported and unsupported changes are described in these sections: [Supported updates](#supported-updates) and [Unsupported updates](#unsupported-updates).
 _It is the administrator's responsibility to make the necessary changes to a domain resource to initiate the correct approach for an update._
 
 {{% notice note %}}
@@ -422,7 +422,7 @@ Deletion can be problematic for online updates in two cases:
 In general, complex deletion should be handled by offline updates
       to avoid these problems.
 
-**Note**: Implicitly removing a model's parent type
+**NOTE:** Implicitly removing a model's parent type
       section may sometimes work depending
       on the type of the section. For example, if you have an application
       in the model under `appDeployments:` in a `model.configMap` and you

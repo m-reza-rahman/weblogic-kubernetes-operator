@@ -15,10 +15,10 @@ which requires that the domain home exists on a persistent volume. The domain ho
 or automatically by specifying the section, `domain.spec.configuration.initializeDomainOnPV`, in the domain resource YAML file.
 The initial domain topology and resources are described using [WebLogic Deploy Tooling (WDT) models](#weblogic-deploy-tooling-models).
 
-**NOTE**: The `initializeDomainOnPV` section provides a **one time only** domain home initialization.
+**NOTE:** The `initializeDomainOnPV` section provides a **one time only** domain home initialization.
 The operator creates the domain when the domain resource is first deployed. After the domain is created,
 this section is ignored. Subsequent domain lifecycle updates must be controlled by
-the WebLogic Server Administration Console, the WebLogic Remote Console, WebLogic Scripting Tool (WLST), or other mechanisms.  See the [High level use case](#high-level-use-case).
+the WebLogic Server Administration Console, the WebLogic Remote Console, WebLogic Scripting Tool (WLST), or other mechanisms.  See the [High-level use case](#high-level-use-case).
 
 The `initializeDomainOnPv` section:
 
@@ -26,7 +26,7 @@ The `initializeDomainOnPv` section:
 - Creates the RCU schema, if needed.
 - Creates the WebLogic domain home on the persistent volume based on the provided WDT models.
 
-### High level use case
+### High-level use case
 
 The typical Domain on PV use case is for an application life cycle that requires persisting changes to the permanent file system.
 

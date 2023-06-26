@@ -16,7 +16,7 @@ Configuration overrides can only be used in combination with Domain in Image and
 
 Use configuration overrides (also called _situational configuration_) to customize a Domain in Image or Domain on PV domain's WebLogic domain configuration without modifying the domain's actual `config.xml` or system resource files. For example, you may want to override a JDBC data source XML module user name, password, and URL so that it references a local database.
 
-**NOTE**: The Domain in Image [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
+**NOTE:** The Domain in Image [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
 
 You can use overrides to customize domains as they are moved from QA to production, are deployed to different sites, or are even deployed multiple times at the same site. Beginning with operator version 3.0.0, you can now modify configuration overrides for running WebLogic Server instances and have these new overrides take effect dynamically. There are [limitations](#unsupported-overrides) to the WebLogic configuration attributes that can be modified by overrides and only changes to dynamic configuration MBean attributes may be changed while a server is running. Other changes, specifically overrides to non-dynamic MBeans, must be applied when servers are starting or restarting.
 
@@ -408,7 +408,7 @@ __Debugging steps:__
          * `<Dec 14, 2018 12:20:47 PM UTC> <Info> <Management> <BEA-141330> <Loading situational configuration file: /shared/domains/domain1/optconfig/custom-situational-config.xml>`
          * This line indicates a configuration overrides file has been loaded.
       * If the search yields `Warning` or `Error` lines, then the format of the custom configuration overrides template is incorrect, and the `Warning` or `Error` text should describe the problem.
-      * **Note**: The following exception may show up in the server logs when overriding JDBC modules. It is not expected to affect runtime behavior, and can be ignored:
+      * **NOTE:** The following exception may show up in the server logs when overriding JDBC modules. It is not expected to affect runtime behavior, and can be ignored:
          ```
          java.lang.NullPointerException
            at weblogic.management.provider.internal.situationalconfig.SituationalConfigManagerImpl.registerListener(SituationalConfigManagerImpl.java:227)

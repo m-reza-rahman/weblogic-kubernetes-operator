@@ -16,7 +16,7 @@ For the current production release {{< latestVersion >}}:
 * Either Oracle WebLogic Server 12.2.1.3.0 with patch 29135930, Oracle WebLogic Server 12.2.1.4.0, or Oracle WebLogic Server 14.1.1.0.0.
    * The existing WebLogic Server General Availability image, `container-registry.oracle.com/middleware/weblogic:12.2.1.3`,
    has this patch applied.
-   * **NOTE**:
+   * **NOTE:**
 
       * As of December, 2022, Fusion Middleware 12.2.1.3 is no longer supported.  The last Critical Patch Updates (CPU) images for FMW Infrastructure 12.2.1.3 were published in October, 2022.
       * Oracle has extended support of WebLogic Server 12.2.1.3, for six months _only_, for PSUs and security patches. CPU images for WebLogic Server 12.2.1.3 will be published in the January, 2023, and April, 2023, CPU cycles.

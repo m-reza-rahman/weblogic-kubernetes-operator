@@ -314,7 +314,7 @@ If the domain home directory is corrupted, and you have a recent backup of the d
    $ kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "replace", "path" : "/spec/restartVersion", "value" : "15" }]'
    ```
 3. After the domain is restarted, check the WebLogic domain configuration to ensure that it has the latest changes.
-   **Note:** If you made any changes that are persisted in the domain home directory after your last backup, you must reapply those changes to the domain home directory.
+   **NOTE:** If you made any changes that are persisted in the domain home directory after your last backup, you must reapply those changes to the domain home directory.
    However, because the operator will reconnect to the same RCU schema, the data stored in the OPSS, MDS, or OWSM tables will be current.
 
 4. Reapply any domain configuration changes persisted to the domain home directory, such as
