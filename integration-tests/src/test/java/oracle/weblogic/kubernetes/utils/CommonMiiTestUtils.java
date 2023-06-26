@@ -977,25 +977,37 @@ public class CommonMiiTestUtils {
   private static ExecResult readRuntimeResource(String adminSvcExtHost, String domainNamespace,
       String adminServerPodName, String resourcePath, String callerName) {
     LoggingFacade logger = getLogger();
-
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-
-    String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + adminServiceNodePort;
-    logger.info("hostAndPort = {0} ", hostAndPort);
-
     ExecResult result = null;
 
-    StringBuffer curlString = new StringBuffer("curl --user "
-        + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + hostAndPort)
-        .append(resourcePath)
-        .append("/")
-        .append(" --silent --show-error ");
-    logger.info(callerName + ": curl command {0}", new String(curlString));
+    String curlString = null;
+    if (OKE_CLUSTER) {
+      String protocol = "http";
+      String port = "7001";
+
+      curlString = String.format(
+          KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -k %s://"
+              + ADMIN_USERNAME_DEFAULT
+              + ":"
+              + ADMIN_PASSWORD_DEFAULT
+              + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
+      curlString = curlString + " --silent --show-error ";
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+
+      String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + adminServiceNodePort;
+      logger.info("hostAndPort = {0} ", hostAndPort);
+      curlString = String.format(
+          "curl --user "
+              + ADMIN_USERNAME_DEFAULT
+              + ":"
+              + ADMIN_PASSWORD_DEFAULT
+              + " http//%s%s/ --silent --show-error ", hostAndPort, resourcePath);
+    }
+    logger.info(callerName + ": curl command {0}", curlString);
     try {
-      result = exec(new String(curlString), true);
-      logger.info(callerName + ": exec curl command {0} got: {1}", new String(curlString), result);
+      result = exec(curlString, true);
+      logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
     } catch (Exception ex) {
       logger.info(callerName + ": caught unexpected exception {0}", ex);
       return null;
