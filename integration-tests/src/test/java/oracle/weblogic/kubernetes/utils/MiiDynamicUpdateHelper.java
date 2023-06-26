@@ -240,6 +240,9 @@ public class MiiDynamicUpdateHelper {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+    assertTrue(checkSystemResourceConfiguration(adminServerPodName, domainNamespace,"JDBCSystemResources",
+        "TestDataSource2", "200"), "JDBCSystemResource not found");
+    /*
     if (!OKE_CLUSTER) {
       assertTrue(checkSystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
           "TestDataSource2", "200"), "JDBCSystemResource not found");
@@ -247,6 +250,8 @@ public class MiiDynamicUpdateHelper {
       assertTrue(checkSystemResourceConfiguration(adminServerPodName, domainNamespace,"JDBCSystemResources",
           "TestDataSource2", "200"), "JDBCSystemResource not found");
     }
+
+    */
     logger.info("JDBCSystemResource configuration found");
     return pods;
   }
