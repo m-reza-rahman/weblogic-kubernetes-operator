@@ -689,7 +689,7 @@ public class CommonTestUtils {
 
     StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + "  " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
-        .append("status=$(curl -k " + protocol + "//:")
+        .append("status=$(curl -k " + protocol + "://")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append("@" + adminServerPodName + ":" + port)
         .append("/management/weblogic/latest/domainConfig")

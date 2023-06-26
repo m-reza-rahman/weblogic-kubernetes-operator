@@ -1002,7 +1002,7 @@ public class CommonMiiTestUtils {
               + ADMIN_USERNAME_DEFAULT
               + ":"
               + ADMIN_PASSWORD_DEFAULT
-              + " http//%s%s/ --silent --show-error ", hostAndPort, resourcePath);
+              + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
     }
     logger.info(callerName + ": curl command {0}", curlString);
     try {
