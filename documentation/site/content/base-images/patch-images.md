@@ -77,7 +77,7 @@ of the WebLogic domain to update the Oracle Home of the servers.
 
 #### Model in Image without auxiliary images
 
-**NOTE:** Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) is deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
+**NOTE**: Model in Image without auxiliary images (the WDT model and installation files are included in the same image with the WebLogic Server installation) is deprecated in WebLogic Kubernetes Operator version 4.0.7. Oracle recommends that you use Model in Image _with_ auxiliary images. See [Auxiliary images]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}}).
 
 For Model in Image domains _without_ using auxiliary images:
 
@@ -95,7 +95,7 @@ of the WebLogic domain to update the Oracle Home of the servers.
 
 #### Domain in Image
 
-**NOTE:** The Domain in Image [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
+**NOTE**: The Domain in Image [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
 
 If you need to update the image for a running Domain in Image domain,
 then use the WIT [`rebase`](https://oracle.github.io/weblogic-image-tool/userguide/tools/rebase-image/)
@@ -130,7 +130,7 @@ Using `rebase`, the new image can be created in one of two ways:
 
 - As a new WebLogic image from a base OS image (similar to the `create` command; recommended).
 
-  **NOTE:**  Oracle strongly recommends rebasing your images with the latest security patches by applying
+  **NOTE**:  Oracle strongly recommends rebasing your images with the latest security patches by applying
   the [`--recommendedPatches`](https://oracle.github.io/weblogic-image-tool/userguide/tools/rebase-image/) option.
 
   To activate:
@@ -168,7 +168,7 @@ files in a Domain in Image image so that, when they are both deployed to the sam
 your updated images and original images can interoperate without a
 [domain secret mismatch]({{< relref "/faq/domain-secret-mismatch.md" >}}).
 
-**NOTES:**
+**NOTES**:
 
   - You cannot use the `rebase` command alone to update the domain home configuration.
     If you need to update the domain home configuration,

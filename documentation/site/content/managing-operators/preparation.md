@@ -282,7 +282,7 @@ that matches its namespace selection criteria until you upgrade
 the operator's Helm release.
 See [Ensuring the operator has permission to manage a namespace]({{< relref "/managing-operators/namespace-management#ensuring-the-operator-has-permission-to-manage-a-namespace" >}}).
 
-**NOTE:** You will need to manually install the operator CRD
+**NOTE**: You will need to manually install the operator CRD
 because `enableClusterRoleBinding` is not set to `true`
 and installation of the CRD requires cluster role binding privileges.
 See [How to manually install the Domain resource custom resource definition (CRD)](#how-to-manually-install-the-domain-resource-custom-resource-definition-crd).

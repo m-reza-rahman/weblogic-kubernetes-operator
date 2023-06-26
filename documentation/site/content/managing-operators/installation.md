@@ -120,7 +120,7 @@ You can verify the operator installation by examining the output from the `helm 
 To check if the operator is deployed and running,
 see [Troubleshooting]({{<relref "/managing-operators/troubleshooting#check-the-operator-deployment">}}).
 
-**NOTES:**
+**NOTES**:
 - In this example, you have not set the `kubernetesPlatform`, but this may be required
   for your environment.
   See [Determine the platform setting]({{<relref "/managing-operators/preparation#determine-the-platform-setting">}}).
@@ -135,7 +135,7 @@ see [Troubleshooting]({{<relref "/managing-operators/troubleshooting#check-the-o
 
 By default, the WebLogic domain resource conversion webhook is automatically installed the first time an operator is installed in a cluster and removed the first time an operator is uninstalled.
 
-**NOTE:** If you are using multiple operators, or want to be able to create or alter domains even when no operators are running, then you will need to fine tune this life cycle.
+**NOTE**: If you are using multiple operators, or want to be able to create or alter domains even when no operators are running, then you will need to fine tune this life cycle.
 For conversion webhook installation details, see [Install the conversion webhook]({{<relref "/managing-operators/conversion-webhook#install-the-conversion-webhook" >}}).
 
 ### Set up domain namespaces
@@ -174,7 +174,7 @@ The rationale for supplying a new `image` value is because, even with a new vers
 `--reuse-values` will retain the previous `image` value from when it was installed.  To upgrade,
 you must override the `image` value to use the new operator image version.
 
-**NOTE:** When upgrading a 3.x operator to 4.x, note that the default value of `domainNamespaceSelectionStrategy`
+**NOTE**: When upgrading a 3.x operator to 4.x, note that the default value of `domainNamespaceSelectionStrategy`
 changed from `List` to `LabelSelector`, so you need to label the namespaces that the operator is supposed
 to watch, rather than just providing the list of namespaces. For detailed information,
 see [Namespace management]({{<relref "/managing-operators/namespace-management#check-the-namespaces-that-a-running-operator-manages">}}).

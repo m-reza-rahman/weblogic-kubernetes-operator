@@ -35,7 +35,7 @@ These include, but are not limited to:
 
 [Development-focused Kubernetes distributions](#development-focused-kubernetes-distributions) are also supported.
 
-**NOTES:**
+**NOTES**:
 
 - **Important:** Some supported environments have additional help or samples that are specific
 to the operator, or are subject to limitations and restrictions; see
@@ -60,7 +60,7 @@ Here are some important considerations for specific environments:
 - [WebLogic Server running in Kubernetes connecting to an Oracle Database also running in Kubernetes](#weblogic-server-running-in-kubernetes-connecting-to-an-oracle-database-also-running-in-kubernetes)
 - [Development-focused Kubernetes distributions](#development-focused-kubernetes-distributions)
 
-**NOTE:** This section does not list all supported environments.
+**NOTE**: This section does not list all supported environments.
 See the [Overview](#overview) for a list of all supported environments.
 
 #### Oracle Cloud Infrastructure
@@ -122,7 +122,7 @@ AKS support and limitations:
 
 * Operator v3.4.4 is certified for use on AKS with Kubernetes 1.24.3+.
 * All three [domain home source types]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) are supported (Domain in Image, Model in Image, and Domain on PV).
-   * **NOTE:** The Domain in Image [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
+   * **NOTE**: The Domain in Image [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
 * For Domain on PV, we support Azure Files volumes accessed through
   a persistent volume claim; see [here](https://docs.microsoft.com/en-us/azure/aks/azure-files-volume).
 * Azure Load Balancers are supported when provisioned using a Kubernetes Service of `type=LoadBalancer`.

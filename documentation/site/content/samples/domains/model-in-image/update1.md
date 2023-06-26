@@ -145,7 +145,7 @@ Here are the steps:
 
       - Apply your changed Domain YAML file:
 
-        **NOTE:** Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `auxliary-image` and other images]({{< relref "/samples/domains/model-in-image/_index.md#ensuring-your-kubernetes-cluster-can-access-images" >}}).
+        **NOTE**: Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `auxliary-image` and other images]({{< relref "/samples/domains/model-in-image/_index.md#ensuring-your-kubernetes-cluster-can-access-images" >}}).
 
         ```shell
         $ kubectl apply -f /tmp/sample/mii-update1.yaml
@@ -153,7 +153,7 @@ Here are the steps:
 
     - Option 2: Use the updated Domain YAML file that is supplied with the sample:
 
-        **NOTE:** Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `auxliary-image` and other images]({{< relref "/samples/domains/model-in-image/_index.md#ensuring-your-kubernetes-cluster-can-access-images" >}}).
+        **NOTE**: Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `auxliary-image` and other images]({{< relref "/samples/domains/model-in-image/_index.md#ensuring-your-kubernetes-cluster-can-access-images" >}}).
 
         ```shell
         $ kubectl apply -f /tmp/sample/domain-resources/WLS-AI/mii-update1-d1-WLS-AI-v1-ds.yaml

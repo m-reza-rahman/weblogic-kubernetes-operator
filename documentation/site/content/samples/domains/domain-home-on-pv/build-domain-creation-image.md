@@ -291,7 +291,7 @@ An image can contain multiple properties files, archive ZIP files, and model YAM
 
 #### Create the image with WIT
 
-**NOTE:** If you are using JRF in this sample, substitute `JRF` for each occurrence of `WLS` in the following `imagetool` command line.
+**NOTE**: If you are using JRF in this sample, substitute `JRF` for each occurrence of `WLS` in the following `imagetool` command line.
 
 At this point, you have all of the files needed for image `wdt-domain-image:WLS-v1` staged; they include:
 
@@ -358,4 +358,4 @@ $ docker run -it --rm wdt-domain-image:WLS-v1 ls -l /auxiliary/weblogic-deploy
   drwxr-x---    1 oracle   root          4096 Jan 22  2019 samples
 ```
 
-**NOTE:** If you have Kubernetes cluster worker nodes that are remote to your local machine, then you need to put the image in a location that these nodes can access. See [Ensuring your Kubernetes cluster can access images]({{< relref "/samples/domains/domain-home-on-pv#ensuring-your-kubernetes-cluster-can-access-images" >}}).
+**NOTE**: If you have Kubernetes cluster worker nodes that are remote to your local machine, then you need to put the image in a location that these nodes can access. See [Ensuring your Kubernetes cluster can access images]({{< relref "/samples/domains/domain-home-on-pv#ensuring-your-kubernetes-cluster-can-access-images" >}}).

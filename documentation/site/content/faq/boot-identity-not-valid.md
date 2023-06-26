@@ -27,7 +27,7 @@ For example:
 
 - If you have enabled SSL for the Administration Server default channel or have configured an administration port on the Administration Server, and the SSL port is using the demo identity certificates, then a Managed Server may fail to establish an SSL connection to the Administration Server due to a hostname verification exception (such as the `SSLKeyException: Hostname verification failed`). For non-production environments, you can turn off the hostname verification by setting the `-Dweblogic.security.SSL.ignoreHostnameVerification=true` property in the Java options for starting the WebLogic Server.
 
-  **NOTE:** Turning off hostname verification leaves WebLogic Server vulnerable to man-in-the-middle attacks. Oracle recommends leaving hostname verification on in production environments.
+  **NOTE**: Turning off hostname verification leaves WebLogic Server vulnerable to man-in-the-middle attacks. Oracle recommends leaving hostname verification on in production environments.
 
 - For other SSL-related errors, make sure the keystores and passwords are specified correctly in the Java options for starting the WebLogic Server. See [Configuring SSL](https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/secmg/ssl.html#GUID-5274E688-51EC-4A63-A35E-FC718B35C897) for details on configuring SSL in the Oracle WebLogic Server environment.
 

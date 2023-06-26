@@ -25,7 +25,7 @@ Following is an example configuration to change the liveness probe interval, tim
       failureThreshold: 3
 ```
 
-**NOTE:** The liveness probe success threshold value must always be 1. See [Configure Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes) in the Kubernetes documentation for more details.
+**NOTE**: The liveness probe success threshold value must always be 1. See [Configure Probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes) in the Kubernetes documentation for more details.
 
 After the liveness probe script (livenessProbe.sh) performs its normal checks, you can customize the liveness probe by specifying a custom script, which will be invoked by livenessProbe.sh. You can specify the custom script either by using the `livenessProbeCustomScript` attribute in the domain resource, or by setting the `LIVENESS_PROBE_CUSTOM_SCRIPT` environment variable using the `env` attribute under the `serverPod` element (see the following configuration examples). If the custom script fails with a non-zero exit status, the liveness probe will fail and Kubernetes will restart the container.
 
@@ -34,9 +34,9 @@ After the liveness probe script (livenessProbe.sh) performs its normal checks, y
 * The `LIVENESS_PROBE_CUSTOM_SCRIPT` environment variable takes precedence over the `spec.livenessProbeCustomScript` domain resource attribute when both are configured, and, like all domain resource environment variables, can be customized on a per domain, per cluster, or even a per server basis.
 * Changes to either the domain resource attribute or the environment variable on a running domain take effect on running WebLogic Server instance Pods when such Pods are restarted (rolled).
 
-**NOTE:** The liveness probe custom script option is for advanced usage only and its value is not set by default. If the specified script is not found, then the custom script is ignored and the existing liveness script will perform its normal checks.
+**NOTE**: The liveness probe custom script option is for advanced usage only and its value is not set by default. If the specified script is not found, then the custom script is ignored and the existing liveness script will perform its normal checks.
 
-**NOTE:** Oracle recommends against having any long running calls (for example, any network calls or executing wlst.sh) in the liveness probe custom script.
+**NOTE**: Oracle recommends against having any long running calls (for example, any network calls or executing wlst.sh) in the liveness probe custom script.
 
 Use the following configuration to specify a liveness probe custom script using the `livenessProbeCustomScript` domain resource field.
 ```yaml
@@ -70,7 +70,7 @@ The following operator-populated environment variables are available for use in 
 
 `LOG_HOME`: The WebLogic log location as a file system path within the container. This variable is available only if its value is set in the configuration.
 
-**NOTES:**
+**NOTES**:
 
 * Additional operator-populated environment variables that are not listed, are not supported for use in the liveness probe custom script.
 

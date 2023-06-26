@@ -57,7 +57,7 @@ First, create the secrets needed by both WLS and JRF type model domains. You hav
 
 Run the following `kubectl` commands to deploy the required secrets:
 
-  **NOTE:** Substitute a password of your choice for `MY_WEBLOGIC_ADMIN_PASSWORD`. This
+  **NOTE**: Substitute a password of your choice for `MY_WEBLOGIC_ADMIN_PASSWORD`. This
   password should contain at least seven letters plus one digit.
 
   ```shell
@@ -81,7 +81,7 @@ Run the following `kubectl` commands to deploy the required secrets:
 
   {{%expand "Click here for the commands for deploying additional secrets for JRF." %}}
 
-  **NOTE:** Replace `MY_RCU_SCHEMA_PASSWORD` with the RCU schema password
+  **NOTE**: Replace `MY_RCU_SCHEMA_PASSWORD` with the RCU schema password
   that you chose in the prequisite steps when
   [setting up JRF]({{< relref "/samples/domains/domain-home-on-pv/prerequisites#additional-prerequisites-for-jrf-domains" >}}).
 
@@ -98,7 +98,7 @@ Run the following `kubectl` commands to deploy the required secrets:
     weblogic.domainUID=sample-domain1
   ```
 
-  **NOTES:**
+  **NOTES**:
   - Replace `MY_OPSS_WALLET_PASSWORD` with a password of your choice.
     The password can contain letters and digits.
   - The domain's JRF RCU schema will be automatically initialized
@@ -130,7 +130,7 @@ Click [here](https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operat
 
 Click [here](https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/scripts/create-weblogic-domain/domain-home-on-pv/domain-resources/JRF/domain-on-pv-JRF-v1.yaml) to view the JRF Domain YAML file.
 
-  **NOTE:** Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `domain-creation-image` and other images]({{< relref "/samples/domains/domain-home-on-pv#ensuring-your-kubernetes-cluster-can-access-images" >}}).
+  **NOTE**: Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `domain-creation-image` and other images]({{< relref "/samples/domains/domain-home-on-pv#ensuring-your-kubernetes-cluster-can-access-images" >}}).
 
   Run the following command to apply the two sample resources.
   ```shell

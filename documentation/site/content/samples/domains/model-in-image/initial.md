@@ -44,10 +44,10 @@ First, create the secrets needed by the domain. You have to create the WebLogic 
 
 Run the following `kubectl` commands to deploy the required secrets:
 
-  **NOTE:** Substitute a password of your choice for `MY_WEBLOGIC_ADMIN_PASSWORD`. This
+  **NOTE**: Substitute a password of your choice for `MY_WEBLOGIC_ADMIN_PASSWORD`. This
   password should contain at least seven letters plus one digit.
 
-  **NOTE:** Substitute a password of your choice for `MY_RUNTIME_PASSWORD`. It should
+  **NOTE**: Substitute a password of your choice for `MY_RUNTIME_PASSWORD`. It should
   be unique and different than the admin password, but this is not required.
 
   ```shell
@@ -88,7 +88,7 @@ This file contains both the domain resource and the referenced cluster resource 
 
 Click [here](https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/scripts/create-weblogic-domain/model-in-image/domain-resources/WLS/mii-initial-d1-WLS-v1.yaml) to view the Domain YAML file.
 
-  **NOTE:** Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `auxiliary-image` and other images]({{< relref "/samples/domains/model-in-image/_index.md#ensuring-your-kubernetes-cluster-can-access-images" >}}).
+  **NOTE**: Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `auxiliary-image` and other images]({{< relref "/samples/domains/model-in-image/_index.md#ensuring-your-kubernetes-cluster-can-access-images" >}}).
 
   Run the following command to create the domain custom resource:
 
@@ -153,7 +153,7 @@ If you see an error, then consult [Debugging]({{< relref "/managing-domains/debu
 
 Now that all the initial use case resources have been deployed, you can invoke the sample web application through the Traefik ingress controller's NodePort.
 
-**NOTE:** The web application will display a list of any data sources it finds, but at this point, we don't expect it to find any because the model doesn't contain any.
+**NOTE**: The web application will display a list of any data sources it finds, but at this point, we don't expect it to find any because the model doesn't contain any.
 
 - Send a web application request to the load balancer for the application, as shown in the following example.
 

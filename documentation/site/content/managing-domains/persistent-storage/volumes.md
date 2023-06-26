@@ -52,5 +52,5 @@ Note the use of the claim name in the `claimName` field of the `volume` entry. B
 `volumeMount` entry are required, and must have the same name. The `volume` entry associates that name with the claim,
 while the `volumeMount` entry defines the path to it that the application can use to access the file.
 
-**NOTE:** If the PVC is mapped either across the domain or to a cluster,
+**NOTE**: If the PVC is mapped either across the domain or to a cluster,
 its access mode must be either `ReadOnlyMany` or `ReadWriteMany`.

@@ -40,7 +40,7 @@ The domain log files must be written to a volume that can be shared between the 
 * A `volume` must be defined on which the log files will reside.  In the example, `emptyDir` is a volume that gets created empty when a pod is created.  It will persist across pod restarts but deleting the pod would delete the `emptyDir` content.
 * The `volumeMounts` mounts the named volume created with `emptyDir` and establishes the base path for accessing the volume.
 
-**NOTE:** For brevity, only the paths to the relevant configuration being added is shown.  A complete example of a domain definition is at the end of this document.
+**NOTE**: For brevity, only the paths to the relevant configuration being added is shown.  A complete example of a domain definition is at the end of this document.
 
 Example: `$ kubectl edit domain bobs-bookstore -n bob` and make the following edits:
 

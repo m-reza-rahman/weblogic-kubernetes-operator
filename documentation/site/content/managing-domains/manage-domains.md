@@ -30,7 +30,7 @@ with a specific configuration or applications deployed, then you can create the 
 manually to deploy your domain.  This process is documented in [this
 sample]({{< relref "/samples/domains/manually-create-domain/_index.md" >}}).
 
-**NOTE:** Once you are familiar with the basics, it is recommended to review
+**NOTE**: Once you are familiar with the basics, it is recommended to review
 [important considerations]({{< relref "/managing-domains/manage-domains#important-considerations-for-weblogic-domains-in-kubernetes" >}})
 and
 [resource name restrictions]({{< relref "/managing-domains/manage-domains#meet-kubernetes-resource-name-restrictions" >}}).

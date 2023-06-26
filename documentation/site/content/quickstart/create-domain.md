@@ -37,7 +37,7 @@ weight: 3
      $ kubectl apply -f https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/quick-start/domain-resource.yaml
      ```
 
-   - **NOTE:** If you want to view or need to modify it, you can download the [sample domain resource](https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/quick-start/domain-resource.yaml) to a file called `/tmp/quickstart/domain-resource.yaml` or similar. Then apply the file using `kubectl apply -f /tmp/quickstart/domain-resource.yaml`.
+   - **NOTE**: If you want to view or need to modify it, you can download the [sample domain resource](https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/quick-start/domain-resource.yaml) to a file called `/tmp/quickstart/domain-resource.yaml` or similar. Then apply the file using `kubectl apply -f /tmp/quickstart/domain-resource.yaml`.
 
 
    The domain resource references the cluster resource, a WebLogic Server installation image, the secrets you defined, and a sample "auxiliary image", which contains traditional WebLogic configuration and a WebLogic application.

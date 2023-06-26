@@ -20,7 +20,7 @@ description: "Follow these prerequisite steps for WLS domain type."
    $ git clone --branch v{{< latestVersion >}} https://github.com/oracle/weblogic-kubernetes-operator.git
    ```
 
-   **NOTE:** We will refer to the top directory of the operator source tree as `/tmp/weblogic-kubernetes-operator`; however, you can use a different location.
+   **NOTE**: We will refer to the top directory of the operator source tree as `/tmp/weblogic-kubernetes-operator`; however, you can use a different location.
 
    For additional information about obtaining the operator source, see the [Developer Guide Requirements](https://oracle.github.io/weblogic-kubernetes-operator/developerguide/requirements/).
 
@@ -32,7 +32,7 @@ description: "Follow these prerequisite steps for WLS domain type."
    ```
    $ cp -r /tmp/weblogic-kubernetes-operator/kubernetes/samples/scripts/create-weblogic-domain/model-in-image/* /tmp/sample
    ```
-   **NOTE:** We will refer to this working copy of the sample as `/tmp/sample`; however, you can use a different location.
+   **NOTE**: We will refer to this working copy of the sample as `/tmp/sample`; however, you can use a different location.
 
 1. Copy the `wdt-artifacts` directory of the sample to a new directory; for example, use directory `/tmp/sample/wdt-artifacts`.
 
@@ -115,7 +115,7 @@ To do this, follow the same steps as the [Quick Start](https://oracle.github.io/
        $ kubectl apply -f https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/scripts/create-weblogic-domain/ingresses/traefik-ingress-sample-domain2-cluster-cluster-1.yaml
        ```
 
-   **NOTE:** We give each cluster ingress a different host name that is decorated using both its operator domain UID and its cluster name. This makes each cluster uniquely addressable even when cluster names are the same across different clusters.  When using `curl` to access the WebLogic domain through the ingress, you will need to supply a host name header that matches the host names in the ingress.
+   **NOTE**: We give each cluster ingress a different host name that is decorated using both its operator domain UID and its cluster name. This makes each cluster uniquely addressable even when cluster names are the same across different clusters.  When using `curl` to access the WebLogic domain through the ingress, you will need to supply a host name header that matches the host names in the ingress.
 
    For more information on ingresses and load balancers, see [Ingress]({{< relref "/managing-domains/accessing-the-domain/ingress/_index.md" >}}).
 

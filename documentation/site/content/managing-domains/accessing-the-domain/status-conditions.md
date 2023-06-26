@@ -137,7 +137,7 @@ Status:
   * Every Cluster resource referenced by the domain has `True` in its `Available` condition.
     Clusters that are configured with a `replicas` value of `0` or a `serverStartPolicy` value of `Never`
     are ignored.
-- **NOTE:** The `Available` `status` can be `True` even when the `status` for the `Completed` condition is `False`,
+- **NOTE**: The `Available` `status` can be `True` even when the `status` for the `Completed` condition is `False`,
   a `Failed` condition is reported, or a cluster has up to `cluster.spec.maxUnavailable` pods
   that are not ready.
 
@@ -211,7 +211,7 @@ The following is a list of condition types for a Cluster resource.
     `cluster.spec.replicas` is `4`,
     and `cluster.spec.maxUnavailable` is `1` (the default),
     then the cluster will have an `Available` condition  that is `True` only when three or four of its pods are ready.
-- **NOTE:** The `Available` condition's `status` can be `True` even when the `status` for the `Completed`
+- **NOTE**: The `Available` condition's `status` can be `True` even when the `status` for the `Completed`
   condition is `False`, a `Failed` condition is reported on the Domain resource, or the cluster
   has up to `cluster.spec.maxUnavailable` pods that are not ready.
 

@@ -28,7 +28,7 @@ description: "Follow these prerequisite steps for WLS and JRF domain types."
    $ git clone --branch v{{< latestVersion >}} https://github.com/oracle/weblogic-kubernetes-operator.git
    ```
 
-   **NOTE:** We will refer to the top directory of the operator source tree as `/tmp/weblogic-kubernetes-operator`; however, you can use a different location.
+   **NOTE**: We will refer to the top directory of the operator source tree as `/tmp/weblogic-kubernetes-operator`; however, you can use a different location.
 
    For additional information about obtaining the operator source, see the [Developer Guide Requirements](https://oracle.github.io/weblogic-kubernetes-operator/developerguide/requirements/).
 
@@ -40,7 +40,7 @@ description: "Follow these prerequisite steps for WLS and JRF domain types."
    ```
    $ cp -r /tmp/weblogic-kubernetes-operator/kubernetes/samples/scripts/create-weblogic-domain/domain-on-pv/* /tmp/sample
    ```
-   **NOTE:** We will refer to this working copy of the sample as `/tmp/sample`; however, you can use a different location.
+   **NOTE**: We will refer to this working copy of the sample as `/tmp/sample`; however, you can use a different location.
 
 1. Copy the `wdt-artifacts` directory of the sample to a new directory; for example, use directory `/tmp/sample/wdt-artifacts`.
 
@@ -122,7 +122,7 @@ To do this, follow the same steps as the [Quick Start](https://oracle.github.io/
        $ kubectl apply -f https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/scripts/create-weblogic-domain/ingresses/traefik-ingress-sample-domain1-cluster-cluster-1.yaml
        ```
 
-   **NOTE:** We give each cluster ingress a different host name that is decorated using both its operator domain UID and its cluster name. This makes each cluster uniquely addressable even when cluster names are the same across different clusters.  When using `curl` to access the WebLogic domain through the ingress, you will need to supply a host name header that matches the host names in the ingress.
+   **NOTE**: We give each cluster ingress a different host name that is decorated using both its operator domain UID and its cluster name. This makes each cluster uniquely addressable even when cluster names are the same across different clusters.  When using `curl` to access the WebLogic domain through the ingress, you will need to supply a host name header that matches the host names in the ingress.
 
    For more information on ingresses and load balancers, see [Ingress]({{< relref "/managing-domains/accessing-the-domain/ingress/_index.md" >}}).
 
@@ -146,7 +146,7 @@ To do this, follow the same steps as the [Quick Start](https://oracle.github.io/
 
 ### Additional prerequisites for JRF domains
 
-**NOTE:** If you're using a Domain on PV, WLS domain type, skip this section and continue on to [Build the domain creation image]({{< relref "/samples/domains/domain-home-on-pv/build-domain-creation-image.md" >}})
+**NOTE**: If you're using a Domain on PV, WLS domain type, skip this section and continue on to [Build the domain creation image]({{< relref "/samples/domains/domain-home-on-pv/build-domain-creation-image.md" >}})
 for the Domain on PV sample.
 
 #### JRF prerequisites
@@ -157,7 +157,7 @@ for the Domain on PV sample.
 
 ##### Introduction to JRF setups
 
-**NOTE:** The requirements in this section are in addition to [Prerequisites for WLS and JRF domain types](#prerequisites-for-wls-and-jrf-domain-types).
+**NOTE**: The requirements in this section are in addition to [Prerequisites for WLS and JRF domain types](#prerequisites-for-wls-and-jrf-domain-types).
 
 A JRF domain requires an infrastructure database, and configuring your domain to access this database. For more details, see [JRF domain]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain.md" >}}) in the user documentation. You must perform all these steps _before_ you create your domain.
 
@@ -193,7 +193,7 @@ A JRF domain requires an infrastructure database and requires initializing this 
      - Replace MY_DBA_PASSWORD with your desired value.
      - Oracle Database passwords can contain upper case, lower case, digits, and special characters.
        Use only `_` and `#` as special characters to eliminate potential parsing errors in Oracle connection strings.
-     - **NOTE:** Record or memorize the value you chose for MY_DBA_PASSWORD. It will be be needed again in other parts of this sample.
+     - **NOTE**: Record or memorize the value you chose for MY_DBA_PASSWORD. It will be be needed again in other parts of this sample.
 
    - Use the sample script in `/tmp/weblogic-kubernetes-operator/kubernetes/samples/scripts/create-oracle-db-service` to create an Oracle database running in the pod, `oracle-db`.
 
@@ -208,7 +208,7 @@ A JRF domain requires an infrastructure database and requires initializing this 
 
      This step is based on the steps documented in [Run a Database]({{< relref "/samples/database/_index.md" >}}).
 
-     **NOTE:** If your Kubernetes cluster nodes do not all have access to the database image in a local cache, then deploy a Kubernetes `docker secret` to the default namespace with login credentials for `container-registry.oracle.com`, and pass the name of this secret as a parameter to `start-db-service.sh` using `-s your-image-pull-secret`. Alternatively, copy the database image to each local Docker cache in the cluster.  For more information, see the [Cannot pull image FAQ]({{<relref "/faq/cannot-pull-image">}}).
+     **NOTE**: If your Kubernetes cluster nodes do not all have access to the database image in a local cache, then deploy a Kubernetes `docker secret` to the default namespace with login credentials for `container-registry.oracle.com`, and pass the name of this secret as a parameter to `start-db-service.sh` using `-s your-image-pull-secret`. Alternatively, copy the database image to each local Docker cache in the cluster.  For more information, see the [Cannot pull image FAQ]({{<relref "/faq/cannot-pull-image">}}).
 
      **WARNING:** The Oracle Database images are supported only for non-production use. For more details, see My Oracle Support note: Oracle Support for Database Running on Docker (Doc ID 2216342.1).
 
