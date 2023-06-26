@@ -18,6 +18,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
@@ -239,8 +240,13 @@ public class MiiDynamicUpdateHelper {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertTrue(checkSystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
-        "TestDataSource2", "200"), "JDBCSystemResource not found");
+    if (!OKE_CLUSTER) {
+      assertTrue(checkSystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
+          "TestDataSource2", "200"), "JDBCSystemResource not found");
+    } else {
+      assertTrue(checkSystemResourceConfiguration(adminServerPodName, domainNamespace,"JDBCSystemResources",
+          "TestDataSource2", "200"), "JDBCSystemResource not found");
+    }
     logger.info("JDBCSystemResource configuration found");
     return pods;
   }

@@ -672,6 +672,45 @@ public class CommonTestUtils {
   }
 
   /**
+   * Check the system resource configuration using REST API.
+   * @param adminServerPodName Used only in OKD env - this is the route host created for AS external service
+   * @param namespace admin pod namespace
+   * @param resourcesType type of the resource
+   * @param resourcesName name of the resource
+   * @param expectedStatusCode expected status code
+   * @return true if the REST API results matches expected status code
+   */
+  public static boolean checkSystemResourceConfiguration(String adminServerPodName, String namespace,
+                                                         String resourcesType,
+                                                         String resourcesName, String expectedStatusCode) {
+    final LoggingFacade logger = getLogger();
+    String protocol = "http";
+    String port = "7001";
+
+    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + "  " + adminServerPodName)
+        .append(" -- /bin/bash -c \"")
+        .append("status=$(curl -k //" + protocol + ":")
+        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append("@" + adminServerPodName + ":" + port)
+        .append("/management/weblogic/latest/domainConfig")
+        .append("/")
+        .append(resourcesType)
+        .append("/")
+        .append(resourcesName)
+        .append("/")
+        .append(" --silent --show-error ")
+        .append(" -o /dev/null ")
+        .append(" -w %{http_code});")
+        .append("echo ${status}")
+        .append(" \"");
+    logger.info("checkSystemResource: curl command {0}", new String(curlString));
+    return Command
+        .withParams(new CommandParams()
+            .command(curlString.toString()))
+        .executeAndVerify(expectedStatusCode);
+  }
+
+  /**
    * verify the system resource configuration using REST API.
    * @param adminRouteHost only required for OKD env. null otherwise
    * @param nodePort admin node port
