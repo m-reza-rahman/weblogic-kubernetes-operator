@@ -312,7 +312,7 @@
         },
         "domainType": {
           "default": "JRF",
-          "description": "WebLogic Deploy Tooling domain type. Legal values: WLS, RestrictedJRF, JRF. Defaults to JRF.",
+          "description": "WebLogic Deploy Tooling domain type. Known values are: WLS, RestrictedJRF, JRF. Defaults to JRF.",
           "type": "string"
         },
         "opss": {

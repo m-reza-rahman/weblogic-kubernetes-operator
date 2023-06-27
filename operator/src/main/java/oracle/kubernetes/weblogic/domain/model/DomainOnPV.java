@@ -21,7 +21,7 @@ public class DomainOnPV {
   @Default(strDefault = "domain")
   private CreateIfNotExists createIfNotExists = CreateIfNotExists.DOMAIN;
 
-  @Description("WebLogic Deploy Tooling domain type. Legal values: WLS, RestrictedJRF, JRF. Defaults to JRF.")
+  @Description("WebLogic Deploy Tooling domain type. Known values are: WLS, RestrictedJRF, JRF. Defaults to JRF.")
   @SerializedName("domainType")
   @Default(strDefault = "JRF")
   private String domainType = JRF;
