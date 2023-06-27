@@ -840,26 +840,27 @@ public class CommonTestUtils {
 
   /**
    * Check the system resource runtime using REST API.
-   * @param adminSvcExtHost Used only in OKD env - this is the route host created for AS external service
-   * @param nodePort admin node port
+   * @param adminServerPodName admin server pod name
+   * @param namespace admin pod namespace
    * @param resourcesUrl url of the resource
    * @param expectedValue expected value returned in the REST call
    * @return true if the REST API results matches expected value
    */
-  public static boolean checkSystemResourceRuntime(String adminSvcExtHost, int nodePort,
+  public static boolean checkSystemResourceRuntime(String adminServerPodName, String namespace,
                                             String resourcesUrl, String expectedValue) {
     final LoggingFacade logger = getLogger();
 
-    String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + nodePort;
-    logger.info("hostAndPort = {0} ", hostAndPort);
-
-    StringBuffer curlString = new StringBuffer("curl --user ");
-    curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + hostAndPort)
+    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n "
+        + namespace + " " + adminServerPodName)
+        .append(" -- /bin/bash -c \"")
+        .append("curl --user ")
+        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" http://" + adminServerPodName + ":7001")
         .append("/management/weblogic/latest/domainRuntime")
         .append("/")
         .append(resourcesUrl)
-        .append("/");
+        .append("/")
+        .append(" \"");
 
     logger.info("checkSystemResource: curl command {0} expectedValue {1}", new String(curlString), expectedValue);
     return Command

@@ -323,7 +323,7 @@ class ItMiiDynamicUpdatePart2 {
     }
 
     // check datasource runtime after restart
-    assertTrue(checkSystemResourceRuntime(helper.adminSvcExtHost, adminServiceNodePort,
+    assertTrue(checkSystemResourceRuntime(helper.adminServerPodName, helper.domainNamespace,
         "serverRuntimes/" + MANAGED_SERVER_NAME_BASE + "1/JDBCServiceRuntime/"
             + "JDBCDataSourceRuntimeMBeans/TestDataSource2",
         "\"testattrib\": \"dummy\""), "JDBCSystemResource new property not found");
