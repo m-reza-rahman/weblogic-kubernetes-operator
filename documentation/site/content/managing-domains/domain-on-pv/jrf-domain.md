@@ -72,7 +72,7 @@ $ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws j
 
 When a JRF domain is created, an OPSS wallet is stored in the file system where the domain home resides.
 This specific wallet key can be exported and used to create a new domain. There is no way to reuse the original RCU schema without this specific wallet key.
-Therefore, for disaster recovery, **you should back up this encryption key**.
+Therefore, for disaster recovery, **you should back up this OPSS wallet**.
 
 After the operator creates the JRF domain, it stores the OPSS wallet in a ConfigMap. See [Download and save the OPSS wallet](#download-opss-wallet-and-store-in-a-kubernetes-secret).
 
@@ -153,7 +153,7 @@ In the rare scenario where the domain home directory is corrupted, and you do **
 
 When a JRF domain is created, an OPSS wallet is stored in the file system where the domain home resides.
 This specific wallet key can be exported and used to create a new domain. There is no way to reuse the original RCU schema without this specific wallet key.
-Therefore, for disaster recovery, **you should back up this encryption key**.
+Therefore, for disaster recovery, **you should back up this OPSS wallet**.
 
 After the operator creates the JRF domain, it stores the OPSS wallet in a ConfigMap. See [Download and save the OPSS wallet](#download-opss-wallet-and-store-in-a-kubernetes-secret).
 
