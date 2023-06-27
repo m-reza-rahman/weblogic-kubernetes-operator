@@ -397,150 +397,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     checkPodDoesNotExist("rcu", null, dbNamespace);
 
   }
-
-  /**
-   * User creates RCU, Operate creates PV/PVC and FMW domain with multiple images
-   * Verify Pod is ready and service exists for both admin server and managed servers.
-   */
-  @Test
-  @Order(6)
-  @DisplayName("Create a FMW domain on PV with multiple images when user per-creates RCU")
-  void testFmwDomainOnPvUserCreatesRCUMultiImages() {
-
-    final String pvName = getUniqueName(domainUid3 + "-pv-");
-    final String pvcName = getUniqueName(domainUid3 + "-pvc-");
-
-    //create RCU schema
-    assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX + "3",
-        dbUrl, dbNamespace), "create RCU schema failed");
-
-    // create a model property file
-    File fmwModelPropFile = createWdtPropertyFile(domainUid3, RCUSCHEMAPREFIX + "3");
-
-    // Create the repo secret to pull the image
-    // this secret is used only for non-kind cluster
-    createTestRepoSecret(domainNamespace);
-
-    // create secret for admin credentials
-    logger.info("Create secret for admin credentials");
-    assertDoesNotThrow(() -> createSecretWithUsernamePassword(
-        adminSecretName3,
-        domainNamespace,
-        ADMIN_USERNAME_DEFAULT,
-        ADMIN_PASSWORD_DEFAULT),
-        String.format("createSecret failed for %s", adminSecretName3));
-
-    // create RCU access secret
-    logger.info("Creating RCU access secret: {0}, with prefix: {1}, dbUrl: {2}, schemapassword: {3})",
-        rcuaccessSecretName3, RCUSCHEMAPREFIX + "3", RCUSCHEMAPASSWORD, dbUrl);
-    assertDoesNotThrow(() -> createRcuAccessSecret(
-        rcuaccessSecretName3,
-        domainNamespace,
-        RCUSCHEMAPREFIX + "3",
-        RCUSCHEMAPASSWORD,
-        dbUrl),
-        String.format("createSecret failed for %s", rcuaccessSecretName3));
-
-    logger.info("Create OPSS wallet password secret");
-    assertDoesNotThrow(() -> createOpsswalletpasswordSecret(
-        opsswalletpassSecretName3,
-        domainNamespace,
-        ADMIN_PASSWORD_DEFAULT),
-        String.format("createSecret failed for %s", opsswalletpassSecretName3));
-    
-    DomainCreationImage domainCreationImage1 = createImage(fmwModelFile,fmwModelPropFile,"jrf3");
-
-    // image2 with model files for jms config
-    List modelList = new ArrayList<>();
-    modelList.add(MODEL_DIR + "/model.jms2.yaml");
-    String miiAuxiliaryImageTag = "jrf3jms" + MII_BASIC_IMAGE_TAG;
-    WitParams witParams =
-        new WitParams()
-            .modelImageName(MII_AUXILIARY_IMAGE_NAME)
-            .modelImageTag(miiAuxiliaryImageTag)
-            .wdtModelOnly(true)
-            .modelFiles(modelList)
-            .wdtVersion("NONE");
-    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImageTag, witParams);
-    DomainCreationImage domainCreationImage2 = new DomainCreationImage().image(MII_AUXILIARY_IMAGE_NAME
-        + ":" + miiAuxiliaryImageTag);
-    domainCreationImages3.add(domainCreationImage1);
-    domainCreationImages3.add(domainCreationImage2);
-
-    // create a domain custom resource configuration object
-    logger.info("Creating domain custom resource with pvName: {0}", pvName);
-    DomainResource domain = createDomainResourceSimplifyJrfPv(
-        domainUid3, domainNamespace, adminSecretName3,
-        TEST_IMAGES_REPO_SECRET_NAME,
-        rcuaccessSecretName3,
-        opsswalletpassSecretName3, null,
-        pvName, pvcName, domainCreationImages3, null);
-
-    createDomainAndVerify(domain, domainNamespace);
-
-    // verify that all servers are ready
-    verifyDomainReady(domainNamespace, domainUid3, replicaCount, "nosuffix");
-
-    //create router for admin service on OKD
-    String adminServerPodName = domainUid3 + "-admin-server";
-    String adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
-    logger.info("admin svc host = {0}", adminSvcExtHost);
-
-    // check configuration for JMS
-    checkConfiguredJMSresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
-
-  }
-
-  /**
-   * Export the OPSS wallet file secret of Fmw domain from the previous run
-   * CrateIfNotExists set to domainAndRCU
-   * Use this OPSS wallet file secret to create Fmw domain on PV to connect to the same database
-   * Verify Pod is ready and service exists for both admin server and managed servers.
-   */
-  @Test
-  @Order(7)
-  @DisplayName("Create a FMW domain on PV with provided OPSS wallet file secret")
-  void testFmwDomainOnPVwithProvidedOpss() {
-
-    final String pvName = getUniqueName(domainUid3 + "-pv-");
-    final String pvcName = getUniqueName(domainUid3 + "-pvc-");
-
-    saveAndRestoreOpssWalletfileSecret(domainNamespace, domainUid3, opsswalletfileSecretName3);
-    logger.info("Deleting domain custom resource with namespace: {0}, domainUid {1}", domainNamespace, domainUid3);
-    deleteDomainResource(domainNamespace, domainUid3);
-    try {
-      deleteDirectory(Paths.get("/share").toFile());
-    } catch (IOException ioe) {
-      logger.severe("Failed to cleanup directory /share", ioe);
-    }
-    logger.info("Creating domain custom resource with pvName: {0}", pvName);
-    DomainResource domain = createSimplifyJrfPvDomainAndRCU(
-        domainUid3, domainNamespace, adminSecretName3,
-        TEST_IMAGES_REPO_SECRET_NAME,
-        rcuaccessSecretName3,
-        opsswalletpassSecretName3, opsswalletfileSecretName3,
-        pvName, pvcName, domainCreationImages3, null);
-
-    createDomainAndVerify(domain, domainNamespace);
-
-    // verify that all servers are ready
-    verifyDomainReady(domainNamespace, domainUid3, replicaCount, "nosuffix");
-
-    // delete the domain
-    deleteDomainResource(domainNamespace, domainUid3);
-    //delete the rcu pod
-    assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
-        "Got exception while deleting server " + "rcu");
-    checkPodDoesNotExist("rcu", null, dbNamespace);
-    //delete the wallet file ewallet.p12
-    try {
-      delete(new File("./ewallet.p12"));
-      logger.info("Wallet file ewallet.p12 is deleted");
-    } catch (IOException ioe) {
-      logger.severe("Failed to delete file ewallet.p12", ioe);
-    }
-  }
-
+  
   /**
    * User creates RCU, Operate creates PV/PVC and FMW domain with additional WDT config map.
    * Verify Pod is ready and service exists for both admin server and managed servers.
@@ -696,6 +553,150 @@ public class ItFmwDomainInPvUserCreateRcu {
     checkPodDoesNotExist("rcu", null, dbNamespace);
 
   }
+
+  /**
+   * User creates RCU, Operate creates PV/PVC and FMW domain with multiple images
+   * Verify Pod is ready and service exists for both admin server and managed servers.
+   */
+  @Test
+  @Order(6)
+  @DisplayName("Create a FMW domain on PV with multiple images when user per-creates RCU")
+  void testFmwDomainOnPvUserCreatesRCUMultiImages() {
+
+    final String pvName = getUniqueName(domainUid3 + "-pv-");
+    final String pvcName = getUniqueName(domainUid3 + "-pvc-");
+
+    //create RCU schema
+    assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX + "3",
+        dbUrl, dbNamespace), "create RCU schema failed");
+
+    // create a model property file
+    File fmwModelPropFile = createWdtPropertyFile(domainUid3, RCUSCHEMAPREFIX + "3");
+
+    // Create the repo secret to pull the image
+    // this secret is used only for non-kind cluster
+    createTestRepoSecret(domainNamespace);
+
+    // create secret for admin credentials
+    logger.info("Create secret for admin credentials");
+    assertDoesNotThrow(() -> createSecretWithUsernamePassword(
+        adminSecretName3,
+        domainNamespace,
+        ADMIN_USERNAME_DEFAULT,
+        ADMIN_PASSWORD_DEFAULT),
+        String.format("createSecret failed for %s", adminSecretName3));
+
+    // create RCU access secret
+    logger.info("Creating RCU access secret: {0}, with prefix: {1}, dbUrl: {2}, schemapassword: {3})",
+        rcuaccessSecretName3, RCUSCHEMAPREFIX + "3", RCUSCHEMAPASSWORD, dbUrl);
+    assertDoesNotThrow(() -> createRcuAccessSecret(
+        rcuaccessSecretName3,
+        domainNamespace,
+        RCUSCHEMAPREFIX + "3",
+        RCUSCHEMAPASSWORD,
+        dbUrl),
+        String.format("createSecret failed for %s", rcuaccessSecretName3));
+
+    logger.info("Create OPSS wallet password secret");
+    assertDoesNotThrow(() -> createOpsswalletpasswordSecret(
+        opsswalletpassSecretName3,
+        domainNamespace,
+        ADMIN_PASSWORD_DEFAULT),
+        String.format("createSecret failed for %s", opsswalletpassSecretName3));
+
+    DomainCreationImage domainCreationImage1 = createImage(fmwModelFile,fmwModelPropFile,"jrf3");
+
+    // image2 with model files for jms config
+    List modelList = new ArrayList<>();
+    modelList.add(MODEL_DIR + "/model.jms2.yaml");
+    String miiAuxiliaryImageTag = "jrf3jms" + MII_BASIC_IMAGE_TAG;
+    WitParams witParams =
+        new WitParams()
+            .modelImageName(MII_AUXILIARY_IMAGE_NAME)
+            .modelImageTag(miiAuxiliaryImageTag)
+            .wdtModelOnly(true)
+            .modelFiles(modelList)
+            .wdtVersion("NONE");
+    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImageTag, witParams);
+    DomainCreationImage domainCreationImage2 = new DomainCreationImage().image(MII_AUXILIARY_IMAGE_NAME
+        + ":" + miiAuxiliaryImageTag);
+    domainCreationImages3.add(domainCreationImage1);
+    domainCreationImages3.add(domainCreationImage2);
+
+    // create a domain custom resource configuration object
+    logger.info("Creating domain custom resource with pvName: {0}", pvName);
+    DomainResource domain = createDomainResourceSimplifyJrfPv(
+        domainUid3, domainNamespace, adminSecretName3,
+        TEST_IMAGES_REPO_SECRET_NAME,
+        rcuaccessSecretName3,
+        opsswalletpassSecretName3, null,
+        pvName, pvcName, domainCreationImages3, null);
+
+    createDomainAndVerify(domain, domainNamespace);
+
+    // verify that all servers are ready
+    verifyDomainReady(domainNamespace, domainUid3, replicaCount, "nosuffix");
+
+    //create router for admin service on OKD
+    String adminServerPodName = domainUid3 + "-admin-server";
+    String adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+    logger.info("admin svc host = {0}", adminSvcExtHost);
+
+    // check configuration for JMS
+    checkConfiguredJMSresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
+
+  }
+
+  /**
+   * Export the OPSS wallet file secret of Fmw domain from the previous run
+   * CrateIfNotExists set to domainAndRCU
+   * Use this OPSS wallet file secret to create Fmw domain on PV to connect to the same database
+   * Verify Pod is ready and service exists for both admin server and managed servers.
+   */
+  @Test
+  @Order(7)
+  @DisplayName("Create a FMW domain on PV with provided OPSS wallet file secret")
+  void testFmwDomainOnPVwithProvidedOpss() {
+
+    final String pvName = getUniqueName(domainUid3 + "-pv-");
+    final String pvcName = getUniqueName(domainUid3 + "-pvc-");
+
+    saveAndRestoreOpssWalletfileSecret(domainNamespace, domainUid3, opsswalletfileSecretName3);
+    logger.info("Deleting domain custom resource with namespace: {0}, domainUid {1}", domainNamespace, domainUid3);
+    deleteDomainResource(domainNamespace, domainUid3);
+    try {
+      deleteDirectory(Paths.get("/share").toFile());
+    } catch (IOException ioe) {
+      logger.severe("Failed to cleanup directory /share", ioe);
+    }
+    logger.info("Creating domain custom resource with pvName: {0}", pvName);
+    DomainResource domain = createSimplifyJrfPvDomainAndRCU(
+        domainUid3, domainNamespace, adminSecretName3,
+        TEST_IMAGES_REPO_SECRET_NAME,
+        rcuaccessSecretName3,
+        opsswalletpassSecretName3, opsswalletfileSecretName3,
+        pvName, pvcName, domainCreationImages3, null);
+
+    createDomainAndVerify(domain, domainNamespace);
+
+    // verify that all servers are ready
+    verifyDomainReady(domainNamespace, domainUid3, replicaCount, "nosuffix");
+
+    // delete the domain
+    deleteDomainResource(domainNamespace, domainUid3);
+    //delete the rcu pod
+    assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
+        "Got exception while deleting server " + "rcu");
+    checkPodDoesNotExist("rcu", null, dbNamespace);
+    //delete the wallet file ewallet.p12
+    try {
+      delete(new File("./ewallet.p12"));
+      logger.info("Wallet file ewallet.p12 is deleted");
+    } catch (IOException ioe) {
+      logger.severe("Failed to delete file ewallet.p12", ioe);
+    }
+  }
+
 
   private DomainCreationImage createImage(String fmwModelFile,  File fmwModelPropFile, String imageTagPrefix) {
 
