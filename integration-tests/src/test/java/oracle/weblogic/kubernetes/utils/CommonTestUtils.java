@@ -1722,7 +1722,7 @@ public class CommonTestUtils {
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
     testUntil(
-        () -> checkSystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort, resourceType,
+        () -> checkSystemResourceConfiguration(adminServerPodName, domainNamespace, resourceType,
             resourceName, expectedValue),
         logger,
         "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} exists",
