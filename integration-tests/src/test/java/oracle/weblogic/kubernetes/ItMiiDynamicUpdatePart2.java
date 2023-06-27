@@ -42,7 +42,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfig;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfigViaAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceRuntime;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
@@ -129,7 +129,7 @@ class ItMiiDynamicUpdatePart2 {
     int adminServiceNodePort
         = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+    assertTrue(checkSystemResourceConfigViaAdminPod(helper.adminServerPodName, helper.domainNamespace,
         "appDeployments",
         "myear"), "Application myear is not found");
     logger.info("Application myear is found");
@@ -167,13 +167,13 @@ class ItMiiDynamicUpdatePart2 {
     adminServiceNodePort
         = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+    assertTrue(checkSystemResourceConfigViaAdminPod(helper.adminServerPodName, helper.domainNamespace,
         "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDriverParams",
         "newdburl"), "JDBCSystemResource DB URL not found");
     logger.info("JDBCSystemResource DB URL found");
 
     // verify the application is undeployed
-    assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+    assertFalse(checkSystemResourceConfigViaAdminPod(helper.adminServerPodName, helper.domainNamespace,
         "appDeployments",
         "myear"), "Application myear found, should be undeployed");
     logger.info("Application myear is undeployed");
@@ -228,7 +228,8 @@ class ItMiiDynamicUpdatePart2 {
     int adminServiceNodePort
         = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
+    assertFalse(checkSystemResourceConfigViaAdminPod(helper.adminServerPodName, helper.domainNamespace,
+        "JDBCSystemResources",
         "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
     logger.info("JDBCSystemResource Datasource is deleted");
 
@@ -291,13 +292,13 @@ class ItMiiDynamicUpdatePart2 {
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
     // check server config for ScatteredReadsEnabled is updated
-    assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+    assertTrue(checkSystemResourceConfigViaAdminPod(helper.adminServerPodName, helper.domainNamespace,
         "servers/" + helper.adminServerName,
         "\"scatteredReadsEnabled\": true"), "ScatteredReadsEnabled is not changed to true");
     logger.info("ScatteredReadsEnabled is changed to true");
 
     // check datasource configuration using REST api
-    assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+    assertTrue(checkSystemResourceConfigViaAdminPod(helper.adminServerPodName, helper.domainNamespace,
         "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDriverParams/properties/properties",
         "\"name\": \"testattrib\""), "JDBCSystemResource new property not found");
     logger.info("JDBCSystemResource new property found");

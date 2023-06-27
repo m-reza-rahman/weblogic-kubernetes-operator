@@ -673,12 +673,12 @@ public class CommonTestUtils {
 
   /**
    * Check the system resource configuration using REST API.
-   * @param adminServerPodName Used only in OKD env - this is the route host created for AS external service
+   * @param adminServerPodName admin pod name
    * @param namespace admin pod namespace
    * @param resourcesType type of the resource
    * @param resourcesName name of the resource
    * @param expectedStatusCode expected status code
-   * @return true if the REST API results matches expected status code
+   * @return true if results matches expected status code
    */
   public static boolean checkSystemResourceConfiguration(String adminServerPodName, String namespace,
                                                          String resourcesType,
@@ -687,11 +687,12 @@ public class CommonTestUtils {
     String protocol = "http";
     String port = "7001";
 
-    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + "  " + adminServerPodName)
+    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
-        .append("status=$(curl -k " + protocol + "://")
+        .append("curl -k --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append("@" + adminServerPodName + ":" + port)
+        .append(" " + protocol + "://")
+        .append(adminServerPodName + ":" + port)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesType)
@@ -700,8 +701,8 @@ public class CommonTestUtils {
         .append("/")
         .append(" --silent --show-error ")
         .append(" -o /dev/null ")
-        .append(" -w %{http_code});")
-        .append("echo ${status}")
+        .append(" -w %{http_code}")
+        .append(" && echo ${status}")
         .append(" \"");
     logger.info("checkSystemResource: curl command {0}", new String(curlString));
     return Command
@@ -772,6 +773,37 @@ public class CommonTestUtils {
         .append("/")
         .append(resourcesPath)
         .append("/");
+
+    logger.info("checkSystemResource: curl command {0}", new String(curlString));
+    return Command
+        .withParams(new CommandParams()
+            .command(curlString.toString()))
+        .executeAndVerify(expectedValue);
+  }
+
+  /**
+   * Check the system resource configuration using REST API.
+   * @param adminServerPodName admin server pod name
+   * @param namespace admin server pod namespace
+   * @param resourcesPath path of the resource
+   * @param expectedValue expected value returned in the REST call
+   * @return true if the REST API results matches expected status code
+   */
+  public static boolean checkSystemResourceConfigViaAdminPod(String adminServerPodName, String namespace,
+                                                  String resourcesPath, String expectedValue) {
+    final LoggingFacade logger = getLogger();
+
+    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n "
+        + namespace + " " + adminServerPodName)
+        .append(" -- /bin/bash -c \"")
+        .append("curl --user ")
+        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" http://" + adminServerPodName + ":7001")
+        .append("/management/weblogic/latest/domainConfig")
+        .append("/")
+        .append(resourcesPath)
+        .append("/")
+        .append(" \"");
 
     logger.info("checkSystemResource: curl command {0}", new String(curlString));
     return Command
