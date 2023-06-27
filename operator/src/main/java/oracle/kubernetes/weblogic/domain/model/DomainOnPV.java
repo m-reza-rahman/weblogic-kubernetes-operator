@@ -8,10 +8,11 @@ import java.util.List;
 import com.google.gson.annotations.SerializedName;
 import oracle.kubernetes.json.Default;
 import oracle.kubernetes.json.Description;
-import oracle.kubernetes.operator.DomainOnPVType;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import static oracle.kubernetes.operator.WebLogicConstants.JRF;
 
 public class DomainOnPV {
 
@@ -20,10 +21,10 @@ public class DomainOnPV {
   @Default(strDefault = "domain")
   private CreateIfNotExists createIfNotExists = CreateIfNotExists.DOMAIN;
 
-  @Description("WebLogic Deploy Tooling domain type. Legal values: WLS, JRF. Defaults to JRF.")
+  @Description("WebLogic Deploy Tooling domain type. Legal values: WLS, RestrictedJRF, JRF. Defaults to JRF.")
   @SerializedName("domainType")
   @Default(strDefault = "JRF")
-  private DomainOnPVType domainType = DomainOnPVType.JRF;
+  private String domainType = JRF;
 
   /**
    * The domain images.
@@ -51,11 +52,11 @@ public class DomainOnPV {
     return this;
   }
 
-  public DomainOnPVType getDomainType() {
+  public String getDomainType() {
     return domainType;
   }
 
-  public DomainOnPV domainType(DomainOnPVType domainType) {
+  public DomainOnPV domainType(String domainType) {
     this.domainType = domainType;
     return this;
   }

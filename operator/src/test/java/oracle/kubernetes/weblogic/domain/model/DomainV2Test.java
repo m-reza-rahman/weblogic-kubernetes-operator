@@ -23,7 +23,6 @@ import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Sysctl;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
-import oracle.kubernetes.operator.DomainOnPVType;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.LogHomeLayoutType;
 import oracle.kubernetes.operator.OverrideDistributionStrategy;
@@ -38,6 +37,8 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.operator.DomainSourceType.FROM_MODEL;
 import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_IMAGE;
+import static oracle.kubernetes.operator.WebLogicConstants.JRF;
+import static oracle.kubernetes.operator.WebLogicConstants.WLS;
 import static oracle.kubernetes.operator.helpers.PodHelperTestBase.CONFIGURED_FAILURE_THRESHOLD;
 import static oracle.kubernetes.operator.helpers.PodHelperTestBase.CONFIGURED_SUCCESS_THRESHOLD;
 import static oracle.kubernetes.weblogic.domain.ChannelMatcher.channelWith;
@@ -1770,7 +1771,7 @@ class DomainV2Test extends DomainTestBase {
 
     assertThat(getDomain(domain), equalTo(createDomainOnPV()));
     assertThat(getDomain(domain).getCreateIfNotExists(), equalTo(CreateIfNotExists.DOMAIN_AND_RCU));
-    assertThat(getDomain(domain).getDomainType(), equalTo(DomainOnPVType.WLS));
+    assertThat(getDomain(domain).getDomainType(), equalTo(WLS));
     assertThat(getDomain(domain).getDomainCreationConfigMap(), equalTo("wdf-config-map"));
     assertThat(getDomain(domain).getDomainCreationImages(), hasItems(new DomainCreationImage().image("image:v1")));
     assertThat(getDomain(domain).getOpss(),
@@ -1778,7 +1779,7 @@ class DomainV2Test extends DomainTestBase {
   }
 
   private DomainOnPV createDomainOnPV() {
-    return new DomainOnPV().domainType(DomainOnPVType.WLS)
+    return new DomainOnPV().domainType(WLS)
         .createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainCreationConfigMap("wdf-config-map")
         .domainCreationImages(Collections.singletonList(new DomainCreationImage().image("image:v1")))
         .opss(new Opss().withWalletFileSecret("wallet-file-secret").withWalletPasswordSecret("weblogic"));
@@ -1847,7 +1848,7 @@ class DomainV2Test extends DomainTestBase {
     DomainResource domain = (DomainResource) resources.get(0);
 
     assertThat(getDomain(domain).getCreateIfNotExists(), equalTo(DOMAIN));
-    assertThat(getDomain(domain).getDomainType(), equalTo(DomainOnPVType.JRF));
+    assertThat(getDomain(domain).getDomainType(), equalTo(JRF));
     assertThat(getDomain(domain).getDomainCreationConfigMap(), equalTo("domain-on-pv-cm"));
     assertThat(getDomain(domain).getDomainCreationImages(),
         hasItems(new DomainCreationImage().image("domain-on-pv-image:v1")));

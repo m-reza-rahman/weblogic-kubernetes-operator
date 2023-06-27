@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 99585cc6da80c53c308ee386305361ba10859fe959ee7cac31bd526dc30e2a42
+    weblogic.sha256: f9d3a20a066a2a529f1a388e990eb8215517c54d3e90741038a8cfbf3c6a60cb
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -318,10 +318,7 @@ spec:
                           domainType:
                             default: JRF
                             description: 'WebLogic Deploy Tooling domain type. Legal
-                              values: WLS, JRF. Defaults to JRF.'
-                            enum:
-                            - WLS
-                            - JRF
+                              values: WLS, RestrictedJRF, JRF. Defaults to JRF.'
                             type: string
                           opss:
                             description: Settings for OPSS security.

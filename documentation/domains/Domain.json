@@ -312,12 +312,8 @@
         },
         "domainType": {
           "default": "JRF",
-          "description": "WebLogic Deploy Tooling domain type. Legal values: WLS, JRF. Defaults to JRF.",
-          "type": "string",
-          "enum": [
-            "WLS",
-            "JRF"
-          ]
+          "description": "WebLogic Deploy Tooling domain type. Legal values: WLS, RestrictedJRF, JRF. Defaults to JRF.",
+          "type": "string"
         },
         "opss": {
           "description": "Settings for OPSS security.",

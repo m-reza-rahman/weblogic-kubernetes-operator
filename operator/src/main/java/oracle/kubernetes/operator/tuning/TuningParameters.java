@@ -24,9 +24,9 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import oracle.kubernetes.operator.DomainOnPVType;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.WatchTuning;
+import oracle.kubernetes.operator.WebLogicConstants;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 
@@ -213,9 +213,9 @@ public class TuningParameters {
   /**
    * Returns the value of introspector job active deadline seconds with default value depending on the context.
    */
-  public long getActiveJobInitialDeadlineSeconds(boolean isInitializeDomainOnPV, DomainOnPVType type) {
+  public long getActiveJobInitialDeadlineSeconds(boolean isInitializeDomainOnPV, String type) {
     long defaultValue = 120L;
-    if (isInitializeDomainOnPV && DomainOnPVType.JRF.equals(type)) {
+    if (isInitializeDomainOnPV && WebLogicConstants.JRF.equals(type)) {
       defaultValue = ProcessingConstants.DEFAULT_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
     } else if (isInitializeDomainOnPV) {
       defaultValue = ProcessingConstants.DEFAULT_WLS_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;

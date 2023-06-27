@@ -30,4 +30,7 @@ public interface WebLogicConstants {
               FORCE_SUSPENDING_STATE));
 
   String READINESS_PROBE_NOT_READY_STATE = "Not ready: WebLogic Server state: ";
+  String JRF = "JRF";
+  String WLS = "WLS";
+
 }
