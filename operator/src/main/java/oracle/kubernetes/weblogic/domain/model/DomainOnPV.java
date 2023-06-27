@@ -13,6 +13,8 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import static oracle.kubernetes.operator.WebLogicConstants.JRF;
+import static oracle.kubernetes.operator.WebLogicConstants.RESTRICTED_JRF;
+import static oracle.kubernetes.operator.WebLogicConstants.WLS;
 
 public class DomainOnPV {
 
@@ -52,7 +54,20 @@ public class DomainOnPV {
     return this;
   }
 
+  /**
+   * Returns the domain type in upper case for WLS and JRF domains, camel case for RestrictedJRF domain,
+   * and user provided value otherwise.
+   *
+   * @return the domain type in proper case.
+   */
   public String getDomainType() {
+    if (JRF.equalsIgnoreCase(domainType)) {
+      return JRF;
+    } else if (WLS.equalsIgnoreCase(domainType)) {
+      return WLS;
+    } else if (RESTRICTED_JRF.equalsIgnoreCase(domainType)) {
+      return RESTRICTED_JRF;
+    }
     return domainType;
   }
 

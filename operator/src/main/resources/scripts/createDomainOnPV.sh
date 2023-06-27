@@ -26,7 +26,7 @@ WDT_CONFIGMAP_ROOT="/weblogic-operator/wdt-config-map"
 
 FATAL_JRF_INTROSPECTOR_ERROR_MSG="Domain On PV domain creation encountered an unrecoverable error.
  Please correct the errors and patch the domain resource 'domain.spec.introspectVersion' with a new
- value and try again. If the domain type required RCU and you are not setting 'domainAndRCU' in 'domain.spec.configuration.initializeDomainOnPV.domain.createIfNotExists'
+ value and try again. If the domain type requires RCU and you are not setting 'domainAndRCU' in 'domain.spec.configuration.initializeDomainOnPV.domain.createIfNotExists'
  then you may have to drop and recreate the RCU schema before retry. Introspection Error: "
 
 export WDT_MODEL_SECRETS_DIRS="/weblogic-operator/config-overrides-secrets"
