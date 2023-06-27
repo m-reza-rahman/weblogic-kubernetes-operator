@@ -23,11 +23,13 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Volume;
@@ -73,6 +75,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createSecret;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteConfigMap;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteSecret;
 import static oracle.weblogic.kubernetes.actions.TestActions.getNextIntrospectVersion;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listServices;
@@ -107,6 +110,7 @@ import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
+import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
@@ -179,7 +183,7 @@ class ItConfigDistributionStrategy {
    * @param namespaces injected by JUnit
    */
   @BeforeAll
-  public void initAll(@Namespaces(2) List<String> namespaces) {
+  public void initAll(@Namespaces(2) List<String> namespaces) throws ApiException {
     logger = getLogger();
 
     logger.info("Assign a unique namespace for operator");
@@ -199,9 +203,15 @@ class ItConfigDistributionStrategy {
 
     //start two MySQL database instances
     createMySQLDB("mysqldb-1", "root", "root123", getNextFreePort(), domainNamespace, null);
+    V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
+    execInPod(pod, null, true, "mysql -u root -proot456 -e "
+        + "\"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"");
     mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
     logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
     createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
+    pod = getPod(domainNamespace, null, "mysqldb-2");
+    execInPod(pod, null, true, "mysql -u root -proot456 -e "
+        + "\"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"");
     mysqlDBPort2 = getMySQLNodePort(domainNamespace, "mysqldb-2");
     logger.info("mysqlDBPort2 is: " + mysqlDBPort2);
 
