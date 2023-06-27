@@ -37,7 +37,7 @@ These include, but are not limited to:
 
 **NOTES**:
 
-- **Important:** Some supported environments have additional help or samples that are specific
+- **Important**: Some supported environments have additional help or samples that are specific
 to the operator, or are subject to limitations and restrictions; see
 [Important notes about specific environments](#important-notes-about-specific-environments).
 

@@ -245,7 +245,7 @@ spec:
 
 ### Best practices
 
-Oracle recommends that you save the OPSS wallet file in a safe, backed-up location __immediately__ after an initial JRF domain is created.
+Oracle recommends that you save the OPSS wallet file in a safe, backed-up location __immediately__ after the initial JRF domain is created.
 In addition, you should make sure to store the wallet in a Kubernetes Secret in the same namespace. This will allow the secret to be available when the domain needs to be recovered in a disaster scenario or if the domain directory gets corrupted. There is no way to reuse the original RCU schema without this specific wallet key.
 Therefore, for disaster recovery, **you should back up this encryption key**.
 
@@ -271,7 +271,7 @@ Therefore, if you recreate the domain using the original WDT model files, you wi
 the backup copy of the domain home directory and connect to the existing RCU schema from the database backup.
 
 #### Store the OPSS wallet in a Kubernetes Secret and update `opss.walletFileSecret` in the domain resource
-After the domain is created, the operator automatically exports the OPSS wallet and stores it in an introspector ConfigMap; the name of the ConfigMap follows the pattern `<domain uid>-weblogic-domain-introspect-cm` with the key `ewallet.p12`. Oracle recommends that you save the OPSS wallet file in a safe, backed-up location __immediately__ after an initial JRF domain is created. In addition, you should make sure to store the wallet in a Kubernetes Secret in the same namespace. This will allow the secret to be available when the domain needs to be recovered in a disaster scenario or if the domain directory gets corrupted.
+After the domain is created, the operator automatically exports the OPSS wallet and stores it in an introspector ConfigMap; the name of the ConfigMap follows the pattern `<domain uid>-weblogic-domain-introspect-cm` with the key `ewallet.p12`. Oracle recommends that you save the OPSS wallet file in a safe, backed-up location __immediately__ after the initial JRF domain is created. In addition, you should make sure to store the wallet in a Kubernetes Secret in the same namespace. This will allow the secret to be available when the domain needs to be recovered in a disaster scenario or if the domain directory gets corrupted.
 
 The following are the high-level steps for storing the OPSS wallet in a Kubernetes Secret.
 1. The operator provides a utility script, [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh), for extracting the wallet file and storing it in a Kubernetes `walletFileSecret`. In addition, you should also save the wallet file in a safely backed-up location outside of Kubernetes. For example, the following command saves the OPSS wallet for the `sample-domain1` domain in the `sample-ns` namespace to a file named `ewallet.p12` in the `/tmp` directory and also stores it in the wallet secret named `jrf-wallet-file-secret`.
