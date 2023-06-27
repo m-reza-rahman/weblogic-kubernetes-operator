@@ -1,7 +1,7 @@
 +++
 title = "JRF domains"
 date = 2023-04-26T16:45:16-05:00
-weight = 25
+weight = 4
 pre = "<b> </b>"
 description = "Important information about using JRF domains."
 +++
@@ -149,7 +149,7 @@ In the rare scenario where the domain home directory is corrupted, and you do **
 
 #### Disaster recovery for Model in Image domains
 
-**Note**: JRF support in Model in Image domains has been deprecated since operator version 4.1.0; use the Domain on PV [domain home source type](({{< relref "/managing-domains/choosing-a-model/_index.md" >}})) instead.
+**Note**: JRF support in Model in Image domains has been deprecated since operator version 4.1.0; use the Domain on PV [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) instead.
 
 When a JRF domain is created, an OPSS wallet is stored in the file system where the domain home resides.
 This specific wallet key can be exported and used to create a new domain. There is no way to reuse the original RCU schema without this specific wallet key.

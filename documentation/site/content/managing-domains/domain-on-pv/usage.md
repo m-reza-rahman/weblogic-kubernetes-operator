@@ -208,7 +208,7 @@ to specify any `persistentVolume` or `persistentVolumeClaim`  under the `intiali
 
 #### Domain information
 
-**For JRF-based domains, before proceeding, please be sure to read this document**, [JRF domains]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain.md">}}).
+**For JRF-based domains, before proceeding, please be sure to read this document**, [JRF domains]({{< relref "/managing-domains/domain-on-pv/jrf-domain.md">}}).
 
 This is the section describing the WebLogic domain. For example:
 
@@ -343,7 +343,7 @@ In the rare scenario where the domain home directory is corrupted, and you do **
    $ kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "replace", "path" : "/spec/restartVersion", "value" : "15" }]'
    ```
 
-For more information, see [Disaster Recovery]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain#disaster-recovery-for-domain-on-pv-deployment">}}).  
+For more information, see [Disaster Recovery]({{< relref "/managing-domains/domain-on-pv/jrf-domain#disaster-recovery-for-domain-on-pv-deployment">}}).  
 
 ### Troubleshooting
 
