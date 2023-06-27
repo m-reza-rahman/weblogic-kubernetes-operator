@@ -27,6 +27,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_F
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.actions.TestActions.deleteClusterCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchClusterCustomResource;
@@ -130,6 +131,7 @@ class ItDiagnosticsCompleteAvailableCondition {
       verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace1, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -180,6 +182,7 @@ class ItDiagnosticsCompleteAvailableCondition {
       verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace1, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -231,6 +234,7 @@ class ItDiagnosticsCompleteAvailableCondition {
 
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -285,6 +289,7 @@ class ItDiagnosticsCompleteAvailableCondition {
 
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -337,6 +342,7 @@ class ItDiagnosticsCompleteAvailableCondition {
       verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace1, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -363,11 +369,12 @@ class ItDiagnosticsCompleteAvailableCondition {
           patch, V1Patch.PATCH_FORMAT_JSON_PATCH), "Failed to patch cluster");
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
   /**
-   * Test domain status condition with cluster replica set to larger than max size of cluster and introspectVersion
+   * Test domain status condition with domain replica set to larger than max size of cluster and introspectVersion
    * changed.
    * Verify all the cluster servers pods will be up and running.
    * Verify the following conditions are generated:
@@ -376,7 +383,7 @@ class ItDiagnosticsCompleteAvailableCondition {
    * Verify no Failed type condition generated.
    */
   @Test
-  @DisplayName("Test domain status condition with cluster replica set to larger than max size of cluster")
+  @DisplayName("Test domain status condition with domain replica set to larger than max size of cluster")
   void testCompleteAvailableConditionWithReplicaExceedMaxSizeAndIntrospectVersionChanged() {
     String domainUid = "diagnosticsdomain7";
     createDomainAndVerify(domainUid);
@@ -400,12 +407,12 @@ class ItDiagnosticsCompleteAvailableCondition {
 
       // verify the cluster server pods are up and running
       logger.info("Checking managed server pods were ready");
-      for (int i = 1; i <= maxClusterSize; i++) {
+      for (int i = 1; i <= replicaCount; i++) {
         checkPodReadyAndServiceExists(managedServerPodNamePrefix + i, domainUid, domainNamespace1);
       }
 
-      // verify there is no pod created larger than max size of cluster
-      for (int i = maxClusterSize + 1; i <= newReplicaCount; i++) {
+      // verify there is no pod created larger than replicaCount since the cluster replicas does not change
+      for (int i = replicaCount + 1; i <= newReplicaCount; i++) {
         checkPodDoesNotExist(managedServerPodNamePrefix + i, domainUid, domainNamespace1);
       }
 
@@ -415,16 +422,13 @@ class ItDiagnosticsCompleteAvailableCondition {
       checkDomainStatusConditionTypeExists(domainUid, domainNamespace1, DOMAIN_STATUS_CONDITION_AVAILABLE_TYPE);
       // verify the condition Completed type has status True
       checkDomainStatusConditionTypeHasExpectedStatus(domainUid, domainNamespace1,
-          DOMAIN_STATUS_CONDITION_COMPLETED_TYPE, "False");
+          DOMAIN_STATUS_CONDITION_COMPLETED_TYPE, "True");
       // verify the condition Available type has status True
       checkDomainStatusConditionTypeHasExpectedStatus(domainUid, domainNamespace1,
           DOMAIN_STATUS_CONDITION_AVAILABLE_TYPE, "True");
-      // verify the condition Failed type has status True
-      checkDomainStatusConditionTypeHasExpectedStatus(domainUid, domainNamespace1,
-          DOMAIN_STATUS_CONDITION_FAILED_TYPE, "True");
-
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -485,6 +489,7 @@ class ItDiagnosticsCompleteAvailableCondition {
       verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace1, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -566,6 +571,7 @@ class ItDiagnosticsCompleteAvailableCondition {
       verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace1, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -631,6 +637,7 @@ class ItDiagnosticsCompleteAvailableCondition {
       verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace1, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
@@ -708,6 +715,7 @@ class ItDiagnosticsCompleteAvailableCondition {
       verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace1, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
     } finally {
       deleteDomainResource(domainNamespace1, domainUid);
+      deleteClusterCustomResource(clusterResName, domainNamespace1);
     }
   }
 
