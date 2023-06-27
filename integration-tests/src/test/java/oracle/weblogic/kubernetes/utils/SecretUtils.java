@@ -182,7 +182,7 @@ public class SecretUtils {
 
     StringBuffer command = new StringBuffer()
         .append(GEN_EXTERNAL_REST_IDENTITY_FILE);
-    if (K8S_NODEPORT_HOST != null) {
+    if (K8S_NODEPORT_HOST != null && !K8S_NODEPORT_HOST.equals("<none>")) {
       if (Character.isDigit(K8S_NODEPORT_HOST.charAt(0))) {
         command.append(" -a \"IP:");
       } else {
