@@ -215,12 +215,16 @@ public class TuningParameters {
    */
   public long getActiveJobInitialDeadlineSeconds(boolean isInitializeDomainOnPV, String type) {
     long defaultValue = 120L;
-    if (isInitializeDomainOnPV && WebLogicConstants.JRF.equals(type)) {
-      defaultValue = ProcessingConstants.DEFAULT_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
+    if (isInitializeDomainOnPV && isWlsOrRestrictedJRFDomain(type)) {
+      defaultValue = ProcessingConstants.DEFAULT_WLS_OR_RESTRICTED_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
     } else if (isInitializeDomainOnPV) {
-      defaultValue = ProcessingConstants.DEFAULT_WLS_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
+      defaultValue = ProcessingConstants.DEFAULT_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
     }
     return getParameter(INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS, defaultValue);
+  }
+
+  private boolean isWlsOrRestrictedJRFDomain(String type) {
+    return WebLogicConstants.WLS.equals(type) || WebLogicConstants.RESTRICTED_JRF.equals(type);
   }
 
   public long getActiveDeadlineIncrementSeconds() {
