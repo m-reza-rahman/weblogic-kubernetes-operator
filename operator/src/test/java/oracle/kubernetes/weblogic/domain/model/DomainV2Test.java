@@ -1720,8 +1720,7 @@ class DomainV2Test extends DomainTestBase {
     return new PersistentVolume().metadata(new V1ObjectMeta().name("test-pv"))
         .spec(new PersistentVolumeSpec().storageClassName("oke-pv")
             .capacity(Collections.singletonMap("storage", new Quantity("500Gi")))
-            .hostPath(new V1HostPathVolumeSource().path("/shared"))
-            .volumeMode("Block"));
+            .hostPath(new V1HostPathVolumeSource().path("/shared")));
   }
 
   @Test
@@ -1749,7 +1748,6 @@ class DomainV2Test extends DomainTestBase {
     assertThat(getPersistentVolumeClaim(domain), equalTo(createPvc()));
     assertThat(getPersistentVolumeClaim(domain).getSpec().getVolumeName(), equalTo("test-pv"));
     assertThat(getPersistentVolumeClaim(domain).getSpec().getStorageClassName(), equalTo("oke-pv"));
-    assertThat(getPersistentVolumeClaim(domain).getSpec().getVolumeMode(), equalTo("Block"));
     assertThat(getPersistentVolumeClaim(domain).getSpec().getResources(), notNullValue());
   }
 
@@ -1758,7 +1756,6 @@ class DomainV2Test extends DomainTestBase {
         .spec(new PersistentVolumeClaimSpec()
             .volumeName("test-pv")
             .storageClassName("oke-pv")
-            .volumeMode("Block")
             .resources(new V1ResourceRequirements()
                 .requests(Collections.singletonMap("storage", new Quantity("50Gi")))));
   }

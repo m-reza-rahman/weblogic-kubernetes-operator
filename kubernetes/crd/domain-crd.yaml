@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 21c4569473c0c1f45b47f92489fda208389b82edf68dc40f17edd82a28bf889a
+    weblogic.sha256: 178adc9415467dab4785cad74e3af8193024aa29ee181df4b22224fbe7866c0e
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -251,12 +251,6 @@ spec:
                                 description: 'Capacity is the description of the persistent
                                   volume''s resources and capacity. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#capacity'
                                 type: object
-                              volumeMode:
-                                description: VolumeMode defines if a volume is intended
-                                  to be used with a formatted filesystem or to remain
-                                  in raw block state. Value of Filesystem is implied
-                                  when not included in spec.
-                                type: string
                             type: object
                         type: object
                       domain:
@@ -475,12 +469,6 @@ spec:
                                       type: string
                                     type: object
                                 type: object
-                              volumeMode:
-                                description: VolumeMode defines if a volume is intended
-                                  to be used with a formatted filesystem or to remain
-                                  in raw block state. Value of Filesystem is implied
-                                  when not included in spec.
-                                type: string
                             type: object
                         type: object
                     type: object
