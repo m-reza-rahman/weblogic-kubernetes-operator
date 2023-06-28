@@ -1,7 +1,7 @@
 +++
 title = "JRF domains"
 date = 2023-04-26T16:45:16-05:00
-weight = 4
+weight = 5
 pre = "<b> </b>"
 description = "Important information about using JRF domains."
 +++
