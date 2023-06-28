@@ -48,11 +48,16 @@ jobs:
           export PATH="$PWD:$PATH"
           mkdir $GITHUB_WORKSPACE/WORK
           
+          cp -R $GITHUB_WORKSPACE/gh-pages/charts $GITHUB_WORKSPACE/WORK
+          
           cd $GITHUB_WORKSPACE/branch-4.0/documentation
           echo "Building documentation for latest minor version..."
+          latest_tag=$(git tag -l --sort=v:refname | grep v4.0 | tail -1 | cut -c2-)
+          echo "Latest tag is $latest_tag..."
+          echo $latest_tag >| $GITHUB_WORKSPACE/branch-4.0/documentation/site/layouts/shortcodes/latestVersion.html
           hugo -s site -d "$GITHUB_WORKSPACE/WORK" -b https://oracle.github.io/weblogic-kubernetes-operator
           echo "Copying static files into place..."
-          cp -R charts domains "$GITHUB_WORKSPACE/WORK"
+          cp -R domains "$GITHUB_WORKSPACE/WORK"
           
           cd $GITHUB_WORKSPACE/branch-3.4/documentation
           echo "Building documentation for older minor version..."
