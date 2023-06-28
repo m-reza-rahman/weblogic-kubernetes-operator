@@ -629,7 +629,7 @@ EOF
                         rm -f ${jenkins_home_directory}/.oci/config
                         rm -f ${jenkins_home_directory}/.oci/oci-signing-key.pem
                         rm -f ${WORKSPACE}/.ssh/*
-                        rm -f ${WORKSPACE}/.mvn
+                        rm -rf ${WORKSPACE}/.mvn
 
                     '''
                 }
