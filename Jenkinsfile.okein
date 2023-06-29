@@ -52,7 +52,7 @@ pipeline {
 
         CLUSTER_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'parcluster' : 'seqcluster'}"
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
-        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-parallel' : 'oke-gate'}"
+        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'gate' : 'oke-gate'}"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
         PARALLEL_RUN = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? true : false}"
     }
