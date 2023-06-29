@@ -14,10 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlElement;
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import io.kubernetes.client.openapi.models.V1ConfigMapVolumeSource;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerPort;
@@ -327,7 +323,8 @@ class ItTwoDomainsManagedByTwoOperators {
 
       logger.info("Validating WebLogic admin server access by login to console");
       assertTrue(assertDoesNotThrow(
-          () -> adminLoginPageAccessible(adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
+          () -> adminLoginPageAccessible(adminServerPodName,
+              domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
           "Access to admin console page failed"), "Console login validation failed");
     }
   }
@@ -759,7 +756,7 @@ class ItTwoDomainsManagedByTwoOperators {
   }
 
   /**
-   * Verify admin node port(default/t3channel) is accessible by login to WebLogic console
+   * Verify admin console is accessible by login to WebLogic console.
    *
    * @param adminServerPodName admin server pod
    * @param namespace admin server pod namespace
