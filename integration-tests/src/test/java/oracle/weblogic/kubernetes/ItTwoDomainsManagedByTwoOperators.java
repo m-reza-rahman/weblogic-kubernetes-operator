@@ -39,6 +39,8 @@ import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -65,6 +67,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -324,8 +327,8 @@ class ItTwoDomainsManagedByTwoOperators {
 
       logger.info("Validating WebLogic admin server access by login to console");
       assertTrue(assertDoesNotThrow(
-          () -> adminNodePortAccessible(serviceNodePort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
-          "Access to admin server node port failed"), "Console login validation failed");
+          () -> adminLoginPageAccessible(adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
+          "Access to admin console page failed"), "Console login validation failed");
     }
   }
 
@@ -757,24 +760,28 @@ class ItTwoDomainsManagedByTwoOperators {
 
   /**
    * Verify admin node port(default/t3channel) is accessible by login to WebLogic console
-   * using the node port and validate its the Home page.
    *
-   * @param nodePort the node port that needs to be tested for access
+   * @param adminServerPodName admin server pod
+   * @param namespace admin server pod namespace
    * @param userName WebLogic administration server user name
    * @param password WebLogic administration server password
    * @return true if login to WebLogic administration console is successful
    * @throws IOException when connection to console fails
    */
-  private static boolean adminNodePortAccessible(int nodePort, String userName, String password)
+  private static boolean adminLoginPageAccessible(String adminServerPodName, String namespace,
+                                                  String userName, String password)
       throws IOException {
     if (WEBLOGIC_SLIM) {
       getLogger().info("Check REST Console for WebLogic slim image");
-      StringBuffer curlCmd = new StringBuffer("status=$(curl --user ");
-      curlCmd.append(userName)
+      StringBuffer curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
+          + namespace + " " + adminServerPodName)
+          .append(" -- /bin/bash -c \"")
+          .append("curl --user ")
+          .append(userName)
           .append(":")
           .append(password)
-          .append(" http://" + K8S_NODEPORT_HOST + ":" + nodePort)
-          .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code});")
+          .append(" http://" + adminServerPodName + ":7001")
+          .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
           .append("echo ${status}");
       logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
       try {
@@ -790,28 +797,29 @@ class ItTwoDomainsManagedByTwoOperators {
     } else {
       // generic/dev Image
       getLogger().info("Check administration Console for generic/dev image");
-      String consoleUrl = new StringBuffer()
-          .append("http://")
-          .append(K8S_NODEPORT_HOST)
+      String curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
+          + namespace + " " + adminServerPodName)
+          .append(" -- /bin/bash -c \"")
+          .append("curl --user ")
+          .append(userName)
           .append(":")
-          .append(nodePort)
-          .append("/console/login/LoginForm.jsp").toString();
+          .append(password)
+          .append(" http://" + adminServerPodName + ":7001")
+          .append("/console/login/LoginForm.jsp")
+          .append("\"").toString();
 
       boolean adminAccessible = false;
+      String expectedValue = "Oracle WebLogic Server Administration Console";
       for (int i = 1; i <= 10; i++) {
-        getLogger().info("Iteration {0} out of 10: Accessing WebLogic console with url {1}", i, consoleUrl);
-        final WebClient webClient = new WebClient();
-        final HtmlPage loginPage = assertDoesNotThrow(() -> webClient.getPage(consoleUrl),
-             "connection to the WebLogic admin console failed");
-        HtmlForm form = loginPage.getFormByName("loginData");
-        form.getInputByName("j_username").type(userName);
-        form.getInputByName("j_password").type(password);
-        HtmlElement submit = form.getOneHtmlElementByAttribute("input", "type", "submit");
-        getLogger().info("Clicking login button");
-        HtmlPage home = submit.click();
-        if (home.asNormalizedText().contains("Persistent Stores")) {
+        getLogger().info("Iteration {0} out of 10: Accessing WebLogic console ", i);
+        logger.info("check administration console: curl command {0} expectedValue {1}", curlCmd, expectedValue);
+        adminAccessible = Command
+            .withParams(new CommandParams()
+                .command(curlCmd))
+            .executeAndVerify(expectedValue);
+
+        if (adminAccessible) {
           getLogger().info("Console login passed");
-          adminAccessible = true;
           break;
         }
       }
