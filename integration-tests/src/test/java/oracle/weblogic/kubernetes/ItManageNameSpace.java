@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
@@ -336,6 +337,7 @@ class ItManageNameSpace {
    * and verify all server pods in the domain were created and ready.
    * Verify operator is able to manage this domain by scaling.
    */
+  @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER_INT", matches = "true")
   @Test
   @Order(3)
   @DisplayName("install operator helm chart and domain, "

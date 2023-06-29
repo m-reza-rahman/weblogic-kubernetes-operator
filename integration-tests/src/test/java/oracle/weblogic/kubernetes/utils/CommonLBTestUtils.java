@@ -47,6 +47,9 @@ import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
+import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static java.nio.file.Files.copy;
 import static java.nio.file.Files.createDirectories;
@@ -60,7 +63,9 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.PV_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -195,9 +200,16 @@ public class CommonLBTestUtils {
       getLogger().info("Getting admin service node port: {0}", serviceNodePort);
 
       getLogger().info("Validating WebLogic admin server access by login to console");
-      assertTrue(assertDoesNotThrow(
-          () -> adminNodePortAccessible(serviceNodePort),
-          "Access to admin server node port failed"), "Console login validation failed");
+      if (OKE_CLUSTER) {
+        assertTrue(assertDoesNotThrow(
+            () -> adminLoginPageAccessible(adminServerPodName,domainNamespace,
+                ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
+            "Access to admin server node port failed"), "Console login validation failed");
+      } else {
+        assertTrue(assertDoesNotThrow(
+            () -> adminNodePortAccessible(serviceNodePort),
+            "Access to admin server node port failed"), "Console login validation failed");
+      }
     }
   }
 
@@ -456,6 +468,76 @@ public class CommonLBTestUtils {
         if (home.asNormalizedText().contains("Persistent Stores")) {
           getLogger().info("Console login passed");
           adminAccessible = true;
+          break;
+        }
+      }
+      return adminAccessible;
+    }
+  }
+
+  /**
+   * Verify admin console is accessible by login to WebLogic console.
+   *
+   * @param adminServerPodName admin server pod
+   * @param namespace admin server pod namespace
+   * @param userName WebLogic administration server user name
+   * @param password WebLogic administration server password
+   * @return true if login to WebLogic administration console is successful
+   * @throws IOException when connection to console fails
+   */
+  public static boolean adminLoginPageAccessible(String adminServerPodName, String namespace,
+                                                 String userName, String password)
+      throws IOException {
+    LoggingFacade logger = getLogger();
+    if (WEBLOGIC_SLIM) {
+      logger.info("Check REST Console for WebLogic slim image");
+      StringBuffer curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
+          + namespace + " " + adminServerPodName)
+          .append(" -- /bin/bash -c \"")
+          .append("curl --user ")
+          .append(userName)
+          .append(":")
+          .append(password)
+          .append(" http://" + adminServerPodName + ":7001")
+          .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
+          .append("echo ${status}");
+      logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
+      try {
+        ExecResult result = ExecCommand.exec(new String(curlCmd), true);
+        String response = result.stdout().trim();
+        logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+            result.exitValue(), response, result.stderr());
+        return response.contains("200");
+      } catch (IOException | InterruptedException ex) {
+        logger.info("Exception in checkRestConsole {0}", ex);
+        return false;
+      }
+    } else {
+      // generic/dev Image
+      logger.info("Check administration Console for generic/dev image");
+      String curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
+          + namespace + " " + adminServerPodName)
+          .append(" -- /bin/bash -c \"")
+          .append("curl --user ")
+          .append(userName)
+          .append(":")
+          .append(password)
+          .append(" http://" + adminServerPodName + ":7001")
+          .append("/console/login/LoginForm.jsp")
+          .append("\"").toString();
+
+      boolean adminAccessible = false;
+      String expectedValue = "Oracle WebLogic Server Administration Console";
+      for (int i = 1; i <= 10; i++) {
+        logger.info("Iteration {0} out of 10: Accessing WebLogic console ", i);
+        logger.info("check administration console: curl command {0} expectedValue {1}", curlCmd, expectedValue);
+        adminAccessible = Command
+            .withParams(new CommandParams()
+                .command(curlCmd))
+            .executeAndVerify(expectedValue);
+
+        if (adminAccessible) {
+          getLogger().info("Console login passed");
           break;
         }
       }

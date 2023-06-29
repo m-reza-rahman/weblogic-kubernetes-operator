@@ -1410,9 +1410,11 @@ public class CommonTestUtils {
 
     // verify WebLogic console is accessible before port forwarding using ingress port
     String consoleUrl = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
+
     boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
     assertTrue(checkConsole, "Failed to access WebLogic console");
     logger.info("WebLogic console is accessible");
+
 
     // forwarding admin port to a local port
     String localhost = "localhost";

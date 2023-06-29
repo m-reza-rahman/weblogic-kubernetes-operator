@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.OffsetDateTime;
@@ -35,13 +34,9 @@ import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
-import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -63,11 +58,9 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -79,6 +72,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
+import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.adminLoginPageAccessible;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.createMultipleDomainsSharingPVUsingWlstAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -752,75 +746,6 @@ class ItTwoDomainsManagedByTwoOperators {
           .withFailMessage(String.format("State of pod %s was changed in namespace %s",
               managedServerPodName, twoDomainsNamespace))
           .isTrue();
-    }
-  }
-
-  /**
-   * Verify admin console is accessible by login to WebLogic console.
-   *
-   * @param adminServerPodName admin server pod
-   * @param namespace admin server pod namespace
-   * @param userName WebLogic administration server user name
-   * @param password WebLogic administration server password
-   * @return true if login to WebLogic administration console is successful
-   * @throws IOException when connection to console fails
-   */
-  private static boolean adminLoginPageAccessible(String adminServerPodName, String namespace,
-                                                  String userName, String password)
-      throws IOException {
-    if (WEBLOGIC_SLIM) {
-      getLogger().info("Check REST Console for WebLogic slim image");
-      StringBuffer curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
-          + namespace + " " + adminServerPodName)
-          .append(" -- /bin/bash -c \"")
-          .append("curl --user ")
-          .append(userName)
-          .append(":")
-          .append(password)
-          .append(" http://" + adminServerPodName + ":7001")
-          .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
-          .append("echo ${status}");
-      logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
-      try {
-        ExecResult result = ExecCommand.exec(new String(curlCmd), true);
-        String response = result.stdout().trim();
-        logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-            result.exitValue(), response, result.stderr());
-        return response.contains("200");
-      } catch (IOException | InterruptedException ex) {
-        logger.info("Exception in checkRestConsole {0}", ex);
-        return false;
-      }
-    } else {
-      // generic/dev Image
-      getLogger().info("Check administration Console for generic/dev image");
-      String curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
-          + namespace + " " + adminServerPodName)
-          .append(" -- /bin/bash -c \"")
-          .append("curl --user ")
-          .append(userName)
-          .append(":")
-          .append(password)
-          .append(" http://" + adminServerPodName + ":7001")
-          .append("/console/login/LoginForm.jsp")
-          .append("\"").toString();
-
-      boolean adminAccessible = false;
-      String expectedValue = "Oracle WebLogic Server Administration Console";
-      for (int i = 1; i <= 10; i++) {
-        getLogger().info("Iteration {0} out of 10: Accessing WebLogic console ", i);
-        logger.info("check administration console: curl command {0} expectedValue {1}", curlCmd, expectedValue);
-        adminAccessible = Command
-            .withParams(new CommandParams()
-                .command(curlCmd))
-            .executeAndVerify(expectedValue);
-
-        if (adminAccessible) {
-          getLogger().info("Console login passed");
-          break;
-        }
-      }
-      return adminAccessible;
     }
   }
 }
