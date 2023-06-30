@@ -35,6 +35,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -147,6 +148,7 @@ class ItUsabilityOperatorHelmChart {
   private String adminSvcExtRouteHost = null;
 
   private static LoggingFacade logger = null;
+  private static List<String> ns;
 
   /**
    * Get namespaces for operator, domain.
@@ -156,6 +158,7 @@ class ItUsabilityOperatorHelmChart {
    */
   @BeforeAll
   public static void initAll(@Namespaces(7) List<String> namespaces) {
+    ns = namespaces;
     logger = getLogger();
     // get a unique operator namespace
     logger.info("Getting a unique namespace for operator");
@@ -233,6 +236,7 @@ class ItUsabilityOperatorHelmChart {
   @DisplayName("install operator helm chart and domain, "
       + " then uninstall operator helm chart and verify the domain is still running")
   void testDeleteOperatorButNotDomain() {
+    boolean testPassed = false;
     try {
       // install and verify operator
       logger.info("Installing and verifying operator");
@@ -312,7 +316,11 @@ class ItUsabilityOperatorHelmChart {
       logger.info("Verify the managed server1 MBean configuration through rest API "
           + "after the operator was deleted");
       assertTrue(checkManagedServerConfiguration(domain1Namespace, domain1Uid));
+      testPassed = true;
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }
       if (!isDomain1Running) {
         cleanUpDomainSecrets(domain1Namespace);
       }
@@ -331,6 +339,7 @@ class ItUsabilityOperatorHelmChart {
   @DisplayName("Install operator helm chart and domain, then uninstall operator helm chart, "
       + " install operator helm chart again and verify it can still manage domain")
   void testCreateDeleteCreateOperatorButNotDomain() {
+    boolean testPassed = false;
     HelmParams op1HelmParams = new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
         .namespace(opNamespace)
         .chartDir(OPERATOR_CHART_DIR);
@@ -375,6 +384,9 @@ class ItUsabilityOperatorHelmChart {
       logger.info("Domain1 scaled to " + replicaCountDomain1 + " servers");
 
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }    
       uninstallOperator(op1HelmParams);
       deleteSecret(TEST_IMAGES_REPO_SECRET_NAME, opNamespace);
       cleanUpSA(opNamespace);
@@ -397,6 +409,7 @@ class ItUsabilityOperatorHelmChart {
   @DisplayName("Create domain2, managed by operator and domain3, upgrade operator to add domain3,"
       + "delete domain3namespace from operator , verify operator can manage domain2 and no access to domain3")
   void testAddRemoveDomainNameSpacesOnOperator() {
+    boolean testPassed = false;
     HelmParams op1HelmParams = new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
         .namespace(op2Namespace)
         .chartDir(OPERATOR_CHART_DIR);
@@ -490,6 +503,9 @@ class ItUsabilityOperatorHelmChart {
           "operator can still manage domain3, scaling was succeeded for " + managedServerPodName1);
 
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }      
       uninstallOperator(op1HelmParams);
       deleteSecret(TEST_IMAGES_REPO_SECRET_NAME, op2Namespace);
       cleanUpSA(op2Namespace);
@@ -510,6 +526,7 @@ class ItUsabilityOperatorHelmChart {
   @Test
   @DisplayName("Negative test to install two operators sharing the same namespace")
   void testCreateSecondOperatorUsingSameOperatorNsNegativeInstall() {
+    boolean testPassed = false;
     HelmParams opHelmParams = installAndVerifyOperator(opNamespace, domain1Namespace).getHelmParams();
     if (!isDomain1Running) {
       logger.info("Installing and verifying domain");
@@ -534,6 +551,9 @@ class ItUsabilityOperatorHelmChart {
       assertNull(opHelmParam2,
           "FAILURE: Helm installs operator in the same namespace as first operator installed ");
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }   
       uninstallOperator(opHelmParams);
       uninstallOperator(op2HelmParams);
       deleteSecret(TEST_IMAGES_REPO_SECRET_NAME, opNamespace);
@@ -555,6 +575,7 @@ class ItUsabilityOperatorHelmChart {
   @Test
   @DisplayName("Negative test to install two operators sharing the same domain namespace")
   void testSecondOpSharingSameDomainNamespacesNegativeInstall() {
+    boolean testPassed = false;
     // install and verify operator1
     logger.info("Installing and verifying operator1");
     HelmParams opHelmParams = installAndVerifyOperator(opNamespace, domain2Namespace).getHelmParams();
@@ -579,6 +600,9 @@ class ItUsabilityOperatorHelmChart {
           expectedError,"failed", 0, op2HelmParams,  LIST_STRATEGY, domain2Namespace);
       assertNull(opHelmParam2, "FAILURE: Helm installs operator in the same namespace as first operator installed ");
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }      
       uninstallOperator(opHelmParams);
       uninstallOperator(op2HelmParams);
       deleteSecret(TEST_IMAGES_REPO_SECRET_NAME, opNamespace);
@@ -599,6 +623,7 @@ class ItUsabilityOperatorHelmChart {
   @Test
   @DisplayName("Negative test to try to create the operator with not preexisted namespace")
   void testSecondOpSharingSameExternalRestPortNegativeInstall() {
+    boolean testPassed = false;
     String opServiceAccount = opNamespace + "-sa";
     String op2ServiceAccount = op2Namespace + "-sa2";
     String opReleaseName = OPERATOR_RELEASE_NAME + "1";
@@ -629,6 +654,9 @@ class ItUsabilityOperatorHelmChart {
       assertNull(opHelmParam2, "FAILURE: Helm installs operator in the same namespace as first operator installed ");
       uninstallOperator(op2HelmParams);
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }     
       uninstallOperator(opHelmParams);
       deleteSecret(TEST_IMAGES_REPO_SECRET_NAME, opNamespace);
       deleteSecret(TEST_IMAGES_REPO_SECRET_NAME, op2Namespace);
@@ -645,6 +673,7 @@ class ItUsabilityOperatorHelmChart {
   @Test
   @DisplayName("Negative test to try to create the operator with not preexisted namespace")
   void testNotPreCreatedOpNsCreateOperatorNegativeInstall() {
+    boolean testPassed = false;
     String opReleaseName = OPERATOR_RELEASE_NAME + "2";
     HelmParams op2HelmParams = new HelmParams().releaseName(opReleaseName)
         .namespace("ns-somens")
@@ -660,6 +689,9 @@ class ItUsabilityOperatorHelmChart {
           LIST_STRATEGY, domain2Namespace);
       assertNull(opHelmParam2, "FAILURE: Helm installs operator in the same namespace as first operator installed ");
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }  
       uninstallOperator(op2HelmParams);
     }
   }
@@ -673,6 +705,7 @@ class ItUsabilityOperatorHelmChart {
   @Test
   @DisplayName("Test to create the operator with empty string for domains namespace")
   void testCreateWithEmptyDomainNamespaceInstall() {
+    boolean testPassed = false;
     String opServiceAccount = op2Namespace + "-sa";
     HelmParams op2HelmParams = new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
         .namespace(op2Namespace)
@@ -727,6 +760,9 @@ class ItUsabilityOperatorHelmChart {
       --replicaCountDomain2;
       logger.info("Domain2 scaled to " + replicaCountDomain2 + " servers");
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }    
       uninstallOperator(op2HelmParams);
       deleteSecret(TEST_IMAGES_REPO_SECRET_NAME, op2Namespace);
       cleanUpSA(op2Namespace);
@@ -747,6 +783,7 @@ class ItUsabilityOperatorHelmChart {
   @DisplayName("Install operator with non existing operator service account and verify helm chart is failed, "
       + "create service account and verify the operator is running")
   void testNotPreexistedOpServiceAccountCreateOperatorNegativeInstall() {
+    boolean testPassed = false;
     String opServiceAccount = op2Namespace + "-sa";
     String opReleaseName = OPERATOR_RELEASE_NAME + "1";
     String errorMsg;
@@ -801,6 +838,9 @@ class ItUsabilityOperatorHelmChart {
       // Helm reports error message status
       assertNotNull(errorMsg, "Expected error message for missing ServiceAccount not found");
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }      
       //uninstall operator helm chart
       uninstallOperator(opHelmParams);
       deleteSecret(TEST_IMAGES_REPO_SECRET_NAME, op2Namespace);
@@ -819,6 +859,7 @@ class ItUsabilityOperatorHelmChart {
   @DisplayName("Create domain4, domain5 in the same namespace managed by operator ,"
       + " verify scaling via scalingAction.sh script and restAPI")
   void testTwoDomainsInSameNameSpaceOnOperator() {
+    boolean testPassed = false;
     HelmParams op1HelmParams = new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
         .namespace(op3Namespace)
         .chartDir(OPERATOR_CHART_DIR);
@@ -885,6 +926,9 @@ class ItUsabilityOperatorHelmChart {
           " scaling via scalingAction.sh script was not succeeded for domain5");
       logger.info("Domain5 scaled to 2 servers");
     } finally {
+      if (!testPassed) {
+        LoggingUtil.generateLog(this, ns);
+      }    
       try {
         String operatorPodName =
             assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, op3Namespace),
