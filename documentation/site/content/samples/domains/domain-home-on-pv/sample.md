@@ -1,5 +1,5 @@
 ---
-title: "Domain on PV sample"
+title: "Sample"
 date: 2019-02-23T17:32:31-05:00
 weight: 3
 description: "Sample for creating a WebLogic domain home on a PV for deploying the generated WebLogic domain."
@@ -7,9 +7,15 @@ description: "Sample for creating a WebLogic domain home on a PV for deploying t
 
 {{< table_of_contents >}}
 
+{{% notice note %}}
+
+**Before you begin**: Perform the steps in [Prerequisites]({{< relref "/samples/domains/domain-home-on-pv/prerequisites.md" >}}) and then build a Domain on PV `domain creation image` by completing the steps in [Build the domain creation image]({{< relref "/samples/domains/domain-home-on-pv/build-domain-creation-image#build-the-domain-creation-image" >}}).
+If you are taking the `JRF` path through the sample, then substitute `JRF` for `WLS` in your image names and directory paths. Also note that the JRF-v1 model YAML file differs from the WLS-v1 YAML file (it contains an additional `domainInfo -> RCUDbInfo` stanza).
+{{% /notice %}}
+
 ### Overview
 
-The sample demonstrates setting up a WebLogic domain with a domain home on a Kubernetes PersistentVolume (PV) (Domain on PV). This involves:
+The sample demonstrates setting up a WebLogic domain with a domain home on a Kubernetes PersistentVolume (PV) (**Domain on PV**). This involves:
 
   - Using the [domain creation image](#domain-creation-image) that you previously built.
   - Creating secrets for the domain.
@@ -18,11 +24,6 @@ The sample demonstrates setting up a WebLogic domain with a domain home on a Kub
     - References the `domain creation image` in the `spec.configuration.initializeDomainOnPV` section for the initial Domain on PV configuration defined using WDT model YAML.
     - Defines PV and PVC metadata and specifications in the `spec.configuration.initializeDomainOnPV` section to create a PV and PVC (optional).
 
-
-{{% notice note %}}
-**Before you begin**: Perform the steps in [Prerequisites]({{< relref "/samples/domains/domain-home-on-pv/prerequisites.md" >}}) and then build a Domain on PV `domain creation image` by completing the steps in [Build the domain creation image]({{< relref "/samples/domains/domain-home-on-pv/build-domain-creation-image#build-the-domain-creation-image" >}}).
-If you are taking the `JRF` path through the sample, then substitute `JRF` for `WLS` in your image names and directory paths. Also note that the JRF-v1 model YAML file differs from the WLS-v1 YAML file (it contains an additional `domainInfo -> RCUDbInfo` stanza).
-{{% /notice %}}
 
 
 **PV and PVC Notes:**
@@ -53,7 +54,7 @@ In this section, you will define the PV and PVC configuration and reference the 
 
 #### Secrets
 
-First, create the secrets needed by both WLS and JRF type model domains. You have to create the "WebLogic credentials secret" and any other secrets that are referenced from the macros in the WDT model file. For more details about using macros in the WDT model files, see [Working with the WDT model files]({{< relref "managing-domains/working-with-wdt-models/model-files/_index.md" >}}).
+First, create the secrets needed by both WLS and JRF type model domains. You have to create the "WebLogic credentials secret" and any other secrets that are referenced from the macros in the WDT model file. For more details about using macros in the WDT model files, see [Working with the WDT model files]({{< relref "managing-domains/domain-on-pv/model-files.md" >}}).
 
 Run the following `kubectl` commands to deploy the required secrets:
 

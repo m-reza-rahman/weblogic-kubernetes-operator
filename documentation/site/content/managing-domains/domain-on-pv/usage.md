@@ -142,7 +142,14 @@ for you.
 The specifications of `PersistentVolume` and `PersistentVolumeClaim` are environment specific and often require information
 from your Kubernetes cluster administrator. See [Persistent Storage](#references) in different environments.
 
-For example, if you specify the specification of the `Persistent Volume` and `Persistent Volume Claim` in the domain resource YAML file,  
+##### PV and PVC requirements
+- Domain on PV requires that the PV and PVC are created with `Filesystem` volume mode; `Block` volume mode is **not** supported.
+  - If you request that the operator creates the PV and PVC, then it uses the default `Filesystem` volume mode.
+  - If you plan to use an existing PV and PVC, then ensure that it was created with `Filesystem` volume mode.
+- You must use a storage provider that supports the `ReadWriteMany` option.
+- The operator will automatically set the owner of all files in the domain home on the persistent volume to `uid 1000` with `gid 0`. If you want to use a different user and group, then configure the desired `runAsUser` and `runAsGroup` in the security context under the `spec.serverPod.podSecurityContext` section of the Domain YAML file. The operator will use these values when setting the owner for files in the domain home directory.
+
+For example, if you provide the specification of the `Persistent Volume` and `Persistent Volume Claim` in the domain resource YAML file,  
 then the operator will create the `PV` and `PVC`, and mount the persistent volume to the `/share` directory.
 
 ```
@@ -208,7 +215,7 @@ to specify any `persistentVolume` or `persistentVolumeClaim`  under the `intiali
 
 #### Domain information
 
-**For JRF-based domains, before proceeding, please be sure to read this document**, [JRF domains]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain.md">}}).
+**For JRF-based domains, before proceeding, please be sure to read this document**, [JRF domains]({{< relref "/managing-domains/domain-on-pv/jrf-domain.md">}}).
 
 This is the section describing the WebLogic domain. For example:
 
@@ -238,7 +245,7 @@ spec:
 | `createIfNotExists`         | Specifies whether the operator should create the RCU schema first, before creating the domain. | `domain` or `domainAndRCU` (drop existing RCU schema and create new RCU schema) | N (default `domain`) |
 | `domainCreationImages`      | WDT domain images.                                                                    | An array of images.                                                          | Y                                |
 | `domainCreationConfigMap`   | Optional ConfigMap containing extra WDT models.                                       | Kubernetes ConfigMap name.                                               | N                                                  |
-| `osss.walletPasswordSecret` | Password for extracting OPSS wallet encryption key for JRF domain.               | Kubernetes Secret name with the key `walletPassword`.                       | Y                                                                   |
+| `osss.walletPasswordSecret` | Password for extracting OPSS wallet for JRF domain.               | Kubernetes Secret name with the key `walletPassword`.                       | Y                                                                   |
 | `osss.walletFileSecret`     | Extracted OPSS wallet file.                                                        | Kubernetes Secret name with the key `walletFile`.                            | N (Only needed when recreating the domain during disaster recovery) |
 
 **After a JRF domain is successfully deployed**: follow the next section, [Best practices](#best-practices), to download and back up the OPSS wallet.
@@ -247,7 +254,7 @@ spec:
 
 Oracle recommends that you save the OPSS wallet file in a safe, backed-up location __immediately__ after the initial JRF domain is created.
 In addition, you should make sure to store the wallet in a Kubernetes Secret in the same namespace. This will allow the secret to be available when the domain needs to be recovered in a disaster scenario or if the domain directory gets corrupted. There is no way to reuse the original RCU schema without this specific wallet key.
-Therefore, for disaster recovery, **you should back up this encryption key**.
+Therefore, for disaster recovery, **you should back up this OPSS wallet**.
 
 
 #### Back up the JRF domain home directory and database
@@ -343,7 +350,7 @@ In the rare scenario where the domain home directory is corrupted, and you do **
    $ kubectl -n sample-ns patch domain sample-domain1 --type='JSON' -p='[ { "op" : "replace", "path" : "/spec/restartVersion", "value" : "15" }]'
    ```
 
-For more information, see [Disaster Recovery]({{< relref "/managing-domains/working-with-wdt-models/jrf-domain#disaster-recovery-for-domain-on-pv-deployment">}}).  
+For more information, see [Disaster Recovery]({{< relref "/managing-domains/domain-on-pv/jrf-domain#disaster-recovery-for-domain-on-pv-deployment">}}).  
 
 ### Troubleshooting
 
