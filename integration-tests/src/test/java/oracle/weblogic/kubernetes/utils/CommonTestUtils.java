@@ -1728,9 +1728,9 @@ public class CommonTestUtils {
         () -> checkSystemResourceConfiguration(adminServerPodName, domainNamespace, resourceType,
             resourceName, expectedValue),
         logger,
-        "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} exists",
-        adminSvcExtHost,
-        adminServiceNodePort,
+        "Checking for adminServerPodName: {0} in domainNamespace: {1} if resourceName: {2} exists",
+        adminServerPodName,
+        domainNamespace,
         resourceName);
     logger.info("Found the " + resourceType + " configuration");
   }
@@ -1750,13 +1750,13 @@ public class CommonTestUtils {
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
     testUntil(
-        () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
+        () -> checkSystemResourceConfigViaAdminPod(adminServerPodName, domainNamespace,
             resourcePath,
             expectedValue),
         logger,
-        "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} has the right value",
-        adminSvcExtHost,
-        adminServiceNodePort,
+        "Checking for adminSvcPod: {0} in namespace: {1} if resourceName: {2} has the right value",
+        adminServerPodName,
+        domainNamespace,
         resourcePath);
     logger.info("Found the " + resourcePath + " configuration");
   }

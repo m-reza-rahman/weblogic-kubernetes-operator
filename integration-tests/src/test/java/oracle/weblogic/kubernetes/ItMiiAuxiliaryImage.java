@@ -69,7 +69,7 @@ import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createPushAux
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceDoesNotExist;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfig;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfigViaAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfiguration;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -352,7 +352,7 @@ class ItMiiAuxiliaryImage {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodNameDomain1), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertTrue(checkSystemResourceConfig(adminSvcExtHostDomain1, adminServiceNodePort,
+    assertTrue(checkSystemResourceConfigViaAdminPod(adminServerPodNameDomain1, domainNamespace,
         "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
         "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
         "Can't find expected URL configuration for DataSource");
@@ -942,7 +942,7 @@ class ItMiiAuxiliaryImage {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
-    assertFalse(checkSystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort, "JMSSystemResources",
+    assertFalse(checkSystemResourceConfiguration(adminServerPodName, domainNamespace, "JMSSystemResources",
         "TestClusterJmsModule2", "200"), "Model files from second AI are not ignored");
   }
 
@@ -1253,7 +1253,7 @@ class ItMiiAuxiliaryImage {
         = getServiceNodePort(wdtDomainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
     testUntil(
-        () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
+        () -> checkSystemResourceConfigViaAdminPod(adminServerPodNameDomain1, domainNamespace,
             "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
             "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
         logger,
@@ -1289,7 +1289,7 @@ class ItMiiAuxiliaryImage {
     // check configuration for DataSource in the running domain
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
     testUntil(
-        () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
+        () -> checkSystemResourceConfigViaAdminPod(adminServerPodNameDomain1, domainNamespace,
             "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
             "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
         logger,
