@@ -109,7 +109,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
-@Tag("oke-gate")
 class ItDiagnosticsFailedCondition {
 
   private static String domainNamespace = null;
