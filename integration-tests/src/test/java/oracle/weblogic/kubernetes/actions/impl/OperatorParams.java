@@ -243,9 +243,9 @@ public class OperatorParams {
     if (elasticSearchPort > 0) {
       values.put(ELASTICSEARCH_PORT, Integer.valueOf(elasticSearchPort));
     }
-    if (javaLoggingLevel != null) {
-      values.put(JAVA_LOGGING_LEVEL, javaLoggingLevel);
-    }
+    
+    values.put(JAVA_LOGGING_LEVEL, "FINE");
+    
     if (logStashImage != null) {
       values.put(LOGSTASH_IMAGE, logStashImage);
     }
