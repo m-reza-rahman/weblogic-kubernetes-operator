@@ -105,6 +105,8 @@ class DomainResourcesValidation {
             .forEach(info -> adjustClusterResources(c, info)));
         executeMakeRightForClusterEvents(dp);
         getActiveDomainPresenceInfos().forEach(info -> activateDomain(dp, info));
+        getDomainPresenceInfoMap().values().forEach(DomainResourcesValidation.this::removeDeletedPodsFromDPI);
+        getDomainPresenceInfoMap().values().forEach(DomainPresenceInfo::clearServerPodNamesFromList);
       }
     };
   }
@@ -134,15 +136,11 @@ class DomainResourcesValidation {
   }
 
   private void addPodList(V1PodList list) {
-    getDomainPresenceInfoMap().values().forEach(dpi -> removeDeletedPodsFromDPI(list, dpi));
     list.getItems().forEach(this::addPod);
   }
 
-  private void removeDeletedPodsFromDPI(V1PodList list, DomainPresenceInfo dpi) {
-    Collection<String> serverNamesFromPodList = list.getItems().stream()
-        .map(PodHelper::getPodServerName).collect(Collectors.toList());
-
-    dpi.getServerNames().stream().filter(s -> !serverNamesFromPodList.contains(s)).collect(Collectors.toList())
+  private void removeDeletedPodsFromDPI(DomainPresenceInfo dpi) {
+    dpi.getServerNames().stream().filter(s -> !dpi.getServerNamesFromPodList().contains(s)).collect(Collectors.toList())
         .forEach(name -> dpi.deleteServerPodFromEvent(name, null));
   }
 
@@ -157,11 +155,14 @@ class DomainResourcesValidation {
   private void addPod(V1Pod pod) {
     String domainUid = PodHelper.getPodDomainUid(pod);
     String serverName = PodHelper.getPodServerName(pod);
+    DomainPresenceInfo info = getExistingDomainPresenceInfo(domainUid);
+    Optional.ofNullable(info).ifPresent(i -> i.addServerNameFromPodList(serverName));
+
     if (domainUid != null && serverName != null) {
-      setServerPodFromEvent(getExistingDomainPresenceInfo(domainUid), serverName, pod);
+      setServerPodFromEvent(info, serverName, pod);
     }
     if (PodHelper.getPodLabel(pod, LabelConstants.JOBNAME_LABEL) != null) {
-      processor.updateDomainStatus(pod, getExistingDomainPresenceInfo(domainUid));
+      processor.updateDomainStatus(pod, info);
     }
   }
 
@@ -229,9 +230,9 @@ class DomainResourcesValidation {
 
   private void addDomain(DomainResource domain) {
     DomainPresenceInfo cachedInfo = getDomainPresenceInfoMap().get(domain.getDomainUid());
-    if (cachedInfo == null) {
+    if (domain.getStatus() == null) {
       newDomainNames.add(domain.getDomainUid());
-    } else if (domain.isGenerationChanged(cachedInfo.getDomain())) {
+    } else if (cachedInfo != null && domain.isGenerationChanged(cachedInfo.getDomain())) {
       modifiedDomainNames.add(domain.getDomainUid());
     }
     getOrComputeDomainPresenceInfo(domain.getDomainUid()).setDomain(domain);
@@ -243,14 +244,14 @@ class DomainResourcesValidation {
   }
 
   private void addCluster(ClusterResource cluster) {
-    ClusterPresenceInfo cachedInfo = getClusterPresenceInfoMap().get(cluster.getClusterName());
-    if (cachedInfo == null) {
-      newClusterNames.add(cluster.getClusterName());
-    } else if (cluster.isGenerationChanged(cachedInfo.getCluster())) {
-      modifiedClusterNames.add(cluster.getClusterName());
+    ClusterPresenceInfo cachedInfo = getClusterPresenceInfoMap().get(getClusterName(cluster));
+    if (cluster.getStatus() == null) {
+      newClusterNames.add(getClusterName(cluster));
+    } else if (cachedInfo != null && cluster.isGenerationChanged(cachedInfo.getCluster())) {
+      modifiedClusterNames.add(getClusterName(cluster));
     }
 
-    getClusterPresenceInfoMap().put(cluster.getClusterName(), new ClusterPresenceInfo(cluster));
+    getClusterPresenceInfoMap().put(getClusterName(cluster), new ClusterPresenceInfo(cluster));
   }
 
   private Stream<DomainPresenceInfo> getStrandedDomainPresenceInfos(DomainProcessor dp) {
@@ -272,8 +273,7 @@ class DomainResourcesValidation {
   private static void removeStrandedDomainPresenceInfo(DomainProcessor dp, DomainPresenceInfo info) {
     info.setDeleting(true);
     info.setPopulated(true);
-    dp.createMakeRightOperation(info).withExplicitRecheck().forDeletion().withEventData(new EventData(
-        EventItem.DOMAIN_DELETED)).execute();
+    dp.createMakeRightOperation(info).withExplicitRecheck().forDeletion().execute();
   }
 
   private Stream<DomainPresenceInfo> getActiveDomainPresenceInfos() {
@@ -289,13 +289,14 @@ class DomainResourcesValidation {
     EventItem eventItem = getEventItem(info);
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
     if (eventItem != null) {
-      makeRight.withEventData(new EventData(eventItem)).interrupt();
+      makeRight.withEventData(new EventData(eventItem)).interrupt().execute();
+    } else if (!info.hasRetriableFailure()) {
+      makeRight.execute();
     }
-    makeRight.execute();
   }
 
   private EventItem getEventItem(DomainPresenceInfo info) {
-    if (newDomainNames.contains(info.getDomainUid()) || info.getDomain().getStatus() == null) {
+    if (newDomainNames.contains(info.getDomainUid())) {
       return DOMAIN_CREATED;
     }
     if (modifiedDomainNames.contains(info.getDomainUid())) {
@@ -305,18 +306,22 @@ class DomainResourcesValidation {
   }
 
   private EventItem getEventItem(ClusterResource cluster) {
-    if (newClusterNames.contains(cluster.getClusterName()) || cluster.getStatus() == null) {
+    if (newClusterNames.contains(getClusterName(cluster))) {
       return CLUSTER_CREATED;
     }
-    if (modifiedClusterNames.contains(cluster.getClusterName())) {
+    if (modifiedClusterNames.contains(getClusterName(cluster))) {
       return CLUSTER_CHANGED;
     }
     return null;
   }
 
+  private String getClusterName(ClusterResource cluster) {
+    return cluster.getMetadata().getName();
+  }
+
   private void updateCluster(DomainProcessor dp, ClusterResource cluster, EventItem eventItem) {
     List<DomainPresenceInfo> list =
-        dp.getExistingDomainPresenceInfoForCluster(cluster.getNamespace(), cluster.getClusterName());
+        dp.getExistingDomainPresenceInfoForCluster(cluster.getNamespace(), getClusterName(cluster));
     if (list.isEmpty()) {
       createAndExecuteMakeRightOperation(dp, cluster, eventItem, null);
     } else {

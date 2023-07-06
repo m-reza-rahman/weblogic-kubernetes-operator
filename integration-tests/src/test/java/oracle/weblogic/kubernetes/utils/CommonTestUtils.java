@@ -811,10 +811,43 @@ public class CommonTestUtils {
     StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
     javacCmd.append(namespace);
     javacCmd.append(" -it ");
+    javacCmd.append(" -c weblogic-server ");
     javacCmd.append(podName);
     javacCmd.append(" -- /bin/bash -c \"");
     javacCmd.append("javac -cp ");
     javacCmd.append(jarLocation);
+    javacCmd.append(" ");
+    javacCmd.append(destLocation);
+    javacCmd.append(" \"");
+    logger.info("javac command {0}", javacCmd.toString());
+    ExecResult result = assertDoesNotThrow(
+        () -> exec(new String(javacCmd), true));
+    logger.info("javac returned {0}", result.toString());
+    logger.info("javac returned EXIT value {0}", result.exitValue());
+    assertEquals(0, result.exitValue(), "Client compilation fails");
+  }
+
+  /**
+   * Compile java class inside the pod.
+   * @param podName name of the pod
+   * @param namespace name of namespace
+   * @param destLocation location of java class
+   * @param extraclasspath location of java class
+   */
+  public static void runJavacInsidePod(String podName, String namespace, String destLocation, String extraclasspath) {
+    final LoggingFacade logger = getLogger();
+
+    String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
+    StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    javacCmd.append(namespace);
+    javacCmd.append(" -it ");
+    javacCmd.append(" -c weblogic-server ");
+    javacCmd.append(podName);
+    javacCmd.append(" -- /bin/bash -c \"");
+    javacCmd.append("javac -cp ");
+    javacCmd.append(jarLocation);
+    javacCmd.append(":");
+    javacCmd.append(extraclasspath);
     javacCmd.append(" ");
     javacCmd.append(destLocation);
     javacCmd.append(" \"");
@@ -844,6 +877,7 @@ public class CommonTestUtils {
     StringBuffer javapCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
     javapCmd.append(namespace);
     javapCmd.append(" -it ");
+    javapCmd.append(" -c weblogic-server ");
     javapCmd.append(podName);
     javapCmd.append(" -- /bin/bash -c \"");
     javapCmd.append("java -cp ");
@@ -864,6 +898,53 @@ public class CommonTestUtils {
       logger.info("java returned {0}", result.toString());
       logger.info("java returned EXIT value {0}", result.exitValue());
       return ((result.exitValue() == 0));
+    });
+  }
+
+  /**
+   * Run java client inside the pod using weblogic.jar.
+   *
+   * @param podName    name of the pod
+   * @param namespace  name of the namespace
+   * @param javaClientLocation location(path) of java class
+   * @param javaClientClass java class name
+   * @param expectedResult expected result
+   * @param args       arguments to the java command
+   * @return true if the client ran successfully
+   */
+  public static Callable<Boolean> runClientInsidePodVerifyResult(String podName,
+                                                                 String namespace,
+                                                                 String javaClientLocation,
+                                                                 String javaClientClass,
+                                                                 String expectedResult,
+                                                                 String... args) {
+    final LoggingFacade logger = getLogger();
+
+    String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
+    StringBuffer javapCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    javapCmd.append(namespace);
+    javapCmd.append(" -it ");
+    javapCmd.append(" -c weblogic-server ");
+    javapCmd.append(podName);
+    javapCmd.append(" -- /bin/bash -c \"");
+    javapCmd.append("java -cp ");
+    javapCmd.append(jarLocation);
+    javapCmd.append(":");
+    javapCmd.append(javaClientLocation);
+    javapCmd.append(" ");
+    javapCmd.append(javaClientClass);
+    javapCmd.append(" ");
+    for (String arg:args) {
+      javapCmd.append(arg).append(" ");
+    }
+    javapCmd.append(" \"");
+    logger.info("java command to be run {0}", javapCmd.toString());
+
+    return (() -> {
+      ExecResult result = assertDoesNotThrow(() -> exec(javapCmd.toString(), true));
+      logger.info("java returned {0}", result.toString());
+      logger.info("java returned EXIT value {0}", result.exitValue());
+      return ((result.exitValue() == 0 && result.stdout().contains(expectedResult)));
     });
   }
 
@@ -1556,7 +1637,7 @@ public class CommonTestUtils {
    * @param adminSvcExtHost admin server external host
    * @param resourceType resource type
    * @param resourceName resource name
-   * @param expectedValue
+   * @param expectedValue expected value
    *
    */
   public static void verifyConfiguredSystemResource(String domainNamespace, String adminServerPodName,
@@ -1669,6 +1750,75 @@ public class CommonTestUtils {
   }
 
   /**
+   * Given a repo and tenancy name, determine the prefix length.  For example,
+   * phx.ocir.io/foobar/test-images/myimage will treat phx.ocir.io/foobar/ as
+   * the prefix so the length is 19.
+   *
+   * @param baseRepo    base repo name
+   * @param baseTenancy base tenancy name
+   * @return prefix length to strip when converting to internal repository name
+   */
+  public static int getBaseImagesPrefixLength(String baseRepo, String baseTenancy) {
+    int result = 0;
+
+    if (baseRepo != null && baseRepo.length() > 0) {
+      // +1 for the trailing slash
+      result += baseRepo.length() + 1;
+
+      if (!baseRepo.equalsIgnoreCase("container-registry.oracle.com")) {
+        if (baseTenancy != null && baseTenancy.length() > 0) {
+          // +1 for the trailing slash
+          result += baseTenancy.length() + 1;
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the image name.
+   *
+   * @param kindRepo      the kind repo value
+   * @param imageName     the image name
+   * @param imageTag      the image tag
+   * @param prefixLength  the prefix length of the image name
+   * @return the image name and tag
+   */
+  public static String getKindRepoImageForSpec(String kindRepo, String imageName, String imageTag, int prefixLength) {
+    String result = imageName + ":" + imageTag;
+    if (kindRepo != null && kindRepo.length() > 0) {
+      String imageNoPrefix = result.substring(prefixLength);
+      if (kindRepo.endsWith("/")) {
+        kindRepo = kindRepo.substring(0, kindRepo.length() - 1);
+      }
+      result = kindRepo + "/" + imageNoPrefix;
+    }
+    return result;
+  }
+
+  /**
+   * Another helper method to deal with the complexities of initializing test constants.
+   *
+   * @param repo    the domain repo
+   * @param tenancy the test tenancy
+   * @return the domain prefix
+   */
+  public static String getDomainImagePrefix(String repo, String tenancy) {
+    if (repo != null && repo.length() > 0) {
+      if (repo.endsWith("/")) {
+        repo = repo.substring(0, repo.length() - 1);
+      }
+
+      if (repo.endsWith(".com")) {
+        repo += "/";
+      } else {
+        repo += "/" + tenancy + "/";
+      }
+    }
+    return repo;
+  }
+
+  /**
    * Get a unique name.
    * @param prefix prefix of the name
    * @param suffix suffix of the name
@@ -1770,5 +1920,22 @@ public class CommonTestUtils {
       default:
         return "";
     }
+  }
+
+  /**
+   * Get the image repo from an image name.
+   * @param imageName the image name
+   * @return image repo
+   */
+  public static String getImageRepoFromImageName(String imageName) {
+    String imageRepo = null;
+    if (imageName != null && imageName.contains("/")) {
+      getLogger().info("Getting image repo from imageName {0}", imageName);
+      int indexOfSlash = imageName.indexOf("/");
+      imageRepo = imageName.substring(0, indexOfSlash);
+    } else {
+      getLogger().info("Can not get the image repo from imageName {0}", imageName);
+    }
+    return imageRepo;
   }
 }

@@ -19,6 +19,8 @@ import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectReference;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1Service;
@@ -29,6 +31,7 @@ import oracle.kubernetes.common.logging.OncePerMessageLoggingFilter;
 import oracle.kubernetes.operator.helpers.ClusterPresenceInfo;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
+import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.helpers.EventHelper.EventItem;
 import oracle.kubernetes.operator.helpers.KubernetesEventObjects;
@@ -59,6 +62,7 @@ import oracle.kubernetes.weblogic.domain.model.ServerHealth;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import org.jetbrains.annotations.NotNull;
 
+import static oracle.kubernetes.common.logging.MessageKeys.PVC_NOT_BOUND_ERROR;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createInternalFailureSteps;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createIntrospectionFailureSteps;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
@@ -67,12 +71,14 @@ import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.CLUSTER_C
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.CLUSTER_CREATED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_CHANGED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_CREATED;
+import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.PERSISTENT_VOLUME_CLAIM_BOUND;
 import static oracle.kubernetes.operator.helpers.EventHelper.createClusterResourceEventData;
 import static oracle.kubernetes.operator.helpers.PodHelper.getPodDomainUid;
 import static oracle.kubernetes.operator.helpers.PodHelper.getPodName;
 import static oracle.kubernetes.operator.helpers.PodHelper.getPodNamespace;
 import static oracle.kubernetes.operator.helpers.PodHelper.getPodStatusMessage;
 import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadContext;
+import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.PERSISTENT_VOLUME_CLAIM;
 
 public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
@@ -336,8 +342,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   // pre-conditions: DomainPresenceInfo SPI
   // "principal"
-  public static Step bringAdminServerUp(DomainPresenceInfo info, PodAwaiterStepFactory podAwaiterStepFactory) {
-    return bringAdminServerUpSteps(info, podAwaiterStepFactory);
+  public static Step bringAdminServerUp(PodAwaiterStepFactory podAwaiterStepFactory) {
+    return bringAdminServerUpSteps(podAwaiterStepFactory);
   }
 
   @Override
@@ -371,10 +377,14 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     final DomainPresenceInfo cachedInfo = getExistingDomainPresenceInfo(liveInfo);
     if (isNewDomain(cachedInfo)) {
       return true;
-    } else if (liveInfo.isFromOutOfDateEvent(operation, cachedInfo)
-        || liveInfo.isDomainProcessingHalted(cachedInfo)) {
+    } else if (liveInfo.isFromOutOfDateEvent(operation, cachedInfo)) {
       return false;
-    } else if (operation.isExplicitRecheck() || liveInfo.isDomainGenerationChanged(cachedInfo)) {
+    } else if (isDeleting(operation)) {
+      return true;
+    } else if (liveInfo.isDomainProcessingHalted(cachedInfo)) {
+      return false;
+    } else if (isExplicitRecheckWithoutRetriableFailure(operation, liveInfo)
+        || liveInfo.isDomainGenerationChanged(cachedInfo)) {
       return true;
     } else {
       cachedInfo.setDomain(liveInfo.getDomain());
@@ -384,7 +394,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private boolean shouldContinue(MakeRightClusterOperation operation, ClusterPresenceInfo liveInfo) {
     final ClusterPresenceInfo cachedInfo = getExistingClusterPresenceInfo(liveInfo);
-    if (hasDeletedClusterEventData(operation)) {
+    if (isDeleting(operation)) {
       return findClusterPresenceInfo(liveInfo.getNamespace(), liveInfo.getResourceName());
     } else if (isNewCluster(cachedInfo)) {
       return true;
@@ -396,6 +406,15 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       cachedInfo.setCluster(liveInfo.getCluster());
       return false;
     }
+  }
+  
+  private boolean isExplicitRecheckWithoutRetriableFailure(
+      MakeRightDomainOperation operation, DomainPresenceInfo info) {
+    return operation.isExplicitRecheck() && !hasRetriableFailureNonRetryingOperation(operation, info);
+  }
+
+  private boolean hasRetriableFailureNonRetryingOperation(MakeRightDomainOperation operation, DomainPresenceInfo info) {
+    return info.hasRetriableFailure() && !operation.isRetryOnFailure();
   }
 
   private boolean isNewDomain(DomainPresenceInfo cachedInfo) {
@@ -410,11 +429,15 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     return Optional.ofNullable(clusters.get(namespace)).orElse(Collections.emptyMap()).get(clusterName) != null;
   }
 
-  private boolean hasDeletedClusterEventData(MakeRightClusterOperation operation) {
+  private boolean isDeleting(MakeRightClusterOperation operation) {
     return EventItem.CLUSTER_DELETED == getEventItem(operation);
   }
 
-  private EventItem getEventItem(MakeRightClusterOperation operation) {
+  private boolean isDeleting(MakeRightDomainOperation operation) {
+    return operation.isDeleting() || EventItem.DOMAIN_DELETED == getEventItem(operation);
+  }
+
+  private EventItem getEventItem(MakeRightOperation operation) {
     return Optional.ofNullable(operation.getEventData()).map(EventData::getItem).orElse(null);
   }
 
@@ -494,14 +517,11 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
   }
 
-  private static Step bringAdminServerUpSteps(DomainPresenceInfo info, PodAwaiterStepFactory podAwaiterStepFactory) {
+  private static Step bringAdminServerUpSteps(PodAwaiterStepFactory podAwaiterStepFactory) {
     List<Step> steps = new ArrayList<>();
     steps.add(new BeforeAdminServiceStep(null));
     steps.add(PodHelper.createAdminPodStep(null));
-
-    if (info.getDomain().isExternalServiceConfigured()) {
-      steps.add(ServiceHelper.createForExternalServiceStep(null));
-    }
+    steps.add(ServiceHelper.createForExternalServiceStep(null));
     steps.add(ServiceHelper.createForServerStep(null));
     steps.add(new WatchPodReadyAdminStep(podAwaiterStepFactory, null));
     return Step.chain(steps.toArray(new Step[0]));
@@ -603,6 +623,26 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
           });
   }
 
+  @Override
+  public void updateDomainStatus(@Nonnull V1PersistentVolumeClaim pvc, DomainPresenceInfo info) {
+    if (!ProcessingConstants.BOUND.equals(getPhase(pvc))) {
+      delegate.runSteps(new Packet().with(info), DomainStatusUpdater
+              .createPersistentVolumeClaimFailureSteps(getMessage(pvc)), null);
+    } else {
+      delegate.runSteps(new Packet().with(info), DomainStatusUpdater
+          .createRemoveSelectedFailuresStep(EventHelper.createEventStep(
+              new EventData(PERSISTENT_VOLUME_CLAIM_BOUND)), PERSISTENT_VOLUME_CLAIM), null);
+    }
+  }
+
+  private String getPhase(@Nonnull V1PersistentVolumeClaim pvc) {
+    return Optional.of(pvc).map(V1PersistentVolumeClaim::getStatus)
+        .map(V1PersistentVolumeClaimStatus::getPhase).orElse(null);
+  }
+
+  private String getMessage(V1PersistentVolumeClaim pvc) {
+    return LOGGER.formatMessage(PVC_NOT_BOUND_ERROR, pvc.getMetadata().getName(), getPhase(pvc));
+  }
 
   /* Recently, we've seen a number of intermittent bugs where K8s reports
    * outdated watch events.  There seem to be two main cases: 1) a DELETED

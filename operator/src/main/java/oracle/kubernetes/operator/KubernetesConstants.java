@@ -8,8 +8,8 @@ import java.net.HttpURLConnection;
 /** Kubernetes constants. */
 public interface KubernetesConstants {
   String DEFAULT_IMAGE = "container-registry.oracle.com/middleware/weblogic:12.2.1.4";
-  String DEFAULT_EXPORTER_IMAGE = "ghcr.io/oracle/weblogic-monitoring-exporter:2.1.3";
-  String DEFAULT_FLUENTD_IMAGE = "fluent/fluentd-kubernetes-daemonset:v1.14.5-debian-elasticsearch7-1.1";
+  String DEFAULT_EXPORTER_IMAGE = "ghcr.io/oracle/weblogic-monitoring-exporter:2.1.4";
+  String DEFAULT_FLUENTD_IMAGE = "fluent/fluentd-kubernetes-daemonset:v1.16.1-debian-elasticsearch7-1.2";
   String EXPORTER_CONTAINER_NAME = "monitoring-exporter";
   String LATEST_IMAGE_SUFFIX = ":latest";
 
@@ -105,4 +105,5 @@ public interface KubernetesConstants {
   String DOMAIN_IMAGE = "spec.image";
   String DOMAIN_INTROSPECT_VERSION = "spec.introspectVersion";
   String AUXILIARY_IMAGES = "spec.configuration.model.auxiliaryImages";
+  String PV_PVC_API_VERSION = "v1";
 }

@@ -146,6 +146,11 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
+    public PvcAwaiterStepFactory getPvcAwaiterStepFactory() {
+      return new PvcWatcher(domainProcessor);
+    }
+
+    @Override
     public boolean isNamespaceRunning(String namespace) {
       return !domainNamespaces.isStopping(namespace).get();
     }

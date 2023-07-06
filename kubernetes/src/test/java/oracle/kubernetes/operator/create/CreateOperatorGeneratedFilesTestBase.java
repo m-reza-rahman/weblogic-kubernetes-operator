@@ -118,6 +118,7 @@ abstract class CreateOperatorGeneratedFilesTestBase {
                     .name("weblogic-operator-cm")
                     .namespace(getInputs().getNamespace())
                     .putLabelsItem(OPERATORNAME_LABEL, getInputs().getNamespace()))
+            .putDataItem("helmChartVersion", "4.1.0-RELEASE-MARKER")
             .putDataItem("serviceaccount", getInputs().getServiceAccount())
             .putDataItem("domainNamespaceSelectionStrategy", getInputs().getDomainNamespaceSelectionStrategy())
             .putDataItem("domainNamespaces", getInputs().getDomainNamespaces())
@@ -262,11 +263,15 @@ abstract class CreateOperatorGeneratedFilesTestBase {
                                         .addEnvItem(
                                             newEnvVar()
                                                 .name("JAVA_LOGGING_MAXSIZE")
-                                                .value("2e+07"))
+                                                .value("20000000"))
                                         .addEnvItem(
                                             newEnvVar()
                                                 .name("JAVA_LOGGING_COUNT")
                                                 .value("10"))
+                                        .addEnvItem(
+                                            newEnvVar()
+                                                .name("JVM_OPTIONS")
+                                                .value("-XX:MaxRAMPercentage=70"))
                                         .resources(
                                             new V1ResourceRequirements()
                                                 .putRequestsItem("cpu", Quantity.fromString("250m"))
@@ -467,6 +472,11 @@ abstract class CreateOperatorGeneratedFilesTestBase {
                         "patch")))
         .addRulesItem(
             newPolicyRule()
+                .addApiGroupsItem("")
+                .resources(singletonList("persistentvolumes"))
+                .verbs(asList("get", "list", "create")))
+        .addRulesItem(
+            newPolicyRule()
                 .addApiGroupsItem("weblogic.oracle")
                 .addResourcesItem("domains")
                 .addResourcesItem("clusters")
@@ -558,59 +568,6 @@ abstract class CreateOperatorGeneratedFilesTestBase {
   }
 
   @Test
-  void generatesCorrect_operatorRoleBindingDiscovery() {
-    assertThat(
-        getGeneratedFiles().getOperatorRoleBindingDiscovery(),
-        equalTo(getExpectedOperatorRoleBindingDiscovery()));
-  }
-
-  private V1ClusterRoleBinding getExpectedOperatorRoleBindingDiscovery() {
-    return newClusterRoleBinding()
-        .metadata(
-            newObjectMeta()
-                .name(
-                    getInputs().getNamespace() + "-weblogic-operator-clusterrolebinding-discovery")
-                .putLabelsItem(OPERATORNAME_LABEL, getInputs().getNamespace()))
-        .addSubjectsItem(
-            newSubject()
-                .kind("ServiceAccount")
-                .name(getInputs().getServiceAccount())
-                .namespace(getInputs().getNamespace())
-                .apiGroup(""))
-        .roleRef(
-            newClusterRoleRef()
-                .name("system:discovery")
-                .apiGroup(KubernetesArtifactUtils.API_GROUP_RBAC));
-  }
-
-  @Test
-  void generatesCorrect_operatorRoleBindingAuthDelegator() {
-    assertThat(
-        getGeneratedFiles().getOperatorRoleBindingAuthDelegator(),
-        equalTo(getExpectedOperatorRoleBindingAuthDelegator()));
-  }
-
-  private V1ClusterRoleBinding getExpectedOperatorRoleBindingAuthDelegator() {
-    return newClusterRoleBinding()
-        .metadata(
-            newObjectMeta()
-                .name(
-                    getInputs().getNamespace()
-                        + "-weblogic-operator-clusterrolebinding-auth-delegator")
-                .putLabelsItem(OPERATORNAME_LABEL, getInputs().getNamespace()))
-        .addSubjectsItem(
-            newSubject()
-                .kind("ServiceAccount")
-                .name(getInputs().getServiceAccount())
-                .namespace(getInputs().getNamespace())
-                .apiGroup(""))
-        .roleRef(
-            newClusterRoleRef()
-                .name("system:auth-delegator")
-                .apiGroup(KubernetesArtifactUtils.API_GROUP_RBAC));
-  }
-
-  @Test
   void generatesCorrect_weblogicOperatorNamespaceRole() {
     assertThat(
         getGeneratedFiles().getWeblogicOperatorNamespaceRole(),
@@ -647,6 +604,11 @@ abstract class CreateOperatorGeneratedFilesTestBase {
                 .addApiGroupsItem("")
                 .resources(singletonList("secrets"))
                 .verbs(asList("get", "list", "watch")))
+        .addRulesItem(
+            newPolicyRule()
+                .addApiGroupsItem("")
+                .resources(singletonList("persistentvolumeclaims"))
+                .verbs(asList("get", "list", "create")))
         .addRulesItem(
             newPolicyRule()
                 .addApiGroupsItem("")

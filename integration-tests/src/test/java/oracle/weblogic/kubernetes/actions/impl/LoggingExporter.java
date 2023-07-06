@@ -468,7 +468,7 @@ public class LoggingExporter {
 
   private static String execLoggingExpStatusCheck(String opNamespace, String esNamespace,
       String labelSelector, String indexRegex) {
-    String elasticSearchHost = "elasticsearch." + esNamespace + ".svc.cluster.local";
+    String elasticSearchHost = "elasticsearch." + esNamespace + ".svc";
     StringBuffer k8sExecCmdPrefixBuff = new StringBuffer("curl http://");
     String cmd = k8sExecCmdPrefixBuff
         .append(elasticSearchHost)
@@ -485,11 +485,12 @@ public class LoggingExporter {
     int i = 0;
     ExecResult statusLine = null;
     while (i < maxIterationsPod) {
+      logger.info("Command to exec execLoggingExpStatusCheck: opNamespace: {0}, operatorPodName: {1}, cmd {2} {3}",
+          opNamespace, operatorPodName, "/bin/sh -c ", cmd);
       statusLine = assertDoesNotThrow(() -> execCommand(opNamespace, operatorPodName, null, true,
               "/bin/sh", "-c", cmd));
       assertNotNull(statusLine, "curl command returns null");
 
-      logger.info("Status {0} for index {1} ", statusLine.stdout(), indexRegex);
       if (null != statusLine.stdout() && !statusLine.stdout().isEmpty()) {
         break;
       }

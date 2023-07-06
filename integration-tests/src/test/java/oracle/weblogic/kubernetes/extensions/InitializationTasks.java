@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.extensions;
@@ -42,6 +42,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_USERNAME;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_TENANCY;
 import static oracle.weblogic.kubernetes.TestConstants.CERT_MANAGER;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TAG;
@@ -289,7 +290,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         }
         
         //install webhook to prevent every operator installation trying to update crd
-        installWebHookOnlyOperator();
+        installWebHookOnlyOperator("DomainOnPvSimplification=true");
 
         // set initialization success to true, not counting the istio installation as not all tests use istio
         isInitializationSuccessful = true;
@@ -584,7 +585,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
 
   private Callable<Boolean> pullImageFromBaseRepoAndPushToKind(String image) {
     return (() -> {
-      String kindRepoImage = KIND_REPO + image.substring(BASE_IMAGES_REPO.length() + 1);
+      String kindRepoImage = KIND_REPO + image.substring(BASE_IMAGES_REPO.length() + BASE_IMAGES_TENANCY.length() + 2);
       return imagePull(image) && imageTag(image, kindRepoImage) && imagePush(kindRepoImage);
     });
   }
@@ -593,6 +594,10 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
   String webhookNamespace = "ns-webhook";
 
   private OperatorParams installWebHookOnlyOperator() {
+    return installWebHookOnlyOperator(null);
+  }
+
+  private OperatorParams installWebHookOnlyOperator(String featureGates) {
     // recreate WebHook namespace
     deleteNamespace(webhookNamespace);
     assertDoesNotThrow(() -> new Namespace().name(webhookNamespace).create());
@@ -615,8 +620,10 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         null, // domainspaceSelector
         true, // enableClusterRolebinding
         "INFO", // webhook pod log level
+        featureGates, // the name of featureGates
         true, // webhookOnly
         "null" // domainNamespace
     );
   }
+
 }

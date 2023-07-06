@@ -4,12 +4,13 @@
 package oracle.kubernetes.operator.steps;
 
 import io.kubernetes.client.openapi.models.V1Job;
-import oracle.kubernetes.operator.DomainStatusUpdater;
 import oracle.kubernetes.operator.JobAwaiterStepFactory;
 import oracle.kubernetes.operator.JobWatcher;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveFailuresStep;
 
 public class WatchDomainIntrospectorJobReadyStep extends Step {
 
@@ -20,8 +21,12 @@ public class WatchDomainIntrospectorJobReadyStep extends Step {
     if (hasNotCompleted(domainIntrospectorJob)) {
       JobAwaiterStepFactory jw = (JobAwaiterStepFactory) packet.get(ProcessingConstants.JOBWATCHER_COMPONENT_NAME);
       return doNext(jw.waitForReady(domainIntrospectorJob, getNext()), packet);
+      /* FIXME
+      JobAwaiterStepFactory jw = packet.getSpi(JobAwaiterStepFactory.class);
+      return doNext(jw.waitForReady(domainIntrospectorJob, createRemoveFailuresStep(getNext())), packet);
+       */
     } else {
-      return doNext(DomainStatusUpdater.createRemoveFailuresStep(getNext()), packet);
+      return doNext(createRemoveFailuresStep(getNext()), packet);
     }
   }
 

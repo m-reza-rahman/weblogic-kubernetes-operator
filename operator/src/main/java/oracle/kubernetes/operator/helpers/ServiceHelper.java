@@ -60,6 +60,8 @@ import static oracle.kubernetes.operator.DomainStatusUpdater.createKubernetesFai
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.forDomainUidSelector;
 import static oracle.kubernetes.operator.LabelConstants.getCreatedByOperatorSelector;
+import static oracle.kubernetes.operator.LabelConstants.getServiceTypeSelector;
+import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 import static oracle.kubernetes.operator.helpers.OperatorServiceType.EXTERNAL;
 
 public class ServiceHelper {
@@ -599,6 +601,20 @@ public class ServiceHelper {
                   createReplacementService(next));
             }
           });
+      /* FIXME
+      return new CallBuilder()
+              .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector())
+              .listServiceAsync(
+                      getNamespace(),
+                      new ActionResponseStep<>() {
+                      public Step createSuccessStep(V1ServiceList result, Step next) {
+                        Collection<V1Service> c = Optional.ofNullable(result).map(list -> list.getItems().stream()
+                                  .filter(ServiceHelper::isNodePortType)
+                                  .collect(Collectors.toList())).orElse(new ArrayList<>());
+                        return new DeleteServiceListStep(c, createReplacementService(next));
+                      }
+                    });
+       */
     }
 
     private Step createReplacementService(Step next) {
@@ -888,6 +904,16 @@ public class ServiceHelper {
     }
 
     @Override
+    Step verifyService(Step next) {
+      if (info.getDomain().isExternalServiceConfigured()) {
+        return super.verifyService(next);
+      } else {
+        removeServiceFromRecord();
+        return deleteExternalService(next);
+      }
+    }
+
+    @Override
     protected V1ObjectMeta createMetadata() {
       return super.createMetadata().putLabelsItem(LabelConstants.SERVERNAME_LABEL, adminServerName);
     }
@@ -942,6 +968,24 @@ public class ServiceHelper {
     Map<String, String> getServiceAnnotations() {
       return getNullableAdminService().map(AdminService::getAnnotations).orElse(Collections.emptyMap());
     }
+
+    private Step deleteExternalService(Step next) {
+      return Step.chain(getStep(), next);
+    }
+
+    private Step getStep() {
+      return new CallBuilder()
+          .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector(),
+              getServiceTypeSelector("EXTERNAL"))
+          .listServiceAsync(
+              info.getNamespace(),
+              new ActionResponseStep<>() {
+                public Step createSuccessStep(V1ServiceList result, Step next) {
+                  return new DeleteServiceListStep(result.getItems(), next);
+                }
+              });
+    }
+
 
     @Override
     protected void logServiceCreated(String messageKey) {

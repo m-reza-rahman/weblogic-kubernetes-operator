@@ -5,6 +5,7 @@ package oracle.kubernetes.operator;
 
 import javax.annotation.Nonnull;
 
+import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.ResourcePresenceInfo;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -26,6 +27,13 @@ public interface MakeRightOperation<T extends ResourcePresenceInfo> {
   T getPresenceInfo();
 
   boolean hasEventData();
+
+  /**
+   * Get the event data associated with this make-right operation.
+   *
+   * @return the event data.
+   */
+  EventHelper.EventData getEventData();
 
   boolean isExplicitRecheck();
 }

@@ -339,6 +339,10 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
       return recheckCount.incrementAndGet();
     }
 
+    int getAndIncrementRecheckCount() {
+      return recheckCount.getAndIncrement();
+    }
+
     int getRecheckCount() {
       return recheckCount.get();
     }

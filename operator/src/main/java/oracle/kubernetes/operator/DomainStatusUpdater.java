@@ -99,6 +99,7 @@ import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.DOMAIN
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.INTERNAL;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.INTROSPECTION;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERNETES;
+import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.PERSISTENT_VOLUME_CLAIM;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.REPLICAS_TOO_HIGH;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.SERVER_POD;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.TOPOLOGY_MISMATCH;
@@ -196,9 +197,10 @@ public class DomainStatusUpdater {
   /**
    * Creates an asynchronous step to initialize the domain status, if needed, to indicate that the operator has
    * seen the domain and is now working on it.
+   * @param hasEventData true if the make right operation is associated with an event.
    */
-  public static Step createStatusInitializationStep() {
-    return new StatusInitializationStep();
+  public static Step createStatusInitializationStep(boolean hasEventData) {
+    return new StatusInitializationStep(hasEventData);
   }
 
   /**
@@ -254,6 +256,15 @@ public class DomainStatusUpdater {
    */
   public static Step createServerPodFailureSteps(String message) {
     return new FailureStep(SERVER_POD, message);
+  }
+
+  /**
+   * Asynchronous steps to set Domain condition to Failed and to generate PERSISTENT_VOLUME_CLAIM error event.
+   *
+   * @param message a fuller description of the problem
+   */
+  public static Step createPersistentVolumeClaimFailureSteps(String message) {
+    return new FailureStep(PERSISTENT_VOLUME_CLAIM, message);
   }
 
   /**
@@ -581,12 +592,23 @@ public class DomainStatusUpdater {
   }
 
   public static class StatusInitializationStep extends DomainStatusUpdaterStep {
+    private final boolean hasEventData;
+
+    StatusInitializationStep(boolean hasEventData) {
+      super();
+      this.hasEventData = hasEventData;
+    }
 
     @Override
     void modifyStatus(DomainStatus status) {
       if (status.getConditions().isEmpty()) {
-        status.addCondition(new DomainCondition(COMPLETED).withStatus(false));
-        status.addCondition(new DomainCondition(AVAILABLE).withStatus(false));
+        if (hasEventData) {
+          status.addCondition(new DomainCondition(COMPLETED).withStatus(false));
+          status.addCondition(new DomainCondition(AVAILABLE).withStatus(false));
+        }
+      } else {
+        status.markFailuresForRemoval(KUBERNETES);
+        status.removeMarkedFailures();
       }
     }
   }
@@ -755,11 +777,8 @@ public class DomainStatusUpdater {
         public Conditions(DomainStatus status) {
           this.status = status != null ? status : new DomainStatus();
           this.clusterChecks = createClusterChecks();
-          boolean isCompleted = isProcessingCompleted();
+          boolean isCompleted = isProcessingCompleted() && !this.status.hasConditionWithType(FAILED);
           conditionList.add(new DomainCondition(COMPLETED).withStatus(isCompleted));
-          if (isCompleted && this.status.hasConditionWithType(FAILED)) {
-            this.status.removeConditionsWithType(FAILED);
-          }
           conditionList.add(createAvailableCondition());
           if (allIntendedServersReady()) {
             this.status.removeConditionsWithType(ROLLING);
@@ -1557,10 +1576,14 @@ public class DomainStatusUpdater {
       @Override
       void modifyStatus(DomainStatus status) {
         removingReasons.forEach(status::markFailuresForRemoval);
-        addFailure(status, status.createAdjustedFailedCondition(reason, message));
-        status.addCondition(new DomainCondition(COMPLETED).withStatus(false));
+        addFailure(status, status.createAdjustedFailedCondition(reason, message, isInitializeDomainOnPV()));
+        status.addCondition(new DomainCondition(COMPLETED).withStatus(false), isInitializeDomainOnPV());
         Optional.ofNullable(jobUid).ifPresent(status::setFailedIntrospectionUid);
         status.removeMarkedFailures();
+      }
+
+      private boolean isInitializeDomainOnPV() {
+        return getDomain().isInitializeDomainOnPV();
       }
 
     }

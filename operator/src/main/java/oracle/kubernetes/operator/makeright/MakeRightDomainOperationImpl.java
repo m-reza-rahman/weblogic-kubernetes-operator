@@ -28,15 +28,20 @@ import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.Processors;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
+import oracle.kubernetes.operator.PvcAwaiterStepFactory;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainValidationSteps;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.helpers.JobHelper;
+import oracle.kubernetes.operator.helpers.PersistentVolumeClaimHelper;
+import oracle.kubernetes.operator.helpers.PersistentVolumeHelper;
 import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.steps.DeleteDomainStep;
 import oracle.kubernetes.operator.steps.ManagedServersUpStep;
@@ -53,6 +58,7 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECT_REQUESTED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_DELETED;
+import static oracle.kubernetes.operator.helpers.EventHelper.createEventStep;
 
 /**
  * A factory which creates and executes steps to align the cached domain status with the value read from Kubernetes.
@@ -60,8 +66,10 @@ import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_DE
 public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainPresenceInfo>
     implements MakeRightDomainOperation {
 
-  private boolean deleting;
+  public static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
   private boolean inspectionRun;
+  private boolean retryOnFailure;
 
   /**
    * Create the operation.
@@ -85,7 +93,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   @Override
   public MakeRightDomainOperation createRetry(@Nonnull DomainPresenceInfo presenceInfo) {
     presenceInfo.setPopulated(false);
-    return cloneWith(presenceInfo).withExplicitRecheck();
+    return cloneWith(presenceInfo).withExplicitRecheck().retryOnFailure();
   }
 
   /**
@@ -134,6 +142,12 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   @Override
+  public MakeRightDomainOperation retryOnFailure() {
+    this.retryOnFailure = true;
+    return this;
+  }
+
+  @Override
   public boolean isDeleting() {
     return deleting;
   }
@@ -141,6 +155,11 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   @Override
   public boolean isExplicitRecheck() {
     return explicitRecheck;
+  }
+
+  @Override
+  public boolean isRetryOnFailure() {
+    return retryOnFailure;
   }
 
   @Override
@@ -182,6 +201,17 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, delegate.getKubernetesVersion());
     packet.put(ProcessingConstants.PODWATCHER_COMPONENT_NAME, delegate.getPodAwaiterStepFactory(getNamespace()));
     packet.put(ProcessingConstants.JOBWATCHER_COMPONENT_NAME, delegate.getJobAwaiterStepFactory(getNamespace()));
+    /* FIXME
+    Packet packet = new Packet().with(delegate).with(liveInfo).with(this);
+    packet
+        .getComponents()
+        .put(
+            ProcessingConstants.DOMAIN_COMPONENT_NAME,
+            Component.createFor(delegate.getKubernetesVersion(),
+                PodAwaiterStepFactory.class, delegate.getPodAwaiterStepFactory(getNamespace()),
+                JobAwaiterStepFactory.class, delegate.getJobAwaiterStepFactory(getNamespace()),
+                PvcAwaiterStepFactory.class, delegate.getPvcAwaiterStepFactory()));
+     */
     return packet;
   }
 
@@ -197,14 +227,13 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   public Step createSteps() {
     final List<Step> result = new ArrayList<>();
 
-    result.add(Optional.ofNullable(eventData).map(EventHelper::createEventStep).orElse(null));
-    result.add(new DomainProcessorImpl.PopulatePacketServerMapsStep());
-    if (hasEventData()) {
-      result.add(createStatusInitializationStep());
-    }
+    result.add(new UpdateDomainPresenceInfoStep(liveInfo));
     if (deleting || domainHasDeletionTimestamp()) {
       result.add(new StartPlanStep(liveInfo, createDomainDownPlan()));
     } else {
+      result.add(getCreateEventStep());
+      result.add(new DomainProcessorImpl.PopulatePacketServerMapsStep());
+      result.add(createStatusInitializationStep(hasEventData()));
       result.add(createListClusterResourcesStep(getNamespace()));
       result.add(createDomainValidationStep(getDomain()));
       result.add(new StartPlanStep(liveInfo, createDomainUpPlan(liveInfo)));
@@ -244,12 +273,8 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   }
 
   private Step createDomainDownPlan() {
-    Step eventStep = null;
-    if (Optional.ofNullable(eventData).map(e -> e.getItem() != DOMAIN_DELETED).orElse(true)) {
-      eventStep = EventHelper.createEventStep(new EventData(DOMAIN_DELETED));
-    }
     return Step.chain(
-        eventStep,
+        createEventStep(new EventData(DOMAIN_DELETED)),
         new DeleteDomainStep(),
         new UnregisterStatusUpdaterStep(),
         new UnregisterEventK8SObjectsStep());
@@ -284,8 +309,12 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
             ConfigMapHelper.createOrReplaceFluentdConfigMapStep(),
             domainIntrospectionSteps(),
             new DomainStatusStep(),
-            DomainProcessorImpl.bringAdminServerUp(info, delegate.getPodAwaiterStepFactory(info.getNamespace())),
+            DomainProcessorImpl.bringAdminServerUp(delegate.getPodAwaiterStepFactory(info.getNamespace())),
             managedServerStrategy);
+
+    if (info.getDomain().getInitializeDomainOnPV() != null) {
+      domainUpStrategy = Step.chain(initializePvPvcStep(), domainUpStrategy);
+    }
 
     Step introspectionAndDomainPresenceSteps = Step.chain(ConfigMapHelper.readExistingIntrospectorConfigMap(),
         DomainPresenceStep.createDomainPresenceStep(domainUpStrategy, managedServerStrategy));
@@ -293,11 +322,20 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     return new UpHeadStep(introspectionAndDomainPresenceSteps);
   }
 
+  private Step getCreateEventStep() {
+    return Optional.ofNullable(eventData).map(EventHelper::createEventStep).orElse(null);
+  }
+
   static Step domainIntrospectionSteps() {
     return Step.chain(
         ConfigMapHelper.readIntrospectionVersionStep(),
         new IntrospectionRequestStep(),
         JobHelper.createIntrospectionStartStep());
+  }
+
+  static Step initializePvPvcStep() {
+    return Step.chain(PersistentVolumeHelper.createPersistentVolumeStep(null),
+        PersistentVolumeClaimHelper.createPersistentVolumeClaimStep(null));
   }
 
   /**
@@ -386,6 +424,27 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
   }
 
+  class UpdateDomainPresenceInfoStep extends Step {
+
+    private final DomainPresenceInfo info;
+
+    UpdateDomainPresenceInfoStep(DomainPresenceInfo info) {
+      super();
+      this.info = info;
+    }
+
+    @Override
+    public NextAction apply(Packet packet) {
+      if (deleting) {
+        executor.unregisterDomainPresenceInfo(info);
+      } else {
+        executor.registerDomainPresenceInfo(info);
+      }
+      return doNext(packet);
+    }
+  }
+
+
   class StartPlanStep extends Step {
 
     private final DomainPresenceInfo info;
@@ -431,6 +490,10 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
           info.getServerNames().stream().filter(s -> !serverNamesFromPodList.contains(s)).toList()
               .forEach(name -> info.deleteServerPodFromEvent(name, null));
+          /* FIXME
+          info.addServerNamesFromPodList(list.getItems().stream()
+              .map(PodHelper::getPodServerName).collect(Collectors.toList()));
+           */
           list.getItems().forEach(this::addPod);
         }
 
@@ -455,6 +518,14 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
         private void addPodDisruptionBudget(V1PodDisruptionBudget pdb) {
           PodDisruptionBudgetHelper.addToPresence(info, pdb);
+        }
+
+        @Override
+        public void completeProcessing(Packet packet) {
+          info.getServerNames().stream().filter(
+              s -> !info.getServerNamesFromPodList().contains(s)).collect(Collectors.toList())
+              .forEach(name -> info.deleteServerPodFromEvent(name, null));
+          info.clearServerPodNamesFromList();
         }
       };
 

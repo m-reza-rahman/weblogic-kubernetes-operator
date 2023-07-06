@@ -7,7 +7,7 @@
 
   <groupId>oracle.kubernetes</groupId>
   <artifactId>operator-parent</artifactId>
-  <version>4.0.5</version>
+  <version>4.1.0-SNAPSHOT</version>
 
   <modules>
     <module>operator</module>
@@ -82,7 +82,6 @@
                 <consoleOutput>true</consoleOutput>
                 <configLocation>${checkstyle.config.location}</configLocation>
                 <suppressionsLocation>${root.basedir}/build-tools/checkstyle/suppressions.xml</suppressionsLocation>
-                <encoding>UTF-8</encoding>
                 <failOnViolation>true</failOnViolation>
                 <violationSeverity>warning</violationSeverity>
                 <includeTestResources>true</includeTestResources>
@@ -117,7 +116,15 @@
                   <requireJavaVersion>
                     <version>${java.version.range}</version>
                   </requireJavaVersion>
-                  <requirePluginVersions></requirePluginVersions>
+                  <requireReleaseDeps>
+                    <excludes>
+                      <exclude>oracle.kubernetes:*</exclude>
+                    </excludes>
+                  </requireReleaseDeps>
+                  <requirePluginVersions>
+                    <banSnapshots>true</banSnapshots>
+                    <unCheckedPluginList>oracle.kubernetes:operator-build-maven-plugin</unCheckedPluginList>
+                  </requirePluginVersions>
                 </rules>
               </configuration>
             </execution>
@@ -128,6 +135,9 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-release-plugin</artifactId>
           <version>${maven-release-plugin-version}</version>
+          <configuration>
+            <tagNameFormat>v@{project.version}</tagNameFormat>
+          </configuration>
         </plugin>
 
         <plugin>
@@ -393,8 +403,8 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <surefireArgLine></surefireArgLine>
-        <failsafeArgLine></failsafeArgLine>
+        <surefireArgLine />
+        <failsafeArgLine />
       </properties>
     </profile>
   </profiles>
@@ -629,25 +639,25 @@
     <java.version.range>19</java.version.range>
     <maven.version.range>[3.5.2,)</maven.version.range>
     <maven-enforcer-plugin-version>3.3.0</maven-enforcer-plugin-version>
-    <maven-clean-plugin-version>3.2.0</maven-clean-plugin-version>
+    <maven-clean-plugin-version>3.3.1</maven-clean-plugin-version>
     <maven-compiler-plugin-version>3.11.0</maven-compiler-plugin-version>
     <maven-deploy-plugin-version>3.1.1</maven-deploy-plugin-version>
     <maven-install-plugin-version>3.1.1</maven-install-plugin-version>
     <maven-jar-plugin-version>3.3.0</maven-jar-plugin-version>
     <maven-resources-plugin-version>3.3.1</maven-resources-plugin-version>
     <maven-site-plugin-version>3.12.1</maven-site-plugin-version>
-    <maven-surefire-plugin-version>3.0.0</maven-surefire-plugin-version>
-    <maven-checkstyle-plugin-version>3.2.1</maven-checkstyle-plugin-version>
-    <maven-release-plugin-version>3.0.0</maven-release-plugin-version>
+    <maven-surefire-plugin-version>3.1.2</maven-surefire-plugin-version>
+    <maven-checkstyle-plugin-version>3.3.0</maven-checkstyle-plugin-version>
+    <maven-release-plugin-version>3.0.1</maven-release-plugin-version>
     <maven-javadoc-plugin-version>3.5.0</maven-javadoc-plugin-version>
-    <maven-failsafe-plugin-version>3.0.0</maven-failsafe-plugin-version>
-    <maven-dependency-plugin-version>3.5.0</maven-dependency-plugin-version>
-    <maven-shade-plugin-version>3.4.1</maven-shade-plugin-version>
+    <maven-failsafe-plugin-version>3.1.2</maven-failsafe-plugin-version>
+    <maven-dependency-plugin-version>3.6.0</maven-dependency-plugin-version>
+    <maven-shade-plugin-version>3.5.0</maven-shade-plugin-version>
     <exec-maven-plugin-version>3.1.0</exec-maven-plugin-version>
-    <checkstyle-version>10.9.3</checkstyle-version>
+    <checkstyle-version>10.12.1</checkstyle-version>
     <directory-maven-version>1.0</directory-maven-version>
     <maven-jxr-plugin-version>3.3.0</maven-jxr-plugin-version>
-    <maven-gpg-plugin-version>3.0.1</maven-gpg-plugin-version>
+    <maven-gpg-plugin-version>3.1.0</maven-gpg-plugin-version>
     <hamcrest-junit-version>2.0.0.0</hamcrest-junit-version>
     <simplestub-version>1.3.2</simplestub-version>
     <wiremock-version>2.35.0</wiremock-version>
@@ -655,42 +665,42 @@
     <jms-api-version>2.0.1</jms-api-version>
     <kjetland-mbknor-jsonschema-version>1.0.39</kjetland-mbknor-jsonschema-version>
     <commons-cli-version>1.5.0</commons-cli-version>
-    <networknt-jsonschmema-validator-version>1.0.79</networknt-jsonschmema-validator-version>
+    <networknt-jsonschmema-validator-version>1.0.85</networknt-jsonschmema-validator-version>
     <commons-exec-version>1.3</commons-exec-version>
-    <commons-codec-version>1.15</commons-codec-version>
+    <commons-codec-version>1.16.0</commons-codec-version>
     <httpunit-version>1.7.3</httpunit-version>
     <voyager-client-version>0.1.0</voyager-client-version>
     <jsonpath-version>2.8.0</jsonpath-version>
-    <mojo-build-helper-version>3.3.0</mojo-build-helper-version>
+    <mojo-build-helper-version>3.4.0</mojo-build-helper-version>
     <maven-plugin-version>1.0.0</maven-plugin-version>
     <assertj.core.version>3.24.2</assertj.core.version>
-    <commons.io.version>2.11.0</commons.io.version>
+    <commons.io.version>2.13.0</commons.io.version>
     <awaitility-version>4.2.0</awaitility-version>
     <client-java-version>18.0.0</client-java-version>
-    <kotlin-stdlib-version>1.8.20</kotlin-stdlib-version>
-    <okhttp-version>4.10.0</okhttp-version>
-    <junit.jupiter.version>5.9.2</junit.jupiter.version>
+    <kotlin-stdlib-version>1.8.22</kotlin-stdlib-version>
+    <okhttp-version>4.11.0</okhttp-version>
+    <junit.jupiter.version>5.9.3</junit.jupiter.version>
     <junit.vintage.version>5.7.1</junit.vintage.version>
     <junit.platform.version>1.7.0</junit.platform.version>
     <junit.platform.surefire.version>1.3.2</junit.platform.surefire.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jersey-version>3.1.1</jersey-version>
+    <jersey-version>3.1.2</jersey-version>
     <grizzly-version>4.0.0</grizzly-version>
     <jakarta-version>6.0.0</jakarta-version>
     <prometheus-version>0.16.0</prometheus-version>
-    <jackson-version>2.14.2</jackson-version>
-    <jackson-databind-version>2.14.2</jackson-databind-version>
+    <jackson-version>2.15.2</jackson-version>
+    <jackson-databind-version>2.15.2</jackson-databind-version>
     <snakeyaml-version>2.0</snakeyaml-version>
     <gson-version>2.10.1</gson-version>
-    <dependency-check-version>8.2.1</dependency-check-version>
+    <dependency-check-version>8.3.1</dependency-check-version>
     <slf4j-version>2.0.7</slf4j-version>
-    <logback-classic-version>1.4.6</logback-classic-version>
+    <logback-classic-version>1.4.8</logback-classic-version>
     <root-generated-swagger>${project.basedir}/src-generated-swagger</root-generated-swagger>
     <src-generated-swagger>${root-generated-swagger}/main/java</src-generated-swagger>
     <domain-swagger-file>${project.basedir}/swagger/domain.json</domain-swagger-file>
     <skip.unit.tests>false</skip.unit.tests>
     <skip.dependency-check>false</skip.dependency-check>
-    <jacoco.version>0.8.9</jacoco.version>
+    <jacoco.version>0.8.10</jacoco.version>
     <git-commit-id-plugin-version>4.9.10</git-commit-id-plugin-version>
     <htmlunit-version>2.70.0</htmlunit-version>
     <checkstyle.config.location>${root.basedir}/build-tools/checkstyle/customized_google_checks.xml</checkstyle.config.location>

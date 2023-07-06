@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.weblogic.domain.model;
@@ -65,7 +65,7 @@ public class DomainValidationTestBase extends DomainTestUtils {
         return (T) new V1Secret().metadata(meta);
       }
       if (ClusterResource.class.equals(type)) {
-        return (T) new ClusterResource().withMetadata(meta);
+        return (T) new ClusterResource().withMetadata(meta).withClusterName(name);
       }
       if (DomainResource.class.equals(type)) {
         return (T) new DomainResource().withMetadata(meta);
@@ -74,8 +74,8 @@ public class DomainValidationTestBase extends DomainTestUtils {
     }
 
     @Override
-    public boolean isSecretExists(String name, String namespace) {
-      return isResourceExists(name, V1Secret.class, namespace);
+    public List<V1Secret> getSecrets() {
+      return getResourceList(V1Secret.class);
     }
 
     @Override

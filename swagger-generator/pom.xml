@@ -7,7 +7,7 @@
     <parent>
         <groupId>oracle.kubernetes</groupId>
         <artifactId>operator-parent</artifactId>
-        <version>4.0.5</version>
+        <version>4.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>operator-swagger</artifactId>
@@ -40,8 +40,8 @@
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-                <surefireArgLine></surefireArgLine>
-                <failsafeArgLine></failsafeArgLine>
+                <surefireArgLine />
+                <failsafeArgLine />
             </properties>
         </profile>
     </profiles>

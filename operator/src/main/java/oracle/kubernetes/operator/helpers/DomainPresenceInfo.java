@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1Secret;
@@ -75,12 +76,14 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
   private final ConcurrentMap<String, ClusterResource> clusters = new ConcurrentHashMap<>();
   private final ConcurrentMap<String, V1Service> clusterServices = new ConcurrentHashMap<>();
   private final ConcurrentMap<String, V1PodDisruptionBudget> podDisruptionBudgets = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, V1PersistentVolumeClaim> persistentVolumeClaims = new ConcurrentHashMap<>();
   private final ReadWriteLock webLogicCredentialsSecretLock = new ReentrantReadWriteLock();
   private V1Secret webLogicCredentialsSecret;
   private OffsetDateTime webLogicCredentialsSecretLastSet;
   private String adminServerName;
 
   private final List<String> validationWarnings = Collections.synchronizedList(new ArrayList<>());
+  private final List<String> serverNamesFromPodList = Collections.synchronizedList(new ArrayList<>());
   private Map<String, Step.StepAndPacket> serversToRoll = Collections.emptyMap();
 
   /**
@@ -669,7 +672,7 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
     return getSko(serverName).getExternalService().get();
   }
 
-  void setExternalService(String serverName, V1Service service) {
+  public void setExternalService(String serverName, V1Service service) {
     getSko(serverName).getExternalService().set(service);
   }
 
@@ -842,6 +845,36 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
   }
 
   /**
+   * Return server Pod names from List operation.
+   */
+  public List<String> getServerNamesFromPodList() {
+    return serverNamesFromPodList;
+  }
+
+  /**
+   * Add server Pod names from List operation.
+   * @param podNames pod names to be added
+   */
+  public void addServerNamesFromPodList(Collection<String> podNames) {
+    serverNamesFromPodList.addAll(podNames);
+  }
+
+  /**
+   * Add server Pod name from List operation.
+   * @param podName pod name to be added
+   */
+  public void addServerNameFromPodList(String podName) {
+    serverNamesFromPodList.add(podName);
+  }
+
+  /**
+   * Clear server Pod names from List operation.
+   */
+  public void clearServerPodNamesFromList() {
+    serverNamesFromPodList.clear();
+  }
+
+  /**
    * Returns the names of the servers which are supposed to be running.
    */
   public Set<String> getExpectedRunningServers() {
@@ -939,6 +972,29 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
   }
 
   /**
+   * Add a PersistentVolumeClaim resource.
+   * @param pvc PersistentVolumeClaim object.
+   */
+  public void addPersistentVolumeClaim(V1PersistentVolumeClaim pvc) {
+    Optional.ofNullable(pvc)
+        .map(V1PersistentVolumeClaim::getMetadata)
+        .map(V1ObjectMeta::getName)
+        .ifPresent(name -> persistentVolumeClaims.put(name, pvc));
+  }
+
+  /**
+   * Remove a named PersistentVolumeClaim resource.
+   * @param pvcName the name of the resource to remove.
+   */
+  public V1PersistentVolumeClaim removePersistentVolumeClaim(String pvcName) {
+    return Optional.ofNullable(pvcName).map(persistentVolumeClaims::remove).orElse(null);
+  }
+
+  public V1PersistentVolumeClaim getPersistentVolumeClaim(String pvcName) {
+    return Optional.ofNullable(pvcName).map(persistentVolumeClaims::get).orElse(null);
+  }
+
+  /**
    * Get the effective configuration of the server, based on Kubernetes resources.
    * @param serverName name of the WLS server.
    * @param clusterName name of the WLS cluster, or null for a non-clustered server.
@@ -1015,6 +1071,10 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
 
   public Collection<ClusterResource> getClusterResources() {
     return clusters.values();
+  }
+
+  public boolean hasRetriableFailure() {
+    return Optional.ofNullable(getDomain()).map(DomainResource::hasRetriableFailure).orElse(false);
   }
 
   /** Details about a specific managed server. */

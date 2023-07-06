@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -92,7 +92,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("olcne")
 @Tag("oke-sequential")
-@Tag("kind-parallel")
+@Tag("kind-sequential")
 @Tag("okd-wls-mrg")
 class ItMonitoringExporterWebApp {
 
@@ -130,7 +130,7 @@ class ItMonitoringExporterWebApp {
   private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
   private static List<String> clusterNames = new ArrayList<>();
-  private static String releaseSuffix = "test2";
+  private static String releaseSuffix = "testwebapp";
   private static String prometheusReleaseName = "prometheus" + releaseSuffix;
   private static String grafanaReleaseName = "grafana" + releaseSuffix;
   private static  String monitoringExporterDir;
