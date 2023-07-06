@@ -382,19 +382,26 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private boolean shouldContinue(MakeRightDomainOperation operation, DomainPresenceInfo liveInfo) {
+    LOGGER.info("DEBUG: In shouldContinue, liveInfo is " + liveInfo);
     final DomainPresenceInfo cachedInfo = getExistingDomainPresenceInfo(liveInfo);
     if (isNewDomain(cachedInfo)) {
+      LOGGER.info("DEBUG: In shouldContinue, isNewDomain is true");
       return true;
     } else if (liveInfo.isFromOutOfDateEvent(operation, cachedInfo)) {
+      LOGGER.info("DEBUG: In shouldContinue, isFromOutOfDateEvent is true");
       return false;
     } else if (isDeleting(operation)) {
       return true;
     } else if (liveInfo.isDomainProcessingHalted(cachedInfo)) {
+      LOGGER.info("DEBUG: In shouldContinue, isDomainProcessingHalted is true");
       return false;
     } else if (isExplicitRecheckWithoutRetriableFailure(operation, liveInfo)
         || liveInfo.isDomainGenerationChanged(cachedInfo)) {
+      LOGGER.info("DEBUG: In shouldContinue, isExplicitRecheckWithoutRetriableFailure "
+          + "or isDomainGenerationChanged is true");
       return true;
     } else {
+      LOGGER.info("DEBUG: In shouldContinue,No conditions match. Retruning false.");
       cachedInfo.setDomain(liveInfo.getDomain());
       return false;
     }
