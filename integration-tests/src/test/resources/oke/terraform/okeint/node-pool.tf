@@ -55,8 +55,8 @@ resource "oci_containerengine_node_pool" "tfsample_node_pool" {
   }
   node_shape_config {
        #Optional
- 	memory_in_gbs = 16.0
-        ocpus = 1.0
+ 	memory_in_gbs = 48.0
+        ocpus = 4.0
   }
 
   # Using image Oracle-Linux-7.x-<date>
