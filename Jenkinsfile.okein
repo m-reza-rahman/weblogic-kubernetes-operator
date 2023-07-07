@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
@@ -52,7 +52,7 @@ pipeline {
 
         CLUSTER_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'parcluster' : 'seqcluster'}"
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
-        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'gate' : 'oke-gate'}"
+        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-gate' : 'oke-gate'}"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
         PARALLEL_RUN = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? true : false}"
     }
@@ -249,9 +249,6 @@ pipeline {
                         FINGERPRINT = 'wkobuild_cert_fingerprint'
                         USER_OCID = 'wkobuild_user_ocid'
                         WKOBUILD_PUBLIC_CERT = "${wkotest_ssh_pubcert}"
-                        //FINGERPRINT = credentials("${wkobuild_cert_fingerprint}")
-                        //USER_OCID = credentials("${wkobuild_user_ocid}")
-                        //WKOBUILD_PUBLIC_CERT = credentials("${wkotest_ssh_pubcert}")
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
 
                     }
@@ -260,7 +257,6 @@ pipeline {
                         withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
                                                         file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
                                            sh "mkdir -p ${jenkins_home_directory}/.oci"
-                                           //sh "chmod 777 ${jenkins_home_directory}/.oci"
                                            sh "sed -e \"s:__jenkins_home__:${jenkins_home_directory}:g\" \"\$OCI_CONFIG_FILE\" > ${jenkins_home_directory}/.oci/config"
                                            sh "cp \"\$OCI_SIGNING_KEY\" ${jenkins_home_directory}/.oci/oci-signing-key.pem"
                                        }
@@ -284,13 +280,6 @@ pipeline {
                         cd ${WORKSPACE}/.ssh
                         ssh-keygen -b 2048 -t rsa -q  -f wkotestkey -N ""
                         chmod 600 ${wkotest_ssh_pk}
-                        #cp -rf ${oci_config_file} ${WORKSPACE}/oci/config
-                        #chmod 777 ${WORKSPACE}/oci/config
-                        #sed -i -e "s:@WORKSPACE@:${WORKSPACE}:g" ${WORKSPACE}/oci/config
-                        #export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
-                        #cat ${OCI_CLI_CONFIG_FILE}
-                        #export OCI_CLI_PROFILE=${oci_profile}
-
 
                         COMPARTMENT_OCID=${compartment_id}
                         export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
@@ -385,8 +374,6 @@ EOF
                             export PATH=${runtime_path}
                             export KUBECONFIG=${KUBECONFIG}
 
-
-                            #chmod 777 ${WORKSPACE}/oci/config
                             export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
                             export OCI_CLI_PROFILE=${oci_profile}
 
@@ -458,7 +445,6 @@ EOF
                 stage('Run integration tests') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
-                        //OKE_SSH_PRIVATE_KEY = "${wkotest_ssh_pk}"
                         clusterName = "${CLUSTER_NAME}"
                         FSS_DIR = "/oketest1,/oketest2,/oketest3,/oketest4,/oketest5,/oketest6,/oketest7,/oketest8,/oketest9,/oketest10,/oketest11,/oketest12,/oketest13,/oketest14,/oketest15"
 
@@ -513,9 +499,7 @@ EOF
                                 NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| head -n2 | tail -n1`
                                 echo "second node external IP ${NODE_IP}"
                                 export NODE_IP=${NODE_IP}
-                                #echo "expand disk volume for nodes"
-                                #ssh -o StrictHostKeyChecking=no -i ${wkotest_ssh_pk} opc@${K8S_NODEPORT_HOST} 'sudo /usr/libexec/oci-growfs -y'
-                                #ssh -o StrictHostKeyChecking=no -i ${wkotest_ssh_pk} opc@${NODE_IP} 'sudo /usr/libexec/oci-growfs -y'
+
                                 mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
                                 mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
@@ -528,11 +512,7 @@ EOF
                                 export NFS_SERVER=$mt_private_ip
                                 export FSS_DIR=${FSS_DIR}
                                 echo "Using NFS Server ${NFS_SERVER}"
-                                #export NO_PROXY="${K8S_NODEPORT_HOST}"
 
-                                if [ "${MAVEN_PROFILE_NAME}" == "oke-gate" ]; then
-                                    PARALLEL_RUN='false'
-                                fi
                                 if [ -n "${IT_TEST}" ]; then
                                     echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
                                     MAVEN_PROFILE_NAME="integration-tests"
@@ -620,8 +600,6 @@ EOF
                         export PATH="${WORKSPACE}/bin:${PATH}"
                         export KUBECONFIG=${kubeconfig_file}
 
-                        #export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
-                        #export OCI_CLI_PROFILE=${oci_profile}
                         echo 'Remove old OKE cluster (if any)...'
 
                         if [ -f "$OCI_PROP_FILE" ] && [ -f "${WORKSPACE}/terraform/oke.delete.sh" ]; then
