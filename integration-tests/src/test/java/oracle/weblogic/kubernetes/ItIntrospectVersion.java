@@ -1220,14 +1220,14 @@ class ItIntrospectVersion {
         + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
 
 
-    final String command = String.format(
-        KUBERNETES_CLI + " exec -n " + introDomainNamespace + "  " + adminServerPodName + " -- curl http://"
+    final String command = KUBERNETES_CLI + " exec -n "
+            + introDomainNamespace + "  " + adminServerPodName + " -- curl http://"
             + wlsUserName
             + ":"
             + wlsPassword
-            + "@" + adminServerPodName + ":%s/clusterview/ClusterViewServlet"
+            + "@" + adminServerPodName + ":7001/clusterview/ClusterViewServlet"
             + "\"?user=" + user
-            + "&password=" + password + "\"");
+            + "&password=" + password + "\"";
 
     testUntil(
         () -> {
