@@ -23,15 +23,12 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.WLS_DEFAULT_CHANNEL_NAME;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.doesPodNotExist;
 import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.isPodReady;
 import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.isPodRestarted;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
-import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -233,7 +230,7 @@ public class Domain {
    * Check if the given WebLogic credentials are valid by using the credentials to
    * invoke a RESTful Management Services command.
    *
-   * @param host hostname of the admin server pod
+   * @param port listen port of the admin server pod
    * @param podName name of the admin server pod
    * @param namespace name of the namespace that the pod is running in
    * @param username WebLogic admin username
@@ -241,13 +238,13 @@ public class Domain {
    * @return true if the RESTful Management Services command succeeded
    **/
   public static boolean credentialsValid(
-      String host,
+      int port,
       String podName,
       String namespace,
       String username,
       String password,
       String... args) {
-    CommandParams params = createCommandParams(host, podName, namespace, username, password, args);
+    CommandParams params = createCommandParams(port, podName, namespace, username, password, args);
     return Command.withParams(params).executeAndVerify("200");
   }
 
@@ -255,7 +252,7 @@ public class Domain {
    * Check if the given WebLogic credentials are not valid by using the credentials to
    * invoke a RESTful Management Services command.
    *
-   * @param host hostname of the admin server pod
+   * @param port listen port of the admin server pod
    * @param podName name of the admin server pod
    * @param namespace name of the namespace that the pod is running in
    * @param username WebLogic admin username
@@ -263,25 +260,23 @@ public class Domain {
    * @return true if the RESTful Management Services command failed with exitCode 401
    **/
   public static boolean credentialsNotValid(
-      String host,
+      int port,
       String podName,
       String namespace,
       String username,
       String password,
       String... args) {
-    CommandParams params = createCommandParams(host, podName, namespace, username, password, args);
+    CommandParams params = createCommandParams(port, podName, namespace, username, password, args);
     return Command.withParams(params).executeAndVerify("401");
   }
 
   private static CommandParams createCommandParams(
-      String host,
+      int port,
       String podName,
       String namespace,
       String username,
       String password,
       String... args) {
-    int adminServiceNodePort
-        = getServiceNodePort(namespace, getExternalServicePodName(podName), WLS_DEFAULT_CHANNEL_NAME);
 
     if (username == null) {
       username = ADMIN_USERNAME_DEFAULT;
@@ -289,11 +284,11 @@ public class Domain {
     if (password == null) {
       password = ADMIN_PASSWORD_DEFAULT;
     }
-    String url = (OKD) ? host : host + ":" + adminServiceNodePort;
 
     // create a RESTful management services command that connects to admin server using given credentials to get
     // information about a managed server
     String managedServer1 = (args.length == 0) ? "managed-server1" : "managed-server1-c1";
+    /*
     StringBuffer cmdString = new StringBuffer()
         .append("status=$(curl --user " + username + ":" + password)
         .append(" http://" + url)
@@ -304,6 +299,18 @@ public class Domain {
         .append(" -w %{http_code});")
         .append(" echo ${status}");
 
+     */
+    StringBuffer cmdString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + podName)
+        .append(" -- /bin/bash -c \"")
+        .append("curl -k --user ")
+        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" http://")
+        .append(podName + ":" + port)
+        .append(" --silent --show-error ")
+        .append(" -o /dev/null ")
+        .append(" -w %{http_code}")
+        .append(" && echo ${status}")
+        .append(" \"");
     return Command
             .defaultCommandParams()
             .command(cmdString.toString())

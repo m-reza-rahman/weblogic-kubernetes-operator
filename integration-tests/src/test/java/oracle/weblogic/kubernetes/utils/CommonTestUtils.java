@@ -581,13 +581,13 @@ public class CommonTestUtils {
       String password,
       boolean expectValid) {
 
-    verifyCredentials(null, podName, namespace, username, password, expectValid);
+    verifyCredentials(7001, podName, namespace, username, password, expectValid);
   }
 
   /**
    * Check that the given credentials are valid to access the WebLogic domain.
    *
-   * @param host this is only for OKD - ingress host to access the service
+   * @param port listen port of admin server
    * @param podName name of the admin server pod
    * @param namespace name of the namespace that the pod is running in
    * @param username WebLogic admin username
@@ -595,7 +595,7 @@ public class CommonTestUtils {
    * @param expectValid true if the check expects a successful result
    */
   public static void verifyCredentials(
-      String host,
+      int port,
       String podName,
       String namespace,
       String username,
@@ -605,13 +605,12 @@ public class CommonTestUtils {
     LoggingFacade logger = getLogger();
     String msg = expectValid ? "valid" : "invalid";
     logger.info("Check if the given WebLogic admin credentials are {0}", msg);
-    String finalHost = host != null ? host : K8S_NODEPORT_HOST;
-    logger.info("finalHost = {0}", finalHost);
+
     testUntil(
         withQuickRetryPolicy,
         assertDoesNotThrow(
-          expectValid ? () -> credentialsValid(finalHost, podName, namespace, username, password, args)
-              : () -> credentialsNotValid(finalHost, podName, namespace, username, password, args),
+          expectValid ? () -> credentialsValid(port, podName, namespace, username, password, args)
+              : () -> credentialsNotValid(port, podName, namespace, username, password, args),
           String.format(
             "Failed to validate credentials %s/%s on pod %s in namespace %s",
             username, password, podName, namespace)),

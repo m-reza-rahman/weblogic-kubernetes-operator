@@ -184,6 +184,7 @@ class ItIntrospectVersion {
   private static Path clusterViewAppPath;
   private static LoggingFacade logger = null;
   private static final int managedServerPort = 7100;
+  private static int adminPort = 7001;
 
   /**
    * Assigns unique namespaces for operator and domains.
@@ -398,6 +399,7 @@ class ItIntrospectVersion {
 
     try {
       execCommand(introDomainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", curlCmd);
+      adminPort = newAdminPort;
     } catch (Exception ex) {
       logger.severe(ex.getMessage());
     }
@@ -584,9 +586,9 @@ class ItIntrospectVersion {
     // So that the test will also work with WebLogic slim image
     final boolean VALID = true;
     logger.info("Check that after patching current credentials are not valid and new credentials are");
-    verifyCredentials(adminSvcExtHost, adminServerPodName, introDomainNamespace,
+    verifyCredentials(adminPort, adminServerPodName, introDomainNamespace,
          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, false);
-    verifyCredentials(adminSvcExtHost, adminServerPodName, introDomainNamespace,
+    verifyCredentials(adminPort, adminServerPodName, introDomainNamespace,
          ADMIN_USERNAME_PATCH, ADMIN_PASSWORD_PATCH, VALID);
 
     List<String> managedServerNames = new ArrayList<>();
@@ -1129,29 +1131,15 @@ class ItIntrospectVersion {
 
     //deploy clusterview application
     logger.info("Deploying clusterview app {0} to cluster {1}", clusterViewAppPath, cluster1Name);
-    String targets = "{identity:[clusters,'mycluster']},{identity:[servers,'admin-server']}";
 
-    String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-    logger.info("hostAndPort = {0} ", hostAndPort);
     assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
-        "7001",
+        String.valueOf(adminPort),
         wlsUserName,
         wlsPassword,
         cluster1Name + "," + adminServerName,
         clusterViewAppPath,
         introDomainNamespace),"Deploying the application");
-    /*
-    testUntil(
-        () -> {
-          ExecResult result = assertDoesNotThrow(() -> deployUsingRest(hostAndPort,
-              wlsUserName, wlsPassword,
-              targets, clusterViewAppPath, null, "clusterview"));
-          return result.stdout().equals("202");
-        },
-        logger,
-        "Deploying the application using Rest");
 
-     */
     List<String> managedServerNames = new ArrayList<>();
     for (int i = 1; i <= cluster1ReplicaCount; i++) {
       managedServerNames.add(cluster1ManagedServerNameBase + i);
@@ -1225,7 +1213,8 @@ class ItIntrospectVersion {
             + wlsUserName
             + ":"
             + wlsPassword
-            + "@" + adminServerPodName + ":7001/clusterview/ClusterViewServlet"
+            + "@" + adminServerPodName + ":"
+            + adminPort + "/clusterview/ClusterViewServlet"
             + "\"?user=" + user
             + "&password=" + password + "\"";
 
