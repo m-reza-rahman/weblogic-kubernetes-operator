@@ -306,6 +306,7 @@ public class Domain {
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" http://")
         .append(podName + ":" + port)
+        .append("/management/tenant-monitoring/servers/" + managedServer1)
         .append(" --silent --show-error ")
         .append(" -o /dev/null ")
         .append(" -w %{http_code}")
