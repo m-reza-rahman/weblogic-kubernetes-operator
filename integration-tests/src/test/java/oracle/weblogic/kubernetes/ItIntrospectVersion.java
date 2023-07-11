@@ -1210,10 +1210,11 @@ class ItIntrospectVersion {
 
     final String command = KUBERNETES_CLI + " exec -n "
             + introDomainNamespace + "  " + adminServerPodName + " -- curl http://"
-            + wlsUserName
-            + ":"
-            + wlsPassword
-            + "@" + adminServerPodName + ":"
+            //+ wlsUserName
+            //+ ":"
+            //+ wlsPassword
+            //+ "@"
+            + adminServerPodName + ":"
             + adminPort + "/clusterview/ClusterViewServlet"
             + "\"?user=" + user
             + "&password=" + password + "\"";
