@@ -143,6 +143,7 @@ public class CommonTestUtils {
   public static ConditionFactory withLongRetryPolicy = createStandardRetryPolicyWithAtMost(15);
 
   private static final String TMP_FILE_NAME = "temp-download-file.out";
+  private static int adminListenPort = 7001;
 
   /**
    * Create a condition factory with custom values for pollDelay, pollInterval and atMost time.
@@ -581,7 +582,7 @@ public class CommonTestUtils {
       String password,
       boolean expectValid) {
 
-    verifyCredentials(7001, podName, namespace, username, password, expectValid);
+    verifyCredentials(adminListenPort, podName, namespace, username, password, expectValid);
   }
 
   /**
@@ -797,7 +798,7 @@ public class CommonTestUtils {
         .append(" -- /bin/bash -c \"")
         .append("curl --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + adminServerPodName + ":7001")
+        .append(" http://" + adminServerPodName + ":" + adminListenPort)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesPath)
@@ -854,7 +855,7 @@ public class CommonTestUtils {
         .append(" -- /bin/bash -c \"")
         .append("curl --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + adminServerPodName + ":7001")
+        .append(" http://" + adminServerPodName + ":" + adminListenPort)
         .append("/management/weblogic/latest/domainRuntime")
         .append("/")
         .append(resourcesUrl)
@@ -1417,7 +1418,7 @@ public class CommonTestUtils {
 
     // forwarding admin port to a local port
     String localhost = "localhost";
-    String forwardedPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
+    String forwardedPort = startPortForwardProcess(localhost, domainNamespace, domainUid, adminListenPort);
     assertNotNull(forwardedPort, "port-forward command fails to assign local port");
     logger.info("Forwarded local port is {0}", forwardedPort);
 
@@ -1528,7 +1529,8 @@ public class CommonTestUtils {
     ExecResult result = null;
 
     // create a WebLogic container
-    String createContainerCmd = new StringBuffer(WLSIMG_BUILDER + " run -d -p 7001:7001 --name=")
+    String createContainerCmd = new StringBuffer(WLSIMG_BUILDER + " run -d -p "
+        + adminListenPort + ":" + adminListenPort + " --name=")
         .append(containerName)
         .append(" --network=host ")
         //.append(" --add-host=host.docker.internal:host-gateway ")

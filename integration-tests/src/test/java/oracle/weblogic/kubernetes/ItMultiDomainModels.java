@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -196,7 +196,7 @@ class ItMultiDomainModels {
     testUntil(
         assertDoesNotThrow(
           () -> {
-            return () -> adminLoginPageAccessible(adminServerPodName,
+            return () -> adminLoginPageAccessible(adminServerPodName, "7001",
             domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
           },
         "Access to admin console page failed"), logger, "Console login validation failed");

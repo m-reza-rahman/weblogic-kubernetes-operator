@@ -337,7 +337,7 @@ class ItManageNameSpace {
    * and verify all server pods in the domain were created and ready.
    * Verify operator is able to manage this domain by scaling.
    */
-  @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER_INT", matches = "true")
+  @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER_PRIVATEIP", matches = "true")
   @Test
   @Order(3)
   @DisplayName("install operator helm chart and domain, "

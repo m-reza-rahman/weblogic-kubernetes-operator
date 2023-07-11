@@ -170,9 +170,9 @@ public interface TestConstants {
   public static final String IMAGE_TAG_OPERATOR_FOR_JENKINS =
       IMAGE_TAG_OPERATOR != null ? IMAGE_TAG_OPERATOR : SAFE_BRANCH_IMAGE_NAME + BUILD_ID;
 
-  public static String K8S_NODEPORT_HOST = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
+  public static final String K8S_NODEPORT_HOST = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
       assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
-  public static String K8S_NODEPORT_HOSTNAME = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
+  public static final String K8S_NODEPORT_HOSTNAME = getNonEmptySystemProperty("wko.it.k8s.nodeport.host",
         assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostName()));
   public static final String RESULTS_BASE = getNonEmptySystemProperty("wko.it.result.root",
       System.getProperty("java.io.tmpdir") + "/it-testsresults");
@@ -336,6 +336,8 @@ public interface TestConstants {
   //OKE constants
   public static final boolean OKE_CLUSTER =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.oke.cluster", "false"));
+  public static final boolean OKE_CLUSTER_PRIVATEIP =
+      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.oke.cluster.privateip", "false"));
   public static final String NFS_SERVER = System.getProperty("wko.it.nfs.server", "");
   public static final String NODE_IP = System.getProperty("wko.it.node.ip", "");
   public static final String [] FSS_DIR = System.getProperty("wko.it.fss.dir","").split(",");

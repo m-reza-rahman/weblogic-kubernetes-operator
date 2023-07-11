@@ -557,7 +557,7 @@ EOF
                                 sh '''
                                     export PATH=${runtime_path}
                                     export OKE_CLUSTER="true"
-                                    export OKE_CLUSTER_INT="true"
+                                    export OKE_CLUSTER_PRIVATEIP="true"
                                     export OKD="false"
                                     export KUBECONFIG=${kubeconfig_file}
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"

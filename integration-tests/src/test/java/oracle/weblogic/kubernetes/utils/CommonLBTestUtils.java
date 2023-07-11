@@ -65,7 +65,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PV_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -200,9 +200,9 @@ public class CommonLBTestUtils {
       getLogger().info("Getting admin service node port: {0}", serviceNodePort);
 
       getLogger().info("Validating WebLogic admin server access by login to console");
-      if (OKE_CLUSTER) {
+      if (OKE_CLUSTER_PRIVATEIP) {
         assertTrue(assertDoesNotThrow(
-            () -> adminLoginPageAccessible(adminServerPodName,domainNamespace,
+            () -> adminLoginPageAccessible(adminServerPodName, "7001", domainNamespace,
                 ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
             "Access to admin server node port failed"), "Console login validation failed");
       } else {
@@ -479,13 +479,14 @@ public class CommonLBTestUtils {
    * Verify admin console is accessible by login to WebLogic console.
    *
    * @param adminServerPodName admin server pod
+   * @param adminPort admin port
    * @param namespace admin server pod namespace
    * @param userName WebLogic administration server user name
    * @param password WebLogic administration server password
    * @return true if login to WebLogic administration console is successful
    * @throws IOException when connection to console fails
    */
-  public static boolean adminLoginPageAccessible(String adminServerPodName, String namespace,
+  public static boolean adminLoginPageAccessible(String adminServerPodName, String adminPort, String namespace,
                                                  String userName, String password)
       throws IOException {
     LoggingFacade logger = getLogger();
@@ -498,7 +499,7 @@ public class CommonLBTestUtils {
           .append(userName)
           .append(":")
           .append(password)
-          .append(" http://" + adminServerPodName + ":7001")
+          .append(" http://" + adminServerPodName + ":" + adminPort)
           .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
           .append("echo ${status}");
       logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
@@ -522,7 +523,7 @@ public class CommonLBTestUtils {
           .append(userName)
           .append(":")
           .append(password)
-          .append(" http://" + adminServerPodName + ":7001")
+          .append(" http://" + adminServerPodName + ":" + adminPort)
           .append("/console/login/LoginForm.jsp")
           .append("\"").toString();
 

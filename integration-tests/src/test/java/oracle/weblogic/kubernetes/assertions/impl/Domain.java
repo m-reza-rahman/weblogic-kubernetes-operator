@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.assertions.impl;
@@ -288,18 +288,6 @@ public class Domain {
     // create a RESTful management services command that connects to admin server using given credentials to get
     // information about a managed server
     String managedServer1 = (args.length == 0) ? "managed-server1" : "managed-server1-c1";
-    /*
-    StringBuffer cmdString = new StringBuffer()
-        .append("status=$(curl --user " + username + ":" + password)
-        .append(" http://" + url)
-        .append("/management/tenant-monitoring/servers/" + managedServer1)
-        .append(" --silent --show-error")
-        .append(" --noproxy '*'")
-        .append(" -o /dev/null")
-        .append(" -w %{http_code});")
-        .append(" echo ${status}");
-
-     */
     StringBuffer cmdString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + podName)
         .append(" -- /bin/bash -c \"")
         .append("curl -k --user ")

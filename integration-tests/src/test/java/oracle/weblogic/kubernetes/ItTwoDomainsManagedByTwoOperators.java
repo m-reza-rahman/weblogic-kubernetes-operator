@@ -311,13 +311,9 @@ class ItTwoDomainsManagedByTwoOperators {
         checkPodReadyAndServiceExists(managedServerPodName, domainUid, domainNamespace);
       }
 
-      logger.info("Getting admin service node port");
-      int serviceNodePort =
-              getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-
       logger.info("Validating WebLogic admin server access by login to console");
       assertTrue(assertDoesNotThrow(
-          () -> adminLoginPageAccessible(adminServerPodName,
+          () -> adminLoginPageAccessible(adminServerPodName, "7001",
               domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
           "Access to admin console page failed"), "Console login validation failed");
     }
