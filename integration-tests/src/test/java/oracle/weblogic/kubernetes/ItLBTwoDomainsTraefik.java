@@ -26,16 +26,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.createMultipleDomainsSharingPVUsingWlstAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyAdminServerAccess;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyClusterLoadbalancing;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.getLbExternalIp;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithTLSCertKey;
@@ -174,15 +171,9 @@ class ItLBTwoDomainsTraefik {
   @DisplayName("Verify Traefik path routing with HTTP protocol across two domains")
   void testTraefikPathRoutingAcrossDomains() {
     logger.info("Verifying Traefik path routing with HTTP protocol across two domains");
-    String lbExternalIP = K8S_NODEPORT_HOST;
-    if (OKE_CLUSTER) {
-      lbExternalIP = assertDoesNotThrow(() -> getLbExternalIp(traefikNamespace, traefikHelmParams.getReleaseName()));
-      assertNotNull(lbExternalIP, " externalIP was not created");
-    }
     for (String domainUid : domainUids) {
       verifyClusterLoadbalancing(domainUid, "", "http", getTraefikLbNodePort(false),
-          replicaCount, false, "/" + domainUid.substring(12).replace("-", ""),
-          lbExternalIP);
+          replicaCount, false, "/" + domainUid.substring(12).replace("-", ""));
     }
   }
 
