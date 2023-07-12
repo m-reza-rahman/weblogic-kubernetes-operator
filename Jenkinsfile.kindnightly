@@ -342,7 +342,7 @@ pipeline {
 
                 stage('Run Helm installation tests') {
                     when {
-                        expression { ${GIT_BRANCH} != 'origin/release34jenkins'}
+                        expression { "${GIT_BRANCH}" != 'origin/release34jenkins'}
                     }
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
