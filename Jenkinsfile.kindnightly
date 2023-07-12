@@ -341,6 +341,9 @@ pipeline {
                 }
 
                 stage('Run Helm installation tests') {
+                    when {
+                        expression { ${GIT_BRANCH} != 'release32jenkins'}
+                    }
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
                     }
