@@ -360,7 +360,7 @@
         },
         "replaceVariablesInJavaOptions": {
           "default": false,
-          "description": "Specifies whether the environment variables in the Java options will be replaced in situations such as when the JAVA_OPTIONS are specified using a config map. Defaults to false.",
+          "description": "Specifies whether the operator will replace the environment variables in the Java options in certain situations, such as when the JAVA_OPTIONS are specified using a config map. Defaults to false.",
           "type": "boolean"
         },
         "serverService": {

@@ -163,8 +163,8 @@ public class DomainSpec extends BaseConfiguration {
   /** Whether to replace the environment variables in the Java options when JAVA_OPTIONS specified using config-map.
    * Default is false.
    */
-  @Description("Specifies whether the environment variables in the Java options will be replaced "
-      + "in situations such as when the JAVA_OPTIONS are specified using a config map. "
+  @Description("Specifies whether the operator will replace the environment variables in the Java options "
+      + "in certain situations, such as when the JAVA_OPTIONS are specified using a config map. "
       + "Defaults to false.")
   @Default(boolDefault = false)
   private Boolean replaceVariablesInJavaOptions;
