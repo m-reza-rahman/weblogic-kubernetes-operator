@@ -345,6 +345,7 @@ if [ "$DO_INITIAL_IMAGE" = "true" ]; then
   doCommand -c "export OKD=${OKD}"
   doCommand    "\$DPVWRAPPERDIR/stage-tooling.sh"
   doCommand    "\$DPVWRAPPERDIR/build-wdt-domain-image.sh"
+  doCommand -c "kind load docker-image wdt-domain-image:JRF-v1 --name kind"
 fi
 
 if [ "$DO_INITIAL_MAIN" = "true" ]; then
