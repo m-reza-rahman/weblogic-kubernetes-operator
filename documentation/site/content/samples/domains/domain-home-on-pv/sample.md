@@ -13,10 +13,6 @@ description: "Sample for creating a WebLogic domain home on a PV for deploying t
 If you are taking the `JRF` path through the sample, then substitute `JRF` for `WLS` in your image names and directory paths. Also note that the JRF-v1 model YAML file differs from the WLS-v1 YAML file (it contains an additional `domainInfo -> RCUDbInfo` stanza).
 {{% /notice %}}
 
-{{% notice note %}}
-This sample creates a Persistent Volume (PV) of type `hostPath`. This works only for a single node Kubernetes cluster for testing or proof of concept activities. In a multinode Kubernetes cluster, consider using a `StorageClass`, or `nfs`, or `hostPath` having a path location on a shared storage and mounted by all nodes in the Kubernetes cluster. If you use Oracle Container Engine for Kubernetes (OKE) and plan to use Oracle Cloud Infrastructure File Storage (FSS) for PV, then Oracle recommends creating a `StorageClass` and specifying the name of the `StorageClass` in your PersistentVolumeClaim (PVC) configuration in the `initializeDomainOnPV` section. See [Provisioning PVCs on the File Storage Service (FSS)](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengcreatingpersistentvolumeclaim_Provisioning_PVCs_on_FSS.htm#Provisioning_Persistent_Volume_Claims_on_the_FileStorageService) in the OCI documentation for more details.
-{{% /notice %}}
-
 ### Overview
 
 The sample demonstrates setting up a WebLogic domain with a domain home on a Kubernetes PersistentVolume (PV) (**Domain on PV**). This involves:
@@ -134,6 +130,12 @@ Copy the contents of the [WLS domain resource YAML file](https://raw.githubuserc
 Click [here](https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/scripts/create-weblogic-domain/domain-on-pv/domain-resources/WLS/domain-on-pv-WLS-v1.yaml) to view the WLS Domain YAML file.
 
 Click [here](https://raw.githubusercontent.com/oracle/weblogic-kubernetes-operator/{{< latestMinorVersion >}}/kubernetes/samples/scripts/create-weblogic-domain/domain-on-pv/domain-resources/JRF/domain-on-pv-JRF-v1.yaml) to view the JRF Domain YAML file.
+
+Modify the PV and PVC specifications defined in the `spec.configuration.initializeDomainOnPV` section of the Domain resource YAML file based on your environment. These specifications often require your Kubernetes cluster administrator to provide the information. See [Persistent volume and Persistent Volume Claim]({{< relref "/managing-domains/domain-on-pv/usage#persistent-volume-and-persistent-volume-claim" >}}) in the user documentation for more details.
+
+{{% notice note %}}
+By default, this sample creates a Persistent Volume (PV) of type `hostPath`. This works only for a single node Kubernetes cluster for testing or proof of concept activities. In a multinode Kubernetes cluster, consider using a Kubernetes `StorageClass`, or PV of `nfs` type, or `hostPath` having a path location on a shared storage and mounted by all nodes in the Kubernetes cluster. If you use Oracle Container Engine for Kubernetes (OKE) and plan to use Oracle Cloud Infrastructure File Storage (FSS) for PV, then Oracle recommends creating a `StorageClass` and specifying the name of the `StorageClass` in your PersistentVolumeClaim (PVC) configuration in the `initializeDomainOnPV` section. See [Provisioning PVCs on the File Storage Service (FSS)](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengcreatingpersistentvolumeclaim_Provisioning_PVCs_on_FSS.htm#Provisioning_Persistent_Volume_Claims_on_the_FileStorageService) in the OCI documentation for more details.
+{{% /notice %}}
 
   **NOTE**: Before you deploy the domain custom resource, ensure all nodes in your Kubernetes cluster [can access `domain-creation-image` and other images]({{< relref "/samples/domains/domain-home-on-pv#ensuring-your-kubernetes-cluster-can-access-images" >}}).
 
