@@ -23,6 +23,10 @@ import io.kubernetes.client.openapi.models.V1JobList;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1NamespaceList;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1PersistentVolume;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeList;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetList;
@@ -82,6 +86,10 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
       new RequestBuilder<>(V1Secret.class, V1SecretList.class, "", "v1", "secrets");
   public static final RequestBuilder<CoreV1Event, CoreV1EventList> EVENT =
       new RequestBuilder<>(CoreV1Event.class, CoreV1EventList.class, "", "v1", "events");
+  public static final RequestBuilder<V1PersistentVolume, V1PersistentVolumeList> PV =
+      new RequestBuilder<>(V1PersistentVolume.class, V1PersistentVolumeList.class, "", "v1", "persistentvolumes");
+  public static final RequestBuilder<V1PersistentVolumeClaim, V1PersistentVolumeClaimList> PVC =
+      new RequestBuilder<>(V1PersistentVolumeClaim.class, V1PersistentVolumeClaimList.class, "", "v1", "persistentvolumeclaims");
 
   public static final RequestBuilder<V1CustomResourceDefinition, V1CustomResourceDefinitionList> CRD =
       new RequestBuilder<>(V1CustomResourceDefinition.class, V1CustomResourceDefinitionList.class,

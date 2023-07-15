@@ -198,7 +198,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     packet.put(ProcessingConstants.DELEGATE_COMPONENT_NAME, delegate);
     packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, liveInfo);
     packet.put(ProcessingConstants.MAKE_RIGHT_DOMAIN_OPERATION, this);
-    packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, delegate.getKubernetesVersion());
+    packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, delegate.getKubernetesVersion()); // FIXME
     packet.put(ProcessingConstants.PODWATCHER_COMPONENT_NAME, delegate.getPodAwaiterStepFactory(getNamespace()));
     packet.put(ProcessingConstants.JOBWATCHER_COMPONENT_NAME, delegate.getJobAwaiterStepFactory(getNamespace()));
     /* FIXME
@@ -434,7 +434,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (deleting) {
         executor.unregisterDomainPresenceInfo(info);
       } else {
@@ -523,7 +523,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
         @Override
         public void completeProcessing(Packet packet) {
           info.getServerNames().stream().filter(
-              s -> !info.getServerNamesFromPodList().contains(s)).collect(Collectors.toList())
+              s -> !info.getServerNamesFromPodList().contains(s)).toList()
               .forEach(name -> info.deleteServerPodFromEvent(name, null));
           info.clearServerPodNamesFromList();
         }

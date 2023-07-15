@@ -12,15 +12,14 @@ import java.util.function.Consumer;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimStatus;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -122,7 +121,7 @@ public class PvcWatcher implements PvcAwaiterStepFactory {
     @Override
     Step createReadAsyncStep(String name, String namespace, String domainUid,
                              ResponseStep<V1PersistentVolumeClaim> responseStep) {
-      return new CallBuilder().readPersistentVolumeClaimAsync(name, namespace, responseStep);
+      return RequestBuilder.PVC.get(namespace, name, responseStep);
     }
 
     @Override
@@ -134,11 +133,11 @@ public class PvcWatcher implements PvcAwaiterStepFactory {
     protected DefaultResponseStep<V1PersistentVolumeClaim> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(null) {
         @Override
-        public NextAction onSuccess(Packet packet, CallResponse<V1PersistentVolumeClaim> callResponse) {
-          DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
-          V1PersistentVolumeClaim pvc = callResponse.getResult();
-          if (isReady(callResponse.getResult()) || callback.didResumeFiber()) {
-            callback.proceedFromWait(callResponse.getResult());
+        public Void onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+          DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+          V1PersistentVolumeClaim pvc = callResponse.getObject();
+          if (isReady(callResponse.getObject()) || callback.didResumeFiber()) {
+            callback.proceedFromWait(callResponse.getObject());
             processor.updateDomainStatus(pvc, info);
             return doNext(packet);
           }

@@ -618,18 +618,20 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     Optional.ofNullable(IntrospectionStatus.createStatusUpdateSteps(pod))
           .ifPresent(steps -> {
             Packet packet = new Packet();
-            packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, info);
+            packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, info);
             delegate.runSteps(packet, steps, null);
           });
   }
 
   @Override
   public void updateDomainStatus(@Nonnull V1PersistentVolumeClaim pvc, DomainPresenceInfo info) {
+    Packet packet = new Packet();
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, info);
     if (!ProcessingConstants.BOUND.equals(getPhase(pvc))) {
-      delegate.runSteps(new Packet().with(info), DomainStatusUpdater
+      delegate.runSteps(packet, DomainStatusUpdater
               .createPersistentVolumeClaimFailureSteps(getMessage(pvc)), null);
     } else {
-      delegate.runSteps(new Packet().with(info), DomainStatusUpdater
+      delegate.runSteps(packet, DomainStatusUpdater
           .createRemoveSelectedFailuresStep(EventHelper.createEventStep(
               new EventData(PERSISTENT_VOLUME_CLAIM_BOUND)), PERSISTENT_VOLUME_CLAIM), null);
     }
@@ -1181,7 +1183,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     @Nonnull
     private Packet createPacket() {
       Packet packet = new Packet();
-      packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, delegate.getKubernetesVersion());
+      packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, delegate.getKubernetesVersion()); // FIXME
       packet.put(LoggingFilter.LOGGING_FILTER_PACKET_KEY, loggingFilter);
       return packet;
     }

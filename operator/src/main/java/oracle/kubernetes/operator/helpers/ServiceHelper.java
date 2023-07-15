@@ -61,7 +61,6 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.forDomainUidSelector;
 import static oracle.kubernetes.operator.LabelConstants.getCreatedByOperatorSelector;
 import static oracle.kubernetes.operator.LabelConstants.getServiceTypeSelector;
-import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 import static oracle.kubernetes.operator.helpers.OperatorServiceType.EXTERNAL;
 
 public class ServiceHelper {
@@ -243,7 +242,7 @@ public class ServiceHelper {
       serverName = (String) packet.get(ProcessingConstants.SERVER_NAME);
       clusterName = (String) packet.get(ProcessingConstants.CLUSTER_NAME);
       scan = (WlsServerConfig) packet.get(ProcessingConstants.SERVER_SCAN);
-      version = (KubernetesVersion) packet.get(ProcessingConstants.DOMAIN_COMPONENT_NAME);
+      version = (KubernetesVersion) packet.get(ProcessingConstants.DOMAIN_COMPONENT_NAME); // FIXME
     }
 
     @Override
@@ -974,16 +973,15 @@ public class ServiceHelper {
     }
 
     private Step getStep() {
-      return new CallBuilder()
-          .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector(),
-              getServiceTypeSelector("EXTERNAL"))
-          .listServiceAsync(
-              info.getNamespace(),
-              new ActionResponseStep<>() {
-                public Step createSuccessStep(V1ServiceList result, Step next) {
-                  return new DeleteServiceListStep(result.getItems(), next);
-                }
-              });
+      return RequestBuilder.SERVICE.list(info.getNamespace(),
+          new ListOptions().labelSelector(
+              forDomainUidSelector(info.getDomainUid()) + ","
+                  + getCreatedByOperatorSelector() + "," + getServiceTypeSelector("EXTERNAL")),
+          new ActionResponseStep<>() {
+        public Step createSuccessStep(V1ServiceList result, Step next) {
+          return new DeleteServiceListStep(result.getItems(), next);
+        }
+      });
     }
 
 
