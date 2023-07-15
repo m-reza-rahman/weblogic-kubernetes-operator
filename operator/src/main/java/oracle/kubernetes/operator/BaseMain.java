@@ -54,7 +54,6 @@ public abstract class BaseMain {
   static final AtomicReference<OffsetDateTime> lastFullRecheck =
       new AtomicReference<>(SystemClock.now());
   static final Semaphore shutdownSignal = new Semaphore(0);
-  static final int DEFAULT_STUCK_POD_RECHECK_SECONDS = 30;
 
   static final File deploymentHome;
   static final File probesHome;
@@ -244,7 +243,7 @@ public abstract class BaseMain {
   void scheduleCheckForShutdownMarker() {
     delegate.scheduleWithFixedDelay(
         () -> {
-          File marker = new File(delegate.getDeploymentHome(), "marker.shutdown");
+          File marker = new File(delegate.getDeploymentHome(), CoreDelegate.SHUTDOWN_MARKER_NAME);
           if (isFileExists(marker)) {
             releaseShutdownSignal();
           }

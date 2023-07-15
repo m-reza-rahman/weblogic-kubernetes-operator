@@ -707,8 +707,9 @@ class OperatorMainTest extends ThreadFactoryTestBase {
         .orElse(0);
   }
 
-  private KubernetesEventObjects getEventMapForDomain(Map map, String domainUid) {
-    return (KubernetesEventObjects) map.get(domainUid);
+  @SuppressWarnings("SameParameterValue")
+  private KubernetesEventObjects getEventMapForDomain(Map<String, KubernetesEventObjects> map, String domainUid) {
+    return map.get(domainUid);
   }
 
   private CoreV1Event createDomainEvent(String name) {
@@ -1007,6 +1008,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
             NAMESPACE_WATCHING_STARTED, Collections.singletonList(OP_NS)), is(true));
   }
 
+  @SuppressWarnings("SameParameterValue")
   private void defineNamespaceListStrategy(String namespaceString) {
     defineSelectionStrategy(SelectionStrategy.LIST);
     HelmAccessStub.defineVariable(HelmAccess.OPERATOR_DOMAIN_NAMESPACES, namespaceString);
@@ -1347,9 +1349,14 @@ class OperatorMainTest extends ThreadFactoryTestBase {
 
   @Test
   @ResourceLock(value = "operatorMain")
-  void whenShutdownMarkerIsCreate_stopOperator() {
-    inMemoryFileSystem.defineFile("/deployment/marker.shutdown", "shutdown");
+  void whenShutdownMarkerIsCreated_stopOperator() throws NoSuchFieldException {
+    mementos.add(StaticStubSupport.install(
+            BaseMain.class, "wrappedExecutorService", testSupport.getScheduledExecutorService()));
+    inMemoryFileSystem.defineFile(delegate.getShutdownMarker(), "shutdown");
+    testSupport.presetFixedDelay();
+
     operatorMain.doMain();
+
     assertThat(operatorMain.getShutdownSignalAvailablePermits(), equalTo(0));
   }
 
@@ -1359,7 +1366,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     BaseServerStub restServer = new BaseServerStub();
     m.getRestServer().set(restServer);
     m.completeStop();
-    Assert.assertTrue(restServer.isStopCalled);
+    assertThat(restServer.isStopCalled, is(true));
     assertThat(m.getRestServer().get(), nullValue());
   }
 
@@ -1384,10 +1391,6 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     @Override
     public void stop() {
       isStopCalled = true;
-    }
-
-    public boolean isStopCalled() {
-      return isStopCalled;
     }
 
     @Override

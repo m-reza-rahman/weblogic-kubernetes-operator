@@ -122,7 +122,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 public class WebhookMainTest extends CrdHelperTestBase {
   @Rule
@@ -295,9 +294,9 @@ public class WebhookMainTest extends CrdHelperTestBase {
   @Test
   void whenCRDsExist_resourceVersionsAreCached() {
     V1CustomResourceDefinition domainCrd = defineCrd(PRODUCT_VERSION, DOMAIN_CRD_NAME);
-    domainCrd.getMetadata().resourceVersion(RESOURCE_VERSION);
+    Objects.requireNonNull(domainCrd.getMetadata()).resourceVersion(RESOURCE_VERSION);
     V1CustomResourceDefinition clusterCrd = defineCrd(PRODUCT_VERSION, CLUSTER_CRD_NAME);
-    clusterCrd.getMetadata().resourceVersion(RESOURCE_VERSION);
+    Objects.requireNonNull(clusterCrd.getMetadata()).resourceVersion(RESOURCE_VERSION);
     testSupport.defineResources(domainCrd, clusterCrd);
 
     recheckCRD();
@@ -634,9 +633,14 @@ public class WebhookMainTest extends CrdHelperTestBase {
   }
 
   @Test
-  void whenShutdownMarkerIsCreate_stopWebhook() {
-    inMemoryFileSystem.defineFile("/deployment/marker.shutdown", "shutdown");
+  void whenShutdownMarkerIsCreated_stopWebhook() throws NoSuchFieldException {
+    mementos.add(StaticStubSupport.install(
+            BaseMain.class, "wrappedExecutorService", testSupport.getScheduledExecutorService()));
+    inMemoryFileSystem.defineFile(delegate.getShutdownMarker(), "shutdown");
+    testSupport.presetFixedDelay();
+
     main.waitForDeath();
+
     assertThat(main.getShutdownSignalAvailablePermits(), equalTo(0));
   }
 
@@ -646,7 +650,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
     BaseServerStub restServer = new BaseServerStub();
     m.getRestServer().set(restServer);
     m.completeStop();
-    assertTrue(restServer.isStopCalled);
+    assertThat(restServer.isStopCalled, is(true));
     assertThat(m.getRestServer().get(), nullValue());
   }
 
@@ -662,10 +666,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
     @Override
     public void stop() {
       isStopCalled = true;
-    }
-
-    public boolean isStopCalled() {
-      return isStopCalled;
     }
 
     @Override
@@ -789,6 +789,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
         .orElse(null);
   }
 
+  @SuppressWarnings("SameParameterValue")
   private void setServiceNamespace(String ns) {
     Optional.ofNullable(getService(testValidatingWebhookConfig)).ifPresent(s -> s.namespace(ns));
   }
