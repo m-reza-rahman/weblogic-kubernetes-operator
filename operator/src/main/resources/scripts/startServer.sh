@@ -20,10 +20,12 @@ traceTiming "POD '${SERVICE_NAME}' MAIN START"
 
 trace "Starting WebLogic Server '${SERVER_NAME}'."
 
-source ${SCRIPTPATH}/modelInImage.sh
+if [ ${DOMAIN_SOURCE_TYPE} == "FromModel" ]; then
+  source ${SCRIPTPATH}/modelInImage.sh
 
-if [ $? -ne 0 ]; then
+  if [ $? -ne 0 ]; then
       trace SEVERE "Error sourcing modelInImage.sh" && exit 1
+  fi
 fi
 
 exportInstallHomes
@@ -287,6 +289,10 @@ if [[ "${KUBERNETES_PLATFORM^^}" == "OPENSHIFT" ]]; then
 
 fi
 export JAVA_OPTIONS="${JAVA_XX_OPTIONS:--XX:+CrashOnOutOfMemoryError} $JAVA_OPTIONS"
+
+if [[ "${REPLACE_VARIABLES_IN_JAVA_OPTIONS}" == "true" ]]; then
+  export JAVA_OPTIONS=$(eval "echo $JAVA_OPTIONS")
+fi
 
 #
 # Start WLS
