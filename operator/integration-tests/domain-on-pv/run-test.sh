@@ -317,7 +317,9 @@ fi
 
 if [ "$DO_OPER" = "true" ]; then
   doCommand -c "echo ====== OPER DEPLOY ======"
-  doCommand -c "kind load docker-image weblogic-kubernetes-operator:test --name kind"
+  if [ -n "$KIND_REPO" ]; then
+    doCommand -c "kind load docker-image weblogic-kubernetes-operator:test --name kind"
+  fi
   doCommand  "\$TESTDIR/deploy-operator.sh"
 fi
 
@@ -345,7 +347,9 @@ if [ "$DO_INITIAL_IMAGE" = "true" ]; then
   doCommand -c "export OKD=${OKD}"
   doCommand    "\$DPVWRAPPERDIR/stage-tooling.sh"
   doCommand    "\$DPVWRAPPERDIR/build-wdt-domain-image.sh"
-  doCommand -c "kind load docker-image wdt-domain-image:JRF-v1 --name kind"
+  if [ -n "$KIND_REPO" ]; then
+    doCommand -c "kind load docker-image wdt-domain-image:JRF-v1 --name kind"
+  fi
 fi
 
 if [ "$DO_INITIAL_MAIN" = "true" ]; then
