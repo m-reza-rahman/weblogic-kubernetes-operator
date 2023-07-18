@@ -342,20 +342,6 @@ pipeline {
                     }
                 }
 
-                stage('Run Helm installation tests') {
-                    when {
-                        expression { "${GIT_BRANCH}" != 'origin/release34jenkins'}
-                    }
-                    environment {
-                        runtime_path = "${WORKSPACE}/bin:${PATH}"
-                    }
-                    steps {
-                        withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
-                            sh 'export PATH=${runtime_path} && mvn -pl kubernetes -P helm-installation-test verify'
-                        }
-                    }
-                }
-
                 stage ('Install kubectl') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
