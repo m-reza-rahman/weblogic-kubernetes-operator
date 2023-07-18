@@ -446,7 +446,7 @@ public class MonitoringUtils {
                                                       String grafanaHelmValuesFileDir,
                                                       String grafanaVersion) {
     LoggingFacade logger = getLogger();
-    logger.info("create a staging location for prometheus scripts");
+    logger.info("create a staging location for grafana scripts");
     Path fileTemp = Paths.get(grafanaHelmValuesFileDir);
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for grafana");
 

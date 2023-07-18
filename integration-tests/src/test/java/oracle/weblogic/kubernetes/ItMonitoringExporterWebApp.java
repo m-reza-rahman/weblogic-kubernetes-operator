@@ -428,7 +428,8 @@ class ItMonitoringExporterWebApp {
       //logger.info("Node Port for Grafana is " + nodeportgrafana);
       grafanaHelmParams = installAndVerifyGrafana(grafanaReleaseName,
               monitoringNS,
-              monitoringExporterEndToEndDir + "/grafana/values.yaml",
+          Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
+              grafanaReleaseName).toString(),
               grafanaChartVersion);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
       String hostPortGrafana = K8S_NODEPORT_HOST + ":" + grafanaHelmParams.getNodePort();
