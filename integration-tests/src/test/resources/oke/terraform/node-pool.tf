@@ -29,10 +29,10 @@ resource "oci_containerengine_node_pool" "tfsample_node_pool" {
        source_type = "image"
        boot_volume_size_in_gbs = "200"
   }
-  node_shape_config {
+  #node_shape_config {
         #Optional
-        memory_in_gbs = 48.0
-        ocpus = 4.0
+   #     memory_in_gbs = 48.0
+    #    ocpus = 4.0
   }
   # Optional
   initial_node_labels {

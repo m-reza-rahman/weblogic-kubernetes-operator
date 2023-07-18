@@ -115,7 +115,7 @@ pipeline {
         )
         string(name: 'NODE_SHAPE',
                        description: '',
-                       defaultValue: 'VM.Standard.E3.Flex'
+                       defaultValue: 'VM.Standard2.24'
                 )
         string(name: 'BRANCH',
                        description: '',
