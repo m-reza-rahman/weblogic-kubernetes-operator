@@ -267,7 +267,7 @@ class ItMonitoringExporterSamples {
       if (!OKD) {
         ingressHost2List
             = createIngressForDomainAndVerify(domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
-                false, nginxHelmParams.getIngressClassName(), false, 0);
+                true, nginxHelmParams.getIngressClassName(), false, 0);
         logger.info("verify access to Monitoring Exporter");
         verifyMonExpAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, nodeportshttp);
       } else {
