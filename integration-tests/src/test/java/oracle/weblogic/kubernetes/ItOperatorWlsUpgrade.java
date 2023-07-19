@@ -216,6 +216,7 @@ class ItOperatorWlsUpgrade {
   void testOperatorWlsUpgradeFrom406ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom406ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "4.0.6", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  }
 
   /**
    * Operator upgrade from 4.1.0 to current.
