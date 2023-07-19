@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -33,8 +35,7 @@ import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_IMAGE_NAM
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_IMAGE_REGISTRY;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_JAVA_HOME;
@@ -45,24 +46,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test and verify Domain on PV sample.
+ * Test and verify Domain on PV FMW domain sample.
  */
-@DisplayName("test domain on pv sample")
+@DisplayName("test domain on pv sample for FMW domain")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("samples")
-class ItDomainOnPVSample {
+class ItFMWDomainOnPVSample {
 
   private static final String domainOnPvSampleScript = "../operator/integration-tests/domain-on-pv/run-test.sh";
   private static final String DOMAIN_CREATION_IMAGE_NAME = "wdt-domain-image";
-  private static final String DOMAIN_CREATION_IMAGE_WLS_TAG = "WLS-v1";
+  private static final String DOMAIN_CREATION_IMAGE_JRF_TAG = "JRF-v1";
   private static String traefikNamespace = null;
   private static Map<String, String> envMap = null;
+  private static DomainType domainType = null;
   private static LoggingFacade logger = null;
 
   private boolean previousTestSuccessful = true;
-  private final String successSearchString = "Finished without errors";
 
   public enum DomainType {
     JRF,
@@ -70,20 +71,22 @@ class ItDomainOnPVSample {
   }
 
   /**
-   * Install Operator.
+   * Create namespaces and set environment variables for the test.
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *        JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(3) List<String> namespaces) {
+  public static void initAll(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
 
-    // clean up the environment before run the tests
-    String command = domainOnPvSampleScript + " -precleanup";
-    Command.withParams(new CommandParams()
-        .command(command)
-        .env(envMap)
-        .redirect(true)).execute();
+    // clean up pv-root content in kind worker
+    if (KIND_REPO != null) {
+      String command = WLSIMG_BUILDER_DEFAULT + " exec -ti kind-worker rm -rf /shared/domains /shared/logs";
+      Command.withParams(new CommandParams()
+          .command(command)
+          .env(envMap)
+          .redirect(true)).execute();
+    }
 
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
@@ -98,6 +101,10 @@ class ItDomainOnPVSample {
     assertNotNull(namespaces.get(2), "Namespace list is null");
     traefikNamespace = namespaces.get(2);
 
+    logger.info("Creating unique namespace for db");
+    assertNotNull(namespaces.get(3), "Namespace list is null");
+    String dbNamespace = namespaces.get(3);
+
     String domainOnPvSampleWorkDir =
         RESULTS_ROOT + "/" + domainNamespace + "/domain-on-pv-sample-work-dir";
 
@@ -105,7 +112,8 @@ class ItDomainOnPVSample {
     envMap = new HashMap<>();
     envMap.put("OPER_NAMESPACE", opNamespace);
     envMap.put("DOMAIN_NAMESPACE", domainNamespace);
-    envMap.put("DOMAIN_UID1", getUniqueName("sample-domain-"));
+    envMap.put("DB_NAMESPACE", dbNamespace);
+    envMap.put("DOMAIN_UID1", getUniqueName("fmw-sample-domain-"));
     envMap.put("TRAEFIK_NAMESPACE", traefikNamespace);
     envMap.put("TRAEFIK_HTTP_NODEPORT", "0"); // 0-->dynamically choose the np
     envMap.put("TRAEFIK_HTTPS_NODEPORT", "0"); // 0-->dynamically choose the np
@@ -114,9 +122,9 @@ class ItDomainOnPVSample {
     envMap.put("TRAEFIK_IMAGE_REPOSITORY", TRAEFIK_INGRESS_IMAGE_NAME);
     envMap.put("TRAEFIK_IMAGE_TAG", TRAEFIK_INGRESS_IMAGE_TAG);
     envMap.put("WORKDIR", domainOnPvSampleWorkDir);
-    envMap.put("BASE_IMAGE_NAME", WEBLOGIC_IMAGE_TO_USE_IN_SPEC
-        .substring(0, WEBLOGIC_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":")));
-    envMap.put("BASE_IMAGE_TAG", WEBLOGIC_IMAGE_TAG);
+    envMap.put("BASE_IMAGE_NAME", FMWINFRA_IMAGE_TO_USE_IN_SPEC
+        .substring(0, FMWINFRA_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":")));
+    envMap.put("BASE_IMAGE_TAG", FMWINFRA_IMAGE_TAG);
     envMap.put("IMAGE_PULL_SECRET_NAME", BASE_IMAGES_REPO_SECRET_NAME);
     envMap.put("DOMAIN_IMAGE_PULL_SECRET_NAME", TEST_IMAGES_REPO_SECRET_NAME);
     envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
@@ -134,7 +142,7 @@ class ItDomainOnPVSample {
     if (WDT_DOWNLOAD_URL != null) {
       envMap.put("WDT_INSTALLER_URL", WDT_DOWNLOAD_URL);
     }
-    logger.info("Env. variables to the script {0}", envMap);
+    logger.info("Environment variables to the script {0}", envMap);
   }
 
   /**
@@ -143,7 +151,7 @@ class ItDomainOnPVSample {
   @Test
   @Order(1)
   public void testInstallOperator() {
-    execTestScriptAndAssertSuccess("-oper", "Failed to run -oper");
+    execTestScriptAndAssertSuccess(DomainType.JRF, "-oper", "Failed to run -oper");
   }
 
   /**
@@ -152,52 +160,78 @@ class ItDomainOnPVSample {
   @Test
   @Order(2)
   public void testInstallTraefik() {
-    execTestScriptAndAssertSuccess("-traefik", "Failed to run -traefik");
+    execTestScriptAndAssertSuccess(DomainType.JRF, "-traefik", "Failed to run -traefik");
   }
 
   /**
-   * Test Domain on PV sample building image use case.
+   * Test Domain on PV sample precleandb use case.
    */
   @Test
   @Order(3)
+  public void testPrecleandb() {
+    execTestScriptAndAssertSuccess(DomainType.JRF, "-precleandb", "Failed to run -precleandb");
+  }
+
+  /**
+   * Test Domain on PV sample create db use case.
+   */
+  @Test
+  @Order(4)
+  public void testCreatedb() {
+    logger.info("test case for creating a db");
+    execTestScriptAndAssertSuccess(DomainType.JRF, "-db", "Failed to run -db");
+  }
+
+  /**
+   * Test Domain on PV sample building image for FMW domain use case.
+   */
+  @Test
+  @Order(5)
   public void testInitialImage() {
-    execTestScriptAndAssertSuccess("-initial-image", "Failed to run -initial-image");
+    logger.info("test case for building image");
+
+    execTestScriptAndAssertSuccess(DomainType.JRF, "-initial-image", "Failed to run -initial-image");
 
     // load the image to kind if using kind cluster
     if (KIND_REPO != null) {
-      String imageCreated = DOMAIN_CREATION_IMAGE_NAME + ":" + DOMAIN_CREATION_IMAGE_WLS_TAG;
+      String imageCreated = DOMAIN_CREATION_IMAGE_NAME + ":" + DOMAIN_CREATION_IMAGE_JRF_TAG;
       logger.info("loading image {0} to kind", imageCreated);
       imagePush(imageCreated);
     }
   }
 
   /**
-   * Test Domain on PV sample create domain use case.
+   * Test Domain on PV sample create FMW domain use case.
    */
   @Test
-  @Order(4)
+  @Order(6)
   public void testInitialMain() {
+    logger.info("test case for creating a FMW domain");
+
     // load the base image to kind if using kind cluster
     if (KIND_REPO != null) {
-      logger.info("loading image {0} to kind", WEBLOGIC_IMAGE_TO_USE_IN_SPEC);
-      imagePush(WEBLOGIC_IMAGE_TO_USE_IN_SPEC);
+      logger.info("loading image {0} to kind", FMWINFRA_IMAGE_TO_USE_IN_SPEC);
+      imagePush(FMWINFRA_IMAGE_TO_USE_IN_SPEC);
     }
 
-    execTestScriptAndAssertSuccess("-initial-main", "Failed to run -initial-main");
+    execTestScriptAndAssertSuccess(DomainType.JRF, "-initial-main", "Failed to run -initial-main");
   }
 
   /**
    * Run script run-test.sh.
+   * @param domainType domain type
    * @param args arguments to execute script
    * @param errString a string of detailed error
    */
-  private void execTestScriptAndAssertSuccess(String args,
+  private void execTestScriptAndAssertSuccess(DomainType domainType,
+                                              String args,
                                               String errString) {
     for (String arg : args.split(",")) {
       Assumptions.assumeTrue(previousTestSuccessful);
       previousTestSuccessful = false;
 
       String command = domainOnPvSampleScript
+          + (domainType == DomainType.JRF ? " -jrf " : "")
           + " "
           + arg;
 
@@ -212,9 +246,10 @@ class ItDomainOnPVSample {
           result != null
               && result.exitValue() == 0
               && result.stdout() != null
-              && result.stdout().contains(successSearchString);
+              && result.stdout().contains("Finished without errors");
 
       String outStr = errString;
+      outStr += ", domainType=" + domainType + "\n";
       outStr += ", command=\n{\n" + command + "\n}\n";
       outStr += ", stderr=\n{\n" + (result != null ? result.stderr() : "") + "\n}\n";
       outStr += ", stdout=\n{\n" + (result != null ? result.stdout() : "") + "\n}\n";
@@ -226,18 +261,29 @@ class ItDomainOnPVSample {
   }
 
   /**
-   * Uninstall Traefik.
+   * Delete DB deployment for FMW test cases and Uninstall traefik.
    */
   @AfterAll
   public static void tearDownAll() {
     logger = getLogger();
-    // uninstall traefik
+
+    // uninstall Traefik
     if (traefikNamespace != null) {
       logger.info("Uninstall Traefik");
+      String command =
+          "helm uninstall " +  TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3) + " -n " + traefikNamespace;
       Command.withParams(new CommandParams()
-          .command("helm uninstall traefik-operator -n " + traefikNamespace)
+          .command(command)
           .redirect(true)).execute();
     }
 
+    // db cleanup or deletion
+    if (domainType.equals(DomainType.JRF) && envMap != null) {
+      logger.info("Running samples DB cleanup");
+      Command.withParams(new CommandParams()
+          .command(domainOnPvSampleScript + " -precleandb")
+          .env(envMap)
+          .redirect(true)).execute();
+    }
   }
 }

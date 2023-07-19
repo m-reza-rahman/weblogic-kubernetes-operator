@@ -115,6 +115,7 @@ public interface TestConstants {
   // Get WEBLOGIC_IMAGE_NAME/WEBLOGIC_IMAGE_TAG from env var, 
   // if its not provided use OCIR default image values
   //
+  public static final String BASE_IMAGES_PREFIX = getDomainImagePrefix(BASE_IMAGES_REPO, BASE_IMAGES_TENANCY);
   public static final String WEBLOGIC_IMAGE_NAME = BASE_IMAGES_REPO + "/" + BASE_IMAGES_TENANCY + "/"
       + getNonEmptySystemProperty("wko.it.weblogic.image.name", WEBLOGIC_IMAGE_NAME_DEFAULT);
   public static final String WEBLOGIC_IMAGE_TAG = getNonEmptySystemProperty("wko.it.weblogic.image.tag", 
