@@ -241,7 +241,7 @@ class ItMonitoringExporterWebApp {
         String ingressClassName = nginxHelmParams.getIngressClassName();
         ingressHost1List
             = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
-                true, ingressClassName, false, 0);
+                false, ingressClassName, false, 0);
         verifyMonExpAppAccessThroughNginx(ingressHost1List.get(0), 1, nodeportshttp);
         // Need to expose the admin server external service to access the console in OKD cluster only
       } else {
