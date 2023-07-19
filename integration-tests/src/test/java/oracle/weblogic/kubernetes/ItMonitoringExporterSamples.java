@@ -211,8 +211,6 @@ class ItMonitoringExporterSamples {
 
     logger.info("install monitoring exporter");
     installMonitoringExporter(monitoringExporterDir);
-    assertDoesNotThrow(() -> replaceStringInFile(monitoringExporterEndToEndDir + "/grafana/values.yaml",
-        "pvc-grafana", "pvc-" + grafanaReleaseName));
 
     logger.info("create and verify WebLogic domain image using model in image with model files");
     miiImage = createAndVerifyMiiImage(monitoringExporterAppDir, MODEL_DIR + "/" + MONEXP_MODEL_FILE,

@@ -473,6 +473,9 @@ public class MonitoringUtils {
     assertDoesNotThrow(() -> replaceStringInFile(targetGrafanaFile.toString(),
         "busybox_tag",
         BUSYBOX_TAG), "Failed to replace String ");
+    assertDoesNotThrow(() -> replaceStringInFile(targetGrafanaFile.toString(),
+        "pvc-grafana",
+        "pvc-" + grafanaReleaseName), "Failed to replace String ");
     if (!OKE_CLUSTER) {
       assertDoesNotThrow(() -> replaceStringInFile(targetGrafanaFile.toString(),
           "enabled: false", "enabled: true"));
