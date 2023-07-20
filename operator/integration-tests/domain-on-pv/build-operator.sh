@@ -14,7 +14,7 @@
 #
 # This script always does a helm uninstall/install.
 
-set -eu
+set -e
 set -o pipefail
 
 TESTDIR="$( cd "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
