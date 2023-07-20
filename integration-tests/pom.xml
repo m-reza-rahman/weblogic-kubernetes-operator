@@ -515,7 +515,9 @@
                   **/ItMiiUpdateDomainConfig,
                   **/ItMultiDomainModels,
                   **/ItPodsRestart,
-                  **/ItRecoveryDomainInPV
+                  **/ItRecoveryDomainInPV,
+                  **/ItFmwDomainInPvUserCreateRcu,
+                  **/ItFmwDomainInPVSimplified
                 </includes-failsafe>
             </properties>
         </profile>
