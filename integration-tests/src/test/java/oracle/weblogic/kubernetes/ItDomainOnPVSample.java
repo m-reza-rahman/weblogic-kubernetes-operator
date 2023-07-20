@@ -64,13 +64,8 @@ class ItDomainOnPVSample {
   private boolean previousTestSuccessful = true;
   private final String successSearchString = "Finished without errors";
 
-  public enum DomainType {
-    JRF,
-    WLS
-  }
-
   /**
-   * Install Operator.
+   * Create namespaces and set environment variables for the test.
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *        JUnit engine parameter resolution mechanism
    */
@@ -134,7 +129,7 @@ class ItDomainOnPVSample {
     if (WDT_DOWNLOAD_URL != null) {
       envMap.put("WDT_INSTALLER_URL", WDT_DOWNLOAD_URL);
     }
-    logger.info("Env. variables to the script {0}", envMap);
+    logger.info("Environment variables to the script {0}", envMap);
   }
 
   /**
@@ -188,41 +183,40 @@ class ItDomainOnPVSample {
 
   /**
    * Run script run-test.sh.
-   * @param args arguments to execute script
+   * @param arg arguments to execute script
    * @param errString a string of detailed error
    */
-  private void execTestScriptAndAssertSuccess(String args,
+  private void execTestScriptAndAssertSuccess(String arg,
                                               String errString) {
-    for (String arg : args.split(",")) {
-      Assumptions.assumeTrue(previousTestSuccessful);
-      previousTestSuccessful = false;
 
-      String command = domainOnPvSampleScript
-          + " "
-          + arg;
+    Assumptions.assumeTrue(previousTestSuccessful);
+    previousTestSuccessful = false;
 
-      ExecResult result = Command.withParams(
-          new CommandParams()
-              .command(command)
-              .env(envMap)
-              .redirect(true)
-      ).executeAndReturnResult();
+    String command = domainOnPvSampleScript
+        + " "
+        + arg;
 
-      boolean success =
-          result != null
-              && result.exitValue() == 0
-              && result.stdout() != null
-              && result.stdout().contains(successSearchString);
+    ExecResult result = Command.withParams(
+        new CommandParams()
+            .command(command)
+            .env(envMap)
+            .redirect(true)
+    ).executeAndReturnResult();
 
-      String outStr = errString;
-      outStr += ", command=\n{\n" + command + "\n}\n";
-      outStr += ", stderr=\n{\n" + (result != null ? result.stderr() : "") + "\n}\n";
-      outStr += ", stdout=\n{\n" + (result != null ? result.stdout() : "") + "\n}\n";
+    boolean success =
+        result != null
+            && result.exitValue() == 0
+            && result.stdout() != null
+            && result.stdout().contains(successSearchString);
 
-      assertTrue(success, outStr);
+    String outStr = errString;
+    outStr += ", command=\n{\n" + command + "\n}\n";
+    outStr += ", stderr=\n{\n" + (result != null ? result.stderr() : "") + "\n}\n";
+    outStr += ", stdout=\n{\n" + (result != null ? result.stdout() : "") + "\n}\n";
 
-      previousTestSuccessful = true;
-    }
+    assertTrue(success, outStr);
+
+    previousTestSuccessful = true;
   }
 
   /**

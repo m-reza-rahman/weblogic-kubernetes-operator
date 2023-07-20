@@ -35,7 +35,6 @@ import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_IMAGE_NAM
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_IMAGE_REGISTRY;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_JAVA_HOME;
@@ -60,15 +59,9 @@ class ItFMWDomainOnPVSample {
   private static final String DOMAIN_CREATION_IMAGE_JRF_TAG = "JRF-v1";
   private static String traefikNamespace = null;
   private static Map<String, String> envMap = null;
-  private static DomainType domainType = null;
   private static LoggingFacade logger = null;
 
   private boolean previousTestSuccessful = true;
-
-  public enum DomainType {
-    JRF,
-    WLS
-  }
 
   /**
    * Create namespaces and set environment variables for the test.
@@ -78,15 +71,6 @@ class ItFMWDomainOnPVSample {
   @BeforeAll
   public static void initAll(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
-
-    // clean up pv-root content in kind worker
-    if (KIND_REPO != null) {
-      String command = WLSIMG_BUILDER_DEFAULT + " exec -ti kind-worker rm -rf /shared/domains /shared/logs";
-      Command.withParams(new CommandParams()
-          .command(command)
-          .env(envMap)
-          .redirect(true)).execute();
-    }
 
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
@@ -151,7 +135,7 @@ class ItFMWDomainOnPVSample {
   @Test
   @Order(1)
   public void testInstallOperator() {
-    execTestScriptAndAssertSuccess(DomainType.JRF, "-oper", "Failed to run -oper");
+    execTestScriptAndAssertSuccess("-oper", "Failed to run -oper");
   }
 
   /**
@@ -160,7 +144,7 @@ class ItFMWDomainOnPVSample {
   @Test
   @Order(2)
   public void testInstallTraefik() {
-    execTestScriptAndAssertSuccess(DomainType.JRF, "-traefik", "Failed to run -traefik");
+    execTestScriptAndAssertSuccess("-traefik", "Failed to run -traefik");
   }
 
   /**
@@ -169,7 +153,7 @@ class ItFMWDomainOnPVSample {
   @Test
   @Order(3)
   public void testPrecleandb() {
-    execTestScriptAndAssertSuccess(DomainType.JRF, "-precleandb", "Failed to run -precleandb");
+    execTestScriptAndAssertSuccess("-precleandb", "Failed to run -precleandb");
   }
 
   /**
@@ -179,7 +163,7 @@ class ItFMWDomainOnPVSample {
   @Order(4)
   public void testCreatedb() {
     logger.info("test case for creating a db");
-    execTestScriptAndAssertSuccess(DomainType.JRF, "-db", "Failed to run -db");
+    execTestScriptAndAssertSuccess("-db", "Failed to run -db");
   }
 
   /**
@@ -190,7 +174,7 @@ class ItFMWDomainOnPVSample {
   public void testInitialImage() {
     logger.info("test case for building image");
 
-    execTestScriptAndAssertSuccess(DomainType.JRF, "-initial-image", "Failed to run -initial-image");
+    execTestScriptAndAssertSuccess("-initial-image", "Failed to run -initial-image");
 
     // load the image to kind if using kind cluster
     if (KIND_REPO != null) {
@@ -214,50 +198,45 @@ class ItFMWDomainOnPVSample {
       imagePush(FMWINFRA_IMAGE_TO_USE_IN_SPEC);
     }
 
-    execTestScriptAndAssertSuccess(DomainType.JRF, "-initial-main", "Failed to run -initial-main");
+    execTestScriptAndAssertSuccess("-initial-main", "Failed to run -initial-main");
   }
 
   /**
    * Run script run-test.sh.
-   * @param domainType domain type
-   * @param args arguments to execute script
+   * @param arg arguments to execute script
    * @param errString a string of detailed error
    */
-  private void execTestScriptAndAssertSuccess(DomainType domainType,
-                                              String args,
+  private void execTestScriptAndAssertSuccess(String arg,
                                               String errString) {
-    for (String arg : args.split(",")) {
-      Assumptions.assumeTrue(previousTestSuccessful);
-      previousTestSuccessful = false;
 
-      String command = domainOnPvSampleScript
-          + (domainType == DomainType.JRF ? " -jrf " : "")
-          + " "
-          + arg;
+    Assumptions.assumeTrue(previousTestSuccessful);
+    previousTestSuccessful = false;
 
-      ExecResult result = Command.withParams(
-          new CommandParams()
-              .command(command)
-              .env(envMap)
-              .redirect(true)
-      ).executeAndReturnResult();
+    String command = domainOnPvSampleScript
+        + " -jrf "
+        + arg;
 
-      boolean success =
-          result != null
-              && result.exitValue() == 0
-              && result.stdout() != null
-              && result.stdout().contains("Finished without errors");
+    ExecResult result = Command.withParams(
+        new CommandParams()
+            .command(command)
+            .env(envMap)
+            .redirect(true)
+    ).executeAndReturnResult();
 
-      String outStr = errString;
-      outStr += ", domainType=" + domainType + "\n";
-      outStr += ", command=\n{\n" + command + "\n}\n";
-      outStr += ", stderr=\n{\n" + (result != null ? result.stderr() : "") + "\n}\n";
-      outStr += ", stdout=\n{\n" + (result != null ? result.stdout() : "") + "\n}\n";
+    boolean success =
+        result != null
+            && result.exitValue() == 0
+            && result.stdout() != null
+            && result.stdout().contains("Finished without errors");
 
-      assertTrue(success, outStr);
+    String outStr = errString;
+    outStr += ", command=\n{\n" + command + "\n}\n";
+    outStr += ", stderr=\n{\n" + (result != null ? result.stderr() : "") + "\n}\n";
+    outStr += ", stdout=\n{\n" + (result != null ? result.stdout() : "") + "\n}\n";
 
-      previousTestSuccessful = true;
-    }
+    assertTrue(success, outStr);
+
+    previousTestSuccessful = true;
   }
 
   /**
@@ -278,12 +257,10 @@ class ItFMWDomainOnPVSample {
     }
 
     // db cleanup or deletion
-    if (domainType.equals(DomainType.JRF) && envMap != null) {
-      logger.info("Running samples DB cleanup");
-      Command.withParams(new CommandParams()
-          .command(domainOnPvSampleScript + " -precleandb")
-          .env(envMap)
-          .redirect(true)).execute();
-    }
+    logger.info("Running samples DB cleanup");
+    Command.withParams(new CommandParams()
+        .command(domainOnPvSampleScript + " -precleandb")
+        .env(envMap)
+        .redirect(true)).execute();
   }
 }
