@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("test domain on pv sample for FMW domain")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @IntegrationTest
-@Tag("kind-parallel")
+@Tag("kind-sequential")
 @Tag("samples")
 class ItFMWDomainOnPVSample {
 
