@@ -10,7 +10,7 @@
 # See "usage()" below for usage.
 #
 
-set -e
+set -eu
 set -o pipefail
 trap 'status=$? ; set +eu ; set +o pipefail ; kill $(jobs -pr) > /dev/null 2>&1 ; exit $status' SIGINT SIGTERM EXIT
 
@@ -23,6 +23,7 @@ source $TESTDIR/test-env.sh
 trace "Running end to end DPV sample test."
 echo "Is OKD set? $OKD"
 echo "Is OKE_CLUSTER set? $OKE_CLUSTER"
+echo "Is KIND_CLUSTER set? $KIND_CLUSTER"
 
 DRY_RUN=false
 DO_CLEANUP=false
@@ -237,6 +238,7 @@ doCommand -c cp -r \$DPVSAMPLEDIR/../wdt-artifacts/* \$WORKDIR/wdt-artifacts
 doCommand -c cp -r \$DPVSAMPLEDIR/../ingresses/* \$WORKDIR/ingresses
 doCommand -c export OKD=$OKD
 doCommand -c export OKE_CLUSTER=$OKE_CLUSTER
+doCommand -c export KIND_CLUSTER=$KIND_CLUSTER
 
 #
 # Build pre-req (operator)
@@ -245,7 +247,7 @@ doCommand -c export OKE_CLUSTER=$OKE_CLUSTER
 if [ "$DO_OPER" = "true" ]; then
   doCommand -c "echo ====== OPER BUILD ======"
   doCommand  "\$TESTDIR/build-operator.sh"
-  if [ -n "$KIND_REPO" ] || [[ "$registry_name" == "kind-registry" ]]; then
+  if [ "$KIND_CLUSTER" = "true" ]; then
       doCommand -c "kind load docker-image ${OPER_IMAGE_NAME:-weblogic-kubernetes-operator}:${OPER_IMAGE_TAG:-test} --name kind"
   fi
 fi

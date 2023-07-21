@@ -61,6 +61,8 @@ public interface TestConstants {
   // kind constants
   public static final String KIND_REPO = getKindRepoValue("wko.it.kind.repo");
   public static final String KIND_NODE_NAME = getNonEmptySystemProperty("wko.it.kind.name", "kind");
+  public static final boolean KIND_CLUSTER =
+      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.kind.repo", "false"));
 
   // crio pipeline constants
   public static final String CRIO_PIPELINE_IMAGE = System.getProperty("wko.it.crio.pipeline.image");
