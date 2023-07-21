@@ -10,7 +10,7 @@
 # See "usage()" below for usage.
 #
 
-set -eu
+set -e
 set -o pipefail
 trap 'status=$? ; set +eu ; set +o pipefail ; kill $(jobs -pr) > /dev/null 2>&1 ; exit $status' SIGINT SIGTERM EXIT
 
