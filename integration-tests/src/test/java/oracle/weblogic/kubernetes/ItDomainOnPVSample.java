@@ -113,7 +113,8 @@ class ItDomainOnPVSample {
     envMap.put("DOMAIN_IMAGE_PULL_SECRET_NAME", TEST_IMAGES_REPO_SECRET_NAME);
     envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
     envMap.put("OKD", "" +  OKD);
-    envMap.put("KIND_CLUSTER", "" + KIND_CLUSTER);
+    //envMap.put("KIND_CLUSTER", "" + KIND_CLUSTER);
+    envMap.put("KIND_CLUSTER", "true");
 
     // kind cluster uses openjdk which is not supported by image tool
     if (WIT_JAVA_HOME != null) {
