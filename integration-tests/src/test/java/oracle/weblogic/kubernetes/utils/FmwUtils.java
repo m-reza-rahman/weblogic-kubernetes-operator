@@ -14,6 +14,7 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
+import io.kubernetes.client.openapi.models.V1NFSVolumeSource;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
@@ -46,6 +47,9 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.NFS_SERVER;
+import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.PV_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.YAML_MAX_FILE_SIZE_PROPERTY;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -372,6 +376,9 @@ public class FmwUtils {
     Map<String, Quantity> request = new HashMap<>();
     request.put("storage", Quantity.fromString("10Gi"));
 
+    PersistentVolumeSpec pvSpec = new PersistentVolumeSpec();
+    setVolumeSource(pvSpec, capacity);
+
     // create the domain CR
     DomainResource domain = new DomainResource()
         .apiVersion(DOMAIN_API_VERSION)
@@ -428,11 +435,12 @@ public class FmwUtils {
                     .persistentVolume(new PersistentVolume()
                         .metadata(new V1ObjectMeta()
                             .name(pvName))
-                        .spec(new PersistentVolumeSpec()
+                        .spec(pvSpec))
+                    /*.spec(new PersistentVolumeSpec()
                             .storageClassName("weblogic-domain-storage-class")
                             .hostPath(new V1HostPathVolumeSource()
                                 .path("/share"))
-                            .capacity(capacity)))
+                            .capacity(capacity)))*/
                     .persistentVolumeClaim(new PersistentVolumeClaim()
                         .metadata(new V1ObjectMeta()
                             .name(pvcName))
@@ -482,6 +490,9 @@ public class FmwUtils {
 
     Map<String, Quantity> request = new HashMap<>();
     request.put("storage", Quantity.fromString("10Gi"));
+
+    PersistentVolumeSpec pvSpec = new PersistentVolumeSpec();
+    setVolumeSource(pvSpec, capacity);
 
     // create the domain CR
     DomainResource domain = new DomainResource()
@@ -533,11 +544,12 @@ public class FmwUtils {
                     .persistentVolume(new PersistentVolume()
                         .metadata(new V1ObjectMeta()
                             .name(pvName))
-                        .spec(new PersistentVolumeSpec()
+                        .spec(pvSpec))
+                    /*  .spec(new PersistentVolumeSpec()
                             .storageClassName("weblogic-domain-storage-class")
                             .hostPath(new V1HostPathVolumeSource()
                                 .path("/share"))
-                            .capacity(capacity)))
+                            .capacity(capacity)))*/
                     .persistentVolumeClaim(new PersistentVolumeClaim()
                         .metadata(new V1ObjectMeta()
                             .name(pvcName))
@@ -626,5 +638,24 @@ public class FmwUtils {
     return result;
 
   }
+
+  private static void setVolumeSource(PersistentVolumeSpec pvSpec, Map<String, Quantity> capacity) {
+
+    if (OKD) {
+      pvSpec.storageClassName("okd-nfsmnt")
+            .nfs(new V1NFSVolumeSource()
+                .path(PV_ROOT)
+                .server(NFS_SERVER)
+                .readOnly(false))
+            .capacity(capacity);
+
+    } else {
+      pvSpec.storageClassName("weblogic-domain-storage-class")
+            .hostPath(new V1HostPathVolumeSource()
+                .path("/shared"))
+            .capacity(capacity);
+    }
+  }
+
 
 }
