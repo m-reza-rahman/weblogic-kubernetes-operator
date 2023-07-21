@@ -15,8 +15,6 @@ TESTDIR="$( cd "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
 SRCDIR="$( cd "$TESTDIR/../../.." > /dev/null 2>&1 ; pwd -P )"
 KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
 
-set -u
-
 WORKDIR=${WORKDIR:-/tmp/$USER/domain-on-pv-sample-work-dir}
 DOMAIN_NAMESPACE=${DOMAIN_NAMESPACE:-sample-domain1-ns}
 
@@ -56,9 +54,9 @@ ${KUBERNETES_CLI} label ns $DOMAIN_NAMESPACE weblogic-operator=enabled
 ${KUBERNETES_CLI} create namespace $OPER_NAMESPACE
 ${KUBERNETES_CLI} create serviceaccount -n $OPER_NAMESPACE $OPER_SA
 
-#if [ -n "$KIND_REPO" ]; then
-#    doCommand -c "kind load docker-image ${OPER_IMAGE_NAME}:${OPER_IMAGE_TAG} --name kind"
-#fi
+if [ -n "$KIND_REPO" ] || [[ "$registry_name" == "kind-registry" ]]; then
+    doCommand -c "kind load docker-image ${OPER_IMAGE_NAME}:${OPER_IMAGE_TAG} --name kind"
+fi
 
 helm uninstall $OPER_NAME -n $OPER_NAMESPACE
 
