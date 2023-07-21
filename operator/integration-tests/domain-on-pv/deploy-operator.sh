@@ -54,10 +54,6 @@ ${KUBERNETES_CLI} label ns $DOMAIN_NAMESPACE weblogic-operator=enabled
 ${KUBERNETES_CLI} create namespace $OPER_NAMESPACE
 ${KUBERNETES_CLI} create serviceaccount -n $OPER_NAMESPACE $OPER_SA
 
-if [ -n "$KIND_REPO" ] || [[ "$registry_name" == "kind-registry" ]]; then
-    doCommand -c "kind load docker-image ${OPER_IMAGE_NAME}:${OPER_IMAGE_TAG} --name kind"
-fi
-
 helm uninstall $OPER_NAME -n $OPER_NAMESPACE
 
 set -eu
