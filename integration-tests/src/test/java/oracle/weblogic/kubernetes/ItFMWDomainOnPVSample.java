@@ -13,7 +13,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-//import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -43,6 +43,8 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_DOWNLOAD_UR
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_JAVA_HOME;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -133,6 +135,23 @@ class ItFMWDomainOnPVSample {
       envMap.put("WDT_INSTALLER_URL", WDT_DOWNLOAD_URL);
     }
     logger.info("Environment variables to the script {0}", envMap);
+
+    logger.info("Setting up image registry secrets");
+    // Create the repo secret to pull the domain image
+    // this secret is used only for non-kind cluster
+    createTestRepoSecret(domainNamespace);
+    logger.info("Registry secret {0} created for domain image successfully in namespace {1}",
+        TEST_IMAGES_REPO_SECRET_NAME, domainNamespace);
+    // Create the repo secret to pull the base image
+    // this secret is used only for non-kind cluster
+    createBaseRepoSecret(domainNamespace);
+    logger.info("Registry secret {0} for base image created successfully in namespace {1}",
+        BASE_IMAGES_REPO_SECRET_NAME, domainNamespace);
+    // create ocr/ocir image registry secret to pull the db images
+    // this secret is used only for non-kind cluster
+    createBaseRepoSecret(dbNamespace);
+    logger.info("Registry secret {0} created successfully in namespace {1}",
+        BASE_IMAGES_REPO_SECRET_NAME, dbNamespace);
   }
 
   /**
@@ -253,7 +272,7 @@ class ItFMWDomainOnPVSample {
   /**
    * Delete DB deployment for FMW test cases and Uninstall Traefik.
    */
-  //@AfterAll
+  @AfterAll
   public static void tearDownAll() {
     logger = getLogger();
 

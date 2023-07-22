@@ -41,6 +41,8 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_DOWNLOAD_UR
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_JAVA_HOME;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -124,6 +126,18 @@ class ItDomainOnPVSample {
       envMap.put("WDT_INSTALLER_URL", WDT_DOWNLOAD_URL);
     }
     logger.info("Environment variables to the script {0}", envMap);
+
+    logger.info("Setting up image registry secrets");
+    // Create the repo secret to pull the domain image
+    // this secret is used only for non-kind cluster
+    createTestRepoSecret(domainNamespace);
+    logger.info("Registry secret {0} created for domain image successfully in namespace {1}",
+        TEST_IMAGES_REPO_SECRET_NAME, domainNamespace);
+    // Create the repo secret to pull the base image
+    // this secret is used only for non-kind cluster
+    createBaseRepoSecret(domainNamespace);
+    logger.info("Registry secret {0} for base image created successfully in namespace {1}",
+        BASE_IMAGES_REPO_SECRET_NAME, domainNamespace);
   }
 
   /**
