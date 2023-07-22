@@ -27,6 +27,7 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
@@ -113,6 +114,7 @@ class ItFMWDomainOnPVSample {
     envMap.put("DOMAIN_IMAGE_PULL_SECRET_NAME", TEST_IMAGES_REPO_SECRET_NAME);
     envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
     envMap.put("OKD", "" +  OKD);
+    envMap.put("KIND_CLUSTER", "" + KIND_CLUSTER);
 
     // kind cluster uses openjdk which is not supported by image tool
     if (WIT_JAVA_HOME != null) {
@@ -240,7 +242,7 @@ class ItFMWDomainOnPVSample {
   }
 
   /**
-   * Delete DB deployment for FMW test cases and Uninstall traefik.
+   * Delete DB deployment for FMW test cases and Uninstall Traefik.
    */
   @AfterAll
   public static void tearDownAll() {

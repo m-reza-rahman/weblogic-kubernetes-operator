@@ -63,7 +63,6 @@ class ItDomainOnPVSample {
   private static LoggingFacade logger = null;
 
   private boolean previousTestSuccessful = true;
-  private final String successSearchString = "Finished without errors";
 
   /**
    * Create namespaces and set environment variables for the test.
@@ -86,9 +85,6 @@ class ItDomainOnPVSample {
     logger.info("Creating unique namespace for Traefik");
     assertNotNull(namespaces.get(2), "Namespace list is null");
     traefikNamespace = namespaces.get(2);
-
-    // install and verify operator
-    //installAndVerifyOperator(opNamespace, domainNamespace);
 
     String domainOnPvSampleWorkDir =
         RESULTS_ROOT + "/" + domainNamespace + "/domain-on-pv-sample-work-dir";
@@ -205,7 +201,7 @@ class ItDomainOnPVSample {
         result != null
             && result.exitValue() == 0
             && result.stdout() != null
-            && result.stdout().contains(successSearchString);
+            && result.stdout().contains("Finished without errors");
 
     String outStr = errString;
     outStr += ", command=\n{\n" + command + "\n}\n";

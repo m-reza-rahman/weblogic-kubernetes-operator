@@ -15,6 +15,8 @@ TESTDIR="$( cd "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
 SRCDIR="$( cd "$TESTDIR/../../.." > /dev/null 2>&1 ; pwd -P )"
 KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
 
+set -u
+
 WORKDIR=${WORKDIR:-/tmp/$USER/domain-on-pv-sample-work-dir}
 DOMAIN_NAMESPACE=${DOMAIN_NAMESPACE:-sample-domain1-ns}
 
