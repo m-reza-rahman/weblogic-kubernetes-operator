@@ -13,7 +13,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-import org.junit.jupiter.api.AfterAll;
+//import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
@@ -110,6 +112,8 @@ class ItFMWDomainOnPVSample {
     envMap.put("BASE_IMAGE_NAME", FMWINFRA_IMAGE_TO_USE_IN_SPEC
         .substring(0, FMWINFRA_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":")));
     envMap.put("BASE_IMAGE_TAG", FMWINFRA_IMAGE_TAG);
+    envMap.put("DB_IMAGE_NAME", DB_IMAGE_NAME);
+    envMap.put("DB_IMAGE_TAG", DB_IMAGE_TAG);
     envMap.put("IMAGE_PULL_SECRET_NAME", BASE_IMAGES_REPO_SECRET_NAME);
     envMap.put("DOMAIN_IMAGE_PULL_SECRET_NAME", TEST_IMAGES_REPO_SECRET_NAME);
     envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
@@ -165,6 +169,11 @@ class ItFMWDomainOnPVSample {
   @Order(4)
   public void testCreatedb() {
     logger.info("test case for creating a db");
+    if (KIND_REPO != null) {
+      String dbimage = DB_IMAGE_NAME + ":" + DB_IMAGE_TAG;
+      logger.info("loading image {0} to kind", dbimage);
+      imagePush(dbimage);
+    }
     execTestScriptAndAssertSuccess("-db", "Failed to run -db");
   }
 
@@ -244,7 +253,7 @@ class ItFMWDomainOnPVSample {
   /**
    * Delete DB deployment for FMW test cases and Uninstall Traefik.
    */
-  @AfterAll
+  //@AfterAll
   public static void tearDownAll() {
     logger = getLogger();
 
