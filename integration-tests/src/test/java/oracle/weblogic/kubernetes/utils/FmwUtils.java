@@ -377,7 +377,8 @@ public class FmwUtils {
     request.put("storage", Quantity.fromString("10Gi"));
 
     PersistentVolumeSpec pvSpec = new PersistentVolumeSpec();
-    setVolumeSource(pvSpec, capacity);
+    PersistentVolumeClaimSpec pvcSpec = new PersistentVolumeClaimSpec();
+    setVolumeSource(pvSpec, pvcSpec, capacity, request, pvName);
 
     // create the domain CR
     DomainResource domain = new DomainResource()
@@ -444,11 +445,12 @@ public class FmwUtils {
                     .persistentVolumeClaim(new PersistentVolumeClaim()
                         .metadata(new V1ObjectMeta()
                             .name(pvcName))
-                         .spec(new PersistentVolumeClaimSpec()
+                        .spec(pvcSpec))
+                    /*     .spec(new PersistentVolumeClaimSpec()
                              .volumeName(pvName)
                              .storageClassName("weblogic-domain-storage-class")
                              .resources(new V1ResourceRequirements()
-                                 .requests(request))))
+                                 .requests(request))))*/
                     .domain(new DomainOnPV()
                         .createMode(CreateIfNotExists.DOMAIN)
                         .domainType(DomainOnPVType.JRF)
@@ -492,7 +494,9 @@ public class FmwUtils {
     request.put("storage", Quantity.fromString("10Gi"));
 
     PersistentVolumeSpec pvSpec = new PersistentVolumeSpec();
-    setVolumeSource(pvSpec, capacity);
+
+    PersistentVolumeClaimSpec pvcSpec = new PersistentVolumeClaimSpec();
+    setVolumeSource(pvSpec, pvcSpec, capacity, request, pvName);
 
     // create the domain CR
     DomainResource domain = new DomainResource()
@@ -553,11 +557,12 @@ public class FmwUtils {
                     .persistentVolumeClaim(new PersistentVolumeClaim()
                         .metadata(new V1ObjectMeta()
                             .name(pvcName))
-                        .spec(new PersistentVolumeClaimSpec()
+                        .spec(pvcSpec))
+                    /*    .spec(new PersistentVolumeClaimSpec()
                              .volumeName(pvName)
                              .storageClassName("weblogic-domain-storage-class")
                              .resources(new V1ResourceRequirements()
-                                 .requests(request))))
+                                 .requests(request))))*/
                     .domain(new DomainOnPV()
                         .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
                         .domainType(DomainOnPVType.JRF)
@@ -639,7 +644,8 @@ public class FmwUtils {
 
   }
 
-  private static void setVolumeSource(PersistentVolumeSpec pvSpec, Map<String, Quantity> capacity) {
+  private static void setVolumeSource(PersistentVolumeSpec pvSpec, PersistentVolumeClaimSpec pvcSpec,
+       Map<String, Quantity> capacity, Map<String, Quantity> request, String pvName) {
 
     if (OKD) {
       pvSpec.storageClassName("okd-nfsmnt")
@@ -649,11 +655,20 @@ public class FmwUtils {
                 .readOnly(false))
             .capacity(capacity);
 
+      pvcSpec.storageClassName("okd-nfsmnt")
+             .volumeName(pvName)
+             .resources(new V1ResourceRequirements()
+                 .requests(request));
+
     } else {
       pvSpec.storageClassName("weblogic-domain-storage-class")
             .hostPath(new V1HostPathVolumeSource()
                 .path("/shared"))
             .capacity(capacity);
+      pvcSpec.storageClassName("weblogic-domain-storage-class")
+             .volumeName(pvName)
+             .resources(new V1ResourceRequirements()
+                 .requests(request));
     }
   }
 
