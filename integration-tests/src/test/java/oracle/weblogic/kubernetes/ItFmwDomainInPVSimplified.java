@@ -8,11 +8,13 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.Callable;
 
 import io.kubernetes.client.custom.Quantity;
@@ -21,8 +23,13 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
+import io.kubernetes.client.openapi.models.V1NFSVolumeSource;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1PersistentVolume;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeSpec;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
@@ -66,11 +73,15 @@ import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.FSS_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.NFS_SERVER;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.PV_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_USERNAME;
@@ -117,6 +128,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to create a FMW domain in persistent volume with new simplified feature")
 @IntegrationTest
 @Tag("kind-parallel")
+@Tag("oke-gate")
 class ItFmwDomainInPVSimplified {
 
   private static String domainNamespace = null;
@@ -239,32 +251,60 @@ class ItFmwDomainInPVSimplified {
 
     Map<String, Quantity> pvcRequest = new HashMap<>();
     pvcRequest.put("storage", new Quantity("2Gi"));
+    Configuration configuration = new Configuration();
+    if (OKE_CLUSTER) {
+      V1PersistentVolume v1pv = new V1PersistentVolume()
+          .spec(new V1PersistentVolumeSpec()
+              .capacity(pvCapacity)
+              .persistentVolumeReclaimPolicy("Retain"))
+          .metadata(new V1ObjectMeta()
+              .name(pvName));
 
-    Configuration configuration = new Configuration()
-        .initializeDomainOnPV(new InitializeDomainOnPV()
-            .persistentVolume(new PersistentVolume()
-                .metadata(new V1ObjectMeta()
-                    .name(pvName))
-                .spec(new PersistentVolumeSpec()
-                    .storageClassName(storageClassName)
-                    .capacity(pvCapacity)
-                    .persistentVolumeReclaimPolicy("Retain")
-                    .hostPath(new V1HostPathVolumeSource()
-                        .path(getHostPath(pvName, this.getClass().getSimpleName())))))
-            .persistentVolumeClaim(new PersistentVolumeClaim()
-                .metadata(new V1ObjectMeta()
-                    .name(pvcName))
-                .spec(new PersistentVolumeClaimSpec()
-                    .storageClassName(storageClassName)
-                    .resources(new V1ResourceRequirements()
-                        .requests(pvcRequest))))
-            .domain(new DomainOnPV()
-                .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
-                .domainCreationImages(Collections.singletonList(domainCreationImage))
-                .domainType(DomainOnPVType.JRF)
-                .opss(new Opss()
-                    .walletPasswordSecret(opsswalletpassSecretName))));
+      String fssDir = FSS_DIR[new Random().nextInt(FSS_DIR.length)];
+      logger.info("Using FSS PV directory {0}", fssDir);
+      v1pv.getSpec()
+          .storageClassName("oci-fss");
 
+      PersistentVolumeClaim v1pvc = new PersistentVolumeClaim()
+          .spec(new PersistentVolumeClaimSpec()
+              .resources(new V1ResourceRequirements()
+                  .requests(pvcRequest))
+              .storageClassName("oci-fss"))
+          .metadata(new V1ObjectMeta()
+              .name(pvcName));
+      configuration.initializeDomainOnPV(new InitializeDomainOnPV()
+          .persistentVolumeClaim(v1pvc)
+          .domain(new DomainOnPV()
+              .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
+              .domainCreationImages(Collections.singletonList(domainCreationImage))
+              .domainType(DomainOnPVType.JRF)
+              .opss(new Opss()
+                  .walletPasswordSecret(opsswalletpassSecretName))));
+    } else {
+      configuration.initializeDomainOnPV(new InitializeDomainOnPV()
+          .persistentVolume(new PersistentVolume()
+              .metadata(new V1ObjectMeta()
+                  .name(pvName))
+              .spec(new PersistentVolumeSpec()
+                  .storageClassName(storageClassName)
+                  .capacity(pvCapacity)
+                  .persistentVolumeReclaimPolicy("Retain")
+                  .hostPath(new V1HostPathVolumeSource()
+                      .path(getHostPath(pvName, this.getClass().getSimpleName())))))
+          .persistentVolumeClaim(new PersistentVolumeClaim()
+              .metadata(new V1ObjectMeta()
+                  .name(pvcName))
+              .spec(new PersistentVolumeClaimSpec()
+                  .storageClassName(storageClassName)
+                  .resources(new V1ResourceRequirements()
+                      .requests(pvcRequest))))
+          .domain(new DomainOnPV()
+              .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
+              .domainCreationImages(Collections.singletonList(domainCreationImage))
+              .domainType(DomainOnPVType.JRF)
+              .opss(new Opss()
+                  .walletPasswordSecret(opsswalletpassSecretName))));
+    }
     DomainResource domain = createDomainResourceOnPv(
         domainUid,
         domainNamespace,
@@ -573,30 +613,53 @@ class ItFmwDomainInPVSimplified {
 
     Map<String, Quantity> pvcRequest = new HashMap<>();
     pvcRequest.put("storage", new Quantity("2Gi"));
+    Configuration configuration = new Configuration();
+    if (OKE_CLUSTER) {
+      V1PersistentVolume v1pv = new V1PersistentVolume()
+          .spec(new V1PersistentVolumeSpec()
+              .capacity(pvCapacity)
+              .storageClassName("oci-fss")
+              .persistentVolumeReclaimPolicy("Retain"))
+          .metadata(new V1ObjectMeta()
+              .name(pvName));
 
-    Configuration configuration = new Configuration()
-        .initializeDomainOnPV(new InitializeDomainOnPV()
-            .persistentVolume(new PersistentVolume()
-                .metadata(new V1ObjectMeta()
-                    .name(pvName))
-                .spec(new PersistentVolumeSpec()
-                    .storageClassName(storageClassName)
-                    .capacity(pvCapacity)
-                    .persistentVolumeReclaimPolicy("Retain")
-                    .hostPath(new V1HostPathVolumeSource()
-                        .path(getHostPath(pvName, this.getClass().getSimpleName())))))
-            .persistentVolumeClaim(new PersistentVolumeClaim()
-                .metadata(new V1ObjectMeta()
-                    .name(pvcName))
-                .spec(new PersistentVolumeClaimSpec()
-                    .storageClassName(storageClassName)
-                    .resources(new V1ResourceRequirements()
-                        .requests(pvcRequest))))
-            .domain(new DomainOnPV()
-                .createMode(CreateIfNotExists.DOMAIN)
-                .domainCreationImages(Collections.singletonList(domainCreationImage))
-                .domainType(DomainOnPVType.WLS)));
-
+      PersistentVolumeClaim v1pvc = new PersistentVolumeClaim()
+          .spec(new PersistentVolumeClaimSpec()
+              .resources(new V1ResourceRequirements()
+                  .requests(pvcRequest))
+              .storageClassName("oci-fss"))
+          .metadata(new V1ObjectMeta()
+              .name(pvcName));
+      configuration.initializeDomainOnPV(new InitializeDomainOnPV()
+          .persistentVolumeClaim(v1pvc)
+          .domain(new DomainOnPV()
+              .createMode(CreateIfNotExists.DOMAIN)
+              .domainCreationImages(Collections.singletonList(domainCreationImage))
+              .domainType(DomainOnPVType.WLS)));
+    } else {
+      configuration
+          .initializeDomainOnPV(new InitializeDomainOnPV()
+              .persistentVolume(new PersistentVolume()
+                  .metadata(new V1ObjectMeta()
+                      .name(pvName))
+                  .spec(new PersistentVolumeSpec()
+                      .storageClassName(storageClassName)
+                      .capacity(pvCapacity)
+                      .persistentVolumeReclaimPolicy("Retain")
+                      .hostPath(new V1HostPathVolumeSource()
+                          .path(getHostPath(pvName, this.getClass().getSimpleName())))))
+              .persistentVolumeClaim(new PersistentVolumeClaim()
+                  .metadata(new V1ObjectMeta()
+                      .name(pvcName))
+                  .spec(new PersistentVolumeClaimSpec()
+                      .storageClassName(storageClassName)
+                      .resources(new V1ResourceRequirements()
+                          .requests(pvcRequest))))
+              .domain(new DomainOnPV()
+                  .createMode(CreateIfNotExists.DOMAIN)
+                  .domainCreationImages(Collections.singletonList(domainCreationImage))
+                  .domainType(DomainOnPVType.WLS)));
+    }
     DomainResource domain = createDomainResourceOnPv(
         domainUid,
         domainNamespace,
