@@ -621,6 +621,8 @@ public abstract class PodStepContext extends BasePodStepContext {
   private void updateEnvForStartupMode(List<V1EnvVar> env) {
     Optional.ofNullable(getDomain().getLivenessProbeCustomScript())
           .ifPresent(s -> addDefaultEnvVarIfMissing(env, "LIVENESS_PROBE_CUSTOM_SCRIPT", s));
+    Optional.ofNullable(getDomain().isReplaceVariablesInJavaOptions())
+        .ifPresent(r -> addDefaultEnvVarIfMissing(env, "REPLACE_VARIABLES_IN_JAVA_OPTIONS", Boolean.toString(r)));
   }
 
   private void defineConfigOverride(List<V1EnvVar> env) {
@@ -1194,7 +1196,7 @@ public abstract class PodStepContext extends BasePodStepContext {
                                  V1Pod currentPod) {
       String convertedName = container.getName().replaceAll("^" + COMPATIBILITY_MODE, "");
       List<V1EnvVar> newEnv = new ArrayList<>();
-      Optional.of(container.getEnv())
+      Optional.ofNullable(container.getEnv())
           .ifPresent(env -> env.forEach(envVar -> newEnv.add(envVar.value(Optional.ofNullable(envVar)
           .map(V1EnvVar::getValue).map(v -> v.replaceAll("^" + COMPATIBILITY_MODE, ""))
               .orElse(null)))));

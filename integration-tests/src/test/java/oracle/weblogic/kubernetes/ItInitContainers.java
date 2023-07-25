@@ -75,9 +75,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Test server's pod init container feature")
 @IntegrationTest
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItInitContainers {
 
   private static String opNamespace = null;
