@@ -64,6 +64,7 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.CLUSTER_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
+import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SECONDS;
@@ -216,7 +217,7 @@ class ItFmwDomainInPVSimplified {
     File fmwModelPropFile = createWdtPropertyFile("jrfonpv-simplified1", RCUSCHEMAPREFIX + "1");
 
     // create domainCreationImage
-    String domainCreationImageName = DOMAIN_IMAGES_REPO + "jrf-domain-on-pv-image";
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "jrf-domain-on-pv-image";
     // create image with model and wdt installation files
     WitParams witParams =
         new WitParams()
@@ -385,7 +386,7 @@ class ItFmwDomainInPVSimplified {
     File fmwModelPropFile = createWdtPropertyFile(domainUid, RCUSCHEMAPREFIX + "2");
 
     // create domainCreationImage
-    String domainCreationImageName = DOMAIN_IMAGES_REPO + "jrf-domain-on-pv-image2";
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "jrf-domain-on-pv-image1";
     // create image with model and wdt installation files
     WitParams witParams =
         new WitParams()
@@ -489,7 +490,7 @@ class ItFmwDomainInPVSimplified {
     File fmwModelPropFile = createWdtPropertyFile(domainUid, RCUSCHEMAPREFIX + "3");
 
     // create domainCreationImage
-    String domainCreationImageName = DOMAIN_IMAGES_REPO + "jrf-domain-on-pv-image2";
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "jrf-domain-on-pv-image2";
     // create image with model and wdt installation files
     WitParams witParams =
         new WitParams()
@@ -722,7 +723,7 @@ class ItFmwDomainInPVSimplified {
     File fmwModelPropFile = createWdtPropertyFile(domainUid, RCUSCHEMAPREFIX + "4");
 
     // create domainCreationImage
-    String domainCreationImageName1 = DOMAIN_IMAGES_REPO + "jrf-domain-on-pv-image41";
+    String domainCreationImageName1 = DOMAIN_IMAGES_PREFIX + "jrf-domain-on-pv-image3";
     // create image with model and wdt installation files
     WitParams witParams =
         new WitParams()
@@ -736,7 +737,7 @@ class ItFmwDomainInPVSimplified {
         new DomainCreationImage().image(domainCreationImageName1 + ":" + MII_BASIC_IMAGE_TAG);
 
     // create second image
-    String domainCreationImageName2 = DOMAIN_IMAGES_REPO + "jrf-domain-on-pv-image42";
+    String domainCreationImageName2 = DOMAIN_IMAGES_PREFIX + "jrf-domain-on-pv-image4";
     // create image with model and wdt installation files
     witParams =
         new WitParams()
@@ -872,7 +873,7 @@ class ItFmwDomainInPVSimplified {
     File fmwModelPropFile = createWdtPropertyFile(domainUid, RCUSCHEMAPREFIX + "5");
 
     // create domainCreationImage
-    String domainCreationImageName1 = DOMAIN_IMAGES_REPO + "jrf-domain-on-pv-image5";
+    String domainCreationImageName1 = DOMAIN_IMAGES_PREFIX + "jrf-domain-on-pv-image5";
     // create image with model and wdt installation files
     WitParams witParams =
         new WitParams()
