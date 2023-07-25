@@ -11,7 +11,7 @@
 #   'domain.spec.configuration.initializeDomainOnPV.domain.domainCreationImages.sourceWDTInstallHome', respectively.
 #
 
-FROM phx.ocir.io/devweblogic/test-images/docker/busybox:1.34.1
+FROM busybox
 ARG AUXILIARY_IMAGE_PATH=/auxiliary
 ARG USER=oracle
 ARG USERID=1000
