@@ -100,6 +100,7 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify
 import static oracle.weblogic.kubernetes.utils.DomainUtils.deleteDomainResource;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
@@ -534,7 +535,7 @@ class ItFmwDomainInPVSimplified {
     File wlsModelPropFile = createWdtPropertyFile("wlsonpv-simplified1", RCUSCHEMAPREFIX + "1");
 
     // create domainCreationImage
-    String domainCreationImageName = DOMAIN_IMAGES_REPO + "wls-domain-on-pv-image";
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "wls-domain-on-pv-image";
     // create image with model and wdt installation files
     WitParams witParams =
         new WitParams()
@@ -1053,15 +1054,7 @@ class ItFmwDomainInPVSimplified {
     return (() -> {
       boolean result = true;
       result = result && imageTag(originalImage, taggedImage);
-      // push the image to a registry to make the test work in multi node cluster
-      logger.info("image repo login to registry {0}", TEST_IMAGES_REPO);
-      result = result && imageRepoLogin(TEST_IMAGES_REPO, TEST_IMAGES_REPO_USERNAME,
-          TEST_IMAGES_REPO_PASSWORD);
-      // push image
-      if (!DOMAIN_IMAGES_REPO.isEmpty()) {
-        logger.info("push image {0} to registry", taggedImage);
-        result = result && imagePush(taggedImage);
-      }
+      imageRepoLoginAndPushImageToRegistry(taggedImage);
       return result;
     });
   }
