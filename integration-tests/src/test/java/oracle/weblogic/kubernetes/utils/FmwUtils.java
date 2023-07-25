@@ -17,6 +17,7 @@ import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1NFSVolumeSource;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.openapi.models.V1PodSecurityContext;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
@@ -417,7 +418,9 @@ public class FmwUtils {
                     .value("-Djava.security.egd=file:/dev/./urandom "))
                 .addEnvItem(new V1EnvVar()
                     .name("WLSDEPLOY_PROPERTIES")
-                    .value(YAML_MAX_FILE_SIZE_PROPERTY)))
+                    .value(YAML_MAX_FILE_SIZE_PROPERTY))
+                .podSecurityContext(new V1PodSecurityContext()
+                    .runAsUser(1000L)))
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
@@ -535,7 +538,9 @@ public class FmwUtils {
                     .value("-Djava.security.egd=file:/dev/./urandom "))
                 .addEnvItem(new V1EnvVar()
                     .name("WLSDEPLOY_PROPERTIES")
-                    .value(YAML_MAX_FILE_SIZE_PROPERTY)))
+                    .value(YAML_MAX_FILE_SIZE_PROPERTY))
+                .podSecurityContext(new V1PodSecurityContext()
+                    .runAsUser(1000L)))
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
