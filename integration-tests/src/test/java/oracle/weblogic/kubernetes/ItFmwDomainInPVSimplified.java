@@ -5,7 +5,6 @@ package oracle.weblogic.kubernetes;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,11 +18,9 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
-import io.kubernetes.client.openapi.models.V1HostPathVolumeSource;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
-import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.AdminServer;
@@ -39,10 +36,6 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.InitializeDomainOnPV;
 import oracle.weblogic.domain.Opss;
-import oracle.weblogic.domain.PersistentVolume;
-import oracle.weblogic.domain.PersistentVolumeClaim;
-import oracle.weblogic.domain.PersistentVolumeClaimSpec;
-import oracle.weblogic.domain.PersistentVolumeSpec;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
@@ -50,7 +43,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.assertions.impl.Cluster;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -93,13 +85,13 @@ import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
 import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.deleteDomainResource;
+import static oracle.weblogic.kubernetes.utils.FmwUtils.getConfiguration;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
-import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVHostPathDir;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodsWithTimeStamps;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
@@ -243,7 +235,8 @@ class ItFmwDomainInPVSimplified {
     if (OKE_CLUSTER) {
       configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
     } else {
-      configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest, storageClassName);
+      configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest, storageClassName,
+          this.getClass().getSimpleName());
     }
     configuration.getInitializeDomainOnPV().domain(new DomainOnPV()
         .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
@@ -563,7 +556,8 @@ class ItFmwDomainInPVSimplified {
     if (OKE_CLUSTER) {
       configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
     } else {
-      configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest, storageClassName);
+      configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest, storageClassName,
+      this.getClass().getSimpleName());
     }
     configuration.getInitializeDomainOnPV().domain(new DomainOnPV()
         .createMode(CreateIfNotExists.DOMAIN)
@@ -595,59 +589,6 @@ class ItFmwDomainInPVSimplified {
     // delete the cluster
     deleteClusterCustomResourceAndVerify(domainUid + "-" + clusterName,  domainNamespace);
   }
-
-  @NotNull
-  private Configuration getConfiguration(String pvName, String pvcName,
-                                         Map<String, Quantity> pvCapacity, Map<String, Quantity> pvcRequest,
-                                         String storageClassName) {
-    Configuration configuration = new Configuration();
-    PersistentVolume pv = null;
-    if (OKE_CLUSTER) {
-      storageClassName = "oci-fss";
-    }
-
-    pv = new PersistentVolume()
-        .spec(new PersistentVolumeSpec()
-            .capacity(pvCapacity)
-            .storageClassName(storageClassName)
-            .persistentVolumeReclaimPolicy("Retain"))
-        .metadata(new V1ObjectMeta()
-            .name(pvName));
-    if (!OKE_CLUSTER) {
-      pv.getSpec().hostPath(new V1HostPathVolumeSource()
-          .path(getHostPath(pvName, this.getClass().getSimpleName())));
-    }
-    configuration
-        .initializeDomainOnPV(new InitializeDomainOnPV()
-            .persistentVolume(pv)
-            .persistentVolumeClaim(new PersistentVolumeClaim()
-                .metadata(new V1ObjectMeta()
-                    .name(pvcName))
-                .spec(new PersistentVolumeClaimSpec()
-                    .storageClassName(storageClassName)
-                    .resources(new V1ResourceRequirements()
-                        .requests(pvcRequest)))));
-
-    return configuration;
-  }
-
-  @NotNull
-  private Configuration getConfiguration(String pvcName,
-                                         Map<String, Quantity> pvcRequest,
-                                         String storageClassName) {
-    Configuration configuration = new Configuration()
-        .initializeDomainOnPV(new InitializeDomainOnPV()
-            .persistentVolumeClaim(new PersistentVolumeClaim()
-                .metadata(new V1ObjectMeta()
-                    .name(pvcName))
-                .spec(new PersistentVolumeClaimSpec()
-                    .storageClassName(storageClassName)
-                    .resources(new V1ResourceRequirements()
-                        .requests(pvcRequest)))));
-
-    return configuration;
-  }
-
 
   /**
    * Create a basic FMW domain on PV.
@@ -743,7 +684,8 @@ class ItFmwDomainInPVSimplified {
     if (OKE_CLUSTER) {
       configuration = getConfiguration(pvcName,pvcRequest, "oci-fss");
     } else {
-      configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest, storageClassName);
+      configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest,
+          storageClassName, this.getClass().getSimpleName());
     }
     configuration.addSecretsItem(rcuAccessSecretName)
         .getInitializeDomainOnPV()
@@ -862,6 +804,7 @@ class ItFmwDomainInPVSimplified {
       configuration = getConfiguration(pvcName,pvcRequest, "oci-fss");
     } else {
       configuration = getConfiguration(pvcName, pvcRequest,"weblogic-domain-storage-class");
+
     }
     configuration.addSecretsItem(rcuAccessSecretName)
         .getInitializeDomainOnPV()
@@ -1033,12 +976,6 @@ class ItFmwDomainInPVSimplified {
     logger.info("Start Oracle DB with dbImage: {0}, dbPort: {1}, dbNamespace: {2}, dbListenerPort:{3}",
         dbImage, dbPort, dbNamespace, dbListenerPort);
     startOracleDB(dbImage, dbPort, dbNamespace, dbListenerPort);
-  }
-
-  // get the host path for multiple environment
-  private String getHostPath(String pvName, String className) {
-    Path hostPVPath = createPVHostPathDir(pvName, className);
-    return hostPVPath.toString();
   }
 
   private Callable<Boolean> tagImageAndPushIfNeeded(String originalImage, String taggedImage) {
