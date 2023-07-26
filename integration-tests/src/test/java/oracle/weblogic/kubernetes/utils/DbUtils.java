@@ -105,7 +105,6 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
-import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.setVolumeSource;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
@@ -1035,15 +1034,17 @@ public class DbUtils {
     }
 
     V1PersistentVolume v1pv = new V1PersistentVolume()
+        .metadata(new V1ObjectMeta()
+            .name(pvName))
         .spec(new V1PersistentVolumeSpec()
             .addAccessModesItem("ReadWriteMany")
             .volumeMode("Filesystem")
             .putCapacityItem("storage", Quantity.fromString("100Gi"))
             .persistentVolumeReclaimPolicy("Recycle")
-            .accessModes(Arrays.asList("ReadWriteMany")))
-        .metadata(new V1ObjectMeta()
-            .name(pvName));
-    setVolumeSource(pvHostPath, v1pv);
+            .accessModes(Arrays.asList("ReadWriteMany"))
+            .storageClassName("oracle-db-sc")
+            .hostPath(new V1HostPathVolumeSource()
+                .path(pvHostPath.toString())));
     logger.info(Yaml.dump(v1pv));
     boolean success = assertDoesNotThrow(() -> createPersistentVolume(v1pv),
         "Failed to create persistent volume");
