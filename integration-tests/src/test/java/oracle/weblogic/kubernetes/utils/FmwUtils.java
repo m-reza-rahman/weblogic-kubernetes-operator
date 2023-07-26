@@ -17,9 +17,10 @@ import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1NFSVolumeSource;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
+//import io.kubernetes.client.openapi.models.V1PodSecurityContext;
 import io.kubernetes.client.openapi.models.V1PodSecurityContext;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
-import io.kubernetes.client.openapi.models.V1SecurityContext;
+//import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.AdminServer;
@@ -420,10 +421,10 @@ public class FmwUtils {
                 .addEnvItem(new V1EnvVar()
                     .name("WLSDEPLOY_PROPERTIES")
                     .value(YAML_MAX_FILE_SIZE_PROPERTY))
-                .containerSecurityContext(new V1SecurityContext()
-                    .runAsUser(1000L))
+                /*.containerSecurityContext(new V1SecurityContext()
+                    .runAsUser(1000L))*/
                 .podSecurityContext(new V1PodSecurityContext()
-                    .runAsUser(1000L)))
+                       .fsGroup(0L)))
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
@@ -542,10 +543,10 @@ public class FmwUtils {
                 .addEnvItem(new V1EnvVar()
                     .name("WLSDEPLOY_PROPERTIES")
                     .value(YAML_MAX_FILE_SIZE_PROPERTY))
-                .containerSecurityContext(new V1SecurityContext()
-                    .runAsUser(1000L))
-                .podSecurityContext(new V1PodSecurityContext()
-                    .runAsUser(1000L)))
+                 /*.containerSecurityContext(new V1SecurityContext()
+                    .runAsUser(1000L))*/
+                 .podSecurityContext(new V1PodSecurityContext()
+                        .fsGroup(0L)))
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()

@@ -78,7 +78,7 @@ import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.addSccToNsSvcAccount;
+//import static oracle.weblogic.kubernetes.utils.OKDUtils.addSccToNsSvcAccount;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
@@ -169,9 +169,9 @@ public class ItFmwDomainInPvUserCreateRcu {
     domainNamespace = namespaces.get(2);
 
     //TODO debug for OKD
-    if (OKD) {
+    /*if (OKD) {
       addSccToNsSvcAccount("default", domainNamespace);
-    }
+    }*/
 
     // start DB
     logger.info("Start DB in namespace: {0}, dbListenerPort: {1}, dbUrl: {2}, dbImage: {3}",
