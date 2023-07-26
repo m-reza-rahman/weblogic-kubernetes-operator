@@ -75,6 +75,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePod;
+import static oracle.weblogic.kubernetes.actions.TestActions.imagePull;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
@@ -634,10 +635,6 @@ class ItFmwDomainInPVSimplified {
   private Configuration getConfiguration(String pvcName,
                                          Map<String, Quantity> pvcRequest,
                                          String storageClassName) {
-
-    if (OKE_CLUSTER) {
-      storageClassName = "oci-fss";
-    }
     Configuration configuration = new Configuration()
         .initializeDomainOnPV(new InitializeDomainOnPV()
             .persistentVolumeClaim(new PersistentVolumeClaim()
@@ -1047,6 +1044,7 @@ class ItFmwDomainInPVSimplified {
   private Callable<Boolean> tagImageAndPushIfNeeded(String originalImage, String taggedImage) {
     return (() -> {
       boolean result = true;
+      imagePull(originalImage);
       result = result && imageTag(originalImage, taggedImage);
       imageRepoLoginAndPushImageToRegistry(taggedImage);
       return result;
