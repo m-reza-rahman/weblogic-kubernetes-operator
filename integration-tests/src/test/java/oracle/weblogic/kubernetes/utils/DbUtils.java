@@ -55,6 +55,7 @@ import io.kubernetes.client.openapi.models.V1StorageClass;
 import io.kubernetes.client.openapi.models.V1Subject;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
@@ -1043,6 +1044,7 @@ public class DbUtils {
         .metadata(new V1ObjectMeta()
             .name(pvName));
     setVolumeSource(pvHostPath, v1pv);
+    logger.info(Yaml.dump(v1pv));
     boolean success = assertDoesNotThrow(() -> createPersistentVolume(v1pv),
         "Failed to create persistent volume");
     assertTrue(success, "PersistentVolume creation failed");
