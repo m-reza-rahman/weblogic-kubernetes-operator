@@ -550,7 +550,7 @@ public class ItFmwDomainInPvUserCreateRcu {
       logger.severe("Failed to cleanup directory /share", ioe);
     }
     logger.info("Creating domain custom resource with pvName: {0}", pvName);
-    DomainResource domain = createSimplifyJrfPvDomainAndRCU(
+    DomainResource domain = createDomainResourceSimplifyJrfPv(
         domainUid4, domainNamespace, adminSecretName4,
         TEST_IMAGES_REPO_SECRET_NAME,
         rcuaccessSecretName4,
