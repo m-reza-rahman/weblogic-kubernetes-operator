@@ -287,9 +287,9 @@ public class ItFmwDomainInPvUserCreateRcu {
     logger.info("Deleting domain custom resource with namespace: {0}, domainUid {1}", domainNamespace, domainUid1);
     deleteDomainResource(domainNamespace, domainUid1);
     try {
-      deleteDirectory(Paths.get("/share").toFile());
+      deleteDirectory(Paths.get("/shared").toFile());
     } catch (IOException ioe) {
-      logger.severe("Failed to cleanup directory /share", ioe);
+      logger.severe("Failed to cleanup directory /shared", ioe);
     }
     logger.info("Creating domain custom resource with pvName: {0}", pvName);
     DomainResource domain = createDomainResourceSimplifyJrfPv(
@@ -546,9 +546,9 @@ public class ItFmwDomainInPvUserCreateRcu {
     logger.info("Deleting domain custom resource with namespace: {0}, domainUid {1}", domainNamespace, domainUid4);
     deleteDomainResource(domainNamespace, domainUid4);
     try {
-      deleteDirectory(Paths.get("/share").toFile());
+      deleteDirectory(Paths.get("/shared").toFile());
     } catch (IOException ioe) {
-      logger.severe("Failed to cleanup directory /share", ioe);
+      logger.severe("Failed to cleanup directory /shared", ioe);
     }
     logger.info("Creating domain custom resource with pvName: {0}", pvName);
     DomainResource domain = createDomainResourceSimplifyJrfPv(
@@ -683,9 +683,9 @@ public class ItFmwDomainInPvUserCreateRcu {
     logger.info("Deleting domain custom resource with namespace: {0}, domainUid {1}", domainNamespace, domainUid3);
     deleteDomainResource(domainNamespace, domainUid3);
     try {
-      deleteDirectory(Paths.get("/share").toFile());
+      deleteDirectory(Paths.get("/shared").toFile());
     } catch (IOException ioe) {
-      logger.severe("Failed to cleanup directory /share", ioe);
+      logger.severe("Failed to cleanup directory /shared", ioe);
     }
     logger.info("Creating domain custom resource with pvName: {0}", pvName);
     DomainResource domain = createSimplifyJrfPvDomainAndRCU(

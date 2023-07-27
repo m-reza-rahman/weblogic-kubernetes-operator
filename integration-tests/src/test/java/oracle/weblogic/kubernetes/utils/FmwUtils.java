@@ -559,7 +559,7 @@ public class FmwUtils {
               .spec(new PersistentVolumeSpec()
                   .storageClassName("weblogic-domain-storage-class")
                   .hostPath(new V1HostPathVolumeSource()
-                      .path("/share"))
+                      .path("/shared"))
                   .capacity(capacity)))
           .persistentVolumeClaim(new PersistentVolumeClaim()
               .metadata(new V1ObjectMeta()
