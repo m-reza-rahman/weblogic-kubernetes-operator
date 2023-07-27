@@ -29,6 +29,7 @@ import io.kubernetes.client.openapi.models.V1EnvVarSource;
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource;
 import io.kubernetes.client.openapi.models.V1LabelSelector;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
+import io.kubernetes.client.openapi.models.V1NFSVolumeSource;
 import io.kubernetes.client.openapi.models.V1ObjectFieldSelector;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolume;
@@ -77,6 +78,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_OPERATOR_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.DB_PREBUILT_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.NFS_SERVER;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.ORACLE_DB_SECRET_NAME;
@@ -1040,10 +1042,20 @@ public class DbUtils {
             .volumeMode("Filesystem")
             .putCapacityItem("storage", Quantity.fromString("100Gi"))
             .persistentVolumeReclaimPolicy("Recycle")
-            .accessModes(Arrays.asList("ReadWriteMany"))
-            .storageClassName("oracle-db-sc")
-            .hostPath(new V1HostPathVolumeSource()
-                .path(pvHostPath.toString())));
+            .accessModes(Arrays.asList("ReadWriteMany")));
+    if (OKD) {
+      v1pv.getSpec()
+          .storageClassName("okd-nfsmnt")
+          .nfs(new V1NFSVolumeSource()
+              .path(PV_ROOT)
+              .server(NFS_SERVER)
+              .readOnly(false));
+    } else {
+      v1pv.getSpec()
+          .storageClassName("weblogic-domain-storage-class")
+          .hostPath(new V1HostPathVolumeSource()
+              .path(pvHostPath.toString()));
+    }
     logger.info(Yaml.dump(v1pv));
     boolean success = assertDoesNotThrow(() -> createPersistentVolume(v1pv),
         "Failed to create persistent volume");
