@@ -859,6 +859,8 @@ public class DbUtils {
     replaceStringInFile(dbYaml.toString(), "secretKey:", "secretKey: " + secretKey);
     replaceStringInFile(dbYaml.toString(), "pullFrom:", "pullFrom: " + DB_IMAGE_19C);
     replaceStringInFile(dbYaml.toString(), "pullSecrets:", "pullSecrets: " + BASE_IMAGES_REPO_SECRET_NAME);
+    replaceStringInFile(dbYaml.toString(), "size: 100Gi", "size: 4Gi");
+    replaceStringInFile(dbYaml.toString(), "storageClass: \"oci-fss\"", "storageClass: \"\"");
     String storageClass = "weblogic-domain-storage-class";
     if (OKE_CLUSTER) {
       storageClass = "oci-fss";
