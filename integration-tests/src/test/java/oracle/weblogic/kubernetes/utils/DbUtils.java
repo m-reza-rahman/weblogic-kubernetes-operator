@@ -1015,16 +1015,15 @@ public class DbUtils {
   public static void createPV(String pvName) {
 
     LoggingFacade logger = getLogger();
-    Path pvHostPath = null;
+    Path pvHostPath = Paths.get(PV_ROOT, pvName);
 
     logger.info("creating persistent volume {0}", pvName);
      
     // when tests are running in local box the PV directories need to exist
     if (!OKE_CLUSTER && !OKD) {
-      try {
-        pvHostPath = Files.createDirectories(Paths.get(
-            PV_ROOT, pvName));
+      try {        
         logger.info("Creating PV directory host path {0}", pvHostPath);
+        Files.createDirectories(pvHostPath);
         deleteDirectory(pvHostPath.toFile());
         createDirectories(pvHostPath);
       } catch (IOException ioex) {
