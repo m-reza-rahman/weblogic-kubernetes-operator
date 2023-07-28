@@ -368,34 +368,6 @@ public class FmwUtils {
       String pvName, String pvcName,
       List<DomainCreationImage> domainCreationImages,
       String domainCreationConfigMap) {
-    return createDomainResourceSimplifyJrfPv(domainUid, domainNamespace,
-        adminSecretName, repoSecretName, rcuAccessSecretName,
-        opssWalletPasswordSecretName,opssWalletFileSecretName, pvName, pvcName,
-        domainCreationImages, domainCreationConfigMap, false);
-  }
-
-  /**
-   * Construct a domain object with the given parameters that can be used to create a domain resource.
-   * @param domainUid unique Uid of the domain
-   * @param domainNamespace  namespace where the domain exists
-   * @param adminSecretName  name of admin secret
-   * @param repoSecretName name of repository secret
-   * @param rcuAccessSecretName name of RCU access secret
-   * @param opssWalletPasswordSecretName name of opss wallet password secret
-   * @param opssWalletFileSecretName name of opss wallet file secret
-   * @param domainCreationImages list of domainCreationImage
-   * @param pvName name of persistent volume
-   * @param pvcName name of persistent volume claim
-   * @param isPVCreated if true set pv name for pvc
-   * @return Domain WebLogic domain
-   */
-  public static DomainResource createDomainResourceSimplifyJrfPv(
-      String domainUid, String domainNamespace, String adminSecretName,
-      String repoSecretName, String rcuAccessSecretName, String opssWalletPasswordSecretName,
-      String opssWalletFileSecretName,
-      String pvName, String pvcName,
-      List<DomainCreationImage> domainCreationImages,
-      String domainCreationConfigMap, boolean isPVCreated) {
 
     Map<String, Quantity> capacity = new HashMap<>();
     capacity.put("storage", Quantity.fromString("10Gi"));
@@ -467,9 +439,6 @@ public class FmwUtils {
 
                         )))));
     InitializeDomainOnPV initializeDomainOnPV = getInitializeDomainOnPV(pvName, pvcName, capacity, request, domain);
-    if (isPVCreated) {
-      initializeDomainOnPV.getPersistentVolumeClaim().getSpec().volumeName(pvName);
-    }
     domain.getSpec().getConfiguration().initializeDomainOnPV(initializeDomainOnPV);
     return domain;
   }

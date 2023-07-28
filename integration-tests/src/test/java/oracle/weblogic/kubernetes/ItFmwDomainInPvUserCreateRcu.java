@@ -45,7 +45,6 @@ import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_
 import static oracle.weblogic.kubernetes.TestConstants.MII_AUXILIARY_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -81,7 +80,6 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
-import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodLogContains;
@@ -122,6 +120,7 @@ public class ItFmwDomainInPvUserCreateRcu {
   private static final String domainUid1 = "jrfdomainonpv-userrcu1";
   private static final String domainUid3 = "jrfdomainonpv-userrcu3";
   private static final String domainUid4 = "jrfdomainonpv-userrcu4";
+  private static final String domainUid5 = "jrfdomainonpv-userrcu5";
   private static final String miiAuxiliaryImage1Tag = "jrf1" + MII_BASIC_IMAGE_TAG;
   private final String adminSecretName1 = domainUid1 + "-weblogic-credentials";
   private final String adminSecretName3 = domainUid3 + "-weblogic-credentials";
@@ -515,9 +514,6 @@ public class ItFmwDomainInPvUserCreateRcu {
 
     final String pvName = getUniqueName(domainUid4 + "-pv-");
     final String pvcName = getUniqueName(domainUid4 + "-pvc-");
-    if (OKE_CLUSTER) {
-      createPV(pvName, domainUid4, this.getClass().getSimpleName());
-    }
 
     //create empty wallet file ewallet.p12
     try {
@@ -556,21 +552,21 @@ public class ItFmwDomainInPvUserCreateRcu {
       logger.severe("Failed to cleanup directory /shared", ioe);
     }
     logger.info("Creating domain custom resource with pvName: {0}", pvName);
+
     DomainResource domain = createDomainResourceSimplifyJrfPv(
-        domainUid4, domainNamespace, adminSecretName4,
+        domainUid5, domainNamespace, adminSecretName4,
         TEST_IMAGES_REPO_SECRET_NAME,
         rcuaccessSecretName4,
         opsswalletpassSecretName4, opsswalletfileSecretName4,
-        pvName, pvcName, domainCreationImages4, configMapName,
-        true);
+        pvName, pvcName, domainCreationImages4, configMapName);
 
     createDomainAndVerify(domain, domainNamespace);
 
     // verify that all servers are ready
-    verifyDomainReady(domainNamespace, domainUid4, replicaCount, "nosuffix");
+    verifyDomainReady(domainNamespace, domainUid5, replicaCount, "nosuffix");
 
     // delete the domain
-    deleteDomainResource(domainNamespace, domainUid4);
+    deleteDomainResource(domainNamespace, domainUid5);
     //delete the rcu pod
     assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
               "Got exception while deleting server " + "rcu");
