@@ -671,7 +671,7 @@ public class FmwUtils {
 
   }
 
-  /** Create configuration wit provided pv and pvc values.
+  /** Create configuration with provided pv and pvc values.
    *
    * @param pvName name of pv
    * @param pvcName name of pvc
