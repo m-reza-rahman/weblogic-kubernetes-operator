@@ -554,7 +554,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     logger.info("Creating domain custom resource with pvName: {0}", pvName);
 
     DomainResource domain = createDomainResourceSimplifyJrfPv(
-        domainUid5, domainNamespace, adminSecretName4,
+        domainUid4, domainNamespace, adminSecretName4,
         TEST_IMAGES_REPO_SECRET_NAME,
         rcuaccessSecretName4,
         opsswalletpassSecretName4, opsswalletfileSecretName4,
@@ -563,7 +563,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     createDomainAndVerify(domain, domainNamespace);
 
     // verify that all servers are ready
-    verifyDomainReady(domainNamespace, domainUid5, replicaCount, "nosuffix");
+    verifyDomainReady(domainNamespace, domainUid4, replicaCount, "nosuffix");
 
     // delete the domain
     deleteDomainResource(domainNamespace, domainUid5);
