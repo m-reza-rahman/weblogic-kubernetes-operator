@@ -120,7 +120,7 @@ public class ItFmwDomainInPvUserCreateRcu {
   private static final String domainUid1 = "jrfdomainonpv-userrcu1";
   private static final String domainUid3 = "jrfdomainonpv-userrcu3";
   private static final String domainUid4 = "jrfdomainonpv-userrcu4";
-  private static final String domainUid5 = "jrfdomainonpv-userrcu5";
+
   private static final String miiAuxiliaryImage1Tag = "jrf1" + MII_BASIC_IMAGE_TAG;
   private final String adminSecretName1 = domainUid1 + "-weblogic-credentials";
   private final String adminSecretName3 = domainUid3 + "-weblogic-credentials";
@@ -566,7 +566,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     verifyDomainReady(domainNamespace, domainUid4, replicaCount, "nosuffix");
 
     // delete the domain
-    deleteDomainResource(domainNamespace, domainUid5);
+    deleteDomainResource(domainNamespace, domainUid4);
     //delete the rcu pod
     assertDoesNotThrow(() -> deletePod("rcu", dbNamespace),
               "Got exception while deleting server " + "rcu");
