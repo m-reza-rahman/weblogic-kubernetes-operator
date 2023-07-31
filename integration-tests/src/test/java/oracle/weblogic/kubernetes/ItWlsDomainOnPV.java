@@ -30,7 +30,6 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -42,7 +41,6 @@ import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPush
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.deleteClusterCustomResourceAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
-import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainResourceOnPv;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.deleteDomainResource;
@@ -51,7 +49,6 @@ import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
-import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -67,57 +64,32 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class ItWlsDomainOnPV {
 
   private static String domainNamespace = null;
-  private static String dbNamespace = null;
+  private static final String storageClassName = "weblogic-domain-storage-class";
 
-  private static final String RCUSCHEMAPREFIX = "fmwdomainpv";
-  private static final String ORACLEDBURLPREFIX = "oracledb.";
-  private static final String RCUSYSPASSWORD = "Oradoc_db1";
-  private static final String RCUSCHEMAPASSWORD = "Oradoc_db1";
-  private static final String storageClassName = "fmw-domain-storage-class";
-
-  private static String dbUrl = null;
   private static LoggingFacade logger = null;
   private static String DOMAINHOMEPREFIX = null;
   private static final String clusterName = "cluster-1";
   private static final int replicaCount = 2;
-
-  private final String fmwModelFilePrefix = "model-fmwdomain-onpv-simplified";
   private final String wlsModelFilePrefix = "model-wlsdomain-onpv-simplified";
 
   /**
-   * Assigns unique namespaces for DB, operator and domain.
-   * Start DB service.
-   * Pull FMW image and Oracle DB image if running tests in Kind cluster.
+   * Assigns unique namespaces for operator and domain.
    */
   @BeforeAll
-  public static void initAll(@Namespaces(3) List<String> namespaces) {
+  public static void initAll(@Namespaces(2) List<String> namespaces) {
     logger = getLogger();
-
-    // get a new unique dbNamespace
-    logger.info("Assign a unique namespace for DB");
-    assertNotNull(namespaces.get(0), "Namespace is null");
-    dbNamespace = namespaces.get(0);
-    final int dbListenerPort = getNextFreePort();
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
 
     // get a new unique opNamespace
     logger.info("Assign a unique namespace for operator");
-    assertNotNull(namespaces.get(1), "Namespace is null");
-    String opNamespace = namespaces.get(1);
+    assertNotNull(namespaces.get(0), "Namespace is null");
+    String opNamespace = namespaces.get(0);
 
     // get a new unique domainNamespace
     logger.info("Assign a unique namespace for FMW domain");
-    assertNotNull(namespaces.get(2), "Namespace is null");
-    domainNamespace = namespaces.get(2);
+    assertNotNull(namespaces.get(1), "Namespace is null");
+    domainNamespace = namespaces.get(1);
 
     DOMAINHOMEPREFIX = "/shared/" + domainNamespace + "/domains/";
-
-    // start DB
-    logger.info("Start DB in namespace: {0}, dbListenerPort: {1}, dbUrl: {2}, dbImage: {3}",
-        dbNamespace, dbListenerPort, dbUrl, DB_IMAGE_TO_USE_IN_SPEC);
-    assertDoesNotThrow(() -> startOracleDB(DB_IMAGE_TO_USE_IN_SPEC, getNextFreePort(), dbNamespace, dbListenerPort),
-        String.format("Failed to setup DB in the namespace %s with dbUrl %s, dbListenerPost %s",
-            dbNamespace, dbUrl, dbListenerPort));
 
     // install operator and verify its running in ready state
     HelmParams opHelmParams =
@@ -153,7 +125,7 @@ class ItWlsDomainOnPV {
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create a model property file
-    File wlsModelPropFile = createWdtPropertyFile("wlsonpv-simplified1", RCUSCHEMAPREFIX + "1");
+    File wlsModelPropFile = createWdtPropertyFile("wlsonpv-simplified1");
 
     // create domainCreationImage
     String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "wls-domain-on-pv-image";
@@ -168,15 +140,6 @@ class ItWlsDomainOnPV {
 
     DomainCreationImage domainCreationImage =
         new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
-
-    // create opss wallet password secret
-    logger.info("Create OPSS wallet password secret");
-    String opsswalletpassSecretName = domainUid + "-opss-wallet-password-secret";
-    assertDoesNotThrow(() -> createOpsswalletpasswordSecret(
-        opsswalletpassSecretName,
-        domainNamespace,
-        ADMIN_PASSWORD_DEFAULT),
-        String.format("createSecret failed for %s", opsswalletpassSecretName));
 
     // create a domain resource
     logger.info("Creating domain custom resource");
@@ -223,21 +186,17 @@ class ItWlsDomainOnPV {
     deleteClusterCustomResourceAndVerify(domainUid + "-" + clusterName,  domainNamespace);
   }
 
-  private File createWdtPropertyFile(String domainName, String rcuSchemaPrefix) {
+  private File createWdtPropertyFile(String domainName) {
 
     // create property file used with domain model file
     Properties p = new Properties();
-    p.setProperty("rcuDb", dbUrl);
-    p.setProperty("rcuSchemaPrefix", rcuSchemaPrefix);
-    p.setProperty("rcuSchemaPassword", RCUSCHEMAPASSWORD);
-    p.setProperty("rcuSysPassword", RCUSYSPASSWORD);
     p.setProperty("adminUsername", ADMIN_USERNAME_DEFAULT);
     p.setProperty("adminPassword", ADMIN_PASSWORD_DEFAULT);
     p.setProperty("domainName", domainName);
 
     // create a model property file
     File domainPropertiesFile = assertDoesNotThrow(() ->
-        File.createTempFile(fmwModelFilePrefix, ".properties"),
+        File.createTempFile(wlsModelFilePrefix, ".properties"),
         "Failed to create FMW model properties file");
 
     // create the property file
