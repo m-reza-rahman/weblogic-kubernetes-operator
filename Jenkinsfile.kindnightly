@@ -261,6 +261,14 @@ pipeline {
                      description: 'Collect logs for successful runs. Default is false.',
                      defaultValue: false
         )
+        string(name: 'NUMBER_OF_DOMAINS',
+               description: 'Number of domains to create, default is 10.',
+               defaultValue: "10"
+        )
+        string(name: 'NUMBER_OF_CLUSTERS',
+               description: 'Number of clusters in each domain, default is 10.',
+               defaultValue: "10"
+        )
     }
 
     stages {
@@ -560,6 +568,8 @@ EOF
                                     export TEST_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
+                                    export NUMBER_OF_DOMAINS="${NUMBER_OF_DOMAINS}"
+                                    export NUMBER_OF_CLUSTERS="${NUMBER_OF_CLUSTERS}"
                                     if [[ -n "${IT_TEST}" && "${IT_TEST}" != "**/It*" ]]; then
                                         echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
                                         export MAVEN_PROFILE_NAME="integration-tests"
