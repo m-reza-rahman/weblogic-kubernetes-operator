@@ -42,6 +42,7 @@ The specification of the operation of the WebLogic domain. Required.
 | `maxClusterConcurrentStartup` | integer | The maximum number of cluster member Managed Server instances that the operator will start in parallel for a given cluster, if `maxConcurrentStartup` is not specified for a specific cluster under the `clusters` field. A value of 0 means there is no configured limit. Defaults to 0. |
 | `maxClusterUnavailable` | integer | The maximum number of cluster members that can be temporarily unavailable. You can override this default on a per cluster basis by setting the cluster's `maxUnavailable` field. Defaults to 1. |
 | `monitoringExporter` | [Monitoring Exporter Specification](#monitoring-exporter-specification) | Automatic deployment and configuration of the WebLogic Monitoring Exporter. If specified, the operator will deploy a sidecar container alongside each WebLogic Server instance that runs the exporter. WebLogic Server instances that are already running when the `monitoringExporter` field is created or deleted, will not be affected until they are restarted. When any given server is restarted for another reason, such as a change to the `restartVersion`, then the newly created pod will have the exporter sidecar or not, as appropriate. See https://github.com/oracle/weblogic-monitoring-exporter. |
+| `replaceVariablesInJavaOptions` | Boolean | Specifies whether the operator will replace the environment variables in the Java options in certain situations, such as when the JAVA_OPTIONS are specified using a config map. Defaults to false. |
 | `replicas` | integer | The default number of cluster member Managed Server instances to start for each WebLogic cluster in the domain configuration, unless `replicas` is specified for that cluster under the `clusters` field. For each cluster, the operator will sort cluster member Managed Server names from the WebLogic domain configuration by normalizing any numbers in the Managed Server name and then sorting alphabetically. This is done so that server names such as "managed-server10" come after "managed-server9". The operator will then start Managed Servers from the sorted list, up to the `replicas` count, unless specific Managed Servers are specified as starting in their entry under the `managedServers` field. In that case, the specified Managed Servers will be started and then additional cluster members will be started, up to the `replicas` count, by finding further cluster members in the sorted list that are not already started. If cluster members are started because of their entries under `managedServers`, then a cluster may have more cluster members running than its `replicas` count. Defaults to 1. |
 | `restartVersion` | string | Changes to this field cause the operator to restart WebLogic Server instances. More info: https://oracle.github.io/weblogic-kubernetes-operator/userguide/managing-domains/domain-lifecycle/startup/#restarting-servers. |
 | `serverPod` | [Server Pod](#server-pod) | Customization affecting the generation of Pods for WebLogic Server instances. |
@@ -83,10 +84,10 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `initializeDomainOnPV` | [Initialize Domain On PV](#initialize-domain-on-pv) | Configuration to initialize a WebLogic Domain on persistent volume (`Domain on PV`) and initialize related resources such as a persistent volume and a persistent volume claim. If specified, the operator will perform these one-time initialization steps only if the domain and resources do not already exist. The operator will not recreate or update the domain and resources when they already exist.  For more information, see https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/choosing-a-model/ and https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/domain-on-pv-initialization  |
+| `initializeDomainOnPV` | [Initialize Domain On PV](#initialize-domain-on-pv) | Configuration to initialize a WebLogic Domain on persistent volume (`Domain on PV`) and initialize related resources such as a persistent volume and a persistent volume claim. If specified, the operator will perform these one-time initialization steps only if the domain and resources do not already exist. The operator will not recreate or update the domain and resources when they already exist.  For more information, see https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/choosing-a-model/ and https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/domain-on-pv  |
 | `introspectorJobActiveDeadlineSeconds` | integer | The introspector job timeout value in seconds. If this field is specified, then the operator's ConfigMap `data.introspectorJobActiveDeadlineSeconds` value is ignored. Defaults to 120 seconds. |
 | `model` | [Model](#model) | Model in image model files and properties. |
-| `opss` | [Opss](#opss) | Settings for OPSS security. |
+| `opss` | [Opss](#opss) | Settings for OPSS security for the Model in Image JRF Domain. This field is deprecated, and will be removed in a future release. For JRF domain on PV initialization, use `configuration.initializeDomainOnPV.domain.opss` section for configuring OPSS security settings. |
 | `overrideDistributionStrategy` | string | Determines how updated configuration overrides are distributed to already running WebLogic Server instances following introspection when the `domainHomeSourceType` is PersistentVolume or Image. Configuration overrides are generated during introspection from Secrets, the `overridesConfigMap` field, and WebLogic domain topology. Legal values are `Dynamic`, which means that the operator will distribute updated configuration overrides dynamically to running servers, and `OnRestart`, which means that servers will use updated configuration overrides only after the server's next restart. The selection of `OnRestart` will not cause servers to restart when there are updated configuration overrides available. See also `domains.spec.introspectVersion`. Defaults to `Dynamic`. |
 | `overridesConfigMap` | string | The name of the ConfigMap for WebLogic configuration overrides. |
 | `secrets` | Array of string | A list of names of the Secrets for WebLogic configuration overrides or model. |
@@ -245,8 +246,8 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `walletFileSecret` | string | Name of a Secret containing the OPSS key wallet file, which must be in a key named `walletFile`. Use this to allow a JRF domain to reuse its entries in the RCU database. This allows you to specify a wallet file that was obtained from the domain home after the domain was booted for the first time. |
-| `walletPasswordSecret` | string | Name of a Secret containing the OPSS key passphrase, which must be in a key named `walletPassword`. Used to encrypt and decrypt the wallet that is used for accessing the domain's entries in its RCU database.The password must have a minimum length of eight characters and contain alphabetic characters combined with numbers or special characters. |
+| `walletFileSecret` | string | Name of a Secret containing the OPSS key wallet file, which must be in a key named `walletFile`. Use this to allow a JRF domain to reuse its schemas in the RCU database. This allows you to specify a wallet file that was obtained from the domain home after the domain was booted for the first time. |
+| `walletPasswordSecret` | string | Name of a Secret containing the OPSS key passphrase, which must be in a key named `walletPassword`. Used to encrypt and decrypt the wallet that is used for accessing the domain's schemas in its RCU database. The password must have a minimum length of eight characters and contain alphabetic characters combined with numbers or special characters. |
 
 ### Introspector Job Pod
 
@@ -302,10 +303,10 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `createIfNotExists` | string | Specifies if the operator should create only the domain or the domain with RCU (for JRF-based domains). Legal values: domain, domainAndRCU. Defaults to domain. |
+| `createIfNotExists` | string | Specifies if the operator should create only the domain or the domain with RCU (for JRF-based domains). Legal values: Domain, DomainAndRCU. Defaults to Domain. |
 | `domainCreationConfigMap` | string | Name of a ConfigMap containing the WebLogic Deploy Tooling model. |
 | `domainCreationImages` | Array of [Domain Creation Image](#domain-creation-image) | Domain creation images containing WebLogic Deploy Tooling model, application archive, and WebLogic Deploy Tooling installation files. These files will be used to create the domain during introspection. This feature internally uses a Kubernetes emptyDir volume and Kubernetes init containers to share the files from the additional images  |
-| `domainType` | string | WebLogic Deploy Tooling domain type. Legal values: WLS, JRF. Defaults to JRF. |
+| `domainType` | string | WebLogic Deploy Tooling domain type. Known values are: WLS, RestrictedJRF, JRF. Defaults to JRF. |
 | `opss` | [Opss](#opss) | Settings for OPSS security. |
 
 ### Persistent Volume
@@ -365,7 +366,6 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | `nfs` | [NFS Volume Source](k8s1.13.5.md#nfs-volume-source) | nfs represents an NFS mount on the host. Provisioned by an admin. More info:<br/>https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>Represents an NFS mount that lasts the lifetime of a pod. NFS volumes do not support ownership management or SELinux relabeling. |
 | `persistentVolumeReclaimPolicy` | string | PersistentVolumeReclaimPolicy defines what happens to a persistent volume when released from its claim. Valid options are Retain (default for manually created PersistentVolumes), Delete (default for dynamically provisioned PersistentVolumes), and Recycle (deprecated). Recycle must be supported by the volume plugin underlying this PersistentVolume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#reclaiming   |
 | `storageClassName` | string | StorageClassName is the name of StorageClass to which this persistent volume belongs. Empty value means that this volume does not belong to any StorageClass. |
-| `volumeMode` | string | VolumeMode defines if a volume is intended to be used with a formatted filesystem or to remain in raw block state. Value of Filesystem is implied when not included in spec. |
 
 ### Persistent Volume Claim Spec
 
@@ -373,7 +373,6 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | --- | --- | --- |
 | `resources` | [Resource Requirements](k8s1.13.5.md#resource-requirements) | Resources represents the minimum resources the volume should have. More info https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources. ResourceRequirements describes the compute resource requirements. |
 | `storageClassName` | string | StorageClassName is the name of StorageClass to which this persistent volume belongs. Empty value means that this volume does not belong to any StorageClass. |
-| `volumeMode` | string | VolumeMode defines if a volume is intended to be used with a formatted filesystem or to remain in raw block state. Value of Filesystem is implied when not included in spec. |
 | `volumeName` | string | VolumeName is the binding reference to the PersistentVolume backing this claim. |
 
 ### WDT Timeouts

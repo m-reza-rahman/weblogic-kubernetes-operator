@@ -6,6 +6,7 @@ pre = "<b> </b>"
 description = "Updating a running Model in Image domain's images and model files."
 +++
 
+
 {{< table_of_contents >}}
 
 ### Overview
@@ -421,7 +422,7 @@ Deletion can be problematic for online updates in two cases:
 In general, complex deletion should be handled by offline updates
       to avoid these problems.
 
-**Note**: Implicitly removing a model's parent type
+**NOTE**: Implicitly removing a model's parent type
       section may sometimes work depending
       on the type of the section. For example, if you have an application
       in the model under `appDeployments:` in a `model.configMap` and you
@@ -749,8 +750,6 @@ For example, assuming you've installed WDT in `/u01/wdt/weblogic-deploy` and ass
    #      /tmp/diffed_model.yaml, and
    #      /tmp/compare_model_stdout
    ```
-
-**NOTE**: If your domain type isn't `WLS`, remember to change the domain type to `JRF` or `RestrictedJRF` in the previous `discoverDomain.sh` commands.
 
 #### Changing a Domain `restartVersion` or `introspectVersion`
 

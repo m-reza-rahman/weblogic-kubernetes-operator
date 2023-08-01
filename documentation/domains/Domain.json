@@ -177,7 +177,7 @@
       "type": "object",
       "properties": {
         "initializeDomainOnPV": {
-          "description": "Configuration to initialize a WebLogic Domain on persistent volume (`Domain on PV`) and initialize related resources such as a persistent volume and a persistent volume claim. If specified, the operator will perform these one-time initialization steps only if the domain and resources do not already exist. The operator will not recreate or update the domain and resources when they already exist.  For more information, see https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/choosing-a-model/ and https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/domain-on-pv-initialization ",
+          "description": "Configuration to initialize a WebLogic Domain on persistent volume (`Domain on PV`) and initialize related resources such as a persistent volume and a persistent volume claim. If specified, the operator will perform these one-time initialization steps only if the domain and resources do not already exist. The operator will not recreate or update the domain and resources when they already exist.  For more information, see https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/choosing-a-model/ and https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/domain-on-pv ",
           "$ref": "#/definitions/InitializeDomainOnPV"
         },
         "overrideDistributionStrategy": {
@@ -190,7 +190,8 @@
           ]
         },
         "opss": {
-          "description": "Settings for OPSS security.",
+          "deprecated": "true",
+          "description": "Settings for OPSS security for the Model in Image JRF Domain. This field is deprecated, and will be removed in a future release. For JRF domain on PV initialization, use `configuration.initializeDomainOnPV.domain.opss` section for configuring OPSS security settings.",
           "$ref": "#/definitions/Opss"
         },
         "model": {
@@ -311,24 +312,20 @@
         },
         "domainType": {
           "default": "JRF",
-          "description": "WebLogic Deploy Tooling domain type. Legal values: WLS, JRF. Defaults to JRF.",
-          "type": "string",
-          "enum": [
-            "WLS",
-            "JRF"
-          ]
+          "description": "WebLogic Deploy Tooling domain type. Known values are: WLS, RestrictedJRF, JRF. Defaults to JRF.",
+          "type": "string"
         },
         "opss": {
           "description": "Settings for OPSS security.",
           "$ref": "#/definitions/Opss"
         },
         "createIfNotExists": {
-          "default": "domain",
-          "description": "Specifies if the operator should create only the domain or the domain with RCU (for JRF-based domains). Legal values: domain, domainAndRCU. Defaults to domain.",
+          "default": "Domain",
+          "description": "Specifies if the operator should create only the domain or the domain with RCU (for JRF-based domains). Legal values: Domain, DomainAndRCU. Defaults to Domain.",
           "type": "string",
           "enum": [
-            "domain",
-            "domainAndRCU"
+            "Domain",
+            "DomainAndRCU"
           ]
         }
       }
@@ -360,6 +357,11 @@
           "pattern": "^[a-z0-9-.]{1,45}$",
           "description": "Domain unique identifier. It is recommended that this value be unique to assist in future work to identify related domains in active-passive scenarios across data centers; however, it is only required that this value be unique within the namespace, similarly to the names of Kubernetes resources. This value is distinct and need not match the domain name from the WebLogic domain configuration. Defaults to the value of `metadata.name`.",
           "type": "string"
+        },
+        "replaceVariablesInJavaOptions": {
+          "default": false,
+          "description": "Specifies whether the operator will replace the environment variables in the Java options in certain situations, such as when the JAVA_OPTIONS are specified using a config map. Defaults to false.",
+          "type": "boolean"
         },
         "serverService": {
           "description": "Customization affecting the generation of ClusterIP Services for WebLogic Server instances.",
@@ -822,11 +824,11 @@
       "type": "object",
       "properties": {
         "walletFileSecret": {
-          "description": "Name of a Secret containing the OPSS key wallet file, which must be in a key named `walletFile`. Use this to allow a JRF domain to reuse its entries in the RCU database. This allows you to specify a wallet file that was obtained from the domain home after the domain was booted for the first time.",
+          "description": "Name of a Secret containing the OPSS key wallet file, which must be in a key named `walletFile`. Use this to allow a JRF domain to reuse its schemas in the RCU database. This allows you to specify a wallet file that was obtained from the domain home after the domain was booted for the first time.",
           "type": "string"
         },
         "walletPasswordSecret": {
-          "description": "Name of a Secret containing the OPSS key passphrase, which must be in a key named `walletPassword`. Used to encrypt and decrypt the wallet that is used for accessing the domain\u0027s entries in its RCU database.The password must have a minimum length of eight characters and contain alphabetic characters combined with numbers or special characters.",
+          "description": "Name of a Secret containing the OPSS key passphrase, which must be in a key named `walletPassword`. Used to encrypt and decrypt the wallet that is used for accessing the domain\u0027s schemas in its RCU database. The password must have a minimum length of eight characters and contain alphabetic characters combined with numbers or special characters.",
           "type": "string"
         }
       }
@@ -871,10 +873,6 @@
         "resources": {
           "description": "Resources represents the minimum resources the volume should have. More info https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources. ResourceRequirements describes the compute resource requirements.",
           "$ref": "https://github.com/garethr/kubernetes-json-schema/blob/master/v1.13.5/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements"
-        },
-        "volumeMode": {
-          "description": "VolumeMode defines if a volume is intended to be used with a formatted filesystem or to remain in raw block state. Value of Filesystem is implied when not included in spec.",
-          "type": "string"
         }
       }
     },
@@ -900,10 +898,6 @@
         "capacity": {
           "description": "Capacity is the description of the persistent volume\u0027s resources and capacity. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#capacity",
           "$ref": "#/definitions/Map"
-        },
-        "volumeMode": {
-          "description": "VolumeMode defines if a volume is intended to be used with a formatted filesystem or to remain in raw block state. Value of Filesystem is implied when not included in spec.",
-          "type": "string"
         }
       }
     },

@@ -337,7 +337,7 @@ Although [Kubernetes `NodePorts`](#kubernetes-nodeports) are good for use in dem
 
 #### `NodePort` steps
 
-Here are the high level steps:
+Here are the high-level steps:
 
 - Review [`NodePort` warnings](#nodeport-warnings).
 
@@ -455,7 +455,7 @@ is sent from a source WebLogic Server to a target WebLogic Server in a different
 RMI forwarding may be needed when transaction server participants are not able to establish
 connection directly with one another.
 
-For example, if a cross-domain transaction communication has failed, and messages such as the 
+For example, if a cross-domain transaction communication has failed, and messages such as the
 following can be found in the WebLogic server log files:
 
 `<BEA-111015> <The commit operation for transaction BEA1-0000993203DB6CDB7DE9 timed out after 30 seconds.>`
@@ -478,8 +478,8 @@ through the proxy.
 In each source WebLogic Server domain, specify the URL for the proxy configured for each target
 WebLogic Server domain:
 
-- Set the Java system property as `weblogic.rjvm.domain.proxy.<prefix>` where `<prefix>` is the 
-  domain UID of the target WebLogic Server domain. 
+- Set the Java system property as `weblogic.rjvm.domain.proxy.<prefix>` where `<prefix>` is the
+  domain UID of the target WebLogic Server domain.
   Multiple Java system properties with different values of `<prefix>` can be specified.
 - For WebLogic Server domains running in Kubernetes managed by the operator, you can set this property by including the system property in the `JAVA_OPTIONS`
   [Domain environment variable]({{< relref "/managing-domains/domain-resource#jvm-memory-and-java-option-environment-variables" >}}) defined in the domain resource's `spec.serverPod.env` attribute.
@@ -493,8 +493,7 @@ with domain1, such as `t3://domain1-managed-server1:8001`, will be sent to the p
 RMI forwarding will ensure that the message will reach WebLogic Server managed-server1 in domain1.
 
 Patch 32408938 is required in each WebLogic Server instance that participates in cross-domain transactions, or that is the routing
-destination of a proxy. The patch is available for WebLogic versions 12.2.1.3.0 (PS3),
-12.2.1.4.0 (PS4), and 14.1.1.0.0, and is already included in the PSUs for these releases since July 2022.
+destination of a proxy. The patch is available for WebLogic versions 12.2.1.4.0 (PS4), and 14.1.1.0.0, and is already included in the PSUs for these releases since July 2022.
 
 ### Configuring WebLogic Server affinity load balancing algorithms
 

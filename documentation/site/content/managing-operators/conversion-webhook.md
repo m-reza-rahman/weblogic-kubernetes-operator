@@ -1,5 +1,5 @@
 ---
-title: "Domain upgrade"
+title: "Upgrade operator from version 3.x to 4.x"
 date: 2019-02-23T16:47:21-05:00
 draft: false
 weight: 4
@@ -21,7 +21,7 @@ To simplify this conversion, see
 [manual upgrade command line tool]({{< relref "managing-domains/upgrade-domain-resource#upgrade-the-weblogicoraclev8-schema-domain-resource-manually" >}}).
 {{% /notice %}}
 
-The WebLogic Domain resource conversion webhook is a singleton Deployment in your Kubernetes cluster that automatically and transparently upgrades domain resources with `weblogic.oracle/v8` schema to `weblogic.oracle/v9` schema. It does this by internally using a [Kubernetes Webhook Conversion](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definition-versioning/#webhook-conversion) strategy.  The Domain CustomResourceDefinition in your Kubernetes cluster, which defines the schema of operator managed Domains, has changed significantly in operator version 4.0 from previous operator releases, therefore we have updated the API version to `weblogic.oracle/v9`. For example, we have enhanced [Auxiliary images]({{<relref "managing-domains/model-in-image/auxiliary-images">}}) in operator version 4.0, and its configuration has changed as a result. With the `Webhook` conversion strategy, the Kubernetes API server internally invokes an external REST service which pulls out the configuration of the auxiliary images defined in the `weblogic.oracle/v8` schema domain resource and converts it to the equivalent `weblogic.oracle/v9` schema configuration in operator 4.0. The webhook is automatically installed by default when an operator is installed, and uninstalled when any operator is uninstalled, but you can optionally install and uninstall it independently. For details, see [Install the conversion webhook](#install-the-conversion-webhook) and [Uninstall the conversion webhook](#uninstall-the-conversion-webhook).
+The Domain CustomResourceDefinition (CRD) in your Kubernetes cluster, which defines the schema of operator managed Domains, has changed significantly in operator version 4.0 from previous operator releases, therefore, we have updated the API version to `weblogic.oracle/v9`. For example, we have enhanced [Auxiliary images]({{<relref "/managing-domains/model-in-image/auxiliary-images">}}) in operator version 4.0, and its configuration has changed. Operator 4.0 uses the [Kubernetes Webhook Conversion](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definition-versioning/#webhook-conversion) strategy and a WebLogic Domain resource conversion webhook to automatically and transparently upgrade domain resources with `weblogic.oracle/v8` schema to `weblogic.oracle/v9` schema. With the Webhook conversion strategy, the Kubernetes API server internally invokes an external REST service that pulls out the configuration of the auxiliary images defined in the `weblogic.oracle/v8` schema domain resource and converts it to the equivalent `weblogic.oracle/v9` schema configuration. The WebLogic Domain resource conversion webhook is a singleton Deployment in your Kubernetes cluster. It is installed by default when an operator is installed, and uninstalled when any operator is uninstalled, but you can optionally install and uninstall it independently. For details, see [Install the conversion webhook](#install-the-conversion-webhook) and [Uninstall the conversion webhook](#uninstall-the-conversion-webhook). For manually upgrading the domain resources with `weblogic.oracle/v8` schema to `weblogic.oracle/v9` schema, see [Upgrade Domain resource]({{<relref "/managing-domains/upgrade-domain-resource/_index.md">}}).
 
 ### Conversion webhook components
 The following table lists the components of the WebLogic Domain resource conversion webhook and their purpose.
@@ -32,7 +32,7 @@ The following table lists the components of the WebLogic Domain resource convers
 | Secret | `webLogic-webhook-secrets` | Contains the CA certificate and key used to secure the communication between the Kubernetes API server and the REST endpoint of WebLogic domain resource conversion webhook. |
 | The `spec.conversion` stanza in the Domain CRD | | Used internally by the Kubernetes API server to call an external service when a Domain conversion is required. |
 
-**Notes:**
+**NOTES**:
 - The conversion webhook Deployment `webLogic-operator-webhook` uses and requires the same image as the operator image. You can scale the Deployment by increasing the number of replicas, although this is rarely required.
 
 - The conversion webhook Deployment sets the `spec.conversion.strategy` field of the Domain CRD to `Webhook`. It also adds webhook client configuration details such as service name, namespace, path, port, and the self-signed CA certificate used for authentication.
@@ -80,7 +80,7 @@ The following table describes the behavior of different operator `Helm` chart co
 | Helm uninstall | | Operator and webhook deployment uninstalled. |
 | Helm uninstall with `preserveWebhook=true` set during `helm install` | | Operator deployment uninstalled and webhook deployment preserved. |
 
-**Note:**
+**NOTE**:
 A webhook install is skipped if there's already a webhook deployment at the same or newer version. The `helm install` step requires cluster-level permissions to search for existing conversion webhook deployments in all namespaces.
 
 ### Uninstall the conversion webhook
