@@ -85,7 +85,7 @@ class ItWlsDomainOnPV {
     String opNamespace = namespaces.get(0);
 
     // get a new unique domainNamespace
-    logger.info("Assign a unique namespace for FMW domain");
+    logger.info("Assign a unique namespace for WLS domain");
     assertNotNull(namespaces.get(1), "Namespace is null");
     domainNamespace = namespaces.get(1);
 
@@ -120,7 +120,7 @@ class ItWlsDomainOnPV {
     final String wlSecretName = domainUid + "-weblogic-credentials";
     final String wlsModelFile = wlsModelFilePrefix + ".yaml";
 
-    // create FMW domain credential secret
+    // create WLS domain credential secret
     createSecretWithUsernamePassword(wlSecretName, domainNamespace,
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
@@ -197,12 +197,12 @@ class ItWlsDomainOnPV {
     // create a model property file
     File domainPropertiesFile = assertDoesNotThrow(() ->
         File.createTempFile(wlsModelFilePrefix, ".properties"),
-        "Failed to create FMW model properties file");
+        "Failed to create WLS model properties file");
 
     // create the property file
     assertDoesNotThrow(() ->
-        p.store(new FileOutputStream(domainPropertiesFile), "FMW properties file"),
-        "Failed to write FMW properties file");
+        p.store(new FileOutputStream(domainPropertiesFile), "WLS properties file"),
+        "Failed to write WLS properties file");
 
     return domainPropertiesFile;
   }
