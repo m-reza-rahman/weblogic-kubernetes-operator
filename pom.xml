@@ -40,16 +40,6 @@
     </license>
   </licenses>
 
-  <repositories>
-    <repository>
-      <id>oss-sonatype</id>
-      <name>oss-sonatype</name>
-      <url>https://oss.sonatype.org/content/repositories/releases/</url>
-      <!-- For if we need to work with kubernetes-client/java snapshot releases
-        <snapshots> <enabled>true</enabled> </snapshots> -->
-    </repository>
-  </repositories>
-
   <build>
     <pluginManagement>
       <plugins>
@@ -669,7 +659,7 @@
     <assertj.core.version>3.24.2</assertj.core.version>
     <commons.io.version>2.13.0</commons.io.version>
     <awaitility-version>4.2.0</awaitility-version>
-    <client-java-version>18.0.0</client-java-version>
+    <client-java-version>18.0.1</client-java-version>
     <kotlin-stdlib-version>1.9.0</kotlin-stdlib-version>
     <okhttp-version>4.11.0</okhttp-version>
     <junit.jupiter.version>5.9.3</junit.jupiter.version>
