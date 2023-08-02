@@ -1211,17 +1211,19 @@ class ItConfigDistributionStrategy {
     }
     return  result.stdout();
   }
-  
+
   private static void runMysqlInsidePod(String podName, String namespace) {
     final LoggingFacade logger = getLogger();
 
+    logger.info("Sleeping for 1 minute before connecting to mysql db");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(1));
     StringBuffer mysqlCmd = new StringBuffer(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd.append(namespace);
     mysqlCmd.append(" ");
     mysqlCmd.append(podName);
     mysqlCmd.append(" -- /bin/bash -c \"");
     mysqlCmd.append("mysql ");
-    mysqlCmd.append("-u root -p root123 ");
+    mysqlCmd.append("-u root -proot123 ");
     mysqlCmd.append("< /tmp/grant.sql ");
     mysqlCmd.append(" \"");
     logger.info("mysql command {0}", mysqlCmd.toString());
