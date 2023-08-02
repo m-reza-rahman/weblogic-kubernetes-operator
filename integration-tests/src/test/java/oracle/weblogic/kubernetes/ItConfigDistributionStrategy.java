@@ -204,18 +204,14 @@ class ItConfigDistributionStrategy {
     //start two MySQL database instances
     createMySQLDB("mysqldb-1", "root", "root123", getNextFreePort(), domainNamespace, null);
     V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
-    //execInPod(pod, null, true, "mysql -u root -proot123 -e "
-    //    + "\"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"");
     createFileInPod(pod.getMetadata().getName(), domainNamespace);
-    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace);
+    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
     mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
     logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
     createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
     pod = getPod(domainNamespace, null, "mysqldb-2");
-    //execInPod(pod, null, true, "mysql -u root -proot456 -e "
-    //    + "\"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"");
     createFileInPod(pod.getMetadata().getName(), domainNamespace);
-    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace);
+    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
     mysqlDBPort2 = getMySQLNodePort(domainNamespace, "mysqldb-2");
     logger.info("mysqlDBPort2 is: " + mysqlDBPort2);
 
@@ -1212,7 +1208,7 @@ class ItConfigDistributionStrategy {
     return  result.stdout();
   }
 
-  private static void runMysqlInsidePod(String podName, String namespace) {
+  private static void runMysqlInsidePod(String podName, String namespace, String password) {
     final LoggingFacade logger = getLogger();
 
     logger.info("Sleeping for 1 minute before connecting to mysql db");
@@ -1223,8 +1219,8 @@ class ItConfigDistributionStrategy {
     mysqlCmd.append(podName);
     mysqlCmd.append(" -- /bin/bash -c \"");
     mysqlCmd.append("mysql ");
-    mysqlCmd.append("-u root -proot123 ");
-    mysqlCmd.append("< /tmp/grant.sql ");
+    mysqlCmd.append("-u root -p" + password);
+    mysqlCmd.append(" < /tmp/grant.sql ");
     mysqlCmd.append(" \"");
     logger.info("mysql command {0}", mysqlCmd.toString());
     ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), true));
