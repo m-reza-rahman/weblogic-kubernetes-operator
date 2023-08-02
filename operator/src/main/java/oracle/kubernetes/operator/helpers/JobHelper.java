@@ -455,14 +455,14 @@ public class JobHelper {
 
     private Step createIntrospectionSteps(Step next) {
       return Step.chain(
-              readExistingIntrospectorConfigMap(),
               createNewJob(),
+
               processExistingIntrospectorJob(next));
     }
 
     // Returns a chain of steps which read the job pod and decide how to handle it.
     private Step processExistingIntrospectorJob(Step next) {
-      return Step.chain(waitForIntrospectionToComplete(), readIntrospectorResults(), next);
+      return Step.chain(waitForIntrospectionToComplete(), readExistingIntrospectorConfigMap(), readIntrospectorResults(), next);
     }
 
     private Step waitForIntrospectionToComplete() {

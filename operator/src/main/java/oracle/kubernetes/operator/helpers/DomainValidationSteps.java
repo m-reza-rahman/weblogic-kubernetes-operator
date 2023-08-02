@@ -63,7 +63,7 @@ public class DomainValidationSteps {
   }
 
   static Step createAdditionalDomainValidationSteps(V1PodSpec podSpec) {
-    return /* null */ new DomainAdditionalValidationStep(podSpec) /**/;
+    return /*/ null /*/ new DomainAdditionalValidationStep(podSpec) /**/;
   }
 
   static Step createValidateDomainTopologySteps(Step next) {
