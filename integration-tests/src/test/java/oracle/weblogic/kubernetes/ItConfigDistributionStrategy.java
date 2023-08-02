@@ -65,6 +65,7 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_12213;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -110,7 +111,6 @@ import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
-import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
@@ -183,7 +183,7 @@ class ItConfigDistributionStrategy {
    * @param namespaces injected by JUnit
    */
   @BeforeAll
-  public void initAll(@Namespaces(2) List<String> namespaces) throws ApiException {
+  public void initAll(@Namespaces(2) List<String> namespaces) throws ApiException, IOException {
     logger = getLogger();
 
     logger.info("Assign a unique namespace for operator");
@@ -204,14 +204,18 @@ class ItConfigDistributionStrategy {
     //start two MySQL database instances
     createMySQLDB("mysqldb-1", "root", "root123", getNextFreePort(), domainNamespace, null);
     V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
-    execInPod(pod, null, true, "mysql -u root -proot123 -e "
-        + "\"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"");
+    //execInPod(pod, null, true, "mysql -u root -proot123 -e "
+    //    + "\"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"");
+    createFileInPod(pod.getMetadata().getName(), domainNamespace);
+    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace);
     mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
     logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
     createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
     pod = getPod(domainNamespace, null, "mysqldb-2");
-    execInPod(pod, null, true, "mysql -u root -proot456 -e "
-        + "\"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"");
+    //execInPod(pod, null, true, "mysql -u root -proot456 -e "
+    //    + "\"GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\"");
+    createFileInPod(pod.getMetadata().getName(), domainNamespace);
+    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace);
     mysqlDBPort2 = getMySQLNodePort(domainNamespace, "mysqldb-2");
     logger.info("mysqlDBPort2 is: " + mysqlDBPort2);
 
@@ -1207,5 +1211,43 @@ class ItConfigDistributionStrategy {
     }
     return  result.stdout();
   }
+  
+  private static void runMysqlInsidePod(String podName, String namespace) {
+    final LoggingFacade logger = getLogger();
+
+    StringBuffer mysqlCmd = new StringBuffer(KUBERNETES_CLI + " exec -i -n ");
+    mysqlCmd.append(namespace);
+    mysqlCmd.append(" ");
+    mysqlCmd.append(podName);
+    mysqlCmd.append(" -- /bin/bash -c \"");
+    mysqlCmd.append("mysql ");
+    mysqlCmd.append("-u root -p root123 ");
+    mysqlCmd.append("< /tmp/grant.sql ");
+    mysqlCmd.append(" \"");
+    logger.info("mysql command {0}", mysqlCmd.toString());
+    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), true));
+    logger.info("mysql returned {0}", result.toString());
+    logger.info("mysql returned EXIT value {0}", result.exitValue());
+    assertEquals(0, result.exitValue(), "mysql execution fails");
+  }
+
+  private void createFileInPod(String podName, String namespace) throws IOException {
+    final LoggingFacade logger = getLogger();
+    
+    Path sourceFile = Files.writeString(Paths.get(WORK_DIR, "grant.sql"),
+        "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;");
+    StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
+    mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
+    mysqlCmd.append(namespace);
+    mysqlCmd.append(" ");
+    mysqlCmd.append(podName);
+    mysqlCmd.append(" -- /bin/bash -c \"");
+    mysqlCmd.append("cat > /tmp/grant.sql\"");
+    logger.info("mysql command {0}", mysqlCmd.toString());
+    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), true));
+    logger.info("mysql returned {0}", result.toString());
+    logger.info("mysql returned EXIT value {0}", result.exitValue());
+    assertEquals(0, result.exitValue(), "mysql execution fails");
+  }  
 
 }
