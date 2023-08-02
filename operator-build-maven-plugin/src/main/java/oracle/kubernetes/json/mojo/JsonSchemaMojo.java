@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.json.mojo;
@@ -43,7 +43,6 @@ public class JsonSchemaMojo extends AbstractMojo {
   @Parameter(defaultValue = "${project.build.outputDirectory}/schema")
   private String targetDir;
 
-  @Parameter private String kubernetesVersion;
   @Parameter private final List<ExternalSchema> externalSchemas = Collections.emptyList();
   @Parameter(required = true)
   private String rootClass;
@@ -94,9 +93,6 @@ public class JsonSchemaMojo extends AbstractMojo {
 
   private void addExternalSchemas() throws MojoExecutionException {
     try {
-      if (kubernetesVersion != null) {
-        main.setKubernetesVersion(kubernetesVersion);
-      }
       for (ExternalSchema externalSchema : externalSchemas) {
         main.defineSchemaUrlAndContents(
             externalSchema.getUrl(), externalSchema.getCacheUrl(baseDir));

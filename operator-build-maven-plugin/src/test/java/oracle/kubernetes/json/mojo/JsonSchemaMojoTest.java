@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.json.mojo;
@@ -135,15 +135,6 @@ class JsonSchemaMojoTest extends MojoTestBase {
   }
 
   @Test
-  void hasKubernetesVersionField_withAnnotation() throws Exception {
-    Field supportObjectReferencesField = JsonSchemaMojo.class.getDeclaredField("kubernetesVersion");
-    assertThat(supportObjectReferencesField.getType(), equalTo(String.class));
-    assertThat(
-        fieldAnnotations.get(supportObjectReferencesField), hasKey(toDescription(Parameter.class)));
-    assertThat(getMojoParameter("kubernetesVersion"), nullValue());
-  }
-
-  @Test
   void hasGenerateMarkdownField_withAnnotation() throws Exception {
     Field supportObjectReferencesField = JsonSchemaMojo.class.getDeclaredField("generateMarkdown");
     assertThat(supportObjectReferencesField.getType(), equalTo(boolean.class));
@@ -158,24 +149,6 @@ class JsonSchemaMojoTest extends MojoTestBase {
     assertThat(field.getType(), equalTo(String.class));
     assertThat(fieldAnnotations.get(field), hasKey(toDescription(Parameter.class)));
     assertThat(getMojoParameter("outputFile"), nullValue());
-  }
-
-  @Test
-  void whenKubernetesVersionSpecified_passToGenerator() throws Exception {
-    setMojoParameter("kubernetesVersion", "1.9.0");
-
-    executeMojo();
-
-    assertThat(main.getKubernetesVersion(), equalTo("1.9.0"));
-  }
-
-  @Test
-  void whenKubernetesVersionNotSpecified_passToGenerator() throws Exception {
-    setMojoParameter("kubernetesVersion", null);
-
-    executeMojo();
-
-    assertThat(main.getKubernetesVersion(), nullValue());
   }
 
   @Test

@@ -3,9 +3,7 @@
 
 package oracle.kubernetes.json;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,17 +18,11 @@ import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.arrayContainingInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SchemaGeneratorTest {
 
-  private static final String K8S_SCHEMA_URL =
-      "https://github.com/garethr/kubernetes-json-schema/blob/master/v1.9.0/_definitions.json";
-  private static final String K8S_CACHE_FILE = "caches/kubernetes-1.9.0.json";
   private final SchemaGenerator generator = new SchemaGenerator();
 
-  private URL schemaUrl;
-  private URL cacheUrl;
   @SuppressWarnings("unused")
   @Default(boolDefault = true)
   private boolean unAnnotatedBoolean;
@@ -95,8 +87,6 @@ class SchemaGeneratorTest {
 
   @BeforeEach
   public void setUp() throws Exception {
-    schemaUrl = new URL(K8S_SCHEMA_URL);
-    cacheUrl = getClass().getResource(K8S_CACHE_FILE);
   }
 
   @Test
@@ -406,62 +396,6 @@ class SchemaGeneratorTest {
     Object schema = generator.generate(ReferencingObject.class);
 
     assertThat(schema, hasJsonPath("$.properties.deprecatedField.type", equalTo("integer")));
-  }
-
-  @Test
-  void whenObjectDefinedInExternalSchema_useFullReference() throws IOException {
-    URL schemaUrl = getClass().getResource("k8smini.json");
-    generator.addExternalSchema(schemaUrl, cacheUrl);
-    Object schema = generator.generate(ExternalReferenceObject.class);
-
-    assertThat(schema, hasJsonPath("$.properties.env.type", equalTo("array")));
-    assertThat(
-        schema,
-        hasJsonPath(
-            "$.properties.env.items.$ref",
-            equalTo(schemaUrl + "#/definitions/io.k8s.api.core.v1.EnvVar")));
-    assertThat(
-        schema, hasJsonPath("$.properties.simple.$ref", equalTo("#/definitions/SimpleObject")));
-  }
-
-  @Test
-  void whenObjectDefinedInCachedKubernetesSchema_useFullReference() throws IOException {
-    generator.addExternalSchema(schemaUrl, cacheUrl);
-    Object schema = generator.generate(ExternalReferenceObject.class);
-
-    assertThat(schema, hasJsonPath("$.properties.env.type", equalTo("array")));
-    assertThat(
-        schema,
-        hasJsonPath(
-            "$.properties.env.items.$ref",
-            equalTo(schemaUrl + "#/definitions/io.k8s.api.core.v1.EnvVar")));
-    assertThat(
-        schema, hasJsonPath("$.properties.simple.$ref", equalTo("#/definitions/SimpleObject")));
-  }
-
-  @Test
-  void whenObjectDefinedInCachedKubernetesSchema_doNotAddToDefinitions() throws IOException {
-    generator.addExternalSchema(schemaUrl, cacheUrl);
-    Object schema = generator.generate(ExternalReferenceObject.class);
-
-    assertThat(schema, hasNoJsonPath("$.definitions.V1EnvVar"));
-  }
-
-  @Test
-  void whenK8sVersionSpecified_useFullReferenceForK8sObject() throws IOException {
-    generator.useKubernetesVersion("1.9.0");
-    Object schema = generator.generate(ExternalReferenceObject.class);
-
-    assertThat(
-        schema,
-        hasJsonPath(
-            "$.properties.env.items.$ref",
-            equalTo(schemaUrl + "#/definitions/io.k8s.api.core.v1.EnvVar")));
-  }
-
-  @Test
-  void whenNonCachedK8sVersionSpecified_throwException() {
-    assertThrows(IOException.class, () -> generator.useKubernetesVersion("1.12.0"));
   }
 
   @Test

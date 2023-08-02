@@ -106,22 +106,6 @@ public class SchemaGenerator {
   }
 
   /**
-   * Specifies the version of the Kubernetes schema to use.
-   *
-   * @param version a Kubernetes version string, such as "1.9.0"
-   * @throws IOException if no schema for that version is cached.
-   */
-  public void useKubernetesVersion(String version) throws IOException {
-    KubernetesSchemaReference reference = KubernetesSchemaReference.create(version);
-    URL cacheUrl = reference.getKubernetesSchemaCacheUrl();
-    if (cacheUrl == null) {
-      throw new IOException("No schema cached for Kubernetes " + version);
-    }
-
-    addExternalSchema(reference.getKubernetesSchemaUrl(), cacheUrl);
-  }
-
-  /**
    * Adds external schema.
    *
    * @param schemaUrl Schema URL

@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.json.mojo;
@@ -11,14 +11,6 @@ import java.util.Map;
 import org.apache.maven.plugin.MojoExecutionException;
 
 public interface Main {
-
-  /**
-   * Specifies the Kubernetes version to be used for object definitions.
-   *
-   * @param kubernetesVersion the desired version
-   * @throws IOException on IO exception
-   */
-  void setKubernetesVersion(String kubernetesVersion) throws IOException;
 
   /**
    * Defines an external schema URL to be used for object definitions.

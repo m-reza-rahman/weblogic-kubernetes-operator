@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.json.mojo;
@@ -16,7 +16,6 @@ public class TestMain implements Main {
   private File schemaFile;
   private String resourceName;
   private Map<URL, URL> schemas = new HashMap<>();
-  private String kubernetesVersion;
   private boolean includeAdditionalProperties;
   private boolean supportObjectReferences;
   private File markdownFile;
@@ -61,15 +60,6 @@ public class TestMain implements Main {
 
   URL getCacheFor(URL schemaUrl) {
     return schemas.get(schemaUrl);
-  }
-
-  String getKubernetesVersion() {
-    return kubernetesVersion;
-  }
-
-  @Override
-  public void setKubernetesVersion(String kubernetesVersion) {
-    this.kubernetesVersion = kubernetesVersion;
   }
 
   boolean isIncludeAdditionalProperties() {

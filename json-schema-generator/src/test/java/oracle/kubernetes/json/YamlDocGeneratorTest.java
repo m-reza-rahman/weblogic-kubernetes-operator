@@ -1,9 +1,8 @@
-// Copyright (c) 2019, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2019, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.json;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.Test;
 
 import static java.util.Map.of;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
@@ -212,89 +210,5 @@ class YamlDocGeneratorTest {
 
   private String tableDivider(int numColumns) {
     return "|" + " --- |".repeat(Math.max(0, numColumns));
-  }
-
-  @Test
-  void whenExternalSchemaSpecified_returnFileName() throws IOException {
-    schemaGenerator.useKubernetesVersion(K8S_VERSION);
-    Map<String, Object> schema = schemaGenerator.generate(KubernetesReferenceObject.class);
-
-    YamlDocGenerator generator = new YamlDocGenerator(schema);
-    generator.useKubernetesVersion(K8S_VERSION);
-    generator.generate("start");
-    KubernetesSchemaReference reference = KubernetesSchemaReference.create(K8S_VERSION);
-    assertThat(
-        generator.getKubernetesSchemaMarkdownFile(), equalTo(reference.getK8sMarkdownLink()));
-  }
-
-  @Test
-  void whenExternalSchemaSpecified_generateWithReferencedSections() throws IOException {
-    schemaGenerator.useKubernetesVersion(K8S_VERSION);
-    Map<String, Object> schema = schemaGenerator.generate(KubernetesReferenceObject.class);
-
-    YamlDocGenerator generator = new YamlDocGenerator(schema);
-    KubernetesSchemaReference reference = KubernetesSchemaReference.create(K8S_VERSION);
-    generator.useKubernetesVersion(K8S_VERSION);
-    String markdown = generator.generate("start");
-    assertThat(
-        markdown,
-        containsString(
-            String.join(
-                "\n",
-                "### Start",
-                "",
-                tableHeader(),
-                tableEntry(
-                    "`env`", linkTo("Env Var", reference.getK8sMarkdownLink() + "#env-var"), ""))));
-  }
-
-  @Test
-  void whenExternalSchemaSpecified_generateMarkdownForIt() throws IOException {
-    schemaGenerator.useKubernetesVersion(K8S_VERSION);
-    Map<String, Object> schema = schemaGenerator.generate(KubernetesReferenceObject.class);
-
-    YamlDocGenerator generator = new YamlDocGenerator(schema);
-    generator.useKubernetesVersion(K8S_VERSION);
-    generator.generate("start");
-    assertThat(
-        generator.getKubernetesSchemaMarkdown(),
-        containsString(
-            String.join(
-                "\n",
-                "### Env Var",
-                "",
-                "EnvVar represents an environment variable present in a Container.",
-                "",
-                tableHeader(),
-                tableEntry(
-                    "`name`",
-                    "string",
-                    "Name of the environment variable. Must be a C_IDENTIFIER."))));
-  }
-
-  @Test
-  void whenExternalSchemaSpecified_generateMarkdownForItsLinks() throws IOException {
-    schemaGenerator.useKubernetesVersion(K8S_VERSION);
-    Map<String, Object> schema = schemaGenerator.generate(KubernetesReferenceObject.class);
-
-    YamlDocGenerator generator = new YamlDocGenerator(schema);
-    generator.useKubernetesVersion(K8S_VERSION);
-    generator.generate("start");
-    assertThat(
-        generator.getKubernetesSchemaMarkdown(),
-        containsString("| `valueFrom` | " + linkTo("Env Var Source", "#env-var-source")));
-  }
-
-  @Test
-  void whenExternalSchemaSpecified_generateMarkdownForItsDependencies() throws IOException {
-    schemaGenerator.useKubernetesVersion(K8S_VERSION);
-    Map<String, Object> schema = schemaGenerator.generate(KubernetesReferenceObject.class);
-
-    YamlDocGenerator generator = new YamlDocGenerator(schema);
-    generator.useKubernetesVersion(K8S_VERSION);
-    generator.generate("start");
-    assertThat(
-        generator.getKubernetesSchemaMarkdown(),
-        containsString(String.join("\n", "### Env Var Source")));
   }
 }

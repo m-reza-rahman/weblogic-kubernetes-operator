@@ -1,10 +1,8 @@
-// Copyright (c) 2019, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2019, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.json;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -24,7 +22,6 @@ public class YamlDocGenerator {
   private final Map<String, Object> schema;
   private final List<String> referencesNeeded = new ArrayList<>();
   private final Set<String> referencesGenerated = new HashSet<>();
-  private KubernetesSchemaReference kubernetesReference;
   private YamlDocGenerator kubernetesGenerator;
 
   public YamlDocGenerator(Map<String, Object> schema) {
@@ -138,35 +135,12 @@ public class YamlDocGenerator {
   }
 
   /**
-   * Assigns kubernetes version to use.
-   *
-   * @param k8sVersion Kubernetes version
-   * @throws IOException IO exception
-   */
-  public void useKubernetesVersion(String k8sVersion) throws IOException {
-    kubernetesReference = KubernetesSchemaReference.create(k8sVersion);
-    URL cacheUrl = kubernetesReference.getKubernetesSchemaCacheUrl();
-    if (cacheUrl != null) {
-      kubernetesGenerator = new YamlDocGenerator(SchemaGenerator.loadCachedSchema(cacheUrl));
-    }
-  }
-
-  /**
    * Returns the markdown generated (if any) for referenced Kubernetes objects.
    *
    * @return a string for a kubernetes schema markdown
    */
   public String getKubernetesSchemaMarkdown() {
     return kubernetesGenerator == null ? null : kubernetesGenerator.generate("Kubernetes Objects");
-  }
-
-  /**
-   * Returns the name of the file to generate for the Kubernetes markdown.
-   *
-   * @return a string representing the local file name
-   */
-  public String getKubernetesSchemaMarkdownFile() {
-    return kubernetesReference == null ? null : kubernetesReference.getK8sMarkdownLink();
   }
 
   private void addReferenceIfNeeded(String reference) {
@@ -288,7 +262,7 @@ public class YamlDocGenerator {
     }
   }
 
-  private class ExternalReference extends Reference {
+  private class ExternalReference extends Reference { // FIXME: need this?
     private final String url;
 
     ExternalReference(String ref) {
@@ -301,19 +275,6 @@ public class YamlDocGenerator {
 
     private String toK8sName(String ref) {
       return ref.substring(ref.lastIndexOf("/") + 1);
-    }
-
-    @Override
-    String getLink() {
-      return getKubernetesSchemaLink() + super.getLink();
-    }
-
-    private String getKubernetesSchemaLink() {
-      return matchesKubernetesVersion() ? kubernetesReference.getK8sMarkdownLink() : "";
-    }
-
-    private boolean matchesKubernetesVersion() {
-      return kubernetesReference != null && kubernetesReference.matchesUrl(url);
     }
   }
 }
