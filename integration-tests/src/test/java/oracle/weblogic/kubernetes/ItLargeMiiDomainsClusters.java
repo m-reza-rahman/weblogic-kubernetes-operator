@@ -183,7 +183,7 @@ class ItLargeMiiDomainsClusters {
           + "       Cluster: 'cluster-" + i + "' \n"
           + "       ListenPort : 8001 \n";
     }
-    yamlString = clusterYamlString
+    yamlString = yamlString + clusterYamlString
         + "  ServerTemplate:\n"
         + serverTemplateYamlString;
     logger.info("Yamlstring " + yamlString);
