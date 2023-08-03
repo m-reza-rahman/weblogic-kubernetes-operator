@@ -30,6 +30,7 @@ import static oracle.weblogic.kubernetes.TestConstants.HTTPS_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.HTTP_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
+import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_VERSION;
@@ -232,12 +233,22 @@ class ItFmwDomainInPVUsingWDT {
         .addEnvItem(new V1EnvVar()
             .name("WDT_DIR")
             .value("/u01/shared/wdt"))
-        .addEnvItem(new V1EnvVar()
+        /*.addEnvItem(new V1EnvVar()
             .name("DOMAIN_HOME_DIR")
-            .value(DOMAINHOMEPREFIX + domainUid))
+            .value(DOMAINHOMEPREFIX + domainUid))*/
         .addEnvItem(new V1EnvVar()
             .name("DOMAIN_TYPE")
             .value("JRF"));
+
+    if (OKD) {
+      jobCreationContainer.addEnvItem(new V1EnvVar()
+            .name("DOMAIN_HOME_DIR")
+            .value("okdtest/" + DOMAINHOMEPREFIX + domainUid));
+    } else {
+      jobCreationContainer.addEnvItem(new V1EnvVar()
+            .name("DOMAIN_HOME_DIR")
+            .value(DOMAINHOMEPREFIX + domainUid));
+    }
 
     if (HTTP_PROXY != null) {
       jobCreationContainer.addEnvItem(new V1EnvVar().name("http_proxy").value(HTTP_PROXY));
