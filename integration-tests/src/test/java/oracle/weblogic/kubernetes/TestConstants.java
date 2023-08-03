@@ -240,6 +240,7 @@ public interface TestConstants {
   // MII image constants
   public static final String MII_BASIC_WDT_MODEL_FILE = "model-singleclusterdomain-sampleapp-wls.yaml";
   public static final String MII_BASIC_IMAGE_NAME = DOMAIN_IMAGES_PREFIX + "mii-basic-image";
+  public static final String MII_ADMINONLY_WDT_MODEL_FILE = "model-adminonlydomain-wls.yaml";
   public static final String MII_AUXILIARY_IMAGE_NAME = DOMAIN_IMAGES_PREFIX + "mii-ai-image";
   public static final boolean SKIP_BUILD_IMAGES_IF_EXISTS =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.skip.build.images.if.exists", "false"));
