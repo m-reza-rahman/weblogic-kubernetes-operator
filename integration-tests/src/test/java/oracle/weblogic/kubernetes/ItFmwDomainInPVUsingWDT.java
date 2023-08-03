@@ -243,7 +243,7 @@ class ItFmwDomainInPVUsingWDT {
     if (OKD) {
       jobCreationContainer.addEnvItem(new V1EnvVar()
             .name("DOMAIN_HOME_DIR")
-            .value("okdtest/" + DOMAINHOMEPREFIX + domainUid));
+            .value("okdtests/" + DOMAINHOMEPREFIX + domainUid));
     } else {
       jobCreationContainer.addEnvItem(new V1EnvVar()
             .name("DOMAIN_HOME_DIR")
