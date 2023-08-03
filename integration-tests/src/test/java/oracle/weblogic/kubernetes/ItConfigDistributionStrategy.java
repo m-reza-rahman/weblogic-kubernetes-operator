@@ -205,13 +205,13 @@ class ItConfigDistributionStrategy {
     //start two MySQL database instances
     createMySQLDB("mysqldb-1", "root", "root123", getNextFreePort(), domainNamespace, null);
     V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
-    createFileInPod(pod.getMetadata().getName(), domainNamespace);
+    createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
     mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
     logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
     createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
     pod = getPod(domainNamespace, null, "mysqldb-2");
-    createFileInPod(pod.getMetadata().getName(), domainNamespace);
+    createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
     mysqlDBPort2 = getMySQLNodePort(domainNamespace, "mysqldb-2");
     logger.info("mysqlDBPort2 is: " + mysqlDBPort2);
@@ -1230,11 +1230,13 @@ class ItConfigDistributionStrategy {
     assertEquals(0, result.exitValue(), "mysql execution fails");
   }
 
-  private void createFileInPod(String podName, String namespace) throws IOException {
+  private void createFileInPod(String podName, String namespace, String password) throws IOException {
     final LoggingFacade logger = getLogger();
     
     Path sourceFile = Files.writeString(Paths.get(WORK_DIR, "grant.sql"),
-        "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;");
+        "SELECT host, user FROM mysql.user;\n"
+        + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
+        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;");
     StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
     mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd.append(namespace);
