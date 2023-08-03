@@ -35,6 +35,7 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerif
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -52,10 +53,10 @@ class ItLargeMiiDomainsClusters {
   private static List<String> domainNamespaces;
   private static final String baseDomainUid = "domain";
   private static final String baseClusterName = "cluster-";
+  private static String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
   private static int numOfDomains = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_DOMAINS", "2"));
   private static int numOfClusters = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_CLUSTERS", "2"));
   private String miiImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
-  private static String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
   private static String opServiceAccount = opNamespace + "-sa";
 
   private static LoggingFacade logger = null;
@@ -104,7 +105,7 @@ class ItLargeMiiDomainsClusters {
       String domainUid = baseDomainUid + (i + 1);
       String configMapName = domainUid + "-configmap";
       List<String> clusterNameList = new ArrayList<>();
-      for (int j = 0; j < numOfClusters; j++) {
+      for (int j = 1; j <= numOfClusters; j++) {
         clusterNameList.add(baseClusterName + j);
       }
       // create model with all clusters
@@ -133,12 +134,30 @@ class ItLargeMiiDomainsClusters {
           encryptionSecretName, replicaCount, clusterNameList);
       domain.getSpec().configuration(new Configuration()
           .model(new Model()
-              .configMap(configMapName)));
+              .configMap(configMapName)
+              .runtimeEncryptionSecret(encryptionSecretName)));
 
       logger.info("Creating Domain Resource {0} in namespace {1} using image {2}",
           domainUid, domainNamespaces.get(i),
           miiAdminOnlyImage);
       createDomainAndVerify(domain, domainNamespaces.get(i));
+
+      String adminServerPodName = domainUid + adminServerPrefix;
+      // check admin server pod is ready
+      logger.info("Wait for admin server pod {0} to be ready in namespace {1}",
+          adminServerPodName, domainNamespaces.get(i));
+      checkPodReady(adminServerPodName, domainUid, domainNamespaces.get(i));
+
+      // check managed server pods are ready in all clusters in the domain
+      for (int j = 1; j <= numOfClusters; j++) {
+        String managedServerPrefix = "c" + j + "-managed-server";
+        // check managed server pods are ready
+        for (int k = 1; k <= replicaCount; k++) {
+          logger.info("Wait for managed server pod {0} to be ready in namespace {1}",
+              managedServerPrefix + k, domainNamespaces.get(i));
+          checkPodReady(managedServerPrefix + k, domainUid, domainNamespaces.get(i));
+        }
+      }
 
     }
 
