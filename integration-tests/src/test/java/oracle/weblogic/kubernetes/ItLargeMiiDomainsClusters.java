@@ -152,7 +152,7 @@ class ItLargeMiiDomainsClusters {
     String serverTemplateYamlString = "";
     for (int i = 1; i <= numOfClusters; i++) {
       clusterYamlString = clusterYamlString
-          + "    'cluster-'" + i + ":\n"
+          + "    'cluster-" + i + "':\n"
           + "       DynamicServers: \n"
           + "         ServerTemplate: 'cluster-" + i + "-template' \n"
           + "         ServerNamePrefix: 'c" + i + "-managed-server' \n"
@@ -160,12 +160,13 @@ class ItLargeMiiDomainsClusters {
           + "         MaxDynamicClusterSize: 5 \n"
           + "         CalculatedListenPorts: false \n";
       serverTemplateYamlString = serverTemplateYamlString
-          + "  ServerTemplate:\n"
           + "    'cluster-" + i + "-template':\n"
           + "       Cluster: 'cluster-" + i + "' \n"
           + "       ListenPort : 8001 \n";
     }
-    yamlString = clusterYamlString + serverTemplateYamlString;
+    yamlString = clusterYamlString
+        + "  ServerTemplate:\n"
+        + serverTemplateYamlString;
     logger.info("Yamlstring " + yamlString);
     Map<String, String> labels = new HashMap<>();
     labels.put("weblogic.domainUid", domainid);
