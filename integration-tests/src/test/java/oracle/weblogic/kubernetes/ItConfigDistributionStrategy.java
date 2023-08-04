@@ -1235,6 +1235,7 @@ class ItConfigDistributionStrategy {
     
     Path sourceFile = Files.writeString(Paths.get(WORK_DIR, "grant.sql"),
         "SELECT host, user FROM mysql.user;\n"
+        + "select user();\n"
         + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
         + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;");
     StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
