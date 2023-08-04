@@ -56,8 +56,12 @@ class ItLargeMiiDomainsClusters {
   private static String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
   private static int numOfDomains = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_DOMAINS", "2"));
   private static int numOfClusters = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_CLUSTERS", "2"));
+  private static int numOfServersToStart = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_SERVERSTOSTART", "2"));
+
   private String miiImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
   private static String opServiceAccount = opNamespace + "-sa";
+  private static String adminSecretName = "weblogic-credentials";
+  private static String encryptionSecretName = "encryptionsecret";
 
   private static LoggingFacade logger = null;
   final int replicaCount = 2;
@@ -100,7 +104,10 @@ class ItLargeMiiDomainsClusters {
   @Test
   @DisplayName("Create n number of domains/clusters")
   void testCreateNDomainsNClusters() {
+    logger.info("Creating {0} domains with {1} clusters in each domain",
+        numOfDomains, numOfClusters);
 
+    // create given number of domains and clusters
     for (int i = 0; i < numOfDomains; i++) {
       String domainUid = baseDomainUid + (i + 1);
       String configMapName = domainUid + "-configmap";
@@ -108,30 +115,20 @@ class ItLargeMiiDomainsClusters {
       for (int j = 1; j <= numOfClusters; j++) {
         clusterNameList.add(baseClusterName + j);
       }
-      // create model with all clusters
-      createModelConfigMap(domainUid, configMapName, domainNamespaces.get(i));
 
-      // Create the repo secret to pull the image
-      // this secret is used only for non-kind cluster
-      createTestRepoSecret(domainNamespaces.get(i));
+      // create config map with model for all clusters
+      createClusterModelConfigMap(domainUid, configMapName, domainNamespaces.get(i));
 
-      // create secret for admin credentials
-      logger.info("Create secret for admin credentials");
-      String adminSecretName = "weblogic-credentials";
-      createSecretWithUsernamePassword(adminSecretName, domainNamespaces.get(i),
-          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
+      // create secrets
+      createSecrets(domainNamespaces.get(i));
 
-      // create encryption secret
-      logger.info("Create encryption secret");
-      String encryptionSecretName = "encryptionsecret";
-      createSecretWithUsernamePassword(encryptionSecretName, domainNamespaces.get(i),
-          "weblogicenc", "weblogicenc");
-
-      // create and deploy domain resource
+      // create cluster resources and domain resource
       DomainResource domain = createDomainResource(domainUid, domainNamespaces.get(i),
           miiAdminOnlyImage,
           adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
-          encryptionSecretName, replicaCount, clusterNameList);
+          encryptionSecretName, numOfServersToStart, clusterNameList);
+
+      // set config map
       domain.getSpec().configuration(new Configuration()
           .model(new Model()
               .configMap(configMapName)
@@ -152,18 +149,16 @@ class ItLargeMiiDomainsClusters {
       for (int j = 1; j <= numOfClusters; j++) {
         String managedServerPrefix = "c" + j + "-managed-server";
         // check managed server pods are ready
-        for (int k = 1; k <= replicaCount; k++) {
+        for (int k = 1; k <= numOfServersToStart; k++) {
           logger.info("Wait for managed server pod {0} to be ready in namespace {1}",
               managedServerPrefix + k, domainNamespaces.get(i));
           checkPodReady(managedServerPrefix + k, domainUid, domainNamespaces.get(i));
         }
       }
-
     }
-
   }
 
-  private static void createModelConfigMap(
+  private static void createClusterModelConfigMap(
       String domainid, String cfgMapName, String domainNamespace) {
     String yamlString = "topology:\n"
         + "  Cluster:\n";
@@ -201,5 +196,21 @@ class ItLargeMiiDomainsClusters {
     boolean cmCreated = assertDoesNotThrow(() -> createConfigMap(configMap),
         String.format("Can't create ConfigMap %s", cfgMapName));
     assertTrue(cmCreated, String.format("createConfigMap failed %s", cfgMapName));
+  }
+
+  private void createSecrets(String domainNamespace) {
+    // Create the repo secret to pull the image
+    // this secret is used only for non-kind cluster
+    createTestRepoSecret(domainNamespace);
+
+    // create secret for admin credentials
+    logger.info("Create secret for admin credentials");
+    createSecretWithUsernamePassword(adminSecretName, domainNamespace,
+        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
+
+    // create encryption secret
+    logger.info("Create encryption secret");
+    createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
+        "weblogicenc", "weblogicenc");
   }
 }
