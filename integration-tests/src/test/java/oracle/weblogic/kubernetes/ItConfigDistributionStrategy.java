@@ -1078,12 +1078,7 @@ class ItConfigDistributionStrategy {
           "Getting admin server default port failed");
       logger.info("default channel port: {0}", defaultChannelPort);
       assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
-
-
-      //String hostAndPort = getHostAndPort(sqlSvcEndpoint, mySQLNodePort);
-      //logger.info("hostAndPort = {0} ", hostAndPort);
-      String jdbcDsUrl; //= "jdbc:mysql://" + hostAndPort;
-      jdbcDsUrl = dsUrl;
+      String jdbcDsUrl = dsUrl;
 
       // based on WebLogic image, change the mysql driver to 
       // 12.2.1.3 - com.mysql.jdbc.Driver
