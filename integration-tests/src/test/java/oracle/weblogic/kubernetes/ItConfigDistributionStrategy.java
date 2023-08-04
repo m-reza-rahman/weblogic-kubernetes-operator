@@ -207,29 +207,29 @@ class ItConfigDistributionStrategy {
     V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
     createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
-    mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
-    logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
+    //mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
+    //logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
     String createMySQLDB2 = createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
     pod = getPod(domainNamespace, null, "mysqldb-2");
     createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
-    mysqlDBPort2 = getMySQLNodePort(domainNamespace, "mysqldb-2");
-    logger.info("mysqlDBPort2 is: " + mysqlDBPort2);
+    //mysqlDBPort2 = getMySQLNodePort(domainNamespace, "mysqldb-2");
+    //logger.info("mysqlDBPort2 is: " + mysqlDBPort2);
 
     if (OKD) {
       mysql1SvcEndpoint = getMySQLSvcEndpoint(domainNamespace, "mysqldb-1");
       mysql2SvcEndpoint = getMySQLSvcEndpoint(domainNamespace, "mysqldb-2");
     }
 
-    String mysql1HostAndPort = getHostAndPort(mysql1SvcEndpoint, mysqlDBPort1);
-    logger.info("mysql1HostAndPort = {0} ", mysql1HostAndPort);
-    String mysql2HostAndPort = getHostAndPort(mysql2SvcEndpoint, mysqlDBPort2);
-    logger.info("mysql2HostAndPort = {0} ", mysql2HostAndPort);
+    //String mysql1HostAndPort = getHostAndPort(mysql1SvcEndpoint, mysqlDBPort1);
+    //logger.info("mysql1HostAndPort = {0} ", mysql1HostAndPort);
+    //String mysql2HostAndPort = getHostAndPort(mysql2SvcEndpoint, mysqlDBPort2);
+    //logger.info("mysql2HostAndPort = {0} ", mysql2HostAndPort);
 
-    dsUrl1 = "jdbc:mysql://" + mysql1HostAndPort;
-    dsUrl2 = "jdbc:mysql://" + mysql2HostAndPort;
-    logger.info(dsUrl1);
-    logger.info(dsUrl2);
+    //dsUrl1 = "jdbc:mysql://" + mysql1HostAndPort;
+    //dsUrl2 = "jdbc:mysql://" + mysql2HostAndPort;
+    //logger.info(dsUrl1);
+    //logger.info(dsUrl2);
     dsUrl1 = "jdbc:mysql://" + createMySQLDB1 + "." + domainNamespace + ".svc:3306";
     dsUrl2 = "jdbc:mysql://" + createMySQLDB2 + "." + domainNamespace + ".svc:3306";
     logger.info(dsUrl1);
