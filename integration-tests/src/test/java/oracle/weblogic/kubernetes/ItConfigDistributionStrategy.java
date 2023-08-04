@@ -29,6 +29,7 @@ import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Volume;
@@ -74,6 +75,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createSecret;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteConfigMap;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteSecret;
 import static oracle.weblogic.kubernetes.actions.TestActions.getNextIntrospectVersion;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listServices;
@@ -201,13 +203,13 @@ class ItConfigDistributionStrategy {
 
     //start two MySQL database instances
     String dbService1 = createMySQLDB("mysqldb-1", "root", "root123", domainNamespace, null);
-    //V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
-    //createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
-    //runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
+    V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
+    createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
+    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
     String dbService2 = createMySQLDB("mysqldb-2", "root", "root456", domainNamespace, null);
-    //pod = getPod(domainNamespace, null, "mysqldb-2");
-    //createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
-    //runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
+    pod = getPod(domainNamespace, null, "mysqldb-2");
+    createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
+    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
     
     dsUrl1 = "jdbc:mysql://" + dbService1 + "." + domainNamespace + ".svc:3306";
     dsUrl2 = "jdbc:mysql://" + dbService2 + "." + domainNamespace + ".svc:3306";
