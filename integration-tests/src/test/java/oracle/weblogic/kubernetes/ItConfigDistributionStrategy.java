@@ -203,13 +203,13 @@ class ItConfigDistributionStrategy {
 
 
     //start two MySQL database instances
-    createMySQLDB("mysqldb-1", "root", "root123", getNextFreePort(), domainNamespace, null);
+    String createMySQLDB1 = createMySQLDB("mysqldb-1", "root", "root123", getNextFreePort(), domainNamespace, null);
     V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
     createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
     mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
     logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
-    createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
+    String createMySQLDB2 = createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
     pod = getPod(domainNamespace, null, "mysqldb-2");
     createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
@@ -228,7 +228,13 @@ class ItConfigDistributionStrategy {
 
     dsUrl1 = "jdbc:mysql://" + mysql1HostAndPort;
     dsUrl2 = "jdbc:mysql://" + mysql2HostAndPort;
-
+    logger.info(dsUrl1);
+    logger.info(dsUrl2);
+    dsUrl1 = "jdbc:mysql://" + createMySQLDB1 + "." + domainNamespace + ".svc:3306";
+    dsUrl2 = "jdbc:mysql://" + createMySQLDB2 + "." + domainNamespace + ".svc:3306";
+    logger.info(dsUrl1);
+    logger.info(dsUrl2);
+    
 
     // build the clusterview application
     Path distDir = buildApplication(Paths.get(APP_DIR, "clusterview"),

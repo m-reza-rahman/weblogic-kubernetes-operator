@@ -51,9 +51,10 @@ public class MySQLDBUtils {
    * @param namespace         name of the namespace in which to create MySQL database
    * @param mySQLImageVersion version of the MySQL db image to use, when null uses version from
    *                          TestConstants.MYSQL_VERSION
+   * @return serviceName      name of the mysql db service
    */
-  public static void createMySQLDB(String name, String user, String password, int nodePort,
-                                   String namespace, String mySQLImageVersion) {
+  public static String createMySQLDB(String name, String user, String password, int nodePort,
+      String namespace, String mySQLImageVersion) {
 
     String uniqueName = Namespace.uniqueName();
     String secretName = name.concat("-secret-").concat(uniqueName);
@@ -64,7 +65,7 @@ public class MySQLDBUtils {
     createMySQLDBService(serviceName, name, namespace, nodePort);
     startMySQLDB(name, secretName, namespace,
         mySQLImageVersion != null ? mySQLImageVersion : TestConstants.MYSQL_VERSION);
-
+    return serviceName;
   }
 
   //create the database pod
@@ -107,12 +108,10 @@ public class MySQLDBUtils {
               .name(serviceName)
               .namespace(namespace))
           .spec(new V1ServiceSpec()
-              .type("NodePort")
               .ports(Arrays.asList(new V1ServicePort()
                   .port(3306)
                   .protocol("TCP")
-                  .targetPort(new IntOrString(3306))
-                  .nodePort(port)))
+                  .targetPort(new IntOrString(3306))))
               .selector(selector)));
     } catch (ApiException ex) {
       Logger.getLogger(MySQLDBUtils.class.getName()).log(Level.SEVERE, null, ex);
