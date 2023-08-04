@@ -47,13 +47,12 @@ public class MySQLDBUtils {
    * @param name              name of the db pod
    * @param user              username for the database
    * @param password          password for the database
-   * @param nodePort          node port of db service
    * @param namespace         name of the namespace in which to create MySQL database
    * @param mySQLImageVersion version of the MySQL db image to use, when null uses version from
    *                          TestConstants.MYSQL_VERSION
    * @return serviceName      name of the mysql db service
    */
-  public static String createMySQLDB(String name, String user, String password, int nodePort,
+  public static String createMySQLDB(String name, String user, String password,
       String namespace, String mySQLImageVersion) {
 
     String uniqueName = Namespace.uniqueName();
@@ -62,7 +61,7 @@ public class MySQLDBUtils {
 
     createTestRepoSecret(namespace);
     createMySQLDBSecret(secretName, user, password, namespace);
-    createMySQLDBService(serviceName, name, namespace, nodePort);
+    createMySQLDBService(serviceName, name, namespace);
     startMySQLDB(name, secretName, namespace,
         mySQLImageVersion != null ? mySQLImageVersion : TestConstants.MYSQL_VERSION);
     return serviceName;
@@ -97,7 +96,7 @@ public class MySQLDBUtils {
   }
 
   //create services for MySQL database
-  private static void createMySQLDBService(String serviceName, String selectorName, String namespace, int port) {
+  private static void createMySQLDBService(String serviceName, String selectorName, String namespace) {
 
     boolean service = false;
     try {

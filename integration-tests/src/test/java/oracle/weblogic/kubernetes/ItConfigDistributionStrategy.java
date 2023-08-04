@@ -66,7 +66,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
-import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_12213;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
@@ -203,35 +202,17 @@ class ItConfigDistributionStrategy {
 
 
     //start two MySQL database instances
-    String createMySQLDB1 = createMySQLDB("mysqldb-1", "root", "root123", getNextFreePort(), domainNamespace, null);
+    String dbService1 = createMySQLDB("mysqldb-1", "root", "root123", domainNamespace, null);
     V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
     createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
-    //mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
-    //logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
-    String createMySQLDB2 = createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
+    String dbService2 = createMySQLDB("mysqldb-2", "root", "root456", domainNamespace, null);
     pod = getPod(domainNamespace, null, "mysqldb-2");
     createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
-    //mysqlDBPort2 = getMySQLNodePort(domainNamespace, "mysqldb-2");
-    //logger.info("mysqlDBPort2 is: " + mysqlDBPort2);
-
-    if (OKD) {
-      mysql1SvcEndpoint = getMySQLSvcEndpoint(domainNamespace, "mysqldb-1");
-      mysql2SvcEndpoint = getMySQLSvcEndpoint(domainNamespace, "mysqldb-2");
-    }
-
-    //String mysql1HostAndPort = getHostAndPort(mysql1SvcEndpoint, mysqlDBPort1);
-    //logger.info("mysql1HostAndPort = {0} ", mysql1HostAndPort);
-    //String mysql2HostAndPort = getHostAndPort(mysql2SvcEndpoint, mysqlDBPort2);
-    //logger.info("mysql2HostAndPort = {0} ", mysql2HostAndPort);
-
-    //dsUrl1 = "jdbc:mysql://" + mysql1HostAndPort;
-    //dsUrl2 = "jdbc:mysql://" + mysql2HostAndPort;
-    //logger.info(dsUrl1);
-    //logger.info(dsUrl2);
-    dsUrl1 = "jdbc:mysql://" + createMySQLDB1 + "." + domainNamespace + ".svc:3306";
-    dsUrl2 = "jdbc:mysql://" + createMySQLDB2 + "." + domainNamespace + ".svc:3306";
+    
+    dsUrl1 = "jdbc:mysql://" + dbService1 + "." + domainNamespace + ".svc:3306";
+    dsUrl2 = "jdbc:mysql://" + dbService2 + "." + domainNamespace + ".svc:3306";
     logger.info(dsUrl1);
     logger.info(dsUrl2);
     
