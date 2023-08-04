@@ -1219,7 +1219,7 @@ class ItConfigDistributionStrategy {
     mysqlCmd.append(" ");
     mysqlCmd.append(podName);
     mysqlCmd.append(" -- /bin/bash -c \"");
-    mysqlCmd.append("mysql ");
+    mysqlCmd.append("mysql --force ");
     mysqlCmd.append("-u root -p" + password);
     mysqlCmd.append(" < /tmp/grant.sql ");
     mysqlCmd.append(" \"");
