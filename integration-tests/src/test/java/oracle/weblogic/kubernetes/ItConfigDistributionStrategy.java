@@ -1246,6 +1246,8 @@ class ItConfigDistributionStrategy {
     Path sourceFile = Files.writeString(Paths.get(WORK_DIR, "grant.sql"),
         "select user();\n"
         + "SELECT host, user FROM mysql.user;\n"
+        + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
+        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
         + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
         + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
         + "SELECT host, user FROM mysql.user;");
