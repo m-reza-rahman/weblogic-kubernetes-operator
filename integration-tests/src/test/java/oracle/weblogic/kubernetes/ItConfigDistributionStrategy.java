@@ -1242,7 +1242,8 @@ class ItConfigDistributionStrategy {
         + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
         + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
         + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
-        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;");
+        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
+        + "SELECT host, user FROM mysql.user;");
     StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
     mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd.append(namespace);
