@@ -29,7 +29,6 @@ import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
-import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Volume;
@@ -75,7 +74,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createSecret;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteConfigMap;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteSecret;
 import static oracle.weblogic.kubernetes.actions.TestActions.getNextIntrospectVersion;
-import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listServices;
@@ -203,13 +201,13 @@ class ItConfigDistributionStrategy {
 
     //start two MySQL database instances
     String dbService1 = createMySQLDB("mysqldb-1", "root", "root123", domainNamespace, null);
-    V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
-    createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
-    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
+    //V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
+    //createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
+    //runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
     String dbService2 = createMySQLDB("mysqldb-2", "root", "root456", domainNamespace, null);
-    pod = getPod(domainNamespace, null, "mysqldb-2");
-    createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
-    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
+    //pod = getPod(domainNamespace, null, "mysqldb-2");
+    //createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
+    //runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
     
     dsUrl1 = "jdbc:mysql://" + dbService1 + "." + domainNamespace + ".svc:3306";
     dsUrl2 = "jdbc:mysql://" + dbService2 + "." + domainNamespace + ".svc:3306";
@@ -230,8 +228,8 @@ class ItConfigDistributionStrategy {
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
 
     //create a jdbc resource targeted to cluster
-    createJdbcDataSource(dsName0, "root", "root123", mysqlDBPort1, "", dsUrl1);
-    createJdbcDataSource(dsName1, "root", "root123", mysqlDBPort1, "", dsUrl1);
+    createJdbcDataSource(dsName0, "root", "root123", dsUrl1);
+    createJdbcDataSource(dsName1, "root", "root123", dsUrl1);
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName);
 
@@ -1069,8 +1067,7 @@ class ItConfigDistributionStrategy {
   }
 
   //create a JDBC datasource targeted to cluster.
-  private void createJdbcDataSource(String dsName, String user, String password,
-                                    int mySQLNodePort, String sqlSvcEndpoint, String dsUrl) {
+  private void createJdbcDataSource(String dsName, String user, String password, String dsUrl) {
 
     try {
       logger.info("Getting port for default channel");
@@ -1239,9 +1236,9 @@ class ItConfigDistributionStrategy {
     mysqlCmd.append(podName);
     mysqlCmd.append(" -- /bin/bash -c \"");
     mysqlCmd.append("cat > /tmp/grant.sql\"");
-    logger.info("mysql command {0}", mysqlCmd.toString());
-    result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), true));
-    logger.info("mysql returned {0}", result.toString());
+    //logger.info("mysql command {0}", mysqlCmd.toString());
+    result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
+    //logger.info("mysql returned {0}", result.toString());
     logger.info("mysql returned EXIT value {0}", result.exitValue());
     assertEquals(0, result.exitValue(), "mysql execution fails");
   }
