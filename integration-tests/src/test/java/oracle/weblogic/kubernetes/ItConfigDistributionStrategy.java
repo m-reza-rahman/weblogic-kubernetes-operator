@@ -249,8 +249,8 @@ class ItConfigDistributionStrategy {
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
 
     //create a jdbc resource targeted to cluster
-    createJdbcDataSource(dsName0, "root", "root123", mysqlDBPort1, mysql1HostAndPort);
-    createJdbcDataSource(dsName1, "root", "root123", mysqlDBPort1, mysql1HostAndPort);
+    createJdbcDataSource(dsName0, "root", "root123", mysqlDBPort1, mysql1HostAndPort, dsUrl1);
+    createJdbcDataSource(dsName1, "root", "root123", mysqlDBPort1, mysql1HostAndPort, dsUrl1);
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName);
 
@@ -1089,7 +1089,7 @@ class ItConfigDistributionStrategy {
 
   //create a JDBC datasource targeted to cluster.
   private void createJdbcDataSource(String dsName, String user, String password,
-                                    int mySQLNodePort, String sqlSvcEndpoint) {
+                                    int mySQLNodePort, String sqlSvcEndpoint, String dsUrl) {
 
     try {
       logger.info("Getting port for default channel");
@@ -1103,6 +1103,7 @@ class ItConfigDistributionStrategy {
       String hostAndPort = getHostAndPort(sqlSvcEndpoint, mySQLNodePort);
       logger.info("hostAndPort = {0} ", hostAndPort);
       String jdbcDsUrl = "jdbc:mysql://" + hostAndPort;
+      jdbcDsUrl = dsUrl;
 
       // based on WebLogic image, change the mysql driver to 
       // 12.2.1.3 - com.mysql.jdbc.Driver
