@@ -205,14 +205,14 @@ class ItConfigDistributionStrategy {
     //start two MySQL database instances
     String createMySQLDB1 = createMySQLDB("mysqldb-1", "root", "root123", getNextFreePort(), domainNamespace, null);
     V1Pod pod = getPod(domainNamespace, null, "mysqldb-1");
-    createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
-    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
+    //createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
+    //runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123");
     //mysqlDBPort1 = getMySQLNodePort(domainNamespace, "mysqldb-1");
     //logger.info("mysqlDBPort1 is: " + mysqlDBPort1);
     String createMySQLDB2 = createMySQLDB("mysqldb-2", "root", "root456", getNextFreePort(), domainNamespace, null);
     pod = getPod(domainNamespace, null, "mysqldb-2");
-    createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
-    runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
+    //createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
+    //runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
     //mysqlDBPort2 = getMySQLNodePort(domainNamespace, "mysqldb-2");
     //logger.info("mysqlDBPort2 is: " + mysqlDBPort2);
 
