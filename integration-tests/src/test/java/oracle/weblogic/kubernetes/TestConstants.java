@@ -134,7 +134,7 @@ public interface TestConstants {
   // if base images repo is OCIR use OCIR default image values
   public static final String DB_IMAGE_NAME = BASE_IMAGES_PREFIX
       + getNonEmptySystemProperty("wko.it.db.image.name", DB_IMAGE_NAME_DEFAULT);
-  public static final String DB_PREBUILT_IMAGE_NAME = BASE_IMAGES_REPO + BASE_IMAGES_TENANCY + "/" 
+  public static final String DB_PREBUILT_IMAGE_NAME = BASE_IMAGES_PREFIX
       + getNonEmptySystemProperty("wko.it.db.prebuilt.image.name", DB_PREBUILT_IMAGE_NAME_DEFAULT);
   public static final String DB_IMAGE_TAG = getNonEmptySystemProperty("wko.it.db.image.tag", DB_IMAGE_TAG_DEFAULT);
   public static final String DB_IMAGE_PREBUILT_TAG = getNonEmptySystemProperty("wko.it.db.image.tag", "18.4.0-xe");
