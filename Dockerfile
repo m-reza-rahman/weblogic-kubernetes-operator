@@ -4,8 +4,8 @@
 # -------------------------
 FROM ghcr.io/oracle/oraclelinux:9-slim AS jre-build
 
-ENV JAVA_URL_X64="https://download.java.net/java/GA/jdk20.0.1/b4887098932d415489976708ad6d1a4b/9/GPL/openjdk-20.0.1_linux-x64_bin.tar.gz"
-ENV JAVA_URL_AARCH64="https://download.java.net/java/GA/jdk20.0.1/b4887098932d415489976708ad6d1a4b/9/GPL/openjdk-20.0.1_linux-aarch64_bin.tar.gz"
+ENV JAVA_URL_X64="https://download.oracle.com/java/17/archive/jdk-17.0.8_linux-x64_bin.tar.gz"
+ENV JAVA_URL_AARCH64="https://download.oracle.com/java/17/archive/jdk-17.0.8_linux-aarch64_bin.tar.gz"
 
 RUN set -eux; \
     microdnf -y install gzip tar; \
