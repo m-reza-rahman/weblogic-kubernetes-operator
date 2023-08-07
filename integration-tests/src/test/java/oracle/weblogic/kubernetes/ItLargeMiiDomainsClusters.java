@@ -27,8 +27,12 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_ADMINONLY_WDT_MODEL_F
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.actions.TestActions.createConfigMap;
+import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNonEmptySystemProperty;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
@@ -36,9 +40,11 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
+import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -57,6 +63,9 @@ class ItLargeMiiDomainsClusters {
   private static int numOfDomains = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_DOMAINS", "2"));
   private static int numOfClusters = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_CLUSTERS", "2"));
   private static int numOfServersToStart = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_SERVERSTOSTART", "2"));
+
+  private static int maxServersInCluster =
+      Integer.valueOf(getNonEmptySystemProperty("MAXIMUM_SERVERS_IN_CLUSTER", "5"));
 
   private String miiImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
   private static String opServiceAccount = opNamespace + "-sa";
@@ -155,6 +164,24 @@ class ItLargeMiiDomainsClusters {
           checkPodReady(managedServerPrefix + k, domainUid, domainNamespaces.get(i));
         }
       }
+
+      // access console
+      int nodePort = getServiceNodePort(
+          domainNamespaces.get(i), getExternalServicePodName(adminServerPodName), "default");
+      assertNotEquals(-1, nodePort,
+          "Could not get the default external service node port");
+      logger.info("Found the default service nodePort {0}", nodePort);
+      String hostAndPort = getHostAndPort(null, nodePort);
+
+      if (!WEBLOGIC_SLIM) {
+        // String curlCmd = "curl -s --show-error --noproxy '*' "
+        String curlCmd = "curl -s --show-error "
+            + " http://" + hostAndPort
+            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+        logger.info("Executing default nodeport curl command {0}", curlCmd);
+        assertTrue(callWebAppAndWaitTillReady(curlCmd, 5));
+        logger.info("WebLogic console is accessible thru default service");
+      }
     }
   }
 
@@ -170,8 +197,8 @@ class ItLargeMiiDomainsClusters {
           + "       DynamicServers: \n"
           + "         ServerTemplate: 'cluster-" + i + "-template' \n"
           + "         ServerNamePrefix: 'c" + i + "-managed-server' \n"
-          + "         DynamicClusterSize: 5 \n"
-          + "         MaxDynamicClusterSize: 5 \n"
+          + "         DynamicClusterSize: " + maxServersInCluster + " \n"
+          + "         MaxDynamicClusterSize: " + maxServersInCluster + " \n"
           + "         CalculatedListenPorts: false \n";
       serverTemplateYamlString = serverTemplateYamlString
           + "    'cluster-" + i + "-template':\n"
