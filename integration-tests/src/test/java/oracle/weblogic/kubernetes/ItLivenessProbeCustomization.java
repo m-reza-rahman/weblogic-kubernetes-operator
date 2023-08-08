@@ -82,9 +82,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify liveness probe customization")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItLivenessProbeCustomization {
 
   // domain constants

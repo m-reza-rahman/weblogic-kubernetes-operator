@@ -180,10 +180,14 @@ public class DbUtils {
     LoggingFacade logger = getLogger();
 
     String dbPodNamePrefix = "oracledb";
-
+    // create pull secrets when running in non Kind Kubernetes cluster
+    // this secret is used only for non-kind cluster
+    createBaseRepoSecret(dbNamespace);
     if (OKD) {
       addSccToDBSvcAccount("default", dbNamespace);
     }
+    logger.info("Start Oracle DB with dbImage: {0}, dbPort: {1}, dbNamespace: {2}, dbListenerPort:{3}",
+        dbBaseImageName, dbPort, dbNamespace, dbListenerPort);
 
     Map<String, String> labels = new HashMap<>();
     labels.put("app", "database");
@@ -853,13 +857,14 @@ public class DbUtils {
     Files.deleteIfExists(dbYaml);
     FileUtils.copy(Paths.get(RESOURCE_DIR, "dboperator", "singleinstancedatabase.yaml"), dbYaml);
 
+    String storageClass = "weblogic-domain-storage-class";
+    
     replaceStringInFile(dbYaml.toString(), "name: sidb-sample", "name: " + dbName);
     replaceStringInFile(dbYaml.toString(), "namespace: default", "namespace: " + namespace);
     replaceStringInFile(dbYaml.toString(), "secretName:", "secretName: " + secretName);
     replaceStringInFile(dbYaml.toString(), "secretKey:", "secretKey: " + secretKey);
     replaceStringInFile(dbYaml.toString(), "pullFrom:", "pullFrom: " + DB_IMAGE_19C);
     replaceStringInFile(dbYaml.toString(), "pullSecrets:", "pullSecrets: " + BASE_IMAGES_REPO_SECRET_NAME);
-    String storageClass = "weblogic-domain-storage-class";
     replaceStringInFile(dbYaml.toString(), "storageClass: \"oci-bv\"",
         "storageClass: \"" + storageClass + "\"");
     replaceStringInFile(dbYaml.toString(), "accessMode: \"ReadWriteOnce\"", "accessMode: \"ReadWriteMany\"");
@@ -1054,7 +1059,6 @@ public class DbUtils {
               .path(pvHostPath.toString()));
     }
     logger.info(Yaml.dump(v1pv));
-
     boolean success = assertDoesNotThrow(() -> createPersistentVolume(v1pv),
         "Failed to create persistent volume");
     assertTrue(success, "PersistentVolume creation failed");

@@ -579,5 +579,4 @@ public class LoggingUtil {
       }
     }
   }
-  
 }
