@@ -14,6 +14,7 @@ import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1HostPathVolumeSource;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
+import io.kubernetes.client.openapi.models.V1NFSVolumeSource;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
@@ -47,7 +48,10 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.NFS_SERVER;
+import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+import static oracle.weblogic.kubernetes.TestConstants.PV_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.YAML_MAX_FILE_SIZE_PROPERTY;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -551,6 +555,26 @@ public class FmwUtils {
               .storageClassName("oci-fss")
               .resources(new V1ResourceRequirements()
               .requests(request))));
+    } else if (OKD) {
+      initializeDomainOnPV = initializeDomainOnPV
+          .persistentVolume(new PersistentVolume()
+              .metadata(new V1ObjectMeta()
+                  .name(pvName))
+              .spec(new PersistentVolumeSpec()
+                  .storageClassName("okd-nfsmnt")
+                  .nfs(new V1NFSVolumeSource()
+                      .path(PV_ROOT)
+                      .server(NFS_SERVER)
+                      .readOnly(false))
+                  .capacity(capacity)))
+          .persistentVolumeClaim(new PersistentVolumeClaim()
+              .metadata(new V1ObjectMeta()
+                  .name(pvcName))
+              .spec(new PersistentVolumeClaimSpec()
+                  .volumeName(pvName)
+                  .storageClassName("okd-nfsmnt")
+                  .resources(new V1ResourceRequirements()
+                      .requests(request))));
     } else {
       initializeDomainOnPV = initializeDomainOnPV
           .persistentVolume(new PersistentVolume()
