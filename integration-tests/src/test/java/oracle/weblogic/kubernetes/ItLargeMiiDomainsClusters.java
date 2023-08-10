@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.MII_ADMINONLY_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -35,9 +34,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNonEmptySystemProperty;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
-import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
-import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
@@ -55,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 class ItLargeMiiDomainsClusters {
   private static String opNamespace = null;
-  private static String miiAdminOnlyImage;
+  // private static String miiAdminOnlyImage;
   private static List<String> domainNamespaces;
   private static final String baseDomainUid = "domain";
   private static final String baseClusterName = "cluster-";
@@ -93,15 +90,6 @@ class ItLargeMiiDomainsClusters {
     logger.info("Assign unique namespaces for Domains");
     domainNamespaces = namespaces.subList(1, numOfDomains + 1);
 
-    // build MII admin only image
-    logger.info("Build/Check mii-adminonly image with tag {0}", MII_BASIC_IMAGE_TAG);
-    miiAdminOnlyImage =
-        createMiiImageAndVerify("mii-adminonly-image", MII_ADMINONLY_WDT_MODEL_FILE, null,
-            null, null);
-
-    // repo login and push image to registry if necessary
-    imageRepoLoginAndPushImageToRegistry(miiAdminOnlyImage);
-
     // install and verify operator
     installAndVerifyOperator(opNamespace, namespaces.subList(1, numOfDomains + 1).toArray(new String[0]));
 
@@ -133,7 +121,7 @@ class ItLargeMiiDomainsClusters {
 
       // create cluster resources and domain resource
       DomainResource domain = createDomainResource(domainUid, domainNamespaces.get(i),
-          miiAdminOnlyImage,
+          MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
           adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
           encryptionSecretName, numOfServersToStart, clusterNameList);
 
@@ -143,9 +131,21 @@ class ItLargeMiiDomainsClusters {
               .configMap(configMapName)
               .runtimeEncryptionSecret(encryptionSecretName)));
 
+      // set resource request and limit
+      Map<String, Quantity> resourceRequest = new HashMap<>();
+      Map<String, Quantity> resourceLimit = new HashMap<>();
+      resourceRequest.put("cpu", new Quantity("250m"));
+      resourceRequest.put("memory", new Quantity("768Mi"));
+      resourceLimit.put("cpu", new Quantity("2"));
+      resourceLimit.put("memory", new Quantity("2Gi"));
+
+      domain.getSpec().getServerPod().resources(new V1ResourceRequirements()
+          .requests(resourceRequest)
+          .limits(resourceLimit));
+
       logger.info("Creating Domain Resource {0} in namespace {1} using image {2}",
           domainUid, domainNamespaces.get(i),
-          miiAdminOnlyImage);
+          MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG);
       createDomainAndVerify(domain, domainNamespaces.get(i));
 
       String adminServerPodName = domainUid + adminServerPrefix;
