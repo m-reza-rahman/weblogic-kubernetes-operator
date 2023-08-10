@@ -330,7 +330,7 @@ public class LoggingUtil {
    * @param destinationPath destination folder to copy the files to
    * @throws ApiException when pod interaction fails
    */
-  private static void copyFromPV(
+  public static void copyFromPV(
       String namespace,
       String pvcName,
       String pvName,
@@ -551,8 +551,13 @@ public class LoggingUtil {
         podName,
         namespace);
   }
-  
-  private void archivePV(String namespace, String resultDir) {
+
+  /**
+   * Archive Pv content.
+   * @param namespace - namespace for pvc
+   * @param resultDir - directory to store
+   */
+  public void archivePV(String namespace, String resultDir) {
     // archive persistent volume contents
     List<V1PersistentVolume> pvList = new ArrayList<>();
     for (var pv : Kubernetes.listPersistentVolumes().getItems()) {
