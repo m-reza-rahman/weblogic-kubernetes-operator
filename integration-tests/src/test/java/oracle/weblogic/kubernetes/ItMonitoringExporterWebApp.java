@@ -67,7 +67,7 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringE
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyPrometheus;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installMonitoringExporter;
+import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installMonitoringExporterWithConfig;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.uninstallPrometheusGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccess;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccessThroughNginx;
@@ -183,7 +183,9 @@ class ItMonitoringExporterWebApp {
         domain1Namespace, domain2Namespace);
 
     logger.info("install monitoring exporter");
-    installMonitoringExporter(monitoringExporterDir);
+    installMonitoringExporterWithConfig(monitoringExporterDir, false,
+        RESOURCE_DIR
+        + "/exporter/rest_webapp.yaml");
 
     logger.info("create and verify WebLogic domain image using model in image with model files");
     miiImage = MonitoringUtils.createAndVerifyMiiImage(monitoringExporterAppDir, MODEL_DIR + "/" + MONEXP_MODEL_FILE,
@@ -300,7 +302,6 @@ class ItMonitoringExporterWebApp {
       shutdownDomain(domain1Uid, domain1Namespace);
     }
   }
-
 
   /**
    * Test covers scenario when admin port enabled .
@@ -603,7 +604,6 @@ class ItMonitoringExporterWebApp {
               + cluster1Name + "-managed-server1%22%7D%5B15s%5D",
           cluster1Name + "-managed-server1", hostPortPrometheus);
     }
-
   }
 
   /**

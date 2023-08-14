@@ -793,6 +793,52 @@ public class MonitoringUtils {
   }
 
   /**
+   * Download src from monitoring exporter github project and build or install webapp.
+   *
+   * @param monitoringExporterDir full path to monitoring exporter install location
+   * @param toBuildMonitoringExporter if true build monitoring exporter webapp or download if false.
+   * @param configFile path to config file
+   */
+  public static void installMonitoringExporterWithConfig(String monitoringExporterDir,
+                                                         boolean toBuildMonitoringExporter,
+                                                         String configFile) {
+
+    String monitoringExporterSrcDir = Paths.get(monitoringExporterDir, "srcdir").toString();
+    String monitoringExporterAppDir = Paths.get(monitoringExporterDir, "apps").toString();
+
+    cloneMonitoringExporter(monitoringExporterSrcDir);
+    Path monitoringApp = Paths.get(monitoringExporterAppDir);
+    assertDoesNotThrow(() -> deleteDirectory(monitoringApp.toFile()));
+    assertDoesNotThrow(() -> Files.createDirectories(monitoringApp));
+    Path monitoringAppNoRestPort = Paths.get(monitoringExporterAppDir, "norestport");
+    assertDoesNotThrow(() -> deleteDirectory(monitoringAppNoRestPort.toFile()));
+    assertDoesNotThrow(() -> Files.createDirectories(monitoringAppNoRestPort));
+    Path monitoringAppAdministrationRestPort = Paths.get(monitoringExporterAppDir, "administrationrestport");
+    assertDoesNotThrow(() -> deleteDirectory(monitoringAppAdministrationRestPort.toFile()));
+    assertDoesNotThrow(() -> Files.createDirectories(monitoringAppAdministrationRestPort));
+
+
+    monitoringExporterAppDir = monitoringApp.toString();
+    String monitoringExporterAppNoRestPortDir = monitoringAppNoRestPort.toString();
+    String monitoringExporterAppAdministrationRestPortDir = monitoringAppAdministrationRestPort.toString();
+    if (!toBuildMonitoringExporter) {
+      downloadMonitoringExporterApp(configFile, monitoringExporterAppDir);
+      downloadMonitoringExporterApp(RESOURCE_DIR
+          + "/exporter/exporter-config-norestport.yaml", monitoringExporterAppNoRestPortDir);
+      downloadMonitoringExporterApp(RESOURCE_DIR
+          + "/exporter/exporter-config-administrationrestport.yaml", monitoringExporterAppAdministrationRestPortDir);
+    } else {
+      buildMonitoringExporterApp(monitoringExporterSrcDir, RESOURCE_DIR
+          + "/exporter/exporter-config.yaml", monitoringExporterAppDir);
+      buildMonitoringExporterApp(monitoringExporterSrcDir,RESOURCE_DIR
+          + "/exporter/exporter-config-norestport.yaml", monitoringExporterAppNoRestPortDir);
+      buildMonitoringExporterApp(monitoringExporterSrcDir,RESOURCE_DIR
+          + "/exporter/exporter-config-administrationrestport.yaml", monitoringExporterAppAdministrationRestPortDir);
+    }
+    logger.info("Finished to build Monitoring Exporter webapp.");
+  }
+
+  /**
    * Delete monitoring exporter dir.
    *
    * @param monitoringExporterDir full path to monitoring exporter install location
