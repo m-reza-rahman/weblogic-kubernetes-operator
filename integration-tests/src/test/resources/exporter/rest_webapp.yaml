@@ -5,6 +5,7 @@ query_sync:
   url: http://coordinator:8999/
   refreshInterval: 5
 metricsNameSnakeCase: true
+domainQualifier: true
 restPort: 8001
 queries:
   - key: name
@@ -18,6 +19,6 @@ queries:
         key: name
         values: [deploymentState, contextRoot, sourceInfo, openSessionsHighCount]
         servlets:
-          prefix: weblogic_servlet_
+          prefix: wls_servlet_
           key: servletName
           values: invocationTotalCount

@@ -236,7 +236,8 @@ class ItMonitoringExporterWebApp {
     try {
       // create and verify one cluster mii domain
       logger.info("Create domain and verify that it's running");
-      createAndVerifyDomain(miiImage, domain1Uid, domain1Namespace, "FromModel", 1, true, null, null);
+      createAndVerifyDomain(miiImage, domain1Uid, domain1Namespace, "FromModel", 1,
+          true, null, null);
 
       // create ingress for the domain
       logger.info("Creating ingress for domain {0} in namespace {1}", domain1Uid, domain1Namespace);
