@@ -32,26 +32,26 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
-import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.imagePull;
+import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getImageBuilderExtraArgs;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.buildMonitoringExporterCreateImageAndPushToRepo;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
@@ -176,10 +176,21 @@ class ItMonitoringExporterSideCar {
 
     logger.info("install monitoring exporter");
     installMonitoringExporter(monitoringExporterDir);
+    exporterImage = "ghcr.io/oracle/weblogic-monitoring-exporter:2.1.4";
+
+    if (KIND_REPO != null) {
+      //String kindRepoImage = KIND_REPO + exporterImage.substring(BASE_IMAGES_REPO.length()
+      // + BASE_IMAGES_TENANCY.length() + 2);
+      imagePull(exporterImage);
+      imagePush(exporterImage);
+    }
+    /*
     exporterImage = assertDoesNotThrow(() ->
             buildMonitoringExporterCreateImageAndPushToRepo(monitoringExporterSrcDir, "exporter",
         domain1Namespace, TEST_IMAGES_REPO_SECRET_NAME, getImageBuilderExtraArgs()),
         "Failed to create image for exporter");
+
+     */
     if (!OKD) {
       // install and verify NGINX
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
@@ -226,7 +237,8 @@ class ItMonitoringExporterSideCar {
           "ItMonitoringExporterSideCar", getOrigModelFile());
       String miiImage1 = createAndVerifyMiiImage(modelFile);
       String yaml = RESOURCE_DIR + "/exporter/rest_webapp.yaml";
-      createAndVerifyDomain(miiImage1, domain3Uid, domain3Namespace, "FromModel", 2, false, yaml, exporterImage);
+      createAndVerifyDomain(miiImage1, domain3Uid, domain3Namespace,
+          "FromModel", 2, false, yaml, exporterImage);
       if (!OKD) {
         installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
             domain3Namespace,
