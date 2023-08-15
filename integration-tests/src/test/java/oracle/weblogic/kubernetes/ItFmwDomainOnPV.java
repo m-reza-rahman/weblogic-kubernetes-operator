@@ -333,6 +333,7 @@ class ItFmwDomainOnPV {
     logger.info("Creating domain custom resource");
     Configuration configuration =
         new Configuration()
+            .introspectorJobActiveDeadlineSeconds(3000L)
             .initializeDomainOnPV(new InitializeDomainOnPV()
                 .domain(new DomainOnPV()
                     .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
@@ -438,6 +439,7 @@ class ItFmwDomainOnPV {
     Configuration configuration =
         new Configuration()
             .addSecretsItem(rcuAccessSecretName)
+            .introspectorJobActiveDeadlineSeconds(3000L)
             .initializeDomainOnPV(new InitializeDomainOnPV()
                 .domain(new DomainOnPV()
                     .createMode(CreateIfNotExists.DOMAIN)
