@@ -2,11 +2,9 @@
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 query_sync:
-  url: http://coordinator:8999/
   refreshInterval: 5
 metricsNameSnakeCase: true
 domainQualifier: true
-restPort: 8001
 queries:
   - key: name
     keyName: server
