@@ -23,6 +23,7 @@ import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
+import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_FAILED_TYPE;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -48,6 +50,8 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getDo
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getImageBuilderExtraArgs;
+import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeExists;
+import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeHasExpectedStatus;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
@@ -66,11 +70,11 @@ import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResource;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPvAndPvc;
+import static oracle.weblogic.kubernetes.utils.PodUtils.verifyIntrospectorPodLogContainsExpectedErrorMsg;
 import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getOrigModelFile;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -290,6 +294,7 @@ class ItMonitoringExporterSideCar {
   @DisplayName("Negative test to check error message in case if restfull"
       + " services in the domain are disabled.")
   void testSideCarRESTfullServicesDisabled() throws Exception {
+    boolean testPassed = false;
     try {
       // create and verify one cluster mii domain
       logger.info("Create domain and verify that it's running");
@@ -297,20 +302,25 @@ class ItMonitoringExporterSideCar {
           "ItMonitoringExporterSideCar", "model.sessmigr.restdisabled.yaml");
       String miiImage1 = createAndVerifyMiiImage(modelFile);
       String yaml = RESOURCE_DIR + "/exporter/rest_webapp.yaml";
-      createAndVerifyDomain(miiImage1, domain4Uid, domain4Namespace, "FromModel", 2, false, yaml, exporterImage);
-      DomainResource domain = getDomainCustomResource(domain4Uid, domain4Namespace);
-      String monexpConfig = domain.getSpec().getMonitoringExporter().toString();
-      logger.info("Monitoring Exporter new Configuration from crd " + monexpConfig);
-      assertTrue(monexpConfig.contains("openSessionsHighCount"));
-      assertFalse(verifyMonExpAppAccessSideCar("webapp_config_open_sessions_high_count",
-          domain4Namespace, domain4Uid + "-managed-server1"));
-      assertTrue(verifyMonExpAppAccessSideCar("No configuration defined",
-          domain4Namespace, domain4Uid + "-managed-server2"));
-      assertTrue(verifyMonExpAppAccessSideCar("No configuration defined",
-          domain4Namespace, domain4Uid + "-managed-server1"));
 
+      createAndVerifyDomain(miiImage1, domain4Uid, domain4Namespace,
+          "FromModel", 2, false, yaml, exporterImage, false);
+      // verify the condition type Failed exists
+      checkDomainStatusConditionTypeExists(domain4Uid, domain4Namespace, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
+      // verify the condition Failed type has expected status
+      checkDomainStatusConditionTypeHasExpectedStatus(domain4Uid, domain4Namespace,
+          DOMAIN_STATUS_CONDITION_FAILED_TYPE, "True");
+      String errorMessage =
+          "[SEVERE] exporter config is specified and the topology has the REST port disabled ";
+      verifyIntrospectorPodLogContainsExpectedErrorMsg(domain4Uid, domain4Namespace, errorMessage);
+      testPassed = true;
     } finally {
-      shutdownDomain(domain4Uid, domain4Namespace);
+      if (!testPassed) {
+        List<String> ns = new ArrayList<>();
+        ns.add(domain4Namespace);
+        LoggingUtil.generateLog(this, ns);
+        shutdownDomain(domain4Uid, domain4Namespace);
+      }
     }
 
   }
