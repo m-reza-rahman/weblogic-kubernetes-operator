@@ -94,11 +94,12 @@ pipeline {
 
     parameters {
         choice(name: 'MAVEN_PROFILE_NAME',
-                description: 'Profile to use in mvn command to run the tests.  Possible values are wls-srg (the default), integration-tests, toolkits-srg, and kind-sequential.  Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                description: 'Profile to use in mvn command to run the tests. Possible values are wls-srg (the default), integration-tests, toolkits-srg, kind-sequential and kind-upgrade. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                 choices: [
                         'wls-srg',
                         'integration-tests',
                         'kind-sequential',
+                        'kind-upgrade',
                         'toolkits-srg'
                 ]
         )
@@ -496,6 +497,8 @@ EOF
                             touch ${WORKSPACE}/.mvn/maven.config
                             K8S_NODEPORT_HOST=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
                             if [ "${MAVEN_PROFILE_NAME}" == "kind-sequential" ]; then
+                                PARALLEL_RUN='false'
+                            elif [ "${MAVEN_PROFILE_NAME}" == "kind-upgrade" ]; then
                                 PARALLEL_RUN='false'
                             elif [ -n "${IT_TEST}" ]; then
                                 echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
