@@ -323,7 +323,6 @@ class ItMonitoringExporterSideCar {
         shutdownDomain(domain4Uid, domain4Namespace);
       }
     }
-
   }
 
   private void changeMonitoringExporterSideCarConfig(String configYamlFile, String domainUid,

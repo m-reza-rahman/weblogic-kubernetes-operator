@@ -1037,6 +1037,7 @@ public class MonitoringUtils {
    * @param twoClusters boolean indicating if the domain has 2 clusters
    * @param monexpConfig monitoring exporter config
    * @param exporterImage exporter image
+   * @param checkPodsReady  true or false if test need to check pods status
    */
   public static void createAndVerifyDomain(String miiImage,
                                            String domainUid,
