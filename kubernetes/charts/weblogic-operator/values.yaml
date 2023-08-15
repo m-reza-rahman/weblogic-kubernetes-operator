@@ -57,7 +57,7 @@ enableClusterRoleBinding: true
 image: "4.2.0-RELEASE-MARKER"
 
 # imagePullPolicy specifies the image pull policy for the operator's container image.
-imagePullPolicy: IfNotPresent
+imagePullPolicy: Always
 
 # imagePullSecrets contains an optional list of Kubernetes Secrets, in the operator's namespace,
 # that are needed to access the registry containing the operator's container image.
