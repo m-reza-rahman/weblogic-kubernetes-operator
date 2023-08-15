@@ -70,6 +70,7 @@ import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getOrigModel
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -93,10 +94,12 @@ class ItMonitoringExporterSideCar {
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
   private static String domain3Namespace = null;
+  private static String domain4Namespace = null;
 
   private static String domain1Uid = "monexp-domain-1";
   private static String domain2Uid = "monexp-domain-2";
   private static String domain3Uid = "monexp-domain-3";
+  private static String domain4Uid = "monexp-domain-4";
 
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
@@ -137,7 +140,7 @@ class ItMonitoringExporterSideCar {
    */
   @BeforeAll
 
-  public static void initAll(@Namespaces(6) List<String> namespaces) {
+  public static void initAll(@Namespaces(7) List<String> namespaces) {
 
     logger = getLogger();
 
@@ -170,9 +173,13 @@ class ItMonitoringExporterSideCar {
     assertNotNull(namespaces.get(5), "Namespace list is null");
     domain3Namespace = namespaces.get(5);
 
+    logger.info("Get a unique namespace for domain4");
+    assertNotNull(namespaces.get(6), "Namespace list is null");
+    domain4Namespace = namespaces.get(6);
+
     logger.info("install and verify operator");
     installAndVerifyOperator(opNamespace,
-        domain1Namespace, domain2Namespace, domain3Namespace);
+        domain1Namespace, domain2Namespace, domain3Namespace, domain4Namespace);
 
     logger.info("install monitoring exporter");
     installMonitoringExporter(monitoringExporterDir);
@@ -269,6 +276,41 @@ class ItMonitoringExporterSideCar {
 
     } finally {
       shutdownDomain(domain3Uid, domain3Namespace);
+    }
+
+  }
+
+  /**
+   * Test Negative test to check error message in case
+   * if restfull management services are disabled.
+   * Create Model in Image with monitoring exporter and restfull services disabled.
+   * Check that no metrics are available.
+   */
+  @Test
+  @DisplayName("Negative test to check error message in case if restfull"
+      + " services in the domain are disabled.")
+  void testSideCarRESTfullServicesDisabled() throws Exception {
+    try {
+      // create and verify one cluster mii domain
+      logger.info("Create domain and verify that it's running");
+      String modelFile = generateNewModelFileWithUpdatedDomainUid(domain4Uid,
+          "ItMonitoringExporterSideCar", "model.sessmigr.restdisabled.yaml");
+      String miiImage1 = createAndVerifyMiiImage(modelFile);
+      String yaml = RESOURCE_DIR + "/exporter/rest_webapp.yaml";
+      createAndVerifyDomain(miiImage1, domain4Uid, domain4Namespace, "FromModel", 2, false, yaml, exporterImage);
+      DomainResource domain = getDomainCustomResource(domain4Uid, domain4Namespace);
+      String monexpConfig = domain.getSpec().getMonitoringExporter().toString();
+      logger.info("Monitoring Exporter new Configuration from crd " + monexpConfig);
+      assertTrue(monexpConfig.contains("openSessionsHighCount"));
+      assertFalse(verifyMonExpAppAccessSideCar("webapp_config_open_sessions_high_count",
+          domain4Namespace, domain4Uid + "-managed-server1"));
+      assertTrue(verifyMonExpAppAccessSideCar("No configuration defined",
+          domain4Namespace, domain4Uid + "-managed-server2"));
+      assertTrue(verifyMonExpAppAccessSideCar("No configuration defined",
+          domain4Namespace, domain4Uid + "-managed-server1"));
+
+    } finally {
+      shutdownDomain(domain4Uid, domain4Namespace);
     }
 
   }
