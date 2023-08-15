@@ -288,7 +288,8 @@ class ItMonitoringExporterSideCar {
    * Test Negative test to check error message in case
    * if restfull management services are disabled.
    * Create Model in Image with monitoring exporter and restfull services disabled.
-   * Check that no metrics are available.
+   * Check that introspector job fails with expected error message
+   * if domain crd contains exporter config with restfull services disabled
    */
   @Test
   @DisplayName("Negative test to check error message in case if restfull"
