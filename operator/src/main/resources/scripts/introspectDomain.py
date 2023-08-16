@@ -134,6 +134,7 @@ class OfflineWlstEnv(object):
     self.BOOT_FILE                = self.INTROSPECT_HOME + '/boot.properties'
     self.USERCONFIG_FILE          = self.INTROSPECT_HOME + '/userConfigNodeManager.secure'
     self.USERKEY_FILE             = self.INTROSPECT_HOME + '/userKeyNodeManager.secure'
+    self.RESTAPI_DISABLED_FILE    = self.INTROSPECT_HOME + "/restAPIDisabled"
 
     # Model in image attributes
 
@@ -1053,6 +1054,22 @@ class BootPropertiesGenerator(Generator):
     self.writeln("username=" + self.encrypt(self.readCredentialsSecret("username")))
     self.writeln("password=" + self.encrypt(self.readCredentialsSecret("password")))
 
+class RestAPIDisabledGenerator(Generator):
+
+  def __init__(self, env):
+    Generator.__init__(self, env, env.RESTAPI_DISABLED_FILE)
+
+  def generate(self):
+    self.open()
+    try:
+      restapi = self.env.getDomain().getRestfulManagementServices()
+      if restapi is not None and not restapi.isEnabled():
+        self.writeln("true")
+        self.close()
+        self.addGeneratedFile()
+    finally:
+      self.close()
+
 class UserConfigAndKeyGenerator(Generator):
 
   def __init__(self, env):
@@ -1916,6 +1933,8 @@ class CustomSitConfigIntrospector(SecretManager):
       gen.close()
       gen.addGeneratedFile()
 
+
+
 class DomainIntrospector(SecretManager):
 
   def __init__(self, env):
@@ -1931,6 +1950,7 @@ class DomainIntrospector(SecretManager):
         SitConfigGenerator(self.env).generate()
       BootPropertiesGenerator(self.env).generate()
       UserConfigAndKeyGenerator(self.env).generate()
+      RestAPIDisabledGenerator(self.env).generate()
 
       if DOMAIN_SOURCE_TYPE == "FromModel":
         trace("cfgmap write primordial_domain")
