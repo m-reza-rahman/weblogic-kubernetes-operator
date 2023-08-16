@@ -119,7 +119,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Operator upgrade tests")
 @IntegrationTest
-@Tag("kind-sequential")
+@Tag("kind-upgrade")
 class ItOperatorWlsUpgrade {
 
   private static LoggingFacade logger = null;
