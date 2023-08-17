@@ -257,6 +257,7 @@ pipeline {
                         echo "Generating kubeconfig file"
 
 cat > $kubeconfig_file <<EOF
+
 apiVersion: v1
 clusters:
 - cluster:
