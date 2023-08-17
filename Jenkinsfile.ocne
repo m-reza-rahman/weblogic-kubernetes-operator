@@ -255,6 +255,8 @@ pipeline {
 
                 stage('Populate kubeconfig file') {
                     steps {
+
+                        sh '''
                         #################
                         echo "Generating kubeconfig file"
 
@@ -284,6 +286,7 @@ EOF
                         ##################
                         echo "kubeconfig file: "
                         cat $kubeconfig_file
+                        '''
                     }
                 }
 
