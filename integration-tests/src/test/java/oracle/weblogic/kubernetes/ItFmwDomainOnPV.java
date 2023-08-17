@@ -42,6 +42,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
@@ -695,6 +696,8 @@ class ItFmwDomainOnPV {
     Configuration configuration = null;
     if (OKE_CLUSTER) {
       configuration = getConfiguration(pvcName,pvcRequest, "oci-fss");
+    } else if (OKD) {
+      configuration = getConfiguration(pvcName,pvcRequest, "okd-nfsmnt");
     } else {
       configuration = getConfiguration(pvcName, pvcRequest,"weblogic-domain-storage-class");
 
