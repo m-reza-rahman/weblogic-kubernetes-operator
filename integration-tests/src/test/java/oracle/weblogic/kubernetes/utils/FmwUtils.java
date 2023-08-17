@@ -577,7 +577,7 @@ public class FmwUtils {
                       .requests(request))));
     } else {
       initializeDomainOnPV = initializeDomainOnPV
-          //.runInitContainerAsRoot(true)
+          .runInitContainerAsRoot(true)
           .persistentVolume(new PersistentVolume()
               .metadata(new V1ObjectMeta()
                   .name(pvName))
@@ -682,6 +682,8 @@ public class FmwUtils {
     PersistentVolume pv = null;
     if (OKE_CLUSTER) {
       storageClassName = "oci-fss";
+    } else if (OKD) {
+      storageClassName = "okd-nfsmnt";
     }
 
     pv = new PersistentVolume()

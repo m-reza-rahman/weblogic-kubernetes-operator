@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
@@ -86,6 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("oke-gate")
+@Tag("okd-fmw-cert")
 class ItFmwDomainOnPV {
 
   private static String domainNamespace = null;
@@ -163,6 +165,7 @@ class ItFmwDomainOnPV {
    */
   @Test
   @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
+  @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testOperatorCreatesPvPvcRcuDomain() {
     String domainUid = "jrfonpv-simplified";
     final String pvName = getUniqueName(domainUid + "-pv-");
@@ -488,6 +491,7 @@ class ItFmwDomainOnPV {
   @Test
   @DisplayName("Create a FMW domain on PV. User creates RCU and operator creates PV/PVC and domain, "
                 + "User creates multiple domain initialization images")
+  @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testUserCreatesRcuOperatorCreatesPvPvcDomainMultipleImages() {
     String domainUid = "jrfonpv-simplified4";
     final String pvName = getUniqueName(domainUid + "-pv-");
