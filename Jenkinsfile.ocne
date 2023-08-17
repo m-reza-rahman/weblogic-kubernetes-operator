@@ -429,6 +429,7 @@ EOF
              when {
                  anyOf {
                      branch 'xc-111571'
+                     branch 'main'
                      branch 'release/4.0'
                      branch 'release/3.4'
                  }
