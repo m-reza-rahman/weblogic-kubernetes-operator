@@ -58,9 +58,10 @@ pipeline {
     parameters {
 
         string(name: 'BRANCH',
-                       description: '',
-                       defaultValue: "main"
+               description: '',
+               defaultValue: "main"
         )
+
         string(name: 'IT_TEST',
                description: 'Comma separated list of individual It test classes to be run e.g., ItParameterizedDomain, ItMiiUpdateDomainConfig, ItMiiDynamicUpdate*, ItMiiMultiMode',
                defaultValue: ''
@@ -71,15 +72,15 @@ pipeline {
                defaultValue: '1.26.2'
         )
         string(name: 'IMAGE_ID',
-                       description: 'oci image id for node pool, find image OCID for your region from https://docs.oracle.com/iaas/images/',
-                       //defaultValue7.6: 'ocid1.image.oc1.phx.aaaaaaaancucg25pze6m52agxwxmmfszvsdnhp3kvim53pts2tw6mik4xtha'
-                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaaaizmtmozeudeeuq7o5ir7dkl2bkxbbb3tgomshqbqn6jpomrsjza'
+               description: 'oci image id for node pool, find image OCID for your region from https://docs.oracle.com/iaas/images/',
+               //defaultValue7.6: 'ocid1.image.oc1.phx.aaaaaaaancucg25pze6m52agxwxmmfszvsdnhp3kvim53pts2tw6mik4xtha'
+               defaultValue: 'ocid1.image.oc1.phx.aaaaaaaaaizmtmozeudeeuq7o5ir7dkl2bkxbbb3tgomshqbqn6jpomrsjza'
                        
-                )
+        )
         string(name: 'KUBECTL_VERSION',
-                       description: 'kubectl version',
-                       defaultValue: '1.26.2'
-                )
+               description: 'kubectl version',
+               defaultValue: '1.26.2'
+        )
         string(name: 'HELM_VERSION',
                description: 'Helm version',
                defaultValue: '3.11.2'
@@ -114,8 +115,8 @@ pipeline {
                defaultValue: "${env.WKT_OCIR_HOST}"
         )
         string(name: 'NODE_SHAPE',
-                       description: '',
-                       defaultValue: "VM.Standard.E3.Flex"
+               description: '',
+               defaultValue: "VM.Standard.E3.Flex"
         )
         choice(name: 'BASE_IMAGES_REPO',
                choices: ["${env.WKT_OCIR_HOST}", 'container-registry.oracle.com'],
@@ -428,6 +429,7 @@ EOF
                         rm -f ${jenkins_home_directory}/.oci/oci-signing-key.pem
                         rm -f ${WORKSPACE}/.ssh/*
                         rm -rf ${WORKSPACE}/.mvn
+                        sudo rm -rf ${pv_root}/It*
 
                     '''
                 }
