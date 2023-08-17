@@ -277,7 +277,7 @@ class ItLargeMiiDomainsClusters {
 
   /**
    * Install WebLogic operator and wait up to five minutes until the operator pod is ready.
-   * Set resource requests and limits.
+   * Set resource requests, limits and jvm options.
    */
   private static OperatorParams installAndVerifyOperator(String opNamespace,
                                                         String opServiceAccount,
@@ -330,7 +330,8 @@ class ItLargeMiiDomainsClusters {
         .cpuRequests("250m")
         .memoryRequests("512Mi")
         .cpuLimits("1")
-        .memoryLimits("512Mi"); //uses default cpuRequests 250m and memoryRequests 512Mi
+        .memoryLimits("512Mi"); // if cpu and memory resquests are set,
+    // uses default cpuRequests 250m and memoryRequests 512Mi
     opParams.jvmOptions(" -XshowSettings:vm -XX:MaxRAMPercentage=70"
         + " -XX:StartFlightRecording=delay=5s,disk=false,dumponexit=true,duration=900s,"
         + "filename=/tmp/operator_rec.jfr");

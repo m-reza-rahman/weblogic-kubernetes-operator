@@ -42,7 +42,6 @@ public class OperatorParams {
   private static final String CPU_LIMITS = "cpuLimits";
   private static final String MEMORY_REQUESTS = "memoryRequests";
   private static final String MEMORY_LIMITS = "memoryLimits";
-
   private static final String JVM_OPTIONS = "jvmOptions";
 
   // Adding some of the most commonly used params for now
