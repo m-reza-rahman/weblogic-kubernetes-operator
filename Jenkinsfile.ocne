@@ -254,6 +254,7 @@ pipeline {
                 }
 
                 stage('Populate kubeconfig file') {
+                    steps {
                         #################
                         echo "Generating kubeconfig file"
 
@@ -284,6 +285,7 @@ EOF
                         echo "kubeconfig file: "
                         cat $kubeconfig_file
                     }
+                }
 
                 stage('Run integration tests') {
                     environment {
