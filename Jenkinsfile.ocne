@@ -254,6 +254,7 @@ pipeline {
                 }
 
                 stage('Populate kubeconfig file') {
+                        #################
                         echo "Generating kubeconfig file"
 
 cat > $kubeconfig_file <<EOF
@@ -283,7 +284,6 @@ EOF
                         echo "kubeconfig file: "
                         cat $kubeconfig_file
                     }
-                }
 
                 stage('Run integration tests') {
                     environment {
@@ -427,6 +427,7 @@ EOF
                 }
             }
         }
+
         stage ('Sync') {
              when {
                  anyOf {
@@ -445,3 +446,5 @@ EOF
         }
     }
 }
+
+
