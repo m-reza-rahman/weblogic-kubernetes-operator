@@ -57,6 +57,10 @@ pipeline {
 
     parameters {
 
+        string(name: 'BRANCH',
+                       description: '',
+                       defaultValue: "main"
+        )
         string(name: 'IT_TEST',
                description: 'Comma separated list of individual It test classes to be run e.g., ItParameterizedDomain, ItMiiUpdateDomainConfig, ItMiiDynamicUpdate*, ItMiiMultiMode',
                defaultValue: ''
@@ -112,10 +116,6 @@ pipeline {
         string(name: 'NODE_SHAPE',
                        description: '',
                        defaultValue: "VM.Standard.E3.Flex"
-        )
-        string(name: 'BRANCH',
-                       description: '',
-                       defaultValue: "main"
         )
         choice(name: 'BASE_IMAGES_REPO',
                choices: ["${env.WKT_OCIR_HOST}", 'container-registry.oracle.com'],
@@ -250,6 +250,7 @@ pipeline {
                         echo "Results will be in ${result_root}"
                         sh 'mkdir -m777 -p ${pv_root}'
                         echo "Persistent volume files, if any, will be in ${pv_root}"
+                        sh 'sudo mount 100.105.4.71:/fs-ocne-test ${pv_root}'
                     }
                 }
 
