@@ -43,7 +43,8 @@ pipeline {
 
         outdir = "${WORKSPACE}/staging"
         result_root = "${outdir}/wl_k8s_test_results"
-        pv_root = "${outdir}/k8s-pvroot"
+        pv_root_parent = "${outdir}/k8s-pvroot"
+        pv_root = "${pv_root_parent}/pvroot"
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
@@ -249,9 +250,10 @@ pipeline {
                     steps {
                         sh 'mkdir -m777 -p ${result_root}'
                         echo "Results will be in ${result_root}"
+                        sh 'mkdir -m777 -p ${pv_root_parent}'
+                        sh 'sudo mount 100.105.4.71:/fs-ocne-test ${pv_root_parent}'
                         sh 'mkdir -m777 -p ${pv_root}'
                         echo "Persistent volume files, if any, will be in ${pv_root}"
-                        sh 'sudo mount 100.105.4.71:/fs-ocne-test ${pv_root}'
                     }
                 }
 
@@ -429,7 +431,8 @@ EOF
                         rm -f ${jenkins_home_directory}/.oci/oci-signing-key.pem
                         rm -f ${WORKSPACE}/.ssh/*
                         rm -rf ${WORKSPACE}/.mvn
-                        sudo rm -rf ${pv_root}/It*
+                        sudo umount ${pv_root_parent}
+                        sudo rm -rf ${pv_root}
 
                     '''
                 }
