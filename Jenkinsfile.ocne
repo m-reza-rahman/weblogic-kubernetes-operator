@@ -49,11 +49,11 @@ pipeline {
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
 
-        CLUSTER_NAME = "${env.JOB_NAME == 'wko-ocne-nightly-parallel' ? 'mycluster' : 'mycluster'}"
+        CLUSTER_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'mycluster' : 'mycluster'}"
         kubeconfig_file = "${WORKSPACE}/ocne_kubeconfig"
-        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-ocne-nightly-parallel' ? 'olcne' : 'olcne'}"
-        availability_domain = "${env.JOB_NAME == 'wko-ocne-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
-        PARALLEL_RUN = "${env.JOB_NAME == 'wko-ocne-nightly-parallel' ? true : false}"
+        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'olcne' : 'olcne'}"
+        availability_domain = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
+        PARALLEL_RUN = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? true : false}"
     }
 
     parameters {
@@ -431,9 +431,9 @@ EOF
                         rm -f ${jenkins_home_directory}/.oci/oci-signing-key.pem
                         rm -f ${WORKSPACE}/.ssh/*
                         rm -rf ${WORKSPACE}/.mvn
-                        sudo umount ${pv_root_parent}
                         sudo rm -rf ${pv_root}
-
+                        sudo umount ${pv_root_parent}
+                        
                     '''
                 }
             }
