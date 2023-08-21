@@ -254,7 +254,8 @@ public class OperatorParams {
    */
   public Map<String, Object> getValues() {
     Map<String, Object> values = new HashMap<>();
-    values.put(DOMAIN_NAMESPACES, domainNamespaces.toString().replace(" ", ""));
+    values.put(DOMAIN_NAMESPACES, domainNamespaces != null
+        ? domainNamespaces.toString().replace(" ", "") : domainNamespaces);
     values.put(IMAGE, image);
     values.put(SERVICE_ACCOUNT, serviceAccount);
 
