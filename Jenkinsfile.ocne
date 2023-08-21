@@ -433,7 +433,7 @@ EOF
                         rm -rf ${WORKSPACE}/.mvn
                         sudo rm -rf ${pv_root}
                         sudo umount ${pv_root_parent}
-                        
+
                     '''
                 }
             }
