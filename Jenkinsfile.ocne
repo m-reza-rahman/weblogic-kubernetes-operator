@@ -381,6 +381,13 @@ EOF
                                 usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS')
                             ]) {
                                 sh '''
+                                    export HTTPS_PROXY='http://www-proxy-hqdc.us.oracle.com:80'
+                                    export https_proxy='http://www-proxy-hqdc.us.oracle.com:80'
+                                    export HTTP_PROXY='http://www-proxy-hqdc.us.oracle.com:80'
+                                    export http_proxy='http://www-proxy-hqdc.us.oracle.com:80'
+                                    #100.105.4.31 is the ip address of kubernetes master node
+                                    export NO_PROXY='localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,100.105.4.31'
+                                    export no_proxy='localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,100.105.4.31'
                                     export PATH=${runtime_path}
                                     export OKE_CLUSTER="false"
                                     export OCNE_CLUSTER="true"
