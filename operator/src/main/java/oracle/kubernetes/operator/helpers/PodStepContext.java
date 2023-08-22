@@ -824,7 +824,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     addEnvVar(vars, ServerEnvVars.DOMAIN_UID, getDomainUid());
     addEnvVar(vars, ServerEnvVars.NODEMGR_HOME, NODEMGR_HOME);
     addEnvVar(vars, ServerEnvVars.LOG_HOME, getEffectiveLogHome());
-    if (getLogHomeLayout() == LogHomeLayoutType.FLAT) {
+    if (getLogHomeLayout() == LogHomeLayoutType.FLAT && getEffectiveLogHome() != null) {
       addEnvVar(vars, ServerEnvVars.LOG_HOME_LAYOUT, getLogHomeLayout().toString());
     }
     addEnvVar(vars, ServerEnvVars.SERVER_OUT_IN_POD_LOG, isIncludeServerOutInPodLog());
