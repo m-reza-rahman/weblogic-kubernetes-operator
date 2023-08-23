@@ -10,6 +10,7 @@ import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.V1Affinity;
 import io.kubernetes.client.openapi.models.V1Container;
+import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1HostAlias;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -19,7 +20,6 @@ import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Toleration;
 import io.kubernetes.client.openapi.models.V1Volume;
-import oracle.kubernetes.operator.DomainOnPVType;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.LogHomeLayoutType;
 import oracle.kubernetes.operator.ModelInImageDomainType;
@@ -72,6 +72,17 @@ public abstract class DomainConfigurator {
    */
   public DomainConfigurator withLivenessProbeCustomScript(String livenessProbeCustomScript) {
     getDomainSpec().setLivenessProbeCustomScript(livenessProbeCustomScript);
+    return this;
+  }
+
+  /**
+   * Sets the value of replace environment variables in Java options for domain.
+   *
+   * @param replaceEnvironmentVariablesInJavaOptions value of replace Env variables in Java options.
+   * @return this object
+   */
+  public DomainConfigurator withReplaceEnvVariablesInJavaOptions(Boolean replaceEnvironmentVariablesInJavaOptions) {
+    getDomainSpec().setReplaceVariablesInJavaOptions(replaceEnvironmentVariablesInJavaOptions);
     return this;
   }
 
@@ -372,6 +383,14 @@ public abstract class DomainConfigurator {
    * @return this object
    */
   public abstract DomainConfigurator withEnvironmentVariable(V1EnvVar envVar);
+
+  /**
+   * Add env from a source such as a config map or a secret.
+   *
+   * @param envFromSources list of source of the env variables.
+   * @return this object
+   */
+  public abstract DomainConfigurator withEnvFrom(List<V1EnvFromSource> envFromSources);
 
   protected DomainSpec getDomainSpec() {
     return domain.getSpec();
@@ -688,7 +707,7 @@ public abstract class DomainConfigurator {
    * @param type the domain type
    * @return this object
    */
-  public abstract DomainConfigurator withInitializeDomainOnPVType(DomainOnPVType type);
+  public abstract DomainConfigurator withInitializeDomainOnPVType(String type);
 
   /**
    * Add domain type for the domain resource's initializeDomainOnPV.

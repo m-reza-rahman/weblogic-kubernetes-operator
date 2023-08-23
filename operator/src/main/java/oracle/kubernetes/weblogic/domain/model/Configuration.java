@@ -7,7 +7,6 @@ import java.util.List;
 
 import oracle.kubernetes.json.Default;
 import oracle.kubernetes.json.Description;
-import oracle.kubernetes.json.Feature;
 import oracle.kubernetes.operator.OverrideDistributionStrategy;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -19,7 +18,15 @@ public class Configuration {
   @Description("Model in image model files and properties.")
   private Model model;
 
-  @Description("Settings for OPSS security.")
+  /**
+   * Settings for OPSS security for the Model in Image JRF Domain.
+   *
+   * @deprecated JRF domain support is deprecated in Model in Image.
+   **/
+  @Description("Settings for OPSS security for the Model in Image JRF Domain. This field is deprecated,"
+      + " and will be removed in a future release. For JRF domain on PV initialization, "
+      + "use `configuration.initializeDomainOnPV.domain.opss` section for configuring OPSS security settings.")
+  @Deprecated(since = "4.1")
   private Opss opss;
 
   @Description(
@@ -46,14 +53,13 @@ public class Configuration {
   @Default(strDefault = "Dynamic")
   private OverrideDistributionStrategy overrideDistributionStrategy;
 
-  @Feature("DomainOnPvSimplification")
   @Description("Configuration to initialize a WebLogic Domain on persistent volume (`Domain on PV`) and initialize"
       + " related resources such as a persistent volume and a persistent volume claim. If specified, the operator will"
       + " perform these one-time initialization steps only if the domain and resources do not already exist."
       + " The operator will not recreate or update the domain and resources when they already exist. "
       + " For more information, see"
       + " https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/choosing-a-model/ and"
-      + " https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/domain-on-pv-initialization ")
+      + " https://oracle.github.io/weblogic-kubernetes-operator/managing-domains/domain-on-pv ")
   private InitializeDomainOnPV initializeDomainOnPV;
 
   public Model getModel() {

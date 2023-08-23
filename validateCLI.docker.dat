@@ -26,8 +26,6 @@ dockerFile
 dockerconfigjson
 /docker/
 /docker-images/
-"../buildAndPushImage.sh"
-Usage: buildAndPushImage.sh
 docker-container\|ockerContainer\|DockerCluster
 contains."BEGIN DOCKERFILE".
 --docker-email
@@ -46,3 +44,4 @@ wlsDockerContainer
 wls-docker-container-imag
 dii-docker-container
 DockerCluster
+TRAEFIK_IMAGE_REGISTRY:-docker.io

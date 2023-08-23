@@ -39,6 +39,7 @@ import oracle.weblogic.domain.PersistentVolumeSpec;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import org.jetbrains.annotations.NotNull;
 
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
@@ -46,6 +47,7 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.YAML_MAX_FILE_SIZE_PROPERTY;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -54,6 +56,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWai
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
+import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVHostPathDir;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -126,7 +129,7 @@ public class FmwUtils {
                     .domainType("JRF")
                     .runtimeEncryptionSecret(encryptionSecretName))
                 .addSecretsItem(rcuAccessSecretName)
-                .introspectorJobActiveDeadlineSeconds(600L)));
+                .introspectorJobActiveDeadlineSeconds(900L)));
 
     return domain;
   }
@@ -425,22 +428,6 @@ public class FmwUtils {
                 .addSecretsItem(rcuAccessSecretName)
                 .introspectorJobActiveDeadlineSeconds(3000L)
                 .initializeDomainOnPV((new InitializeDomainOnPV()
-                    .persistentVolume(new PersistentVolume()
-                        .metadata(new V1ObjectMeta()
-                            .name(pvName))
-                        .spec(new PersistentVolumeSpec()
-                            .storageClassName("weblogic-domain-storage-class")
-                            .hostPath(new V1HostPathVolumeSource()
-                                .path("/share"))
-                            .capacity(capacity)))
-                    .persistentVolumeClaim(new PersistentVolumeClaim()
-                        .metadata(new V1ObjectMeta()
-                            .name(pvcName))
-                         .spec(new PersistentVolumeClaimSpec()
-                             .volumeName(pvName)
-                             .storageClassName("weblogic-domain-storage-class")
-                             .resources(new V1ResourceRequirements()
-                                 .requests(request))))
                     .domain(new DomainOnPV()
                         .createMode(CreateIfNotExists.DOMAIN)
                         .domainType(DomainOnPVType.JRF)
@@ -451,12 +438,143 @@ public class FmwUtils {
                             .walletFileSecret(opssWalletFileSecretName))
 
                         )))));
-
+    InitializeDomainOnPV initializeDomainOnPV = getInitializeDomainOnPV(pvName, pvcName, capacity, request, domain);
+    domain.getSpec().getConfiguration().initializeDomainOnPV(initializeDomainOnPV);
     return domain;
   }
 
   /**
-   * Save the OPSS key wallet from a running JRF domain's introspector configmap to a file.
+   * Construct a domain and RCU with the given parameters that can be used to create a domain resource.
+   * @param domainUid unique Uid of the domain
+   * @param domainNamespace  namespace where the domain exists
+   * @param adminSecretName  name of admin secret
+   * @param repoSecretName name of repository secret
+   * @param rcuAccessSecretName name of RCU access secret
+   * @param opssWalletPasswordSecretName name of opss wallet password secret
+   * @param opssWalletFileSecretName name of opss wallet file secret
+   * @param domainCreationImages list of domainCreationImage
+   * @param pvName name of persistent volume
+   * @param pvcName name of persistent volume claim
+   * @return Domain WebLogic domain
+   */
+  public static DomainResource createSimplifyJrfPvDomainAndRCU(
+      String domainUid, String domainNamespace, String adminSecretName,
+      String repoSecretName, String rcuAccessSecretName, String opssWalletPasswordSecretName,
+      String opssWalletFileSecretName,
+      String pvName, String pvcName,
+      List<DomainCreationImage> domainCreationImages,
+      String domainCreationConfigMap) {
+
+    Map<String, Quantity> capacity = new HashMap<>();
+    capacity.put("storage", Quantity.fromString("10Gi"));
+
+    Map<String, Quantity> request = new HashMap<>();
+    request.put("storage", Quantity.fromString("10Gi"));
+
+    // create the domain CR
+    DomainResource domain = new DomainResource()
+        .apiVersion(DOMAIN_API_VERSION)
+        .kind("Domain")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid)
+            .namespace(domainNamespace))
+        .spec(new DomainSpec()
+            .domainUid(domainUid)
+            .domainHomeSourceType("PersistentVolume")
+            .image(FMWINFRA_IMAGE_TO_USE_IN_SPEC)
+            .imagePullPolicy(IMAGE_PULL_POLICY)
+            .addImagePullSecretsItem(new V1LocalObjectReference()
+                .name(repoSecretName))
+            .webLogicCredentialsSecret(new V1LocalObjectReference()
+                .name(adminSecretName))
+            .includeServerOutInPodLog(true)
+            .serverStartPolicy("IfNeeded")
+            .introspectVersion("1")
+            .failureRetryIntervalSeconds(FAILURE_RETRY_INTERVAL_SECONDS)
+            .failureRetryLimitMinutes(FAILURE_RETRY_LIMIT_MINUTES)
+            .serverPod(new ServerPod()
+                .addVolumesItem(new V1Volume()
+                    .name("weblogic-domain-storage-volume")
+                    .persistentVolumeClaim(new V1PersistentVolumeClaimVolumeSource()
+                        .claimName(pvcName)))
+                .addVolumeMountsItem(new V1VolumeMount()
+                    .mountPath("/shared")
+                    .name("weblogic-domain-storage-volume"))
+                .addEnvItem(new V1EnvVar()
+                    .name("JAVA_OPTIONS")
+                    .value("-Dweblogic.StdoutDebugEnabled=false"))
+                .addEnvItem(new V1EnvVar()
+                    .name("USER_MEM_ARGS")
+                    .value("-Djava.security.egd=file:/dev/./urandom "))
+                .addEnvItem(new V1EnvVar()
+                    .name("WLSDEPLOY_PROPERTIES")
+                    .value(YAML_MAX_FILE_SIZE_PROPERTY)))
+            .adminServer(new AdminServer()
+                .adminService(new AdminService()
+                    .addChannelsItem(new Channel()
+                        .channelName("default")
+                        .nodePort(0))))
+            .configuration(new Configuration()
+                .addSecretsItem(rcuAccessSecretName)
+                .introspectorJobActiveDeadlineSeconds(3000L)
+                .initializeDomainOnPV((new InitializeDomainOnPV()
+                    .domain(new DomainOnPV()
+                        .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
+                        .domainType(DomainOnPVType.JRF)
+                        .domainCreationImages(domainCreationImages)
+                        .domainCreationConfigMap(domainCreationConfigMap)
+                        .opss(new Opss()
+                            .walletPasswordSecret(opssWalletPasswordSecretName)
+                            .walletFileSecret(opssWalletFileSecretName))
+
+                        )))));
+
+    InitializeDomainOnPV initializeDomainOnPV = getInitializeDomainOnPV(pvName, pvcName, capacity, request, domain);
+    domain.getSpec().getConfiguration().initializeDomainOnPV(initializeDomainOnPV);
+    return domain;
+  }
+
+  private static InitializeDomainOnPV getInitializeDomainOnPV(String pvName,
+                                                              String pvcName,
+                                                              Map<String, Quantity> capacity,
+                                                              Map<String, Quantity> request,
+                                                              DomainResource domain) {
+    InitializeDomainOnPV initializeDomainOnPV = domain
+        .getSpec()
+        .getConfiguration()
+        .getInitializeDomainOnPV();
+    if (OKE_CLUSTER) {
+      initializeDomainOnPV = initializeDomainOnPV.persistentVolumeClaim(new PersistentVolumeClaim()
+          .metadata(new V1ObjectMeta()
+              .name(pvcName))
+          .spec(new PersistentVolumeClaimSpec()
+              .storageClassName("oci-fss")
+              .resources(new V1ResourceRequirements()
+              .requests(request))));
+    } else {
+      initializeDomainOnPV = initializeDomainOnPV
+          .persistentVolume(new PersistentVolume()
+              .metadata(new V1ObjectMeta()
+                  .name(pvName))
+              .spec(new PersistentVolumeSpec()
+                  .storageClassName("weblogic-domain-storage-class")
+                  .hostPath(new V1HostPathVolumeSource()
+                      .path("/shared"))
+                  .capacity(capacity)))
+          .persistentVolumeClaim(new PersistentVolumeClaim()
+              .metadata(new V1ObjectMeta()
+                  .name(pvcName))
+              .spec(new PersistentVolumeClaimSpec()
+                  .volumeName(pvName)
+                  .storageClassName("weblogic-domain-storage-class")
+                  .resources(new V1ResourceRequirements()
+                  .requests(request))));
+    }
+    return initializeDomainOnPV;
+  }
+
+  /**
+   * Save and restore the OPSS key wallet from a running JRF domain's introspector configmap to a file.
    * @param namespace namespace where JRF domain exists
    * @param domainUid unique domain Uid
    * @param walletfileSecretName name of wallet file secret
@@ -492,4 +610,107 @@ public class FmwUtils {
 
   }
 
+  /**
+   * Restore the OPSS key wallet from a running JRF domain's introspector configmap to a file.
+   * @param namespace namespace where JRF domain exists
+   * @param domainUid unique domain Uid
+   * @param walletfileSecretName name of wallet file secret
+   * @return ExecResult result of running corresponding script
+   */
+  public static ExecResult restoreOpssWalletfileSecret(String namespace, String domainUid,
+       String walletfileSecretName) {
+
+    logger = getLogger();
+    Path saveAndRestoreOpssPath =
+         Paths.get(RESOURCE_DIR, "bash-scripts", "opss-wallet.sh");
+    String script = saveAndRestoreOpssPath.toString();
+    logger.info("Script for saveAndRestoreOpss is {0)", script);
+
+    //restore opss wallet password secret
+    String command = script + " -d " + domainUid + " -n " + namespace + " -r" + " -ws " + walletfileSecretName;
+    logger.info("Restore wallet file command: {0}", command);
+    ExecResult result = Command.withParams(
+          defaultCommandParams()
+            .command(command)
+            .saveResults(true)
+            .redirect(true))
+        .executeAndReturnResult();
+
+    return result;
+
+  }
+
+  /** Create configuration with provided pv and pvc values.
+   *
+   * @param pvName name of pv
+   * @param pvcName name of pvc
+   * @param pvCapacity pv capacity
+   * @param pvcRequest pvc request
+   * @param storageClassName storage name
+   * @return configuration object with pv and pvc setup
+   */
+  @NotNull
+  public static Configuration getConfiguration(String pvName, String pvcName,
+                                         Map<String, Quantity> pvCapacity, Map<String, Quantity> pvcRequest,
+                                         String storageClassName, String testClass) {
+    Configuration configuration = new Configuration();
+    PersistentVolume pv = null;
+    if (OKE_CLUSTER) {
+      storageClassName = "oci-fss";
+    }
+
+    pv = new PersistentVolume()
+        .spec(new PersistentVolumeSpec()
+            .capacity(pvCapacity)
+            .storageClassName(storageClassName)
+            .persistentVolumeReclaimPolicy("Retain"))
+        .metadata(new V1ObjectMeta()
+            .name(pvName));
+    if (!OKE_CLUSTER) {
+      pv.getSpec().hostPath(new V1HostPathVolumeSource()
+          .path(getHostPath(pvName, testClass)));
+    }
+    configuration
+        .initializeDomainOnPV(new InitializeDomainOnPV()
+            .persistentVolume(pv)
+            .persistentVolumeClaim(new PersistentVolumeClaim()
+                .metadata(new V1ObjectMeta()
+                    .name(pvcName))
+                .spec(new PersistentVolumeClaimSpec()
+                    .storageClassName(storageClassName)
+                    .resources(new V1ResourceRequirements()
+                        .requests(pvcRequest)))));
+
+    return configuration;
+  }
+
+  /** Create configuration with pvc only provided values.
+   *
+   * @param pvcName name of pvc
+   * @param pvcRequest pvc request
+   * @param storageClassName storage name
+   * @return configuration object with pv and pvc setup
+   */
+  @NotNull
+  public static Configuration getConfiguration(String pvcName,
+                                         Map<String, Quantity> pvcRequest,
+                                         String storageClassName) {
+    Configuration configuration = new Configuration()
+        .initializeDomainOnPV(new InitializeDomainOnPV()
+            .persistentVolumeClaim(new PersistentVolumeClaim()
+                .metadata(new V1ObjectMeta()
+                    .name(pvcName))
+                .spec(new PersistentVolumeClaimSpec()
+                    .storageClassName(storageClassName)
+                    .resources(new V1ResourceRequirements()
+                        .requests(pvcRequest)))));
+
+    return configuration;
+  }
+
+  // get the host path for multiple environment
+  private static String getHostPath(String pvName, String className) {
+    Path hostPVPath = createPVHostPathDir(pvName, className);
+    return hostPVPath.toString();
+  }
 }

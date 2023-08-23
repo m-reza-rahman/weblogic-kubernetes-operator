@@ -3,7 +3,11 @@
 
 package oracle.kubernetes.weblogic.domain;
 
+import java.util.List;
+
+import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1PodSecurityContext;
 
 /** An interface for an object to configure a introspector job pod in a test. */
 @SuppressWarnings("UnusedReturnValue")
@@ -11,6 +15,8 @@ public interface IntrospectorJobPodConfigurator {
   IntrospectorJobPodConfigurator withEnvironmentVariable(String name, String value);
 
   IntrospectorJobPodConfigurator withEnvironmentVariable(V1EnvVar envVar);
+
+  IntrospectorJobPodConfigurator withEnvFrom(List<V1EnvFromSource> envFromSources);
 
   /**
    * Add a resource requirement at server level. The requests for memory are measured in bytes. You
@@ -37,4 +43,6 @@ public interface IntrospectorJobPodConfigurator {
    * @return this object
    */
   IntrospectorJobPodConfigurator withLimitRequirement(String resource, String quantity);
+
+  IntrospectorJobPodConfigurator withPodSecurityContext(V1PodSecurityContext podSecurityContext);
 }

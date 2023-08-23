@@ -27,7 +27,9 @@ import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.models.V1Affinity;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
+import io.kubernetes.client.openapi.models.V1ConfigMapEnvSource;
 import io.kubernetes.client.openapi.models.V1Container;
+import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobSpec;
@@ -45,7 +47,6 @@ import io.kubernetes.client.openapi.models.V1Toleration;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.common.utils.CommonUtils;
-import oracle.kubernetes.operator.DomainOnPVType;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.JobAwaiterStepFactory;
 import oracle.kubernetes.operator.LabelConstants;
@@ -73,6 +74,7 @@ import oracle.kubernetes.weblogic.domain.model.InitializeDomainOnPV;
 import oracle.kubernetes.weblogic.domain.model.Opss;
 import oracle.kubernetes.weblogic.domain.model.ServerEnvVars;
 import org.hamcrest.Matcher;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,9 +92,11 @@ import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.createTestDomain;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_DOMAIN_SPEC_GENERATION;
 import static oracle.kubernetes.operator.ProcessingConstants.DEFAULT_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
-import static oracle.kubernetes.operator.ProcessingConstants.DEFAULT_WLS_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
+import static oracle.kubernetes.operator.ProcessingConstants.DEFAULT_WLS_OR_RESTRICTED_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 import static oracle.kubernetes.operator.ProcessingConstants.JOBWATCHER_COMPONENT_NAME;
+import static oracle.kubernetes.operator.WebLogicConstants.JRF;
+import static oracle.kubernetes.operator.WebLogicConstants.WLS;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CONFIG_MAP;
 import static oracle.kubernetes.operator.helpers.Matchers.hasConfigMapVolume;
 import static oracle.kubernetes.operator.helpers.Matchers.hasContainer;
@@ -609,6 +613,91 @@ class JobHelperTest extends DomainValidationTestBase {
   }
 
   @Test
+  void whenIntrospectorServerHasEnvFromItems_introspectorPodStartupWithThem() {
+    configureDomain()
+        .configureIntrospector()
+        .withEnvFrom(createEnvFrom("test"));
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(
+        getMatchingContainerEnvFrom(domainPresenceInfo, jobSpec), is(createEnvFrom("test")));
+  }
+
+  @NotNull
+  private List<V1EnvFromSource> createEnvFrom(String name) {
+    return List.of(new V1EnvFromSource().configMapRef(new V1ConfigMapEnvSource().name(name)));
+  }
+
+  @Test
+  void whenIntrospectorServerHasSecurityContext_introspectorPodStartupWithThem() {
+    configureDomain()
+        .configureIntrospector()
+        .withPodSecurityContext(getPodSecurityContext(1000L, 2000L));
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(
+        getMatchingPodSecurityContext(domainPresenceInfo, jobSpec), is(getPodSecurityContext(1000L, 2000L)));
+  }
+
+  @Test
+  void whenDomainOnPVIntrospectorServerHasSecurityContextWithNoFsGroup_introspectorPodStartupWithDefaultFsGroup() {
+    configureDomain()
+        .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
+        .withInitializeDomainOnPv(new InitializeDomainOnPV()
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN)))
+        .configureIntrospector()
+        .withPodSecurityContext(getPodSecurityContext(1000L, 2000L));
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(
+        getMatchingPodSecurityContext(domainPresenceInfo, jobSpec),
+        is(getPodSecurityContext(1000L, 2000L, 2000L).fsGroupChangePolicy("OnRootMismatch")));
+  }
+
+  private V1PodSecurityContext getPodSecurityContext(long user, long group) {
+    return new V1PodSecurityContext().runAsUser(user).runAsGroup(group);
+  }
+
+  private V1PodSecurityContext getPodSecurityContext(long user, long group, long fsGroup) {
+    return new V1PodSecurityContext().runAsUser(user).runAsGroup(group).fsGroup(fsGroup);
+  }
+
+  @Test
+  void whenDomainOnPVHasSecurityContextWithNoFsGroupAndNoRunAsGroup_introspectorPodStartupWithDefaultFsGroup() {
+    configureDomain()
+        .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
+        .withInitializeDomainOnPv(new InitializeDomainOnPV()
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN)))
+        .configureIntrospector()
+        .withPodSecurityContext(new V1PodSecurityContext().runAsUser(1000L));
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(
+        getMatchingPodSecurityContext(domainPresenceInfo, jobSpec),
+        is(new V1PodSecurityContext().runAsUser(1000L).fsGroup(0L).fsGroupChangePolicy("OnRootMismatch")));
+  }
+
+  @Test
+  void whenDomainOnPVIntrospectorServerHasSecurityContextWithFsGroup_introspectorPodStartupWithSpecifiedFsGroup() {
+    configureDomain()
+        .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
+        .withInitializeDomainOnPv(new InitializeDomainOnPV()
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN)))
+        .configureIntrospector()
+        .withPodSecurityContext(getPodSecurityContext(1000L, 2000L, 3000L));
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(
+        getMatchingPodSecurityContext(domainPresenceInfo, jobSpec),
+        is(getPodSecurityContext(1000L, 2000L, 3000L).fsGroupChangePolicy("OnRootMismatch")));
+  }
+
+  @Test
   void whenDomainAndIntrospectorHaveEnvironmentItems_introspectorPodStartupWithBothEnvVars() {
     configureDomain()
           .withEnvironmentVariable("item1", "domain-value1")
@@ -632,6 +721,95 @@ class JobHelperTest extends DomainValidationTestBase {
                 envVarOEVNContains("item1"),
                 envVarOEVNContains("JAVA_OPTIONS"),
                 envVarOEVNContains("USER_MEM_ARGS")));
+  }
+
+  @Test
+  void whenDomainAndIntrospectorHaveEnvFromItems_introspectorPodStartupWithIntrospectorEnvFrom() {
+    configureDomain()
+        .withEnvFrom(createEnvFrom("domain"))
+        .configureIntrospector()
+        .withEnvFrom(createEnvFrom("introspector"));
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(
+        getMatchingContainerEnvFrom(domainPresenceInfo, jobSpec),
+        is(createEnvFrom("introspector")));
+    assertThat(
+        getMatchingContainerEnvFrom(domainPresenceInfo, jobSpec),
+        not(is(createEnvFrom("domain"))));
+  }
+
+  @Test
+  void whenDomainOnPVAndIntrospectorHavePodSecurityContext_introspectorPodStartupWithIntrospectorPodSecurityContext() {
+    configureDomain()
+        .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
+        .withInitializeDomainOnPv(new InitializeDomainOnPV()
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN)))
+        .withPodSecurityContext(getPodSecurityContext(3000L, 4000L))
+        .configureIntrospector()
+        .withPodSecurityContext(getPodSecurityContext(1000L, 2000L));
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(
+        getMatchingPodSecurityContext(domainPresenceInfo, jobSpec),
+        is(getPodSecurityContext(1000L, 2000L, 2000L).fsGroupChangePolicy("OnRootMismatch")));
+  }
+
+  @Test
+  void whenDomainOnPVHasRunInitContainerAsRoot_introspectorPodStartupWithCorrectInitContainerSecurityContext() {
+    configureDomain()
+        .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
+        .withInitializeDomainOnPv(new InitializeDomainOnPV()
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN)).runInitContainerAsRoot(true))
+        .withPodSecurityContext(getPodSecurityContext(3000L, 4000L))
+        .configureIntrospector()
+        .withPodSecurityContext(getPodSecurityContext(1000L, 2000L));
+
+    V1JobSpec jobSpec = createJobSpec();
+    V1PodSpec podSpec = getPodSpec(jobSpec);
+
+    V1Container domainOnPVINitContainer = podSpec.getInitContainers().stream().filter(
+        a -> a.getName().equals(INIT_DOMAIN_ON_PV_CONTAINER)).findFirst().orElse(null);
+    assertThat(domainOnPVINitContainer.getSecurityContext(),
+        is(new V1SecurityContext().runAsUser(0L).runAsGroup(0L)));
+  }
+
+  @Test
+  void whenDomainOnPVWithDefaultFsGroupDisable_introspectorPodStartupWithCorrectPodSecurityContext() {
+    configureDomain()
+        .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
+        .withInitializeDomainOnPv(new InitializeDomainOnPV()
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN)).setDefaultFsGroup(false))
+        .withPodSecurityContext(getPodSecurityContext(3000L, 4000L))
+        .configureIntrospector()
+        .withPodSecurityContext(getPodSecurityContext(1000L, 2000L));
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(
+        getMatchingPodSecurityContext(domainPresenceInfo, jobSpec),
+        is(getPodSecurityContext(1000L, 2000L)));
+  }
+
+  @Test
+  void whenDomainAndIntrospectorHaveNoPodSecurityContext_initContainerStartsWithContextWithfsGroup() {
+    configureDomain()
+        .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
+        .withInitializeDomainOnPv(new InitializeDomainOnPV()
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN)));
+
+    V1JobSpec jobSpec = createJobSpec();
+    V1PodSpec podSpec = getPodSpec(jobSpec);
+
+    assertThat(podSpec.getSecurityContext().getFsGroup(), is(0L));
+    assertThat(podSpec.getSecurityContext().getFsGroupChangePolicy(), is("OnRootMismatch"));
+
+    V1Container domainOnPVINitContainer = podSpec.getInitContainers().stream().filter(
+        a -> a.getName().equals(INIT_DOMAIN_ON_PV_CONTAINER)).findFirst().orElse(null);
+    assertThat(domainOnPVINitContainer.getSecurityContext(),
+        is(PodSecurityHelper.getDefaultContainerSecurityContext()));
   }
 
   @Test
@@ -966,15 +1144,15 @@ class JobHelperTest extends DomainValidationTestBase {
     configureDomain()
         .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
         .withInitializeDomainOnPV(new InitializeDomainOnPV()
-            .domain(new DomainOnPV().domainType(DomainOnPVType.WLS).createMode(CreateIfNotExists.DOMAIN)));
+            .domain(new DomainOnPV().domainType(WLS).createMode(CreateIfNotExists.DOMAIN)));
 
     V1JobSpec jobSpec = createJobSpec();
 
     assertThat(
         getPodSpecActiveDeadlineSeconds(jobSpec),
-        is(DEFAULT_WLS_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS));
+        is(DEFAULT_WLS_OR_RESTRICTED_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS));
     assertThat(
-        jobSpec.getActiveDeadlineSeconds(), is(DEFAULT_WLS_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS));
+        jobSpec.getActiveDeadlineSeconds(), is(DEFAULT_WLS_OR_RESTRICTED_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS));
   }
 
   @Test
@@ -1132,7 +1310,7 @@ class JobHelperTest extends DomainValidationTestBase {
     configureDomain()
         .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
         .withInitializeDomainOnPV(new InitializeDomainOnPV()
-            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(DomainOnPVType.JRF)
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(JRF)
                 .opss(new Opss().withWalletFileSecret("wallet-secret-file")
                     .withWalletPasswordSecret("wallet-secret-password"))
             ));
@@ -1157,7 +1335,7 @@ class JobHelperTest extends DomainValidationTestBase {
             .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
             .withPodSecurityContext(new V1PodSecurityContext().runAsUser(2000L).runAsGroup(0L))
             .withInitializeDomainOnPV(new InitializeDomainOnPV()
-                    .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(DomainOnPVType.JRF)
+                    .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(JRF)
                             .opss(new Opss().withWalletFileSecret("wallet-secret-file")
                                     .withWalletPasswordSecret("wallet-secret-password"))
                     ));
@@ -1184,7 +1362,7 @@ class JobHelperTest extends DomainValidationTestBase {
     configureDomain()
             .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
             .withInitializeDomainOnPV(new InitializeDomainOnPV()
-                    .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(DomainOnPVType.JRF)
+                    .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(JRF)
                             .opss(new Opss().withWalletFileSecret("wallet-secret-file")
                                     .withWalletPasswordSecret("wallet-secret-password"))
                     ));
@@ -1212,7 +1390,7 @@ class JobHelperTest extends DomainValidationTestBase {
     configureDomain()
             .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
             .withInitializeDomainOnPV(new InitializeDomainOnPV()
-                    .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(DomainOnPVType.JRF)
+                    .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(JRF)
                             .opss(new Opss().withWalletFileSecret("wallet-secret-file")
                                     .withWalletPasswordSecret("wallet-secret-password"))
                     ));
@@ -1241,7 +1419,7 @@ class JobHelperTest extends DomainValidationTestBase {
             .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
             .withPodSecurityContext(new V1PodSecurityContext().runAsUser(2000L).runAsGroup(0L))
             .withInitializeDomainOnPV(new InitializeDomainOnPV()
-                    .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(DomainOnPVType.JRF)
+                    .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(JRF)
                             .opss(new Opss().withWalletFileSecret("wallet-secret-file")
                                     .withWalletPasswordSecret("wallet-secret-password"))
                     ));
@@ -1270,7 +1448,7 @@ class JobHelperTest extends DomainValidationTestBase {
         .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
         .withInitializeDomainOnPV(new InitializeDomainOnPV()
             .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU)
-                .domainType(DomainOnPVType.JRF)
+                .domainType(JRF)
                 .domainCreationConfigMap("wdt-config-map")));
 
     V1JobSpec jobSpec = createJobSpec();
@@ -1295,7 +1473,7 @@ class JobHelperTest extends DomainValidationTestBase {
         .withAdditionalVolumeMount("volume1Mount", VOLUME_MOUNT_PATH_1)
         .withInitializeDomainOnPV(new InitializeDomainOnPV()
             .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU)
-                .domainType(DomainOnPVType.JRF)
+                .domainType(JRF)
                 .domainCreationConfigMap("wdt-config-map")));
 
     V1JobSpec jobSpec = createJobSpec();
@@ -1319,7 +1497,7 @@ class JobHelperTest extends DomainValidationTestBase {
     configureDomain()
         .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
         .withInitializeDomainOnPV(new InitializeDomainOnPV()
-            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(DomainOnPVType.JRF)
+            .domain(new DomainOnPV().createMode(CreateIfNotExists.DOMAIN_AND_RCU).domainType(JRF)
                 .opss(new Opss().withWalletFileSecret("wallet-secret-file")
                     .withWalletPasswordSecret("wallet-secret-password"))
             ));
@@ -1946,10 +2124,24 @@ class JobHelperTest extends DomainValidationTestBase {
           .orElse(Collections.emptyList());
   }
 
+  private List<V1EnvFromSource> getMatchingContainerEnvFrom(
+      DomainPresenceInfo domainPresenceInfo, V1JobSpec jobSpec) {
+    return getMatchingContainer(domainPresenceInfo, jobSpec)
+        .map(V1Container::getEnvFrom)
+        .orElse(Collections.emptyList());
+  }
+
   private V1ResourceRequirements getMatchingContainerResources(
       DomainPresenceInfo domainPresenceInfo, V1JobSpec jobSpec) {
     return getMatchingContainer(domainPresenceInfo, jobSpec)
         .map(V1Container::getResources)
+        .orElse(null);
+  }
+
+  private V1PodSecurityContext getMatchingPodSecurityContext(
+      DomainPresenceInfo domainPresenceInfo, V1JobSpec jobSpec) {
+    return Optional.ofNullable(jobSpec.getTemplate().getSpec())
+        .map(V1PodSpec::getSecurityContext)
         .orElse(null);
   }
 

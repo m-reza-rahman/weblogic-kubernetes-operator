@@ -121,7 +121,7 @@ The behavior when using an unsupported override is undefined.
 
 The operator generates the final configuration overrides, combining customer-provided configuration overrides and operator-generated overrides, during the operator's introspection phase. These overrides are then used when starting or restarting WebLogic Server instances. Starting with operator version 3.0.0, these [overrides can also be distributed]({{< relref "/managing-domains/domain-lifecycle/introspection/_index.md#distributing-changes-to-configuration-overrides" >}}) and applied to already running WebLogic Server instances.
 
-For [Domain on PV]({{< relref "/managing-domains/domain-lifecycle/restarting/_index.md#domain-in-pv" >}}), the ability to change WebLogic domain configuration using traditional management transactions involving the Administration Console or WLST can be combined with the ability to initiate a repeat introspection and distribute updated configuration overrides. This combination supports use cases such as defining a new WebLogic cluster and then immediately starting Managed Server cluster members.
+For [Domain on PV]({{< relref "/managing-domains/domain-lifecycle/restarting/_index.md#domain-on-pv" >}}), the ability to change WebLogic domain configuration using traditional management transactions involving the Administration Console or WLST can be combined with the ability to initiate a repeat introspection and distribute updated configuration overrides. This combination supports use cases such as defining a new WebLogic cluster and then immediately starting Managed Server cluster members.
 
 ---
 ### Override template names and syntax
@@ -373,8 +373,7 @@ __Background notes:__
     overrides are failing to take effect.
 
 - Some incorrect overrides may be detected on WebLogic Server versions that
-  support the `weblogic.SituationalConfig.failBootOnError` system property
-  (not applicable to WebLogic Server 12.2.1.3.0).
+  support the `weblogic.SituationalConfig.failBootOnError` system property.
   - If the system property is supported, then, by default, WebLogic Server will fail to boot
     if it encounters a syntax error while loading configuration overrides files.
   - If you _want_ to start up WebLogic Servers with incorrectly formatted override files,
@@ -408,7 +407,7 @@ __Debugging steps:__
          * `<Dec 14, 2018 12:20:47 PM UTC> <Info> <Management> <BEA-141330> <Loading situational configuration file: /shared/domains/domain1/optconfig/custom-situational-config.xml>`
          * This line indicates a configuration overrides file has been loaded.
       * If the search yields `Warning` or `Error` lines, then the format of the custom configuration overrides template is incorrect, and the `Warning` or `Error` text should describe the problem.
-      * **Note**: The following exception may show up in the server logs when overriding JDBC modules. It is not expected to affect runtime behavior, and can be ignored:
+      * **NOTE**: The following exception may show up in the server logs when overriding JDBC modules. It is not expected to affect runtime behavior, and can be ignored:
          ```
          java.lang.NullPointerException
            at weblogic.management.provider.internal.situationalconfig.SituationalConfigManagerImpl.registerListener(SituationalConfigManagerImpl.java:227)

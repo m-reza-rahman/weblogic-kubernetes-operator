@@ -31,7 +31,6 @@ import io.kubernetes.client.openapi.models.V1ContainerState;
 import io.kubernetes.client.openapi.models.V1ContainerStateWaiting;
 import io.kubernetes.client.openapi.models.V1ContainerStatus;
 import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource;
-import io.kubernetes.client.openapi.models.V1HostPathVolumeSource;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobCondition;
 import io.kubernetes.client.openapi.models.V1JobSpec;
@@ -84,8 +83,6 @@ import oracle.kubernetes.weblogic.domain.model.DomainTestUtils;
 import oracle.kubernetes.weblogic.domain.model.InitializeDomainOnPV;
 import oracle.kubernetes.weblogic.domain.model.Model;
 import oracle.kubernetes.weblogic.domain.model.Opss;
-import oracle.kubernetes.weblogic.domain.model.PersistentVolume;
-import oracle.kubernetes.weblogic.domain.model.PersistentVolumeSpec;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -117,9 +114,9 @@ import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTIO
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTOR_JOB;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 import static oracle.kubernetes.operator.ProcessingConstants.JOBWATCHER_COMPONENT_NAME;
+import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD;
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED;
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER;
-import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_NAME;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_FAILED;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.JOB;
 import static oracle.kubernetes.operator.helpers.Matchers.hasEnvVar;
@@ -226,13 +223,17 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
             .withLogLevel(Level.FINE)
             .ignoringLoggedExceptions(ApiException.class));
 
-    testSupport.addToPacket(JOB_POD_NAME, jobPodName);
+    testSupport.addToPacket(JOB_POD, getIntrospectorJobPod());
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
     testSupport.defineResources(domain);
     testSupport.defineResources(cluster);
     testSupport.addComponent(JOBWATCHER_COMPONENT_NAME, JobAwaiterStepFactory.class, new JobAwaiterStepFactoryStub());
 
     TuningParametersStub.setParameter(DOMAIN_PRESENCE_RECHECK_INTERVAL_SECONDS, "2");
+  }
+
+  private V1Pod getIntrospectorJobPod() {
+    return new V1Pod().metadata(new V1ObjectMeta().name(jobPodName));
   }
 
   private static class JobAwaiterStepFactoryStub implements JobAwaiterStepFactory {
@@ -558,13 +559,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     opss.withWalletFileSecret("wfSecret");
     opss.withWalletPasswordSecret("wpSecret");
     return opss;
-  }
-
-  private PersistentVolume createPv() {
-    return new PersistentVolume().metadata(new V1ObjectMeta().name("test-pv"))
-        .spec(new PersistentVolumeSpec().storageClassName("oke-pv")
-            .capacity(Collections.singletonMap("storage", new Quantity("500Gi")))
-            .hostPath(new V1HostPathVolumeSource().path("/shared")));
   }
 
   private List<V1Container> getCreatedPodSpecContainers(List<V1Job> jobs) {
@@ -974,8 +968,14 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   }
 
   private void defineNewIntrospectionResult() {
-    testSupport.getPacket().put(JOB_POD_NAME, jobPodName);
+    testSupport.getPacket().put(JOB_POD, new V1Pod().metadata(new V1ObjectMeta().name(jobPodName))
+        .status(createJobPodStatus()));
     testSupport.definePodLog(jobPodName, NS, SEVERE_MESSAGE);
+  }
+
+  private V1PodStatus createJobPodStatus() {
+    return new V1PodStatus().containerStatuses(
+        Arrays.asList(new V1ContainerStatus().name(UID + "-introspector").ready(true).started(true)));
   }
 
   private void ignoreJobCreatedAndDeletedLogs() {
