@@ -2,11 +2,18 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
+CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=olcne'''
+
 pipeline {
     agent { label 'large' }
     options {
         timeout(time: 1800, unit: 'MINUTES')
         disableConcurrentBuilds()
+    }
+    triggers {
+        // timer trigger for "nightly build"
+        parameterizedCron(env.JOB_NAME == 'wko-ocne-main-nightly' ?
+        CRON_SETTINGS : '')
     }
 
     tools {
