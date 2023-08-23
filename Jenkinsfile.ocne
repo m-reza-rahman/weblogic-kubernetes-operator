@@ -39,7 +39,7 @@ pipeline {
         wkotest_ssh_pubcert = "${WORKSPACE}/.ssh/wkotestkey.pub"
         wkotest_ssh_pk = "${WORKSPACE}/.ssh/wkotestkey"
 
-        OCNE_CLUSTER='true'
+        OCNE='true'
 
         outdir = "${WORKSPACE}/staging"
         result_root = "${outdir}/wl_k8s_test_results"
@@ -100,8 +100,8 @@ pipeline {
         )
 
         string(name: 'NUMBER_OF_THREADS',
-               description: 'Number of threads to run the classes in parallel, default is 3.',
-               defaultValue: "3"
+               description: 'Number of threads to run the classes in parallel, default is 2.',
+               defaultValue: "2"
         )
         string(name: 'WDT_DOWNLOAD_URL',
                description: 'URL to download WDT.',
@@ -390,7 +390,7 @@ EOF
                                     export no_proxy='localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,100.105.4.31'
                                     export PATH=${runtime_path}
                                     export OKE_CLUSTER="false"
-                                    export OCNE_CLUSTER="true"
+                                    export OCNE="true"
                                     export OKD="false"
                                     export KUBECONFIG=${kubeconfig_file}
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
