@@ -39,6 +39,7 @@ import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_IMAGE_TAG
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_JAVA_HOME;
@@ -191,6 +192,8 @@ class ItWlsDomainOnPVSample {
     if (KIND_REPO != null) {
       logger.info("loading image {0} to kind", WEBLOGIC_IMAGE_TO_USE_IN_SPEC);
       imagePush(WEBLOGIC_IMAGE_TO_USE_IN_SPEC);
+      createPVHostPath();
+      changePVHostPathPermission();
     }
 
     execTestScriptAndAssertSuccess("-initial-main", "Failed to run -initial-main");
@@ -232,6 +235,26 @@ class ItWlsDomainOnPVSample {
     assertTrue(success, outStr);
 
     previousTestSuccessful = true;
+  }
+
+  private void createPVHostPath() {
+    String command = WLSIMG_BUILDER_DEFAULT + " exec kind-worker mkdir /shared";
+    Command.withParams(
+        new CommandParams()
+            .command(command)
+            .env(envMap)
+            .redirect(true)
+    ).execute();
+  }
+
+  private void changePVHostPathPermission() {
+    String command = WLSIMG_BUILDER_DEFAULT + " exec kind-worker chmod g+w /shared";
+    Command.withParams(
+        new CommandParams()
+            .command(command)
+            .env(envMap)
+            .redirect(true)
+    ).execute();
   }
 
   /**
