@@ -779,7 +779,7 @@ public class DbUtils {
     replaceStringInFile(operatorYamlDestFile.toString(), "oracle-database-operator-system", namespace);
     replaceStringInFile(operatorYamlDestFile.toString(), "container-registry-secret", TEST_IMAGES_REPO_SECRET_NAME);
     replaceStringInFile(operatorYamlDestFile.toString(),
-        "container-registry.oracle.com/database/operator:0.2.1", DB_OPERATOR_IMAGE);
+        "container-registry.oracle.com/database/operator:1.0.0", DB_OPERATOR_IMAGE);
     replaceStringInFile(operatorYamlDestFile.toString(), "imagePullPolicy: Always", "imagePullPolicy: IfNotPresent");
     createTestRepoSecret(namespace);
     createBaseRepoSecret(namespace);
