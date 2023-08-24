@@ -881,7 +881,7 @@ public class DbUtils {
 
     ConditionFactory withLongRetryPolicy = with().pollDelay(2, SECONDS)
         .and().with().pollInterval(10, SECONDS)
-        .atMost(25, MINUTES).await();
+        .atMost(40, MINUTES).await();
 
     // wait for the pod to be ready
     logger.info("Wait for the database {0} pod to be ready in namespace {1}", dbName, namespace);
