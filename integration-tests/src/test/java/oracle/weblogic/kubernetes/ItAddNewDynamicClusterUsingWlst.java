@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify that server in newly added dynamic cluster is started successfully")
 @IntegrationTest
+//@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("olcne")
 @Tag("oke-gate")
