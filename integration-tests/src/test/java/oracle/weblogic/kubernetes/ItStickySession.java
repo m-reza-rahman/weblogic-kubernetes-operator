@@ -85,9 +85,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 @DisplayName("Test sticky sessions management with Traefik and ClusterService")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
+//@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItStickySession {
 
   // constants for creating domain image using model in image
