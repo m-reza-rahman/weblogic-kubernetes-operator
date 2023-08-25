@@ -85,9 +85,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @DisplayName("Test istio enabled WebLogic Domain in mii model")
 @IntegrationTest
-@Tag("oke-parallel")
+//@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("olcne")
+@Tag("oke-gate")
 class ItIstioMiiDomain {
 
   private static String opNamespace = null;
