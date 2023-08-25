@@ -2051,7 +2051,7 @@ def isSecureModeEnabledForDomain(domain):
     if attributes['SecureModeEnabled']:
       secureModeEnabled = True
   else:
-    secureModeEnabled = domain.isProductionModeEnabled() and not LegalHelper.versionEarlierThan(domain.getDomainVersion(), "14.1.2.0")
+    secureModeEnabled = domain.isProductionModeEnabled() and not LegalHelper.versionEarlierThan(domain.getDomainVersion(), "15.1.2.0")
 
 
   return secureModeEnabled

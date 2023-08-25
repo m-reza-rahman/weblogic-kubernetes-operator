@@ -437,7 +437,7 @@ def isSecureModeEnabledForDomain(model):
     is_production_mode_enabled = False
     if 'ProductionModeEnabled' in topology:
       is_production_mode_enabled = topology['ProductionModeEnabled']
-    secureModeEnabled = is_production_mode_enabled and not env.wlsVersionEarlierThan("14.1.2.0")
+    secureModeEnabled = is_production_mode_enabled and not env.wlsVersionEarlierThan("15.1.2.0")
   return secureModeEnabled
 
 
