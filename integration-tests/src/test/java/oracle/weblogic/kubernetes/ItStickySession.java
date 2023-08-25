@@ -312,6 +312,22 @@ class ItStickySession {
     params.command(cmd2);
     result = Command.withParams(params).executeAndReturnResult();
     logger.info("5. verify that DNS endpoints are exposed returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = "cat /etc/resolv.conf";
+    logger.info("==6. Command to cat /etc/resolv.conf: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("6. cat /etc/resolv.conf returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = "cat /etc/hosts";
+    logger.info("==7. Command to cat /etc/hosts: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("7. cat /etc/hosts returns: {0} {1}", "\n",result.toString());
+
+
   }
 
   private static String createAndVerifyDomainImage() {
