@@ -3,11 +3,14 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
@@ -33,6 +36,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DEFAULT_EXTERNAL_REST_IDE
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HTTP_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.JAVA_LOGGING_LEVEL_VALUE;
+import static oracle.weblogic.kubernetes.TestConstants.LARGE_DOMAIN_TESTING_PROPS_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.LOGSTASH_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -41,6 +45,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createConfigMap;
 import static oracle.weblogic.kubernetes.actions.TestActions.createServiceAccount;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorImageName;
@@ -53,7 +58,6 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.operatorWebho
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNonEmptySystemProperty;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
@@ -73,7 +77,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Create large number of domains, clusters and servers.
+ * Create given number of domains, clusters and servers.
+ * Use properties file at resources/domain/largedomaintesting.props
+ * to configure number of domains, clusters, servers and resource requests
+ * for server pod and operator.
+ * To run the test: mvn -Dit.test=ItLargeMiiDomainsClusters
+ * -pl integration-tests -P integration-tests verify 2>&1  | tee xx
  */
 @DisplayName("Test to create large number of domains, clusters and servers.")
 @IntegrationTest
@@ -84,20 +93,15 @@ class ItLargeMiiDomainsClusters {
   private static final String baseDomainUid = "domain";
   private static final String baseClusterName = "cluster-";
   private static String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
-  private static int numOfDomains = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_DOMAINS", "2"));
-  private static int numOfClusters = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_CLUSTERS", "2"));
-  private static int numOfServersToStart = Integer.valueOf(getNonEmptySystemProperty("NUMBER_OF_SERVERSTOSTART", "2"));
-
-  private static int maxServersInCluster =
-      Integer.valueOf(getNonEmptySystemProperty("MAXIMUM_SERVERS_IN_CLUSTER", "5"));
-
-  private String miiImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
-  private static String opServiceAccount = opNamespace + "-sa";
+  private static int numOfDomains;
+  private static int numOfClusters;
+  private static int numOfServersToStart;
+  private static int maxServersInCluster;
   private static String adminSecretName = "weblogic-credentials";
   private static String encryptionSecretName = "encryptionsecret";
+  private static Properties largeDomainProps = new Properties();
 
   private static LoggingFacade logger = null;
-  final int replicaCount = 2;
 
   /**
    * Install Operator.
@@ -113,6 +117,16 @@ class ItLargeMiiDomainsClusters {
     logger.info("Assign unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     opNamespace = namespaces.get(0);
+
+    // load props file and assign values
+    assertDoesNotThrow(
+        () -> loadLargeDomainProps(), "Failed to load large domain props file");
+    numOfDomains = Integer.valueOf(largeDomainProps.getProperty("NUMBER_OF_DOMAINS", "2"));
+    numOfClusters = Integer.valueOf(largeDomainProps.getProperty("NUMBER_OF_CLUSTERS", "2"));
+    // if NUMBER_OF_SERVERSTOSTART is not in props, uses MAXIMUM_SERVERS_IN_CLUSTER
+    numOfServersToStart = Integer.valueOf(largeDomainProps.getProperty("NUMBER_OF_SERVERSTOSTART",
+        largeDomainProps.getProperty("MAXIMUM_SERVERS_IN_CLUSTER", "2")));
+    maxServersInCluster = Integer.valueOf(largeDomainProps.getProperty("MAXIMUM_SERVERS_IN_CLUSTER", "2"));
 
     logger.info("Assign unique namespaces for Domains");
     domainNamespaces = namespaces.subList(1, numOfDomains + 1);
@@ -130,7 +144,7 @@ class ItLargeMiiDomainsClusters {
   }
 
   /**
-   * Create given number of domains with clusters.
+   * Create given number of domains with clusters and access the console.
    */
   @Test
   @DisplayName("Create n number of domains/clusters")
@@ -167,11 +181,24 @@ class ItLargeMiiDomainsClusters {
 
       // set resource request and limit
       Map<String, Quantity> resourceRequest = new HashMap<>();
+      if (largeDomainProps.containsKey("SERVER_POD_CPU_REQUEST")) {
+        resourceRequest.put("cpu",
+            new Quantity(largeDomainProps.getProperty("SERVER_POD_CPU_REQUEST")));
+      }
+      if (largeDomainProps.containsKey("SERVER_POD_MEM_REQUEST")) {
+        resourceRequest.put("memory",
+            new Quantity(largeDomainProps.getProperty("SERVER_POD_MEM_REQUEST")));
+      }
+
       Map<String, Quantity> resourceLimit = new HashMap<>();
-      resourceRequest.put("cpu", new Quantity("250m"));
-      resourceRequest.put("memory", new Quantity("768Mi"));
-      resourceLimit.put("cpu", new Quantity("2"));
-      resourceLimit.put("memory", new Quantity("2Gi"));
+      if (largeDomainProps.containsKey("SERVER_POD_CPU_LIMIT")) {
+        resourceLimit.put("cpu",
+            new Quantity(largeDomainProps.getProperty("SERVER_POD_CPU_LIMIT")));
+      }
+      if (largeDomainProps.containsKey("SERVER_POD_MEM_LIMIT")) {
+        resourceLimit.put("memory",
+            new Quantity(largeDomainProps.getProperty("SERVER_POD_MEM_LIMIT")));
+      }
 
       domain.getSpec().getServerPod().resources(new V1ResourceRequirements()
           .requests(resourceRequest)
@@ -320,21 +347,31 @@ class ItLargeMiiDomainsClusters {
     secretNameMap.put("name", TEST_IMAGES_REPO_SECRET_NAME);
 
     // operator chart values to override
+    // default cpuRequests is 250m and memoryRequests is 512Mi
     OperatorParams opParams = new OperatorParams()
         .helmParams(opHelmParams)
         .imagePullSecrets(secretNameMap)
         .imagePullPolicy("Always")
         .domainNamespaces(Arrays.asList(domainNamespace))
         .javaLoggingLevel(loggingLevel)
-        .serviceAccount(opServiceAccount)
-        .cpuRequests("250m")
-        .memoryRequests("512Mi")
-        .cpuLimits("1")
-        .memoryLimits("512Mi"); // if cpu and memory resquests are set,
-    // uses default cpuRequests 250m and memoryRequests 512Mi
-    opParams.jvmOptions(" -XshowSettings:vm -XX:MaxRAMPercentage=70"
-        + " -XX:StartFlightRecording=delay=5s,disk=false,dumponexit=true,duration=900s,"
-        + "filename=/tmp/operator_rec.jfr");
+        .serviceAccount(opServiceAccount);
+    if (largeDomainProps.containsKey("OPERATOR_CPU_REQUEST")) {
+      opParams.cpuRequests(largeDomainProps.getProperty("OPERATOR_CPU_REQUEST"));
+    }
+    if (largeDomainProps.containsKey("OPERATOR_MEM_REQUEST")) {
+      opParams.memoryRequests(largeDomainProps.getProperty("OPERATOR_MEM_REQUEST"));
+    }
+    if (largeDomainProps.containsKey("OPERATOR_CPU_LIMIT")) {
+      opParams.cpuLimits(largeDomainProps.getProperty("OPERATOR_CPU_LIMIT"));
+    }
+    if (largeDomainProps.containsKey("OPERATOR_MEM_LIMIT")) {
+      opParams.memoryLimits(largeDomainProps.getProperty("OPERATOR_MEM_LIMIT"));
+    }
+    // below jvmOptions are to record JFR dump, the file will be inside operator pod
+    if (largeDomainProps.containsKey("OPERATOR_JVM_OPTIONS")) {
+      logger.info("Operator JVM Options " + largeDomainProps.getProperty("OPERATOR_JVM_OPTIONS"));
+      opParams.jvmOptions(largeDomainProps.getProperty("OPERATOR_JVM_OPTIONS"));
+    }
 
     if (webhookOnly) {
       opParams.webHookOnly(webhookOnly);
@@ -445,5 +482,10 @@ class ItLargeMiiDomainsClusters {
       setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
     }
     return opParams;
+  }
+
+  private static void loadLargeDomainProps() throws IOException {
+    largeDomainProps.load(new FileInputStream(RESOURCE_DIR
+        + "/domain/" + LARGE_DOMAIN_TESTING_PROPS_FILE));
   }
 }
