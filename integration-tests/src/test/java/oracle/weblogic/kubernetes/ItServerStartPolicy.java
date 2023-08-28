@@ -62,9 +62,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("ServerStartPolicy attribute in different levels in a MII domain")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
+//@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItServerStartPolicy {
 
   private static String domainNamespace = null;
