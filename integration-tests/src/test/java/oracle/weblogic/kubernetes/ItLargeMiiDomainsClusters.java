@@ -81,6 +81,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Use properties file at resources/domain/largedomaintesting.props
  * to configure number of domains, clusters, servers and resource requests
  * for server pod and operator.
+ * If testing for large domain(s), make sure the kubernetes cluster has
+ * sufficient resources.
  * To run the test: mvn -Dit.test=ItLargeMiiDomainsClusters
  * -pl integration-tests -P integration-tests verify 2>&1  | tee xx
  */
@@ -88,7 +90,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 class ItLargeMiiDomainsClusters {
   private static String opNamespace = null;
-  // private static String miiAdminOnlyImage;
   private static List<String> domainNamespaces;
   private static final String baseDomainUid = "domain";
   private static final String baseClusterName = "cluster-";
@@ -132,7 +133,6 @@ class ItLargeMiiDomainsClusters {
     domainNamespaces = namespaces.subList(1, numOfDomains + 1);
 
     // install and verify operator
-    //installAndVerifyOperator(opNamespace, namespaces.subList(1, numOfDomains + 1).toArray(new String[0]));
     HelmParams opHelmParams =
         new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
             .namespace(opNamespace)

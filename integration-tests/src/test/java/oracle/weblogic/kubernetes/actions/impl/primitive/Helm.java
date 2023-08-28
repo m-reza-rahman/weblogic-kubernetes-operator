@@ -195,7 +195,6 @@ public class Helm {
         valuesString.append(String.format(" --set \"%s=%s\"",
             entry.getKey(), entry.getValue().toString()
                 .replaceAll("\\[", "{")
-                //.replaceAll("\\]", "}").replace(" ","")));
                 .replaceAll("\\]", "}")));
 
       }
