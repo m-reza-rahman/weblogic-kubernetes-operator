@@ -340,16 +340,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           divisor:
-                            type: object
-                            properties:
-                              number:
-                                type: number
-                              format:
-                                type: string
-                                enum:
-                                  - DECIMAL_EXPONENT
-                                  - DECIMAL_SI
-                                  - BINARY_SI
+                            type: string
                           resource:
                             type: string
                           containerName:
@@ -533,8 +524,11 @@ openAPIV3Schema:
                     Pod is created. See `kubectl explain pods.spec.serviceAccountName`.
                   type: string
                 podSecurityContext:
-                  description: Pod-level security attributes. See `kubectl explain
-                    pods.spec.securityContext`.
+                  description: 'Pod-level security attributes. See `kubectl
+                          explain pods.spec.podSecurityContext`. Beginning with operator
+                          version 3.4.8, if no value is specified for this field,
+                          the operator will use default content for the pod-level
+                          `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                   properties:
                     runAsUser:
                       type: number
@@ -710,9 +704,12 @@ openAPIV3Schema:
                       type: number
                   type: object
                 containerSecurityContext:
-                  description: Container-level security attributes. Will override
-                    any matching Pod-level attributes. See `kubectl explain
-                    pods.spec.containers.securityContext`.
+                  description: 'Container-level security attributes. Will override
+                          any matching Pod-level attributes. See `kubectl explain
+                          pods.spec.containers.securityContext`. Beginning with operator
+                          version 3.4.8, if no value is specified for this field,
+                          the operator will use default content for container-level
+                          `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                   properties:
                     privileged:
                       type: boolean
@@ -1069,16 +1066,7 @@ openAPIV3Schema:
                                             type: object
                                             properties:
                                               divisor:
-                                                type: object
-                                                properties:
-                                                  number:
-                                                    type: number
-                                                  format:
-                                                    type: string
-                                                    enum:
-                                                      - DECIMAL_EXPONENT
-                                                      - DECIMAL_SI
-                                                      - BINARY_SI
+                                                type: string
                                               resource:
                                                 type: string
                                               containerName:
@@ -1207,16 +1195,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           sizeLimit:
-                            type: object
-                            properties:
-                              number:
-                                type: number
-                              format:
-                                type: string
-                                enum:
-                                  - DECIMAL_EXPONENT
-                                  - DECIMAL_SI
-                                  - BINARY_SI
+                            type: string
                           medium:
                             type: string
                       glusterfs:
@@ -1305,16 +1284,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     divisor:
-                                      type: object
-                                      properties:
-                                        number:
-                                          type: number
-                                        format:
-                                          type: string
-                                          enum:
-                                            - DECIMAL_EXPONENT
-                                            - DECIMAL_SI
-                                            - BINARY_SI
+                                      type: string
                                     resource:
                                       type: string
                                     containerName:
@@ -1602,16 +1572,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               divisor:
-                                type: object
-                                properties:
-                                  number:
-                                    type: number
-                                  format:
-                                    type: string
-                                    enum:
-                                      - DECIMAL_EXPONENT
-                                      - DECIMAL_SI
-                                      - BINARY_SI
+                                type: string
                               resource:
                                 type: string
                               containerName:
@@ -1734,16 +1695,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -1778,16 +1730,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -1895,16 +1838,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -1939,16 +1873,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -1992,16 +1917,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     divisor:
-                                      type: object
-                                      properties:
-                                        number:
-                                          type: number
-                                        format:
-                                          type: string
-                                          enum:
-                                            - DECIMAL_EXPONENT
-                                            - DECIMAL_SI
-                                            - BINARY_SI
+                                      type: string
                                     resource:
                                       type: string
                                     containerName:
@@ -2085,16 +2001,7 @@ openAPIV3Schema:
                                 type: object
                                 properties:
                                   port:
-                                    type: object
-                                    properties:
-                                      intValue:
-                                        type: number
-                                      isInt:
-                                        type: boolean
-                                      strValue:
-                                        type: string
-                                    required:
-                                      - isInt
+                                    x-kubernetes-int-or-string: true
                                   host:
                                     type: string
                                 required:
@@ -2114,16 +2021,7 @@ openAPIV3Schema:
                                   scheme:
                                     type: string
                                   port:
-                                    type: object
-                                    properties:
-                                      intValue:
-                                        type: number
-                                      isInt:
-                                        type: boolean
-                                      strValue:
-                                        type: string
-                                    required:
-                                      - isInt
+                                    x-kubernetes-int-or-string: true
                                   host:
                                     type: string
                                   httpHeaders:
@@ -2147,16 +2045,7 @@ openAPIV3Schema:
                                 type: object
                                 properties:
                                   port:
-                                    type: object
-                                    properties:
-                                      intValue:
-                                        type: number
-                                      isInt:
-                                        type: boolean
-                                      strValue:
-                                        type: string
-                                    required:
-                                      - isInt
+                                    x-kubernetes-int-or-string: true
                                   host:
                                     type: string
                                 required:
@@ -2176,16 +2065,7 @@ openAPIV3Schema:
                                   scheme:
                                     type: string
                                   port:
-                                    type: object
-                                    properties:
-                                      intValue:
-                                        type: number
-                                      isInt:
-                                        type: boolean
-                                      strValue:
-                                        type: string
-                                    required:
-                                      - isInt
+                                    x-kubernetes-int-or-string: true
                                   host:
                                     type: string
                                   httpHeaders:
@@ -2219,16 +2099,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -2263,16 +2134,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -2350,16 +2212,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -2394,16 +2247,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -2511,16 +2355,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -2555,16 +2390,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -2608,16 +2434,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     divisor:
-                                      type: object
-                                      properties:
-                                        number:
-                                          type: number
-                                        format:
-                                          type: string
-                                          enum:
-                                            - DECIMAL_EXPONENT
-                                            - DECIMAL_SI
-                                            - BINARY_SI
+                                      type: string
                                     resource:
                                       type: string
                                     containerName:
@@ -2701,16 +2518,7 @@ openAPIV3Schema:
                                 type: object
                                 properties:
                                   port:
-                                    type: object
-                                    properties:
-                                      intValue:
-                                        type: number
-                                      isInt:
-                                        type: boolean
-                                      strValue:
-                                        type: string
-                                    required:
-                                      - isInt
+                                    x-kubernetes-int-or-string: true
                                   host:
                                     type: string
                                 required:
@@ -2730,16 +2538,7 @@ openAPIV3Schema:
                                   scheme:
                                     type: string
                                   port:
-                                    type: object
-                                    properties:
-                                      intValue:
-                                        type: number
-                                      isInt:
-                                        type: boolean
-                                      strValue:
-                                        type: string
-                                    required:
-                                      - isInt
+                                    x-kubernetes-int-or-string: true
                                   host:
                                     type: string
                                   httpHeaders:
@@ -2763,16 +2562,7 @@ openAPIV3Schema:
                                 type: object
                                 properties:
                                   port:
-                                    type: object
-                                    properties:
-                                      intValue:
-                                        type: number
-                                      isInt:
-                                        type: boolean
-                                      strValue:
-                                        type: string
-                                    required:
-                                      - isInt
+                                    x-kubernetes-int-or-string: true
                                   host:
                                     type: string
                                 required:
@@ -2792,16 +2582,7 @@ openAPIV3Schema:
                                   scheme:
                                     type: string
                                   port:
-                                    type: object
-                                    properties:
-                                      intValue:
-                                        type: number
-                                      isInt:
-                                        type: boolean
-                                      strValue:
-                                        type: string
-                                    required:
-                                      - isInt
+                                    x-kubernetes-int-or-string: true
                                   host:
                                     type: string
                                   httpHeaders:
@@ -2835,16 +2616,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -2879,16 +2651,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -3505,8 +3268,11 @@ openAPIV3Schema:
                       Pod is created. See `kubectl explain pods.spec.serviceAccountName`.
                     type: string
                   podSecurityContext:
-                    description: Pod-level security attributes. See `kubectl
-                      explain pods.spec.securityContext`.
+                    description: 'Pod-level security attributes. See `kubectl
+                            explain pods.spec.podSecurityContext`. Beginning with
+                            operator version 3.4.8, if no value is specified for this
+                            field, the operator will use default content for the pod-level
+                            `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                     type: object
                     properties:
                       runAsUser:
@@ -3685,9 +3451,12 @@ openAPIV3Schema:
                           check is performed.
                         type: number
                   containerSecurityContext:
-                    description: Container-level security attributes. Will override
-                      any matching Pod-level attributes. See `kubectl explain
-                      pods.spec.containers.securityContext`.
+                    description: 'Container-level security attributes. Will
+                            override any matching Pod-level attributes. See `kubectl
+                            explain pods.spec.containers.securityContext`. Beginning
+                            with operator version 3.4.8, if no value is specified
+                            for this field, the operator will use default content
+                            for container-level `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                     type: object
                     properties:
                       privileged:
@@ -4047,16 +3816,7 @@ openAPIV3Schema:
                                               type: object
                                               properties:
                                                 divisor:
-                                                  type: object
-                                                  properties:
-                                                    number:
-                                                      type: number
-                                                    format:
-                                                      type: string
-                                                      enum:
-                                                        - DECIMAL_EXPONENT
-                                                        - DECIMAL_SI
-                                                        - BINARY_SI
+                                                  type: string
                                                 resource:
                                                   type: string
                                                 containerName:
@@ -4185,16 +3945,7 @@ openAPIV3Schema:
                           type: object
                           properties:
                             sizeLimit:
-                              type: object
-                              properties:
-                                number:
-                                  type: number
-                                format:
-                                  type: string
-                                  enum:
-                                    - DECIMAL_EXPONENT
-                                    - DECIMAL_SI
-                                    - BINARY_SI
+                              type: string
                             medium:
                               type: string
                         glusterfs:
@@ -4283,16 +4034,7 @@ openAPIV3Schema:
                                     type: object
                                     properties:
                                       divisor:
-                                        type: object
-                                        properties:
-                                          number:
-                                            type: number
-                                          format:
-                                            type: string
-                                            enum:
-                                              - DECIMAL_EXPONENT
-                                              - DECIMAL_SI
-                                              - BINARY_SI
+                                        type: string
                                       resource:
                                         type: string
                                       containerName:
@@ -4581,16 +4323,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 divisor:
-                                  type: object
-                                  properties:
-                                    number:
-                                      type: number
-                                    format:
-                                      type: string
-                                      enum:
-                                        - DECIMAL_EXPONENT
-                                        - DECIMAL_SI
-                                        - BINARY_SI
+                                  type: string
                                 resource:
                                   type: string
                                 containerName:
@@ -4713,16 +4446,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -4757,16 +4481,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -4874,16 +4589,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -4918,16 +4624,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -4971,16 +4668,7 @@ openAPIV3Schema:
                                     type: object
                                     properties:
                                       divisor:
-                                        type: object
-                                        properties:
-                                          number:
-                                            type: number
-                                          format:
-                                            type: string
-                                            enum:
-                                              - DECIMAL_EXPONENT
-                                              - DECIMAL_SI
-                                              - BINARY_SI
+                                        type: string
                                       resource:
                                         type: string
                                       containerName:
@@ -5064,16 +4752,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -5093,16 +4772,7 @@ openAPIV3Schema:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -5126,16 +4796,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -5155,16 +4816,7 @@ openAPIV3Schema:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -5198,16 +4850,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -5242,16 +4885,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -5329,16 +4963,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -5373,16 +4998,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -5490,16 +5106,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -5534,16 +5141,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -5587,16 +5185,7 @@ openAPIV3Schema:
                                     type: object
                                     properties:
                                       divisor:
-                                        type: object
-                                        properties:
-                                          number:
-                                            type: number
-                                          format:
-                                            type: string
-                                            enum:
-                                              - DECIMAL_EXPONENT
-                                              - DECIMAL_SI
-                                              - BINARY_SI
+                                        type: string
                                       resource:
                                         type: string
                                       containerName:
@@ -5680,16 +5269,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -5709,16 +5289,7 @@ openAPIV3Schema:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -5742,16 +5313,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -5771,16 +5333,7 @@ openAPIV3Schema:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -5814,16 +5367,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -5858,16 +5402,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -6497,8 +6032,11 @@ openAPIV3Schema:
                 See `kubectl explain pods.spec.serviceAccountName`.
               type: string
             podSecurityContext:
-              description: Pod-level security attributes. See `kubectl explain
-                pods.spec.securityContext`.
+              description: 'Pod-level security attributes. See `kubectl explain
+                      pods.spec.podSecurityContext`. Beginning with operator version
+                      3.4.8, if no value is specified for this field, the operator
+                      will use default content for the pod-level `securityContext`.
+                      More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
               properties:
                 runAsUser:
                   type: number
@@ -6671,8 +6209,11 @@ openAPIV3Schema:
                   type: number
               type: object
             containerSecurityContext:
-              description: Container-level security attributes. Will override
-                any matching Pod-level attributes. See `kubectl explain pods.spec.containers.securityContext`.
+              description: 'Container-level security attributes. Will override
+                      any matching Pod-level attributes. See `kubectl explain pods.spec.containers.securityContext`.
+                      Beginning with operator version 3.4.8, if no value is specified
+                      for this field, the operator will use default content for container-level
+                      `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
               properties:
                 privileged:
                   type: boolean
@@ -7028,16 +6569,7 @@ openAPIV3Schema:
                                         type: object
                                         properties:
                                           divisor:
-                                            type: object
-                                            properties:
-                                              number:
-                                                type: number
-                                              format:
-                                                type: string
-                                                enum:
-                                                  - DECIMAL_EXPONENT
-                                                  - DECIMAL_SI
-                                                  - BINARY_SI
+                                            type: string
                                           resource:
                                             type: string
                                           containerName:
@@ -7166,16 +6698,7 @@ openAPIV3Schema:
                     type: object
                     properties:
                       sizeLimit:
-                        type: object
-                        properties:
-                          number:
-                            type: number
-                          format:
-                            type: string
-                            enum:
-                              - DECIMAL_EXPONENT
-                              - DECIMAL_SI
-                              - BINARY_SI
+                        type: string
                       medium:
                         type: string
                   glusterfs:
@@ -7264,16 +6787,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 divisor:
-                                  type: object
-                                  properties:
-                                    number:
-                                      type: number
-                                    format:
-                                      type: string
-                                      enum:
-                                        - DECIMAL_EXPONENT
-                                        - DECIMAL_SI
-                                        - BINARY_SI
+                                  type: string
                                 resource:
                                   type: string
                                 containerName:
@@ -7560,16 +7074,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           divisor:
-                            type: object
-                            properties:
-                              number:
-                                type: number
-                              format:
-                                type: string
-                                enum:
-                                  - DECIMAL_EXPONENT
-                                  - DECIMAL_SI
-                                  - BINARY_SI
+                            type: string
                           resource:
                             type: string
                           containerName:
@@ -7689,16 +7194,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                         required:
@@ -7733,16 +7229,7 @@ openAPIV3Schema:
                           scheme:
                             type: string
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                           httpHeaders:
@@ -7850,16 +7337,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                         required:
@@ -7894,16 +7372,7 @@ openAPIV3Schema:
                           scheme:
                             type: string
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                           httpHeaders:
@@ -7947,16 +7416,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 divisor:
-                                  type: object
-                                  properties:
-                                    number:
-                                      type: number
-                                    format:
-                                      type: string
-                                      enum:
-                                        - DECIMAL_EXPONENT
-                                        - DECIMAL_SI
-                                        - BINARY_SI
+                                  type: string
                                 resource:
                                   type: string
                                 containerName:
@@ -8040,16 +7500,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -8069,16 +7520,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -8102,16 +7544,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -8131,16 +7564,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -8174,16 +7598,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                         required:
@@ -8218,16 +7633,7 @@ openAPIV3Schema:
                           scheme:
                             type: string
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                           httpHeaders:
@@ -8305,16 +7711,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                         required:
@@ -8349,16 +7746,7 @@ openAPIV3Schema:
                           scheme:
                             type: string
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                           httpHeaders:
@@ -8466,16 +7854,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                         required:
@@ -8510,16 +7889,7 @@ openAPIV3Schema:
                           scheme:
                             type: string
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                           httpHeaders:
@@ -8563,16 +7933,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 divisor:
-                                  type: object
-                                  properties:
-                                    number:
-                                      type: number
-                                    format:
-                                      type: string
-                                      enum:
-                                        - DECIMAL_EXPONENT
-                                        - DECIMAL_SI
-                                        - BINARY_SI
+                                  type: string
                                 resource:
                                   type: string
                                 containerName:
@@ -8656,16 +8017,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -8685,16 +8037,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -8718,16 +8061,7 @@ openAPIV3Schema:
                             type: object
                             properties:
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                             required:
@@ -8747,16 +8081,7 @@ openAPIV3Schema:
                               scheme:
                                 type: string
                               port:
-                                type: object
-                                properties:
-                                  intValue:
-                                    type: number
-                                  isInt:
-                                    type: boolean
-                                  strValue:
-                                    type: string
-                                required:
-                                  - isInt
+                                x-kubernetes-int-or-string: true
                               host:
                                 type: string
                               httpHeaders:
@@ -8790,16 +8115,7 @@ openAPIV3Schema:
                         type: object
                         properties:
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                         required:
@@ -8834,16 +8150,7 @@ openAPIV3Schema:
                           scheme:
                             type: string
                           port:
-                            type: object
-                            properties:
-                              intValue:
-                                type: number
-                              isInt:
-                                type: boolean
-                              strValue:
-                                type: string
-                            required:
-                              - isInt
+                            x-kubernetes-int-or-string: true
                           host:
                             type: string
                           httpHeaders:
@@ -9367,8 +8674,11 @@ openAPIV3Schema:
                       Pod is created. See `kubectl explain pods.spec.serviceAccountName`.
                     type: string
                   podSecurityContext:
-                    description: Pod-level security attributes. See `kubectl
-                      explain pods.spec.securityContext`.
+                    description: 'Pod-level security attributes. See `kubectl
+                            explain pods.spec.podSecurityContext`. Beginning with
+                            operator version 3.4.8, if no value is specified for this
+                            field, the operator will use default content for the pod-level
+                            `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                     type: object
                     properties:
                       runAsUser:
@@ -9547,9 +8857,12 @@ openAPIV3Schema:
                           check is performed.
                         type: number
                   containerSecurityContext:
-                    description: Container-level security attributes. Will override
-                      any matching Pod-level attributes. See `kubectl explain
-                      pods.spec.containers.securityContext`.
+                    description: 'Container-level security attributes. Will
+                            override any matching Pod-level attributes. See `kubectl
+                            explain pods.spec.containers.securityContext`. Beginning
+                            with operator version 3.4.8, if no value is specified
+                            for this field, the operator will use default content
+                            for container-level `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                     type: object
                     properties:
                       privileged:
@@ -9909,16 +9222,7 @@ openAPIV3Schema:
                                               type: object
                                               properties:
                                                 divisor:
-                                                  type: object
-                                                  properties:
-                                                    number:
-                                                      type: number
-                                                    format:
-                                                      type: string
-                                                      enum:
-                                                        - DECIMAL_EXPONENT
-                                                        - DECIMAL_SI
-                                                        - BINARY_SI
+                                                  type: string
                                                 resource:
                                                   type: string
                                                 containerName:
@@ -10047,16 +9351,7 @@ openAPIV3Schema:
                           type: object
                           properties:
                             sizeLimit:
-                              type: object
-                              properties:
-                                number:
-                                  type: number
-                                format:
-                                  type: string
-                                  enum:
-                                    - DECIMAL_EXPONENT
-                                    - DECIMAL_SI
-                                    - BINARY_SI
+                              type: string
                             medium:
                               type: string
                         glusterfs:
@@ -10145,16 +9440,7 @@ openAPIV3Schema:
                                     type: object
                                     properties:
                                       divisor:
-                                        type: object
-                                        properties:
-                                          number:
-                                            type: number
-                                          format:
-                                            type: string
-                                            enum:
-                                              - DECIMAL_EXPONENT
-                                              - DECIMAL_SI
-                                              - BINARY_SI
+                                        type: string
                                       resource:
                                         type: string
                                       containerName:
@@ -10443,16 +9729,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 divisor:
-                                  type: object
-                                  properties:
-                                    number:
-                                      type: number
-                                    format:
-                                      type: string
-                                      enum:
-                                        - DECIMAL_EXPONENT
-                                        - DECIMAL_SI
-                                        - BINARY_SI
+                                  type: string
                                 resource:
                                   type: string
                                 containerName:
@@ -10575,16 +9852,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -10619,16 +9887,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -10736,16 +9995,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -10780,16 +10030,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -10833,16 +10074,7 @@ openAPIV3Schema:
                                     type: object
                                     properties:
                                       divisor:
-                                        type: object
-                                        properties:
-                                          number:
-                                            type: number
-                                          format:
-                                            type: string
-                                            enum:
-                                              - DECIMAL_EXPONENT
-                                              - DECIMAL_SI
-                                              - BINARY_SI
+                                        type: string
                                       resource:
                                         type: string
                                       containerName:
@@ -10926,16 +10158,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -10955,16 +10178,7 @@ openAPIV3Schema:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -10988,16 +10202,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -11017,16 +10222,7 @@ openAPIV3Schema:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -11060,16 +10256,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -11104,16 +10291,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -11191,16 +10369,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -11235,16 +10404,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -11352,16 +10512,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -11396,16 +10547,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -11449,16 +10591,7 @@ openAPIV3Schema:
                                     type: object
                                     properties:
                                       divisor:
-                                        type: object
-                                        properties:
-                                          number:
-                                            type: number
-                                          format:
-                                            type: string
-                                            enum:
-                                              - DECIMAL_EXPONENT
-                                              - DECIMAL_SI
-                                              - BINARY_SI
+                                        type: string
                                       resource:
                                         type: string
                                       containerName:
@@ -11542,16 +10675,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -11571,16 +10695,7 @@ openAPIV3Schema:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -11604,16 +10719,7 @@ openAPIV3Schema:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -11633,16 +10739,7 @@ openAPIV3Schema:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                        - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -11676,16 +10773,7 @@ openAPIV3Schema:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -11720,16 +10808,7 @@ openAPIV3Schema:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                    - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:

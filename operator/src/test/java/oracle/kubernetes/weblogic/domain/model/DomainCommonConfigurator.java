@@ -10,6 +10,7 @@ import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.V1Affinity;
 import io.kubernetes.client.openapi.models.V1Container;
+import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -19,6 +20,7 @@ import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Toleration;
 import io.kubernetes.client.openapi.models.V1Volume;
+import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.MIINonDynamicChangesMethod;
 import oracle.kubernetes.operator.ModelInImageDomainType;
@@ -121,6 +123,12 @@ public class DomainCommonConfigurator extends DomainConfigurator {
   @Override
   public DomainConfigurator withEnvironmentVariable(V1EnvVar envVar) {
     getDomainSpec().addEnvironmentVariable(envVar);
+    return this;
+  }
+
+  @Override
+  public DomainConfigurator withEnvFrom(List<V1EnvFromSource> envFromSources) {
+    getDomainSpec().setEnvFrom(envFromSources);
     return this;
   }
 
@@ -421,6 +429,11 @@ public class DomainCommonConfigurator extends DomainConfigurator {
     return this;
   }
 
+  @Override
+  public DomainConfigurator withModel(Model model) {
+    getOrCreateConfiguration().withModel(model);
+    return this;
+  }
 
   @Override
   public DomainConfigurator withOpssWalletPasswordSecret(String secret) {
@@ -431,6 +444,30 @@ public class DomainCommonConfigurator extends DomainConfigurator {
   @Override
   public DomainConfigurator withOpssWalletFileSecret(String secret) {
     getOrCreateOpss().withWalletFileSecret(secret);
+    return this;
+  }
+
+  @Override
+  public DomainConfigurator withInitializeDomainOnPVOpssWalletPasswordSecret(String secret) {
+    getOrCreateInitializeDomainOnPVOpss().withWalletPasswordSecret(secret);
+    return this;
+  }
+
+  @Override
+  public DomainConfigurator withInitializeDomainOnPVOpssWalletFileSecret(String secret) {
+    getOrCreateInitializeDomainOnPVOpss().withWalletFileSecret(secret);
+    return this;
+  }
+
+  @Override
+  public DomainConfigurator withInitializeDomainOnPVType(String type) {
+    getOrCreateInitializeDomainOnPVDomain().domainType(type);
+    return this;
+  }
+
+  @Override
+  public DomainConfigurator withDomainCreationConfigMap(String cm) {
+    getOrCreateInitializeDomainOnPVDomain().domainCreationConfigMap(cm);
     return this;
   }
 
@@ -449,6 +486,22 @@ public class DomainCommonConfigurator extends DomainConfigurator {
   @Override
   public DomainConfigurator withFailureRetryLimitMinutes(long limitMinutes) {
     getDomainSpec().setFailureRetryLimitMinutes(limitMinutes);
+    return this;
+  }
+
+  @Override
+  public DomainConfigurator withInitializeDomainOnPV(InitializeDomainOnPV initializeDomainOnPV) {
+    getOrCreateConfiguration().setInitializeDomainOnPV(initializeDomainOnPV);
+    return this;
+  }
+
+  @Override
+  public DomainConfigurator withConfigurationForInitializeDomainOnPV(
+      InitializeDomainOnPV initializeDomainOnPV, String volumeName, String pvcName, String mountPath) {
+    getOrCreateConfiguration().setInitializeDomainOnPV(initializeDomainOnPV);
+    this.withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME);
+    this.withAdditionalVolumeMount(volumeName, mountPath);
+    this.withAdditionalPvClaimVolume(volumeName, pvcName);
     return this;
   }
 
@@ -476,6 +529,30 @@ public class DomainCommonConfigurator extends DomainConfigurator {
     return configuration.getOpss();   
   }
 
+  private InitializeDomainOnPV getOrCreateInitializeDomainOnPV() {
+    Configuration configuration = getOrCreateConfiguration();
+    if (configuration.getInitializeDomainOnPV() == null) {
+      configuration.setInitializeDomainOnPV(new InitializeDomainOnPV());
+    }
+    return configuration.getInitializeDomainOnPV();
+  }
+
+  private DomainOnPV getOrCreateInitializeDomainOnPVDomain() {
+    InitializeDomainOnPV initializeDomainOnPV = getOrCreateInitializeDomainOnPV();
+    if (initializeDomainOnPV.getDomain() == null) {
+      initializeDomainOnPV.domain(new DomainOnPV());
+    }
+    return initializeDomainOnPV.getDomain();
+  }
+
+  private Opss getOrCreateInitializeDomainOnPVOpss() {
+    DomainOnPV domain = getOrCreateInitializeDomainOnPVDomain();
+    if (domain.getOpss() == null) {
+      domain.opss(new Opss());
+    }
+    return domain.getOpss();
+  }
+
   @Override
   public void setShuttingDown(boolean shuttingDown) {
     configureAdminServer().withServerStartPolicy(shuttingDown ? ServerStartPolicy.NEVER : ServerStartPolicy.ALWAYS);
@@ -501,6 +578,12 @@ public class DomainCommonConfigurator extends DomainConfigurator {
     }
 
     @Override
+    public IntrospectorJobPodConfigurator withEnvFrom(List<V1EnvFromSource> envFromSources) {
+      introspector.setEnvFrom(envFromSources);
+      return this;
+    }
+
+    @Override
     public IntrospectorJobPodConfigurator withRequestRequirement(String resource, String quantity) {
       introspector.addRequestRequirement(resource, quantity);
       return this;
@@ -509,6 +592,12 @@ public class DomainCommonConfigurator extends DomainConfigurator {
     @Override
     public IntrospectorJobPodConfigurator withLimitRequirement(String resource, String quantity) {
       introspector.addLimitRequirement(resource, quantity);
+      return this;
+    }
+
+    @Override
+    public IntrospectorJobPodConfigurator withPodSecurityContext(V1PodSecurityContext podSecurityContext) {
+      introspector.setPodSecurityContext(podSecurityContext);
       return this;
     }
 
@@ -553,6 +642,12 @@ public class DomainCommonConfigurator extends DomainConfigurator {
     @Override
     public ServerConfigurator withEnvironmentVariable(V1EnvVar envVar) {
       server.addEnvironmentVariable(envVar);
+      return this;
+    }
+
+    @Override
+    public ServerConfigurator withEnvFrom(List<V1EnvFromSource> envFromSource) {
+      server.setEnvFrom(envFromSource);
       return this;
     }
 
@@ -742,6 +837,12 @@ public class DomainCommonConfigurator extends DomainConfigurator {
     @Override
     public ClusterConfigurator withEnvironmentVariable(String name, String value) {
       clusterSpec.addEnvironmentVariable(name, value);
+      return this;
+    }
+
+    @Override
+    public ClusterConfigurator withEnvFrom(List<V1EnvFromSource> envFromSources) {
+      clusterSpec.setEnvFrom(envFromSources);
       return this;
     }
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2017, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2023, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #
@@ -133,7 +133,7 @@ if [ "${SERVER_NAME}" = "introspector" ]; then
 else
   # setup ".out" location for a WL server
   serverLogHome="${LOG_HOME:-${DOMAIN_HOME}}"
-  if [ -z ${LOG_HOME_LAYOUT} ] || [ "BY_SERVERS" = ${LOG_HOME_LAYOUT} ] ; then
+  if [ -z ${LOG_HOME} ] || [ "ByServers" = ${LOG_HOME_LAYOUT} ] ; then
     serverLogHome="${serverLogHome}/servers/${SERVER_NAME}/logs"
   fi
   export SERVER_OUT_FILE="${serverLogHome}/${SERVER_NAME}.out"

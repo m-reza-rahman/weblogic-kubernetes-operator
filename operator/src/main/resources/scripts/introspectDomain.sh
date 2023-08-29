@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #
@@ -69,9 +69,25 @@ checkCompatibilityModeInitContainersWithLegacyAuxImages  || exit 1
 #
 # setup MII functions in case this is a MII domain
 #
+if [ ! -z ${INIT_DOMAIN_ON_PV} ] ; then
+  source ${SCRIPTPATH}/createDomainOnPV.sh
+  [ $? -ne 0 ] && trace SEVERE "Error sourcing ${SCRIPTPATH}/createDomainOnPV.sh" && exit 1
+else
+  source ${SCRIPTPATH}/modelInImage.sh
+  [ $? -ne 0 ] && trace SEVERE "Error sourcing ${SCRIPTPATH}/modelInImage.sh" && exit 1
+fi
 
-source ${SCRIPTPATH}/modelInImage.sh
-[ $? -ne 0 ] && trace SEVERE "Error sourcing ${SCRIPTPATH}/modelInImage.sh" && exit 1
+#
+# If JAVA_OPTIONS are specified via config-map, replace the newline and env variables.
+#
+if [[ "${REPLACE_VARIABLES_IN_JAVA_OPTIONS}" == "true" ]]; then
+  replaceEnv "$JAVA_OPTIONS" newJavaOptions true
+  if [[ "${newJavaOptions}" =~ "SEVERE ERROR: " ]]; then
+    echo  "${newJavaOptions}"
+    exit 1
+  fi
+  JAVA_OPTIONS="${newJavaOptions}"
+fi
 
 #
 # setup introspector log file
@@ -173,6 +189,10 @@ doIntrospect() {
     createWLDomain || exit 1
     created_domain=$DOMAIN_CREATED
     trace "Create domain return code = " ${created_domain}
+  elif [ ${DOMAIN_SOURCE_TYPE} == "PersistentVolume" ] && [ ! -z ${INIT_DOMAIN_ON_PV} ]; then
+    # New domain on PV create the domain
+    createDomainOnPVWLDomain
+    created_domain=$DOMAIN_CREATED
   else
     created_domain=1
   fi

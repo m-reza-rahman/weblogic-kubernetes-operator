@@ -89,7 +89,6 @@ import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAnd
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
-import static oracle.weblogic.kubernetes.utils.DbUtils.deleteHostPathProvisioner;
 import static oracle.weblogic.kubernetes.utils.DbUtils.deleteOracleDB;
 import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.uninstallDBOperator;
@@ -204,7 +203,7 @@ class ItIstioDBOperator {
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(fmwDomainNamespace);
     createBaseRepoSecret(wlsDomainNamespace);
-
+    createTestRepoSecret(wlsDomainNamespace);
     // create PV, PVC for logs/data
     createPV(pvName, wlsDomainUid, ItIstioDBOperator.class.getSimpleName());
     createPVC(pvName, pvcName, wlsDomainUid, wlsDomainNamespace);
@@ -406,7 +405,6 @@ class ItIstioDBOperator {
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
-    createTestRepoSecret(wlsDomainNamespace);
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
@@ -585,7 +583,6 @@ class ItIstioDBOperator {
   public void tearDownAll() throws ApiException {
     if (!SKIP_CLEANUP) {
       deleteOracleDB(dbNamespace, dbName);
-      deleteHostPathProvisioner(dbNamespace);
       uninstallDBOperator(dbNamespace);
     }
   }

@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
@@ -25,6 +25,7 @@ import com.meterware.simplestub.Memento;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
+import io.kubernetes.client.openapi.models.V1ConfigMapVolumeSource;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerState;
 import io.kubernetes.client.openapi.models.V1ContainerStateWaiting;
@@ -41,6 +42,8 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
+import io.kubernetes.client.openapi.models.V1Secret;
+import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.common.utils.SchemaConversionUtils;
@@ -72,10 +75,14 @@ import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.ClusterSpec;
 import oracle.kubernetes.weblogic.domain.model.Configuration;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
+import oracle.kubernetes.weblogic.domain.model.DomainCreationImage;
+import oracle.kubernetes.weblogic.domain.model.DomainOnPV;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainTestUtils;
+import oracle.kubernetes.weblogic.domain.model.InitializeDomainOnPV;
 import oracle.kubernetes.weblogic.domain.model.Model;
+import oracle.kubernetes.weblogic.domain.model.Opss;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -107,9 +114,9 @@ import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTIO
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTOR_JOB;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 import static oracle.kubernetes.operator.ProcessingConstants.JOBWATCHER_COMPONENT_NAME;
+import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD;
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED;
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER;
-import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_NAME;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_FAILED;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.JOB;
 import static oracle.kubernetes.operator.helpers.Matchers.hasEnvVar;
@@ -124,11 +131,18 @@ import static oracle.kubernetes.operator.helpers.PodHelperTestBase.createLegacyD
 import static oracle.kubernetes.operator.helpers.PodHelperTestBase.createResources;
 import static oracle.kubernetes.operator.helpers.PodHelperTestBase.getLegacyAuxiliaryImageVolumeName;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONTAINER_NAME;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.OPSS_KEYPASSPHRASE_VOLUME;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.OPSS_KEY_MOUNT_PATH;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.OPSS_WALLETFILE_MOUNT_PATH;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.OPSS_WALLETFILE_VOLUME;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.SECRETS_VOLUME;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.WDTCONFIGMAP_MOUNT_PATH;
 import static oracle.kubernetes.operator.tuning.TuningParameters.DOMAIN_PRESENCE_RECHECK_INTERVAL_SECONDS;
 import static oracle.kubernetes.weblogic.domain.model.AuxiliaryImage.AUXILIARY_IMAGE_DEFAULT_SOURCE_WDT_INSTALL_HOME;
 import static oracle.kubernetes.weblogic.domain.model.AuxiliaryImage.AUXILIARY_IMAGE_INTERNAL_VOLUME_NAME;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionMatcher.hasCondition;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
+import static oracle.kubernetes.weblogic.domain.model.DomainCreationImage.DOMAIN_CREATION_IMAGE_MOUNT_PATH;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.ABORTED;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.INTROSPECTION;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERNETES;
@@ -209,13 +223,17 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
             .withLogLevel(Level.FINE)
             .ignoringLoggedExceptions(ApiException.class));
 
-    testSupport.addToPacket(JOB_POD_NAME, jobPodName);
+    testSupport.addToPacket(JOB_POD, getIntrospectorJobPod());
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
     testSupport.defineResources(domain);
     testSupport.defineResources(cluster);
     testSupport.addComponent(JOBWATCHER_COMPONENT_NAME, JobAwaiterStepFactory.class, new JobAwaiterStepFactoryStub());
 
     TuningParametersStub.setParameter(DOMAIN_PRESENCE_RECHECK_INTERVAL_SECONDS, "2");
+  }
+
+  private V1Pod getIntrospectorJobPod() {
+    return new V1Pod().metadata(new V1ObjectMeta().name(jobPodName));
   }
 
   private static class JobAwaiterStepFactoryStub implements JobAwaiterStepFactory {
@@ -442,6 +460,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageDefined_hasAuxiliaryImageInitContainerVolumeAndMounts() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")));
 
     V1Job job = runStepsAndGetJobs().get(0);
@@ -457,6 +476,89 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     assertThat(getPodTemplateContainers(job).get(0).getVolumeMounts(),
             hasItem(new V1VolumeMount().name(AUXILIARY_IMAGE_INTERNAL_VOLUME_NAME)
                     .mountPath(DEFAULT_AUXILIARY_IMAGE_MOUNT_PATH)));
+  }
+
+  @Test
+  void whenJobCreatedWithInitializeDomainOnPVDefined_hasSecretsVolumeAndMounts() {
+    getConfigurator().withInitializeDomainOnPVOpssWalletFileSecret("wfSecret")
+        .withInitializeDomainOnPVOpssWalletPasswordSecret("wpSecret");
+
+    testSupport.defineResources(createSecret("wpSecret"), createSecret("wfSecret"));
+
+    List<V1Job> jobs = runStepsAndGetJobs();
+    V1Job job = jobs.get(0);
+
+    assertThat(getJobPodSpec(job).getVolumes(),
+        hasItem(new V1Volume().name(SECRETS_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("webLogicCredentialsSecretName").defaultMode(420))));
+    assertThat(getJobPodSpec(job).getVolumes(),
+        hasItem(new V1Volume().name(OPSS_WALLETFILE_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("wfSecret").defaultMode(420).optional(true))));
+    assertThat(getJobPodSpec(job).getVolumes(),
+        hasItem(new V1Volume().name(OPSS_KEYPASSPHRASE_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("wpSecret").defaultMode(420).optional(true))));
+    assertThat(getCreatedPodSpecContainers(jobs).get(0).getVolumeMounts(),
+        hasItem(new V1VolumeMount().name(OPSS_WALLETFILE_VOLUME)
+            .mountPath(OPSS_WALLETFILE_MOUNT_PATH).readOnly(true)));
+    assertThat(getCreatedPodSpecContainers(jobs).get(0).getVolumeMounts(),
+        hasItem(new V1VolumeMount().name(OPSS_KEYPASSPHRASE_VOLUME)
+            .mountPath(OPSS_KEY_MOUNT_PATH).readOnly(true)));
+  }
+
+  private V1Secret createSecret(String name) {
+    return new V1Secret().metadata(new V1ObjectMeta().name(name).namespace(NS));
+  }
+
+  @Test
+  void whenJobCreatedWithoutInitializeDomainOnPVDefined_dontHaveSecretsVolumeAndMounts() {
+    List<V1Job> jobs = runStepsAndGetJobs();
+    V1Job job = jobs.get(0);
+
+    assertThat(getJobPodSpec(job).getVolumes(),
+        hasItem(new V1Volume().name(SECRETS_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("webLogicCredentialsSecretName").defaultMode(420))));
+    assertThat(getJobPodSpec(job).getVolumes(),
+        not(hasItem(new V1Volume().name(OPSS_WALLETFILE_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("wfSecret").defaultMode(420).optional(true)))));
+    assertThat(getJobPodSpec(job).getVolumes(),
+        not(hasItem(new V1Volume().name(OPSS_KEYPASSPHRASE_VOLUME).secret(
+            new V1SecretVolumeSource().secretName("wpSecret").defaultMode(420).optional(true)))));
+    assertThat(getCreatedPodSpecContainers(jobs).get(0).getVolumeMounts(),
+        not(hasItem(new V1VolumeMount().name(OPSS_WALLETFILE_VOLUME)
+            .mountPath(OPSS_WALLETFILE_MOUNT_PATH).readOnly(true))));
+    assertThat(getCreatedPodSpecContainers(jobs).get(0).getVolumeMounts(),
+        not(hasItem(new V1VolumeMount().name(OPSS_KEYPASSPHRASE_VOLUME)
+            .mountPath(OPSS_KEY_MOUNT_PATH).readOnly(true))));
+  }
+
+  @Test
+  void whenJobCreatedWithInitializeDomainOnPVCreateDomainCMDefined_hasConfigMapVolumeAndMounts() {
+    V1ConfigMap cm = new V1ConfigMap().metadata(new V1ObjectMeta().name("initPvDomainCM").namespace(NS));
+    testSupport.defineResources(cm);
+    getConfigurator().withDomainCreationConfigMap("initPvDomainCM");
+
+    List<V1Job> jobs = runStepsAndGetJobs();
+    V1Job job = jobs.get(0);
+
+    assertThat(getJobPodSpec(job).getVolumes(),
+        hasItem(new V1Volume().name("initPvDomainCM-volume").configMap(
+            new V1ConfigMapVolumeSource().name("initPvDomainCM").defaultMode(365))));
+    assertThat(getCreatedPodSpecContainers(jobs).get(0).getVolumeMounts(),
+        hasItem(new V1VolumeMount().name("initPvDomainCM-volume")
+            .mountPath(WDTCONFIGMAP_MOUNT_PATH).readOnly(true)));
+  }
+
+  private DomainOnPV getInitDomain() {
+    DomainOnPV initDomain = new DomainOnPV();
+    initDomain.opss(getOpss());
+    return initDomain;
+  }
+
+  private Opss getOpss() {
+    Opss opss = new Opss();
+    opss.withWalletFileSecret("wfSecret");
+    opss.withWalletPasswordSecret("wpSecret");
+    return opss;
   }
 
   private List<V1Container> getCreatedPodSpecContainers(List<V1Job> jobs) {
@@ -475,9 +577,22 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     return new AuxiliaryImage().image(image);
   }
 
+  @Nonnull
+  private List<DomainCreationImage> getDomainCreationImages(String...images) {
+    List<DomainCreationImage> auxiliaryImageList = new ArrayList<>();
+    Arrays.stream(images).forEach(image -> auxiliaryImageList.add(getDomainCreationImage(image)));
+    return auxiliaryImageList;
+  }
+
+  @Nonnull
+  public static DomainCreationImage getDomainCreationImage(String image) {
+    return new DomainCreationImage().image(image);
+  }
+
   @Test
   void whenJobCreatedWithAuxiliaryImageAndVolumeHavingAuxiliaryImagePath_hasVolumeMountWithAuxiliaryImagePath() {
     DomainConfiguratorFactory.forDomain(domain)
+            .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImageVolumeMountPath(CUSTOM_MOUNT_PATH)
             .withAuxiliaryImages(getAuxiliaryImages("wdt-image:v1"));
 
@@ -490,6 +605,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageVolumeWithMedium_createdJobPodsHasVolumeWithSpecifiedMedium() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImageVolumeMedium("Memory")
             .withAuxiliaryImages(getAuxiliaryImages("wdt-image:v1"));
 
@@ -502,6 +618,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageVolumeWithSizeLimit_createdJobPodsHasVolumeWithSpecifiedSizeLimit() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImageVolumeSizeLimit("100G")
             .withAuxiliaryImages(getAuxiliaryImages());
 
@@ -514,8 +631,9 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageWithImagePullPolicy_createJobPodHasImagePullPolicy() {
     getConfigurator()
-            .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
-                    .imagePullPolicy("Always")));
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
+        .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
+                .imagePullPolicy("Always")));
 
     V1Job job = runStepsAndGetJobs().get(0);
     assertThat(getPodTemplateInitContainers(job),
@@ -526,6 +644,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageWithResourceRequirements_createInitContainerHasResourceRequirements() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
             .imagePullPolicy("Always")))
         .withLimitRequirement("cpu", "250m")
@@ -542,6 +661,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageWithResourceLimits_createInitContainerHasResourceLimits() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
             .imagePullPolicy("Always")))
         .withLimitRequirement("memory", "1Gi");
@@ -556,6 +676,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAuxiliaryImageWithResourceRequests_createInitContainerHasResourceRequests() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
             .imagePullPolicy("Always")))
         .withRequestRequirement("memory", "1Gi");
@@ -570,6 +691,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAIAndCustomSourceWDTInstallHome_createPodWithInitContainerHavingCustomSourceWDTInstallHome() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
                     .sourceWDTInstallHome(CUSTOM_WDT_INSTALL_SOURCE_HOME)));
 
@@ -582,6 +704,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   @Test
   void whenJobCreatedWithAIAndCustomSourceModelHome_createPodWithInitContainerHavingCustomSourceModelHome() {
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
             .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")
                     .sourceModelHome(CUSTOM_MODEL_SOURCE_HOME)));
 
@@ -609,6 +732,26 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     assertThat(getPodTemplateContainers(job).get(0).getVolumeMounts(),
             hasItem(new V1VolumeMount().name(AUXILIARY_IMAGE_INTERNAL_VOLUME_NAME)
                     .mountPath(DEFAULT_AUXILIARY_IMAGE_MOUNT_PATH)));
+  }
+
+  @Test
+  void whenJobCreatedWithMultipleDomainCreationImages_createdJobPodsHasMultipleInitContainers() {
+    getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
+        .withInitializeDomainOnPv(new InitializeDomainOnPV()
+            .domain(new DomainOnPV().domainCreationImages(getDomainCreationImages("wdt-image1:v1", "wdt-image2:v1"))));
+
+    V1Job job = runStepsAndGetJobs().get(0);
+    assertThat(getPodTemplateInitContainers(job),
+        org.hamcrest.Matchers.allOf(
+            Matchers.hasAuxiliaryImageInitContainer(AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX + 1,
+                "wdt-image1:v1", "IfNotPresent"),
+            Matchers.hasAuxiliaryImageInitContainer(AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX + 2,
+                "wdt-image2:v1", "IfNotPresent")));
+    assertThat(getPodTemplateContainers(job).get(0).getVolumeMounts(), hasSize(7));
+    assertThat(getPodTemplateContainers(job).get(0).getVolumeMounts(),
+        hasItem(new V1VolumeMount().name(AUXILIARY_IMAGE_INTERNAL_VOLUME_NAME)
+            .mountPath(DOMAIN_CREATION_IMAGE_MOUNT_PATH)));
   }
 
   @Test
@@ -825,8 +968,14 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   }
 
   private void defineNewIntrospectionResult() {
-    testSupport.getPacket().put(JOB_POD_NAME, jobPodName);
+    testSupport.getPacket().put(JOB_POD, new V1Pod().metadata(new V1ObjectMeta().name(jobPodName))
+        .status(createJobPodStatus()));
     testSupport.definePodLog(jobPodName, NS, SEVERE_MESSAGE);
+  }
+
+  private V1PodStatus createJobPodStatus() {
+    return new V1PodStatus().containerStatuses(
+        Arrays.asList(new V1ContainerStatus().name(UID + "-introspector").ready(true).started(true)));
   }
 
   private void ignoreJobCreatedAndDeletedLogs() {
@@ -961,6 +1110,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     ignoreJobCreatedAndDeletedLogs();
 
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v2")));
 
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
@@ -1029,6 +1179,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     ignoreJobCreatedAndDeletedLogs();
 
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(Collections.singletonList(getAuxiliaryImage("wdt-image:v1")));
 
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
@@ -1060,6 +1211,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     ignoreJobCreatedAndDeletedLogs();
 
     getConfigurator()
+        .withDomainHomeSourceType(DomainSourceType.FROM_MODEL)
         .withAuxiliaryImages(List.of(getAuxiliaryImage("wdt-image1:v1"), getAuxiliaryImage("wdt-image2:v1")));
 
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));

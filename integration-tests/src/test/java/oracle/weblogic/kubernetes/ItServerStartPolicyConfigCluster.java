@@ -65,9 +65,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("ServerStartPolicy attribute in different levels in a MII domain")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItServerStartPolicyConfigCluster {
 
   private static String domainNamespace = null;
@@ -124,12 +124,12 @@ class ItServerStartPolicyConfigCluster {
 
     logger.info("Check admin service/pod {0} is created in namespace {1}",
         adminServerPodName, domainNamespace);
-    checkPodReadyAndServiceExists(adminServerPodName, 
-          domainUid, domainNamespace);
+    checkPodReadyAndServiceExists(adminServerPodName,
+        domainUid, domainNamespace);
 
     for (int i = 1; i <= replicaCount; i++) {
-      checkPodReadyAndServiceExists(managedServerPrefix + i, 
-                domainUid, domainNamespace);
+      checkPodReadyAndServiceExists(managedServerPrefix + i,
+          domainUid, domainNamespace);
     }
 
     // Check configured cluster configuration is available
@@ -147,15 +147,16 @@ class ItServerStartPolicyConfigCluster {
           "Could not find standalone managed server from configured cluster");
       logger.info("Found standalone managed server configuration");
     } else {
+      // Check configured cluster configuration is available 
       boolean isServerConfigured
-          = checkManagedServerConfiguration(ingressHost, "config-cluster-server1", domainNamespace, adminServerPodName);
+          = checkManagedServerConfiguration("config-cluster-server1", domainNamespace, adminServerPodName);
       assertTrue(isServerConfigured,
           "Could not find managed server from configured cluster");
       logger.info("Found managed server from configured cluster");
 
       // Check standalone server configuration is available 
       boolean isStandaloneServerConfigured
-          = checkManagedServerConfiguration(ingressHost, "standalone-managed", domainNamespace, adminServerPodName);
+          = checkManagedServerConfiguration("standalone-managed", domainNamespace, adminServerPodName);
       assertTrue(isStandaloneServerConfigured,
           "Could not find standalone managed server from configured cluster");
       logger.info("Found standalone managed server configuration");

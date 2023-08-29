@@ -42,6 +42,8 @@ import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_IMAGE;
 import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_MAX_CLUSTER_CONCURRENT_SHUTDOWN;
 import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_MAX_CLUSTER_CONCURRENT_START_UP;
 import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_MAX_CLUSTER_UNAVAILABLE;
+import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_REPLACE_VARIABLES_IN_JAVA_OPTIONS;
+import static oracle.kubernetes.weblogic.domain.model.Model.DEFAULT_AUXILIARY_IMAGE_MOUNT_PATH;
 import static oracle.kubernetes.weblogic.domain.model.Model.DEFAULT_WDT_INSTALL_HOME;
 import static oracle.kubernetes.weblogic.domain.model.Model.DEFAULT_WDT_MODEL_HOME;
 
@@ -127,7 +129,6 @@ public class DomainSpec extends BaseConfiguration {
         + "`ByServers` specifies that domain log files and `introspector.out` are at the `logHome` root level, "
         + "all other files are organized under the respective server name logs directory  "
         + "`logHome/servers/<server name>/logs`. Defaults to `ByServers`.")
-  @Default(strDefault = "ByServers")
   private LogHomeLayoutType logHomeLayout = LogHomeLayoutType.BY_SERVERS;
 
 
@@ -157,6 +158,15 @@ public class DomainSpec extends BaseConfiguration {
       + "Defaults to true.")
   @Default(boolDefault = true)
   private Boolean includeServerOutInPodLog;
+
+  /** Whether to replace the environment variables in the Java options when JAVA_OPTIONS specified using config-map.
+   * Default is false.
+   */
+  @Description("Specifies whether the operator will replace the environment variables in the Java options "
+      + "in certain situations, such as when the JAVA_OPTIONS are specified using a config map. "
+      + "Defaults to false.")
+  @Default(boolDefault = false)
+  private Boolean replaceVariablesInJavaOptions;
 
   /** Whether to include the server HTTP access log file to the  directory specified in {@link #logHome}
    *  if {@link #logHomeEnabled} is true. Default is true. */
@@ -555,6 +565,15 @@ public class DomainSpec extends BaseConfiguration {
   }
 
   /**
+   * Whether to replace environment variables in Java options such as when JAVA_OPTIONS specified using config map.
+   *
+   * @return true if environment variables should be replaced, false otherwise.
+   */
+  public boolean getReplaceVariablesInJavaOptions() {
+    return Optional.ofNullable(replaceVariablesInJavaOptions).orElse(DEFAULT_REPLACE_VARIABLES_IN_JAVA_OPTIONS);
+  }
+
+  /**
    * Domain home.
    *
    * @since 2.0
@@ -566,6 +585,10 @@ public class DomainSpec extends BaseConfiguration {
 
   public void setLivenessProbeCustomScript(String livenessProbeCustomScript) {
     this.livenessProbeCustomScript = livenessProbeCustomScript;
+  }
+
+  public void setReplaceVariablesInJavaOptions(boolean replaceVariablesInJavaOptions) {
+    this.replaceVariablesInJavaOptions = replaceVariablesInJavaOptions;
   }
 
   @Nullable
@@ -887,8 +910,26 @@ public class DomainSpec extends BaseConfiguration {
   }
 
   String getOpssWalletPasswordSecret() {
+    return isInitializeDomainOnPV()
+        ? getInitializeDomainOnPVOpssWalletPasswordSecret()
+        : getModelOpssWalletPasswordSecret();
+  }
+
+  String getModelOpssWalletPasswordSecret() {
     return Optional.ofNullable(configuration)
         .map(Configuration::getOpss)
+        .map(Opss::getWalletPasswordSecret)
+        .orElse(null);
+  }
+
+  boolean isInitializeDomainOnPV() {
+    return DomainSourceType.PERSISTENT_VOLUME == (getDomainHomeSourceType()) && getInitializeDomainOnPV() != null;
+  }
+
+  String getInitializeDomainOnPVOpssWalletPasswordSecret() {
+    return Optional.ofNullable(getInitializeDomainOnPV())
+        .map(InitializeDomainOnPV::getDomain)
+        .map(DomainOnPV::getOpss)
         .map(Opss::getWalletPasswordSecret)
         .orElse(null);
   }
@@ -898,9 +939,28 @@ public class DomainSpec extends BaseConfiguration {
    * @return wallet file secret
    */
   public String getOpssWalletFileSecret() {
+    return isInitializeDomainOnPV() ? getInitializeDomainOnPVOpssWalletFileSecret() : getModelOpssWalletFileSecret();
+  }
+
+  private String getModelOpssWalletFileSecret() {
     return Optional.ofNullable(configuration)
         .map(Configuration::getOpss)
         .map(Opss::getWalletFileSecret)
+        .orElse(null);
+  }
+
+  private String getInitializeDomainOnPVOpssWalletFileSecret() {
+    return Optional.ofNullable(getInitializeDomainOnPV())
+        .map(InitializeDomainOnPV::getDomain)
+        .map(DomainOnPV::getOpss)
+        .map(Opss::getWalletFileSecret)
+        .orElse(null);
+  }
+
+  String getInitializeDomainOnPVDomainType() {
+    return Optional.ofNullable(getInitializeDomainOnPV())
+        .map(InitializeDomainOnPV::getDomain)
+        .map(DomainOnPV::getDomainType)
         .orElse(null);
   }
 
@@ -916,10 +976,18 @@ public class DomainSpec extends BaseConfiguration {
    * @return config map name
    */
   public String getWdtConfigMap() {
-    return Optional.ofNullable(configuration)
-        .map(Configuration::getModel)
-        .map(Model::getConfigMap)
-        .orElse(null);
+    if (isInitializeDomainOnPV()) {
+      return Optional.ofNullable(configuration)
+          .map(Configuration::getInitializeDomainOnPV)
+          .map(InitializeDomainOnPV::getDomain)
+          .map(DomainOnPV::getDomainCreationConfigMap)
+          .orElse(null);
+    } else {
+      return Optional.ofNullable(configuration)
+          .map(Configuration::getModel)
+          .map(Model::getConfigMap)
+          .orElse(null);
+    }
   }
 
   /**
@@ -978,9 +1046,27 @@ public class DomainSpec extends BaseConfiguration {
         .map(Configuration::getModel).map(Model::getAuxiliaryImages).orElse(null);
   }
 
+  InitializeDomainOnPV getInitializeDomainOnPV() {
+    return Optional.ofNullable(configuration)
+        .map(Configuration::getInitializeDomainOnPV).orElse(null);
+  }
+
+  List<DomainCreationImage> getPVDomainCreationImages() {
+    return Optional.ofNullable(getInitializeDomainOnPV()).map(InitializeDomainOnPV::getDomain)
+        .map(DomainOnPV::getDomainCreationImages).orElse(null);
+  }
+
+  String getDomainCreationConfigMap() {
+    return Optional.ofNullable(getInitializeDomainOnPV())
+        .map(InitializeDomainOnPV::getDomain)
+        .map(DomainOnPV::getDomainCreationConfigMap)
+        .orElse(null);
+  }
+
   String getAuxiliaryImageVolumeMountPath() {
     return Optional.ofNullable(configuration)
-        .map(Configuration::getModel).map(Model::getAuxiliaryImageVolumeMountPath).orElse(null);
+        .map(Configuration::getModel).map(Model::getAuxiliaryImageVolumeMountPath)
+        .orElse(DEFAULT_AUXILIARY_IMAGE_MOUNT_PATH);
   }
 
   String getAuxiliaryImageVolumeMedium() {
@@ -1020,7 +1106,8 @@ public class DomainSpec extends BaseConfiguration {
             .append("replicas", replicas)
             .append("serverStartPolicy", serverStartPolicy)
             .append("webLogicCredentialsSecret", webLogicCredentialsSecret)
-            .append("fluentdSpecification", fluentdSpecification);
+            .append("fluentdSpecification", fluentdSpecification)
+            .append("replaceVariablesInJavaOptions", replaceVariablesInJavaOptions);
 
     return builder.toString();
   }
@@ -1052,7 +1139,8 @@ public class DomainSpec extends BaseConfiguration {
             .append(replicas)
             .append(serverStartPolicy)
             .append(webLogicCredentialsSecret)
-            .append(fluentdSpecification);
+            .append(fluentdSpecification)
+            .append(replaceVariablesInJavaOptions);
 
     return builder.toHashCode();
   }
@@ -1092,7 +1180,8 @@ public class DomainSpec extends BaseConfiguration {
             .append(getMaxClusterConcurrentStartup(), rhs.getMaxClusterConcurrentStartup())
             .append(getMaxClusterConcurrentShutdown(), rhs.getMaxClusterConcurrentShutdown())
             .append(getMaxClusterUnavailable(), rhs.getMaxClusterUnavailable())
-            .append(fluentdSpecification, rhs.getFluentdSpecification());
+            .append(fluentdSpecification, rhs.getFluentdSpecification())
+            .append(replaceVariablesInJavaOptions, rhs.replaceVariablesInJavaOptions);
     return builder.isEquals();
   }
 
@@ -1163,6 +1252,14 @@ public class DomainSpec extends BaseConfiguration {
 
   long getFailureRetryLimitMinutes() {
     return Optional.ofNullable(failureRetryLimitMinutes).orElse(DEFAULT_RETRY_LIMIT_MINUTES);
+  }
+
+  public boolean hasMiiOpssConfigured() {
+    return getModelOpssWalletPasswordSecret() != null || getModelOpssWalletFileSecret() != null;
+  }
+  
+  public boolean isModelConfigured() {
+    return Optional.ofNullable(configuration).map(Configuration::getModel).orElse(null) != null;
   }
 
   class CommonEffectiveConfigurationFactory implements EffectiveConfigurationFactory {

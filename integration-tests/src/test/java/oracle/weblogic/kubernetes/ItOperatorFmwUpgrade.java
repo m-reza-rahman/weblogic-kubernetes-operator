@@ -94,7 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Tests to upgrade Operator with FMW domain in PV using WLST")
 @IntegrationTest
-@Tag("kind-sequential")
+@Tag("kind-upgrade")
 class ItOperatorFmwUpgrade {
 
   private static String opNamespace = null;
@@ -203,41 +203,57 @@ class ItOperatorFmwUpgrade {
   }
 
   /**
-   * Operator upgrade from 3.4.3 to current with a FMW Domain.
+   * Operator upgrade from 3.4.5 to current with a FMW Domain.
    */
   @Test
-  @DisplayName("Upgrade Operator from 3.4.3 to current")
-  void testOperatorFmwUpgradeFrom343ToCurrent() {
-    installAndUpgradeOperator("3.4.3", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 3.4.5 to current")
+  void testOperatorFmwUpgradeFrom345ToCurrent() {
+    installAndUpgradeOperator("3.4.5", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 3.4.4 to current with a FMW Domain.
+   * Operator upgrade from 3.4.6 to current with a FMW Domain.
    */
   @Test
-  @DisplayName("Upgrade Operator from 3.4.4 to current")
-  void testOperatorFmwUpgradeFrom344ToCurrent() {
-    installAndUpgradeOperator("3.4.4", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 3.4.6 to current")
+  void testOperatorFmwUpgradeFrom346ToCurrent() {
+    installAndUpgradeOperator("3.4.6", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 4.0.3 to current with a FMW Domain.
+   * Operator upgrade from 4.0.7 to current with a FMW Domain.
    */
-  @Tag("oke-sequential")
   @Test
-  @DisplayName("Upgrade Operator from 4.0.3 to current")
-  void testOperatorFmwUpgradeFrom403ToCurrent() {
-    installAndUpgradeOperator("4.0.3", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 4.0.7 to current")
+  void testOperatorFmwUpgradeFrom407ToCurrent() {
+    installAndUpgradeOperator("4.0.7", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 4.0.4 to current with a FMW Domain.
+   * Operator upgrade from 4.0.8 to current with a FMW Domain.
    */
-  @Tag("oke-sequential")
   @Test
-  @DisplayName("Upgrade Operator from 4.0.4 to current")
-  void testOperatorFmwUpgradeFrom404ToCurrent() {
-    installAndUpgradeOperator("4.0.4", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 4.0.8 to current")
+  void testOperatorFmwUpgradeFrom408ToCurrent() {
+    installAndUpgradeOperator("4.0.8", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  }
+
+  /**
+   * Operator upgrade from 4.1.0 to current with a FMW Domain.
+   */
+  @Test
+  @DisplayName("Upgrade Operator from 4.1.0 to current")
+  void testOperatorFmwUpgradeFrom410ToCurrent() {
+    installAndUpgradeOperator("4.1.0", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  }
+
+  /**
+   * Operator upgrade from 4.1.1 to current with a FMW Domain.
+   */
+  @Test
+  @DisplayName("Upgrade Operator from 4.1.1 to current")
+  void testOperatorFmwUpgradeFrom411ToCurrent() {
+    installAndUpgradeOperator("4.1.1", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   private void installAndUpgradeOperator(

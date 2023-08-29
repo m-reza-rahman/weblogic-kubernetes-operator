@@ -1,4 +1,4 @@
-# Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2017, 2023, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 set -o pipefail
@@ -505,6 +505,27 @@ getWebLogicVersion()
   echo ${wlver:-"9999.9999.9999.9999"}
 }
 
+# getDomainVersion
+#   parse wl domain version from config.xml
+getDomainVersion()
+{
+  local config_file=$DOMAIN_HOME/config/config.xml
+
+  [ ! -f $config_file ] && echo "9999.9999.9999.9999" && return
+
+  local domainver="`grep 'domain-version' $config_file \
+               | sed -ne '/domain-version/{s/.*<domain-version>\(.*\)<\/domain-version>.*/\1/p;q;}'`"
+
+  echo ${domainver:-"9999.9999.9999.9999"}
+}
+
+# getMajorVersion
+#   parse wl major version from a full version number
+getMajorVersion()
+{
+  local major_ver="`echo ${1} | sed  's/\([0-9]*\.[0-9]*\).*$/\1/'`"
+  echo ${major_ver}
+}
 
 # checkWebLogicVersion
 #   check if the WL version is supported by the Operator
@@ -821,4 +842,54 @@ checkCompatibilityModeInitContainersWithLegacyAuxImages() {
       && return 1
   done
   return 0
+}
+
+#
+# escape_for_sed:
+#   purpose: Helper function for replaceEnv function to escape the string value for 'sed' command.
+escape_for_sed() {
+  local string="$1"
+  string="${string//\\/\\\\}"
+  string="${string//&/\\&}"
+  string="${string//\//\\/}"
+  string="${string//\$/\\$}"
+  string="${string//\!/\\!}"
+  string="${string//\'/\\\'}"
+  string="${string//\"/\\\"}"
+  echo "$string"
+}
+
+#
+# replaceEnv:
+#   purpose: replace a set of k8s style env variables ($()) provided and newline characters in a string
+# $1 - String value to replace the env variables and newline.
+# $2 - Retrun value containing the cluster resource name.
+# $3 - Specifies if the function is called from introspector script.
+#
+replaceEnv() {
+  local text=$1
+  local __result=$2
+  local isIntrospector=$3
+  local __retVal=""
+
+  text=$(echo $text | sed -r "s/\\n/ /")
+  matches=$(echo $text | grep -oP '\$\(.*?\)' )
+  __retVal="$text"
+  for match in $matches; do
+    name=${match:2:-1}
+    in_env=$(env | cut -d '=' -f 1 | grep "^$name$" | wc -l)
+    value=$(escape_for_sed ${!name})
+    match=$(echo $match | sed -r "s/\\(/\\\\(/")
+    match=$(echo $match | sed -r "s/\\)/\\\\)/")
+    if [ $in_env -gt 0 ] ; then
+      __retVal=$(echo "$__retVal" | sed -r "s/\\$match/${value}/")
+    else
+      if [[ "${isIntrospector}" == "true" ]]; then
+        __retVal=$(echo "$__retVal" | sed -r "s/\\$match/\\\\$match/")
+      else
+        __retVal="SEVERE ERROR: ''$name'' specified in the ''JAVA_OPTIONS'' is not in the list of environment variables."
+      fi
+    fi
+  done
+  eval $__result="'${__retVal}'"
 }

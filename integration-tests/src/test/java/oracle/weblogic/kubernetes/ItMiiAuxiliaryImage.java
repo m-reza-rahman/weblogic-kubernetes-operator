@@ -32,6 +32,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_FAILED_TYPE;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
@@ -43,7 +44,6 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
-import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_TEST_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -57,7 +57,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deleteConfigMap;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.actions.TestActions.now;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.listConfigMaps;
@@ -70,7 +69,7 @@ import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createPushAux
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceDoesNotExist;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfig;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfigViaAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfiguration;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -115,10 +114,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("toolkits-srg")
 @Tag("okd-wls-srg")
+@Tag("oke-gate")
 class ItMiiAuxiliaryImage {
 
   private static String domainNamespace = null;
@@ -306,7 +305,7 @@ class ItMiiAuxiliaryImage {
     // create stage dir for auxiliary image
     Path aiPath = Paths.get(RESULTS_ROOT,
         ItMiiAuxiliaryImage.class.getSimpleName(), "ai"
-            + miiAuxiliaryImage1.substring(miiAuxiliaryImage1.length() - 1));
+        + miiAuxiliaryImage1.substring(miiAuxiliaryImage1.length() - 1));
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(aiPath.toFile()),
         "Delete directory failed");
     assertDoesNotThrow(() -> Files.createDirectories(aiPath),
@@ -321,7 +320,6 @@ class ItMiiAuxiliaryImage {
         Paths.get(MODEL_DIR, "multi-model-one-ds.20.yaml"),
         Paths.get(modelsPath.toString(), "multi-model-one-ds.20.yaml"),
         StandardCopyOption.REPLACE_EXISTING), "Copy files failed");
-
 
     // create stage dir for auxiliary image with image3
     // replace DataSource URL info in the  model file
@@ -339,8 +337,8 @@ class ItMiiAuxiliaryImage {
     modelList.add(modelsPath + "/multi-model-one-ds.20.yaml");
 
     // create image3 with model and wdt installation files
-    WitParams witParams =
-        new WitParams()
+    WitParams witParams
+        = new WitParams()
             .modelImageName(MII_AUXILIARY_IMAGE_NAME)
             .modelImageTag(miiAuxiliaryImage3Tag)
             .modelFiles(modelList)
@@ -356,38 +354,35 @@ class ItMiiAuxiliaryImage {
     } else {
       //create router for admin service on OKD
       if (adminSvcExtHostDomain1 == null) {
-        adminSvcExtHostDomain1 = createRouteForOKD(getExternalServicePodName(adminServerPodNameDomain1), 
+        adminSvcExtHostDomain1 = createRouteForOKD(getExternalServicePodName(adminServerPodNameDomain1),
             domainNamespace);
         logger.info("admin svc host = {0}", adminSvcExtHostDomain1);
       }
 
       // check configuration for DataSource in the running domain
-      int adminServiceNodePort
-          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodNameDomain1), "default");
-      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-      assertTrue(checkSystemResourceConfig(adminSvcExtHostDomain1, adminServiceNodePort,
+      assertTrue(checkSystemResourceConfigViaAdminPod(adminServerPodNameDomain1, domainNamespace,
           "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
           "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
           "Can't find expected URL configuration for DataSource");
 
       logger.info("Found the DataResource configuration");
+
+      // get the map with server pods and their original creation timestamps
+      Map<String, OffsetDateTime> podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace, adminServerPodNameDomain1,
+          managedServerPrefixDomain1, replicaCount);
+
+      patchDomainWithAuxiliaryImageAndVerify(miiAuxiliaryImage1,
+          miiAuxiliaryImage3,
+          domainUid1, domainNamespace, replicaCount);
+
+      // verify the server pods are rolling restarted and back to ready state
+      logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
+          domainUid1, domainNamespace);
+      assertTrue(verifyRollingRestartOccurred(podsWithTimeStamps, 1, domainNamespace),
+          String.format("Rolling restart failed for domain %s in namespace %s", domainUid1, domainNamespace));
+
+      checkConfiguredJDBCresouce(domainNamespace, adminServerPodNameDomain1, adminSvcExtHostDomain1);
     }
-
-    // get the map with server pods and their original creation timestamps
-    Map<String, OffsetDateTime> podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace, adminServerPodNameDomain1,
-        managedServerPrefixDomain1, replicaCount);
-
-    patchDomainWithAuxiliaryImageAndVerify(miiAuxiliaryImage1,
-        miiAuxiliaryImage3,
-        domainUid1, domainNamespace, replicaCount);
-
-    // verify the server pods are rolling restarted and back to ready state
-    logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
-        domainUid1, domainNamespace);
-    assertTrue(verifyRollingRestartOccurred(podsWithTimeStamps, 1, domainNamespace),
-        String.format("Rolling restart failed for domain %s in namespace %s", domainUid1, domainNamespace));
-
-    checkConfiguredJDBCresouce(domainNamespace, adminServerPodNameDomain1, adminSvcExtHostDomain1);
   }
 
   /**
@@ -417,7 +412,7 @@ class ItMiiAuxiliaryImage {
     String imageTag = getDateAndTimeStamp();
     String imageUpdate = KIND_REPO != null ? KIND_REPO
         + (WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag).substring(TestConstants.BASE_IMAGES_REPO.length() + 1)
-        : TEST_IMAGES_REPO + "/" + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag;
+        : DOMAIN_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag;
     imageTag(imageName, imageUpdate);
     imageRepoLoginAndPushImageToRegistry(imageUpdate);
 
@@ -951,17 +946,13 @@ class ItMiiAuxiliaryImage {
         domainUid, miiAuxiliaryImage1, miiAuxiliaryImage4, domainNamespace);
     createDomainAndVerify(domainUid, domainCR1, domainNamespace,
         adminServerPodName, managedServerPrefix, replicaCount);
-
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+   
     
-    
-    if (LOADBALANCER_ACCESS_ONLY) {            
+    if (LOADBALANCER_ACCESS_ONLY) {
       createTraefikIngressRoutingRules(domainNamespace, domainUid);
     }
 
-    assertFalse(checkSystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort, "JMSSystemResources",
+    assertFalse(checkSystemResourceConfiguration(adminServerPodName, domainNamespace, "JMSSystemResources",
         "TestClusterJmsModule2", "200"), "Model files from second AI are not ignored");
   }
 
@@ -1220,19 +1211,19 @@ class ItMiiAuxiliaryImage {
     List<String> modelList = new ArrayList<>();
     modelList.add(MODEL_DIR + "/multi-model-one-ds.20.yaml");
     modelList.add(MODEL_DIR + "/" + MII_BASIC_WDT_MODEL_FILE);
-    WitParams witParams =
-        new WitParams()
+    WitParams witParams
+        = new WitParams()
             .modelImageName(MII_AUXILIARY_IMAGE_NAME)
             .modelImageTag(miiAuxiliaryImage9Tag)
             .modelArchiveFiles(archiveList)
             .modelFiles(modelList)
             .wdtVersion("NONE");
-    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME,miiAuxiliaryImage9Tag, witParams);
+    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImage9Tag, witParams);
 
     // create second auxiliary image with older wdt installation files only
     logger.info("Create Auxiliary image with older wdt installation {0}", WDT_TEST_VERSION);
-    witParams =
-        new WitParams()
+    witParams
+        = new WitParams()
             .modelImageName(MII_AUXILIARY_IMAGE_NAME)
             .modelImageTag(miiAuxiliaryImage10Tag)
             .wdtVersion(WDT_TEST_VERSION);
@@ -1241,12 +1232,12 @@ class ItMiiAuxiliaryImage {
     // create third auxiliary image with newest wdt installation files only
     logger.info("Create AUX IMAGE with latest wdt installation");
     logger.info("Create Auxiliary image with latest wdt installation");
-    witParams =
-        new WitParams()
+    witParams
+        = new WitParams()
             .modelImageName(MII_AUXILIARY_IMAGE_NAME)
             .modelImageTag(miiAuxiliaryImage11Tag)
             .wdtVersion("latest");
-    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME,miiAuxiliaryImage11Tag, witParams);
+    createAndPushAuxiliaryImage(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImage11Tag, witParams);
 
     // create domain custom resource using 2 auxiliary images ( image1, image2)
     logger.info("Creating domain custom resource with domainUid {0} and auxiliary images {1} {2}",
@@ -1266,33 +1257,17 @@ class ItMiiAuxiliaryImage {
     //create router for admin service on OKD in wdtDomainNamespace
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), wdtDomainNamespace);
     logger.info("admin svc host = {0}", adminSvcExtHost);
-    
-    if (LOADBALANCER_ACCESS_ONLY) {
-      createTraefikIngressRoutingRules(wdtDomainNamespace, domainUid);
-    }
 
-    // check configuration for DataSource in the running domain
-    if (LOADBALANCER_ACCESS_ONLY) {
-      testUntil(
-          () -> PCAUtils
-              .checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-                  "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"), logger, "jdbc url to match{0}",
-          "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
-    } else {
-      int adminServiceNodePort
-          = getServiceNodePort(wdtDomainNamespace, getExternalServicePodName(adminServerPodName), "default");
-      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-      testUntil(
-          () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
-              "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-              "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
-          logger,
-          "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} has the right value",
-          adminSvcExtHost,
-          adminServiceNodePort,
-          "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams");
-      logger.info("Found the DataResource configuration");
-    }
+    testUntil(
+        () -> checkSystemResourceConfigViaAdminPod(adminServerPodName, wdtDomainNamespace,
+            "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+            "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
+        logger,
+        "Checking for adminServerPodName: {0} in namespace : {1} if resourceName: {2} has the right value",
+        adminServerPodName,
+        wdtDomainNamespace,
+        "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams");
+    logger.info("Found the DataResource configuration");
     //check WDT version in the image equals the  provided WDT_TEST_VERSION
     assertDoesNotThrow(() -> {
       String wdtVersion = checkWDTVersion(wdtDomainNamespace,
@@ -1312,32 +1287,22 @@ class ItMiiAuxiliaryImage {
       String wdtVersion = checkWDTVersion(wdtDomainNamespace, adminServerPodName,
           "/aux", this.getClass().getSimpleName());
       logger.info("(after patch) Returned WDT Version {0}", wdtVersion);
-      assertNotEquals("WebLogic Deploy Tooling " + WDT_TEST_VERSION,wdtVersion,
+      assertNotEquals("WebLogic Deploy Tooling " + WDT_TEST_VERSION, wdtVersion,
           " Used WDT in the auxiliary image was not updated");
     }, "Can't retrieve wdt version file "
         + "or wdt was not updated after patching with auxiliary image");
 
     // check configuration for DataSource in the running domain
-    if (LOADBALANCER_ACCESS_ONLY) {
-      testUntil(
-          () -> PCAUtils
-              .checkSystemResourceConfigByValue("JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-                  "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"), logger, "jdbc url to match{0}",
-          "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB");
-    } else {
-      int adminServiceNodePort = -1;
-      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-      testUntil(
-          () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
-              "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
-              "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
-          logger,
-          "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} has the right value",
-          adminSvcExtHost,
-          adminServiceNodePort,
-          "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams");
-      logger.info("Found the DataResource configuration");
-    }
+    testUntil(
+        () -> checkSystemResourceConfigViaAdminPod(adminServerPodName, wdtDomainNamespace,
+            "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
+            "jdbc:oracle:thin:@\\/\\/xxx.xxx.x.xxx:1521\\/ORCLCDB"),
+        logger,
+        "Checking for adminServerPodName: {0} in namespace: {1} if resourceName: {2} has the right value",
+        adminServerPodName,
+        wdtDomainNamespace,
+        "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams");
+    logger.info("Found the DataResource configuration");
 
   }
 

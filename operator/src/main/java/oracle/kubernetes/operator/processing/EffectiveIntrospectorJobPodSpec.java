@@ -5,7 +5,9 @@ package oracle.kubernetes.operator.processing;
 
 import java.util.List;
 
+import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1PodSecurityContext;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 
 public interface EffectiveIntrospectorJobPodSpec {
@@ -16,5 +18,14 @@ public interface EffectiveIntrospectorJobPodSpec {
    */
   List<V1EnvVar> getEnv();
 
+  /**
+   * Returns the source of the environment variables to be defined for the introspector job pod.
+   *
+   * @return a list of sources for the environment variables
+   */
+  List<V1EnvFromSource> getEnvFrom();
+
   V1ResourceRequirements getResources();
+
+  V1PodSecurityContext getPodSecurityContext();
 }

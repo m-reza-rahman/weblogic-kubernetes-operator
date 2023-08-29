@@ -79,9 +79,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify shutdown rules when shutdown properties are defined at different levels")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItPodsShutdownOption {
 
   private static String domainNamespace = null;

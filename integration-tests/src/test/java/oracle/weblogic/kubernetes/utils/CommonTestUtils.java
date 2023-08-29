@@ -143,6 +143,7 @@ public class CommonTestUtils {
   public static ConditionFactory withLongRetryPolicy = createStandardRetryPolicyWithAtMost(15);
 
   private static final String TMP_FILE_NAME = "temp-download-file.out";
+  private static int adminListenPort = 7001;
 
   /**
    * Create a condition factory with custom values for pollDelay, pollInterval and atMost time.
@@ -581,13 +582,13 @@ public class CommonTestUtils {
       String password,
       boolean expectValid) {
 
-    verifyCredentials(null, podName, namespace, username, password, expectValid);
+    verifyCredentials(adminListenPort, podName, namespace, username, password, expectValid);
   }
 
   /**
    * Check that the given credentials are valid to access the WebLogic domain.
    *
-   * @param host this is only for OKD - ingress host to access the service
+   * @param port listen port of admin server
    * @param podName name of the admin server pod
    * @param namespace name of the namespace that the pod is running in
    * @param username WebLogic admin username
@@ -595,7 +596,7 @@ public class CommonTestUtils {
    * @param expectValid true if the check expects a successful result
    */
   public static void verifyCredentials(
-      String host,
+      int port,
       String podName,
       String namespace,
       String username,
@@ -605,13 +606,12 @@ public class CommonTestUtils {
     LoggingFacade logger = getLogger();
     String msg = expectValid ? "valid" : "invalid";
     logger.info("Check if the given WebLogic admin credentials are {0}", msg);
-    String finalHost = host != null ? host : K8S_NODEPORT_HOST;
-    logger.info("finalHost = {0}", finalHost);
+
     testUntil(
         withQuickRetryPolicy,
         assertDoesNotThrow(
-          expectValid ? () -> credentialsValid(finalHost, podName, namespace, username, password, args)
-              : () -> credentialsNotValid(finalHost, podName, namespace, username, password, args),
+          expectValid ? () -> credentialsValid(port, podName, namespace, username, password, args)
+              : () -> credentialsNotValid(port, podName, namespace, username, password, args),
           String.format(
             "Failed to validate credentials %s/%s on pod %s in namespace %s",
             username, password, podName, namespace)),
@@ -664,6 +664,46 @@ public class CommonTestUtils {
         .append(" -o /dev/null ")
         .append(" -w %{http_code});")
         .append("echo ${status}");
+    logger.info("checkSystemResource: curl command {0}", new String(curlString));
+    return Command
+        .withParams(new CommandParams()
+            .command(curlString.toString()))
+        .executeAndVerify(expectedStatusCode);
+  }
+
+  /**
+   * Check the system resource configuration using REST API.
+   * @param adminServerPodName admin pod name
+   * @param namespace admin pod namespace
+   * @param resourcesType type of the resource
+   * @param resourcesName name of the resource
+   * @param expectedStatusCode expected status code
+   * @return true if results matches expected status code
+   */
+  public static boolean checkSystemResourceConfiguration(String adminServerPodName, String namespace,
+                                                         String resourcesType,
+                                                         String resourcesName, String expectedStatusCode) {
+    final LoggingFacade logger = getLogger();
+    String protocol = "http";
+    String port = "7001";
+
+    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
+        .append(" -- /bin/bash -c \"")
+        .append("curl -k --user ")
+        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" " + protocol + "://")
+        .append(adminServerPodName + ":" + port)
+        .append("/management/weblogic/latest/domainConfig")
+        .append("/")
+        .append(resourcesType)
+        .append("/")
+        .append(resourcesName)
+        .append("/")
+        .append(" --silent --show-error ")
+        .append(" -o /dev/null ")
+        .append(" -w %{http_code}")
+        .append(" && echo ${status}")
+        .append(" \"");
     logger.info("checkSystemResource: curl command {0}", new String(curlString));
     return Command
         .withParams(new CommandParams()
@@ -743,6 +783,37 @@ public class CommonTestUtils {
 
   /**
    * Check the system resource configuration using REST API.
+   * @param adminServerPodName admin server pod name
+   * @param namespace admin server pod namespace
+   * @param resourcesPath path of the resource
+   * @param expectedValue expected value returned in the REST call
+   * @return true if the REST API results matches expected status code
+   */
+  public static boolean checkSystemResourceConfigViaAdminPod(String adminServerPodName, String namespace,
+                                                  String resourcesPath, String expectedValue) {
+    final LoggingFacade logger = getLogger();
+
+    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n "
+        + namespace + " " + adminServerPodName)
+        .append(" -- /bin/bash -c \"")
+        .append("curl --user ")
+        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" http://" + adminServerPodName + ":" + adminListenPort)
+        .append("/management/weblogic/latest/domainConfig")
+        .append("/")
+        .append(resourcesPath)
+        .append("/")
+        .append(" \"");
+
+    logger.info("checkSystemResource: curl command {0}", new String(curlString));
+    return Command
+        .withParams(new CommandParams()
+            .command(curlString.toString()))
+        .executeAndVerify(expectedValue);
+  }
+
+  /**
+   * Check the system resource configuration using REST API.
    * @param adminSvcExtHost Used only in OKD env - this is the route host created for AS external service
    * @param nodePort admin node port
    * @param expectedValue expected value returned in the REST call
@@ -769,26 +840,27 @@ public class CommonTestUtils {
 
   /**
    * Check the system resource runtime using REST API.
-   * @param adminSvcExtHost Used only in OKD env - this is the route host created for AS external service
-   * @param nodePort admin node port
+   * @param adminServerPodName admin server pod name
+   * @param namespace admin pod namespace
    * @param resourcesUrl url of the resource
    * @param expectedValue expected value returned in the REST call
    * @return true if the REST API results matches expected value
    */
-  public static boolean checkSystemResourceRuntime(String adminSvcExtHost, int nodePort,
+  public static boolean checkSystemResourceRuntime(String adminServerPodName, String namespace,
                                             String resourcesUrl, String expectedValue) {
     final LoggingFacade logger = getLogger();
 
-    String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + nodePort;
-    logger.info("hostAndPort = {0} ", hostAndPort);
-
-    StringBuffer curlString = new StringBuffer("curl --user ");
-    curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + hostAndPort)
+    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n "
+        + namespace + " " + adminServerPodName)
+        .append(" -- /bin/bash -c \"")
+        .append("curl --user ")
+        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" http://" + adminServerPodName + ":" + adminListenPort)
         .append("/management/weblogic/latest/domainRuntime")
         .append("/")
         .append(resourcesUrl)
-        .append("/");
+        .append("/")
+        .append(" \"");
 
     logger.info("checkSystemResource: curl command {0} expectedValue {1}", new String(curlString), expectedValue);
     return Command
@@ -811,10 +883,43 @@ public class CommonTestUtils {
     StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
     javacCmd.append(namespace);
     javacCmd.append(" -it ");
+    javacCmd.append(" -c weblogic-server ");
     javacCmd.append(podName);
     javacCmd.append(" -- /bin/bash -c \"");
     javacCmd.append("javac -cp ");
     javacCmd.append(jarLocation);
+    javacCmd.append(" ");
+    javacCmd.append(destLocation);
+    javacCmd.append(" \"");
+    logger.info("javac command {0}", javacCmd.toString());
+    ExecResult result = assertDoesNotThrow(
+        () -> exec(new String(javacCmd), true));
+    logger.info("javac returned {0}", result.toString());
+    logger.info("javac returned EXIT value {0}", result.exitValue());
+    assertEquals(0, result.exitValue(), "Client compilation fails");
+  }
+
+  /**
+   * Compile java class inside the pod.
+   * @param podName name of the pod
+   * @param namespace name of namespace
+   * @param destLocation location of java class
+   * @param extraclasspath location of java class
+   */
+  public static void runJavacInsidePod(String podName, String namespace, String destLocation, String extraclasspath) {
+    final LoggingFacade logger = getLogger();
+
+    String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
+    StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    javacCmd.append(namespace);
+    javacCmd.append(" -it ");
+    javacCmd.append(" -c weblogic-server ");
+    javacCmd.append(podName);
+    javacCmd.append(" -- /bin/bash -c \"");
+    javacCmd.append("javac -cp ");
+    javacCmd.append(jarLocation);
+    javacCmd.append(":");
+    javacCmd.append(extraclasspath);
     javacCmd.append(" ");
     javacCmd.append(destLocation);
     javacCmd.append(" \"");
@@ -844,6 +949,7 @@ public class CommonTestUtils {
     StringBuffer javapCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
     javapCmd.append(namespace);
     javapCmd.append(" -it ");
+    javapCmd.append(" -c weblogic-server ");
     javapCmd.append(podName);
     javapCmd.append(" -- /bin/bash -c \"");
     javapCmd.append("java -cp ");
@@ -864,6 +970,53 @@ public class CommonTestUtils {
       logger.info("java returned {0}", result.toString());
       logger.info("java returned EXIT value {0}", result.exitValue());
       return ((result.exitValue() == 0));
+    });
+  }
+
+  /**
+   * Run java client inside the pod using weblogic.jar.
+   *
+   * @param podName    name of the pod
+   * @param namespace  name of the namespace
+   * @param javaClientLocation location(path) of java class
+   * @param javaClientClass java class name
+   * @param expectedResult expected result
+   * @param args       arguments to the java command
+   * @return true if the client ran successfully
+   */
+  public static Callable<Boolean> runClientInsidePodVerifyResult(String podName,
+                                                                 String namespace,
+                                                                 String javaClientLocation,
+                                                                 String javaClientClass,
+                                                                 String expectedResult,
+                                                                 String... args) {
+    final LoggingFacade logger = getLogger();
+
+    String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
+    StringBuffer javapCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    javapCmd.append(namespace);
+    javapCmd.append(" -it ");
+    javapCmd.append(" -c weblogic-server ");
+    javapCmd.append(podName);
+    javapCmd.append(" -- /bin/bash -c \"");
+    javapCmd.append("java -cp ");
+    javapCmd.append(jarLocation);
+    javapCmd.append(":");
+    javapCmd.append(javaClientLocation);
+    javapCmd.append(" ");
+    javapCmd.append(javaClientClass);
+    javapCmd.append(" ");
+    for (String arg:args) {
+      javapCmd.append(arg).append(" ");
+    }
+    javapCmd.append(" \"");
+    logger.info("java command to be run {0}", javapCmd.toString());
+
+    return (() -> {
+      ExecResult result = assertDoesNotThrow(() -> exec(javapCmd.toString(), true));
+      logger.info("java returned {0}", result.toString());
+      logger.info("java returned EXIT value {0}", result.exitValue());
+      return ((result.exitValue() == 0 && result.stdout().contains(expectedResult)));
     });
   }
 
@@ -1257,13 +1410,15 @@ public class CommonTestUtils {
 
     // verify WebLogic console is accessible before port forwarding using ingress port
     String consoleUrl = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
+
     boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
     assertTrue(checkConsole, "Failed to access WebLogic console");
     logger.info("WebLogic console is accessible");
 
+
     // forwarding admin port to a local port
     String localhost = "localhost";
-    String forwardedPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
+    String forwardedPort = startPortForwardProcess(localhost, domainNamespace, domainUid, adminListenPort);
     assertNotNull(forwardedPort, "port-forward command fails to assign local port");
     logger.info("Forwarded local port is {0}", forwardedPort);
 
@@ -1374,7 +1529,8 @@ public class CommonTestUtils {
     ExecResult result = null;
 
     // create a WebLogic container
-    String createContainerCmd = new StringBuffer(WLSIMG_BUILDER + " run -d -p 7001:7001 --name=")
+    String createContainerCmd = new StringBuffer(WLSIMG_BUILDER + " run -d -p "
+        + adminListenPort + ":" + adminListenPort + " --name=")
         .append(containerName)
         .append(" --network=host ")
         //.append(" --add-host=host.docker.internal:host-gateway ")
@@ -1556,7 +1712,7 @@ public class CommonTestUtils {
    * @param adminSvcExtHost admin server external host
    * @param resourceType resource type
    * @param resourceName resource name
-   * @param expectedValue
+   * @param expectedValue expected value
    *
    */
   public static void verifyConfiguredSystemResource(String domainNamespace, String adminServerPodName,
@@ -1570,12 +1726,12 @@ public class CommonTestUtils {
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
     testUntil(
-        () -> checkSystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort, resourceType,
+        () -> checkSystemResourceConfiguration(adminServerPodName, domainNamespace, resourceType,
             resourceName, expectedValue),
         logger,
-        "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} exists",
-        adminSvcExtHost,
-        adminServiceNodePort,
+        "Checking for adminServerPodName: {0} in domainNamespace: {1} if resourceName: {2} exists",
+        adminServerPodName,
+        domainNamespace,
         resourceName);
     logger.info("Found the " + resourceType + " configuration");
   }
@@ -1595,13 +1751,13 @@ public class CommonTestUtils {
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
     testUntil(
-        () -> checkSystemResourceConfig(adminSvcExtHost, adminServiceNodePort,
+        () -> checkSystemResourceConfigViaAdminPod(adminServerPodName, domainNamespace,
             resourcePath,
             expectedValue),
         logger,
-        "Checking for adminSvcExtHost: {0} or adminServiceNodePort: {1} if resourceName: {2} has the right value",
-        adminSvcExtHost,
-        adminServiceNodePort,
+        "Checking for adminSvcPod: {0} in namespace: {1} if resourceName: {2} has the right value",
+        adminServerPodName,
+        domainNamespace,
         resourcePath);
     logger.info("Found the " + resourcePath + " configuration");
   }
@@ -1666,6 +1822,75 @@ public class CommonTestUtils {
       propertyValue += "/";
     }
     return propertyValue;
+  }
+
+  /**
+   * Given a repo and tenancy name, determine the prefix length.  For example,
+   * phx.ocir.io/foobar/test-images/myimage will treat phx.ocir.io/foobar/ as
+   * the prefix so the length is 19.
+   *
+   * @param baseRepo    base repo name
+   * @param baseTenancy base tenancy name
+   * @return prefix length to strip when converting to internal repository name
+   */
+  public static int getBaseImagesPrefixLength(String baseRepo, String baseTenancy) {
+    int result = 0;
+
+    if (baseRepo != null && baseRepo.length() > 0) {
+      // +1 for the trailing slash
+      result += baseRepo.length() + 1;
+
+      if (!baseRepo.equalsIgnoreCase("container-registry.oracle.com")) {
+        if (baseTenancy != null && baseTenancy.length() > 0) {
+          // +1 for the trailing slash
+          result += baseTenancy.length() + 1;
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the image name.
+   *
+   * @param kindRepo      the kind repo value
+   * @param imageName     the image name
+   * @param imageTag      the image tag
+   * @param prefixLength  the prefix length of the image name
+   * @return the image name and tag
+   */
+  public static String getKindRepoImageForSpec(String kindRepo, String imageName, String imageTag, int prefixLength) {
+    String result = imageName + ":" + imageTag;
+    if (kindRepo != null && kindRepo.length() > 0) {
+      String imageNoPrefix = result.substring(prefixLength);
+      if (kindRepo.endsWith("/")) {
+        kindRepo = kindRepo.substring(0, kindRepo.length() - 1);
+      }
+      result = kindRepo + "/" + imageNoPrefix;
+    }
+    return result;
+  }
+
+  /**
+   * Another helper method to deal with the complexities of initializing test constants.
+   *
+   * @param repo    the domain repo
+   * @param tenancy the test tenancy
+   * @return the domain prefix
+   */
+  public static String getDomainImagePrefix(String repo, String tenancy) {
+    if (repo != null && repo.length() > 0) {
+      if (repo.endsWith("/")) {
+        repo = repo.substring(0, repo.length() - 1);
+      }
+
+      if (repo.endsWith(".com") || tenancy == null || tenancy.isEmpty()) {
+        repo += "/";
+      } else {
+        repo += "/" + tenancy + "/";
+      }
+    }
+    return repo;
   }
 
   /**
@@ -1770,5 +1995,22 @@ public class CommonTestUtils {
       default:
         return "";
     }
+  }
+
+  /**
+   * Get the image repo from an image name.
+   * @param imageName the image name
+   * @return image repo
+   */
+  public static String getImageRepoFromImageName(String imageName) {
+    String imageRepo = null;
+    if (imageName != null && imageName.contains("/")) {
+      getLogger().info("Getting image repo from imageName {0}", imageName);
+      int indexOfSlash = imageName.indexOf("/");
+      imageRepo = imageName.substring(0, indexOfSlash);
+    } else {
+      getLogger().info("Can not get the image repo from imageName {0}", imageName);
+    }
+    return imageRepo;
   }
 }

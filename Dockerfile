@@ -1,16 +1,11 @@
 # Copyright (c) 2017, 2023, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 #
-# HOW TO BUILD AND PUSH THIS IMAGE
-# -----------------------
-# Run:
-#      $ ./buildAndPushImage.sh -t <image-name>
-#
 # -------------------------
 FROM ghcr.io/oracle/oraclelinux:9-slim AS jre-build
 
-ENV JAVA_URL_X64="https://download.java.net/java/GA/jdk20/bdc68b4b9cbc4ebcb30745c85038d91d/36/GPL/openjdk-20_linux-x64_bin.tar.gz"
-ENV JAVA_URL_AARCH64="https://download.java.net/java/GA/jdk20/bdc68b4b9cbc4ebcb30745c85038d91d/36/GPL/openjdk-20_linux-aarch64_bin.tar.gz"
+ENV JAVA_URL_X64="https://download.oracle.com/java/17/archive/jdk-17.0.8_linux-x64_bin.tar.gz"
+ENV JAVA_URL_AARCH64="https://download.oracle.com/java/17/archive/jdk-17.0.8_linux-aarch64_bin.tar.gz"
 
 RUN set -eux; \
     microdnf -y install gzip tar; \
@@ -20,10 +15,10 @@ RUN set -eux; \
     else \
       JAVA_URL=$JAVA_URL_AARCH64; \
     fi; \
-    curl -fL -o /jdk.tar.gz "$JAVA_URL"; \
+    curl -fL -o jdk.tar.gz "$JAVA_URL"; \
     mkdir -p /jdk; \
-    tar --extract --file /jdk.tar.gz --directory /jdk --strip-components 1; \
-    /jdk/bin/jlink --verbose --compress 2 --strip-java-debug-attributes --no-header-files --no-man-pages --output jre --add-modules java.base,java.desktop,java.instrument,java.management,java.naming,java.net.http,java.sql,jdk.attach,jdk.jdi,jdk.unsupported,jdk.crypto.ec,jdk.zipfs
+    tar --extract --file jdk.tar.gz --directory /jdk --strip-components 1; \
+    /jdk/bin/jlink --verbose --compress 2 --strip-java-debug-attributes --no-header-files --no-man-pages --output jre --add-modules java.base,java.desktop,java.instrument,java.management,java.naming,java.net.http,java.sql,jdk.attach,jdk.jdi,jdk.unsupported,jdk.crypto.ec,jdk.zipfs,jdk.jcmd,jdk.management.agent,jdk.management.jfr,jdk.jfr
 
 FROM ghcr.io/oracle/oraclelinux:9-slim
 

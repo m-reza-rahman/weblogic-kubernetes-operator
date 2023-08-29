@@ -619,9 +619,9 @@ spec:
       jsonPath: .spec.dbPort
       name: DB Port
       type: integer
-    - description: SCAN Name
-      jsonPath: .spec.scanName
-      name: SCAN Name
+    - description: ' string of the tnsalias'
+      jsonPath: .spec.dbTnsurl
+      name: TNS STRING
       type: string
     - description: Replicas
       jsonPath: .spec.replicas
@@ -688,11 +688,45 @@ spec:
               cdbName:
                 description: Name of the CDB
                 type: string
+              cdbTlsCrt:
+                properties:
+                  secret:
+                    description: CDBSecret defines the secretName
+                    properties:
+                      key:
+                        type: string
+                      secretName:
+                        type: string
+                    required:
+                    - key
+                    - secretName
+                    type: object
+                required:
+                - secret
+                type: object
+              cdbTlsKey:
+                properties:
+                  secret:
+                    description: CDBSecret defines the secretName
+                    properties:
+                      key:
+                        type: string
+                      secretName:
+                        type: string
+                    required:
+                    - key
+                    - secretName
+                    type: object
+                required:
+                - secret
+                type: object
               dbPort:
                 description: DB server port
                 type: integer
               dbServer:
                 description: Name of the DB server
+                type: string
+              dbTnsurl:
                 type: string
               nodeSelector:
                 additionalProperties:
@@ -734,9 +768,6 @@ spec:
               replicas:
                 description: Number of ORDS Containers to create
                 type: integer
-              scanName:
-                description: SCAN Name
-                type: string
               serviceName:
                 description: Name of the CDB Service
                 type: string
@@ -807,6 +838,135 @@ spec:
             required:
             - phase
             - status
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.6.1
+  creationTimestamp: null
+  name: dataguardbrokers.database.oracle.com
+spec:
+  group: database.oracle.com
+  names:
+    kind: DataguardBroker
+    listKind: DataguardBrokerList
+    plural: dataguardbrokers
+    singular: dataguardbroker
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.primaryDatabase
+      name: Primary
+      type: string
+    - jsonPath: .status.standbyDatabases
+      name: Standbys
+      type: string
+    - jsonPath: .spec.protectionMode
+      name: Protection Mode
+      type: string
+    - jsonPath: .status.clusterConnectString
+      name: Cluster Connect Str
+      priority: 1
+      type: string
+    - jsonPath: .status.externalConnectString
+      name: Connect Str
+      type: string
+    - jsonPath: .spec.primaryDatabaseRef
+      name: Primary Database
+      priority: 1
+      type: string
+    - jsonPath: .status.status
+      name: Status
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: DataguardBroker is the Schema for the dataguardbrokers API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: DataguardBrokerSpec defines the desired state of DataguardBroker
+            properties:
+              fastStartFailOver:
+                properties:
+                  enable:
+                    type: boolean
+                  strategy:
+                    items:
+                      description: FSFO strategy
+                      properties:
+                        sourceDatabaseRef:
+                          type: string
+                        targetDatabaseRefs:
+                          type: string
+                      type: object
+                    type: array
+                type: object
+              loadBalancer:
+                type: boolean
+              nodeSelector:
+                additionalProperties:
+                  type: string
+                type: object
+              primaryDatabaseRef:
+                type: string
+              protectionMode:
+                enum:
+                - MaxPerformance
+                - MaxAvailability
+                type: string
+              serviceAnnotations:
+                additionalProperties:
+                  type: string
+                type: object
+              setAsPrimaryDatabase:
+                type: string
+              standbyDatabaseRefs:
+                items:
+                  type: string
+                type: array
+            required:
+            - primaryDatabaseRef
+            - protectionMode
+            - standbyDatabaseRefs
+            type: object
+          status:
+            description: DataguardBrokerStatus defines the observed state of DataguardBroker
+            properties:
+              clusterConnectString:
+                type: string
+              externalConnectString:
+                type: string
+              primaryDatabase:
+                type: string
+              primaryDatabaseRef:
+                type: string
+              protectionMode:
+                type: string
+              standbyDatabases:
+                type: string
+              status:
+                type: string
             type: object
         type: object
     served: true
@@ -1282,7 +1442,7 @@ spec:
   - additionalPrinterColumns:
     - description: The connect string to be used
       jsonPath: .status.connString
-      name: Connect String
+      name: Connect_String
       type: string
     - description: Name of the CDB
       jsonPath: .spec.cdbName
@@ -1416,6 +1576,54 @@ spec:
                 - OPEN
                 - CLOSE
                 type: string
+              pdbTlsCat:
+                properties:
+                  secret:
+                    description: PDBSecret defines the secretName
+                    properties:
+                      key:
+                        type: string
+                      secretName:
+                        type: string
+                    required:
+                    - key
+                    - secretName
+                    type: object
+                required:
+                - secret
+                type: object
+              pdbTlsCrt:
+                properties:
+                  secret:
+                    description: PDBSecret defines the secretName
+                    properties:
+                      key:
+                        type: string
+                      secretName:
+                        type: string
+                    required:
+                    - key
+                    - secretName
+                    type: object
+                required:
+                - secret
+                type: object
+              pdbTlsKey:
+                properties:
+                  secret:
+                    description: PDBSecret defines the secretName
+                    properties:
+                      key:
+                        type: string
+                      secretName:
+                        type: string
+                    required:
+                    - key
+                    - secretName
+                    type: object
+                required:
+                - secret
+                type: object
               reuseTempFile:
                 description: Whether to reuse temp file
                 type: boolean
@@ -1836,7 +2044,7 @@ spec:
                 type: object
               conditions:
                 items:
-                  description: "Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, type FooStatus struct{     // Represents the observations of a foo's current state.     // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type     // +patchStrategy=merge     // +listType=map     // +listMapKey=type     Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"` \n     // other fields }"
+                  description: "Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, \n \ttype FooStatus struct{ \t    // Represents the observations of a foo's current state. \t    // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\" \t    // +patchMergeKey=type \t    // +patchStrategy=merge \t    // +listType=map \t    // +listMapKey=type \t    Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"` \n \t    // other fields \t}"
                   properties:
                     lastTransitionTime:
                       description: lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
@@ -1936,12 +2144,15 @@ spec:
     - jsonPath: .status.edition
       name: Edition
       type: string
+    - jsonPath: .status.sid
+      name: Sid
+      priority: 1
+      type: string
     - jsonPath: .status.status
       name: Status
       type: string
     - jsonPath: .status.role
       name: Role
-      priority: 1
       type: string
     - jsonPath: .status.releaseUpdate
       name: Version
@@ -1951,6 +2162,13 @@ spec:
       type: string
     - jsonPath: .status.pdbConnectString
       name: Pdb Connect Str
+      priority: 1
+      type: string
+    - jsonPath: .status.tcpsConnectString
+      name: TCPS Connect Str
+      type: string
+    - jsonPath: .status.tcpsPdbConnectString
+      name: TCPS Pdb Connect Str
       priority: 1
       type: string
     - jsonPath: .status.oemExpressUrl
@@ -1991,12 +2209,19 @@ spec:
                 type: string
               cloneFrom:
                 type: string
+              createAsStandby:
+                type: boolean
+              dgBrokerConfigured:
+                type: boolean
               edition:
                 enum:
                 - standard
                 - enterprise
                 - express
+                - free
                 type: string
+              enableTCPS:
+                type: boolean
               flashBack:
                 type: boolean
               forceLog:
@@ -2027,6 +2252,8 @@ spec:
                   sgaTarget:
                     type: integer
                 type: object
+              listenerPort:
+                type: integer
               loadBalancer:
                 type: boolean
               nodeSelector:
@@ -2052,6 +2279,8 @@ spec:
                   volumeName:
                     type: string
                 type: object
+              primaryDatabaseRef:
+                type: string
               readinessCheckPeriod:
                 type: integer
               replicas:
@@ -2067,6 +2296,10 @@ spec:
                 maxLength: 12
                 pattern: ^[a-zA-Z0-9]+$
                 type: string
+              tcpsCertRenewInterval:
+                type: string
+              tcpsListenerPort:
+                type: integer
             required:
             - image
             type: object
@@ -2077,7 +2310,13 @@ spec:
                 type: boolean
               archiveLog:
                 type: string
+              certCreationTimestamp:
+                type: string
+              certRenewInterval:
+                type: string
               charset:
+                type: string
+              clientWalletLoc:
                 type: string
               cloneFrom:
                 type: string
@@ -2085,7 +2324,7 @@ spec:
                 type: string
               conditions:
                 items:
-                  description: "Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, type FooStatus struct{     // Represents the observations of a foo's current state.     // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\"     // +patchMergeKey=type     // +patchStrategy=merge     // +listType=map     // +listMapKey=type     Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"` \n     // other fields }"
+                  description: "Condition contains details for one aspect of the current state of this API Resource. --- This struct is intended for direct use as an array at the field path .status.conditions.  For example, \n \ttype FooStatus struct{ \t    // Represents the observations of a foo's current state. \t    // Known .status.conditions.type are: \"Available\", \"Progressing\", and \"Degraded\" \t    // +patchMergeKey=type \t    // +patchStrategy=merge \t    // +listType=map \t    // +listMapKey=type \t    Conditions []metav1.Condition `json:\"conditions,omitempty\" patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"` \n \t    // other fields \t}"
                   properties:
                     lastTransitionTime:
                       description: lastTransitionTime is the last time the condition transitioned from one status to another. This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.
@@ -2137,6 +2376,8 @@ spec:
               datafilesPatched:
                 default: "false"
                 type: string
+              dgBrokerConfigured:
+                type: boolean
               edition:
                 type: string
               flashBack:
@@ -2159,6 +2400,9 @@ spec:
                 type: integer
               initSgaSize:
                 type: integer
+              isTcpsEnabled:
+                default: false
+                type: boolean
               nodes:
                 items:
                   type: string
@@ -2190,6 +2434,8 @@ spec:
                 type: object
               prebuiltDB:
                 type: boolean
+              primaryDatabase:
+                type: string
               releaseUpdate:
                 type: string
               replicas:
@@ -2204,7 +2450,12 @@ spec:
                 type: object
               status:
                 type: string
+              tcpsConnectString:
+                type: string
+              tcpsPdbConnectString:
+                type: string
             required:
+            - isTcpsEnabled
             - persistence
             type: object
         type: object
@@ -2524,6 +2775,32 @@ rules:
   - database.oracle.com
   resources:
   - cdbs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - database.oracle.com
+  resources:
+  - dataguardbrokers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - database.oracle.com
+  resources:
+  - dataguardbrokers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - database.oracle.com
+  resources:
+  - dataguardbrokers/status
   verbs:
   - get
   - patch
@@ -2864,6 +3141,27 @@ webhooks:
     service:
       name: oracle-database-operator-webhook-service
       namespace: oracle-database-operator-system
+      path: /mutate-database-oracle-com-v1alpha1-dataguardbroker
+  failurePolicy: Fail
+  name: mdataguardbroker.kb.io
+  rules:
+  - apiGroups:
+    - database.oracle.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - dataguardbrokers
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: oracle-database-operator-webhook-service
+      namespace: oracle-database-operator-system
       path: /mutate-database-oracle-com-v1alpha1-oraclerestdataservice
   failurePolicy: Fail
   name: moraclerestdataservice.kb.io
@@ -3036,6 +3334,27 @@ webhooks:
     service:
       name: oracle-database-operator-webhook-service
       namespace: oracle-database-operator-system
+      path: /validate-database-oracle-com-v1alpha1-dataguardbroker
+  failurePolicy: Fail
+  name: vdataguardbroker.kb.io
+  rules:
+  - apiGroups:
+    - database.oracle.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - dataguardbrokers
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  - v1beta1
+  clientConfig:
+    service:
+      name: oracle-database-operator-webhook-service
+      namespace: oracle-database-operator-system
       path: /validate-database-oracle-com-v1alpha1-oraclerestdataservice
   failurePolicy: Fail
   name: voraclerestdataservice.kb.io
@@ -3116,7 +3435,7 @@ spec:
         - --enable-leader-election
         command:
         - /manager
-        image: container-registry.oracle.com/database/operator:0.2.0
+        image: container-registry.oracle.com/database/operator:1.0.0
         imagePullPolicy: Always
         name: manager
         ports:

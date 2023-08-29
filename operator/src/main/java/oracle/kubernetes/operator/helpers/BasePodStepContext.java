@@ -18,12 +18,15 @@ import javax.annotation.Nonnull;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource;
+import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1EnvVarSource;
 import io.kubernetes.client.openapi.models.V1HostAlias;
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodSecurityContext;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
+import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Toleration;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
@@ -31,7 +34,7 @@ import oracle.kubernetes.common.helpers.AuxiliaryImageEnvVars;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
 import oracle.kubernetes.operator.tuning.TuningParameters;
-import oracle.kubernetes.weblogic.domain.model.AuxiliaryImage;
+import oracle.kubernetes.weblogic.domain.model.DeploymentImage;
 
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_INIT_CONTAINER_WRAPPER_SCRIPT;
@@ -74,11 +77,15 @@ public abstract class BasePodStepContext extends StepContextBase {
   }
 
   protected void addVolumeMountIfMissing(V1Container container) {
+    addVolumeMountIfMissing(container, getPrimaryContainerMountPath());
+  }
+
+  protected void addVolumeMountIfMissing(V1Container container, String mountPath) {
     if (Optional.ofNullable(container.getVolumeMounts()).map(volumeMounts -> volumeMounts.stream().noneMatch(
         this::hasMatchingVolumeName)).orElse(true)) {
       container.addVolumeMountsItem(
               new V1VolumeMount().name(AUXILIARY_IMAGE_INTERNAL_VOLUME_NAME)
-                      .mountPath(getPrimaryContainerMountPath()));
+                      .mountPath(mountPath));
     }
   }
 
@@ -101,9 +108,12 @@ public abstract class BasePodStepContext extends StepContextBase {
         .imagePullPolicy(getServerSpec().getImagePullPolicy())
         .command(getContainerCommand())
         .env(getEnvironmentVariables())
+        .envFrom(getEnvFrom())
         .resources(getResources())
         .securityContext(getServerSpec().getContainerSecurityContext());
   }
+
+  protected abstract List<V1EnvFromSource> getEnvFrom();
 
   protected abstract V1ResourceRequirements getResources();
 
@@ -139,7 +149,7 @@ public abstract class BasePodStepContext extends StepContextBase {
         .name(AUXILIARY_IMAGE_INTERNAL_VOLUME_NAME).emptyDir(emptyDirVolumeSource);
   }
 
-  protected V1Container createInitContainerForAuxiliaryImage(AuxiliaryImage auxiliaryImage, int index) {
+  protected V1Container createInitContainerForAuxiliaryImage(DeploymentImage auxiliaryImage, int index) {
     return new V1Container().name(getName(index))
         .image(auxiliaryImage.getImage())
             .imagePullPolicy(auxiliaryImage.getImagePullPolicy())
@@ -153,11 +163,13 @@ public abstract class BasePodStepContext extends StepContextBase {
                     new V1VolumeMount().name(SCRIPTS_VOLUME).mountPath(SCRIPTS_MOUNTS_PATH)));
   }
 
+  abstract V1SecurityContext getInitContainerSecurityContext();
+
   private String getName(int index) {
     return AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX + (index + 1);
   }
 
-  protected List<V1EnvVar> createEnv(AuxiliaryImage auxiliaryImage, String name) {
+  protected List<V1EnvVar> createEnv(DeploymentImage auxiliaryImage, String name) {
     List<V1EnvVar> vars = new ArrayList<>();
     addEnvVar(vars, AuxiliaryImageEnvVars.AUXILIARY_IMAGE_TARGET_PATH, AUXILIARY_IMAGE_TARGET_PATH);
     addEnvVar(vars, AuxiliaryImageEnvVars.AUXILIARY_IMAGE_SOURCE_WDT_INSTALL_HOME,
@@ -211,9 +223,11 @@ public abstract class BasePodStepContext extends StepContextBase {
         .tolerations(getTolerations())
         .hostAliases(getHostAliases())
         .restartPolicy(getServerSpec().getRestartPolicy())
-        .securityContext(getServerSpec().getPodSecurityContext())
+        .securityContext(getPodSecurityContext())
         .imagePullSecrets(getServerSpec().getImagePullSecrets());
   }
+
+  abstract V1PodSecurityContext getPodSecurityContext();
 
   private List<V1Toleration> getTolerations() {
     List<V1Toleration> tolerations = getServerSpec().getTolerations();

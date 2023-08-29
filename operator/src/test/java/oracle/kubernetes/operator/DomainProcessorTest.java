@@ -34,6 +34,7 @@ import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerState;
+import io.kubernetes.client.openapi.models.V1ContainerStateTerminated;
 import io.kubernetes.client.openapi.models.V1ContainerStateWaiting;
 import io.kubernetes.client.openapi.models.V1ContainerStatus;
 import io.kubernetes.client.openapi.models.V1HTTPGetAction;
@@ -95,6 +96,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainConditionType;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
+import oracle.kubernetes.weblogic.domain.model.InitializeDomainOnPV;
 import oracle.kubernetes.weblogic.domain.model.ManagedServer;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import org.hamcrest.MatcherAssert;
@@ -169,6 +171,9 @@ import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.AVAILA
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.COMPLETED;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.ABORTED;
+import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.DOMAIN_INVALID;
+import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERNETES;
+import static oracle.kubernetes.weblogic.domain.model.DomainStatusNoConditionMatcher.hasNoCondition;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -198,6 +203,7 @@ class DomainProcessorTest {
 
   static final String DOMAIN_NAME = "base_domain";
   public static final String NEW_DOMAIN_UID = "56789";
+  public static final String EXEC_FORMAT_ERROR = "Exec format error";
   static long uidNum = 0;
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
   private final HttpAsyncTestSupport httpSupport = new HttpAsyncTestSupport();
@@ -410,13 +416,68 @@ class DomainProcessorTest {
   }
 
   @Test
-  void whenDomainChangedSpecWithDeletedEventData_dontGenerateDomainChangedEvent() {
+  void whenDomainChangedSpecWithForDeletion_dontGenerateDomainChangedEvent() {
     processor.registerDomainPresenceInfo(originalInfo);
 
-    processor.createMakeRightOperation(newInfo).withEventData(new EventData(DOMAIN_DELETED)).execute();
+    processor.createMakeRightOperation(newInfo).forDeletion().execute();
 
     assertThat(testSupport, not(hasEvent(DOMAIN_CHANGED.getReason())));
     assertThat(testSupport, hasEvent(DOMAIN_DELETED.getReason()));
+  }
+
+  @Test
+  void whenDomainSpecNotChangedWithRetriableFailureButNotRetrying_dontContinueProcessing() {
+    originalInfo.setPopulated(true);
+    processor.registerDomainPresenceInfo(originalInfo);
+    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
+
+    processor.createMakeRightOperation(originalInfo).withExplicitRecheck().execute();
+
+    assertThat(logRecords, containsFine(NOT_STARTING_DOMAINUID_THREAD));
+  }
+
+  @Test
+  void whenDomainSpecChangedWithRetriableFailureButNotRetrying_continueProcessing() {
+    originalInfo.setPopulated(true);
+    processor.registerDomainPresenceInfo(originalInfo);
+    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
+
+    processor.createMakeRightOperation(newInfo).withExplicitRecheck().execute();
+
+    assertThat(logRecords, not(containsFine(NOT_STARTING_DOMAINUID_THREAD)));
+  }
+
+  @Test
+  void whenDomainWithRetriableFailureButForDeletion_continueProcessing() {
+    originalInfo.setPopulated(true);
+    processor.registerDomainPresenceInfo(originalInfo);
+    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
+
+    processor.createMakeRightOperation(originalInfo).withExplicitRecheck().forDeletion().execute();
+
+    assertThat(logRecords, not(containsFine(NOT_STARTING_DOMAINUID_THREAD)));
+  }
+
+  @Test
+  void whenDomainWithNonRetriableFailureButForDeletion_continueProcessing() {
+    originalInfo.setPopulated(true);
+    processor.registerDomainPresenceInfo(originalInfo);
+    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(ABORTED));
+
+    processor.createMakeRightOperation(originalInfo).withExplicitRecheck().forDeletion().execute();
+
+    assertThat(logRecords, not(containsFine(NOT_STARTING_DOMAINUID_THREAD)));
+  }
+
+  @Test
+  void whenDomainWithRetriableFailureAndRetryOnFailure_continueProcess() {
+    originalInfo.setPopulated(false);
+    processor.registerDomainPresenceInfo(originalInfo);
+    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
+
+    processor.createMakeRightOperation(originalInfo).withExplicitRecheck().retryOnFailure().execute();
+
+    assertThat(logRecords, not(containsFine(NOT_STARTING_DOMAINUID_THREAD)));
   }
 
   @Test
@@ -683,6 +744,22 @@ class DomainProcessorTest {
     triggerStatusUpdate();
 
     assertThat(testSupport.getResourceWithName(DOMAIN, UID), hasCondition(COMPLETED).withStatus("True"));
+  }
+
+  @Test
+  void afterServersUpdatedWhenFailedConditionExists_dontUpdateDomainStatus() {
+    domainConfigurator.configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
+    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
+    processor.createMakeRightOperation(newInfo).execute();
+    newInfo.setWebLogicCredentialsSecret(createCredentialsSecret());
+    newDomain.getOrCreateStatus().addCondition(new DomainCondition(FAILED).withReason(KUBERNETES).withStatus(true));
+    makePodsReady();
+    makePodsHealthy();
+
+    triggerStatusUpdate();
+
+    assertThat(((DomainResource)testSupport.getResourceWithName(DOMAIN, UID)).getStatus(),
+        hasNoCondition(COMPLETED).withStatus("True"));
   }
 
   @Test
@@ -966,14 +1043,27 @@ class DomainProcessorTest {
   }
 
   @Test
-  void whenNewClusterAdded_generateClusterCreatedEvent() {
+  void whenNewClusterAddedWithoutStatus_generateClusterCreatedEvent() {
     processor.getClusterPresenceInfoMap().values().clear();
     ClusterResource cluster1 = createClusterAlone(CLUSTER4, NS);
+    cluster1.setStatus(null);
     testSupport.defineResources(cluster1);
 
     testSupport.runSteps(domainNamespaces.readExistingResources(NS, processor));
 
     assertThat(testSupport, hasEvent(CLUSTER_CREATED.getReason()));
+  }
+
+  @Test
+  void whenNewClusterAddedWithStatus_dontGenerateClusterCreatedEvent() {
+    processor.getClusterPresenceInfoMap().values().clear();
+    ClusterResource cluster1 = createClusterAlone(CLUSTER4, NS);
+    cluster1.setStatus(new ClusterStatus());
+    testSupport.defineResources(cluster1);
+
+    testSupport.runSteps(domainNamespaces.readExistingResources(NS, processor));
+
+    assertThat(testSupport, not(hasEvent(CLUSTER_CREATED.getReason())));
   }
 
   @Test
@@ -983,6 +1073,22 @@ class DomainProcessorTest {
     ClusterPresenceInfo info = new ClusterPresenceInfo(cluster1);
     processor.registerClusterPresenceInfo(info);
     ClusterResource cluster2 = createClusterAlone(CLUSTER4, NS).withStatus(status);
+    cluster2.getMetadata().setGeneration(1234L);
+    testSupport.defineResources(cluster2);
+
+    testSupport.runSteps(domainNamespaces.readExistingResources(NS, processor));
+
+    assertThat(testSupport, hasEvent(CLUSTER_CHANGED.getReason()));
+    assertThat(getEventsForSeason(CLUSTER_CHANGED.getReason()), not(empty()));
+  }
+
+  @Test
+  void whenClusterResourceWithDifferentMetadataNameAndSpecNameChanged_generateClusterChangedEvent() {
+    ClusterStatus status = new ClusterStatus().withClusterName(CLUSTER4);
+    ClusterResource cluster1 = createClusterWithDifferentMetadataAndSpecName(CLUSTER4, NS).withStatus(status);
+    ClusterPresenceInfo info = new ClusterPresenceInfo(cluster1);
+    processor.registerClusterPresenceInfo(info);
+    ClusterResource cluster2 = createClusterWithDifferentMetadataAndSpecName(CLUSTER4, NS).withStatus(status);
     cluster2.getMetadata().setGeneration(1234L);
     testSupport.defineResources(cluster2);
 
@@ -1450,6 +1556,12 @@ class DomainProcessorTest {
         .spec(new ClusterSpec().withClusterName(clusterName));
   }
 
+  private ClusterResource createClusterWithDifferentMetadataAndSpecName(String clusterMetadataName, String ns) {
+    return new ClusterResource()
+        .withMetadata(new V1ObjectMeta().name(clusterMetadataName).namespace(ns))
+        .spec(new ClusterSpec().withClusterName("specClusterName-" + clusterMetadataName));
+  }
+
   private V1Service createNonOperatorService() {
     return new V1Service()
         .metadata(
@@ -1528,6 +1640,24 @@ class DomainProcessorTest {
     processor.createMakeRightOperation(newInfo).execute();
 
     assertThat(newInfo.getDomain(), hasCondition(COMPLETED).withStatus("False"));
+  }
+
+  @Test
+  void runStatusInitializationStepWithKubernetesFailure_removeFailedCondition() {
+    newDomain.getOrCreateStatus().addCondition(new DomainCondition(FAILED).withReason(KUBERNETES).withStatus(true));
+    testSupport.addDomainPresenceInfo(newInfo);
+    testSupport.runSteps(DomainStatusUpdater.createStatusInitializationStep(false));
+
+    assertThat(newInfo.getDomain().getStatus(), hasNoCondition(FAILED).withReason(KUBERNETES));
+  }
+
+  @Test
+  void runStatusInitializationStepWithNonKubernetesFailure_dontRemoveFailedCondition() throws JsonProcessingException {
+    newDomain.getOrCreateStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID).withStatus(true));
+    testSupport.addDomainPresenceInfo(newInfo);
+    testSupport.runSteps(DomainStatusUpdater.createStatusInitializationStep(false));
+
+    assertThat(newInfo.getDomain(), hasCondition(FAILED).withStatus("True"));
   }
 
   @Test
@@ -1621,6 +1751,22 @@ class DomainProcessorTest {
   }
 
   @Test
+  void whenIntrospectionJobTimedOutForInitDomainOnPV_activeDeadlineNotIncreased() throws Exception {
+    TuningParametersStub.setParameter(INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS, "180");
+    initializeDomainOnPV();
+    runMakeRight_withIntrospectionTimeout();
+
+    executeScheduledRetry();
+
+    assertThat(getRecordedJob().getSpec().getActiveDeadlineSeconds(), is(180L));
+  }
+
+  private void initializeDomainOnPV() {
+    domainConfigurator.withConfigurationForInitializeDomainOnPV(
+        new InitializeDomainOnPV(), "test-volume", "test-pvc", "/shared");
+  }
+
+  @Test
   void whenFluentdSpecified_verifyConfigMap() {
     domainConfigurator
             .withFluentdConfiguration(true, "fluentd-cred",
@@ -1704,6 +1850,15 @@ class DomainProcessorTest {
     job.setStatus(createCompletedStatus());
   }
 
+  private void createJobPodAndSetExecFormatErrorStatus(V1Job job) {
+    Map<String, String> labels = new HashMap<>();
+    labels.put(LabelConstants.JOBNAME_LABEL, getJobName());
+    testSupport.defineResources(POD,
+        new V1Pod().metadata(new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS))
+            .status(getInitContainerStatusWithExecFormatError()));
+    job.setStatus(createCompletedStatus());
+  }
+
   private void defineTimedoutIntrospection() {
     V1Job job = asFailedJob(createIntrospectorJob("TIMEDOUT_JOB"));
     testSupport.defineResources(job);
@@ -1751,6 +1906,20 @@ class DomainProcessorTest {
     return new V1PodStatus().initContainerStatuses(
           List.of(new V1ContainerStatus().state(new V1ContainerState().waiting(
                 new V1ContainerStateWaiting().reason("ImagePullBackOff").message("Back-off pulling image")))));
+  }
+
+  private void defineIntrospectionWithInitContainerWithExecFormatError() {
+    V1Job job = asFailedJob(createIntrospectorJob("IMAGE_PULL_FAILURE_JOB"));
+    testSupport.defineResources(job);
+    testSupport.addToPacket(DOMAIN_INTROSPECTOR_JOB, job);
+    testSupport.<V1Pod>getResourceWithName(POD, getJobName()).status(getInitContainerStatusWithExecFormatError());
+  }
+
+  public static V1PodStatus getInitContainerStatusWithExecFormatError() {
+    return new V1PodStatus().containerStatuses(List.of(new V1ContainerStatus().ready(false))).initContainerStatuses(
+        List.of(new V1ContainerStatus().name("operator-aux-container1")
+            .state(new V1ContainerState().terminated(new V1ContainerStateTerminated()
+            .reason("Error")))));
   }
 
   private V1Job createIntrospectorJob(String uid) {
@@ -1820,6 +1989,28 @@ class DomainProcessorTest {
 
   private String defineTopology(List<String> clusterNames, List<String> serverNames) throws JsonProcessingException {
     return IntrospectionTestUtils.createTopologyYaml(createDomainConfig(clusterNames, serverNames));
+  }
+
+  @Test
+  void whenIntrospectionJobInitContainerScriptExecError_domainStatusUpdated() throws Exception {
+
+
+    consoleHandlerMemento.ignoringLoggedExceptions(RuntimeException.class);
+    consoleHandlerMemento.ignoreMessage(MessageKeys.NOT_STARTING_DOMAINUID_THREAD);
+    jobStatusSupplier.setJobStatus(createBackoffStatus());
+
+    establishPreviousIntrospection(null);
+    defineIntrospectionWithInitContainerWithExecFormatError();
+    testSupport.doOnDelete(JOB, j -> deletePod());
+    testSupport.doOnCreate(JOB, j -> createJobPodAndSetExecFormatErrorStatus(job));
+    testSupport.definePodLog(LegalNames.toJobIntrospectorName(UID), NS,
+        String.format(EXEC_FORMAT_ERROR, defineTopology()));
+    domainConfigurator.withIntrospectVersion(NEW_INTROSPECTION_STATE);
+    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
+
+    processor.createMakeRightOperation(newInfo).interrupt().execute();
+
+    assertThat(newDomain.getStatus().getMessage().contains(EXEC_FORMAT_ERROR), is(true));
   }
 
   // case 1: job was able to pull, time out during introspection: pod will have DEADLINE_EXCEEDED

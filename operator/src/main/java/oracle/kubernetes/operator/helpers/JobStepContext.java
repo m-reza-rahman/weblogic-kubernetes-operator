@@ -17,16 +17,20 @@ import javax.annotation.Nullable;
 
 import io.kubernetes.client.openapi.models.V1ConfigMapVolumeSource;
 import io.kubernetes.client.openapi.models.V1Container;
+import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobSpec;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1PodSecurityContext;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
+import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import oracle.kubernetes.common.AuxiliaryImageConstants;
 import oracle.kubernetes.common.helpers.AuxiliaryImageEnvVars;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.common.utils.CommonUtils;
@@ -35,7 +39,6 @@ import oracle.kubernetes.operator.IntrospectorConfigMapConstants;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.LogHomeLayoutType;
-import oracle.kubernetes.operator.ModelInImageDomainType;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.calls.CallResponse;
 import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
@@ -49,11 +52,19 @@ import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.AuxiliaryImage;
+import oracle.kubernetes.weblogic.domain.model.Configuration;
+import oracle.kubernetes.weblogic.domain.model.CreateIfNotExists;
+import oracle.kubernetes.weblogic.domain.model.DeploymentImage;
+import oracle.kubernetes.weblogic.domain.model.DomainCreationImage;
+import oracle.kubernetes.weblogic.domain.model.DomainOnPV;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
+import oracle.kubernetes.weblogic.domain.model.InitializeDomainOnPV;
 import oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars;
 import oracle.kubernetes.weblogic.domain.model.ServerEnvVars;
+import org.jetbrains.annotations.NotNull;
 
+import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_TARGET_PATH;
 import static oracle.kubernetes.common.CommonConstants.COMPATIBILITY_MODE;
 import static oracle.kubernetes.common.CommonConstants.SCRIPTS_MOUNTS_PATH;
 import static oracle.kubernetes.common.CommonConstants.SCRIPTS_VOLUME;
@@ -63,6 +74,8 @@ import static oracle.kubernetes.common.utils.CommonUtils.VOLUME_NAME_SUFFIX;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createKubernetesFailureSteps;
 import static oracle.kubernetes.operator.helpers.AffinityHelper.getDefaultAntiAffinity;
 import static oracle.kubernetes.utils.OperatorUtils.emptyToNull;
+import static oracle.kubernetes.weblogic.domain.model.AuxiliaryImage.AUXILIARY_IMAGE_INTERNAL_VOLUME_NAME;
+import static oracle.kubernetes.weblogic.domain.model.DomainCreationImage.DOMAIN_CREATION_IMAGE_MOUNT_PATH;
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_USE_ONLINE_UPDATE;
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_WDT_ACTIVATE_TIMEOUT;
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_WDT_CONNECT_TIMEOUT;
@@ -72,6 +85,7 @@ import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_WDT_START_APPLICATION_TIMEOUT;
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_WDT_STOP_APPLICATION_TIMEOUT;
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_WDT_UNDEPLOY_TIMEOUT;
+import static oracle.kubernetes.weblogic.domain.model.ServerEnvVars.DOMAIN_HOME;
 
 public class JobStepContext extends BasePodStepContext {
 
@@ -146,6 +160,15 @@ public class JobStepContext extends BasePodStepContext {
 
   private V1ResourceRequirements getAdminServerResources() {
     return Optional.ofNullable(getDomain().getAdminServerSpec()).map(as -> as.getResources()).orElse(null);
+  }
+
+  protected List<V1EnvFromSource> getEnvFrom() {
+    return Optional.ofNullable(getDomain().getIntrospectorSpec()).map(is -> is.getEnvFrom())
+        .orElse(getAdminServerEnvFrom());
+  }
+
+  private List<V1EnvFromSource> getAdminServerEnvFrom() {
+    return Optional.ofNullable(getDomain().getAdminServerSpec()).map(as -> as.getEnvFrom()).orElse(null);
   }
 
   protected List<V1EnvVar> getServerPodEnvironmentVariables() {
@@ -279,16 +302,29 @@ public class JobStepContext extends BasePodStepContext {
     return getDomain().getWdtInstallHome();
   }
 
-  ModelInImageDomainType getWdtDomainType() {
-    return getDomain().getWdtDomainType();
+  String getWdtDomainTypeValue() {
+    if (getInitializeDomainOnPV().isEmpty()) {
+      return getDomain().getWdtDomainType().toString();
+    } else {
+      return getInitializeDomainOnPV().map(InitializeDomainOnPV::getDomain).map(DomainOnPV::getDomainType)
+          .orElse(null);
+    }
   }
 
   DomainSourceType getDomainHomeSourceType() {
     return getDomain().getDomainHomeSourceType();
   }
 
+  boolean isInitializeDomainOnPV() {
+    return getDomain().isInitializeDomainOnPV();
+  }
+
   boolean isUseOnlineUpdate() {
     return getDomain().isUseOnlineUpdate();
+  }
+
+  String getDomainCreationConfigMap() {
+    return getDomain().getDomainCreationConfigMap();
   }
 
   public boolean isAdminChannelPortForwardingEnabled(DomainSpec domainSpec) {
@@ -323,14 +359,12 @@ public class JobStepContext extends BasePodStepContext {
     return emptyToNull(getDomain().getConfigOverrides());
   }
 
-  // ---------------------- model methods ------------------------------
+  private ResponseStep<V1Job> newCreateResponse() {
+    return new CreateResponseStep(null);
+  }
 
   private String getWdtConfigMap() {
     return emptyToNull(getDomain().getWdtConfigMap());
-  }
-
-  private ResponseStep<V1Job> newCreateResponse() {
-    return new CreateResponseStep(null);
   }
 
   private V1Job createJobModel() {
@@ -356,7 +390,12 @@ public class JobStepContext extends BasePodStepContext {
 
   private long getIntrospectorJobActiveDeadlineSeconds() {
     return Optional.ofNullable(getDomain().getIntrospectorJobActiveDeadlineSeconds())
-        .orElse(TuningParameters.getInstance().getActiveJobInitialDeadlineSeconds());
+        .orElse(getDefaultIntrospectorJobInitialDeadlineSeconds());
+  }
+
+  private long getDefaultIntrospectorJobInitialDeadlineSeconds() {
+    return TuningParameters.getInstance().getActiveJobInitialDeadlineSeconds(isInitializeDomainOnPV(),
+        getDomain().getInitializeDomainOnPVDomainType());
   }
 
   @Nonnull
@@ -382,14 +421,23 @@ public class JobStepContext extends BasePodStepContext {
           .metadata(createPodTemplateMetadata())
           .spec(createPodSpec());
     addInitContainers(podTemplateSpec.getSpec());
-    Optional.ofNullable(getAuxiliaryImages())
-            .ifPresent(p -> podTemplateSpec.getSpec().addVolumesItem(createEmptyDirVolume()));
+    if (auxiliaryOrDomainCreationImagesConfigured()) {
+      podTemplateSpec.getSpec().addVolumesItem(createEmptyDirVolume());
+    }
 
     return updateForDeepSubstitution(podTemplateSpec.getSpec(), podTemplateSpec);
   }
 
+  private boolean auxiliaryOrDomainCreationImagesConfigured() {
+    return getAuxiliaryImages() != null || getDomainCreationImages() != null;
+  }
+
   private List<AuxiliaryImage> getAuxiliaryImages() {
     return getDomain().getAuxiliaryImages();
+  }
+
+  private List<DomainCreationImage> getDomainCreationImages() {
+    return getDomain().getDomainCreationImages();
   }
 
   private V1ObjectMeta createPodTemplateMetadata() {
@@ -398,24 +446,99 @@ public class JobStepContext extends BasePodStepContext {
           .putLabelsItem(LabelConstants.CREATEDBYOPERATOR_LABEL, "true")
           .putLabelsItem(LabelConstants.DOMAINUID_LABEL, getDomainUid())
           .putLabelsItem(LabelConstants.JOBNAME_LABEL, createJobName(getDomainUid()));
-    // always set it to false
-    metadata.putAnnotationsItem("sidecar.istio.io/inject", "false");
     return metadata;
   }
 
   protected void addInitContainers(V1PodSpec podSpec) {
     List<V1Container> initContainers = new ArrayList<>();
+    getInitializeDomainOnPV().ifPresent(initializeDomainOnPV -> addInitDomainOnPVInitContainer(initContainers));
     Optional.ofNullable(getAuxiliaryImages()).ifPresent(auxImages -> addInitContainers(initContainers, auxImages));
+    Optional.ofNullable(getDomainCreationImages()).ifPresent(dcrImages -> addInitContainers(initContainers, dcrImages));
     initContainers.addAll(getAdditionalInitContainers().stream()
             .filter(container -> isAllowedInIntrospector(container.getName()))
-            .map(c -> c.env(createEnv(c)).resources(createResources()))
+            .map(c -> c.env(createEnv(c)).envFrom(c.getEnvFrom()).resources(createResources()))
             .collect(Collectors.toList()));
     podSpec.initContainers(initContainers);
   }
 
-  private void addInitContainers(List<V1Container> initContainers, List<AuxiliaryImage> auxiliaryImages) {
+  private void addInitContainers(List<V1Container> initContainers, List<? extends DeploymentImage> auxiliaryImages) {
     IntStream.range(0, auxiliaryImages.size()).forEach(idx ->
-            initContainers.add(createInitContainerForAuxiliaryImage(auxiliaryImages.get(idx), idx)));
+        initContainers.add(createInitContainerForAuxiliaryImage(auxiliaryImages.get(idx), idx)));
+  }
+
+  private Optional<InitializeDomainOnPV> getInitializeDomainOnPV() {
+    return Optional.ofNullable(getDomain().getSpec())
+        .map(DomainSpec::getConfiguration)
+        .map(Configuration::getInitializeDomainOnPV);
+  }
+
+  private void addInitDomainOnPVInitContainer(List<V1Container> initContainers) {
+    initContainers.add(new V1Container()
+        .name(INIT_DOMAIN_ON_PV_CONTAINER)
+        .image(getDomain().getSpec().getImage())
+        .volumeMounts(getDomain().getAdminServerSpec().getAdditionalVolumeMounts())
+        .addVolumeMountsItem(new V1VolumeMount().name(SCRIPTS_VOLUME).mountPath(SCRIPTS_MOUNTS_PATH))
+        .addVolumeMountsItem(new V1VolumeMount().name(AUXILIARY_IMAGE_INTERNAL_VOLUME_NAME)
+            .mountPath(AUXILIARY_IMAGE_TARGET_PATH))
+        .env(getDomain().getAdminServerSpec().getEnvironmentVariables())
+        .addEnvItem(new V1EnvVar().name(DOMAIN_HOME).value(getDomainHome()))
+        .addEnvItem(new V1EnvVar().name(ServerEnvVars.LOG_HOME).value(getEffectiveLogHome()))
+        .addEnvItem(new V1EnvVar().name(ServerEnvVars.DOMAIN_HOME_ON_PV_DEFAULT_UGID)
+                .value(getDomainHomeOnPVHomeOwnership()))
+        .addEnvItem(new V1EnvVar().name(AuxiliaryImageEnvVars.AUXILIARY_IMAGE_TARGET_PATH)
+            .value(AuxiliaryImageConstants.AUXILIARY_IMAGE_TARGET_PATH))
+        .securityContext(getInitContainerSecurityContext())
+        .command(List.of(INIT_DOMAIN_ON_PV_SCRIPT))
+    );
+  }
+
+  @Override
+  V1SecurityContext getInitContainerSecurityContext() {
+    if (isInitDomainOnPVRunAsRoot()) {
+      return new V1SecurityContext().runAsGroup(0L).runAsUser(0L);
+    }
+    if (getPodSecurityContext().equals(new V1PodSecurityContext())) {
+      return PodSecurityHelper.getDefaultContainerSecurityContext();
+    }
+    return creatSecurityContextFromPodSecurityContext(getPodSecurityContext());
+  }
+
+  @NotNull
+  private Boolean isInitDomainOnPVRunAsRoot() {
+    return Optional.ofNullable(getDomain().getInitializeDomainOnPV())
+        .map(p -> p.getRunDomainInitContainerAsRoot()).orElse(false);
+  }
+
+  private V1SecurityContext creatSecurityContextFromPodSecurityContext(
+      V1PodSecurityContext podSecurityContext) {
+    return new V1SecurityContext()
+        .runAsUser(podSecurityContext.getRunAsUser())
+        .runAsGroup(podSecurityContext.getRunAsGroup())
+        .runAsNonRoot(podSecurityContext.getRunAsNonRoot())
+        .seccompProfile(podSecurityContext.getSeccompProfile())
+        .seLinuxOptions(podSecurityContext.getSeLinuxOptions())
+        .windowsOptions(podSecurityContext.getWindowsOptions());
+  }
+
+  private String getDomainHomeOnPVHomeOwnership() {
+    Long uid = Optional.ofNullable(getDomain().getAdminServerSpec())
+                    .map(EffectiveServerSpec::getPodSecurityContext)
+                            .map(V1PodSecurityContext::getRunAsUser)
+                                    .orElse(-1L);
+    Long gid = Optional.ofNullable(getDomain().getAdminServerSpec())
+            .map(EffectiveServerSpec::getPodSecurityContext)
+            .map(V1PodSecurityContext::getRunAsGroup)
+            .orElse(-1L);
+
+    if ("OpenShift".equals(getKubernetesPlatform())) {
+      uid = (uid == -1L) ? 1000L : uid;
+      gid = (gid == -1L) ? 0L : gid;
+    } else {
+      uid = (uid == -1L) ? 1000L : uid;
+      gid = (gid == -1L) ? 1000L : gid;
+    }
+
+    return uid + ":" + gid;
   }
 
   @Override
@@ -449,15 +572,47 @@ public class JobStepContext extends BasePodStepContext {
     getConfigOverrideSecrets().forEach(secretName -> addConfigOverrideSecretVolume(podSpec, secretName));
     Optional.ofNullable(getConfigOverrides()).ifPresent(overrides -> addConfigOverrideVolume(podSpec, overrides));
 
-    if (isSourceWdt()) {
+    if (isDomainSourceFromModel()) {
       Optional.ofNullable(getWdtConfigMap()).ifPresent(mapName -> addWdtConfigMapVolume(podSpec, mapName));
       addWdtSecretVolume(podSpec);
+    }
+
+    if (isInitializeDomainOnPV()) {
+      Optional.ofNullable(getDomainCreationConfigMap()).ifPresent(mapName -> addWdtConfigMapVolume(podSpec, mapName));
     }
 
     if (getDefaultAntiAffinity().equals(podSpec.getAffinity())) {
       podSpec.affinity(null);
     }
+
+    if (isInitializeDomainOnPV()) {
+      V1PodSecurityContext podSecurityContext = getPodSecurityContext();
+      if (getDomain().getInitializeDomainOnPV().getSetDefaultSecurityContextFsGroup()) {
+        if (podSecurityContext.getFsGroup() == null && podSecurityContext.getRunAsGroup() != null) {
+          podSpec.securityContext(podSecurityContext.fsGroup(podSecurityContext.getRunAsGroup()));
+        } else if (podSecurityContext.getFsGroup() == null) {
+          Optional.ofNullable(TuningParameters.getInstance()).ifPresent(instance -> {
+            if (!"OpenShift".equalsIgnoreCase(instance.getKubernetesPlatform()) && !isInitDomainOnPVRunAsRoot()) {
+              podSpec.securityContext(podSecurityContext.fsGroup(0L));
+            }
+          });
+        }
+        if (podSpec.getSecurityContext().getFsGroupChangePolicy() == null) {
+          Optional.ofNullable(TuningParameters.getInstance()).ifPresent(instance -> {
+            if (!"OpenShift".equalsIgnoreCase(instance.getKubernetesPlatform()) && !isInitDomainOnPVRunAsRoot()) {
+              podSpec.getSecurityContext().fsGroupChangePolicy("OnRootMismatch");
+            }
+          });
+        }
+      }
+    }
     return podSpec;
+  }
+
+  @Override
+  V1PodSecurityContext getPodSecurityContext() {
+    return Optional.ofNullable(getDomain().getIntrospectorSpec()).map(s -> s.getPodSecurityContext())
+        .orElse(getDomain().getAdminServerSpec().getPodSecurityContext());
   }
 
   private void addConfigOverrideSecretVolume(V1PodSpec podSpec, String secretName) {
@@ -474,7 +629,7 @@ public class JobStepContext extends BasePodStepContext {
                 .configMap(getOverridesVolumeSource(configOverrides)));
   }
 
-  private boolean isSourceWdt() {
+  private boolean isDomainSourceFromModel() {
     return getDomainHomeSourceType() == DomainSourceType.FROM_MODEL;
   }
 
@@ -519,7 +674,9 @@ public class JobStepContext extends BasePodStepContext {
             readOnlyVolumeMount(getVolumeName(getConfigOverrides(), CONFIGMAP_TYPE), OVERRIDES_CM_MOUNT_PATH));
     }
 
-    Optional.ofNullable(getAuxiliaryImages()).ifPresent(auxiliaryImages -> addVolumeMountIfMissing(container));
+    Optional.ofNullable(getAuxiliaryImages()).ifPresent(ai -> addVolumeMountIfMissing(container));
+    Optional.ofNullable(getDomainCreationImages()).ifPresent(dci -> addVolumeMountIfMissing(container,
+        DOMAIN_CREATION_IMAGE_MOUNT_PATH));
 
     List<String> configOverrideSecrets = getConfigOverrideSecrets();
     for (String secretName : configOverrideSecrets) {
@@ -528,7 +685,7 @@ public class JobStepContext extends BasePodStepContext {
                   getVolumeName(secretName, SECRET_TYPE), OVERRIDE_SECRETS_MOUNT_PATH + '/' + secretName));
     }
 
-    if (isSourceWdt()) {
+    if (isDomainSourceFromModel()) {
       if (getWdtConfigMap() != null) {
         container.addVolumeMountsItem(
             readOnlyVolumeMount(getVolumeName(getWdtConfigMap(), CONFIGMAP_TYPE), WDTCONFIGMAP_MOUNT_PATH));
@@ -536,7 +693,11 @@ public class JobStepContext extends BasePodStepContext {
       container.addVolumeMountsItem(
           readOnlyVolumeMount(RUNTIME_ENCRYPTION_SECRET_VOLUME,
               RUNTIME_ENCRYPTION_SECRET_MOUNT_PATH));
+    }
 
+    if (isInitializeDomainOnPV() && getDomainCreationConfigMap() != null) {
+      container.addVolumeMountsItem(
+          readOnlyVolumeMount(getVolumeName(getDomainCreationConfigMap(), CONFIGMAP_TYPE), WDTCONFIGMAP_MOUNT_PATH));
     }
 
     return container;
@@ -707,13 +868,14 @@ public class JobStepContext extends BasePodStepContext {
     addEnvVar(vars, IntrospectorJobEnvVars.OPSS_KEY_SECRET_NAME, getOpssWalletPasswordSecretName());
     addEnvVar(vars, IntrospectorJobEnvVars.OPSS_WALLETFILE_SECRET_NAME, getOpssWalletFileSecretName());
     addEnvVar(vars, IntrospectorJobEnvVars.RUNTIME_ENCRYPTION_SECRET_NAME, getRuntimeEncryptionSecretName());
-    addEnvVar(vars, IntrospectorJobEnvVars.WDT_DOMAIN_TYPE, getWdtDomainType().toString());
+    addEnvVar(vars, IntrospectorJobEnvVars.WDT_DOMAIN_TYPE, getWdtDomainTypeValue());
     addEnvVar(vars, IntrospectorJobEnvVars.DOMAIN_SOURCE_TYPE, getDomainHomeSourceType().toString());
     addEnvVar(vars, IntrospectorJobEnvVars.ADMIN_CHANNEL_PORT_FORWARDING_ENABLED,
             Boolean.toString(isAdminChannelPortForwardingEnabled(getDomain().getSpec())));
     Optional.ofNullable(getKubernetesPlatform())
             .ifPresent(v -> addEnvVar(vars, ServerEnvVars.KUBERNETES_PLATFORM, v));
-
+    Optional.ofNullable(getDomain().isReplaceVariablesInJavaOptions())
+        .ifPresent(v -> addEnvVar(vars, "REPLACE_VARIABLES_IN_JAVA_OPTIONS", Boolean.toString(v)));
     if (isUseOnlineUpdate()) {
       addOnlineUpdateEnvVars(vars);
     }
@@ -747,13 +909,25 @@ public class JobStepContext extends BasePodStepContext {
       addEnvVar(vars, IntrospectorJobEnvVars.WDT_INSTALL_HOME, wdtInstallHome);
     }
 
+    getInitializeDomainOnPV().ifPresent(initializeDomainOnPV ->
+        addEnvVar(vars, IntrospectorJobEnvVars.INIT_DOMAIN_ON_PV, getInitializeDomainOnPV()
+            .map(InitializeDomainOnPV::getDomain).map(DomainOnPV::getCreateIfNotExists)
+            .map(CreateIfNotExists::toString).orElse(null)));
+
     Optional.ofNullable(getAuxiliaryImages()).ifPresent(ais -> addAuxImagePathEnv(ais, vars));
+    Optional.ofNullable(getDomainCreationImages()).ifPresent(dcrImages -> addAuxImagePathEnv(dcrImages, vars,
+        DOMAIN_CREATION_IMAGE_MOUNT_PATH));
     return vars;
   }
 
-  private void addAuxImagePathEnv(List<AuxiliaryImage> auxiliaryImages, List<V1EnvVar> vars) {
+  private void addAuxImagePathEnv(List<? extends DeploymentImage> auxiliaryImages, List<V1EnvVar> vars) {
+    addAuxImagePathEnv(auxiliaryImages, vars, getDomain().getAuxiliaryImageVolumeMountPath());
+  }
+
+  private void addAuxImagePathEnv(List<? extends DeploymentImage> auxiliaryImages, List<V1EnvVar> vars,
+                                  String mountPath) {
     if (!auxiliaryImages.isEmpty()) {
-      addEnvVar(vars, AuxiliaryImageEnvVars.AUXILIARY_IMAGE_MOUNT_PATH, getDomain().getAuxiliaryImageVolumeMountPath());
+      addEnvVar(vars, AuxiliaryImageEnvVars.AUXILIARY_IMAGE_MOUNT_PATH, mountPath);
     }
   }
 

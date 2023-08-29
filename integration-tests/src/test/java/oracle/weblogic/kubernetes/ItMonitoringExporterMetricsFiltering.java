@@ -77,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("olcne")
 @Tag("oke-sequential")
-@Tag("kind-parallel")
+@Tag("kind-sequential")
 @Tag("okd-wls-mrg")
 class ItMonitoringExporterMetricsFiltering {
 
@@ -112,7 +112,7 @@ class ItMonitoringExporterMetricsFiltering {
   private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
   private static List<String> clusterNames = new ArrayList<>();
-  private static String releaseSuffix = "test2";
+  private static String releaseSuffix = "testfilter";
   private static String prometheusReleaseName = "prometheus" + releaseSuffix;
   private static String grafanaReleaseName = "grafana" + releaseSuffix;
   private static  String monitoringExporterDir;

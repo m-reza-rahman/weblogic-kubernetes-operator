@@ -11,7 +11,7 @@ You can:
 * Supply WebLogic domain configuration using:
   * _Model in Image_: Includes [WebLogic Deploy Tooling](https://github.com/oracle/weblogic-deploy-tooling) models and archives in a container image.
   * _Domain in Image_: Includes a WebLogic domain home in a container image.
-  * _Domain in PV_: Locates WebLogic domain homes in a Kubernetes PersistentVolume (PV). This PV can reside in an NFS file system or other Kubernetes volume types.
+  * _Domain on PV_: Locates WebLogic domain homes in a Kubernetes PersistentVolume (PV). This PV can reside in an NFS file system or other Kubernetes volume types.
 * Configure deployment of WebLogic domains as Kubernetes resources (using Kubernetes custom resource definitions).
 * Override certain aspects of the WebLogic domain configuration; for example, use a different database password for different deployments.
 * Start and stop servers and clusters in the domain based on declarative startup parameters and desired states.
@@ -24,11 +24,6 @@ You can:
 
 The fastest way to experience the operator is to follow the [Quick Start guide](https://oracle.github.io/weblogic-kubernetes-operator/quickstart/), or you can peruse our [documentation](https://oracle.github.io/weblogic-kubernetes-operator), read our [blogs](https://blogs.oracle.com/weblogicserver/how-to-weblogic-server-on-kubernetes), or try out the [samples](https://oracle.github.io/weblogic-kubernetes-operator/samples/).
 
-***
-The [current release of the operator](https://github.com/oracle/weblogic-kubernetes-operator/releases) is 4.0.5.
-This release was published on February 21, 2023.
-***
-
 ## Documentation
 
 Documentation for the operator is [available here](https://oracle.github.io/weblogic-kubernetes-operator).
@@ -36,7 +31,7 @@ Documentation for the operator is [available here](https://oracle.github.io/webl
 This documentation includes information for users and for developers.  It provides samples, reference material, security
 information and a [Quick Start](https://oracle.github.io/weblogic-kubernetes-operator/quickstart/) guide if you just want to get up and running quickly.
 
-Documentation for prior releases of the operator: [2.5.0](https://oracle.github.io/weblogic-kubernetes-operator/2.5/), [2.6.0](https://oracle.github.io/weblogic-kubernetes-operator/2.6/), [3.0.x](https://oracle.github.io/weblogic-kubernetes-operator/3.0/), [3.1.x](https://oracle.github.io/weblogic-kubernetes-operator/3.1/), [3.2.x](https://oracle.github.io/weblogic-kubernetes-operator/3.2/), [3.3.x](https://oracle.github.io/weblogic-kubernetes-operator/3.3/), and [3.4.x](https://oracle.github.io/weblogic-kubernetes-operator/3.4/).
+Documentation for prior releases of the operator: [3.4](https://oracle.github.io/weblogic-kubernetes-operator/3.4/) and [4.0](https://oracle.github.io/weblogic-kubernetes-operator/4.0/).
 
 ## Backward compatibility guidelines
 

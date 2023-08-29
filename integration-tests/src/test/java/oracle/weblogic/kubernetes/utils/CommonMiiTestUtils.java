@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -63,6 +63,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
@@ -71,6 +72,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createConfigMap;
 import static oracle.weblogic.kubernetes.actions.TestActions.createSecret;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteConfigMap;
+import static oracle.weblogic.kubernetes.actions.TestActions.deleteJob;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getJob;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
@@ -185,14 +187,45 @@ public class CommonMiiTestUtils {
       String imageName,
       String adminServerPodName,
       String managedServerPrefix,
-      int replicaCount, 
+      int replicaCount,
       List<String> clusterNames,
       boolean setDataHome,
       String dataHome) {
+    return createMiiDomainAndVerify(domainNamespace, domainUid, imageName, adminServerPodName, managedServerPrefix,
+        replicaCount, clusterNames, setDataHome, dataHome, false);
+  }
+
+  /**
+   * Create a basic Kubernetes domain resource and wait until the domain is fully up.
+   *
+   * @param domainNamespace Kubernetes namespace that the pod is running in
+   * @param domainUid identifier of the domain
+   * @param imageName name of the image including its tag
+   * @param adminServerPodName name of the admin server pod
+   * @param managedServerPrefix prefix of the managed server pods
+   * @param replicaCount number of managed servers to start
+   * @param clusterNames names of clusters
+   * @param setDataHome whether to set dataHome in the domain spec
+   * @param dataHome dataHome override in the domain spec
+   * @param prefixDomainName whether prefix the domain name in front of cluster name
+   * @return DomainResource
+   */
+  public static DomainResource createMiiDomainAndVerify(
+      String domainNamespace,
+      String domainUid,
+      String imageName,
+      String adminServerPodName,
+      String managedServerPrefix,
+      int replicaCount, 
+      List<String> clusterNames,
+      boolean setDataHome,
+      String dataHome,
+      boolean prefixDomainName) {
 
     LoggingFacade logger = getLogger();
     DomainResource domain =
-        createMiiDomain(domainNamespace, domainUid, imageName, replicaCount, clusterNames, setDataHome, dataHome);
+        createMiiDomain(domainNamespace, domainUid, imageName, replicaCount, clusterNames, setDataHome, dataHome,
+            prefixDomainName);
 
     // check admin server pod is ready
     logger.info("Wait for admin server pod {0} to be ready in namespace {1}",
@@ -240,6 +273,32 @@ public class CommonMiiTestUtils {
       List<String> clusterNames,
       boolean setDataHome,
       String dataHome) {
+    return createMiiDomain(domainNamespace, domainUid, imageName, replicaCount, clusterNames,
+        setDataHome, dataHome, false);
+  }
+
+  /**
+   * Create a basic Kubernetes domain resource and verify the domain is created.
+   *
+   * @param domainNamespace Kubernetes namespace that the pod is running in
+   * @param domainUid identifier of the domain
+   * @param imageName name of the image including its tag
+   * @param replicaCount number of managed servers to start
+   * @param clusterNames names of clusters
+   * @param setDataHome whether to set dataHome in the domain spec
+   * @param dataHome dataHome override in the domain spec
+   * @param prefixDomainName whether prefix domain name in front of cluster name
+   * @return DomainResource
+   */
+  public static DomainResource createMiiDomain(
+      String domainNamespace,
+      String domainUid,
+      String imageName,
+      int replicaCount,
+      List<String> clusterNames,
+      boolean setDataHome,
+      String dataHome,
+      boolean prefixDomainName) {
 
     LoggingFacade logger = getLogger();
     // this secret is used only for non-kind cluster
@@ -277,7 +336,8 @@ public class CommonMiiTestUtils {
         new String[]{TEST_IMAGES_REPO_SECRET_NAME},
         encryptionSecretName,
         replicaCount,
-        clusterNames
+        clusterNames,
+        prefixDomainName
     );
 
     // set the dataHome in the domain spec
@@ -655,6 +715,54 @@ public class CommonMiiTestUtils {
           String dbSecretName,
           boolean onlineUpdateEnabled,
           boolean setDataHome) {
+    return createDomainResourceWithLogHome(domainResourceName,
+        domNamespace,
+        imageName,
+        adminSecretName,
+        repoSecretName,
+        encryptionSecretName,
+        pvName,
+        pvcName,
+        configMapName,
+        dbSecretName,
+        "-Dweblogic.security.SSL.ignoreHostnameVerification=true",
+    onlineUpdateEnabled,
+    setDataHome);
+  }
+
+  /**
+   * Create a domain object for a Kubernetes domain custom resource using the basic model-in-image
+   * image.
+   *
+   * @param domainResourceName name of the domain resource
+   * @param domNamespace Kubernetes namespace that the domain is hosted
+   * @param imageName name of the image including its tag
+   * @param adminSecretName name of the new WebLogic admin credentials secret
+   * @param repoSecretName name of the secret for pulling the WebLogic image
+   * @param encryptionSecretName name of the secret used to encrypt the models
+   * @param pvName Name of persistent volume
+   * @param pvcName Name of persistent volume claim
+   * @param configMapName name of the configMap containing Weblogic Deploy Tooling model
+   * @param dbSecretName name of the Secret for WebLogic configuration overrides
+   * @param javaOpt sting of all java options to be set
+   * @param onlineUpdateEnabled whether to enable onlineUpdate feature for mii dynamic update
+   * @param setDataHome whether to set data home at domain resource
+   * @return domain object of the domain resource
+   */
+  public static DomainResource createDomainResourceWithLogHome(
+      String domainResourceName,
+      String domNamespace,
+      String imageName,
+      String adminSecretName,
+      String repoSecretName,
+      String encryptionSecretName,
+      String pvName,
+      String pvcName,
+      String configMapName,
+      String dbSecretName,
+      String javaOpt,
+      boolean onlineUpdateEnabled,
+      boolean setDataHome) {
     LoggingFacade logger = getLogger();
 
     List<String> securityList = new ArrayList<>();
@@ -679,7 +787,7 @@ public class CommonMiiTestUtils {
         .serverPod(new ServerPod()
             .addEnvItem(new V1EnvVar()
                 .name("JAVA_OPTIONS")
-                .value("-Dweblogic.security.SSL.ignoreHostnameVerification=true"))
+                .value(javaOpt))
             .addEnvItem(new V1EnvVar()
                 .name("USER_MEM_ARGS")
                 .value("-Djava.security.egd=file:/dev/./urandom "))
@@ -928,25 +1036,36 @@ public class CommonMiiTestUtils {
   private static ExecResult readRuntimeResource(String adminSvcExtHost, String domainNamespace,
       String adminServerPodName, String resourcePath, String callerName) {
     LoggingFacade logger = getLogger();
-
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-
-    String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + adminServiceNodePort;
-    logger.info("hostAndPort = {0} ", hostAndPort);
-
     ExecResult result = null;
+    String curlString = null;
+    if (OKE_CLUSTER_PRIVATEIP) {
+      String protocol = "http";
+      String port = "7001";
 
-    StringBuffer curlString = new StringBuffer("curl --user "
-        + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + hostAndPort)
-        .append(resourcePath)
-        .append("/")
-        .append(" --silent --show-error ");
-    logger.info(callerName + ": curl command {0}", new String(curlString));
+      curlString = String.format(
+          KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -k %s://"
+              + ADMIN_USERNAME_DEFAULT
+              + ":"
+              + ADMIN_PASSWORD_DEFAULT
+              + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
+      curlString = curlString + " --silent --show-error ";
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+
+      String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + adminServiceNodePort;
+      logger.info("hostAndPort = {0} ", hostAndPort);
+      curlString = String.format(
+          "curl --user "
+              + ADMIN_USERNAME_DEFAULT
+              + ":"
+              + ADMIN_PASSWORD_DEFAULT
+              + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
+    }
+    logger.info(callerName + ": curl command {0}", curlString);
     try {
-      result = exec(new String(curlString), true);
-      logger.info(callerName + ": exec curl command {0} got: {1}", new String(curlString), result);
+      result = exec(curlString, true);
+      logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
     } catch (Exception ex) {
       logger.info(callerName + ": caught unexpected exception {0}", ex);
       return null;
@@ -1025,7 +1144,13 @@ public class CommonMiiTestUtils {
                                            boolean isSecureMode,
                                            String sslChannelName) {
     LoggingFacade logger = getLogger();
-
+    if (OKE_CLUSTER_PRIVATEIP) {
+      return checkWeblogicMBeanInAdminPod(domainNamespace,
+          adminServerPodName,
+          resourcePath,
+          expectedStatusCode,
+          isSecureMode);
+    }
     int adminServiceNodePort;
     if (isSecureMode) {
       adminServiceNodePort =
@@ -1055,6 +1180,42 @@ public class CommonMiiTestUtils {
     return Command
         .withParams(new CommandParams()
             .command(curlString.toString()))
+        .executeAndVerify(expectedStatusCode);
+  }
+
+  /**
+   * Use REST APIs to check a runtime mbean from the WebLogic server inside admin pod.
+   *
+   * @param domainNamespace Kubernetes namespace that the domain is hosted
+   * @param adminServerPodName Name of the admin server pod to which the REST requests should be sent to
+   * @param resourcePath Path of the system resource to be used in the REST API call
+   * @param expectedStatusCode the expected response to verify
+   * @param isSecureMode whether use SSL
+   * @return true if the REST API reply contains the expected response
+   */
+  public static boolean checkWeblogicMBeanInAdminPod(String domainNamespace,
+                                                     String adminServerPodName,
+                                                     String resourcePath,
+                                                     String expectedStatusCode,
+                                                     boolean isSecureMode) {
+    String protocol = "http";
+    String port = "7001";
+    if (isSecureMode) {
+      protocol = "https";
+      port = "7002";
+    }
+    LoggingFacade logger = getLogger();
+    String curlString = String.format(
+        KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -k %s://"
+            + ADMIN_USERNAME_DEFAULT
+            + ":"
+            + ADMIN_PASSWORD_DEFAULT
+            + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
+    curlString = curlString + " --silent --show-error -o /dev/null -w %{http_code}";
+    logger.info("checkSystemResource: curl command {0}", curlString);
+    return Command
+        .withParams(new CommandParams()
+            .command(curlString))
         .executeAndVerify(expectedStatusCode);
   }
 
@@ -1157,6 +1318,72 @@ public class CommonMiiTestUtils {
   }
 
   /**
+   * Create a job to change the permissions on the pv host path.
+   *
+   * @param pvName Name of the persistent volume
+   * @param pvcName Name of the persistent volume claim
+   * @param namespace Namespace containing the persistent volume claim and where the job should be created in
+   * @param mountPath path
+   * @param command to change permission
+   */
+  public static void createJobToChangePermissionsOnPvHostPath(String pvName, String pvcName,
+                                                              String namespace, String mountPath, String command) {
+    LoggingFacade logger = getLogger();
+
+    if (!OKD) {
+      logger.info("Running Kubernetes job to create domain");
+      V1Job jobBody = new V1Job()
+          .metadata(
+              new V1ObjectMeta()
+                  .name("change-permissions-onpv-job-" + pvName) // name of the job
+                  .namespace(namespace))
+          .spec(new V1JobSpec()
+              .backoffLimit(0) // try only once
+              .template(new V1PodTemplateSpec()
+                  .spec(new V1PodSpec()
+                      .restartPolicy("Never")
+                      .addContainersItem(
+                          createfixPVCOwnerContainer(pvName,
+                              mountPath,
+                              command))
+                      .volumes(Arrays.asList(
+                          new V1Volume()
+                              .name(pvName)
+                              .persistentVolumeClaim(
+                                  new V1PersistentVolumeClaimVolumeSource()
+                                      .claimName(pvcName))))
+                      .imagePullSecrets(Arrays.asList(
+                          new V1LocalObjectReference()
+                              .name(TEST_IMAGES_REPO_SECRET_NAME)))))); // this secret is used only for non-kind cluster
+
+      String jobName = createJobAndWaitUntilComplete(jobBody, namespace);
+
+      // check job status and fail test if the job failed
+      V1Job job = assertDoesNotThrow(() -> getJob(jobName, namespace),
+          "Getting the job failed");
+      if (job != null) {
+        V1JobCondition jobCondition = job.getStatus().getConditions().stream().filter(
+                v1JobCondition -> "Failed".equals(v1JobCondition.getType()))
+            .findAny()
+            .orElse(null);
+        if (jobCondition != null) {
+          logger.severe("Job {0} failed to change permissions on PV hostpath", jobName);
+          List<V1Pod> pods = assertDoesNotThrow(() -> listPods(
+                  namespace, "job-name=" + jobName).getItems(),
+              "Listing pods failed");
+          if (!pods.isEmpty()) {
+            String podLog = assertDoesNotThrow(() -> getPodLog(pods.get(0).getMetadata().getName(), namespace),
+                "Failed to get pod log");
+            logger.severe(podLog);
+            fail("Change permissions on PV hostpath job failed");
+          }
+        }
+        assertDoesNotThrow(() -> deleteJob(jobName, namespace));
+      }
+    }
+  }
+
+  /**
    * Check logs are written on PV by running the specified command on the pod.
    * @param domainNamespace Kubernetes namespace that the domain is hosted
    * @param commandToExecuteInsidePod The command to be run inside the pod
@@ -1243,7 +1470,7 @@ public class CommonMiiTestUtils {
 
     logger.info("Introspector pod log START");
     String introspectorLog = assertDoesNotThrow(() -> getPodLog(introspectorPodName,
-        domainNamespace, null, null, null, true), "Could not get introspector pod log");
+        domainNamespace, domainUid + "-introspector", null, null, true), "Could not get introspector pod log");
     logger.info(introspectorLog);
     logger.info("Introspector pod log END");
     checkPodDoesNotExist(introspectorPodName, domainUid, domainNamespace);
@@ -1305,7 +1532,7 @@ public class CommonMiiTestUtils {
    */
   public static void verifyUpdateWebLogicCredential(String domainNamespace, String domainUid,
        String adminServerPodName, String managedServerPrefix, int replicaCount, String... args) {
-    verifyUpdateWebLogicCredential(null, domainNamespace, domainUid, adminServerPodName,
+    verifyUpdateWebLogicCredential(7001, domainNamespace, domainUid, adminServerPodName,
                                managedServerPrefix, replicaCount, args);
   }
 
@@ -1315,7 +1542,6 @@ public class CommonMiiTestUtils {
    * Update domainRestartVersion to trigger a rolling restart of server pods.
    * Make sure all the server pods are re-started in a rolling fashion.
    * Check the validity of new credentials by accessing WebLogic RESTful Service.
-   * @param adminSvcExtHost Used only in OKD env - this is the route host created for AS external service
    * @param domainNamespace namespace where the domain is
    * @param domainUid domain uid for which WebLogic Admin credential is being changed
    * @param adminServerPodName pod name of admin server
@@ -1324,7 +1550,7 @@ public class CommonMiiTestUtils {
    * @param args arguments to determine appending suffix to managed server pod name or not.
    *             Append suffix if it's set. Otherwise do not append.
    */
-  public static void verifyUpdateWebLogicCredential(String adminSvcExtHost, String domainNamespace, String domainUid,
+  public static void verifyUpdateWebLogicCredential(int adminListenPort, String domainNamespace, String domainUid,
        String adminServerPodName, String managedServerPrefix, int replicaCount, String... args) {
     final boolean VALID = true;
     final boolean INVALID = false;
@@ -1346,9 +1572,9 @@ public class CommonMiiTestUtils {
     }
 
     getLogger().info("Check that before patching current credentials are valid and new credentials are not");
-    verifyCredentials(adminSvcExtHost, adminServerPodName, domainNamespace,
+    verifyCredentials(adminListenPort, adminServerPodName, domainNamespace,
                       ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, VALID, args);
-    verifyCredentials(adminSvcExtHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH, ADMIN_PASSWORD_PATCH,
+    verifyCredentials(adminListenPort, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH, ADMIN_PASSWORD_PATCH,
         INVALID, args);
 
     // create a new secret for admin credentials
@@ -1377,9 +1603,9 @@ public class CommonMiiTestUtils {
 
     // check if the new credentials are valid and the old credentials are not valid any more
     getLogger().info("Check that after patching current credentials are not valid and new credentials are");
-    verifyCredentials(adminSvcExtHost, adminServerPodName, domainNamespace,
+    verifyCredentials(adminListenPort, adminServerPodName, domainNamespace,
                       ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, INVALID, args);
-    verifyCredentials(adminSvcExtHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH, ADMIN_PASSWORD_PATCH,
+    verifyCredentials(adminListenPort, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH, ADMIN_PASSWORD_PATCH,
         VALID, args);
 
     getLogger().info("Domain {0} in namespace {1} is fully started after changing WebLogic credentials secret",

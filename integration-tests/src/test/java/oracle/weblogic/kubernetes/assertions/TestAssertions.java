@@ -21,7 +21,6 @@ import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.ServerStatus;
 import oracle.weblogic.kubernetes.actions.impl.LoggingExporter;
-import oracle.weblogic.kubernetes.assertions.impl.Apache;
 import oracle.weblogic.kubernetes.assertions.impl.Application;
 import oracle.weblogic.kubernetes.assertions.impl.Cluster;
 import oracle.weblogic.kubernetes.assertions.impl.ClusterRole;
@@ -40,7 +39,6 @@ import oracle.weblogic.kubernetes.assertions.impl.Pod;
 import oracle.weblogic.kubernetes.assertions.impl.Prometheus;
 import oracle.weblogic.kubernetes.assertions.impl.Service;
 import oracle.weblogic.kubernetes.assertions.impl.Traefik;
-import oracle.weblogic.kubernetes.assertions.impl.Voyager;
 import oracle.weblogic.kubernetes.assertions.impl.WitAssertion;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
@@ -100,16 +98,6 @@ public class TestAssertions {
   }
 
   /**
-   * Check if there are ready Apache pods in the specified namespace.
-   *
-   * @param namespace in which to check if Apache pods are in the ready state
-   * @return true if there are ready Apache pods in the specified namespace , false otherwise
-   */
-  public static Callable<Boolean> isApacheReady(String namespace) {
-    return Apache.isReady(namespace);
-  }
-
-  /**
    * Check traefik controller pod is ready in the specified namespace.
    *
    * @param namespace in which to check for traefik pod readiness
@@ -117,28 +105,6 @@ public class TestAssertions {
    */
   public static Callable<Boolean> isTraefikReady(String namespace) {
     return Traefik.isReady(namespace);
-  }
-
-  /**
-   * Check if Voyager pod is running.
-   *
-   * @param namespace in which to check if Voyager pod is running
-   * @param podName name of Voyager ingress controller pod or ingress resource pod
-   * @return true if Voyager pod is running, false otherwise
-   */
-  public static Callable<Boolean> isVoyagerRunning(String namespace, String podName) {
-    return Voyager.isRunning(namespace, podName);
-  }
-
-  /**
-   * Check if Voyager pods is in the ready state in a given namespace.
-   *
-   * @param namespace in which to check if Voyager pod is in the ready state
-   * @param podName name of Voyager ingress controller pod or ingress resource pod
-   * @return true if Voyager pod is in the ready state, false otherwise
-   */
-  public static Callable<Boolean> isVoyagerReady(String namespace, String podName) {
-    return Voyager.isReady(namespace, podName);
   }
 
   /**
@@ -905,6 +871,25 @@ public class TestAssertions {
   }
 
   /**
+   * Check if a admin server pod admin node port is accessible.
+   *
+   * @param nodePort the node port of the WebLogic administration server service
+   * @param userName user name to access WebLogic administration server
+   * @param password password to access WebLogic administration server
+   * @return true if the WebLogic administration service node port is accessible otherwise false
+   * @throws java.io.IOException when connection to WebLogic administration server fails
+   */
+  public static Callable<Boolean> adminLoginPageAccessible(int nodePort, String userName,
+                                                          String password, String... routeHost)
+      throws IOException {
+    if (routeHost.length == 0) {
+      return () -> Domain.adminNodePortAccessible(nodePort, userName, password, null);
+    } else {
+      return () -> Domain.adminNodePortAccessible(nodePort, userName, password, routeHost[0]);
+    }
+  }
+
+  /**
    * Check if an image exists.
    *
    * @param imageName the name of the image to be checked
@@ -919,7 +904,7 @@ public class TestAssertions {
    * Check if the given WebLogic credentials are valid by using the credentials to
    * invoke a RESTful Management Services command.
    *
-   * @param host hostname of the admin server pod
+   * @param port listen port of the admin server pod
    * @param podName name of the admin server pod
    * @param namespace name of the namespace that the pod is running in
    * @param username WebLogic admin username
@@ -927,20 +912,20 @@ public class TestAssertions {
    * @return true if the RESTful Management Services command succeeded
    */
   public static Callable<Boolean> credentialsValid(
-      String host,
+      int port,
       String podName,
       String namespace,
       String username,
       String password,
       String... args) {
-    return () -> Domain.credentialsValid(host, podName, namespace, username, password, args);
+    return () -> Domain.credentialsValid(port, podName, namespace, username, password, args);
   }
 
   /**
    * Check if the given WebLogic credentials are NOT valid by using the credentials to
    * invoke a RESTful Management Services command.
    *
-   * @param host hostname of the admin server pod
+   * @param port listen port of the admin server pod
    * @param podName name of the admin server pod
    * @param namespace name of the namespace that the pod is running in
    * @param username WebLogic admin username
@@ -948,13 +933,13 @@ public class TestAssertions {
    * @return true if the RESTful Management Services command failed with exitCode 401
    */
   public static Callable<Boolean> credentialsNotValid(
-      String host,
+      int port,
       String podName,
       String namespace,
       String username,
       String password,
       String... args) {
-    return () -> Domain.credentialsNotValid(host, podName, namespace, username, password, args);
+    return () -> Domain.credentialsNotValid(port, podName, namespace, username, password, args);
   }
 
   /**

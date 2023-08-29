@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -238,9 +238,9 @@ class ItOperatorRestart {
     LinkedHashMap<String, OffsetDateTime> pods = new LinkedHashMap<>();
 
     // get the creation time of the admin server pod before patching
-    OffsetDateTime adminPodCreationTime =
-        assertDoesNotThrow(() -> getPodCreationTimestamp(domainNamespace, "", adminServerPodName),
-        String.format("Failed to get creationTimestamp for pod %s", adminServerPodName));
+    OffsetDateTime adminPodCreationTime
+        = assertDoesNotThrow(() -> getPodCreationTimestamp(domainNamespace, "", adminServerPodName),
+            String.format("Failed to get creationTimestamp for pod %s", adminServerPodName));
     assertNotNull(adminPodCreationTime, "creationTimestamp of the admin server pod is null");
 
     logger.info("Domain {0} in namespace {1}, admin server pod {2} creationTimestamp before patching is {3}",
@@ -255,18 +255,18 @@ class ItOperatorRestart {
     // get the creation time of the managed server pods before patching
     assertDoesNotThrow(
         () -> {
-            for (int i = 1; i <= replicaCount; i++) {
-              String managedServerPodName = managedServerPrefix + i;
-              OffsetDateTime creationTime = getPodCreationTimestamp(domainNamespace, "", managedServerPodName);
-              msLastCreationTime.add(creationTime);
-              pods.put(managedServerPodName, creationTime);
+          for (int i = 1; i <= replicaCount; i++) {
+            String managedServerPodName = managedServerPrefix + i;
+            OffsetDateTime creationTime = getPodCreationTimestamp(domainNamespace, "", managedServerPodName);
+            msLastCreationTime.add(creationTime);
+            pods.put(managedServerPodName, creationTime);
 
-              logger.info("Domain {0} in namespace {1}, server pod {2} creationTimestamp before patching is {3}",
-                  domainUid,
-                  domainNamespace,
-                  managedServerPodName,
-                  creationTime);
-            }
+            logger.info("Domain {0} in namespace {1}, server pod {2} creationTimestamp before patching is {3}",
+                domainUid,
+                domainNamespace,
+                managedServerPodName,
+                creationTime);
+          }
         },
         "Failed to get creationTimestamp for managed server pods");
 
@@ -298,9 +298,9 @@ class ItOperatorRestart {
       assertTrue(callWebAppAndWaitTillReturnedCode(cmdString.toString(), "401", 10));
       logger.info("Got the correct http status code for invalid credentials");
     } else {
-      verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
+      verifyCredentials(7001, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
           ADMIN_PASSWORD_DEFAULT, VALID);
-      verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH,
+      verifyCredentials(7001, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH,
           ADMIN_PASSWORD_PATCH, INVALID);
     }
 
@@ -346,39 +346,11 @@ class ItOperatorRestart {
 
     // check if the new credentials are valid and the old credentials are not valid any more
     logger.info("Check that after patching current credentials are not valid and new credentials are");
-    if (LOADBALANCER_ACCESS_ONLY) {
-      String managedServer = "managed-server1";
 
-      StringBuffer cmdString = new StringBuffer()
-          .append("curl -sk --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-          .append(" https://" + hostAndPort)
-          .append("/management/tenant-monitoring/servers/" + managedServer)
-          .append(" --silent --show-error")
-          .append(" -o /dev/null")
-          .append(" -w %{http_code}");
-
-      assertTrue(callWebAppAndWaitTillReturnedCode(cmdString.toString(), "401", 10));
-      logger.info("Got the correct http status code for valid credentials");
-
-      cmdString = new StringBuffer()
-          .append("curl -sk --user " + ADMIN_USERNAME_PATCH + ":" + ADMIN_PASSWORD_PATCH)
-          .append(" https://" + hostAndPort)
-          .append("/management/tenant-monitoring/servers/" + managedServer)
-          .append(" --silent --show-error")
-          .append(" -o /dev/null")
-          .append(" -w %{http_code}");
-
-      assertTrue(callWebAppAndWaitTillReturnedCode(cmdString.toString(), "200", 10));
-      logger.info("Got the correct http status code for invalid credentials");
-    } else {
-      verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
-          ADMIN_PASSWORD_DEFAULT, INVALID);
-      verifyCredentials(ingressHost, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH,
-          ADMIN_PASSWORD_PATCH, VALID);
-
-      logger.info("Domain {0} in namespace {1} is fully started after changing WebLogic credentials secret",
-          domainUid, domainNamespace);
-    }
+    verifyCredentials(7001, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
+        ADMIN_PASSWORD_DEFAULT, INVALID);
+    verifyCredentials(7001, adminServerPodName, domainNamespace, ADMIN_USERNAME_PATCH,
+        ADMIN_PASSWORD_PATCH, VALID);
   }
 
   private void restartOperatorAndVerify() {
