@@ -207,7 +207,7 @@ if [ "${running}" = 'true' ]; then
 fi
 ${WLSIMG_BUILDER:-docker} run \
   -d --restart=always -p "127.0.0.1:${reg_port}:5000" --name "${reg_name}" \
-  phx.ocir.io/weblogick8s/test-images/docker/registry:2
+  phx.ocir.io/weblogick8s/test-images/docker/registry:2.8.2
 
 reg_host="${reg_name}"
 echo "Registry Host: ${reg_host}"
