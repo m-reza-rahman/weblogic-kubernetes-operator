@@ -712,11 +712,11 @@ class ItFmwDomainOnPV {
       pvcRequest.put("storage", new Quantity("2Gi"));
       Configuration configuration = null;
       if (OKE_CLUSTER) {
-      configuration = getConfiguration(pvcName,pvcRequest, "oci-fss");
+        configuration = getConfiguration(pvcName,pvcRequest, "oci-fss");
       } else if (OKD) {
-      configuration = getConfiguration(pvcName,pvcRequest, "okd-nfsmnt");
+        configuration = getConfiguration(pvcName,pvcRequest, "okd-nfsmnt");
       } else {
-      configuration = getConfiguration(pvcName, pvcRequest,"weblogic-domain-storage-class");
+        configuration = getConfiguration(pvcName, pvcRequest,"weblogic-domain-storage-class");
 
       }
       configuration.addSecretsItem(rcuAccessSecretName)

@@ -588,7 +588,7 @@
                   **/ItFmwMiiDomain,
                   **/ItMiiSampleFmwMain,
                   **/ItMiiSampleFmwAux,
-                  **/ItFmwDomainOnPV  
+                  **/ItFmwDomainOnPV
                 </includes-failsafe>
             </properties>
         </profile>
