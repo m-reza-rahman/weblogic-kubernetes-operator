@@ -27,6 +27,8 @@ import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.ActionConstants;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -85,9 +87,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 @DisplayName("Test sticky sessions management with Traefik and ClusterService")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
+//@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItStickySession {
 
   // constants for creating domain image using model in image
@@ -203,6 +206,8 @@ class ItStickySession {
     int ingressServiceNodePort =
         getIngressServiceNodePort(traefikNamespace, ingressServiceName, channelName);
 
+    printInfo();
+
     // verify that two HTTP connections are sticky to the same server
     sendHttpRequestsToTestSessionStickinessAndVerify(hostName, ingressServiceNodePort);
   }
@@ -265,8 +270,64 @@ class ItStickySession {
     assertFalse(clusterPort == 0 || clusterPort < 0, "cluster Port is an invalid number");
     logger.info("cluster port for cluster server {0} is: {1}", clusterAddress, clusterPort);
 
+    printInfo();
+
     // verify that two HTTP connections are sticky to the same server
     sendHttpRequestsToTestSessionStickinessAndVerify(hostName, clusterPort, clusterAddress);
+  }
+
+  private void printInfo() {
+    CommandParams params = new CommandParams().defaults();
+    String cmd2 = KUBERNETES_CLI + " get pods --all-namespaces";
+    logger.info("==1. Command to get pods --all-namespaces {0}", cmd2);
+    params.command(cmd2);
+    ExecResult result = Command.withParams(params).executeAndReturnResult();
+    logger.info("1. get pods --all-namespaces returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " get pods --namespace=kube-system -l k8s-app=kube-dns";
+    logger.info("==2. Command to Command to verify that the DNS pod is running: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("2. get pods --namespace=kube-system -l k8s-app=kube-dns returns: {0} {1}!",
+        "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " logs --namespace=kube-system -l k8s-app=kube-dns";
+    logger.info("==3. Command to see logs for the DNS containers: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("3. logs for the DNS containers returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " get svc --namespace=kube-system";
+    logger.info("==4. Command to verify that the DNS service is up: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("4. verify that the DNS service is up returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " get endpoints kube-dns --namespace=kube-system";
+    logger.info("==5. Command to verify that DNS endpoints are exposed: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("5. verify that DNS endpoints are exposed returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = "cat /etc/resolv.conf";
+    logger.info("==6. Command to cat /etc/resolv.conf: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("6. cat /etc/resolv.conf returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = "cat /etc/hosts";
+    logger.info("==7. Command to cat /etc/hosts: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("7. cat /etc/hosts returns: {0} {1}", "\n",result.toString());
+
+
   }
 
   private static String createAndVerifyDomainImage() {
