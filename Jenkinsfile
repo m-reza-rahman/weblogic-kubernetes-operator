@@ -354,7 +354,7 @@ pipeline {
                             if kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
                                 echo "Deleted orphaned kind cluster ${kind_name}"
                             fi
-                            cat <<EOF | kind create cluster --name "${kind_name}" --kubeconfig "${kubeconfig_file}" --config=-
+                            cat <<EOF | kind create cluster --verbosity 99 --name "${kind_name}" --kubeconfig "${kubeconfig_file}" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
