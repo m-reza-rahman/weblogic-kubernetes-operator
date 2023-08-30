@@ -67,7 +67,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResource
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyUpdateWebLogicCredential;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
@@ -195,7 +194,8 @@ class ItMiiUpdateDomainConfig {
     createPVC(pvName, pvcName, domainUid, domainNamespace);
 
     // create job to change permissions on PV hostPath
-    createJobToChangePermissionsOnPvHostPath(pvName, pvcName, domainNamespace);
+    //comment out fix pvc permission 08/30/2023
+    //createJobToChangePermissionsOnPvHostPath(pvName, pvcName, domainNamespace);
 
     // create cluster object
     String clusterName = "cluster-1";
