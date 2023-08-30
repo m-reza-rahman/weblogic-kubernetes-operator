@@ -419,6 +419,7 @@ pipeline {
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
+  ipFamily: ipv6
   podSubnet: 192.168.0.0/16
 containerdConfigPatches:
 - |-
