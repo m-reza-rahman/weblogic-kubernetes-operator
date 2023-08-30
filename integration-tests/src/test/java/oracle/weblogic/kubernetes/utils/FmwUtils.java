@@ -676,6 +676,7 @@ public class FmwUtils {
           .path(getHostPath(pvName, testClass)));
     }
     configuration
+        .introspectorJobActiveDeadlineSeconds(3000L)
         .initializeDomainOnPV(new InitializeDomainOnPV()
             .persistentVolume(pv)
             .persistentVolumeClaim(new PersistentVolumeClaim()
@@ -701,6 +702,7 @@ public class FmwUtils {
                                          Map<String, Quantity> pvcRequest,
                                          String storageClassName) {
     Configuration configuration = new Configuration()
+        .introspectorJobActiveDeadlineSeconds(3000L)
         .initializeDomainOnPV(new InitializeDomainOnPV()
             .persistentVolumeClaim(new PersistentVolumeClaim()
                 .metadata(new V1ObjectMeta()
