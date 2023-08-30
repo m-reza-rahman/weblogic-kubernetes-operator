@@ -83,6 +83,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_MODEL_PROPERTIES_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_IMAGE_DOMAINHOME_BASE_DIR;
@@ -1205,7 +1206,7 @@ public class DomainUtils {
                     .imagePullSecrets(Arrays.asList(
                         new V1LocalObjectReference()
                             .name(BASE_IMAGES_REPO_SECRET_NAME)));  // this secret is used only for non-kind cluster
-    if (!OKD) {
+    if (!OKD && !OKE_CLUSTER) {
       podSpec.initContainers(Arrays.asList(createfixPVCOwnerContainer(pvName, "/u01/shared")));
     }
 
