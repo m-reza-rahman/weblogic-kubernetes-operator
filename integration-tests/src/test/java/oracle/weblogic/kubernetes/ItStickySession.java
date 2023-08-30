@@ -328,8 +328,7 @@ class ItStickySession {
     logger.info("7. cat /etc/hosts returns: {0} {1}", "\n",result.toString());
 
     String k8sHost = System.getenv("K8S_NODEPORT_HOST");
-
-    System.out.println("8.  K8S_NODEPORT_HOST is: " + k8sHost);
+    logger.info("==8. env.K8S_NODEPORT_HOST returns: {0} {1}", "\n",k8sHost);
   }
 
   private static String createAndVerifyDomainImage() {
