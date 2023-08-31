@@ -38,6 +38,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import oracle.weblogic.kubernetes.utils.PCAUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -52,6 +53,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.LOADBALANCER_ACCESS_ONLY;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -75,7 +77,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyCommandResultContainsMsg;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifySystemResourceConfiguration;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -84,6 +85,9 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerIP;
+import static oracle.weblogic.kubernetes.utils.PCAUtils.getLoadBalancerPort;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDeleted;
@@ -130,6 +134,7 @@ class ItMiiUpdateDomainConfig {
   private final String adminServerName = "admin-server";
   private final String clusterName = "cluster-1";
   private String adminSvcExtHost = null;
+  private static String hostAndPort = null; //only PCA
 
   private static LoggingFacade logger = null;
 
@@ -210,6 +215,12 @@ class ItMiiUpdateDomainConfig {
         clusterName, domainNamespace, domain, replicaCount);
 
     createDomainAndVerify(domain, domainNamespace);
+    if (LOADBALANCER_ACCESS_ONLY) {
+      createTraefikIngressRoutingRules(domainNamespace, domainUid);
+      String loadBalancerIP = assertDoesNotThrow(() -> getLoadBalancerIP("traefik", "traefik-operator"));
+      int port = assertDoesNotThrow(() -> getLoadBalancerPort("traefik", "traefik-operator", "web"));
+      hostAndPort = loadBalancerIP + ":" + port;
+    }    
   }
 
   /**
@@ -264,17 +275,18 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
+    String address = LOADBALANCER_ACCESS_ONLY ? hostAndPort : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     String curlString = new StringBuffer()
-          .append("curl --user ")
-          .append(ADMIN_USERNAME_DEFAULT)
-          .append(":")
-          .append(ADMIN_PASSWORD_DEFAULT)
-          .append(" ")
-          .append("\"http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort))
-          .append("/management/weblogic/latest/domainConfig")
-          .append("/JMSServers/TestClusterJmsServer")
-          .append("?fields=notes&links=none\"")
-          .append(" --silent ").toString();
+        .append("curl --user ")
+        .append(ADMIN_USERNAME_DEFAULT)
+        .append(":")
+        .append(ADMIN_PASSWORD_DEFAULT)
+        .append(" ")
+        .append("\"http://" + address)
+        .append("/management/weblogic/latest/domainConfig")
+        .append("/JMSServers/TestClusterJmsServer")
+        .append("?fields=notes&links=none\"")
+        .append(" --silent ").toString();
     logger.info("checkJmsServerConfig: curl command {0}", curlString);
     verifyCommandResultContainsMsg(curlString, "${DOMAIN_UID}~##!'%*$(ls)");
   }
@@ -341,16 +353,13 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                      "JDBCSystemResources", "TestDataSource", "200");
+    PCAUtils.checkSystemResourceConfiguration("JDBCSystemResources", "TestDataSource", "200");
     logger.info("Found the JDBCSystemResource configuration");
 
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                      "JMSSystemResources", "TestClusterJmsModule", "200");
+    PCAUtils.checkSystemResourceConfiguration("JMSSystemResources", "TestClusterJmsModule", "200");
     logger.info("Found the JMSSystemResource configuration");
 
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                      "WLDFSystemResources", "TestWldfModule", "200");
+    PCAUtils.checkSystemResourceConfiguration("WLDFSystemResources", "TestWldfModule", "200");
     logger.info("Found the WLDFSystemResource configuration");
 
     verifyJdbcRuntime("TestDataSource", "jdbc:oracle:thin:localhost");
@@ -419,10 +428,8 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JDBCSystemResources", "TestDataSource", "404");
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JMSSystemResources", "TestClusterJmsModule", "404");
+    PCAUtils.checkSystemResourceConfiguration("JDBCSystemResources", "TestDataSource", "404");
+    PCAUtils.checkSystemResourceConfiguration("JMSSystemResources", "TestClusterJmsModule", "404");
   }
 
   /**
@@ -486,12 +493,10 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JDBCSystemResources", "TestDataSource2", "200");
+    PCAUtils.checkSystemResourceConfiguration("JDBCSystemResources", "TestDataSource2", "200");
     logger.info("Found the JDBCSystemResource configuration");
 
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JMSSystemResources", "TestClusterJmsModule2", "200");
+    PCAUtils.checkSystemResourceConfiguration("JMSSystemResources", "TestClusterJmsModule2", "200");
     logger.info("Found the JMSSystemResource configuration");
 
     // check JMS logs are written on PV
@@ -806,10 +811,8 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JDBCSystemResources", "TestDataSource", "404");
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JMSSystemResources", "TestClusterJmsModule", "404");
+    PCAUtils.checkSystemResourceConfiguration("JDBCSystemResources", "TestDataSource", "404");
+    PCAUtils.checkSystemResourceConfiguration("JMSSystemResources", "TestClusterJmsModule", "404");
   }
 
   // Run standalone JMS Client in the pod using wlthint3client.jar in classpath.
@@ -921,13 +924,13 @@ class ItMiiUpdateDomainConfig {
 
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-
+    String address = LOADBALANCER_ACCESS_ONLY ? hostAndPort : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     checkCluster = new StringBuffer("status=$(curl --user ");
     checkCluster.append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
           .append(" ")
-          .append("http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort))
+          .append("http://" + address)
           .append("/management/tenant-monitoring/servers/")
           .append(managedServer)
           .append(" --silent --show-error ")
@@ -968,18 +971,18 @@ class ItMiiUpdateDomainConfig {
   private void verifyJdbcRuntime(String resourcesName, String expectedOutput) {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-
+    String address = LOADBALANCER_ACCESS_ONLY ? hostAndPort : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     ExecResult result = null;
     curlString = new StringBuffer("curl --user ")
-         .append(ADMIN_USERNAME_DEFAULT)
-         .append(":")
-         .append(ADMIN_PASSWORD_DEFAULT)
-         .append(" ")
-         .append("http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort))
-         .append("/management/wls/latest/datasources/id/")
-         .append(resourcesName)
-         .append("/")
-         .append(" --silent --show-error ");
+        .append(ADMIN_USERNAME_DEFAULT)
+        .append(":")
+        .append(ADMIN_PASSWORD_DEFAULT)
+        .append(" ")
+        .append("http://" + address)
+        .append("/management/wls/latest/datasources/id/")
+        .append(resourcesName)
+        .append("/")
+        .append(" --silent --show-error ");
     logger.info("checkJdbcRuntime: curl command {0}", new String(curlString));
 
     verifyCommandResultContainsMsg(new String(curlString), expectedOutput);
