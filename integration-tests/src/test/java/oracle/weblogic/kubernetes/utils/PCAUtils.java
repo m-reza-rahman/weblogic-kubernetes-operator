@@ -184,7 +184,7 @@ public class PCAUtils {
 
     logger.info("hostAndPort = {0} ", hostAndPort);
 
-    StringBuffer curlString = new StringBuffer("status=$(curl --user ");
+    StringBuffer curlString = new StringBuffer("status=$(curl -sk --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" https://" + hostAndPort)
         .append("/management/weblogic/latest/domainConfig")
