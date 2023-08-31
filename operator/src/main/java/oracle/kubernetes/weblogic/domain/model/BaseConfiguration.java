@@ -186,6 +186,10 @@ public abstract class BaseConfiguration {
     return serverPod.getTopologySpreadConstrains();
   }
 
+  void setTopologySpreadConstraints(List<V1TopologySpreadConstraint> topologySpreadConstraints) {
+    serverPod.setTopologySpreadConstraints(topologySpreadConstraints);
+  }
+
   public String getPriorityClassName() {
     return serverPod.getPriorityClassName();
   }
