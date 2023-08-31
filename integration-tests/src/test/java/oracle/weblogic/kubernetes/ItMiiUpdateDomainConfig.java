@@ -275,14 +275,15 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
-    String address = LOADBALANCER_ACCESS_ONLY ? hostAndPort : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+    String address = LOADBALANCER_ACCESS_ONLY ? "https://" + hostAndPort
+        : "http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     String curlString = new StringBuffer()
         .append("curl --user ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
         .append(" ")
-        .append("\"http://" + address)
+        .append("\"" + address)
         .append("/management/weblogic/latest/domainConfig")
         .append("/JMSServers/TestClusterJmsServer")
         .append("?fields=notes&links=none\"")
@@ -924,13 +925,14 @@ class ItMiiUpdateDomainConfig {
 
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    String address = LOADBALANCER_ACCESS_ONLY ? hostAndPort : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+    String address = LOADBALANCER_ACCESS_ONLY ? "https://" + hostAndPort
+        : "http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     checkCluster = new StringBuffer("status=$(curl --user ");
     checkCluster.append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
           .append(" ")
-          .append("http://" + address)
+          .append(address)
           .append("/management/tenant-monitoring/servers/")
           .append(managedServer)
           .append(" --silent --show-error ")
@@ -971,14 +973,15 @@ class ItMiiUpdateDomainConfig {
   private void verifyJdbcRuntime(String resourcesName, String expectedOutput) {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    String address = LOADBALANCER_ACCESS_ONLY ? hostAndPort : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+    String address = LOADBALANCER_ACCESS_ONLY ? "https://" + hostAndPort
+        : "http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     ExecResult result = null;
     curlString = new StringBuffer("curl --user ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
         .append(" ")
-        .append("http://" + address)
+        .append(address)
         .append("/management/wls/latest/datasources/id/")
         .append(resourcesName)
         .append("/")

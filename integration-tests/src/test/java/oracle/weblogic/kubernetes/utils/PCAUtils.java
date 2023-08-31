@@ -186,7 +186,7 @@ public class PCAUtils {
 
     StringBuffer curlString = new StringBuffer("status=$(curl --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + hostAndPort)
+        .append(" https://" + hostAndPort)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesType)
