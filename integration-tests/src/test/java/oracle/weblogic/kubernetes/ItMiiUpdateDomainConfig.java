@@ -278,7 +278,7 @@ class ItMiiUpdateDomainConfig {
     String address = LOADBALANCER_ACCESS_ONLY ? "https://" + hostAndPort
         : "http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     String curlString = new StringBuffer()
-        .append("curl --user ")
+        .append("curl -sk --user ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
@@ -927,7 +927,7 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     String address = LOADBALANCER_ACCESS_ONLY ? "https://" + hostAndPort
         : "http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort);
-    checkCluster = new StringBuffer("status=$(curl --user ");
+    checkCluster = new StringBuffer("status=$(curl -sk --user ");
     checkCluster.append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
@@ -976,7 +976,7 @@ class ItMiiUpdateDomainConfig {
     String address = LOADBALANCER_ACCESS_ONLY ? "https://" + hostAndPort
         : "http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     ExecResult result = null;
-    curlString = new StringBuffer("curl --user ")
+    curlString = new StringBuffer("curl -sk --user ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
