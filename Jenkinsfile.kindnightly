@@ -579,6 +579,7 @@ EOF
                                         echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
                                         export MAVEN_PROFILE_NAME="integration-tests"
                                     fi
+				    cat "${WORKSPACE}/.mvn/maven.config"
                                     if ! time mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/kindtest.log"; then
                                         echo "integration-tests failed"
                                         exit 1
