@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: a75abc92b2e2f3a344dc65eaed6e1e9aa5621ba540c0956db32056592f9ffb46
+    weblogic.sha256: 131a41dd6f18122586bbab5494259760dee4a40e7b5c1e4354e3505b60f93768
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -47,9 +47,9 @@ spec:
                   appropriate. See https://github.com/oracle/weblogic-monitoring-exporter.
                 properties:
                   image:
-                    default: ghcr.io/oracle/weblogic-monitoring-exporter:2.1.4
+                    default: ghcr.io/oracle/weblogic-monitoring-exporter:2.1.5
                     description: The WebLogic Monitoring Exporter sidecar container
-                      image name. Defaults to ghcr.io/oracle/weblogic-monitoring-exporter:2.1.4
+                      image name. Defaults to ghcr.io/oracle/weblogic-monitoring-exporter:2.1.5
                     type: string
                   imagePullPolicy:
                     description: The image pull policy for the WebLogic Monitoring
@@ -1338,6 +1338,58 @@ spec:
                               is performed.
                             type: integer
                         type: object
+                      topologySpreadConstraints:
+                        description: TopologySpreadConstraints describes how a group
+                          of pods ought to spread across topology domains. Scheduler
+                          will schedule pods in a way which abides by the constraints.
+                          All topologySpreadConstraints are ANDed.
+                        items:
+                          type: object
+                          properties:
+                            nodeTaintsPolicy:
+                              type: string
+                            whenUnsatisfiable:
+                              type: string
+                            maxSkew:
+                              type: integer
+                            nodeAffinityPolicy:
+                              type: string
+                            labelSelector:
+                              type: object
+                              properties:
+                                matchExpressions:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      values:
+                                        type: array
+                                        items:
+                                          type: string
+                                      key:
+                                        type: string
+                                      operator:
+                                        type: string
+                                    required:
+                                    - key
+                                    - operator
+                                matchLabels:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                            minDomains:
+                              type: integer
+                            topologyKey:
+                              type: string
+                            matchLabelKeys:
+                              type: array
+                              items:
+                                type: string
+                          required:
+                          - maxSkew
+                          - topologyKey
+                          - whenUnsatisfiable
+                        type: array
                       volumes:
                         description: Additional volumes to be created in the server
                           Pod. See `kubectl explain pods.spec.volumes`.
@@ -2187,16 +2239,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -2231,16 +2274,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -2348,16 +2382,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -2392,16 +2417,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -2529,16 +2545,7 @@ spec:
                                       type: object
                                       properties:
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: integer
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                       required:
@@ -2558,16 +2565,7 @@ spec:
                                         scheme:
                                           type: string
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: integer
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                         httpHeaders:
@@ -2591,16 +2589,7 @@ spec:
                                       type: object
                                       properties:
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: integer
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                       required:
@@ -2620,16 +2609,7 @@ spec:
                                         scheme:
                                           type: string
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: integer
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                         httpHeaders:
@@ -2663,16 +2643,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -2707,16 +2678,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -2794,16 +2756,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -2838,16 +2791,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -2955,16 +2899,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -2999,16 +2934,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -3136,16 +3062,7 @@ spec:
                                       type: object
                                       properties:
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: integer
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                       required:
@@ -3165,16 +3082,7 @@ spec:
                                         scheme:
                                           type: string
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: integer
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                         httpHeaders:
@@ -3198,16 +3106,7 @@ spec:
                                       type: object
                                       properties:
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: integer
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                       required:
@@ -3227,16 +3126,7 @@ spec:
                                         scheme:
                                           type: string
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: integer
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                         httpHeaders:
@@ -3270,16 +3160,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -3314,16 +3195,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -4479,6 +4351,58 @@ spec:
                           is performed.
                         type: integer
                     type: object
+                  topologySpreadConstraints:
+                    description: TopologySpreadConstraints describes how a group of
+                      pods ought to spread across topology domains. Scheduler will
+                      schedule pods in a way which abides by the constraints. All
+                      topologySpreadConstraints are ANDed.
+                    items:
+                      type: object
+                      properties:
+                        nodeTaintsPolicy:
+                          type: string
+                        whenUnsatisfiable:
+                          type: string
+                        maxSkew:
+                          type: integer
+                        nodeAffinityPolicy:
+                          type: string
+                        labelSelector:
+                          type: object
+                          properties:
+                            matchExpressions:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  values:
+                                    type: array
+                                    items:
+                                      type: string
+                                  key:
+                                    type: string
+                                  operator:
+                                    type: string
+                                required:
+                                - key
+                                - operator
+                            matchLabels:
+                              additionalProperties:
+                                type: string
+                              type: object
+                        minDomains:
+                          type: integer
+                        topologyKey:
+                          type: string
+                        matchLabelKeys:
+                          type: array
+                          items:
+                            type: string
+                      required:
+                      - maxSkew
+                      - topologyKey
+                      - whenUnsatisfiable
+                    type: array
                   volumes:
                     description: Additional volumes to be created in the server Pod.
                       See `kubectl explain pods.spec.volumes`.
@@ -5327,16 +5251,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -5371,16 +5286,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -5488,16 +5394,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -5532,16 +5429,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -5669,16 +5557,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -5698,16 +5577,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -5731,16 +5601,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -5760,16 +5621,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -5803,16 +5655,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -5847,16 +5690,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -5934,16 +5768,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -5978,16 +5803,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -6095,16 +5911,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -6139,16 +5946,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -6276,16 +6074,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -6305,16 +6094,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -6338,16 +6118,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -6367,16 +6138,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: integer
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -6410,16 +6172,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -6454,16 +6207,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: integer
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -7283,6 +7027,58 @@ spec:
                               description: The number of seconds before the first
                                 check is performed.
                               type: integer
+                        topologySpreadConstraints:
+                          description: TopologySpreadConstraints describes how a group
+                            of pods ought to spread across topology domains. Scheduler
+                            will schedule pods in a way which abides by the constraints.
+                            All topologySpreadConstraints are ANDed.
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              nodeTaintsPolicy:
+                                type: string
+                              whenUnsatisfiable:
+                                type: string
+                              maxSkew:
+                                type: integer
+                              nodeAffinityPolicy:
+                                type: string
+                              labelSelector:
+                                type: object
+                                properties:
+                                  matchExpressions:
+                                    type: array
+                                    items:
+                                      type: object
+                                      properties:
+                                        values:
+                                          type: array
+                                          items:
+                                            type: string
+                                        key:
+                                          type: string
+                                        operator:
+                                          type: string
+                                      required:
+                                      - key
+                                      - operator
+                                  matchLabels:
+                                    additionalProperties:
+                                      type: string
+                                    type: object
+                              minDomains:
+                                type: integer
+                              topologyKey:
+                                type: string
+                              matchLabelKeys:
+                                type: array
+                                items:
+                                  type: string
+                            required:
+                            - maxSkew
+                            - topologyKey
+                            - whenUnsatisfiable
                         volumes:
                           description: Additional volumes to be created in the server
                             Pod. See `kubectl explain pods.spec.volumes`.
@@ -8134,16 +7930,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -8178,16 +7965,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -8295,16 +8073,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -8339,16 +8108,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -8476,16 +8236,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: integer
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -8505,16 +8256,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: integer
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -8538,16 +8280,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: integer
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -8567,16 +8300,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: integer
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -8610,16 +8334,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -8654,16 +8369,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -8741,16 +8447,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -8785,16 +8482,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -8902,16 +8590,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -8946,16 +8625,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -9083,16 +8753,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: integer
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -9112,16 +8773,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: integer
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -9145,16 +8797,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: integer
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -9174,16 +8817,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: integer
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -9217,16 +8851,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -9261,16 +8886,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: integer
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -10499,8 +10115,11 @@ spec:
                           Pod is created. See `kubectl explain pods.spec.serviceAccountName`.
                         type: string
                       podSecurityContext:
-                        description: Pod-level security attributes. See `kubectl explain
-                          pods.spec.securityContext`.
+                        description: 'Pod-level security attributes. See `kubectl
+                          explain pods.spec.podSecurityContext`. Beginning with operator
+                          version 3.4.8, if no value is specified for this field,
+                          the operator will use default content for the pod-level
+                          `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                         properties:
                           runAsUser:
                             type: number
@@ -10676,9 +10295,12 @@ spec:
                             type: number
                         type: object
                       containerSecurityContext:
-                        description: Container-level security attributes. Will override
+                        description: 'Container-level security attributes. Will override
                           any matching Pod-level attributes. See `kubectl explain
-                          pods.spec.containers.securityContext`.
+                          pods.spec.containers.securityContext`. Beginning with operator
+                          version 3.4.8, if no value is specified for this field,
+                          the operator will use default content for container-level
+                          `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                         properties:
                           privileged:
                             type: boolean
@@ -11664,16 +11286,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -11708,16 +11321,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -11825,16 +11429,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -11869,16 +11464,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -12006,16 +11592,7 @@ spec:
                                       type: object
                                       properties:
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: number
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                       required:
@@ -12035,16 +11612,7 @@ spec:
                                         scheme:
                                           type: string
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: number
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                         httpHeaders:
@@ -12068,16 +11636,7 @@ spec:
                                       type: object
                                       properties:
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: number
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                       required:
@@ -12097,16 +11656,7 @@ spec:
                                         scheme:
                                           type: string
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: number
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                         httpHeaders:
@@ -12140,16 +11690,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -12184,16 +11725,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -12271,16 +11803,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -12315,16 +11838,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -12432,16 +11946,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -12476,16 +11981,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -12613,16 +12109,7 @@ spec:
                                       type: object
                                       properties:
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: number
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                       required:
@@ -12642,16 +12129,7 @@ spec:
                                         scheme:
                                           type: string
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: number
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                         httpHeaders:
@@ -12675,16 +12153,7 @@ spec:
                                       type: object
                                       properties:
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: number
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                       required:
@@ -12704,16 +12173,7 @@ spec:
                                         scheme:
                                           type: string
                                         port:
-                                          type: object
-                                          properties:
-                                            intValue:
-                                              type: number
-                                            isInt:
-                                              type: boolean
-                                            strValue:
-                                              type: string
-                                          required:
-                                          - isInt
+                                          x-kubernetes-int-or-string: true
                                         host:
                                           type: string
                                         httpHeaders:
@@ -12747,16 +12207,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -12791,16 +12242,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -13417,8 +12859,11 @@ spec:
                             Pod is created. See `kubectl explain pods.spec.serviceAccountName`.
                           type: string
                         podSecurityContext:
-                          description: Pod-level security attributes. See `kubectl
-                            explain pods.spec.securityContext`.
+                          description: 'Pod-level security attributes. See `kubectl
+                            explain pods.spec.podSecurityContext`. Beginning with
+                            operator version 3.4.8, if no value is specified for this
+                            field, the operator will use default content for the pod-level
+                            `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                           type: object
                           properties:
                             runAsUser:
@@ -13597,9 +13042,12 @@ spec:
                                 check is performed.
                               type: number
                         containerSecurityContext:
-                          description: Container-level security attributes. Will override
-                            any matching Pod-level attributes. See `kubectl explain
-                            pods.spec.containers.securityContext`.
+                          description: 'Container-level security attributes. Will
+                            override any matching Pod-level attributes. See `kubectl
+                            explain pods.spec.containers.securityContext`. Beginning
+                            with operator version 3.4.8, if no value is specified
+                            for this field, the operator will use default content
+                            for container-level `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                           type: object
                           properties:
                             privileged:
@@ -14589,16 +14037,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -14633,16 +14072,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -14750,16 +14180,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -14794,16 +14215,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -14931,16 +14343,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -14960,16 +14363,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -14993,16 +14387,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -15022,16 +14407,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -15065,16 +14441,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -15109,16 +14476,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -15196,16 +14554,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -15240,16 +14589,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -15357,16 +14697,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -15401,16 +14732,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -15538,16 +14860,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -15567,16 +14880,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -15600,16 +14904,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -15629,16 +14924,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -15672,16 +14958,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -15716,16 +14993,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -16355,8 +15623,11 @@ spec:
                       See `kubectl explain pods.spec.serviceAccountName`.
                     type: string
                   podSecurityContext:
-                    description: Pod-level security attributes. See `kubectl explain
-                      pods.spec.securityContext`.
+                    description: 'Pod-level security attributes. See `kubectl explain
+                      pods.spec.podSecurityContext`. Beginning with operator version
+                      3.4.8, if no value is specified for this field, the operator
+                      will use default content for the pod-level `securityContext`.
+                      More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                     properties:
                       runAsUser:
                         type: number
@@ -16529,8 +15800,11 @@ spec:
                         type: number
                     type: object
                   containerSecurityContext:
-                    description: Container-level security attributes. Will override
+                    description: 'Container-level security attributes. Will override
                       any matching Pod-level attributes. See `kubectl explain pods.spec.containers.securityContext`.
+                      Beginning with operator version 3.4.8, if no value is specified
+                      for this field, the operator will use default content for container-level
+                      `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                     properties:
                       privileged:
                         type: boolean
@@ -17511,16 +16785,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -17555,16 +16820,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -17672,16 +16928,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -17716,16 +16963,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -17853,16 +17091,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -17882,16 +17111,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -17915,16 +17135,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -17944,16 +17155,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -17987,16 +17189,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -18031,16 +17224,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -18118,16 +17302,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -18162,16 +17337,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -18279,16 +17445,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -18323,16 +17480,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -18460,16 +17608,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -18489,16 +17628,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -18522,16 +17652,7 @@ spec:
                                   type: object
                                   properties:
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                   required:
@@ -18551,16 +17672,7 @@ spec:
                                     scheme:
                                       type: string
                                     port:
-                                      type: object
-                                      properties:
-                                        intValue:
-                                          type: number
-                                        isInt:
-                                          type: boolean
-                                        strValue:
-                                          type: string
-                                      required:
-                                      - isInt
+                                      x-kubernetes-int-or-string: true
                                     host:
                                       type: string
                                     httpHeaders:
@@ -18594,16 +17706,7 @@ spec:
                               type: object
                               properties:
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                               required:
@@ -18638,16 +17741,7 @@ spec:
                                 scheme:
                                   type: string
                                 port:
-                                  type: object
-                                  properties:
-                                    intValue:
-                                      type: number
-                                    isInt:
-                                      type: boolean
-                                    strValue:
-                                      type: string
-                                  required:
-                                  - isInt
+                                  x-kubernetes-int-or-string: true
                                 host:
                                   type: string
                                 httpHeaders:
@@ -19171,8 +18265,11 @@ spec:
                             Pod is created. See `kubectl explain pods.spec.serviceAccountName`.
                           type: string
                         podSecurityContext:
-                          description: Pod-level security attributes. See `kubectl
-                            explain pods.spec.securityContext`.
+                          description: 'Pod-level security attributes. See `kubectl
+                            explain pods.spec.podSecurityContext`. Beginning with
+                            operator version 3.4.8, if no value is specified for this
+                            field, the operator will use default content for the pod-level
+                            `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                           type: object
                           properties:
                             runAsUser:
@@ -19351,9 +18448,12 @@ spec:
                                 check is performed.
                               type: number
                         containerSecurityContext:
-                          description: Container-level security attributes. Will override
-                            any matching Pod-level attributes. See `kubectl explain
-                            pods.spec.containers.securityContext`.
+                          description: 'Container-level security attributes. Will
+                            override any matching Pod-level attributes. See `kubectl
+                            explain pods.spec.containers.securityContext`. Beginning
+                            with operator version 3.4.8, if no value is specified
+                            for this field, the operator will use default content
+                            for container-level `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.'
                           type: object
                           properties:
                             privileged:
@@ -20343,16 +19443,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -20387,16 +19478,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -20504,16 +19586,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -20548,16 +19621,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -20685,16 +19749,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -20714,16 +19769,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -20747,16 +19793,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -20776,16 +19813,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -20819,16 +19847,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -20863,16 +19882,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -20950,16 +19960,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -20994,16 +19995,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -21111,16 +20103,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -21155,16 +20138,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
@@ -21292,16 +20266,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -21321,16 +20286,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -21354,16 +20310,7 @@ spec:
                                         type: object
                                         properties:
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                         required:
@@ -21383,16 +20330,7 @@ spec:
                                           scheme:
                                             type: string
                                           port:
-                                            type: object
-                                            properties:
-                                              intValue:
-                                                type: number
-                                              isInt:
-                                                type: boolean
-                                              strValue:
-                                                type: string
-                                            required:
-                                            - isInt
+                                            x-kubernetes-int-or-string: true
                                           host:
                                             type: string
                                           httpHeaders:
@@ -21426,16 +20364,7 @@ spec:
                                     type: object
                                     properties:
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                     required:
@@ -21470,16 +20399,7 @@ spec:
                                       scheme:
                                         type: string
                                       port:
-                                        type: object
-                                        properties:
-                                          intValue:
-                                            type: number
-                                          isInt:
-                                            type: boolean
-                                          strValue:
-                                            type: string
-                                        required:
-                                        - isInt
+                                        x-kubernetes-int-or-string: true
                                       host:
                                         type: string
                                       httpHeaders:
