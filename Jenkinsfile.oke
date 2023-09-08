@@ -493,7 +493,7 @@ EOF
                                 export NO_PROXY=$NO_PROXY,${clusterPublicIP}
                                 echo "NO_PROXY:" $NO_PROXY
                                 K8S_NODES=`kubectl get nodes -o wide`
-                                echo "K8S_NODES is =========:" $K8S_NODES
+                                echo "K8S_NODES is =========----:" $K8S_NODES
                                 NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
                                 if [ -z "${NODE_IP}" ]; then
                                         echo "retry get node ip ";
