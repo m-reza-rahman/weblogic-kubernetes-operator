@@ -492,6 +492,8 @@ EOF
                                 echo " clusterPublicIP : ${clusterPublicIP}"
                                 export NO_PROXY=$NO_PROXY,${clusterPublicIP}
                                 echo "NO_PROXY:" $NO_PROXY
+                                K8S_NODES=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
+                                echo "K8S_NODES is =========:" $K8S_NODES
                                 NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
                                 if [ -z "${NODE_IP}" ]; then
                                         echo "retry get node ip ";
@@ -506,7 +508,7 @@ EOF
  
                                 K8S_NODEPORT_HOST=`${KUBERNETES_CLI:-kubectl} get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}'`
                                 export ${K8S_NODEPORT_HOST}
-                                echo "K8S_NODEPORT_HOST = ${K8S_NODEPORT_HOST}"
+                                echo "K8S_NODEPORT_HOST:" $K8S_NODEPORT_HOST
 
                                 mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
