@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import oracle.weblogic.kubernetes.TestConstants;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.utils.CleanupUtil;
 import oracle.weblogic.kubernetes.utils.LoggingUtil;
@@ -324,6 +326,10 @@ public class IntegrationTestWatcher implements
       getLogger().info("Skipping cleanup after test class");
     } else {
       getLogger().info("Starting cleanup after test class");
+      CommandParams params = new CommandParams().defaults();
+      params.command("ls -lrt integration-tests/target/failsafe-reports");
+      params.verbose(true);
+      Command.withParams(params).execute();
       CleanupUtil.cleanup(namespaces);
     }
   }

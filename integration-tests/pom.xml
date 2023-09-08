@@ -246,7 +246,7 @@
                                 <wko.it.grafana.chart.version>${wko.it.grafana.chart.version}</wko.it.grafana.chart.version>
                                 <wko.it.istio.version>${wko.it.istio.version}</wko.it.istio.version>
                                 <wko.it.oke.cluster>${wko.it.oke.cluster}</wko.it.oke.cluster>
-        			<wko.it.oke.cluster.privateip>${env.OKE_CLUSTER_PRIVATEIP}</wko.it.oke.cluster.privateip>
+        			            <wko.it.oke.cluster.privateip>${env.OKE_CLUSTER_PRIVATEIP}</wko.it.oke.cluster.privateip>
                                 <wko.it.nfs.server>${wko.it.nfs.server}</wko.it.nfs.server>
                                 <wko.it.fss.dir>${wko.it.fss.dir}</wko.it.fss.dir>
                                 <wko.it.okd.cluster>${wko.it.okd.cluster}</wko.it.okd.cluster>
@@ -411,7 +411,7 @@
             <properties>
                 <skipITs>false</skipITs>
                 <includes-failsafe>
-		  **/ItMultiDomainModels,
+		          **/ItMultiDomainModels,
                   **/ItServerStartPolicy,
                   **/ItServiceStartPolicyDynamicCluster,
                   **/ItServerStartPolicyConfigCluster,
