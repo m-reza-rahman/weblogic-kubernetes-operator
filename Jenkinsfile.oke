@@ -55,9 +55,6 @@ pipeline {
         MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-gate' : 'oke-gate'}"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
         PARALLEL_RUN = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? true : false}"
-        K8S_NODEPORT_HOST = `kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}'`
-        export ${K8S_NODEPORT_HOST}
-        echo "K8S_NODEPORT_HOST = ${K8S_NODEPORT_HOST}"
     }
 
     parameters {
@@ -506,6 +503,10 @@ EOF
                                 NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| head -n2 | tail -n1`
                                 echo "second node external IP ${NODE_IP}"
                                 export NODE_IP=${NODE_IP}
+ 
+                                K8S_NODEPORT_HOST=`${KUBERNETES_CLI:-kubectl} get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}'`
+                                export ${K8S_NODEPORT_HOST}
+                                echo "K8S_NODEPORT_HOST = ${K8S_NODEPORT_HOST}"
 
                                 mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
