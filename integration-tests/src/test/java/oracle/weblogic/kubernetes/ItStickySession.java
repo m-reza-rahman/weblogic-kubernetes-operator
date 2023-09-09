@@ -331,18 +331,18 @@ class ItStickySession {
     logger.info("==8. env.K8S_NODEPORT_HOST returns: {0} {1}", "\n",k8sHost);
   
     params = new CommandParams().defaults();
-    cmd2 = KUBERNETES_CLI + " cluster-info dump";
-    logger.info("==9. cluster-info dump: {0}", cmd2);
+    cmd2 = KUBERNETES_CLI + " cluster-info";
+    logger.info("==9. cluster-info: {0}", cmd2);
     params.command(cmd2);
     result = Command.withParams(params).executeAndReturnResult();
-    logger.info("9. cluster-info dump returns: {0} {1}", "\n",result.toString());
+    logger.info("9. cluster-info returns: {0} {1}", "\n",result.toString());
 
     params = new CommandParams().defaults();
-    cmd2 = KUBERNETES_CLI + " get services --all-namespaces";
-    logger.info("==10. Command to get services --all-namespaces: {0}", cmd2);
+    cmd2 = KUBERNETES_CLI + " get services -n " + traefikNamespace + " | awk '{print $4}' |tail -n+2";
+    logger.info("==10. Command to get services -n {0} | awk '{print $4}' |tail -n+2: {1}", traefikNamespace, cmd2);
     params.command(cmd2);
     result = Command.withParams(params).executeAndReturnResult();
-    logger.info("10. get services --all-namespaces returns: {0} {1}", "\n",result.toString());
+    logger.info("10. get services -n traefikNamespace returns: {0} {1}", "\n",result.toString());
 
     /*
     String k8sConfig = System.getenv("KUBECONFIG");
