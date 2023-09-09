@@ -508,10 +508,12 @@ EOF
                                 
                                 echo "=== run kubectl cluster-info dump"
                                 kubectl cluster-info dump
+
                                 echo "=== run cat ${KUBECONFIG}"
                                 cat ${KUBECONFIG}
-                                echo "=== run kubectl get pods --all-namespaces | grep kube-apiserver"
-                                kubectl get pods --all-namespaces | grep kube-apiserver
+
+                                echo "=== run kubectl get pods --all-namespaces -o wide"  
+                                kubectl get pods --all-namespaces -o wide
  
                                 mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
