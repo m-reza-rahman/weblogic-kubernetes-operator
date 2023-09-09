@@ -506,14 +506,11 @@ EOF
                                 echo "second node external IP ${NODE_IP}"
                                 export NODE_IP=${NODE_IP}
                                 
-                                echo "=== run kubectl cluster-info dump"
-                                kubectl cluster-info dump
+                                echo "=== run kubectl cluster-info"
+                                kubectl cluster-info
+                                echo "=== run kubectl get services --all-namespaces"
+                                kubectl get services --all-namespaces
 
-                                echo "=== run cat ${KUBECONFIG}"
-                                cat ${KUBECONFIG}
-
-                                echo "=== run kubectl get pods --all-namespaces -o wide"  
-                                kubectl get pods --all-namespaces -o wide
  
                                 mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
