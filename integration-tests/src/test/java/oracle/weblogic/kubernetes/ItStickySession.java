@@ -329,6 +329,28 @@ class ItStickySession {
 
     String k8sHost = System.getenv("K8S_NODEPORT_HOST");
     logger.info("==8. env.K8S_NODEPORT_HOST returns: {0} {1}", "\n",k8sHost);
+  
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " cluster-info dump";
+    logger.info("==9. cluster-info dump: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("9. cluster-info dump returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " get pods --all-namespaces -o wide";
+    logger.info("==10. Command to get pods --all-namespaces -o wide: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("10. get pods --all-namespaces -o wide returns: {0} {1}", "\n",result.toString());
+
+    String k8sConfig = System.getenv("KUBECONFIG");
+    params = new CommandParams().defaults();
+    cmd2 = "cat " + k8sConfig;
+    logger.info("==11. Command to cat k8sConfig: {0}", cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("11. cat k8sConfig returns: {0} {1}", "\n",result.toString());
   }
 
   private static String createAndVerifyDomainImage() {
