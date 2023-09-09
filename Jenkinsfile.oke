@@ -508,9 +508,6 @@ EOF
                                 
                                 echo "=== run kubectl cluster-info"
                                 kubectl cluster-info
-                                echo "=== run kubectl get services --all-namespaces"
-                                kubectl get services --all-namespaces
-
  
                                 mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
