@@ -57,7 +57,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
@@ -549,7 +549,17 @@ class ItStickySession {
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
-      String hostAndPort = getHostAndPort(hostName, servicePort);
+      CommandParams params = new CommandParams().defaults();
+      String cmdToGetTraefikExtIPAddr =
+          KUBERNETES_CLI + " get services -n " + traefikNamespace + " | awk '{print $4}' |tail -n+2";
+      logger.info("======. Command to get services -n {0} | awk '{print $4}' |tail -n+2: {1}",
+          traefikNamespace, cmdToGetTraefikExtIPAddr);
+      params.command(cmdToGetTraefikExtIPAddr);
+      ExecResult result = Command.withParams(params).executeAndReturnResult();
+      String traefikExtIPAddr = result.toString();
+      logger.info("======. get services -n traefikNamespace returns: {0} {1}", "\n",traefikExtIPAddr);
+
+      String hostAndPort = traefikExtIPAddr + ":" + servicePort; //getHostAndPort(hostName, servicePort);
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
           .append(hostName)
