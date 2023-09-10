@@ -566,7 +566,7 @@ class ItStickySession {
       String traefikExtIPAddr = result.stdout();
       logger.info("======. get services -n traefikNamespace returns: {0} {1}", "\n",traefikExtIPAddr);
 
-      String hostAndPort = traefikExtIPAddr + ":" + servicePort; //getHostAndPort(hostName, servicePort);
+      String hostAndPort = traefikExtIPAddr;// + ":" + servicePort; //getHostAndPort(hostName, servicePort);
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
           .append(hostName)
