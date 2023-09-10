@@ -27,6 +27,8 @@ import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.ActionConstants;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -48,6 +50,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.LOGS_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -465,6 +468,19 @@ class ItStickySession {
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
       String hostAndPort = getHostAndPort(hostName, servicePort);
+
+      if (OKE_CLUSTER) {
+        CommandParams params = new CommandParams().defaults();
+        String cmdToGetTraefikExtIPAddr =
+            KUBERNETES_CLI + " get services -n " + traefikNamespace + " | awk '{print $4}' |tail -n+2";
+        logger.info("Command to get Traefik external IP address {0}: ", cmdToGetTraefikExtIPAddr);
+        params.command(cmdToGetTraefikExtIPAddr);
+        ExecResult result = Command.withParams(params).executeAndReturnResult();
+        String traefikExtIPAddr = result.stdout();
+        logger.info("get Traefik external IP address returns: {0} {1}", "\n",traefikExtIPAddr);
+        
+        hostAndPort = traefikExtIPAddr;
+      }
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
           .append(hostName)
