@@ -556,7 +556,7 @@ class ItStickySession {
           traefikNamespace, cmdToGetTraefikExtIPAddr);
       params.command(cmdToGetTraefikExtIPAddr);
       ExecResult result = Command.withParams(params).executeAndReturnResult();
-      String traefikExtIPAddr = result.toString();
+      String traefikExtIPAddr = result.stdout();
       logger.info("======. get services -n traefikNamespace returns: {0} {1}", "\n",traefikExtIPAddr);
 
       String hostAndPort = traefikExtIPAddr + ":" + servicePort; //getHostAndPort(hostName, servicePort);
