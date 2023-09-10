@@ -27,8 +27,6 @@ import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.ActionConstants;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -60,6 +58,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -470,16 +469,8 @@ class ItStickySession {
       String hostAndPort = getHostAndPort(hostName, servicePort);
 
       if (OKE_CLUSTER) {
-        CommandParams params = new CommandParams().defaults();
-        String cmdToGetTraefikExtIPAddr =
-            KUBERNETES_CLI + " get services -n " + traefikNamespace + " | awk '{print $4}' |tail -n+2";
-        logger.info("Command to get Traefik external IP address {0}: ", cmdToGetTraefikExtIPAddr);
-        params.command(cmdToGetTraefikExtIPAddr);
-        ExecResult result = Command.withParams(params).executeAndReturnResult();
-        String traefikExtIPAddr = result.stdout();
-        logger.info("get Traefik external IP address returns: {0} {1}", "\n",traefikExtIPAddr);
-        
-        hostAndPort = traefikExtIPAddr;
+        String traefikExtIPAddr = getServiceExtIPAddrtOke(traefikNamespace);
+        hostAndPort = traefikExtIPAddr + ":" + servicePort;
       }
 
       curlCmd.append(" --noproxy '*' -H 'host: ")

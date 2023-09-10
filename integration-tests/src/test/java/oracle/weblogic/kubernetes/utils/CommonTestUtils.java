@@ -1234,6 +1234,27 @@ public class CommonTestUtils {
   }
 
   /**
+   * Get external IP address of a service.
+   *
+   * @param nameSpace - nameSpace of service
+   * @return host and port for all env, route hostname for OKD
+   */
+  public static String getServiceExtIPAddrtOke(String nameSpace) {
+    LoggingFacade logger = getLogger();
+
+    CommandParams params = new CommandParams().defaults();
+    String cmdToGetServiceExtIPAddr =
+        KUBERNETES_CLI + " get services -n " + nameSpace + " | awk '{print $4}' |tail -n+2";
+    logger.info("Command to get Traefik external IP address {0}: ", cmdToGetServiceExtIPAddr);
+    params.command(cmdToGetServiceExtIPAddr);
+    ExecResult result = Command.withParams(params).executeAndReturnResult();
+    String serviceExtIPAddr = result.stdout();
+    logger.info("get Traefik external IP address returns: {0} {1}", "\n",serviceExtIPAddr);
+
+    return serviceExtIPAddr;
+  }
+
+  /**
    * Verify the command result contains expected message.
    *
    * @param command the command to execute
