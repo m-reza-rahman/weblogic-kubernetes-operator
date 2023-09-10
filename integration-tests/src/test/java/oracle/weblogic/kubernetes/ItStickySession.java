@@ -338,11 +338,18 @@ class ItStickySession {
     logger.info("9. cluster-info returns: {0} {1}", "\n",result.toString());
 
     params = new CommandParams().defaults();
-    cmd2 = KUBERNETES_CLI + " get services -n " + traefikNamespace + " | awk '{print $4}' |tail -n+2";
-    logger.info("==10. Command to get services -n {0} | awk '{print $4}' |tail -n+2: {1}", traefikNamespace, cmd2);
+    cmd2 = KUBERNETES_CLI + " get services -n " + traefikNamespace;
+    logger.info("==10. Command to get services -n {0}: {1}", traefikNamespace, cmd2);
     params.command(cmd2);
     result = Command.withParams(params).executeAndReturnResult();
     logger.info("10. get services -n traefikNamespace returns: {0} {1}", "\n",result.toString());
+
+    params = new CommandParams().defaults();
+    cmd2 = KUBERNETES_CLI + " get services -n " + traefikNamespace + " | awk '{print $4}' |tail -n+2";
+    logger.info("==11. Command to get services -n {0} | awk '{print $4}' |tail -n+2: {1}", traefikNamespace, cmd2);
+    params.command(cmd2);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("11. get services -n traefikNamespace returns: {0} {1}", "\n",result.toString());
 
     /*
     String k8sConfig = System.getenv("KUBECONFIG");
