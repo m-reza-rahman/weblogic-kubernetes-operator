@@ -206,6 +206,12 @@ If the PV and PVC already exist in your environment, you do not need
 to specify any `persistentVolume` or `persistentVolumeClaim`  under the `intializedDomainOnPV` section.
 
 
+In OpenShift if you intend to have operator create PV on your behalf, it is essential to create 
+a custom SCC (security context constrains). Otherwise, you could run into problems with the default
+restricted SCC, which allocates random UID. A preferable approach is to manually create the PV in advance,
+allowing you to configure the security context settings to match your application's specific requirements.
+
+
 #### References
 
 - [Oracle Kubernetes Engine Persistent Storage](https://docs.oracle.com/en-us/iaas/Content/ContEng/Tasks/contengcreatingpersistentvolumeclaim.htm)
