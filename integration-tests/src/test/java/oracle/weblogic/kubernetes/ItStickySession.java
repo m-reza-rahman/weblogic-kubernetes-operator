@@ -465,8 +465,8 @@ class ItStickySession {
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
-      String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(traefikNamespace) : getHostAndPort(hostName, servicePort);
+      String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
+          ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik") : getHostAndPort(hostName, servicePort);
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
           .append(hostName)
