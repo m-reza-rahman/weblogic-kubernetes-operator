@@ -79,6 +79,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVeri
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyServerCommunication;
@@ -832,16 +833,20 @@ public class CommonLBTestUtils {
                                              int lbNodePort,
                                              boolean isHostRouting,
                                              String ingressHostName,
-                                             String pathLocation) {
+                                             String pathLocation,
+                                             String... args) {
+    String serviceNamespace = (args.length == 0) ? "" : args[0];
     StringBuffer consoleUrl = new StringBuffer();
     if (isTLS) {
       consoleUrl.append("https://");
     } else {
       consoleUrl.append("http://");
     }
-    consoleUrl.append(K8S_NODEPORT_HOST)
-        .append(":")
-        .append(lbNodePort);
+
+    String hostAndPort = getServiceExtIPAddrtOke(serviceNamespace, ingressHostName) != null
+        ? getServiceExtIPAddrtOke(serviceNamespace, ingressHostName) : K8S_NODEPORT_HOST + ":" + lbNodePort;
+
+    consoleUrl.append(hostAndPort);
     if (!isHostRouting) {
       consoleUrl.append(pathLocation);
     }

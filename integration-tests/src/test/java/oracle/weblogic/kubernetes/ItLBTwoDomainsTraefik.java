@@ -134,7 +134,7 @@ class ItLBTwoDomainsTraefik {
     logger.info("Verifying WebLogic admin console is accessible through Traefik host routing with HTTP protocol");
     for (String domainUid : domainUids) {
       verifyAdminServerAccess(false, getTraefikLbNodePort(false), true,
-          domainUid + "." + domainNamespace + "." + "admin-server" + ".test", "");
+          domainUid + "." + domainNamespace + "." + "admin-server" + ".test", "", traefikNamespace);
     }
   }
 
