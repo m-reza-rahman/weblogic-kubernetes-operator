@@ -207,7 +207,7 @@ to specify any `persistentVolume` or `persistentVolumeClaim`  under the `intiali
 
 
 In OpenShift if you intend to have operator create PV on your behalf, it is essential to create 
-a custom SCC (security context constrains). Otherwise, you could run into problems with the default
+a custom SCC (security context constrain). Otherwise, you could run into problems with the default
 restricted SCC, which allocates random UID. A preferable approach is to manually create the PV in advance,
 allowing you to configure the security context settings to match your application's specific requirements.
 
