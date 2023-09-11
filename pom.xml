@@ -641,7 +641,7 @@
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
     <java.version.range>11</java.version.range>
-    <maven.version.range>[3.8,)</maven.version.range>
+    <maven.version.range>[3.8.1,)</maven.version.range>
     <maven-enforcer-plugin-version>3.4.0</maven-enforcer-plugin-version>
     <maven-clean-plugin-version>3.3.1</maven-clean-plugin-version>
     <maven-compiler-plugin-version>3.11.0</maven-compiler-plugin-version>
@@ -698,7 +698,7 @@
     <snakeyaml-version>2.2</snakeyaml-version>
     <gson-version>2.10.1</gson-version>
     <dependency-check-version>8.4.0</dependency-check-version>
-    <slf4j-version>2.0.7</slf4j-version>
+    <slf4j-version>2.0.9</slf4j-version>
     <logback-classic-version>1.4.11</logback-classic-version>
     <root-generated-swagger>${project.basedir}/src-generated-swagger</root-generated-swagger>
     <src-generated-swagger>${root-generated-swagger}/main/java</src-generated-swagger>
