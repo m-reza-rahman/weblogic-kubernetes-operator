@@ -1241,15 +1241,18 @@ public class CommonTestUtils {
    */
   public static String getServiceExtIPAddrtOke(String nameSpace) {
     LoggingFacade logger = getLogger();
+    String serviceExtIPAddr = null;
 
-    CommandParams params = new CommandParams().defaults();
-    String cmdToGetServiceExtIPAddr =
-        KUBERNETES_CLI + " get services -n " + nameSpace + " | awk '{print $4}' |tail -n+2";
-    logger.info("Command to get Traefik external IP address {0}: ", cmdToGetServiceExtIPAddr);
-    params.command(cmdToGetServiceExtIPAddr);
-    ExecResult result = Command.withParams(params).executeAndReturnResult();
-    String serviceExtIPAddr = result.stdout();
-    logger.info("get Traefik external IP address returns: {0} {1}", "\n",serviceExtIPAddr);
+    if (OKE_CLUSTER) {
+      String cmdToGetServiceExtIPAddr =
+          KUBERNETES_CLI + " get services -n " + nameSpace + " | awk '{print $4}' |tail -n+2";
+      logger.info("Command to get Traefik external IP address {0}: ", cmdToGetServiceExtIPAddr);
+      CommandParams params = new CommandParams().defaults();
+      params.command(cmdToGetServiceExtIPAddr);
+      ExecResult result = Command.withParams(params).executeAndReturnResult();
+      serviceExtIPAddr = result.stdout();
+      logger.info("get Traefik external IP address returns: {0} {1}", "\n", serviceExtIPAddr);
+    }
 
     return serviceExtIPAddr;
   }

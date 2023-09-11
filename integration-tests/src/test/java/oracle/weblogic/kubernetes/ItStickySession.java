@@ -48,7 +48,6 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.LOGS_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -466,12 +465,8 @@ class ItStickySession {
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
-      String hostAndPort = getHostAndPort(hostName, servicePort);
-
-      if (OKE_CLUSTER) {
-        String traefikExtIPAddr = getServiceExtIPAddrtOke(traefikNamespace);
-        hostAndPort = traefikExtIPAddr + ":" + servicePort;
-      }
+      String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace) != null
+          ? getServiceExtIPAddrtOke(traefikNamespace) : getHostAndPort(hostName, servicePort);
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
           .append(hostName)
