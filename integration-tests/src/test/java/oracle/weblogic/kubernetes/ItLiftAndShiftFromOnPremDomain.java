@@ -59,6 +59,7 @@ import static oracle.weblogic.kubernetes.utils.BuildApplication.setupWebLogicPod
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getActualLocationIfNeeded;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withQuickRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -93,10 +94,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @DisplayName("Test to validate on-prem to k8s use case")
 @Tag("kind-parallel")
-@Tag("oke-parallel")
 @Tag("toolkits-srg")
 @Tag("okd-wls-mrg")
 @Tag("olcne")
+@Tag("oke-gate")
 @IntegrationTest
 class ItLiftAndShiftFromOnPremDomain {
   private static String opNamespace = null;
@@ -331,7 +332,9 @@ class ItLiftAndShiftFromOnPremDomain {
       hostName = createRouteForOKD(clusterService, domainNamespace);
     }
 
-    String hostAndPort = getHostAndPort(hostName, traefikNodePort);
+    String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
+        ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik") : getHostAndPort(hostName, traefikNodePort);
+
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     String curlString = String.format("curl -v --show-error --noproxy '*' "

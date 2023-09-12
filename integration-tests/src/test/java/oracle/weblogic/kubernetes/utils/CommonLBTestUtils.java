@@ -79,6 +79,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVeri
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyServerCommunication;
@@ -600,7 +601,11 @@ public class CommonLBTestUtils {
    * @param domainNamespace domain namespace
    * @param domainUids uid of the domains
    */
-  public static void buildAndDeployClusterviewApp(String domainNamespace, List<String> domainUids) {
+  public static void buildAndDeployClusterviewApp(String domainNamespace,
+                                                  List<String> domainUids,
+                                                  String... args) {
+    String lberServiceNamespace = (args.length == 0) ? "" : args[0];
+
     // build the clusterview application
     getLogger().info("Building clusterview application");
     Path distDir = BuildApplication.buildApplication(Paths.get(APP_DIR, "clusterview"),
@@ -614,7 +619,8 @@ public class CommonLBTestUtils {
     for (String domainUid : domainUids) {
       // admin/managed server name here should match with model yaml in MII_BASIC_WDT_MODEL_FILE
       String adminServerPodName = domainUid + "-admin-server";
-      testUntil(() -> deployApplication(domainNamespace, domainUid, adminServerPodName, clusterViewAppPath),
+      testUntil(() -> deployApplication(domainNamespace, domainUid, adminServerPodName,
+                                        clusterViewAppPath, lberServiceNamespace),
           getLogger(),
           "deploying application {0} to pod {1} in namespace {2} succeeds",
           clusterViewAppPath,
@@ -623,8 +629,13 @@ public class CommonLBTestUtils {
     }
   }
 
-  private static boolean deployApplication(String namespace, String domainUid, String adminServerPodName,
-                                        Path clusterViewAppPath) {
+  private static boolean deployApplication(String namespace,
+                                           String domainUid,
+                                           String adminServerPodName,
+                                           Path clusterViewAppPath,
+                                           String... args) {
+    String lberServiceNamespace = (args.length == 0) ? "" : args[0];
+
     getLogger().info("Getting node port for admin server default channel");
     int serviceNodePort = assertDoesNotThrow(() ->
             getServiceNodePort(namespace, getExternalServicePodName(adminServerPodName), "default"),
@@ -633,9 +644,12 @@ public class CommonLBTestUtils {
     getLogger().info("Deploying application {0} to domain {1} cluster target cluster-1 in namespace {2}",
         clusterViewAppPath, domainUid, namespace);
     String targets = "{ identity: [ clusters, 'cluster-1' ] }";
-    ExecResult result = DeployUtil.deployUsingRest(K8S_NODEPORT_HOST,
-        String.valueOf(serviceNodePort),
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+    String hostAndPort =
+        getServiceExtIPAddrtOke(lberServiceNamespace, "Load Balancer w namespace: " + lberServiceNamespace) != null
+            ? getServiceExtIPAddrtOke(lberServiceNamespace, "Load Balancer w namespace: " + lberServiceNamespace)
+                : K8S_NODEPORT_HOST + ":" + serviceNodePort;
+
+    ExecResult result = DeployUtil.deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
         targets, clusterViewAppPath, null, domainUid + "clusterview");
     assertNotNull(result, "Application deployment failed");
     getLogger().info("Application deployment returned {0}", result.toString());
@@ -832,21 +846,28 @@ public class CommonLBTestUtils {
                                              int lbNodePort,
                                              boolean isHostRouting,
                                              String ingressHostName,
-                                             String pathLocation) {
+                                             String pathLocation,
+                                             String... args) {
+    String lberServiceNamespace = (args.length == 0) ? "" : args[0];
+
+    String hostAndPort = getServiceExtIPAddrtOke(lberServiceNamespace, ingressHostName) != null
+        ? getServiceExtIPAddrtOke(lberServiceNamespace, ingressHostName) : K8S_NODEPORT_HOST + ":" + lbNodePort;
+
     StringBuffer consoleUrl = new StringBuffer();
     if (isTLS) {
       consoleUrl.append("https://");
     } else {
       consoleUrl.append("http://");
     }
-    consoleUrl.append(K8S_NODEPORT_HOST)
-        .append(":")
-        .append(lbNodePort);
+
+    consoleUrl.append(hostAndPort);
+
     if (!isHostRouting) {
       consoleUrl.append(pathLocation);
     }
 
     consoleUrl.append("/console/login/LoginForm.jsp");
+
     String curlCmd;
     if (isHostRouting) {
       curlCmd = String.format("curl -ks --show-error --noproxy '*' -H 'host: %s' %s",

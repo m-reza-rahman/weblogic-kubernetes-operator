@@ -53,8 +53,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DisplayName("Verify a single operator manages multiple WebLogic domains with a single Traefik fronted loadbalancer")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
+@Tag("oke-gate")
 class ItLBTwoDomainsTraefik {
 
   private static final int numberOfDomains = 2;
@@ -134,7 +134,7 @@ class ItLBTwoDomainsTraefik {
     logger.info("Verifying WebLogic admin console is accessible through Traefik host routing with HTTP protocol");
     for (String domainUid : domainUids) {
       verifyAdminServerAccess(false, getTraefikLbNodePort(false), true,
-          domainUid + "." + domainNamespace + "." + "admin-server" + ".test", "");
+          domainUid + "." + domainNamespace + "." + "admin-server" + ".test", "", traefikNamespace);
     }
   }
 

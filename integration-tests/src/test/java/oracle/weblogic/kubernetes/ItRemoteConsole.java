@@ -51,6 +51,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWai
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReturnedCode;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createSSLenabledMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAndRetryIfFail;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
@@ -78,9 +79,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @DisabledOnSlimImage
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItRemoteConsole {
 
   private static String domainNamespace = null;
@@ -366,6 +367,9 @@ class ItRemoteConsole {
     logger.info("LB nodePort is {0}", nodePortOfLB);
     logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
 
+    String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
+        ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik") : K8S_NODEPORT_HOST + ":" + nodePortOfLB;
+
     //The final complete curl command to run is like:
     //curl -v --user username:password http://localhost:8012/api/providers/AdminServerConnection -H
     //"Content-Type:application/json" --data "{ \"name\": \"asconn\", \"domainUrl\": \"http://myhost://nodeport\"}"
@@ -376,7 +380,7 @@ class ItRemoteConsole {
         + " --data "
         + "\"{ \\" + "\"name\\" + "\"" + ": " + "\\" + "\"" + "asconn\\" + "\"" + ", "
         + "\\" + "\"" + "domainUrl\\" + "\"" + ": " + "\\" + "\"" + "http://"
-        + K8S_NODEPORT_HOST + ":" + nodePortOfLB + "\\" + "\" }" + "\""
+        + hostAndPort + "\\" + "\" }" + "\""
         + "  --write-out %{http_code} -o /dev/null";
     logger.info("Executing LB nodeport curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReturnedCode(curlCmd, "201", 10),
