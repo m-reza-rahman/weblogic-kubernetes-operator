@@ -61,8 +61,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DisplayName("Verify Nginx load balancer handles traffic to two background WebLogic domains")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
+@Tag("oke-gate")
 class ItLBTwoDomainsNginx {
 
   private static final int numberOfDomains = 2;
@@ -143,7 +143,7 @@ class ItLBTwoDomainsNginx {
     logger.info("Verifying WebLogic admin console is accessible through NGINX path routing with HTTPS protocol");
     for (int i = 0; i < numberOfDomains; i++) {
       verifyAdminServerAccess(true, getNginxLbNodePort("https"), false, "",
-          "/" + domainUids.get(i).substring(4) + "console");
+          "/" + domainUids.get(i).substring(4) + "console", nginxNamespace);
 
       // verify the header 'WL-Proxy-Client-IP' is removed in the admin server log
       // verify the header 'WL-Proxy-SSL: false' is removed in the admin server log
