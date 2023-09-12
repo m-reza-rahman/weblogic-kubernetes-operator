@@ -135,7 +135,6 @@ class ItRemoteConsole {
       logger.info("Installing Traefik controller using helm");
       traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
 
-
       // install and verify Nginx
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
     }
@@ -324,7 +323,10 @@ class ItRemoteConsole {
     String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
         "Getting Nginx loadbalancer service node port failed");
-    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + K8S_NODEPORT_HOST + ":" + nginxNodePort
+    String hostAndPort = getServiceExtIPAddrtOke(nginxNamespace, "Nginx") != null
+        ? getServiceExtIPAddrtOke(nginxNamespace, "Nginx") : K8S_NODEPORT_HOST + ":" + nginxNodePort;
+
+    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
     logger.info("Executing curl command {0}", curlCmd);

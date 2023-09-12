@@ -1255,6 +1255,14 @@ public class CommonTestUtils {
       ExecResult result = Command.withParams(params).executeAndReturnResult();
       serviceExtIPAddr = result.stdout();
       logger.info("get external IP address of {0} service returns: {1}", serviceName, serviceExtIPAddr);
+
+      //TODO huizhao debug
+      cmdToGetServiceExtIPAddr = KUBERNETES_CLI + " get services -n " + nameSpace;
+      logger.info("Command to get external IP address of {0} service {1}: ", serviceName, cmdToGetServiceExtIPAddr);
+      params = new CommandParams().defaults();
+      params.command(cmdToGetServiceExtIPAddr);
+      result = Command.withParams(params).executeAndReturnResult();
+      logger.info("============== get external IP address of {0} service returns: {1}", serviceName, result.stdout());
     }
 
     return serviceExtIPAddr;
