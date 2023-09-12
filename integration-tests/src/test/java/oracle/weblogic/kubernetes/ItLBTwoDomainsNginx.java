@@ -126,7 +126,7 @@ class ItLBTwoDomainsNginx {
         replicaCount, clusterName, ADMIN_SERVER_PORT, MANAGED_SERVER_PORT);
 
     // build and deploy app to be used by all test cases
-    buildAndDeployClusterviewApp(domainNamespace, domainUids);
+    buildAndDeployClusterviewApp(domainNamespace, domainUids, nginxNamespace);
 
     // install Nginx ingress controller for all test cases using Nginx
     installNginxIngressController();
