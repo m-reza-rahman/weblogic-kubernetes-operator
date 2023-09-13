@@ -214,7 +214,10 @@ class ItRemoteConsole {
     int sslPort = getServicePort(
          domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
     setTargetPortForRoute("domain1-admin-server-sslport-ext", domainNamespace, sslPort);
-    String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
+    //String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
+    String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
+        ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik") : getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
+
     logger.info("The hostAndPort is {0}", hostAndPort);
 
     //verify WebLogic console is accessible through default-secure nodeport
