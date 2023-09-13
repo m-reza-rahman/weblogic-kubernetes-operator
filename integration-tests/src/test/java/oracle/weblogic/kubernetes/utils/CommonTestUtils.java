@@ -61,6 +61,7 @@ import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE_DOWNLOAD_FILENAME_DEFAULT;
@@ -77,6 +78,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_DOWNLOAD_UR
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE_DOWNLOAD_FILENAME_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE_DOWNLOAD_URL_DEFAULT;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -1234,6 +1236,31 @@ public class CommonTestUtils {
   }
 
   /**
+   * Get external IP address of a service.
+   *
+   * @param nameSpace - nameSpace of service
+   * @param serviceName - service name
+   * @return external IP address of the given service on OKE
+   */
+  public static String getServiceExtIPAddrtOke(String nameSpace, String serviceName) {
+    LoggingFacade logger = getLogger();
+    String serviceExtIPAddr = null;
+
+    if (OKE_CLUSTER) {
+      String cmdToGetServiceExtIPAddr =
+          KUBERNETES_CLI + " get services -n " + nameSpace + " | awk '{print $4}' |tail -n+2";
+      logger.info("Command to get external IP address of {0} service {1}: ", serviceName, cmdToGetServiceExtIPAddr);
+      CommandParams params = new CommandParams().defaults();
+      params.command(cmdToGetServiceExtIPAddr);
+      ExecResult result = Command.withParams(params).executeAndReturnResult();
+      serviceExtIPAddr = result.stdout();
+      logger.info("get external IP address of {0} service returns: {1}", serviceName, serviceExtIPAddr);
+    }
+
+    return serviceExtIPAddr;
+  }
+
+  /**
    * Verify the command result contains expected message.
    *
    * @param command the command to execute
@@ -2013,4 +2040,33 @@ public class CommonTestUtils {
     }
     return imageRepo;
   }
+  
+  /**
+   * Backup failsafe-reports directory to a temporary location.
+   *
+   * @param uniqueDir directory to save reports
+   * @return absolute path of the reports directory
+   */
+  public static String backupReports(String uniqueDir) {
+    String srcContents = ITTESTS_DIR + "/target/failsafe-reports/*";
+    String dstDir = WORK_DIR + "/" + uniqueDir;
+    CommandParams params = new CommandParams().defaults();
+    Command.withParams(params.command("ls -lrt " + srcContents)).execute();
+    Command.withParams(params.command("mkdir -p " + dstDir)).execute();
+    Command.withParams(params.command("cp " + srcContents + " " + dstDir)).execute();
+    return dstDir;
+  }
+
+  /**
+   * Restore reports from backup.
+   *
+   * @param backupDir directory containing the reports
+   */
+  public static void restoreReports(String backupDir) {
+    String dstDir = ITTESTS_DIR + "/target/failsafe-reports";
+    CommandParams params = new CommandParams().defaults();
+    Command.withParams(params.command("mkdir -p " + dstDir)).execute();
+    Command.withParams(params.command("cp " + backupDir + "/* " + dstDir)).execute();
+  }
+  
 }
