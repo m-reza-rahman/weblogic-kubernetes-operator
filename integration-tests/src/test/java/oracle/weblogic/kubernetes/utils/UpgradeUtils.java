@@ -44,7 +44,7 @@ public class UpgradeUtils {
   /**
    * Install a released WebLogic Kubernates Operator Version.
    */
-  public static void installOldOperator(String operatorVersion, String opNamespace, String domainNamespace) {
+  public static void installOldOperator(String operatorVersion, String opNamespace, String... domainNamespace) {
     logger = getLogger();
     assertNotNull(opNamespace, "Operator Namespace is null");
     assertNotNull(opNamespace, "Domain Namespace is null");
@@ -55,7 +55,7 @@ public class UpgradeUtils {
   }
 
   private static HelmParams installOperator(String operatorVersion,
-      String opNamespace, String domainNamespace) {
+      String opNamespace, String... domainNamespace) {
     // delete existing CRD if any
     cleanUpCRD();
 
@@ -78,8 +78,10 @@ public class UpgradeUtils {
 
   /**
    * upgrade to operator to current version.
+   *
+   * @param opNamespace Operator namespace
    */
-  public static void upgradeOperatorToCurrent(String opNamespace, String domainNamespace, String domainUid) {
+  public static void upgradeOperatorToCurrent(String opNamespace) {
     String latestOperatorImageName = getOperatorImageName();
     HelmParams upgradeHelmParams = new HelmParams()
             .releaseName(OPERATOR_RELEASE_NAME)
@@ -113,8 +115,6 @@ public class UpgradeUtils {
           checkCrdVersion(),
           logger,
           "the CRD version to be updated to current");
-    // check domain status conditions
-    checkDomainStatus(domainNamespace,domainUid);
   }
 
   private static Callable<Boolean> getOpContainerImageName(String namespace) {
