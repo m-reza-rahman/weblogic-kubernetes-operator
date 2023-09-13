@@ -300,7 +300,10 @@ public class DeployUtil {
    */
   public static ExecResult deployUsingRest(String hostAndPort,
             String userName, String password, String targets, 
-            Path archivePath, String hostHeader, String appName) {
+            Path archivePath, String hostHeader, String appName,
+                                           String... args) {
+    String hostName = (args.length == 0) ? "" : args[0];
+
     final LoggingFacade logger = getLogger();
     ExecResult result = null;
     StringBuffer headerString = null;
@@ -326,7 +329,9 @@ public class DeployUtil {
         .append(" ] }\" ")
         .append(" -F \"sourcePath=@")
         .append(archivePath.toString() + "\" ")
-        .append("-X POST http://" + hostAndPort)
+        .append("-X POST ")
+        .append("-H " + hostName + " ")
+        .append("http://" + hostAndPort)
         .append("/management/weblogic/latest/edit/appDeployments); ")
         .append("echo ${status}");
 

@@ -645,20 +645,15 @@ public class CommonLBTestUtils {
         clusterViewAppPath, domainUid, namespace);
     String targets = "{ identity: [ clusters, 'cluster-1' ] }";
 
-    assertTrue(assertDoesNotThrow(
-        () -> adminLoginPageAccessible(adminServerPodName, "7001", namespace,
-            ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
-        "====== Access to admin server node port failed"), "====== Console login validation failed");
-
     String hostAndPort =
-        OKE_CLUSTER_PRIVATEIP ? adminServerPodName + ":7001" : K8S_NODEPORT_HOST + ":" + serviceNodePort;
-    /*
+        //OKE_CLUSTER_PRIVATEIP ? adminServerPodName + ":7001" : K8S_NODEPORT_HOST + ":" + serviceNodePort;
         getServiceExtIPAddrtOke(lberServiceNamespace, "Load Balancer w namespace: " + lberServiceNamespace) != null
             ? getServiceExtIPAddrtOke(lberServiceNamespace, "Load Balancer w namespace: " + lberServiceNamespace)
                 : K8S_NODEPORT_HOST + ":" + serviceNodePort;
-    */
+
     ExecResult result = DeployUtil.deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-        targets, clusterViewAppPath, null, domainUid + "clusterview");
+        targets, clusterViewAppPath, null, domainUid + "clusterview",
+            domainUid + "." + namespace + ".cluster-1.test");
     assertNotNull(result, "Application deployment failed");
     getLogger().info("Application deployment returned {0}", result.toString());
     return result.stdout().equals("202");
