@@ -169,7 +169,9 @@ class ItFmwDomainOnPVSample {
   @Test
   @Order(1)
   public void testInstallOperator() {
+    String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));    
     execTestScriptAndAssertSuccess("-oper", "Failed to run -oper");
+    restoreReports(backupReports);
   }
 
   /**
@@ -178,9 +180,7 @@ class ItFmwDomainOnPVSample {
   @Test
   @Order(2)
   public void testInstallTraefik() {
-    String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));
     execTestScriptAndAssertSuccess("-traefik", "Failed to run -traefik");
-    restoreReports(backupReports);
   }
 
   /**

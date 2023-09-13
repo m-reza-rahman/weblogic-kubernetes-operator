@@ -155,8 +155,8 @@ class ItWlsDomainOnPVSample {
   @Test
   @Order(1)
   public void testInstallOperator() {
-    String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));
-    execTestScriptAndAssertSuccess("-traefik", "Failed to run -traefik");
+    String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));    
+    execTestScriptAndAssertSuccess("-oper", "Failed to run -oper");
     restoreReports(backupReports);
   }
 
