@@ -117,14 +117,11 @@ class ItLBTwoDomainsTraefik {
         domainNamespace, wlSecretName, ItLBTwoDomainsTraefik.class.getSimpleName(), numberOfDomains, domainUids,
         replicaCount, clusterName, ADMIN_SERVER_PORT, MANAGED_SERVER_PORT);
 
-    // install Traefik ingress controller for all test cases using Traefik
-    installTraefikIngressController();
-
     // build and deploy app to be used by all test cases
     buildAndDeployClusterviewApp(domainNamespace, domainUids, traefikNamespace);
 
     // install Traefik ingress controller for all test cases using Traefik
-    //installTraefikIngressController();
+    installTraefikIngressController();
   }
 
   /**
