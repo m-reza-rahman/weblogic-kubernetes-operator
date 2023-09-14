@@ -98,6 +98,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToImageContaine
 import static oracle.weblogic.kubernetes.utils.FileUtils.isFileExistAndNotEmpty;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createDiiImageAndVerify;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.getLbExternalIp;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodEvictedStatusInOperatorLogs;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
@@ -1242,11 +1243,37 @@ public class CommonTestUtils {
    * @param serviceName - service name
    * @return external IP address of the given service on OKE
    */
-  public static String getServiceExtIPAddrtOke(String nameSpace, String serviceName) {
+  public static String getServiceExtIPAddrtOke(String serviceName, String nameSpace) {
     LoggingFacade logger = getLogger();
     String serviceExtIPAddr = null;
 
+    testUntil(
+        isServiceExtIPAddrtOkeReady(serviceName, nameSpace),
+        logger,
+        "Waiting until external IP address of the service available");
+
+    serviceExtIPAddr =
+        assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+            "Can't find external IP address of the service " + serviceName);
+
+    logger.info("=======serviceExtIPAddr = {0} ", serviceExtIPAddr);
+
+    /*
     if (OKE_CLUSTER) {
+      testUntil(
+          isServiceExtIPAddrtOkeReady(serviceName, nameSpace),
+          logger,
+          "Waiting until external IP address of the service available");
+
+      serviceExtIPAddr =
+          assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+              "Can't find external IP address of the service " + serviceName);
+    }*/
+
+    /*
+      serviceExtIPAddr =
+          assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+             "Can't find external IP address of the service " + serviceName);
       String cmdToGetServiceExtIPAddr =
           KUBERNETES_CLI + " get services -n " + nameSpace + " | awk '{print $4}' |tail -n+2";
       logger.info("Command to get external IP address of {0} service {1}: ", serviceName, cmdToGetServiceExtIPAddr);
@@ -1254,10 +1281,51 @@ public class CommonTestUtils {
       params.command(cmdToGetServiceExtIPAddr);
       ExecResult result = Command.withParams(params).executeAndReturnResult();
       serviceExtIPAddr = result.stdout();
-      logger.info("get external IP address of {0} service returns: {1}", serviceName, serviceExtIPAddr);
-    }
+      logger.info("get external IP address of {0} service returns: {1}", serviceName, serviceExtIPAddr);*/
 
     return serviceExtIPAddr;
+  }
+
+  /**
+   * Check if external IP address of a service is ready.
+   *
+   * @param nameSpace - nameSpace of service
+   * @param serviceName - service name
+   * @return external IP address of the given service on OKE
+   */
+  public static Callable<Boolean> isServiceExtIPAddrtOkeReady(String serviceName, String nameSpace) {
+    LoggingFacade logger = getLogger();
+    logger.info("=======calling isServiceExtIPAddrtOkeReady");
+
+    // Regex for digit from 0 to 255.
+    String zeroTo255 = "(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])";
+
+    // Regex for a digit from 0 to 255 and
+    // followed by a dot, repeat 4 times.
+    // this is the regex to validate an IP address.
+    String regex = zeroTo255 + "\\." + zeroTo255 + "\\." + zeroTo255 + "\\." + zeroTo255;
+
+    // Compile the ReGex
+    Pattern p = Pattern.compile(regex);
+
+
+    return () -> {
+      String serviceExtIPAddr =
+          assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+              "Can't find external IP address of the service " + serviceName);
+
+      logger.info("-----------serviceExtIPAddr = {0} ", serviceExtIPAddr);
+
+      if (serviceExtIPAddr == null) {
+        return false;
+      }
+
+      Matcher m = p.matcher(serviceExtIPAddr);
+
+      logger.info("=======m.matches() = {0} ", m.matches());
+      //boolean extIPReady = (!serviceExtIPAddr.isEmpty() && !serviceExtIPAddr.contains("none"));
+      return m.matches();
+    };
   }
 
   /**
