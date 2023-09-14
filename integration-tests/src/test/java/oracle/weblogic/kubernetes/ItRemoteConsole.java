@@ -214,9 +214,11 @@ class ItRemoteConsole {
     int sslPort = getServicePort(
          domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
     setTargetPortForRoute("domain1-admin-server-sslport-ext", domainNamespace, sslPort);
-    //String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
-    String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
-        ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik") : getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
+
+    String ingressServiceName = traefikHelmParams.getReleaseName();
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+            : getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
 
     logger.info("The hostAndPort is {0}", hostAndPort);
 
@@ -326,8 +328,8 @@ class ItRemoteConsole {
     String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
         "Getting Nginx loadbalancer service node port failed");
-    String hostAndPort = getServiceExtIPAddrtOke(nginxNamespace, "Nginx") != null
-        ? getServiceExtIPAddrtOke(nginxNamespace, "Nginx") : K8S_NODEPORT_HOST + ":" + nginxNodePort;
+    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + ":" + nginxNodePort;
 
     String curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
@@ -372,8 +374,9 @@ class ItRemoteConsole {
     logger.info("LB nodePort is {0}", nodePortOfLB);
     logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
 
-    String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
-        ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik") : K8S_NODEPORT_HOST + ":" + nodePortOfLB;
+    String ingressServiceName = traefikHelmParams.getReleaseName();
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST + ":" + nodePortOfLB;
 
     //The final complete curl command to run is like:
     //curl -v --user username:password http://localhost:8012/api/providers/AdminServerConnection -H

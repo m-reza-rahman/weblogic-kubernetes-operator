@@ -188,8 +188,8 @@ class ItManagedCoherence {
           "Getting Ingress Service node port failed");
       logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
 
-      String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
-          ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik")
+      String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
               : getHostAndPort(clusterHostname, ingressServiceNodePort);
 
       assertTrue(checkCoheranceApp(clusterHostname, hostAndPort), "Failed to access Coherance App cation");
@@ -320,9 +320,10 @@ class ItManagedCoherence {
   private boolean coherenceCacheTest(String hostName, int ingressServiceNodePort) {
     logger.info("Starting to test the cache");
 
+    String ingressServiceName = traefikHelmParams.getReleaseName();
     String traefikNamespace = traefikHelmParams.getNamespace();
-    String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
-        ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik")
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
             : getHostAndPort(hostName, ingressServiceNodePort);
 
     logger.info("hostAndPort = {0} ", hostAndPort);

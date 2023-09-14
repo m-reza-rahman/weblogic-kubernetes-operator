@@ -332,8 +332,9 @@ class ItLiftAndShiftFromOnPremDomain {
       hostName = createRouteForOKD(clusterService, domainNamespace);
     }
 
-    String hostAndPort = getServiceExtIPAddrtOke(traefikNamespace, "Traefik") != null
-        ? getServiceExtIPAddrtOke(traefikNamespace, "Traefik") : getHostAndPort(hostName, traefikNodePort);
+    final String ingressServiceName = traefikHelmParams.getReleaseName();
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : getHostAndPort(hostName, traefikNodePort);
 
     logger.info("hostAndPort = {0} ", hostAndPort);
 

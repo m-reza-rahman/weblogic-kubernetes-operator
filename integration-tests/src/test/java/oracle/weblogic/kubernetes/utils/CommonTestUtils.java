@@ -104,7 +104,6 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodEvictedStatusInO
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
-import static oracle.weblogic.kubernetes.utils.PodUtils.getPodName;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.WLSTUtils.executeWLSTScriptInImageContainer;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1241,20 +1240,17 @@ public class CommonTestUtils {
    * Get external IP address of a service.
    *
    * @param nameSpace - nameSpace of service
-   * @param serviceNamePrefix - service name Prefix
+   * @param serviceName - service name
    * @return external IP address of the given service on OKE
    */
-  public static String getServiceExtIPAddrtOke(String nameSpace, String serviceNamePrefix) {
+  public static String getServiceExtIPAddrtOke(String serviceName, String nameSpace) {
     LoggingFacade logger = getLogger();
     String serviceExtIPAddr = null;
 
     if (OKE_CLUSTER) {
-      String podName = assertDoesNotThrow(() -> getPodName(nameSpace, "Traefik"),
-          "Can't find " + serviceNamePrefix + " pod");
-
       serviceExtIPAddr =
-          assertDoesNotThrow(() -> getLbExternalIp(podName, nameSpace),
-              "Can't find external IP address of the service " + podName);
+          assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+              "Can't find external IP address of the service " + serviceName);
 
       /*
       //TODO huizhao debug
