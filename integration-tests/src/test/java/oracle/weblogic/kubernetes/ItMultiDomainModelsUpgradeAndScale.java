@@ -22,7 +22,6 @@ import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
-import oracle.weblogic.kubernetes.annotations.DisabledOnSlimImage;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -179,7 +178,7 @@ class ItMultiDomainModelsUpgradeAndScale {
    */
   @Order(2)
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
-  void testUpgradeOperatorToCurrent(String domainType) {
+  void testUpgradeOperatorToCurrent() {
     upgradeOperatorToCurrent(opNamespace);
   }
 
@@ -191,10 +190,8 @@ class ItMultiDomainModelsUpgradeAndScale {
    */
   @Order(3)
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
-  @DisabledOnSlimImage
-  void testScaleClustersByPatchingClusterResource(Map<String, String> domainMap) {
-
-    for (Map.Entry<String, String> entry : domainMap.entrySet()) {
+  void testScaleClustersByPatchingClusterResource() {
+    for (Map.Entry<String, String> entry : domains.entrySet()) {
       String domainUid = entry.getKey();
       String domainNamespace = entry.getValue();
 
