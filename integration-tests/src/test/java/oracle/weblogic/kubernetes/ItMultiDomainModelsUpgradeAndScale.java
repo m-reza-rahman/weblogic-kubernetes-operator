@@ -31,6 +31,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -177,6 +178,7 @@ class ItMultiDomainModelsUpgradeAndScale {
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
   @Order(2)
+  @Test
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
   void testUpgradeOperatorToCurrent() {
     upgradeOperatorToCurrent(opNamespace);
@@ -189,6 +191,7 @@ class ItMultiDomainModelsUpgradeAndScale {
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
   @Order(3)
+  @Test
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
   void testScaleClustersByPatchingClusterResource() {
     for (Map.Entry<String, String> entry : domains.entrySet()) {
