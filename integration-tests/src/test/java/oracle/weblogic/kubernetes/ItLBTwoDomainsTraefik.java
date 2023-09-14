@@ -33,7 +33,7 @@ import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
+//import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.createMultipleDomainsSharingPVUsingWlstAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyAdminServerAccess;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyClusterLoadbalancing;
@@ -113,6 +113,8 @@ class ItLBTwoDomainsTraefik {
       domainUids.add("wls-traefik-domain-" + i);
     }
 
+    //Path pvHostPath = get(PV_ROOT, "ItLBTwoDomainsTraefik", "sharing-persistentVolume");
+
     pvPvcNamePair = createMultipleDomainsSharingPVUsingWlstAndVerify(
         domainNamespace, wlSecretName, ItLBTwoDomainsTraefik.class.getSimpleName(), numberOfDomains, domainUids,
         replicaCount, clusterName, ADMIN_SERVER_PORT, MANAGED_SERVER_PORT);
@@ -121,7 +123,7 @@ class ItLBTwoDomainsTraefik {
     installTraefikIngressController();
 
     // build and deploy app to be used by all test cases
-    buildAndDeployClusterviewApp(domainNamespace, domainUids, traefikNamespace);
+    //buildAndDeployClusterviewApp(domainNamespace, domainUids, traefikNamespace);
 
     // install Traefik ingress controller for all test cases using Traefik
     //installTraefikIngressController();
