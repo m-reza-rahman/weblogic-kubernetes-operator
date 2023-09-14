@@ -198,7 +198,7 @@ class ItMultiDomainModelsUpgradeAndScale {
       String domainUid = entry.getKey();
       String domainNamespace = entry.getValue();
 
-      DomainResource domain = assertDoesNotThrow(() -> getDomainCustomResource(domainNamespace, domainUid));
+      DomainResource domain = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
 
       // get the domain properties
       int numClusters = domain.getSpec().getClusters().size();
