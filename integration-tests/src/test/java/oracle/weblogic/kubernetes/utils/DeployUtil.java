@@ -330,7 +330,7 @@ public class DeployUtil {
         .append(" -F \"sourcePath=@")
         .append(archivePath.toString() + "\" ")
         .append("-X POST ")
-        .append("-H " + hostName + " ")
+        .append("-H 'host: " + hostName + "' ")
         .append("http://" + hostAndPort)
         .append("/management/weblogic/latest/edit/appDeployments); ")
         .append("echo ${status}");
