@@ -1249,21 +1249,16 @@ public class CommonTestUtils {
 
     if (OKE_CLUSTER) {
       testUntil(
-          () -> {
-              serviceExtIPAddr =
-                  assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
-                      "Can't find external IP address of the service " + serviceName);
+          isServiceExtIPAddrtOkeReady(serviceName, nameSpace),
+          logger,
+          "Waiting until external IP address of the service available");
 
-              if  (serviceExtIPAddr.isEmpty() || serviceExtIPAddr.contains("none")) {
-                return false;
-              }
+      serviceExtIPAddr =
+          assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+              "Can't find external IP address of the service " + serviceName);
+    }
 
-              return true;
-          },
-
-          getLogger(),
-              "Waiting until external IP address of the service {0} available", serviceName);
-      /*
+    /*
       serviceExtIPAddr =
           assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
              "Can't find external IP address of the service " + serviceName);
@@ -1275,9 +1270,42 @@ public class CommonTestUtils {
       ExecResult result = Command.withParams(params).executeAndReturnResult();
       serviceExtIPAddr = result.stdout();
       logger.info("get external IP address of {0} service returns: {1}", serviceName, serviceExtIPAddr);*/
-    }
 
     return serviceExtIPAddr;
+  }
+
+  /**
+   * Check if external IP address of a service is ready.
+   *
+   * @param nameSpace - nameSpace of service
+   * @param serviceName - service name
+   * @return external IP address of the given service on OKE
+   */
+  public static Callable<Boolean> isServiceExtIPAddrtOkeReady(String serviceName, String nameSpace) {
+    // Regex for digit from 0 to 255.
+    String zeroTo255 = "(\\d{1,2}|(0|1)\\d{2}|2[0-4]\\d|25[0-5])";
+
+    // Regex for a digit from 0 to 255 and
+    // followed by a dot, repeat 4 times.
+    // this is the regex to validate an IP address.
+    String regex = zeroTo255 + "\\." + zeroTo255 + "\\." + zeroTo255 + "\\." + zeroTo255;
+
+    // Compile the ReGex
+    Pattern p = Pattern.compile(regex);
+
+    return () -> {
+      String serviceExtIPAddr =
+          assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+              "Can't find external IP address of the service " + serviceName);
+
+      if (serviceExtIPAddr == null) {
+        return false;
+      }
+
+      Matcher m = p.matcher(serviceExtIPAddr);
+      //boolean extIPReady = (!serviceExtIPAddr.isEmpty() && !serviceExtIPAddr.contains("none"));
+      return m.matches();
+    };
   }
 
   /**
