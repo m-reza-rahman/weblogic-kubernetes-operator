@@ -98,11 +98,13 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToImageContaine
 import static oracle.weblogic.kubernetes.utils.FileUtils.isFileExistAndNotEmpty;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createDiiImageAndVerify;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.getLbExternalIp;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodEvictedStatusInOperatorLogs;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
+import static oracle.weblogic.kubernetes.utils.PodUtils.getPodName;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.WLSTUtils.executeWLSTScriptInImageContainer;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1239,23 +1241,22 @@ public class CommonTestUtils {
    * Get external IP address of a service.
    *
    * @param nameSpace - nameSpace of service
-   * @param serviceName - service name
+   * @param serviceNamePrefix - service name Prefix
    * @return external IP address of the given service on OKE
    */
-  public static String getServiceExtIPAddrtOke(String nameSpace, String serviceName) {
+  public static String getServiceExtIPAddrtOke(String nameSpace, String serviceNamePrefix) {
     LoggingFacade logger = getLogger();
     String serviceExtIPAddr = null;
 
     if (OKE_CLUSTER) {
-      String cmdToGetServiceExtIPAddr =
-          KUBERNETES_CLI + " get services -n " + nameSpace + " | awk '{print $4}' |tail -n+2";
-      logger.info("Command to get external IP address of {0} service {1}: ", serviceName, cmdToGetServiceExtIPAddr);
-      CommandParams params = new CommandParams().defaults();
-      params.command(cmdToGetServiceExtIPAddr);
-      ExecResult result = Command.withParams(params).executeAndReturnResult();
-      serviceExtIPAddr = result.stdout();
-      logger.info("get external IP address of {0} service returns: {1}", serviceName, serviceExtIPAddr);
+      String podName = assertDoesNotThrow(() -> getPodName(nameSpace, "Traefik"),
+          "Can't find " + serviceNamePrefix + " pod");
 
+      serviceExtIPAddr =
+          assertDoesNotThrow(() -> getLbExternalIp(podName, nameSpace),
+              "Can't find external IP address of the service " + podName);
+
+      /*
       //TODO huizhao debug
       cmdToGetServiceExtIPAddr = KUBERNETES_CLI + " get services --all-namespaces";
       logger.info("Command to get services --all-namespaces {0} service {1}: ", serviceName, cmdToGetServiceExtIPAddr);
@@ -1271,7 +1272,7 @@ public class CommonTestUtils {
       params.command(cmdToGetServiceExtIPAddr);
       result = Command.withParams(params).executeAndReturnResult();
       logger.info("============== get get services -n {0} service {1} returns: {2}",
-          nameSpace,serviceName, result.toString());
+          nameSpace,serviceName, result.toString());*/
     }
 
     return serviceExtIPAddr;
