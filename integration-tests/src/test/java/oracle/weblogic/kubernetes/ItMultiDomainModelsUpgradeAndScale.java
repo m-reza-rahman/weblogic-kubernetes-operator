@@ -45,7 +45,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
@@ -69,8 +68,6 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.shutdownDomainAndVeri
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -481,9 +478,6 @@ class ItMultiDomainModelsUpgradeAndScale {
 
         // create mii domain
         domain = createMiiDomainWithMultiClusters(miiDomainNamespace);
-
-        // create route for OKD or ingress for the domain
-        createRouteForOKDOrIngressForDomain(domain);
       } else {
         domain = assertDoesNotThrow(() -> getDomainCustomResource(miiDomainUid, miiDomainNamespace));
         startDomainAndVerify(miiDomainNamespace, miiDomainUid, replicaCount, domain.getSpec().getClusters().size());
@@ -498,9 +492,6 @@ class ItMultiDomainModelsUpgradeAndScale {
         String clusterName = "dimcluster-1";
         domain = createAndVerifyDomainInImageUsingWdt(dimDomainUid, domainInImageNamespace,
             wdtModelFileForDomainInImage, appSrcDirList, wlSecretName, clusterName, replicaCount);
-
-        // create route for OKD or ingress for the domain
-        createRouteForOKDOrIngressForDomain(domain);
       } else {
         domain = assertDoesNotThrow(() -> getDomainCustomResource(dimDomainUid, domainInImageNamespace));
         startDomainAndVerify(domainInImageNamespace, dimDomainUid, replicaCount, domain.getSpec().getClusters().size());
@@ -510,9 +501,6 @@ class ItMultiDomainModelsUpgradeAndScale {
 
         // create domain-on-pv domain
         domain = createDomainOnPvUsingWdt(domainOnPVUid, domainOnPVNamespace);
-
-        // create route for OKD or ingress for the domain
-        createRouteForOKDOrIngressForDomain(domain);
       } else {
         domain = assertDoesNotThrow(() -> getDomainCustomResource(domainOnPVUid, domainOnPVNamespace));
         startDomainAndVerify(domainOnPVNamespace, domainOnPVUid, replicaCount, domain.getSpec().getClusters().size());
@@ -523,33 +511,7 @@ class ItMultiDomainModelsUpgradeAndScale {
 
     return domain;
   }
-
-  private static void createRouteForOKDOrIngressForDomain(DomainResource domain) {
-
-    assertDomainNotNull(domain);
-    String domainUid = domain.getSpec().getDomainUid();
-    String domainNamespace = domain.getMetadata().getNamespace();
-
-    //create route for external admin service
-    createRouteForOKD(domainUid + "-admin-server-ext", domainNamespace);
-
-    // create ingress using host based routing
-    Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
-    int numClusters = domain.getSpec().getClusters().size();
-    for (int i = 1; i <= numClusters; i++) {
-      String clusterName = domain.getSpec().getClusters().get(i - 1).getName();
-      logger.info("DEBUG: get clusterName = {0}", clusterName);
-      clusterNameMsPortMap.put(clusterName, MANAGED_SERVER_PORT);
-      createRouteForOKD(domainUid + "-cluster-" + clusterName, domainNamespace);
-    }
-
-    if (!OKD) {
-      logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-      createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
-          true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
-    }
-  }
-
+  
   /**
    * Start domain and verify all the server pods were started.
    *
