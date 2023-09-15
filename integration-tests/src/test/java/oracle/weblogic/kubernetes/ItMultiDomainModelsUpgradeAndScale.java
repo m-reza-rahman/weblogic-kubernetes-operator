@@ -150,13 +150,13 @@ class ItMultiDomainModelsUpgradeAndScale {
   }
   
   /**
-   * Create 3 different types of domains with operator 4.1.1 (domain-on-pv, domain-in-image and model-in-image).
+   * Create 3 different types of domains with operator 4.0.8 (domain-on-pv, domain-in-image and model-in-image).
    *
    */
-  @DisplayName("create three different type of domains in Operator 4.1.1 and upgrade")
-  void installAndUpgradeOperatorFrom411() {
+  @DisplayName("create three different type of domains in Operator 4.0.8 and upgrade")
+  void installAndUpgradeOperatorFrom408() {
     // install and verify operator
-    installOldOperator("4.1.1", opNamespace,
+    installOldOperator("4.0.8", opNamespace,
         miiDomainNamespace, domainOnPVNamespace, domainInImageNamespace);
     String[] domainTypes = {"modelInImage", "domainInImage", "domainOnPV"};
     for (String domainType : domainTypes) {
