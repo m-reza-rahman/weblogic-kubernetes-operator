@@ -36,6 +36,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.HTTPS_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.HTTP_PROXY;
+import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
@@ -45,6 +46,7 @@ import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT;
@@ -368,6 +370,10 @@ class ItLiftAndShiftFromOnPremDomain {
     getLogger().info("The actual download location for lifeAndShift is {0}", wdtDownloadurl);
     // create a V1Container with specific scripts and properties for creating domain
     V1Container container = new V1Container()
+        .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
+        .imagePullPolicy(IMAGE_PULL_POLICY)
+        .addCommandItem("sleep")
+        .addArgsItem("600")
         .addEnvItem(new V1EnvVar()
             .name("WDT_INSTALL_ZIP_URL")
             .value(wdtDownloadurl))
