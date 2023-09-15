@@ -520,27 +520,31 @@ public class LoadBalancerUtils {
   /**
    * Create an ingress Resource.
    *
-   * @param domainUid uid of the domain
    * @param domainNamespace namespace of the domain
    * @param traefikNamespace namespace in which the ingress will be created
    * @param ingressResourceFileName ingress resource file path and name
+   * @param domainUids uids of the domains
    */
-  public static boolean createTraefikIngressRoutingRules(String domainUid,
-                                                         String domainNamespace,
+  public static boolean createTraefikIngressRoutingRules(String domainNamespace,
                                                          String traefikNamespace,
-                                                         String ingressResourceFileName) {
+                                                         String ingressResourceFileName,
+                                                         String... domainUids) {
     LoggingFacade logger = getLogger();
     logger.info("Creating Traefik ingress resource");
 
     // prepare Traefik ingress resource file
     Path srcFile = Paths.get(RESOURCE_DIR, ingressResourceFileName);
     Path dstFile = Paths.get(RESULTS_ROOT, ingressResourceFileName);
+    
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
-      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", domainNamespace)
-          .replaceAll("@domain1uid@", domainUid)
-          .getBytes(StandardCharsets.UTF_8));
+      for (int i = 1; i <= domainUids.length; i++) {
+        Files.write(dstFile, Files.readString(srcFile)
+            .replaceAll("@NS@", domainNamespace)
+            .replaceAll("@domain" + i + "uid@", domainUids[i - 1])
+            .getBytes(StandardCharsets.UTF_8));
+      }
     });
 
     // create Traefik ingress resource

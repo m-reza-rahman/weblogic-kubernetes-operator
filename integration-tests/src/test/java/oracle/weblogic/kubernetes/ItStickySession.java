@@ -185,7 +185,7 @@ class ItStickySession {
 
     // create Traefik ingress resource
     final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";
-    createTraefikIngressRoutingRules(domainUid, domainNamespace, traefikNamespace, ingressResourceFileName);
+    createTraefikIngressRoutingRules(domainNamespace, traefikNamespace, ingressResourceFileName, domainUid);
 
     String hostName = new StringBuffer()
         .append(domainUid)

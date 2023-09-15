@@ -244,6 +244,11 @@ public class ItMiiDomainModelInPV {
       // install and verify Traefik
       traefikHelmParams =
           installAndVerifyTraefik(traefikNamespace, 0, 0);
+
+      // create Traefik ingress resource
+      final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
+      createTraefikIngressRoutingRules(domainNamespace, traefikNamespace,
+          ingressResourceFileName, domainUid1, domainUid2);
     }
   }
 
@@ -265,12 +270,6 @@ public class ItMiiDomainModelInPV {
 
     String domainUid = params.getKey();
     String image = params.getValue();
-
-    if (OKE_CLUSTER) {
-      // create Traefik ingress resource
-      final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
-      createTraefikIngressRoutingRules(domainUid, domainNamespace, traefikNamespace, ingressResourceFileName);
-    }
 
     // create domain custom resource and verify all the pods came up
     logger.info("Creating domain custom resource with domainUid {0} and image {1}",
