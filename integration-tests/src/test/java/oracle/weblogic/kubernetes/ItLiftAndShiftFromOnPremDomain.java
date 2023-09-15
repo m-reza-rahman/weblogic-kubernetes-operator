@@ -95,10 +95,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @DisplayName("Test to validate on-prem to k8s use case")
 @Tag("kind-parallel")
-@Tag("oke-parallel")
 @Tag("toolkits-srg")
 @Tag("okd-wls-mrg")
 @Tag("olcne")
+@Tag("oke-gate")
 @IntegrationTest
 class ItLiftAndShiftFromOnPremDomain {
   private static String opNamespace = null;
