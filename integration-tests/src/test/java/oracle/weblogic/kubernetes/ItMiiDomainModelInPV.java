@@ -25,6 +25,7 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -74,6 +75,8 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
@@ -102,6 +105,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ItMiiDomainModelInPV {
 
   private static String domainNamespace = null;
+  private static String traefikNamespace = null;
 
   // domain constants
   private static Map<String, String> params = new HashMap<>();
@@ -131,6 +135,7 @@ public class ItMiiDomainModelInPV {
   private static boolean isUseSecret;
 
   private static String adminSvcExtHost = null;
+  private static HelmParams traefikHelmParams = null;
 
   /**
    * 1. Get namespaces for operator and WebLogic domain.
@@ -143,7 +148,7 @@ public class ItMiiDomainModelInPV {
    * @param namespaces list of namespaces injected by JUnit
    */
   @BeforeAll
-  public static void initAll(@Namespaces(2) List<String> namespaces) {
+  public static void initAll(@Namespaces(3) List<String> namespaces) {
     logger = getLogger();
     // get a unique operator namespace
     logger.info("Getting a unique namespace for operator");
@@ -154,6 +159,11 @@ public class ItMiiDomainModelInPV {
     logger.info("Getting a unique namespace for WebLogic domains");
     assertNotNull(namespaces.get(1), "Namespace list is null");
     domainNamespace = namespaces.get(1);
+
+    // get a unique Traefik namespace
+    logger.info("Get a unique namespace for Traefik");
+    assertNotNull(namespaces.get(2), "Namespace list is null");
+    traefikNamespace = namespaces.get(2);
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domainNamespace);
@@ -229,6 +239,12 @@ public class ItMiiDomainModelInPV {
     if (!OKD) {
       execInPod(pvPod, null, true, argCommand);
     }
+
+    if (OKE_CLUSTER) {
+      // install and verify Traefik
+      traefikHelmParams =
+          installAndVerifyTraefik(traefikNamespace, 0, 0);
+    }
   }
 
   /**
@@ -249,6 +265,12 @@ public class ItMiiDomainModelInPV {
 
     String domainUid = params.getKey();
     String image = params.getValue();
+
+    if (OKE_CLUSTER) {
+      // create Traefik ingress resource
+      final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
+      createTraefikIngressRoutingRules(domainUid, domainNamespace, traefikNamespace, ingressResourceFileName);
+    }
 
     // create domain custom resource and verify all the pods came up
     logger.info("Creating domain custom resource with domainUid {0} and image {1}",
