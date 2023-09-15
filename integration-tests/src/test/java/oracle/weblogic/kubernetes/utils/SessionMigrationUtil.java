@@ -8,8 +8,11 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownManagedServerUsingServerStartPolicy;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -91,6 +94,14 @@ public class SessionMigrationUtil {
     final String sessionCreateTimeAttr = "sessioncreatetime";
     final String countAttr = "count";
     LoggingFacade logger = getLogger();
+
+    //TODO debugger to remove
+    String cmd = KUBERNETES_CLI + " get svc --all-namespaces";
+    logger.info("========== Command to get svc --all-namespaces is {0} ", cmd);
+    CommandParams params = new CommandParams().defaults();
+    params.command(cmd);
+    ExecResult result = Command.withParams(params).executeAndReturnResult();
+    logger.info("============== get svc --all-namespaces returns: {0}", result.toString());
 
     // send a HTTP request to set http session state(count number) and save HTTP session cookie info
     // or get http session state(count number usind saved HTTP session cookie info
@@ -193,6 +204,7 @@ public class SessionMigrationUtil {
     final String httpHeaderFile = "/u01/domains/header";
     LoggingFacade logger = getLogger();
 
+    String hostAndPort = (port == 0) ? hostName : hostName + ":" + port;
     // --connect-timeout - Maximum time in seconds that you allow curl's connection to take
     // --max-time - Maximum time in seconds that you allow the whole operation to take
     int waittime = 10;
@@ -200,9 +212,7 @@ public class SessionMigrationUtil {
         .append("curl --silent --show-error")
         .append(" --connect-timeout ").append(waittime).append(" --max-time ").append(waittime)
         .append(" http://")
-        .append(hostName)
-        .append(":")
-        .append(port)
+        .append(hostAndPort)
         .append("/")
         .append(curlUrlPath)
         .append(headerOption)
