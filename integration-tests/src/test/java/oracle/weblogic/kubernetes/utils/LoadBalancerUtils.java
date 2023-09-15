@@ -535,7 +535,7 @@ public class LoadBalancerUtils {
     // prepare Traefik ingress resource file
     Path srcFile = Paths.get(RESOURCE_DIR, ingressResourceFileName);
     Path dstFile = Paths.get(RESULTS_ROOT, ingressResourceFileName);
-    
+
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
@@ -546,6 +546,13 @@ public class LoadBalancerUtils {
             .getBytes(StandardCharsets.UTF_8));
       }
     });
+
+    try {
+      String fileContent = Files.readString(dstFile);
+      logger.info("====Content of {0} is {1}: {2}", dstFile, fileContent, "\n");
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
 
     // create Traefik ingress resource
     String createIngressCmd = KUBERNETES_CLI + " create -f " + dstFile;
