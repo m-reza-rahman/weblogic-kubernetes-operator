@@ -240,6 +240,14 @@ public class ItMiiDomainModelInPV {
       execInPod(pvPod, null, true, argCommand);
     }
 
+    // install and verify Traefik
+    traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+
+    // create Traefik ingress resource
+    final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
+    createTraefikIngressRoutingRules(domainNamespace, traefikNamespace,
+        ingressResourceFileName, domainUid1, domainUid2);
+    /*
     if (OKE_CLUSTER) {
       // install and verify Traefik
       traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
@@ -248,7 +256,7 @@ public class ItMiiDomainModelInPV {
       final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
       createTraefikIngressRoutingRules(domainNamespace, traefikNamespace,
           ingressResourceFileName, domainUid1, domainUid2);
-    }
+    }*/
   }
 
   /**

@@ -539,11 +539,13 @@ public class LoadBalancerUtils {
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
+      String contentOfFile = Files.readString(srcFile);
       for (int i = 1; i <= domainUids.length; i++) {
-        Files.write(dstFile, Files.readString(srcFile)
+        Files.write(dstFile, contentOfFile
             .replaceAll("@NS@", domainNamespace)
             .replaceAll("@domain" + i + "uid@", domainUids[i - 1])
             .getBytes(StandardCharsets.UTF_8));
+        contentOfFile = Files.readString(dstFile);
       }
     });
 
