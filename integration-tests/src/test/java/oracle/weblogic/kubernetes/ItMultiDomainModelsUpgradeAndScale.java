@@ -26,10 +26,9 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 import static java.nio.file.Paths.get;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
@@ -121,6 +120,20 @@ class ItMultiDomainModelsUpgradeAndScale {
   public static void initAll(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
 
+    domains = new HashMap<>();
+
+    // create mii image
+    miiImage = createAndPushMiiImage();
+
+  }
+
+  /**
+   * For each test:
+   * Assigns unique namespaces for operator and domain.
+   * @param namespaces injected by JUnit
+   */
+  @BeforeEach
+  public void beforeEach(@Namespaces(4) List<String> namespaces) {    
     // get a unique operator namespace
     logger.info("Get a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
@@ -134,45 +147,40 @@ class ItMultiDomainModelsUpgradeAndScale {
     domainOnPVNamespace = namespaces.get(2);
     assertNotNull(namespaces.get(3));
     domainInImageNamespace = namespaces.get(3);
-    domains = new HashMap<>();
-
-    // create mii image
-    miiImage = createAndPushMiiImage();
-
   }
-
+  
   /**
-   * Create 3 different types of domains. domain-on-pv, domain-in-image and model-in-image
+   * Create 3 different types of domains with operator 4.1.1 (domain-on-pv, domain-in-image and model-in-image).
    *
-   * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @ParameterizedTest
-  @DisplayName("create three different type of domains")
-  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
-  void installAndUpgradeOperatorFrom411(String domainType) {
+  @DisplayName("create three different type of domains in Operator 4.1.1 and upgrade")
+  void installAndUpgradeOperatorFrom411() {
     // install and verify operator
     installOldOperator("4.1.1", opNamespace,
         miiDomainNamespace, domainOnPVNamespace, domainInImageNamespace);
-    DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
-    domains.put(domain.getMetadata().getName(), domain.getMetadata().getNamespace());
+    String[] domainTypes = {"modelInImage", "domainInImage", "domainOnPV"};
+    for (String domainType : domainTypes) {
+      DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
+      domains.put(domain.getMetadata().getName(), domain.getMetadata().getNamespace());
+    }
     upgradeOperatorToCurrent(opNamespace);
     scaleClustersByPatchingClusterResource();
   }
 
   /**
-   * Create 3 different types of domains. domain-on-pv, domain-in-image and model-in-image
+   * Create 3 different types of domains with operator 4.1.2 (domain-on-pv, domain-in-image and model-in-image).
    *
-   * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @ParameterizedTest
-  @DisplayName("create three different type of domains")
-  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
-  void installAndUpgradeOperatorFrom412(String domainType) {
+  @DisplayName("create three different type of domains in Operator 4.1.2 and upgrade")
+  void installAndUpgradeOperatorFrom412() {
     // install and verify operator
     installOldOperator("4.1.2", opNamespace,
         miiDomainNamespace, domainOnPVNamespace, domainInImageNamespace);
-    DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
-    domains.put(domain.getMetadata().getName(), domain.getMetadata().getNamespace());
+    String[] domainTypes = {"modelInImage", "domainInImage", "domainOnPV"};
+    for (String domainType : domainTypes) {
+      DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
+      domains.put(domain.getMetadata().getName(), domain.getMetadata().getNamespace());
+    }
     upgradeOperatorToCurrent(opNamespace);
     scaleClustersByPatchingClusterResource();
   }
