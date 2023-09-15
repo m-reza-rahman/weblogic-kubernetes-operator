@@ -85,6 +85,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify scaling the clusters in the domain with different domain types after operator upgrade")
 @IntegrationTest
 @Tag("kind-upgrade")
+@Tag("kind-paralell")
 class ItMultiDomainModelsUpgradeAndScale {
 
   // domain constants
