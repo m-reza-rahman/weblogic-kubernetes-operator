@@ -69,6 +69,7 @@ import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
@@ -243,11 +244,6 @@ public class ItMiiDomainModelInPV {
     // install and verify Traefik
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
 
-    // create Traefik ingress resource
-    final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
-    createTraefikIngressRoutingRules(domainNamespace, traefikNamespace,
-        ingressResourceFileName, domainUid1, domainUid2);
-    /*
     if (OKE_CLUSTER) {
       // install and verify Traefik
       traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
@@ -256,7 +252,7 @@ public class ItMiiDomainModelInPV {
       final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
       createTraefikIngressRoutingRules(domainNamespace, traefikNamespace,
           ingressResourceFileName, domainUid1, domainUid2);
-    }*/
+    }
   }
 
   /**
@@ -349,7 +345,10 @@ public class ItMiiDomainModelInPV {
         -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
         "Getting admin server node port failed");
 
-    String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+    final String ingressServiceName = traefikHelmParams.getReleaseName();
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+            : getHostAndPort(adminSvcExtHost, serviceNodePort);
     logger.info("Checking the health of servers in cluster");
     String url = "http://" + hostAndPort
         + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
