@@ -242,8 +242,7 @@ public class ItMiiDomainModelInPV {
 
     if (OKE_CLUSTER) {
       // install and verify Traefik
-      traefikHelmParams =
-          installAndVerifyTraefik(traefikNamespace, 0, 0);
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
 
       // create Traefik ingress resource
       final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";

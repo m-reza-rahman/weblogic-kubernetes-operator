@@ -29,6 +29,7 @@ import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
+import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -44,12 +45,14 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleAllClustersInDomain;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Command.defaultCommandParams;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
@@ -60,6 +63,8 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.createAdminServer;
 import static oracle.weblogic.kubernetes.utils.JobUtils.createDomainJob;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
@@ -83,12 +88,15 @@ class ItRecoveryDomainInPV  {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
+  private static String traefikNamespace = null;
   private final String wlSecretName = "weblogic-credentials";
-  private final String domainUid = "recovery-dpv";
+  private static final String domainUid = "recovery-dpv";
   private final String clusterName = "cluster-1";
   private final String adminServerName = "admin-server";
   private final String adminServerPodName = domainUid + "-" + adminServerName;
   private static LoggingFacade logger = null;
+
+  private static HelmParams traefikHelmParams = null;
 
   /**
    * Assigns unique namespaces for operator and domains.
@@ -109,8 +117,22 @@ class ItRecoveryDomainInPV  {
     assertNotNull(namespaces.get(1), "Namespace is null");
     domainNamespace = namespaces.get(1);
 
+    // get a unique Traefik namespace
+    logger.info("Get a unique namespace for Traefik");
+    assertNotNull(namespaces.get(2), "Namespace list is null");
+    traefikNamespace = namespaces.get(2);
+
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domainNamespace);
+
+    if (OKE_CLUSTER) {
+      // install and verify Traefik
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+
+      // create Traefik ingress resource
+      final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";
+      createTraefikIngressRoutingRules(domainNamespace, traefikNamespace, ingressResourceFileName, domainUid);
+    }
   }
 
   /**
@@ -155,6 +177,10 @@ class ItRecoveryDomainInPV  {
     createPV(pvName, domainUid, this.getClass().getSimpleName());
     createPVC(pvName, pvcName, domainUid, domainNamespace);
 
+    final String ingressServiceName = traefikHelmParams.getReleaseName();
+    String hostName = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
+
     // create a temporary WebLogic domain property file
     File domainPropertiesFile = assertDoesNotThrow(() ->
             File.createTempFile("domain", "properties"),
@@ -169,7 +195,7 @@ class ItRecoveryDomainInPV  {
     p.setProperty("admin_server_port", "7001");
     p.setProperty("admin_username", ADMIN_USERNAME_DEFAULT);
     p.setProperty("admin_password", ADMIN_PASSWORD_DEFAULT);
-    p.setProperty("admin_t3_public_address", K8S_NODEPORT_HOST);
+    p.setProperty("admin_t3_public_address", hostName);
     p.setProperty("admin_t3_channel_port", Integer.toString(t3ChannelPort));
     p.setProperty("number_of_ms", "4");
     p.setProperty("managed_server_name_base", managedServerNameBase);

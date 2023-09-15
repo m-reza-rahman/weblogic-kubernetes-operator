@@ -351,10 +351,6 @@ class ItRemoteConsole {
     logger.info("admin svc host = {0}", adminSvcExtHost);
     String hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
 
-    //The final complete curl command to run is like:
-    //curl -v --show-error --user username:password http://localhost:8012/api/providers/AdminServerConnection -H
-    //"Content-Type:application/json" --data "{ \"name\": \"asconn\", \"domainUrl\": \"http://myhost://nodeport\"}"
-    //--write-out %{http_code} -o /dev/null
     String curlCmd = "curl -v --show-error --noproxy '*' --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " http://localhost:8012/api/providers/AdminServerConnection -H "
@@ -373,10 +369,6 @@ class ItRemoteConsole {
     logger.info("LB nodePort is {0}", nodePortOfLB);
     logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
 
-    //The final complete curl command to run is like:
-    //curl -v --user username:password http://localhost:8012/api/providers/AdminServerConnection -H
-    //"Content-Type:application/json" --data "{ \"name\": \"asconn\", \"domainUrl\": \"http://myhost://nodeport\"}"
-    //--write-out %{http_code} -o /dev/null
     String ingressServiceName = traefikHelmParams.getReleaseName();
     String traefikNamespace = traefikHelmParams.getNamespace();
     String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
