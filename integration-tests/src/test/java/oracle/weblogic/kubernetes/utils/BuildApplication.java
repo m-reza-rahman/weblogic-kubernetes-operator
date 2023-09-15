@@ -20,8 +20,6 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.util.exception.CopyNotSupportedException;
 import oracle.weblogic.kubernetes.actions.impl.Exec;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
@@ -260,13 +258,6 @@ public class BuildApplication {
         .apiVersion("v1")
         .kind("Pod");
     V1Pod wlsPod = assertDoesNotThrow(() -> Kubernetes.createPod(namespace, podBody));
-
-    String cmd = KUBERNETES_CLI + " describe pod " + podName + " -n " + namespace;
-    logger.info("========== Command to describe pod {0} is {1} ", podName, cmd);
-    CommandParams params = new CommandParams().defaults();
-    params.command(cmd);
-    ExecResult result = Command.withParams(params).executeAndReturnResult();
-    logger.info("============== describe pod {0} is {1} returns: {1}", podName, result.toString());
 
     testUntil(
         podReady(podName, null, namespace),

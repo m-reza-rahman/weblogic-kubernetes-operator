@@ -21,6 +21,8 @@ import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.ServerStatus;
 import oracle.weblogic.kubernetes.actions.impl.LoggingExporter;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.assertions.impl.Application;
 import oracle.weblogic.kubernetes.assertions.impl.Cluster;
 import oracle.weblogic.kubernetes.assertions.impl.ClusterRole;
@@ -41,9 +43,11 @@ import oracle.weblogic.kubernetes.assertions.impl.Service;
 import oracle.weblogic.kubernetes.assertions.impl.Traefik;
 import oracle.weblogic.kubernetes.assertions.impl.WitAssertion;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 
 import static oracle.weblogic.kubernetes.TestConstants.CLUSTER_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.listSecrets;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getClusterCustomResource;
@@ -289,6 +293,14 @@ public class TestAssertions {
    * @return true if the pod is running otherwise false
    */
   public static Callable<Boolean> podReady(String podName, String domainUid, String namespace) {
+    final LoggingFacade logger = getLogger();
+    String cmd = KUBERNETES_CLI + " describe pod " + podName + " -n " + namespace;
+    logger.info("========== Command to describe pod {0} is {1} ", podName, cmd);
+    CommandParams params = new CommandParams().defaults();
+    params.command(cmd);
+    ExecResult result = Command.withParams(params).executeAndReturnResult();
+    logger.info("============== describe pod {0} is {1} returns: {1}", podName, result.toString());
+
     return Pod.podReady(namespace, domainUid, podName);
   }
 
