@@ -27,11 +27,7 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -81,12 +77,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The test class creates WebLogic domains with three models. domain-on-pv ( using WDT ) domain-in-image ( using WDT )
  * model-in-image.
- * Verify the basic lifecycle operations of the WebLogic server pods by scaling the domain and triggering
- * rolling ( in case of mii domain ) after upgrade to current version.
+ * Start all three domain with a single operator
+ * Upgrade the Operator to latest version
+ * Make sure all the domain can be re-managed after the Operator upgrade
+ * Verify the basic lifecycle operations of the WebLogic server pods by scaling the domain after upgrade to 
+ * current version.
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@DisplayName("Verify scaling the clusters in the domain with different domain types, "
-    + "rolling restart behavior in a multi-cluster MII domain after upgrade")
+@DisplayName("Verify scaling the clusters in the domain with different domain types after operator upgrade")
 @IntegrationTest
 @Tag("kind-upgrade")
 class ItMultiDomainModelsUpgradeAndScale {
@@ -112,17 +109,16 @@ class ItMultiDomainModelsUpgradeAndScale {
   private static String domainOnPVNamespace = null;
   private static String miiImage = null;
   private static String encryptionSecretName = "encryptionsecret";
-
-  private static String oldOperatorVersion = "4.1.1";
+  
   private static Map<String, String> domains;
 
   /**
-   * Install operator.
+   * Create MII image.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher
    */
   @BeforeAll
-  public static void initAll(@Namespaces(5) List<String> namespaces) {
+  public static void initAll(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
 
     // get a unique operator namespace
@@ -143,9 +139,6 @@ class ItMultiDomainModelsUpgradeAndScale {
     // create mii image
     miiImage = createAndPushMiiImage();
 
-    // install and verify operator
-    installOldOperator(oldOperatorVersion, opNamespace,
-        miiDomainNamespace, domainOnPVNamespace, domainInImageNamespace);
   }
 
   /**
@@ -153,24 +146,35 @@ class ItMultiDomainModelsUpgradeAndScale {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @Order(1)
   @ParameterizedTest
-  @DisplayName("createthree different type of domains")
+  @DisplayName("create three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
-  void testCreateDomain(String domainType) {
+  void installAndUpgradeOperatorFrom411(String domainType) {
+    // install and verify operator
+    installOldOperator("4.1.1", opNamespace,
+        miiDomainNamespace, domainOnPVNamespace, domainInImageNamespace);
     DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
     domains.put(domain.getMetadata().getName(), domain.getMetadata().getNamespace());
+    upgradeOperatorToCurrent(opNamespace);
+    scaleClustersByPatchingClusterResource();
   }
 
   /**
-   * Upgrade operator to current version.
+   * Create 3 different types of domains. domain-on-pv, domain-in-image and model-in-image
    *
+   * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @Order(2)
-  @Test
-  @DisplayName("scale cluster by patching domain resource with three different type of domains")
-  void testUpgradeOperatorToCurrent() {
+  @ParameterizedTest
+  @DisplayName("create three different type of domains")
+  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
+  void installAndUpgradeOperatorFrom412(String domainType) {
+    // install and verify operator
+    installOldOperator("4.1.2", opNamespace,
+        miiDomainNamespace, domainOnPVNamespace, domainInImageNamespace);
+    DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
+    domains.put(domain.getMetadata().getName(), domain.getMetadata().getNamespace());
     upgradeOperatorToCurrent(opNamespace);
+    scaleClustersByPatchingClusterResource();
   }
 
   /**
@@ -178,10 +182,7 @@ class ItMultiDomainModelsUpgradeAndScale {
    * domain-in-image and model-in-image
    *
    */
-  @Order(3)
-  @Test
-  @DisplayName("scale cluster by patching domain resource with three different type of domains")
-  void testScaleClustersByPatchingClusterResource() {
+  void scaleClustersByPatchingClusterResource() {
     for (Map.Entry<String, String> entry : domains.entrySet()) {
       String domainUid = entry.getKey();
       String domainNamespace = entry.getValue();
