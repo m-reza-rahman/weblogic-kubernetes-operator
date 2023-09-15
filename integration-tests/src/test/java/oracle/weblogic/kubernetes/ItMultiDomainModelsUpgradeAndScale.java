@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -21,7 +21,6 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -81,23 +80,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The test class creates WebLogic domains with three models. domain-on-pv ( using WDT ) domain-in-image ( using WDT )
- * model-in-image Verify the basic lifecycle operations of the WebLogic server pods by scaling the domain and triggering
- * rolling ( in case of mii domain )
+ * model-in-image.
+ * Verify the basic lifecycle operations of the WebLogic server pods by scaling the domain and triggering
+ * rolling ( in case of mii domain ) after upgrade to current version.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Verify scaling the clusters in the domain with different domain types, "
-    + "rolling restart behavior in a multi-cluster MII domain and ")
-@Tag("kind-sequential")
-@Tag("oke-sequential")
+    + "rolling restart behavior in a multi-cluster MII domain after upgrade")
 @IntegrationTest
-@Tag("olcne")
+@Tag("kind-upgrade")
 class ItMultiDomainModelsUpgradeAndScale {
 
   // domain constants
   private static final int NUMBER_OF_CLUSTERS_MIIDOMAIN = 2;
   private static final String CLUSTER_NAME_PREFIX = "cluster-";
-  private static final int MANAGED_SERVER_PORT = 8001;
-  private static final int ADMIN_SERVER_PORT = 7001;
   private static final int replicaCount = 1;
   private static final String SAMPLE_APP_CONTEXT_ROOT = "sample-war";
   private static final String WLDF_OPENSESSION_APP = "opensessionapp";
@@ -110,23 +106,18 @@ class ItMultiDomainModelsUpgradeAndScale {
   private static final String wdtModelFileForDomainInImage = "wdt-singlecluster-multiapps-usingprop-wls.yaml";
 
   private static String opNamespace = null;
-  private static NginxParams nginxHelmParams = null;
-  private static int nodeportshttp = 0;
-  private static int externalRestHttpsPort = 0;
   private static LoggingFacade logger = null;
   private static String miiDomainNamespace = null;
   private static String domainInImageNamespace = null;
   private static String domainOnPVNamespace = null;
   private static String miiImage = null;
   private static String encryptionSecretName = "encryptionsecret";
-  private String curlCmd = null;
 
   private static String oldOperatorVersion = "4.1.1";
   private static Map<String, String> domains;
 
   /**
-   * Install operator. Create three different type of domains: model in image, domain in PV and domain in
-   * image. Create ingress for each domain.
+   * Install operator.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher
    */
@@ -158,7 +149,7 @@ class ItMultiDomainModelsUpgradeAndScale {
   }
 
   /**
-   * Create 3 different domains. domain-on-pv, domain-in-image and model-in-image
+   * Create 3 different types of domains. domain-on-pv, domain-in-image and model-in-image
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
@@ -172,10 +163,8 @@ class ItMultiDomainModelsUpgradeAndScale {
   }
 
   /**
-   * Scale the cluster by patching domain resource for three different type of domains i.e. domain-on-pv,
-   * domain-in-image and model-in-image
+   * Upgrade operator to current version.
    *
-   * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
   @Order(2)
   @Test
@@ -188,7 +177,6 @@ class ItMultiDomainModelsUpgradeAndScale {
    * Scale the cluster by patching domain resource for three different type of domains i.e. domain-on-pv,
    * domain-in-image and model-in-image
    *
-   * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
   @Order(3)
   @Test
@@ -226,7 +214,7 @@ class ItMultiDomainModelsUpgradeAndScale {
             clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
         managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
         scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-            numberOfServers, replicaCount, curlCmd, managedServersBeforeScale);
+            numberOfServers, replicaCount, null, managedServersBeforeScale);
       }
 
       // shutdown domain and verify the domain is shutdown
