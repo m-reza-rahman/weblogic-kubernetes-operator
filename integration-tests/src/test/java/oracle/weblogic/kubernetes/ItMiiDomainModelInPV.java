@@ -36,7 +36,7 @@ import oracle.weblogic.kubernetes.utils.CommonMiiTestUtils;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
-import org.junit.jupiter.api.AfterAll;
+//import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -68,22 +68,22 @@ import static oracle.weblogic.kubernetes.actions.TestActions.defaultWitParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageRepoLogin;
-import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
+//import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
+//import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
+//import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
@@ -94,7 +94,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodNam
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static org.assertj.core.api.Assertions.assertThat;
+//import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -248,6 +248,7 @@ public class ItMiiDomainModelInPV {
       execInPod(pvPod, null, true, argCommand);
     }
 
+    /* TODO
     if (OKE_CLUSTER) {
       // install and verify Traefik
       traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
@@ -256,9 +257,10 @@ public class ItMiiDomainModelInPV {
       final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
       createTraefikIngressRoutingRules(domainNamespace, traefikNamespace,
           ingressResourceFileName, domainUid1, domainUid2);
-    }
+    }*/
   }
 
+  /* TODO
   @AfterAll
   void tearDown() {
     // uninstall Traefik
@@ -268,7 +270,7 @@ public class ItMiiDomainModelInPV {
           .withFailMessage("uninstallTraefik() did not return true")
           .isTrue();
     }
-  }
+  }*/
 
   /**
    * Test domain creation from model file stored in PV. https://oracle.github.io/weblogic-kubernetes-operator
@@ -352,21 +354,12 @@ public class ItMiiDomainModelInPV {
   private static void verifyMemberHealth(String adminServerPodName, List<String> managedServerNames,
       String user, String password) {
 
-    adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
-    logger.info("admin svc host = {0}", adminSvcExtHost);
-
-    logger.info("Getting node port for default channel");
-    int serviceNodePort = assertDoesNotThrow(()
-        -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
-        "Getting admin server node port failed");
-
+    /* TODO
     final String ingressServiceName = traefikHelmParams.getReleaseName();
     String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-            : getHostAndPort(adminSvcExtHost, serviceNodePort);
+            : getHostAndPort(adminSvcExtHost, serviceNodePort);*/
     logger.info("Checking the health of servers in cluster");
-    String url = "http://" + hostAndPort
-        + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
 
     testUntil(
         () -> {
@@ -398,6 +391,17 @@ public class ItMiiDomainModelInPV {
             }
             return health;
           } else {
+            adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+            logger.info("admin svc host = {0}", adminSvcExtHost);
+
+            logger.info("Getting node port for default channel");
+            int serviceNodePort = assertDoesNotThrow(()
+                -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+                    "Getting admin server node port failed");
+            String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+
+            String url = "http://" + hostAndPort
+                + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
             HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
             assertEquals(200, response.statusCode(), "Status code not equals to 200");
             boolean health = true;
