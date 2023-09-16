@@ -83,6 +83,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyServerCommunication;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapFromFiles;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.JobUtils.createJobAndWaitUntilComplete;
@@ -624,8 +625,9 @@ public class CommonLBTestUtils {
   }
 
   private static boolean deployApplication(String namespace, String domainUid, String adminServerPodName,
-                                        Path clusterViewAppPath) {
+                                        Path clusterViewAppPath, String... clusterName) {
     getLogger().info("Getting node port for admin server default channel");
+
     int serviceNodePort = assertDoesNotThrow(() ->
             getServiceNodePort(namespace, getExternalServicePodName(adminServerPodName), "default"),
         "Getting admin server node port failed");
@@ -633,13 +635,24 @@ public class CommonLBTestUtils {
     getLogger().info("Deploying application {0} to domain {1} cluster target cluster-1 in namespace {2}",
         clusterViewAppPath, domainUid, namespace);
     String targets = "{ identity: [ clusters, 'cluster-1' ] }";
-    ExecResult result = DeployUtil.deployUsingRest(K8S_NODEPORT_HOST,
-        String.valueOf(serviceNodePort),
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-        targets, clusterViewAppPath, null, domainUid + "clusterview");
-    assertNotNull(result, "Application deployment failed");
-    getLogger().info("Application deployment returned {0}", result.toString());
-    return result.stdout().equals("202");
+    if (OKE_CLUSTER_PRIVATEIP) {
+      assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
+          String.valueOf(7001),
+          ADMIN_USERNAME_DEFAULT,
+          ADMIN_PASSWORD_DEFAULT,
+          clusterName + "," + adminServerPodName,
+          clusterViewAppPath,
+          namespace),"Deploying the application");
+      return true;
+    } else {
+      ExecResult result = DeployUtil.deployUsingRest(K8S_NODEPORT_HOST,
+          String.valueOf(serviceNodePort),
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          targets, clusterViewAppPath, null, domainUid + "clusterview");
+      assertNotNull(result, "Application deployment failed");
+      getLogger().info("Application deployment returned {0}", result.toString());
+      return result.stdout().equals("202");
+    }
   }
 
   /**
