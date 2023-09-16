@@ -33,6 +33,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHos
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.configIstioModelInImageDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
@@ -256,7 +257,12 @@ class ItIstioGatewaySessionMigration {
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
     if (!WEBLOGIC_SLIM) {
-      String consoleUrl = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
+      final String istioNamespace = "istio-system";
+      final String istioIngressServiceName = "istio-ingressgateway";
+      String istioIngressGatewayIP = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
+          ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
+
+      String consoleUrl = "http://" + istioIngressGatewayIP + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
       boolean checkConsole =
           checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console");
