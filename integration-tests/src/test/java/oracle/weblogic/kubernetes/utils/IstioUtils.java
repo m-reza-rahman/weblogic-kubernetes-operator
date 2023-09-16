@@ -24,6 +24,7 @@ import oracle.weblogic.domain.MonitoringExporterSpecification;
 import oracle.weblogic.domain.OnlineUpdate;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.SemanticVersion.Compatibility;
 
@@ -248,6 +249,15 @@ public class IstioUtils {
       Path configPath) {
     LoggingFacade logger = getLogger();
     ExecResult result = null;
+
+    //TODO debugger to remove
+    String cmd = KUBERNETES_CLI + " get svc --all-namespaces";
+    logger.info("========== Command to get svc --all-namespaces is {0} ", cmd);
+    CommandParams params = new CommandParams().defaults();
+    params.command(cmd);
+    result = Command.withParams(params).executeAndReturnResult();
+    logger.info("============== get svc --all-namespaces returns: {0}", result.toString());
+
     StringBuffer deployIstioGateway = null;
     deployIstioGateway = new StringBuffer(KUBERNETES_CLI + " apply -f ");
     deployIstioGateway.append(configPath);
