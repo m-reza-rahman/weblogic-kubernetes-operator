@@ -33,6 +33,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.CommonMiiTestUtils;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -63,6 +64,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.defaultWitParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageRepoLogin;
+import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
@@ -88,6 +90,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodNam
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -241,9 +244,6 @@ public class ItMiiDomainModelInPV {
       execInPod(pvPod, null, true, argCommand);
     }
 
-    // install and verify Traefik
-    traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-
     if (OKE_CLUSTER) {
       // install and verify Traefik
       traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
@@ -252,6 +252,17 @@ public class ItMiiDomainModelInPV {
       final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
       createTraefikIngressRoutingRules(domainNamespace, traefikNamespace,
           ingressResourceFileName, domainUid1, domainUid2);
+    }
+  }
+
+  @AfterAll
+  void tearDown() {
+    // uninstall Traefik
+    if (OKE_CLUSTER && traefikHelmParams != null) {
+      assertThat(uninstallTraefik(traefikHelmParams))
+          .as("Test uninstallTraefik returns true")
+          .withFailMessage("uninstallTraefik() did not return true")
+          .isTrue();
     }
   }
 
