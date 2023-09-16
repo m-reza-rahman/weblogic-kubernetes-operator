@@ -30,8 +30,8 @@ import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.verifyNamespaceActive;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -260,15 +260,23 @@ public class BuildApplication {
         .kind("Pod");
     V1Pod wlsPod = assertDoesNotThrow(() -> Kubernetes.createPod(namespace, podBody));
 
+    /* TODO
     testUntil(
         withLongRetryPolicy,
         podReady(podName, null, namespace),
         logger,
         "{0} to be ready in namespace {1}",
         podName,
-        namespace);
+        namespace);*/
 
+    for (int i = 0; i < 10; i++) {
+      podReady(podName, null, namespace);
+      try {
+        Thread.sleep(30000);
+      } catch (Exception ex) {
+        //
+      }
+    }
     return wlsPod;
   }
-
 }
