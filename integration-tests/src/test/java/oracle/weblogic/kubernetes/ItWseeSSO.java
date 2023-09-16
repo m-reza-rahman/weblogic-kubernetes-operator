@@ -23,6 +23,7 @@ import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
+//import oracle.weblogic.kubernetes.actions.impl.Service;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -61,6 +62,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePodVerifyResult;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
@@ -92,8 +94,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify that client can communicate with webservices with SSO")
 @IntegrationTest
-@Tag("oke-parallel")
 @Tag("kind-parallel")
+@Tag("oke-gate")
 class ItWseeSSO {
 
   private static String opNamespace = null;
@@ -211,12 +213,17 @@ class ItWseeSSO {
     assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
             "addSAMLRelyingPartySenderConfig.py", receiverURI),
         "Failed to run python script addSAMLRelyingPartySenderConfig.py");
+
     int serviceNodePort = assertDoesNotThrow(()
-            -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
+        -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
             "default"),
         "Getting admin server node port failed");
+    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + " " + serviceNodePort;
+
     assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
-            "setupPKI.py", K8S_NODEPORT_HOST + " " + serviceNodePort),
+            "setupPKI.py", hostAndPort),
         "Failed to run python script setupPKI.py");
 
     buildRunClientOnPod();
