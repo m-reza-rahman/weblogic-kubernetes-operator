@@ -640,7 +640,8 @@ public class CommonLBTestUtils {
           String.valueOf(7001),
           ADMIN_USERNAME_DEFAULT,
           ADMIN_PASSWORD_DEFAULT,
-          clusterName + "," + adminServerPodName,
+          targets,
+          //clusterName + "," + adminServerPodName,
           clusterViewAppPath,
           namespace),"Deploying the application");
       return true;
