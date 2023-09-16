@@ -94,7 +94,6 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodNam
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-//import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -247,30 +246,7 @@ public class ItMiiDomainModelInPV {
     if (!OKD) {
       execInPod(pvPod, null, true, argCommand);
     }
-
-    /* TODO
-    if (OKE_CLUSTER) {
-      // install and verify Traefik
-      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-
-      // create Traefik ingress resource
-      final String ingressResourceFileName = "traefik/traefik-ingress-rules.yaml";
-      createTraefikIngressRoutingRules(domainNamespace, traefikNamespace,
-          ingressResourceFileName, domainUid1, domainUid2);
-    }*/
   }
-
-  /* TODO
-  @AfterAll
-  void tearDown() {
-    // uninstall Traefik
-    if (OKE_CLUSTER && traefikHelmParams != null) {
-      assertThat(uninstallTraefik(traefikHelmParams))
-          .as("Test uninstallTraefik returns true")
-          .withFailMessage("uninstallTraefik() did not return true")
-          .isTrue();
-    }
-  }*/
 
   /**
    * Test domain creation from model file stored in PV. https://oracle.github.io/weblogic-kubernetes-operator
@@ -354,16 +330,12 @@ public class ItMiiDomainModelInPV {
   private static void verifyMemberHealth(String adminServerPodName, List<String> managedServerNames,
       String user, String password) {
 
-    /* TODO
-    final String ingressServiceName = traefikHelmParams.getReleaseName();
-    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-            : getHostAndPort(adminSvcExtHost, serviceNodePort);*/
     logger.info("Checking the health of servers in cluster");
 
     testUntil(
         () -> {
           if (OKE_CLUSTER) {
+            // In internal OKE env, verifyMemberHealth in admin server pod
             int adminPort = 7001;
             final String command = KUBERNETES_CLI + " exec -n "
                 + domainNamespace + "  " + adminServerPodName + " -- curl http://"
@@ -391,6 +363,7 @@ public class ItMiiDomainModelInPV {
             }
             return health;
           } else {
+            // In non-internal OKE env, verifyMemberHealth using adminSvcExtHost by sending HTTP request from local VM
             adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
             logger.info("admin svc host = {0}", adminSvcExtHost);
 
