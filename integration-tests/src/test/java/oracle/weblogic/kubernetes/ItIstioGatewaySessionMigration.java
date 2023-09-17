@@ -35,7 +35,8 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.configIstioMod
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
@@ -312,10 +313,14 @@ class ItIstioGatewaySessionMigration {
     }
 
     ExecResult result = null;
+    String target = "{identity: [clusters,'" + clusterName + "']}";
+    result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+        target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+    /*
     result = deployToClusterUsingRest(hostAndPort,
         String.valueOf(istioIngressPort),
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-        clusterName, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+        clusterName, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
     assertNotNull(result, "Application deployment failed");
     logger.info("Application deployment returned {0}", result.toString());
     assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
