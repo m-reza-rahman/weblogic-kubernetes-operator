@@ -259,10 +259,18 @@ class ItIstioGatewaySessionMigration {
     if (!WEBLOGIC_SLIM) {
       final String istioNamespace = "istio-system";
       final String istioIngressServiceName = "istio-ingressgateway";
+      /*
       String istioIngressGatewayIP = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
           ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
 
-      String consoleUrl = "http://" + istioIngressGatewayIP + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
+      String consoleUrl = "http://" + istioIngressGatewayIP + ":" + istioIngressPort + "/console/login/LoginForm.jsp";*/
+
+      // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+      String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
+          ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
+              : K8S_NODEPORT_HOST + ":" + istioIngressPort;
+
+      String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
       boolean checkConsole =
           checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console");
