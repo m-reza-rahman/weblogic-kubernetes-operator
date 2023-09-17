@@ -601,7 +601,8 @@ public class CommonLBTestUtils {
    * @param domainNamespace domain namespace
    * @param domainUids uid of the domains
    */
-  public static void buildAndDeployClusterviewApp(String domainNamespace, List<String> domainUids) {
+  public static void buildAndDeployClusterviewApp(String domainNamespace,
+                                                  List<String> domainUids) {
     // build the clusterview application
     getLogger().info("Building clusterview application");
     Path distDir = BuildApplication.buildApplication(Paths.get(APP_DIR, "clusterview"),
@@ -636,16 +637,17 @@ public class CommonLBTestUtils {
         clusterViewAppPath, domainUid, namespace);
     String targets = "{ identity: [ clusters, 'cluster-1' ] }";
     if (OKE_CLUSTER_PRIVATEIP) {
+      // In internal OKE env, deploy App using WLST
       assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
           String.valueOf(7001),
           ADMIN_USERNAME_DEFAULT,
           ADMIN_PASSWORD_DEFAULT,
-          targets,
-          //clusterName + "," + adminServerPodName,
+          "cluster-1",
           clusterViewAppPath,
           namespace),"Deploying the application");
       return true;
     } else {
+      // In non-internal OKE env, deploy App using WebLogic restful management services
       ExecResult result = DeployUtil.deployUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(serviceNodePort),
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
