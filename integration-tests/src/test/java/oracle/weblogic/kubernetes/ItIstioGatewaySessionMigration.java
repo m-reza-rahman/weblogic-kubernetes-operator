@@ -182,9 +182,9 @@ class ItIstioGatewaySessionMigration {
     // the NodePort services created by the operator are not usable, because they would expose ports
     // on the worker node’s private IP addresses only, which are not reachable from outside the cluster
     Map<String, String> httpDataInfo = OKE_CLUSTER ? getServerAndSessionInfoAndVerify(domainNamespace,
-        adminServerPodName, serverName, istioIngressIP, istioIngressPort, webServiceSetUrl, " -c ")
+            adminServerPodName, serverName, istioIngressIP, 0, webServiceSetUrl, " -c ")
         : getServerAndSessionInfoAndVerify(domainNamespace,
-            adminServerPodName, serverName, istioIngressIP, 0, webServiceSetUrl, " -c ");
+            adminServerPodName, serverName, istioIngressIP, istioIngressPort, webServiceSetUrl, " -c ");
     // get server and session info from web service deployed on the cluster
     String origPrimaryServerName = httpDataInfo.get(primaryServerAttr);
     String origSecondaryServerName = httpDataInfo.get(secondaryServerAttr);
@@ -200,9 +200,9 @@ class ItIstioGatewaySessionMigration {
     // send a HTTP request to get server and session info after shutting down the primary server
     serverName = domainUid + "-" + origSecondaryServerName;
     httpDataInfo = OKE_CLUSTER ? getServerAndSessionInfoAndVerify(domainNamespace,
-        adminServerPodName, serverName, istioIngressIP, istioIngressPort, webServiceGetUrl, " -b ")
+            adminServerPodName, serverName, istioIngressIP, 0, webServiceGetUrl, " -b ")
         : getServerAndSessionInfoAndVerify(domainNamespace,
-            adminServerPodName, serverName, istioIngressIP, 0, webServiceGetUrl, " -b ");
+            adminServerPodName, serverName, istioIngressIP, istioIngressPort, webServiceGetUrl, " -b ");
     // get server and session info from web service deployed on the cluster
     String primaryServerName = httpDataInfo.get(primaryServerAttr);
     String sessionCreateTime = httpDataInfo.get(sessionCreateTimeAttr);
