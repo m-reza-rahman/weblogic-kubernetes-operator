@@ -591,6 +591,12 @@ public class LoadBalancerUtils {
   public static String getLbExternalIp(String lbrelname, String lbns) throws Exception {
     int i = 0;
     LoggingFacade logger = getLogger();
+    //TODO remove
+    String cmdip0 = KUBERNETES_CLI + " get svc --all-namespaces";
+    logger.info("====Command to get svc --all-namespaces: {0} ", cmdip0);
+    ExecResult result0 = exec(cmdip0, true);
+    logger.info("=====The command returned: " + result0.toString() + "\n");
+
     String cmdip = KUBERNETES_CLI + " get svc --namespace " + lbns
           + " -o jsonpath='{.items[?(@.metadata.name == \"" + lbrelname + "\")]"
           + ".status.loadBalancer.ingress[0].ip}'";
@@ -606,13 +612,6 @@ public class LoadBalancerUtils {
     }
 
     logger.info(" LB_PUBLIC_IP is " + result.stdout().trim());
-
-    /*
-    //TODO remove
-    cmdip = KUBERNETES_CLI + " get svc --all-namespaces";
-    logger.info("====Command to get svc --all-namespaces: {0} ", cmdip);
-    result = exec(cmdip, true);
-    logger.info("=====The command returned: " + result.toString());*/
 
     return result.stdout().trim();
   }
