@@ -303,8 +303,16 @@ class ItIstioGatewaySessionMigration {
         archivePath,
         Paths.get(destLocation)));
 
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+          managedServerPodName, "",
+          archivePath,
+          Paths.get(destLocation)));
+    }
+
     ExecResult result = null;
-    result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
+    result = deployToClusterUsingRest(hostAndPort,
         String.valueOf(istioIngressPort),
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
         clusterName, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
