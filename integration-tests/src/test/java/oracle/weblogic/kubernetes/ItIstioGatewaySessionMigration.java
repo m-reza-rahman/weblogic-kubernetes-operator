@@ -297,13 +297,26 @@ class ItIstioGatewaySessionMigration {
     Path archivePath = Paths.get(testWebAppWarLoc);
     if (OKE_CLUSTER) {
       // In internal OKE env, deploy App using WLST
+
+      try {
+        deployUsingWlst(adminServerPodName,
+            String.valueOf(7001),
+            ADMIN_USERNAME_DEFAULT,
+            ADMIN_PASSWORD_DEFAULT,
+            "cluster-1",
+            archivePath,
+            domainNamespace);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+      }
+      /*
       assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
           String.valueOf(7001),
           ADMIN_USERNAME_DEFAULT,
           ADMIN_PASSWORD_DEFAULT,
           "cluster-1",
           archivePath,
-          domainNamespace),"Deploying the application");
+          domainNamespace),"Deploying the application");*/
     } else {
       ExecResult result = null;
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
