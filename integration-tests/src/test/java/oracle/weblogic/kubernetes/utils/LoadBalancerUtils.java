@@ -607,11 +607,12 @@ public class LoadBalancerUtils {
 
     logger.info(" LB_PUBLIC_IP is " + result.stdout().trim());
 
+    /*
     //TODO remove
     cmdip = KUBERNETES_CLI + " get svc --all-namespaces";
     logger.info("====Command to get svc --all-namespaces: {0} ", cmdip);
     result = exec(cmdip, true);
-    logger.info("=====The command returned: " + result.toString());
+    logger.info("=====The command returned: " + result.toString());*/
 
     return result.stdout().trim();
   }
