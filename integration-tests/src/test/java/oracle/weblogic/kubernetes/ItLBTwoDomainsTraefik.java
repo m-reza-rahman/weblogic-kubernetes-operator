@@ -128,8 +128,9 @@ class ItLBTwoDomainsTraefik {
     // install Traefik ingress controller for all test cases using Traefik
     installTraefikIngressController();
 
-    ingressIP = getServiceExtIPAddrtOke(traefikNamespace, traefikNamespace) != null
-        ? getServiceExtIPAddrtOke(traefikNamespace, traefikNamespace) : K8S_NODEPORT_HOST;
+    String ingressServiceName = traefikHelmParams.getReleaseName();
+    ingressIP = getServiceExtIPAddrtOke(traefikNamespace, ingressServiceName) != null
+        ? getServiceExtIPAddrtOke(traefikNamespace, ingressServiceName) : K8S_NODEPORT_HOST;
   }
 
   /**
