@@ -36,7 +36,8 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppW
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
+import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
@@ -294,29 +295,33 @@ class ItIstioGatewaySessionMigration {
 
     ///tmp/workspace/wko-oke-nightly-parallel/staging/wl_k8s_test_results/workdir/ns-pcanbk/testwebapp.war
 
+    String destLocation = "/u01/testwebapp.war";
     Path archivePath = Paths.get(testWebAppWarLoc);
+
+    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+        adminServerPodName, "",
+        archivePath,
+        Paths.get(destLocation)));
+
+    ExecResult result = null;
+    result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
+        String.valueOf(istioIngressPort),
+        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+        clusterName, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+    assertNotNull(result, "Application deployment failed");
+    logger.info("Application deployment returned {0}", result.toString());
+    assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
+
+    /*
     if (OKE_CLUSTER) {
       // In internal OKE env, deploy App using WLST
-
-      try {
-        deployUsingWlst(adminServerPodName,
-            String.valueOf(7001),
-            ADMIN_USERNAME_DEFAULT,
-            ADMIN_PASSWORD_DEFAULT,
-            "cluster-1",
-            archivePath,
-            domainNamespace);
-      } catch (Exception ex) {
-        ex.printStackTrace();
-      }
-      /*
       assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
           String.valueOf(7001),
           ADMIN_USERNAME_DEFAULT,
           ADMIN_PASSWORD_DEFAULT,
           "cluster-1",
           archivePath,
-          domainNamespace),"Deploying the application");*/
+          domainNamespace),"Deploying the application");
     } else {
       ExecResult result = null;
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
@@ -326,7 +331,7 @@ class ItIstioGatewaySessionMigration {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment returned {0}", result.toString());
       assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-    }
+    }*/
 
     String url = "http://" + hostAndPort + "/testwebapp/index.jsp";
     logger.info("Application Access URL {0}", url);
