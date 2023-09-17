@@ -138,6 +138,8 @@ class ItLBTwoDomainsNginx {
     String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
+
+    logger.info("1. =========== ingressIP: {0}", ingressIP);
   }
 
   /**
@@ -326,6 +328,7 @@ class ItLBTwoDomainsNginx {
         ingressHost = domainUid + "." + domainNamespace + ".nginx.nonssl.test";
       }
 
+      logger.info("2. =========== ingressIP: {0}", ingressIP);
       checkIngressReady(true, ingressHost, isTLS, httpNodeport, httpsNodeport, "", ingressIP);
     }
   }

@@ -717,6 +717,17 @@ public class CommonLBTestUtils {
                                         String... ingressExtIP) {
     // check the ingress is ready to route the app to the server pod
     String hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : K8S_NODEPORT_HOST + ":" + httpsNodeport;
+
+    getLogger().info("=========== hostAndPort in checkIngressReady: {0}", hostAndPort);
+    //TODO remove
+    try {
+      String k8sCmd = KUBERNETES_CLI + " get svc --all-namespaces";
+      ExecResult result = ExecCommand.exec(new String(k8sCmd), true);
+      getLogger().info("=========== result:\n {0} \n", result.toString());
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+
     if (httpNodeport != 0 && httpsNodeport != 0) {
       String curlCmd;
       if (isHostRouting) {
