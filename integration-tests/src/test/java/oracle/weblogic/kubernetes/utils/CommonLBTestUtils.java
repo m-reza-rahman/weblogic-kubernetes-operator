@@ -713,26 +713,28 @@ public class CommonLBTestUtils {
    * @param pathString path string in path routing
    */
   public static void checkIngressReady(boolean isHostRouting, String ingressHost, boolean isTLS,
-                                        int httpNodeport, int httpsNodeport, String pathString) {
+                                        int httpNodeport, int httpsNodeport, String pathString,
+                                        String... ingressExtIP) {
     // check the ingress is ready to route the app to the server pod
+    String hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : K8S_NODEPORT_HOST + ":" + httpsNodeport;
     if (httpNodeport != 0 && httpsNodeport != 0) {
       String curlCmd;
       if (isHostRouting) {
         if (isTLS) {
           curlCmd = "curl -k --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-              + "' https://" + K8S_NODEPORT_HOST + ":" + httpsNodeport
+              + "' https://" + hostAndPort
               + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         } else {
           curlCmd = "curl --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-              + "' http://" + K8S_NODEPORT_HOST + ":" + httpNodeport
+              + "' http://" + hostAndPort
               + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         }
       } else {
         if (isTLS) {
-          curlCmd = "curl -k --silent --show-error --noproxy '*' https://" + K8S_NODEPORT_HOST + ":" + httpsNodeport
+          curlCmd = "curl -k --silent --show-error --noproxy '*' https://" + hostAndPort
               + "/" + pathString + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         } else {
-          curlCmd = "curl --silent --show-error --noproxy '*' http://" + K8S_NODEPORT_HOST + ":" + httpNodeport
+          curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
               + "/" + pathString + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         }
       }

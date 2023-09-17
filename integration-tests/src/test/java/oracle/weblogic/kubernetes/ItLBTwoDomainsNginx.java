@@ -326,7 +326,7 @@ class ItLBTwoDomainsNginx {
         ingressHost = domainUid + "." + domainNamespace + ".nginx.nonssl.test";
       }
 
-      checkIngressReady(true, ingressHost, isTLS, httpNodeport, httpsNodeport, "");
+      checkIngressReady(true, ingressHost, isTLS, httpNodeport, httpsNodeport, "", ingressIP);
     }
   }
 
