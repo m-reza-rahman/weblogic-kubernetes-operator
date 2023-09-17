@@ -753,12 +753,14 @@ public class CommonLBTestUtils {
    * @param locationString location string in apache configuration or path prefix in path routing
    */
   public static void verifyClusterLoadbalancing(String domainUid,
-                                          String ingressHostName,
-                                          String protocol,
-                                          int lbPort,
-                                          int replicaCount,
-                                          boolean hostRouting,
-                                          String locationString) {
+                                                String ingressHostName,
+                                                String protocol,
+                                                int lbPort,
+                                                int replicaCount,
+                                                boolean hostRouting,
+                                                String locationString,
+                                                String... host) {
+    //String host = (args.length == 0) ? K8S_NODEPORT_HOST : args[0];
     verifyClusterLoadbalancing(domainUid,
         ingressHostName,
         protocol,
@@ -766,7 +768,7 @@ public class CommonLBTestUtils {
         replicaCount,
         hostRouting,
         locationString,
-        K8S_NODEPORT_HOST);
+        host[0]);
   }
 
   /**
@@ -793,17 +795,23 @@ public class CommonLBTestUtils {
     getLogger().info("Accessing the clusterview app through load balancer to verify all servers in cluster");
     String curlRequest;
     if (hostRouting) {
-      curlRequest = String.format("curl --show-error -ks --noproxy '*' "
+      curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl --show-error -ks --noproxy '*' "
+              + "-H 'host: %s' %s://%s/clusterview/ClusterViewServlet"
+              + "\"?user=" + ADMIN_USERNAME_DEFAULT
+              + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"", ingressHostName, protocol, host)
+          : String.format("curl --show-error -ks --noproxy '*' "
               + "-H 'host: %s' %s://%s:%s/clusterview/ClusterViewServlet"
               + "\"?user=" + ADMIN_USERNAME_DEFAULT
-              + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"",
-          ingressHostName, protocol, host, lbPort);
+              + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"", ingressHostName, protocol, host, lbPort);
     } else {
-      curlRequest = String.format("curl --show-error -ks --noproxy '*' "
-              + "%s://%s:%s" + locationString + "/clusterview/ClusterViewServlet"
+      curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl --show-error -ks --noproxy '*' "
+              + "%s://%s" + locationString + "/clusterview/ClusterViewServlet"
               + "\"?user=" + ADMIN_USERNAME_DEFAULT
-              + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"",
-          protocol, host, lbPort);
+              + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"", protocol, host)
+        : String.format("curl --show-error -ks --noproxy '*' "
+            + "%s://%s:%s" + locationString + "/clusterview/ClusterViewServlet"
+            + "\"?user=" + ADMIN_USERNAME_DEFAULT
+            + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"", protocol, host, lbPort);
     }
 
     List<String> managedServers = new ArrayList<>();
@@ -848,16 +856,17 @@ public class CommonLBTestUtils {
                                              int lbNodePort,
                                              boolean isHostRouting,
                                              String ingressHostName,
-                                             String pathLocation) {
+                                             String pathLocation,
+                                             String... args) {
     StringBuffer consoleUrl = new StringBuffer();
+    String hostAndPort = (args.length == 0) ? K8S_NODEPORT_HOST + ":" + lbNodePort : args[0];
+
     if (isTLS) {
       consoleUrl.append("https://");
     } else {
       consoleUrl.append("http://");
     }
-    consoleUrl.append(K8S_NODEPORT_HOST)
-        .append(":")
-        .append(lbNodePort);
+    consoleUrl.append(hostAndPort);
     if (!isHostRouting) {
       consoleUrl.append(pathLocation);
     }
