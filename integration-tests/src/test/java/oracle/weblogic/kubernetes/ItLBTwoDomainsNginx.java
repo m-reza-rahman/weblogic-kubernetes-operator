@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
@@ -44,6 +45,7 @@ import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.createMultipleD
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyAdminServerAccess;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyClusterLoadbalancing;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyHeadersInAdminServerLog;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -61,8 +63,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DisplayName("Verify Nginx load balancer handles traffic to two background WebLogic domains")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
+@Tag("oke-gate")
 class ItLBTwoDomainsNginx {
 
   private static final int numberOfDomains = 2;
@@ -82,6 +84,8 @@ class ItLBTwoDomainsNginx {
   private static final int MANAGED_SERVER_PORT = 7100;
   private static final int ADMIN_SERVER_PORT = 7001;
   private static final String clusterName = "cluster-1";
+
+  private static String ingressIP = null;
 
   /**
    * Assigns unique namespaces for operator and domains.
@@ -130,6 +134,10 @@ class ItLBTwoDomainsNginx {
 
     // install Nginx ingress controller for all test cases using Nginx
     installNginxIngressController();
+
+    String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
   }
 
   /**
@@ -143,13 +151,12 @@ class ItLBTwoDomainsNginx {
     logger.info("Verifying WebLogic admin console is accessible through NGINX path routing with HTTPS protocol");
     for (int i = 0; i < numberOfDomains; i++) {
       verifyAdminServerAccess(true, getNginxLbNodePort("https"), false, "",
-          "/" + domainUids.get(i).substring(4) + "console");
+          "/" + domainUids.get(i).substring(4) + "console", ingressIP);
 
       // verify the header 'WL-Proxy-Client-IP' is removed in the admin server log
       // verify the header 'WL-Proxy-SSL: false' is removed in the admin server log
       // verify the header 'WL-Proxy-SSL: true' is added in the admin server log
-      verifyHeadersInAdminServerLog(domainUids.get(i) + "-" + ADMIN_SERVER_NAME_BASE,
-          domainNamespace);
+      verifyHeadersInAdminServerLog(domainUids.get(i) + "-" + ADMIN_SERVER_NAME_BASE, domainNamespace);
     }
   }
 
@@ -165,7 +172,7 @@ class ItLBTwoDomainsNginx {
     logger.info("Verifying NGINX path routing with HTTPS protocol across two domains");
     for (String domainUid : domainUids) {
       verifyClusterLoadbalancing(domainUid, "", "https", getNginxLbNodePort("https"),
-          replicaCount, false, "/" + domainUid.substring(4));
+          replicaCount, false, "/" + domainUid.substring(4), ingressIP);
     }
   }
 
@@ -183,7 +190,7 @@ class ItLBTwoDomainsNginx {
     for (int i = 0; i < numberOfDomains; i++) {
       verifyClusterLoadbalancing(domainUids.get(i),
           domainUids.get(i) + "." + domainNamespace + ".nginx.nonssl.test",
-          "http", getNginxLbNodePort("http"), replicaCount, true, "");
+          "http", getNginxLbNodePort("http"), replicaCount, true, "", ingressIP);
     }
   }
 
@@ -201,7 +208,7 @@ class ItLBTwoDomainsNginx {
     for (int i = 0; i < numberOfDomains; i++) {
       verifyClusterLoadbalancing(domainUids.get(i),
           domainUids.get(i) + "." + domainNamespace + ".nginx.ssl.test",
-          "https", getNginxLbNodePort("https"), replicaCount, true, "");
+          "https", getNginxLbNodePort("https"), replicaCount, true, "", ingressIP);
     }
   }
 
@@ -217,7 +224,7 @@ class ItLBTwoDomainsNginx {
     logger.info("Verifying NGINX path routing with HTTP protocol across two domains");
     for (String domainUid : domainUids) {
       verifyClusterLoadbalancing(domainUid, "", "http", getNginxLbNodePort("http"),
-          replicaCount, false, "/" + domainUid.substring(4));
+          replicaCount, false, "/" + domainUid.substring(4), ingressIP);
     }
   }
 
