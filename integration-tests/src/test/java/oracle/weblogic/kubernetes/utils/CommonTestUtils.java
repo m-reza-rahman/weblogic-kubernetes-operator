@@ -93,6 +93,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceDoesNo
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceExists;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndCheckForServerNameInResponse;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToImageContainer;
 import static oracle.weblogic.kubernetes.utils.FileUtils.isFileExistAndNotEmpty;
@@ -1249,6 +1250,7 @@ public class CommonTestUtils {
 
     if (OKE_CLUSTER) {
       testUntil(
+          withLongRetryPolicy,
           isServiceExtIPAddrtOkeReady(serviceName, nameSpace),
           logger,
           "Waiting until external IP address of the service available");
