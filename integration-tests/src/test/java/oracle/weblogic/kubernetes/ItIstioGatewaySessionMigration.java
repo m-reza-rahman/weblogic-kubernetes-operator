@@ -37,7 +37,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.configIstioMod
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
-//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
@@ -282,12 +282,6 @@ class ItIstioGatewaySessionMigration {
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
     if (!WEBLOGIC_SLIM) {
-      /*
-      String istioIngressGatewayIP = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
-          ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
-
-      String consoleUrl = "http://" + istioIngressGatewayIP + ":" + istioIngressPort + "/console/login/LoginForm.jsp";*/
-
       String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
       boolean checkConsole =
           checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
@@ -297,64 +291,48 @@ class ItIstioGatewaySessionMigration {
       logger.info("Skipping WebLogic console in WebLogic slim image");
     }
 
-    // TODO remove
-    ///tmp/workspace/wko-oke-nightly-parallel/staging/wl_k8s_test_results/workdir/ns-pcanbk/testwebapp.war
-
-    String destLocation = "/u01/testwebapp.war";
+    ExecResult result = null;
     Path archivePath = Paths.get(testWebAppWarLoc);
+    if (OKE_CLUSTER) {
+      // In internal OKE env, deploy App in domain pods using WLST
+      String destLocation = "/u01/testwebapp.war";
 
-    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-        adminServerPodName, "",
-        archivePath,
-        Paths.get(destLocation)));
-
-    try {
-      V1Pod adminPod = getPod(domainNamespace, null, adminServerPodName);
-      execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
-
-    for (int i = 1; i <= replicaCount; i++) {
-      String managedServerPodName = managedServerPrefix + i;
+      // Copy App archive to admin pod
       assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-          managedServerPodName, "",
+          adminServerPodName, "",
           archivePath,
           Paths.get(destLocation)));
 
-      try {
-        V1Pod adminPod = getPod(domainNamespace, null, managedServerPodName);
-        execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
-      } catch (Exception ex) {
-        ex.printStackTrace();
+      // chown of App archive in admin pod
+      V1Pod adminPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, adminServerPodName));
+      execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
+
+      for (int i = 1; i <= replicaCount; i++) {
+        // Copy App archive to managed server pod
+        String managedServerPodName = managedServerPrefix + i;
+        assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+            managedServerPodName, "",
+            archivePath,
+            Paths.get(destLocation)));
+
+        // chown of App archive in managed server pod
+        V1Pod msPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, managedServerPodName));
+        execInPod(msPod, null, true, "chown 1000:root  " + destLocation);
       }
-    }
 
-    ExecResult result = null;
-    String target = "{identity: [clusters,'" + clusterName + "']}";
-    result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+      String target = "{identity: [clusters,'" + clusterName + "']}";
+      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
         target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-
-    /*
-    if (OKE_CLUSTER) {
-      // In internal OKE env, deploy App using WLST
-      assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
-          String.valueOf(7001),
-          ADMIN_USERNAME_DEFAULT,
-          ADMIN_PASSWORD_DEFAULT,
-          "cluster-1",
-          archivePath,
-          domainNamespace),"Deploying the application");
     } else {
-      ExecResult result = null;
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
         String.valueOf(istioIngressPort),
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
         clusterName, archivePath, domainNamespace + ".org", "testwebapp");
-      assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment returned {0}", result.toString());
-      assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-    }*/
+    }
+
+    assertNotNull(result, "Application deployment failed");
+    logger.info("Application deployment returned {0}", result.toString());
+    assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
 
     String url = "http://" + hostAndPort + "/testwebapp/index.jsp";
     logger.info("Application Access URL {0}", url);
