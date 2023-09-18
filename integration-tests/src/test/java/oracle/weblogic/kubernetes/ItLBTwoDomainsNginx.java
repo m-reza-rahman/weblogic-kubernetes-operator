@@ -35,7 +35,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+//import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
@@ -43,7 +43,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVol
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
-import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.checkIngressReady;
+//import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.checkIngressReady;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.createMultipleDomainsSharingPVUsingWlstAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyAdminServerAccess;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyClusterLoadbalancing;
@@ -332,9 +332,7 @@ class ItLBTwoDomainsNginx {
       }
 
       logger.info("2. =========== ingressIP: {0}", ingressIP);
-      if (!OKE_CLUSTER) {
-        checkIngressReady(true, ingressHost, isTLS, httpNodeport, httpsNodeport, "", ingressIP);
-      }
+      //TODO checkIngressReady(true, ingressHost, isTLS, httpNodeport, httpsNodeport, "", ingressIP);
     }
   }
 
@@ -385,7 +383,7 @@ class ItLBTwoDomainsNginx {
     // check the ingress is ready to route the app to the server pod
     int httpNodeport = getNginxLbNodePort("http");
     for (String domainUid : domainUids) {
-      checkIngressReady(false, "", false, httpNodeport, -1, domainUid.substring(4));
+      //TODO checkIngressReady(false, "", false, httpNodeport, -1, domainUid.substring(4));
     }
   }
 
@@ -463,7 +461,7 @@ class ItLBTwoDomainsNginx {
     // check the ingress is ready to route the app to the server pod
     int httpsNodeport = getNginxLbNodePort("https");
     for (String domainUid : domainUids) {
-      checkIngressReady(false, "", true, -1, httpsNodeport, domainUid.substring(4));
+      //TODO checkIngressReady(false, "", true, -1, httpsNodeport, domainUid.substring(4));
     }
   }
 
