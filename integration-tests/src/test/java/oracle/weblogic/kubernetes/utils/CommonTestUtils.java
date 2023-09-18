@@ -1249,17 +1249,18 @@ public class CommonTestUtils {
 
     if (OKE_CLUSTER) {
       testUntil(
+          withLongRetryPolicy,
           isServiceExtIPAddrtOkeReady(serviceName, nameSpace),
           logger,
           "Waiting until external IP address of the service available");
 
       serviceExtIPAddr =
-          assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
-              "Can't find external IP address of the service " + serviceName);
+        assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+          "Can't find external IP address of the service " + serviceName);
 
       logger.info("External IP address of the service is {0} ", serviceExtIPAddr);
     }
-    
+
     return serviceExtIPAddr;
   }
 
