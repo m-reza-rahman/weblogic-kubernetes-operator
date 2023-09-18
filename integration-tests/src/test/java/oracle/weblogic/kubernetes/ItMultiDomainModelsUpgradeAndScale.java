@@ -95,37 +95,32 @@ class ItMultiDomainModelsUpgradeAndScale {
   private static final String SAMPLE_APP_CONTEXT_ROOT = "sample-war";
   private static final String WLDF_OPENSESSION_APP = "opensessionapp";
   private static final String wlSecretName = "weblogic-credentials";
-  private static final String miiImageName = "mdlb-mii-image";
+  private static final String miiImageName = "mdup-mii-image";
   private static final String wdtModelFileForMiiDomain = "model-multiclusterdomain-sampleapp-wls.yaml";
-  private static final String miiDomainUid = "mdlb-miidomain";
-  private static final String dimDomainUid = "mdlb-domaininimage";
-  private static final String domainOnPVUid = "mdlb-domainonpv";
+  private static final String miiDomainUid = "mdup-miidomain";
+  private static final String dimDomainUid = "mdup-domaininimage";
+  private static final String domainOnPVUid = "mdup-domainonpv";
   private static final String wdtModelFileForDomainInImage = "wdt-singlecluster-multiapps-usingprop-wls.yaml";
 
-  private static String opNamespace = null;
-  private static LoggingFacade logger = null;
+  private static String opNamespace = null;  
   private static String miiDomainNamespace = null;
   private static String domainInImageNamespace = null;
   private static String domainOnPVNamespace = null;
   private static String miiImage = null;
   private static String encryptionSecretName = "encryptionsecret";
   
+  private static LoggingFacade logger = null;
   private static Map<String, String> domains;
 
   /**
    * Create MII image.
-   *
-   * @param namespaces list of namespaces created by the IntegrationTestWatcher
    */
   @BeforeAll
-  public static void initAll(@Namespaces(4) List<String> namespaces) {
+  public static void initAll() {
     logger = getLogger();
-
     domains = new HashMap<>();
-
     // create mii image
     miiImage = createAndPushMiiImage();
-
   }
 
   /**
@@ -197,16 +192,13 @@ class ItMultiDomainModelsUpgradeAndScale {
     for (Map.Entry<String, String> entry : domains.entrySet()) {
       String domainUid = entry.getKey();
       String domainNamespace = entry.getValue();
-
       DomainResource domain = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
 
       // get the domain properties
       int numClusters = domain.getSpec().getClusters().size();
-
       for (int i = 1; i <= numClusters; i++) {
         String clusterName = domain.getSpec().getClusters().get(i - 1).getName();
         String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
-
         int numberOfServers;
         // scale cluster-1 to 2 server and cluster-2 to 3 servers
         if (i == 1) {
@@ -214,7 +206,6 @@ class ItMultiDomainModelsUpgradeAndScale {
         } else {
           numberOfServers = 3;
         }
-
         logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
             clusterName, domainUid, domainNamespace, numberOfServers);
         List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
