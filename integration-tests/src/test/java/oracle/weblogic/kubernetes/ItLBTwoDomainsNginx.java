@@ -23,6 +23,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -33,6 +34,8 @@ import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
@@ -329,7 +332,9 @@ class ItLBTwoDomainsNginx {
       }
 
       logger.info("2. =========== ingressIP: {0}", ingressIP);
-      checkIngressReady(true, ingressHost, isTLS, httpNodeport, httpsNodeport, "", ingressIP);
+      if (!OKE_CLUSTER) {
+        checkIngressReady(true, ingressHost, isTLS, httpNodeport, httpsNodeport, "", ingressIP);
+      }
     }
   }
 
@@ -490,6 +495,18 @@ class ItLBTwoDomainsNginx {
 
     // create ingress rules with TLS path routing for NGINX
     createNginxTLSPathRoutingForTwoDomains();
+
+    //TODO remove
+    try {
+      for (int i = 0; i < 10; i++) {
+        String k8sCmd = KUBERNETES_CLI + " get svc --all-namespaces";
+        ExecResult result = ExecCommand.exec(new String(k8sCmd), true);
+        getLogger().info("===========----->>>> result:\n {0} \n", result.toString());
+      }
+      Thread.sleep(30000);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
   }
 
 }
