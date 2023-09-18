@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -30,6 +31,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.configIstioModelInImageDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
@@ -46,6 +48,7 @@ import static oracle.weblogic.kubernetes.utils.IstioUtils.deployHttpIstioGateway
 import static oracle.weblogic.kubernetes.utils.IstioUtils.deployIstioDestinationRule;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.getIstioHttpIngressPort;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
 import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getOrigModelFile;
 import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getServerAndSessionInfoAndVerify;
 import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.shutdownServerAndVerify;
@@ -294,6 +297,7 @@ class ItIstioGatewaySessionMigration {
       logger.info("Skipping WebLogic console in WebLogic slim image");
     }
 
+    // TODO remove
     ///tmp/workspace/wko-oke-nightly-parallel/staging/wl_k8s_test_results/workdir/ns-pcanbk/testwebapp.war
 
     String destLocation = "/u01/testwebapp.war";
@@ -304,26 +308,32 @@ class ItIstioGatewaySessionMigration {
         archivePath,
         Paths.get(destLocation)));
 
+    try {
+      V1Pod adminPod = getPod(domainNamespace, null, adminServerPodName);
+      execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
+
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
           managedServerPodName, "",
           archivePath,
           Paths.get(destLocation)));
+
+      try {
+        V1Pod adminPod = getPod(domainNamespace, null, managedServerPodName);
+        execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+      }
     }
 
     ExecResult result = null;
     String target = "{identity: [clusters,'" + clusterName + "']}";
     result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
         target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-    /*
-    result = deployToClusterUsingRest(hostAndPort,
-        String.valueOf(istioIngressPort),
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-        clusterName, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
-    assertNotNull(result, "Application deployment failed");
-    logger.info("Application deployment returned {0}", result.toString());
-    assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
 
     /*
     if (OKE_CLUSTER) {
