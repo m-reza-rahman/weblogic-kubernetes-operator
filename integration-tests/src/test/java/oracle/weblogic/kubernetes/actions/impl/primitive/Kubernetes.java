@@ -2629,9 +2629,14 @@ public class Kubernetes {
       V1ServicePort port = service.getSpec().getPorts().stream().filter(
           v1ServicePort -> v1ServicePort.getName().equalsIgnoreCase(channelName))
           .findAny().orElse(null);
+      logger.info("===========port.getNodePort():\n {0}", port.getNodePort());
+      logger.info("===========port.getName():\n {0}", port.getName());
+      logger.info("===========port.toString():\n {0}", port.toString());
       if (port != null) {
         return port.getNodePort();
       }
+    } else {
+      logger.info("===========service is NULL!!!!");
     }
     return -1;
   }
