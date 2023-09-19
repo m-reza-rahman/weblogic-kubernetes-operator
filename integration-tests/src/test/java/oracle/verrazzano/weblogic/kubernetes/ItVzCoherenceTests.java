@@ -1,0 +1,365 @@
+// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+package oracle.verrazzano.weblogic.kubernetes;
+
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.util.Yaml;
+import oracle.verrazzano.weblogic.ApplicationConfiguration;
+import oracle.verrazzano.weblogic.ApplicationConfigurationSpec;
+import oracle.verrazzano.weblogic.Component;
+import oracle.verrazzano.weblogic.ComponentSpec;
+import oracle.verrazzano.weblogic.Components;
+import oracle.verrazzano.weblogic.Destination;
+import oracle.verrazzano.weblogic.IngressRule;
+import oracle.verrazzano.weblogic.IngressTrait;
+import oracle.verrazzano.weblogic.IngressTraitSpec;
+import oracle.verrazzano.weblogic.IngressTraits;
+import oracle.verrazzano.weblogic.Path;
+import oracle.verrazzano.weblogic.Workload;
+import oracle.verrazzano.weblogic.WorkloadSpec;
+import oracle.verrazzano.weblogic.kubernetes.annotations.VzIntegrationTest;
+import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.kubernetes.annotations.Namespaces;
+import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecResult;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPodIP;
+import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewRestartVersion;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
+import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createAndPushMiiImage;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolderToPod;
+import static oracle.weblogic.kubernetes.utils.FileUtils.deleteDirectories;
+import static oracle.weblogic.kubernetes.utils.FileUtils.makeDirectories;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
+import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
+import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAddress;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.setLabelToNamespace;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * Test to create a WebLogic domain with Coherence, build the Coherence proxy client program which load and verify the
+ * cache.
+ */
+@DisplayName("Test to create a WebLogic domain with Coherence and verify the use of Coherence cache service")
+@VzIntegrationTest
+@Tag("v8o")
+class ItVzCoherenceTests {
+
+  // constants for Coherence
+  private static final String PROXY_CLIENT_APP_NAME = "coherence-proxy-client";
+  private static final String PROXY_SERVER_APP_NAME = "coherence-proxy-server";
+  private static final String APP_LOC_ON_HOST = APP_DIR + "/" + PROXY_CLIENT_APP_NAME;
+  private static final String APP_LOC_IN_POD = "/u01/apps/" + PROXY_CLIENT_APP_NAME;
+  private static final String PROXY_CLIENT_SCRIPT = "buildRunProxyClient.sh";
+  private static final String OP_CACHE_LOAD = "load";
+  private static final String OP_CACHE_VALIDATE = "validate";
+  private static final String PROXY_PORT = "9000";
+
+  // constants for Coherence
+  private static final String COHERENCE_MODEL_FILE = "coherence-wdt-config.yaml";
+  private static final String COHERENCE_MODEL_PROP = "coherence-wdt-config.properties";
+  private static final String COHERENCE_IMAGE_NAME = "vz-coherence-image";
+
+  private static String domainUid = "coherence-domain";
+  private static String clusterName = "cluster-1";
+  private static String adminServerPodName = domainUid + "-admin-server";
+  private static String managedServerPrefix = domainUid + "-managed-server";
+  private static String containerName = "weblogic-server";
+  private static int replicaCount = 5;
+  private static String domainNamespace = null;
+  
+  private static LoggingFacade logger = null;
+
+  /**
+   * Assign namespace to domain and label.
+   *
+   * @param namespaces injected by JUnit
+   */
+  @BeforeAll
+  public static void init(@Namespaces(1) List<String> namespaces) throws ApiException {
+    logger = getLogger();
+    // get a new unique domainNamespace
+    logger.info("Assigning a unique namespace for Domain");
+    assertNotNull(namespaces.get(0), "Namespace list is null");
+    domainNamespace = namespaces.get(0);
+    setLabelToNamespace(Arrays.asList(domainNamespace));
+  }
+
+  /**
+   * Create a WebLogic domain with a Coherence cluster and deploying it using WDT Test rolling restart of Coherence
+   * managed servers and verify that data are not lost during a domain restart.
+   */
+  @Test
+  @DisplayName("Create domain with a Coherence cluster using WDT and test rolling restart")
+  void testCoherenceServerRollingRestart() {
+    final String successMarker = "CACHE-SUCCESS";
+
+    // create a MII image using WebLogic Image Tool
+    String cohMiiImage = createCohMiiImageAndPushToRegistry();
+
+    // create secret for admin credentials
+    logger.info("Create secret for admin credentials");
+    String adminSecretName = "weblogic-credentials";
+    createSecretWithUsernamePassword(adminSecretName, domainNamespace,
+        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
+
+    // create encryption secret
+    logger.info("Create encryption secret");
+    String encryptionSecretName = "encryptionsecret";
+    createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
+        "weblogicenc", "weblogicenc");
+
+    // create and verify a WebLogic domain with a Coherence cluster
+    DomainResource domain = createDomainResource(domainUid, domainNamespace, cohMiiImage,
+        adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
+        encryptionSecretName, replicaCount, Arrays.asList(clusterName));
+
+    Component component = new Component()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("Component")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid)
+            .namespace(domainNamespace))
+        .spec(new ComponentSpec()
+            .workLoad(new Workload()
+                .apiVersion("oam.verrazzano.io/v1alpha1")
+                .kind("VerrazzanoWebLogicWorkload")
+                .spec(new WorkloadSpec()
+                    .template(domain))));
+
+    Map<String, String> keyValueMap = new HashMap<>();
+    keyValueMap.put("version", "v1.0.0");
+    keyValueMap.put("description", "My vz coherence cluster");
+
+    ApplicationConfiguration application = new ApplicationConfiguration()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("ApplicationConfiguration")
+        .metadata(new V1ObjectMeta()
+            .name("myvzdomain")
+            .namespace(domainNamespace)
+            .annotations(keyValueMap))
+        .spec(new ApplicationConfigurationSpec()
+            .components(Arrays.asList(new Components()
+                .componentName(domainUid)
+                .traits(Arrays.asList(new IngressTraits()
+                    .trait(new IngressTrait()
+                        .apiVersion("oam.verrazzano.io/v1alpha1")
+                        .kind("IngressTrait")
+                        .metadata(new V1ObjectMeta()
+                            .name("mycohdomain-ingress")
+                            .namespace(domainNamespace))
+                        .spec(new IngressTraitSpec()
+                            .ingressRules(Arrays.asList(
+                                new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/console")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(adminServerPodName)
+                                        .port(7001)))))))))));
+
+    logger.info(Yaml.dump(component));
+    logger.info(Yaml.dump(application));
+
+    logger.info("Deploying components");
+    assertDoesNotThrow(() -> createComponent(component));
+    logger.info("Deploying application");
+    assertDoesNotThrow(() -> createApplication(application));
+
+    // check admin server pod is ready
+    logger.info("Wait for admin server pod {0} to be ready in namespace {1}",
+        adminServerPodName, domainNamespace);
+    checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
+    // check managed server pods are ready
+    for (int i = 1; i <= replicaCount; i++) {
+      logger.info("Wait for managed server pod {0} to be ready in namespace {1}",
+          managedServerPrefix + i, domainNamespace);
+      checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
+    }
+
+    // get istio gateway host and loadbalancer address
+    String host = getIstioHost(domainNamespace);
+    String address = getLoadbalancerAddress();
+
+    // verify WebLogic console page is accessible through istio/loadbalancer
+    String message = "Oracle WebLogic Server Administration Console";
+    String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
+    assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
+
+    // build the Coherence proxy client program in the server pods
+    // which load and verify the cache
+    copyCohProxyClientAppToPods();
+
+    // run the Coherence proxy client to load the cache
+    String serverName = managedServerPrefix + "1";
+    final ExecResult execResult1 = assertDoesNotThrow(
+        () -> runCoherenceProxyClient(serverName, OP_CACHE_LOAD),
+        String.format("Failed to call Coherence proxy client in pod %s, namespace %s",
+            serverName, domainNamespace));
+
+    assertAll("Check that the cache loaded successfully",
+        () -> assertEquals(0, execResult1.exitValue(), "Failed to load the cache"),
+        () -> assertTrue(execResult1.stdout().contains(successMarker), "Failed to load the cache")
+    );
+
+    logger.info("Coherence proxy client {0} returns {1} \n ",
+        OP_CACHE_LOAD, execResult1.stdout());
+
+    // patch domain to rolling restart it by change restartVersion
+    rollingRestartDomainAndVerify();
+
+    // build the Coherence proxy client program in the server pods
+    // which load and verify the cache
+    copyCohProxyClientAppToPods();
+
+    // run the Coherence proxy client to verify the cache contents
+    final ExecResult execResult2 = assertDoesNotThrow(
+        () -> runCoherenceProxyClient(serverName, OP_CACHE_VALIDATE),
+        String.format("Failed to call Coherence proxy client in pod %s, namespace %s",
+            serverName, domainNamespace));
+
+    assertAll("Check that the cache loaded successfully",
+        () -> assertEquals(0, execResult1.exitValue(), "Failed to validate the cache"),
+        () -> assertTrue(execResult2.stdout().contains(successMarker), "Failed to validate the cache")
+    );
+
+    logger.info("Coherence proxy client {0} returns {1}",
+        OP_CACHE_VALIDATE, execResult2.stdout());
+
+    logger.info("Coherence Server restarted in rolling fashion");
+  }
+
+  private void copyCohProxyClientAppToPods() {
+    List<String> dirsToMake = new ArrayList<String>();
+    dirsToMake.add(APP_LOC_IN_POD + "/src/main/java/cohapp");
+    dirsToMake.add(APP_LOC_IN_POD + "/src/main/resources");
+
+    // copy the shell script file and all Coherence app files over to the managed server pods
+    for (int i = 1; i < replicaCount; i++) {
+      String serverName = managedServerPrefix + i;
+      assertDoesNotThrow(
+          () -> deleteDirectories(domainNamespace, serverName,
+              null, true, dirsToMake),
+          String.format("Failed to delete dir %s in pod %s in namespace %s ",
+              dirsToMake.toString(), serverName, domainNamespace));
+      logger.info("Deleted dir {0} in Pod {1} in namespace {2} ",
+          dirsToMake.toString(), serverName, domainNamespace);
+
+      assertDoesNotThrow(
+          () -> makeDirectories(domainNamespace, serverName,
+              null, true, dirsToMake),
+          String.format("Failed to create dir %s in pod %s in namespace %s ",
+              dirsToMake.toString(), serverName, domainNamespace));
+      logger.info("Created dir {0} in Pod {1} in namespace {2} ",
+          dirsToMake.toString(), serverName, domainNamespace);
+
+      assertDoesNotThrow(
+          () -> copyFolderToPod(domainNamespace, serverName,
+              containerName, Paths.get(APP_LOC_ON_HOST), Paths.get(APP_LOC_IN_POD)),
+          String.format("Failed to copy file %s to pod %s in namespace %s and located at %s ",
+              APP_LOC_ON_HOST, serverName, domainNamespace, APP_LOC_IN_POD));
+      logger.info("File {0} copied to {1} to Pod {2} in namespace {3} ",
+          APP_LOC_ON_HOST, APP_LOC_IN_POD, serverName, domainNamespace);
+    }
+  }
+
+  private ExecResult runCoherenceProxyClient(String serverName, String cacheOp
+  ) throws IOException, ApiException, InterruptedException {
+
+    // build the proxy client in the pod and run the proxy test.
+    final String coherenceScriptPathInPod = APP_LOC_IN_POD + "/" + PROXY_CLIENT_SCRIPT;
+
+    String serverPodIP = assertDoesNotThrow(
+        () -> getPodIP(domainNamespace, "", serverName),
+        String.format("Get pod IP address failed with ApiException for %s in namespace %s",
+            serverName, domainNamespace));
+    logger.info("Admin Pod IP {0} ", serverPodIP);
+
+    StringBuffer coherenceProxyClientCmd = new StringBuffer("chmod +x -R ");
+    coherenceProxyClientCmd
+        .append(APP_LOC_IN_POD)
+        .append(" && sh ")
+        .append(coherenceScriptPathInPod)
+        .append(" ")
+        .append(APP_LOC_IN_POD)
+        .append(" ")
+        .append(cacheOp)
+        .append(" ")
+        .append(serverPodIP)
+        .append(" ")
+        .append(PROXY_PORT);
+
+    logger.info("Command to exec script file: " + coherenceProxyClientCmd);
+
+    ExecResult execResult
+        = execCommand(domainNamespace, serverName, containerName, true,
+            "/bin/sh", "-c", coherenceProxyClientCmd.toString());
+
+    logger.info("Coherence proxy client returns {0}", execResult.stdout());
+
+    return execResult;
+  }
+
+  private static String createCohMiiImageAndPushToRegistry() {
+    // create image with model files
+    logger.info("Create image with model file and verify");
+    String vzCohMiiImage = createAndPushMiiImage(COHERENCE_IMAGE_NAME, COHERENCE_MODEL_FILE,
+        PROXY_SERVER_APP_NAME, COHERENCE_MODEL_PROP);
+    // repo login and push image to registry if necessary
+    imageRepoLoginAndPushImageToRegistry(vzCohMiiImage);
+    // create registry secret to pull the image from registry
+    // this secret is used only for non-kind cluster
+    logger.info("Create registry secret in namespace {0}", domainNamespace);
+    createTestRepoSecret(domainNamespace);
+    return vzCohMiiImage;
+  }
+
+  private void rollingRestartDomainAndVerify() {
+    LinkedHashMap<String, OffsetDateTime> pods = new LinkedHashMap<>();
+    // get the creation time of the server pods before patching
+    OffsetDateTime adminPodCreationTime = getPodCreationTime(domainNamespace, adminServerPodName);
+    pods.put(adminServerPodName, adminPodCreationTime);
+    for (int i = 1; i <= replicaCount; i++) {
+      pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
+    }
+
+    String newRestartVersion = patchDomainResourceWithNewRestartVersion(domainUid, domainNamespace);
+    logger.info("New restart version : {0}", newRestartVersion);
+
+    assertTrue(verifyRollingRestartOccurred(pods, 1, domainNamespace), "Rolling restart failed");
+  }
+}
