@@ -83,7 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Test logHome on PV, add SystemResources, Clusters to model in image domain")
 @IntegrationTest
-@Tag("olcne")
+@Tag("olcne-mrg")
 @Tag("kind-parallel")
 @Tag("oke-gate")
 class ItLogHomeFlatStructure {

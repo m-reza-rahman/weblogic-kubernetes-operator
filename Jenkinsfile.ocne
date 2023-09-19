@@ -2,7 +2,8 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
-CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=olcne'''
+CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=olcne-srg
+                   H 7 * * * % MAVEN_PROFILE_NAME=olcne-mrg'''
 
 pipeline {
     agent { label 'large' }
@@ -12,7 +13,7 @@ pipeline {
     }
     triggers {
         // timer trigger for "nightly build"
-        parameterizedCron(env.JOB_NAME == 'wko-ocne-main-nightly' ?
+        parameterizedCron(env.JOB_NAME == 'wko-ocne-main-nightly-new' ?
         CRON_SETTINGS : '')
     }
 
@@ -51,16 +52,16 @@ pipeline {
         outdir = "${WORKSPACE}/staging"
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root_parent = "${outdir}/k8s-pvroot"
-        pv_root = "${pv_root_parent}/pvroot"
+        pv_root = "${pv_root_parent}/pvroot1"
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
 
-        CLUSTER_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'mycluster' : 'mycluster'}"
-        kubeconfig_file = "${WORKSPACE}/ocne_kubeconfig"
-        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'olcne' : 'olcne'}"
-        availability_domain = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
-        PARALLEL_RUN = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? true : false}"
+        CLUSTER_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'mycluster1' : 'mycluster1'}"
+        kubeconfig_file = "${WORKSPACE}/ocne_kubeconfig1"
+        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'olcne-srg' : 'olcne-mrg'}"
+        availability_domain = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
+        PARALLEL_RUN = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? true : false}"
     }
 
     parameters {
@@ -73,7 +74,8 @@ pipeline {
         choice(name: 'MAVEN_PROFILE_NAME',
                 description: 'Profile to use in mvn command to run the tests.  Possible values are olcne (the default), wko-olcne-cert and integration-tests. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                 choices: [
-                        'olcne',
+                        'olcne-srg',
+                        'olcne-mrg',
                         'wko-olcne-cert',
                         'integration-tests'
                 ]
@@ -285,8 +287,8 @@ cat > $kubeconfig_file <<EOF
 apiVersion: v1
 clusters:
 - cluster:
-    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMvakNDQWVhZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJek1EZ3hOVEl3TVRZMU1Gb1hEVE16TURneE1qSXdNVFkxTUZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBS1pECnBWQS9RMVdoN1hqUTRUVzV2dmJkZ2Y3OElieEtwS21DWFlMeTNXV2ZlMCs3Y2VrOGlyNitIZVh0Y09TdTdib2kKWU9oejhYTXIyMVdTdHM3dkdMNk5OQnoxem9UWXo1aHIwclhqcTBwd0lJcDRvS3RTZmo4K1haWE13VnpnVmVGSApxNmNod2trZ20yMVlxTnkxd0dGVXBnYWNmd3BmUDdaUk8wS1lGWlpRMFlaZ3FqWlNjSDhldFliL2k4WWpRQVJ2CklzTGJyT2VsWURRQjl4OW00RE5zcm1oWG5heHJ1SjJidkFVY2pPWU1RSk5KNzljYmtNKzBJS05yaWkwWG9NZ3AKOEJqWG53dEQvUG4xbE1KVzA2bVNQMDJQTmxYby9DczJPSVhZWHEzVU9BeU5zV3hVOVltaElFSDVpLzRHTldmOApUTms3LzV6aXcvbVhWbWplWmlzQ0F3RUFBYU5aTUZjd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZONEVoZGN3RGFZM3pVbjMxbFhhaVk5eVVYdlNNQlVHQTFVZEVRUU8KTUF5Q0NtdDFZbVZ5Ym1WMFpYTXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBSXh5MnowTzcvUGM3Mm1ZT3pHaQozRDl2dEd0RjZNL0tkUm44MjRNamZUWkpaNWlyVXk4cDRSVzI4VVhORmFLeC9veU0xaTdWREQxWWQ3QUZtbjZ4CmwrVmllbFVib0p6YTQ4Z1VWZ2oxOGlEV2E4NU5ZNm1TYUFwVDZZMkYydm8wL2VLZEdxM2h2NnVjS2FqbGlDeFEKUkRSTngvT3UraDQ3WEswR053NFlFVUdUMEY0eVFUOFVGRFIyRGk4RTR0MHpwM3lRUDRYYXJJOTdWUlNMd0dRRQpXV3hqa3JjS3loV3FoOG90UitmcWxneVNYSHJGTXovakoyZzI1elM5aUZTMVdrTVJNR2xOZXF0Y29KQWozbnRmClcwbWhLRGh3bTNROUk0dS95dlUrTjNKbEl2eWJrbHhiQk91aGY1ZzRYUTRVRVptQlZPYWFROUVPUHZYbm5oemgKd2hRPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
-    server: https://100.105.4.31:6443
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMvakNDQWVhZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJek1Ea3hPVEF5TVRFeE1Gb1hEVE16TURreE5qQXlNVEV4TUZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBTkt4CnFEd2EwTkJ5M2tMSUVBcTdHb2cwbGprV2FHWW9PTEFQdzUrMkt3Kzc1dzJCSXc3ZmVobFZIcXlkNHU4dnpGQ1YKaXFwS29rSXdYYkRTemRuK1M1RFV5ZFlOODNHV0Z1TGpTWXU0VDV5c0twdVk2a2xZd3ltQWRZSENpVUxtUEUyQwpLdVJYaTZkSWl5SDgrd1dFNFJXY3hvWmQ1YXl5dmszM1ZPZHRQT2FtMCs3SlJNMHVBVUc0YzE2azBFOEVvK0VWCkgvS1hXWWtOY1hDN3VDcm9oaFVvYk94amVSWHZuWHBMTG1HZm84QkllYnhUSDVCd1g1eEY3bElidER3dGZYSDMKSzdQcVlUNDZSYzEvWFpGd0hrS3ZxWFlVUzFIOEtadzdYSlNHMThmRXlFQmdUbjNEWVQxTUM5bldwazI4WWlvRApJMDB3ZVJ6SEhZazZ6djhiWnowQ0F3RUFBYU5aTUZjd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZLbW4xWHFmRCtIbXk1ZWpPM3Y1SEVsMllIWUdNQlVHQTFVZEVRUU8KTUF5Q0NtdDFZbVZ5Ym1WMFpYTXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBSjRaWXJBVWd0ZkhZdDI2QWcxaQpaQWtNWWtNdzRsaHdlZ2VILzBVRDk1NW9vL29WaGlhYXZrWE45bHd6RmhCTTJqREs5dDVUYjEzSE9aekpJNmphClFGZjlDd0RXeUF3Sk40R3FhQXRBVy9WMVNSVUdXenZzbDE4YnNBeXdYcUN1U0Y2SHJ6bWlaK05Xd3ZsWk9iaTgKNVV6RUhkMDcwWW0yeUIreVp3bzRKb2ZaNi91NjNnQkJFRzh2dGxIdDByNlI2UzN0NEgybEVZY3Q1V0JBbU43bQpUWnBnck5Gc0tBWklSZjJCQ1pIekpIa2g0SW44K1U3V3BPOVpTdklhaUpYYXN3VDVtQkpoLzdhZm9EMUdEelM2Ck9wSFdoM29tWUhIY2FyZmdQTnl0K0RWWjZkUk9UU0szMFR6WmpNRVV0ZHFPV2l2UVNabEl6aVltdkV2VDBBOSsKM2hFPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+    server: https://100.105.4.62:6443
   name: kubernetes
 contexts:
 - context:
@@ -299,8 +301,8 @@ preferences: {}
 users:
 - name: kubernetes-admin
   user:
-    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJVENDQWdtZ0F3SUJBZ0lJTFZ1Z0I0YUhKZ3d3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBNE1UVXlNREUyTlRCYUZ3MHlOREE0TVRReU1ERTJOVEphTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXVmY2oxRmhjUDNKM2FDc3MKWnZZdkQzVzlHMUMwUWo1QTlwaDJxVk1sc2I5Zkg4S2x5N2Z4ZWpCYXloRVJtVko1U0xpU2I4VlI1ck8vK1BpOAp1R0kyTDJMeVFSRnh5VGxxOWxwQVVQMk1zaHF1OUI3RC9HVVQzdUxlQWxSejlXVUxGc1BQOFJDTGpnbTVLbFN3CkdQQTFzN2JFRUdxOThhdkdOYTdZYmNINE9XbTJqRW5wNGtEaERJeVJMN3MvenhCVVVnTzRMdmM5VzA0azJoS0MKaFdVQzFzeERma1dUWDhIeXJtOVcxYi9tZ3dlMkFkTVd2M2FpSWdUYnpqckptbzh6R3RENlphdkQ4TEE4WTE1YQpEaHo3OHR2ZzE5YTRRaDJxUmhVSkNkeGdiQm5iTlpvQWlFWnpwQ3RqOTBwWWExOXMyRVp6NFlUbU9SaVMxMVViCnZ3bEZOd0lEQVFBQm8xWXdWREFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0RBWURWUjBUQVFIL0JBSXdBREFmQmdOVkhTTUVHREFXZ0JUZUJJWFhNQTJtTjgxSjk5WlYyb21QY2xGNwowakFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBbXRvcmtYSTRidW8zaHk5eWhaYm5DOCt3QzNNOGlMbG0wOW1UCkpYbUo0MzJqSXpDM01JSTVKckRHWmVuS0s1MUs2Y1FvQTlUMlVGcVBUOFBTaTZNdSsrSlBLWFRsZllFclNpMXEKTWx6M01lT2V3aWsrU3dxNTloWmozMzk5a01LdEw5ZFBOVVdTSzFOeWNtWkRYYThLSGFibE10UzJnV1FacmlLcQpOcm5mdjBBdkkzOU92WjYrUUcyVWUvblpqK3gzMTVsc1E4L2E5Rno0Rlh4Y25pS1BaYnhCd1kvNzRBKzl3SGo2CkV3Qi8zZGhtYmlrUGphTngwWHV1YUJ2NVNScXhFSGd6UlRQYVhXcWRJdnpRZ3czdUlsRzluMFlOekg4dHV1d1IKZ1pLQ2NpZmRCbktLQ1FDd1VzYzJnbXRJcHZ1VzJqY3NYUlYrM0lRUkNFRkdzZ2hxYnc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
-    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBdWZjajFGaGNQM0ozYUNzc1p2WXZEM1c5RzFDMFFqNUE5cGgycVZNbHNiOWZIOEtsCnk3ZnhlakJheWhFUm1WSjVTTGlTYjhWUjVyTy8rUGk4dUdJMkwyTHlRUkZ4eVRscTlscEFVUDJNc2hxdTlCN0QKL0dVVDN1TGVBbFJ6OVdVTEZzUFA4UkNMamdtNUtsU3dHUEExczdiRUVHcTk4YXZHTmE3WWJjSDRPV20yakVucAo0a0RoREl5Ukw3cy96eEJVVWdPNEx2YzlXMDRrMmhLQ2hXVUMxc3hEZmtXVFg4SHlybTlXMWIvbWd3ZTJBZE1XCnYzYWlJZ1RiempySm1vOHpHdEQ2WmF2RDhMQThZMTVhRGh6Nzh0dmcxOWE0UWgycVJoVUpDZHhnYkJuYk5ab0EKaUVaenBDdGo5MHBZYTE5czJFWno0WVRtT1JpUzExVWJ2d2xGTndJREFRQUJBb0lCQUJWN3NuenVkRUcwSkkwNQpKNWtCYWJCY2hxc29LSnJhZkVEQW5qeXphVkJlYmt2Si9jTktEYkJ5ODVvU1hMa2NxUHc0cmxvUkxvUDdVZnNlCktSY1g2WENSK3JCL3BtaDdwSnF2RkcwR3pZRXB5ZnBUcjRweDF0alIxcG5vVGJrVW9qSlFEcTZubmFlY0FmTWMKODNiK0VRWWc0QWVSZlQzMC9TSG9nQUkxL1VvTWROWDJtZHBMSmNEVWNwM3pzdUxZNm9zbnhoWTVMLzRDNXhhcQprQTZSSzF4RWxHazcxOXlucEN1aXZRVnlqRy9yNklIT2hzTVV5MUh2dUpWN0FkWGZ6eU5WbHhPTGx2ZDZwWWhnCkdtWEdTVmRCRHJUTjhiUHIvL0RvSXJIeENENGI0blE1WjNSRGdyTnY4Wmtwd0JlR29TdFlLNC9xdHViUHFYY0sKeGVVVFZCRUNnWUVBemVqbyt6WlRYQWxiZzAveFpMYnlNalc4M1JWdVFKdERuT2RQbytHL1VnejRLbDZvS3RkUQplOGp6anVXQkNiTGlkN3BEODc4Q1FkRmFFWXVzaEc5cUd5c002U1BsOXFzcEFTcU1TNkx1c2xZcFEzbkVxU3BVCnBRMUNKVkprK25FTWdUU2FpK3hmWjVnSHM4THhCODl6VTlKQ3VOeTlIOVBscFhoK2pLWEpDTjhDZ1lFQTV6UXYKbXVMT2d1SU1RQkxFcDNGa0xsa3lqMHBpemd3ZjNTTnVKS0RWUkt3MXk2RS9DRWllNGF0VDdVTVJseXo4SlUwYQpkanE2MUZaaFZJUDI0SzM2OWpoTjhhTVFpNnZ0aEJhM0hXYnVWOEwxK05aQkxXMkxzQlZaNHFwMUlHd05PeW1jCncvclo3Y0NsZndDcnBEaEl1UFlDYWp4a3owM2g3MmpGYXZVWTFxa0NnWUJTcmNIWEZRSTF3NEFlWXR3dnI1SGkKZlZkZmducHBzSzVlY3phMFBESUJOVG4wY1Z1ZkVDTytBSHRqbGwzUTBpWkRJdVNrRzc5QlJGbWhEKzl1b2ZuOQovTFJMYk9HcXdTRk8yWkhKMFJ0OU9rR0pXWHlRM0hGdWNMdHRsdjc2M0tmRHZhYU1wcFhNVit4SHp1L1BUZ29sCnp4aUJlQWpzbmIzcFNrK3VFK2Q4Q3dLQmdBMGQwczJRckhLVWJHbCtKeFh3d3VRMlB6NE4xRWtvT3U2S3dnYmwKOFBOeWFhTGh4UGV0VndZcWVCcHZ3YUczOVo0UUg3NHhXc1FOR254MitCeUxBai9SdGVwTmUvVFFqaXIrTnVrKwpHNnR5N2cxdDZraXZmRXREQ3RSbkl6bnhwMWFCNTlqZWRGcWVvVVR4UHN1VVBkdndhUGFwOG5Zb1R2Y01GSmNhCnpJdnhBb0dCQUlEN3ZKSUtXY3hzSDVKSFd4OUg4a0ViamM5Tkd2UW9VQXhUN2xrRlFTY2RZYXd5RzRjUVRyVEIKNlAzeGRWM3pwa0lFMURVaERrMVUycFM0K2Fhd1JVVXRETU9DamVOZXFzTUVpMGFwMUt5Vkc3NlcwY2JNdmRhNQpqQjZ0Y3RGc0xqTW8xMXlHeHp5YVY0TExpczBiUG9UZG5WNUtZYzVReHdNMktjd2t2R1l0Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+        client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJVENDQWdtZ0F3SUJBZ0lJWXRCWjlDTVh2bll3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBNU1Ua3dNakV4TVRCYUZ3MHlOREE1TVRnd01qRXhNVEphTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXlBNEFUR0RTR0hrTUphelEKWFdFcmtpQlQvUkhjT1A1RHB4Y25qUVkzaWZYenZRRUgwblJUeS9CVy9tbG84dVgzWUlZSDl6K1o5Zi9VWVNLVgpNbDVaVkI3K1NrYzcwT2htQm9qVktySTZpSGdBeXd5WWpZaHZSWHM4czhwQVhiRWVUcnJ4OTVkMWhISzlsdXhaCktTWkJlQ2Z2YlpiYjlXNFMvTk9hTFFMRSszQnU3Z0t1T0NLWG9Za3huU25hbnByUTB2V0lkNDZXRnZadVI0OFYKdVJwbVFLU2tpeGJ4ektYQkwwWU1HL3QyWXJSc2crTVp2V0s3ckFId09VNmFOVk9OQTk0cDdqUjZhanhFVFpSTApOcEovbWorek8vQXY5bmhQNHBZQjhlLzdkUldBaENiNE91Y3M4U3p2Y1FYS0w1ck5sV25iR0tva21ZQ0dmWGI4Cklha0dLd0lEQVFBQm8xWXdWREFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0RBWURWUjBUQVFIL0JBSXdBREFmQmdOVkhTTUVHREFXZ0JTcHA5VjZudy9oNXN1WG96dDcrUnhKZG1CMgpCakFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBaytGNmtUd1UxRW56QUVhMTBNM1VWMmdSMEVUTkVTS3dmdTF0Cnk0Sm4zQlltTUZmM1ZZYlV2aFp0TjJ5ZU1rNHpOZGQyN2dremZFTlZlZ29VRjNJTGVQQm1temEzVGp3MWdRbDEKMHk4OXNHNUVoYzYzcVgySkFlSWRjOE85VTVxTEJwUitXOWp6QjUrQTQ5c0pScVhoTnJBWnZERFRnWGkwN2lFNQpublVhV2VJQnpubzJyV3pCeDdPanVuZnMydG84Wm1zR01ET2FKbEs3VkRrcDNmdVlwMmFEaUNNT1F6MVN3OC9VCllxbEtWbTRnVzJDWHdFZGhWOWk5VDFjZ1AzUDZWY1ZaYldiWWJ1V09hc0p2R3AwMXh5NlVDZjc0aE5NOHRlenYKTk02dnJ5dmk2UzVxZGxBMUJmdHQ5ZGdZUHZlTHUxYnh4ZWVyQUtFazJjTDhlekltdGc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+        client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBeUE0QVRHRFNHSGtNSmF6UVhXRXJraUJUL1JIY09QNURweGNualFZM2lmWHp2UUVICjBuUlR5L0JXL21sbzh1WDNZSVlIOXorWjlmL1VZU0tWTWw1WlZCNytTa2M3ME9obUJvalZLckk2aUhnQXl3eVkKallodlJYczhzOHBBWGJFZVRycng5NWQxaEhLOWx1eFpLU1pCZUNmdmJaYmI5VzRTL05PYUxRTEUrM0J1N2dLdQpPQ0tYb1lreG5TbmFucHJRMHZXSWQ0NldGdlp1UjQ4VnVScG1RS1NraXhieHpLWEJMMFlNRy90MllyUnNnK01aCnZXSzdyQUh3T1U2YU5WT05BOTRwN2pSNmFqeEVUWlJMTnBKL21qK3pPL0F2OW5oUDRwWUI4ZS83ZFJXQWhDYjQKT3VjczhTenZjUVhLTDVyTmxXbmJHS29rbVlDR2ZYYjhJYWtHS3dJREFRQUJBb0lCQVFDc01ua0pSVkd5WlFjUwpxdFRUZTkrQU1UbDZITlI5YmtjWFhUUGJESjNqcjRRMGpOMkp4ajJXem5KakhLS01hV3ZzZHBJR3ZZVXRuUjdXCjJXaW82Vk5rdUNUVUZNcWxBRlZKaktCSDF3L1JCZEpROUsrZksrL3pVNmVsYmhMSFVyeXVzZld5MDNrQkg2NlgKYVNzNTQwYjVRUTZ6T3Vac05HbzltM29iQWtaQjBqWkVHN0dSNGdDZitzVjBvcWNHRFBaY2E5YzdsNUxIR1RzRAo1cHd0TkIxNzdpR3RSb2hsdlA0N21hcXE4M3NSejdtdmRCSnB2RFRyNkZ4NHgwcTlQRTNDQTNUMUVJdE1oNGk4Cm9vaFJmd0VleGFrNGNBZVNXMXVFb0dwNGR2WWxFWCszOCtaRnRMWGdYUUhrOE9kZTZBT0RoRjhpZVdaWkN1dE8KSnpzbUlhZWhBb0dCQVA0Y3VSODFlQVhWa0VBNGJKb3hGVnV5dHBjV3ZnZUxaOEd3NmJGazY5Z044Unk2R1FTZQpyRVhuN2dqMVgwUGhGQVJzcjV2a3RzT0cveDJOcE5pYnVSK1hxSmNzWjV0WmQ5RytvczVrNVRRSlNxNXRQbjJVClZMWGFnNFk3aWVmVW1CajkzQ0RJbkJPVDlGRkJUREZSMklaZVB5d0grSHdpQU5RL0JQTTFBR0l4QW9HQkFNbUsKZUZwSXJZYXNoWDI3cThrMmM0YUplR3QxOVdzVjg2eVIySythZjYwQjFQM3NkdmtwM2FMQjliT21NYmxKaVV6LwpTbmJUcDRGZlVNYnVCNWtFaWhKek54Uit1cVl1QjZvNkRDVU1EdlBvck9ySkRWYndQZG5LenM5eUtETitWQmhICklNSXhFbERCa1pLeERId0pVcmhjc1dkMFQvbk9XM1V4TnVJMEc1c2JBb0dBUnRFS1prQW9hcmZSczVRRjhCS3QKdVJoYytrNUVOeVlLakZnWlNHNnZxMDUzVzJJaGhzQVJrb25JTklidFBhV0VScGRqZVRhTUdJR09wMVhLRXZPUwo2OU1BRU9FM0hud1lnRU40YTd5Q2c3WHpNaGtQeVQrRlBBamhqbzhaSjVwL3FMZFdtV3hPMHNYdzJKUXgvNnluCmd3clE0Qng0aTErT2k1ZmtjVUxjRUlFQ2dZRUFuVCtiRStaczdnMGh3cTV4SkhlRnY4ejIxZkdkWU1ZcDc5V0QKMmMrVUdxcTVRcjREUGZrNllza3ZLZEpjTFpPQXUwRGRHc1dkaGtXV1F3QnBrU3lIaGttN0NoU3ZFUVlOR1BaZApqM0pQSUdQRXR4UFRncWZEdW5DUTJDN2J5d0dnSDZrdm1CU3RrN0RVSWo1ZDNWRnc1MFA3YnhyRFk4ZHNlSTNECm9zN0JVMDBDZ1lBSDU5MHgrSTVrZWhCMGllZjlodjAvUFcxK05tOVlQdDgwQjloSW4vUmorTTFlN2UvOERJdGIKSDlCbWJLS3poYXluYmRpQVM3aEFrT3R2V09uL3ZxWEtERWhZcDVFK01RK0tiNmZSUG1RYm1naXBEMWNsTkYxZQo1djY5bVpjSlArczI1Zkx4TkJpYUpJL1dXeDFHRjZjZmFVRFQ5VlNVOW5XYURnR0N1N3dCNGc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
 EOF
 
                         ##################
@@ -349,7 +351,7 @@ EOF
                                 touch ${WORKSPACE}/.mvn/maven.config
                                 export KUBECONFIG=${kubeconfig_file}
 
-                                clusterIP='100.105.4.31'
+                                clusterIP='100.105.4.62'
                                 export NO_PROXY=$NO_PROXY,${clusterIP}
                                 echo "NO_PROXY:" $NO_PROXY
 
@@ -360,7 +362,12 @@ EOF
                                     MAVEN_PROFILE_NAME="integration-tests"
                                     echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
                                 fi
-
+                                if [ "${MAVEN_PROFILE_NAME}" == "olcne-srg" ]; then
+                                    PARALLEL_RUN='false'
+                                fi
+                                if [ "${MAVEN_PROFILE_NAME}" == "olcne-mrg" ]; then
+                                    PARALLEL_RUN='false'
+                                fi
                                 echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME
                                 echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.result.root=\"${result_root}\""                                               >> ${WORKSPACE}/.mvn/maven.config
@@ -402,9 +409,9 @@ EOF
                                     export https_proxy='http://www-proxy-hqdc.us.oracle.com:80'
                                     export HTTP_PROXY='http://www-proxy-hqdc.us.oracle.com:80'
                                     export http_proxy='http://www-proxy-hqdc.us.oracle.com:80'
-                                    #100.105.4.31 is the ip address of kubernetes master node
-                                    export NO_PROXY='localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,100.105.4.31'
-                                    export no_proxy='localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,100.105.4.31'
+                                    #100.105.4.62 is the ip address of kubernetes master node
+                                    export NO_PROXY='localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,100.105.4.62'
+                                    export no_proxy='localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,100.105.4.62'
                                     export PATH=${runtime_path}
                                     export OKE_CLUSTER="false"
                                     export OCNE="true"

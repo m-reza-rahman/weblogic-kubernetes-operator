@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Verify a single operator manages multiple WebLogic domains with a single Traefik fronted loadbalancer")
 @IntegrationTest
-@Tag("olcne")
+@Tag("olcne-mrg")
 @Tag("oke-parallel")
 @Tag("kind-parallel")
 class ItLBTwoDomainsTraefik {

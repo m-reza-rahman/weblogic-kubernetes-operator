@@ -132,7 +132,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("okd-wls-mrg")
 @Tag("oke-sequential")
 @IntegrationTest
-@Tag("olcne")
+@Tag("olcne-mrg")
 class ItConfigDistributionStrategy {
 
   private static String opNamespace = null;

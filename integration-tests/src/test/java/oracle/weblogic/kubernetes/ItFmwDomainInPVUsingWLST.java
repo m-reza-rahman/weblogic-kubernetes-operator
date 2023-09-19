@@ -69,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("kind-parallel")
 @Tag("okd-fmw-cert")
 @IntegrationTest
-@Tag("olcne")
+@Tag("olcne-mrg")
 @Tag("oke-gate")
 class ItFmwDomainInPVUsingWLST {
 

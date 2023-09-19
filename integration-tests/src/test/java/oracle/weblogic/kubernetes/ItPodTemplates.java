@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Test to verify domain pod templates.")
 @IntegrationTest
-@Tag("olcne")
+@Tag("olcne-mrg")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
 @Tag("oke-gate")

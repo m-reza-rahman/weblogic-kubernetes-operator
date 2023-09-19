@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("oke-gate")
-@Tag("olcne")
+@Tag("olcne-mrg")
 class ItIstioProductionSecureMode {
 
   private static String opNamespace = null;

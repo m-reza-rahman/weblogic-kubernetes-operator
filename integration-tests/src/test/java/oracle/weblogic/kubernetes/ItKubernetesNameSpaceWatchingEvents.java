@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 @DisplayName("Verify the Kubernetes events for watching namespace")
 @IntegrationTest
-@Tag("olcne")
+@Tag("olcne-mrg")
 @Tag("kind-parallel")
 @Tag("oke-gate")
 class ItKubernetesNameSpaceWatchingEvents {

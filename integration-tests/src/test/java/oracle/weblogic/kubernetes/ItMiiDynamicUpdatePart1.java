@@ -68,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("toolkits-srg")
 @Tag("okd-wls-mrg")
 @Tag("oke-gate")
+@Tag("olcne-srg")
 class ItMiiDynamicUpdatePart1 {
 
   static MiiDynamicUpdateHelper helper = new MiiDynamicUpdateHelper();

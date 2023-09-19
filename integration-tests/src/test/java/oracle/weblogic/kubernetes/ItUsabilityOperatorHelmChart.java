@@ -115,7 +115,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Test operator usability using Helm chart installation")
 @IntegrationTest
-@Tag("olcne")
+@Tag("olcne-mrg")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
 class ItUsabilityOperatorHelmChart {
