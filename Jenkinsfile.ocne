@@ -357,8 +357,6 @@ EOF
                                 export K8S_NODEPORT_HOST=${clusterIP}
 
                                 if [ -n "${IT_TEST}" ]; then
-                                    echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
-                                    MAVEN_PROFILE_NAME="integration-tests"
                                     echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
                                 fi
                                 if [ "${MAVEN_PROFILE_NAME}" == "olcne-srg" ]; then
@@ -422,7 +420,10 @@ EOF
                                     export TEST_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
-
+                                    if [[ -n "${IT_TEST}" && "${IT_TEST}" != "**/It*" ]]; then
+                                        echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
+                                        export MAVEN_PROFILE_NAME="integration-tests"
+                                    fi
                                     echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME
                                     if ! mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/oketest.log"; then
                                         echo "integration-tests failed"
