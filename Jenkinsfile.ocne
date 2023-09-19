@@ -59,7 +59,7 @@ pipeline {
 
         CLUSTER_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'mycluster1' : 'mycluster1'}"
         kubeconfig_file = "${WORKSPACE}/ocne_kubeconfig1"
-        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'olcne-srg' : 'olcne-mrg'}"
+        //MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'olcne-srg' : 'olcne-mrg'}"
         availability_domain = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
         PARALLEL_RUN = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? true : false}"
     }
@@ -76,7 +76,6 @@ pipeline {
                 choices: [
                         'olcne-srg',
                         'olcne-mrg',
-                        'wko-olcne-cert',
                         'integration-tests'
                 ]
         )
@@ -366,7 +365,7 @@ EOF
                                     PARALLEL_RUN='false'
                                 fi
                                 if [ "${MAVEN_PROFILE_NAME}" == "olcne-mrg" ]; then
-                                    PARALLEL_RUN='false'
+                                    PARALLEL_RUN='true'
                                 fi
                                 echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME
                                 echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
