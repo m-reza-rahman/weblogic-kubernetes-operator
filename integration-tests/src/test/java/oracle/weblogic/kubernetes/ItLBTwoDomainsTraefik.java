@@ -13,6 +13,8 @@ import java.util.List;
 
 import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.kubernetes.actions.ActionConstants;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.DisabledOnSlimImage;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -262,6 +264,15 @@ class ItLBTwoDomainsTraefik {
 
   private int getTraefikLbNodePort(boolean isHttps) {
     logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
+
+    //TODO remove
+    String cmd = KUBERNETES_CLI + " get svc --all-namespaces";
+    logger.info("========== Command to get svc --all-namespaces is {0} ", cmd);
+    CommandParams params = new CommandParams().defaults();
+    params.command(cmd);
+    ExecResult result = Command.withParams(params).executeAndReturnResult();
+    logger.info("============== get svc --all-namespaces {0} returns: {1}",  result.toString());
+
     return assertDoesNotThrow(() ->
             getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
         "Getting web node port for Traefik loadbalancer failed");
