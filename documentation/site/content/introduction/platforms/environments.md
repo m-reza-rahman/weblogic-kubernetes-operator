@@ -72,7 +72,7 @@ Container Services for use with Kubernetes* on Oracle Cloud Infrastructure Compu
 any other Oracle Cloud Infrastructure "Authorized Cloud Environments"
 as described in the [Overview](#overview).
 
-WebLogic Kubernetes Operator is certified for use on OKE with Kubernetes 1.24.0+, 1.25.0+, 1.26.2+.
+WebLogic Kubernetes Operator is certified for use on OKE with Kubernetes 1.24.0+, 1.25.0+, 1.26.2+, and 1.27.2+.
 
 #### Oracle Cloud Native Environment
 
