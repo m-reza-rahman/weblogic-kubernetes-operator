@@ -827,21 +827,23 @@ public class CommonLBTestUtils {
    * @param isHostRouting whether it is host routing
    * @param ingressHostName ingress host name
    * @param pathLocation path location in the console url
+   * @param args arguments to determine hostname on OKE or non-OKE env
    */
   public static void verifyAdminServerAccess(boolean isTLS,
                                              int lbNodePort,
                                              boolean isHostRouting,
                                              String ingressHostName,
-                                             String pathLocation) {
+                                             String pathLocation,
+                                             String... args) {
     StringBuffer consoleUrl = new StringBuffer();
+    String hostAndPort = (args.length == 0) ? K8S_NODEPORT_HOST + ":" + lbNodePort : args[0];
+
     if (isTLS) {
       consoleUrl.append("https://");
     } else {
       consoleUrl.append("http://");
     }
-    consoleUrl.append(K8S_NODEPORT_HOST)
-        .append(":")
-        .append(lbNodePort);
+    consoleUrl.append(hostAndPort);
     if (!isHostRouting) {
       consoleUrl.append(pathLocation);
     }

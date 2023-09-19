@@ -1239,8 +1239,8 @@ public class CommonTestUtils {
   /**
    * Get external IP address of a service.
    *
-   * @param nameSpace - nameSpace of service
    * @param serviceName - service name
+   * @param nameSpace - nameSpace of service
    * @return external IP address of the given service on OKE
    */
   public static String getServiceExtIPAddrtOke(String serviceName, String nameSpace) {
