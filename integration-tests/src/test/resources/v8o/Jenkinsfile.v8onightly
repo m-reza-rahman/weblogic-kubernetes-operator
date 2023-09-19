@@ -437,8 +437,7 @@ EOF
 
                             export KUBECONFIG=${kubeconfig_file}
                             kubectl cluster-info --context "kind-${kind_name}"
-                            kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.11.0/manifests/namespace.yaml
-                            kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.11.0/manifests/metallb.yaml
+                            https://raw.githubusercontent.com/metallb/metallb/v0.13.11/config/manifests/metallb-native.yaml
                             kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
                             SUBNET=$(docker inspect kind | jq '.[0].IPAM.Config[0].Subnet' -r | sed 's|/.*||g')
                             address_range="${SUBNET%.*}.230-${SUBNET%.*}.250"
