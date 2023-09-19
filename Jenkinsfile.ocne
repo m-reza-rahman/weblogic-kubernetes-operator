@@ -2,8 +2,8 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
-CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=olcne-srg
-                   H 7 * * * % MAVEN_PROFILE_NAME=olcne-mrg'''
+//CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=olcne-srg
+//                   H 7 * * * % MAVEN_PROFILE_NAME=olcne-mrg'''
 
 pipeline {
     agent { label 'large' }
@@ -11,11 +11,11 @@ pipeline {
         timeout(time: 1800, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
-    triggers {
+    //triggers {
         // timer trigger for "nightly build"
-        parameterizedCron(env.JOB_NAME == 'wko-ocne-main-nightly-new' ?
-        CRON_SETTINGS : '')
-    }
+    //    parameterizedCron(env.JOB_NAME == 'wko-ocne-main-nightly-new' ?
+    //    CRON_SETTINGS : '')
+    //}
 
     tools {
         maven 'maven-3.8.7'
