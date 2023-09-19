@@ -36,9 +36,13 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.ClientBuilder;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 
 import static io.kubernetes.client.util.Yaml.dump;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodRestartVersion;
@@ -216,6 +220,14 @@ public class Kubernetes {
     } else {
       logger.info("Pod {0} does not exist in namespace {1}", podName, namespace);
     }
+
+    String cmd = KUBERNETES_CLI + " describe pod " + podName + " -n " + namespace;
+    logger.info("========== Command to describe pod {0} is {1} ", podName, cmd);
+    CommandParams params = new CommandParams().defaults();
+    params.command(cmd);
+    ExecResult result = Command.withParams(params).executeAndReturnResult();
+    logger.info("============== describe pod {0} is {1} returns: {1}", podName, result.toString());
+
     return status;
   }
 
