@@ -859,16 +859,17 @@ public class CommonLBTestUtils {
    * @param isHostRouting whether it is host routing
    * @param ingressHostName ingress host name
    * @param pathLocation path location in the console url
-   * @param args arguments to determine hostname on OKE or non-OKE env
+   * @param host hostname
    */
   public static void verifyAdminServerAccess(boolean isTLS,
                                              int lbNodePort,
                                              boolean isHostRouting,
                                              String ingressHostName,
                                              String pathLocation,
-                                             String... args) {
+                                             String... host) {
     StringBuffer consoleUrl = new StringBuffer();
-    String hostAndPort = OKE_CLUSTER_PRIVATEIP ? args[0] : K8S_NODEPORT_HOST + ":" + lbNodePort;
+    //String hostAndPort = OKE_CLUSTER_PRIVATEIP ? args[0] : K8S_NODEPORT_HOST + ":" + lbNodePort;
+    String hostAndPort = OKE_CLUSTER_PRIVATEIP ? host[0] : host[0] + ":" + lbNodePort;
 
     if (isTLS) {
       consoleUrl.append("https://");
