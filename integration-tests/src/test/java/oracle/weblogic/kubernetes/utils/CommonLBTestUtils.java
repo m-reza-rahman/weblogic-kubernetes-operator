@@ -868,7 +868,7 @@ public class CommonLBTestUtils {
                                              String pathLocation,
                                              String... args) {
     StringBuffer consoleUrl = new StringBuffer();
-    String hostAndPort = (args.length == 0) ? K8S_NODEPORT_HOST + ":" + lbNodePort : args[0];
+    String hostAndPort = OKE_CLUSTER_PRIVATEIP ? args[0] : K8S_NODEPORT_HOST + ":" + lbNodePort;
 
     if (isTLS) {
       consoleUrl.append("https://");
