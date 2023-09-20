@@ -142,6 +142,7 @@ class ItLBTwoDomainsTraefik {
   @DisplayName("Verify WebLogic admin console is accessible through Traefik host routing with HTTP protocol")
   void testTraefikHostRoutingAdminServer() {
     logger.info("Verifying WebLogic admin console is accessible through Traefik host routing with HTTP protocol");
+    logger.info("getTraefikLbNodePort returns: {0}", getTraefikLbNodePort(false));
     for (String domainUid : domainUids) {
       verifyAdminServerAccess(false, getTraefikLbNodePort(false), true,
           domainUid + "." + domainNamespace + "." + "admin-server" + ".test", "", ingressIP);
@@ -272,6 +273,14 @@ class ItLBTwoDomainsTraefik {
     params.command(cmd);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
     logger.info("============== get svc --all-namespaces {0} returns: {1}",  result.toString());
+
+    try {
+      int port = getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(),
+          isHttps ? "websecure" : "web");
+      logger.info("========port fr getServiceNodePortin getTraefikLbNodePort is {0} ", cmd);
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
 
     return assertDoesNotThrow(() ->
             getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
