@@ -351,6 +351,7 @@ pipeline {
                     steps {
                         sh '''
                             export PATH=${runtime_path}
+                            export KIND_EXPERIMENTAL_PROVIDER=podman
                             if kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
                                 echo "Deleted orphaned kind cluster ${kind_name}"
                             fi
