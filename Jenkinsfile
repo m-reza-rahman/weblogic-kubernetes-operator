@@ -352,6 +352,12 @@ pipeline {
                         sh '''
                             export PATH=${runtime_path}
                             export KIND_EXPERIMENTAL_PROVIDER=podman
+
+                            podman version
+                            cat /etc/systemd/system/user@.service.d/delegate.conf
+                            cat /etc/modules-load.d/iptables.conf
+                            lsmod|grep -E "^ip_tables|^iptable_filter|^iptable_nat|^ip6"
+
                             if kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
                                 echo "Deleted orphaned kind cluster ${kind_name}"
                             fi
