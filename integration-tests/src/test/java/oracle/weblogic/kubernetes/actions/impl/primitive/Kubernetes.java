@@ -2633,6 +2633,7 @@ public class Kubernetes {
       logger.info("===========port.getName():\n {0}", port.getName());
       logger.info("===========port.toString():\n {0}", port.toString());
       if (port != null) {
+        logger.info("====returning port.getNodePort():\n {0}", port.getNodePort());
         return port.getNodePort();
       }
     } else {

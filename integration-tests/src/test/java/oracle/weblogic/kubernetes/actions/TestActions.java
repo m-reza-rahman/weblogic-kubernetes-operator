@@ -1017,6 +1017,8 @@ public class TestActions {
    * @return node port if service and channel is found, otherwise -1
    */
   public static int getServiceNodePort(String namespace, String serviceName, String channelName) {
+    getLogger().info("====Service.getServiceNodePort:\n {0}",
+        Service.getServiceNodePort(namespace, serviceName, channelName));
     return Service.getServiceNodePort(namespace, serviceName, channelName);
   }
 

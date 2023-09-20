@@ -9,6 +9,8 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 
+import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+
 
 public class Service {
 
@@ -54,6 +56,8 @@ public class Service {
    * @return node port if service and channel is found, otherwise -1
    */
   public static int getServiceNodePort(String namespace, String serviceName, String channelName) {
+    getLogger().info("====Kubernetes.getServiceNodePort:\n {0}",
+        Kubernetes.getServiceNodePort(namespace, serviceName, channelName));
     return Kubernetes.getServiceNodePort(namespace, serviceName, channelName);
   }
 
