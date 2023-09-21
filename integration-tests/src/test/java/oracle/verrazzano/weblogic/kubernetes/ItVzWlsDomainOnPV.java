@@ -58,6 +58,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainResourceOnPv;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.getConfiguration;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
@@ -97,6 +98,9 @@ class ItVzWlsDomainOnPV {
     domainNamespace = namespaces.get(0);
     DOMAINHOMEPREFIX = "/shared/" + domainNamespace + "/domains/";
     setLabelToNamespace(Arrays.asList(domainNamespace));
+    // Create the repo secret to pull the image
+    // this secret is used only for non-kind cluster
+    createTestRepoSecret(domainNamespace);
   }
 
   /**
