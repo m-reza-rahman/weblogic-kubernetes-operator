@@ -74,7 +74,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItVzWlsDomainOnPV {
 
   private static String domainNamespace = null;
-  private static String auxDomainNamespace = null;
   private final String domainUid = "domain1";
   private static LoggingFacade logger = null;
 
@@ -90,13 +89,12 @@ class ItVzWlsDomainOnPV {
    * @param namespaces list of namespaces injected by JUnit.
    */
   @BeforeAll
-  public static void initAll(@Namespaces(2) List<String> namespaces) throws Exception {
+  public static void initAll(@Namespaces(1) List<String> namespaces) throws Exception {
     logger = getLogger();
     logger.info("Getting unique namespace for Domain");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
-    auxDomainNamespace = namespaces.get(1);
-    setLabelToNamespace(Arrays.asList(domainNamespace, auxDomainNamespace));
+    setLabelToNamespace(Arrays.asList(domainNamespace));
   }
 
   /**
@@ -105,7 +103,7 @@ class ItVzWlsDomainOnPV {
   @Test
   @DisplayName("Create domain on persistent volume using new simplified domain on pv feature and"
       + " verify services and pods are created and ready in verrazzano.")
-  void testCreateVzMiiDomain() {
+  void testCreateVzDPVDomain() {
 
     final String adminServerPodName = domainUid + "-admin-server";
     String managedServerPrefix = domainUid + "-managed-server";
