@@ -109,7 +109,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
 @IntegrationTest
-@Tag("olcne-mrg")
 class ItMonitoringExporterSamples {
 
   // domain constants
