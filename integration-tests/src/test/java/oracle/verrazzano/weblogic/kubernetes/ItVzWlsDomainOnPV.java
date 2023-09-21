@@ -94,6 +94,7 @@ class ItVzWlsDomainOnPV {
     logger.info("Getting unique namespace for Domain");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
+    DOMAINHOMEPREFIX = "/shared/" + domainNamespace + "/domains/";
     setLabelToNamespace(Arrays.asList(domainNamespace));
   }
 
