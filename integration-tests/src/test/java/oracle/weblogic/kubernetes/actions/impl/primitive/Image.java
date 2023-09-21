@@ -111,8 +111,8 @@ public class Image {
    * @return true if delete image is successful
    */
   public static boolean createImage(String imageBuildDir, String image, String extraArgs) {
-    String cmdToExecute = String.format("DOCKER_BUILD_KIT=1 DOCKER_CLI_EXPERIMENTAL=enabled "
-        + WLSIMG_BUILDER
+    String cmdToExecute = String.format(
+        WLSIMG_BUILDER
         + " buildx build --platform linux/amd64,linux/arm64 %s -t %s  %s",
         imageBuildDir, image, extraArgs);
     return Command
