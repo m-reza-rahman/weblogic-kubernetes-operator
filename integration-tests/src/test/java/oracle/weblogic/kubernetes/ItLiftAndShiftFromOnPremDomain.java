@@ -335,6 +335,7 @@ class ItLiftAndShiftFromOnPremDomain {
     }
 
     final String ingressServiceName = traefikHelmParams.getReleaseName();
+    logger.info("ingressServiceName = {0}, traefikNamespace {1} ", ingressServiceName,traefikNamespace);
     String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : getHostAndPort(hostName, traefikNodePort);
 
