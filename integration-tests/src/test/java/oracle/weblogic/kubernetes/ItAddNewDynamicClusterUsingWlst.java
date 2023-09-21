@@ -85,7 +85,7 @@ class ItAddNewDynamicClusterUsingWlst {
    *                   JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(2) List<String> namespaces) {
+  public static void initAll(@Namespaces(3) List<String> namespaces) {
     logger = getLogger();
 
     // get a unique operator namespace
@@ -97,6 +97,11 @@ class ItAddNewDynamicClusterUsingWlst {
     logger.info("Getting unique namespace for domain-on-pv domain");
     assertNotNull(namespaces.get(1));
     domainNamespace = namespaces.get(1);
+
+    // get a unique Traefik namespace
+    logger.info("Get a unique namespace for Traefik");
+    assertNotNull(namespaces.get(2), "Namespace list is null");
+    traefikNamespace = namespaces.get(2);
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domainNamespace);
