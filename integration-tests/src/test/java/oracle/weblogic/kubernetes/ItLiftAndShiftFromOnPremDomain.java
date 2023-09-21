@@ -71,6 +71,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copy;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
 import static oracle.weblogic.kubernetes.utils.FileUtils.createZipFile;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
@@ -405,6 +406,9 @@ class ItLiftAndShiftFromOnPremDomain {
     if (NO_PROXY != null) {
       container.addEnvItem(new V1EnvVar().name("no_proxy").value(NO_PROXY));
     }
+
+    // TODO this secret is used only for non-kind cluster
+    createBaseRepoSecret(namespace);
 
     return setupWebLogicPod(namespace, container);
   }
