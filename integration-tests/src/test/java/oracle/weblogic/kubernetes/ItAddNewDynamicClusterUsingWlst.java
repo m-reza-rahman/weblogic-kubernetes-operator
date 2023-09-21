@@ -12,9 +12,11 @@ import java.util.Properties;
 
 import io.kubernetes.client.custom.V1Patch;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -22,20 +24,26 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getNextIntrospectVersion;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.adminNodePortAccessible;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainOnPvUsingWdt;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.WLSTUtils.executeWLSTScript;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -63,6 +71,11 @@ class ItAddNewDynamicClusterUsingWlst {
   private static final String wlSecretName = "weblogic-credentials";
   private static String domainNamespace = null;
 
+  // constants for Traefik
+  private static String traefikNamespace = null;
+  private static HelmParams traefikHelmParams = null;
+  private static String ingressIP = null;
+
   private static LoggingFacade logger = null;
 
   /**
@@ -87,6 +100,26 @@ class ItAddNewDynamicClusterUsingWlst {
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domainNamespace);
+
+    if (OKE_CLUSTER) {
+      // install and verify Traefik
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+
+      // create Traefik ingress resource
+      final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";
+      createTraefikIngressRoutingRules(domainNamespace, traefikNamespace, ingressResourceFileName, domainUid);
+    }
+  }
+
+  @AfterAll
+  void tearDown() {
+    // uninstall Traefik
+    if (traefikHelmParams != null) {
+      assertThat(uninstallTraefik(traefikHelmParams))
+          .as("Test uninstallTraefik returns true")
+          .withFailMessage("uninstallTraefik() did not return true")
+          .isTrue();
+    }
   }
 
   /**
@@ -110,8 +143,11 @@ class ItAddNewDynamicClusterUsingWlst {
         "Getting admin server node port failed");
 
     // In OKD cluster, we need to get the routeHost for the external admin service
-    String routeHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
-    
+    // In internal OKE cluster, we need to get the routeHost for a LBer
+    String ingressServiceName = traefikHelmParams.getReleaseName();
+    String routeHost = OKE_CLUSTER ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+        : createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+
     logger.info("Validating WebLogic admin server access by login to console");
     testUntil(
         assertDoesNotThrow(() -> {
