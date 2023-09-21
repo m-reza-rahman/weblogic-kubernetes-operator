@@ -131,9 +131,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to a create model in image domain and start the domain")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-srg")
+@Tag("oke-gate")
 class ItMiiDomain {
 
   private static String opNamespace = null;

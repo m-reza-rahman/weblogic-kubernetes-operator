@@ -42,9 +42,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test scaling usability ")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItClusterResourceScaling {
 
   private static String opNamespace = null;

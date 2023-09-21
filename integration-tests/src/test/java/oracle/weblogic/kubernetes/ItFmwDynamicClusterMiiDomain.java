@@ -61,9 +61,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DisplayName("Test to Create a FMW Dynamic Domain with Dynamic Cluster using model in image")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-fmw-cert")
+@Tag("oke-gate")
 class ItFmwDynamicClusterMiiDomain {
 
   private static String dbNamespace = null;

@@ -94,9 +94,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to verify the validating webhook for domain or cluster resource replicas count")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItValidateWebhookReplicas {
   private static String opNamespace = null;
   private static String domainNamespace = null;
