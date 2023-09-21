@@ -65,6 +65,7 @@ import static oracle.weblogic.kubernetes.utils.BuildApplication.setupWebLogicPod
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getActualLocationIfNeeded;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withQuickRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -348,7 +349,11 @@ class ItLiftAndShiftFromOnPremDomain {
       hostName = createRouteForOKD(clusterService, domainNamespace);
     }
 
-    String hostAndPort = getHostAndPort(hostName, traefikNodePort);
+    //String hostAndPort = getHostAndPort(hostName, traefikNodePort);
+    final String ingressServiceName = traefikHelmParams.getReleaseName();
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : getHostAndPort(hostName, traefikNodePort);
+
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     String curlString = String.format("curl -v --show-error --noproxy '*' "
