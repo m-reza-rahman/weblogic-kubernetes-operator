@@ -28,6 +28,7 @@ public class Image {
    */
   public static boolean login(String registryName, String username, String password) {
     String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p \"%s\"",
+    //String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p '%s'",
         registryName, username, password);
     return Command
         .withParams(new CommandParams()
@@ -110,7 +111,7 @@ public class Image {
    * @return true if delete image is successful
    */
   public static boolean createImage(String imageBuildDir, String image, String extraArgs) {
-    String cmdToExecute = String.format(WLSIMG_BUILDER + " build %s -t %s  %s", imageBuildDir, image, extraArgs);
+    String cmdToExecute = String.format("DOCKER_BUILD_KIT=1 DOCKER_CLI_EXPERIMENTAL=enabled " + WLSIMG_BUILDER + " buildx build --platform linux/amd64,linux/arm64 %s -t %s  %s", imageBuildDir, image, extraArgs);
     return Command
         .withParams(new CommandParams()
             .command(cmdToExecute))
