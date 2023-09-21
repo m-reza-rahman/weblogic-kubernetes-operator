@@ -24,7 +24,7 @@ def kind_k8s_map = [
 def _kind_image = null
 
 pipeline {
-    agent { label 'large-ol8' }
+    agent { label 'large-ol9' }
     options {
         timeout(time: 800, unit: 'MINUTES')
     }
@@ -364,9 +364,6 @@ pipeline {
                             cat <<EOF | kind create cluster --verbosity 99 --name "${kind_name}" --kubeconfig "${kubeconfig_file}" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  ipFamily: ipv6
-  apiServerAddress: 127.0.0.1
 containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${registry_port}"]
