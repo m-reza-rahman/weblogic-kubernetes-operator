@@ -504,6 +504,7 @@ class TopologyGenerator(Generator):
 
   def validateNonDynamicCluster(self, cluster):
     self.validateNonDynamicClusterReferencedByAtLeastOneServer(cluster)
+    self.validateNonDynamicClusterWithCoherenceClusterSystemResource(cluster)
     self.validateNonDynamicClusterNotReferencedByAnyServerTemplates(cluster)
     self.validateNonDynamicClusterServersHaveSameListenPort(cluster)
     self.validateNonDynamicClusterServerHaveSameCustomChannels(cluster)
@@ -515,6 +516,14 @@ class TopologyGenerator(Generator):
       if self.env.getClusterOrNone(server) is cluster:
         return
     self.addError("The WebLogic configured cluster " + self.name(cluster) + " is not referenced by any servers.  You must have managed servers defined that belong to this cluster.")
+
+  def validateNonDynamicClusterWithCoherenceClusterSystemResource(self, cluster):
+    ccsr = cluster.getCoherenceClusterSystemResource()
+    if ccsr is None:
+      return
+    for server in self.env.getDomain().getServers():
+      if self.env.getClusterOrNone(server) is cluster:
+        self.validateCoherenceMemberConfig(server.getCoherenceMemberConfig())
 
   def validateNonDynamicClusterNotReferencedByAnyServerTemplates(self, cluster):
     for template in self.env.getDomain().getServerTemplates():
@@ -645,7 +654,7 @@ class TopologyGenerator(Generator):
       if self.env.getClusterOrNone(template) is cluster:
         if server_template is None:
           server_template = template
-    self.getCoherenceMemberConfig(server_template.getCoherenceMemberConfig())
+    self.validateCoherenceMemberConfig(server_template.getCoherenceMemberConfig())
 
   def validateCoherenceMemberConfig(self, cmc)
     if cmc is None:
