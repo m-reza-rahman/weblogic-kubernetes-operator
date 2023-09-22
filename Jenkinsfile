@@ -389,19 +389,6 @@ EOF
                                 kubectl annotate node ${node} tilt.dev/registry=localhost:${registry_port};
                             done
 
-                            if [ "${kind_network}" != "bridge" ]; then
-                                containers=$(docker network inspect ${kind_network} -f "{{range .Containers}}{{.Name}} {{end}}")
-                                needs_connect="true"
-                                for c in ${containers}; do
-                                    if [ "$c" = "${registry_name}" ]; then
-                                        needs_connect="false"
-                                    fi
-                                done
-                                if [ "${needs_connect}" = "true" ]; then
-                                    docker network connect "${kind_network}" "${registry_name}" || true
-                                fi
-                            fi
-
                             # Document the local registry
                             # https://github.com/kubernetes/enhancements/tree/master/keps/sig-cluster-lifecycle/generic/1755-communicating-a-local-registry
                             cat <<EOF | kubectl apply -f -
@@ -513,10 +500,10 @@ EOF
                                 if ! kind export logs "${result_root}/kubelogs" --name "${kind_name}" --verbosity 99; then
                                     echo "Failed to export kind logs for kind cluster ${kind_name}"
                                 fi
-                                if ! docker exec kind-worker journalctl --utc --dmesg --system > "${result_root}/journalctl-kind-worker.out"; then
+                                if ! podman exec kind-worker journalctl --utc --dmesg --system > "${result_root}/journalctl-kind-worker.out"; then
                                     echo "Failed to run journalctl for kind worker"
                                 fi
-                                if ! docker exec kind-control-plane journalctl --utc --dmesg --system > "${result_root}/journalctl-kind-control-plane.out"; then
+                                if ! podman exec kind-control-plane journalctl --utc --dmesg --system > "${result_root}/journalctl-kind-control-plane.out"; then
                                     echo "Failed to run journalctl for kind control plane"
                                 fi
                                 if ! journalctl --utc --dmesg --system --since "$start_time" > "${result_root}/journalctl-compute.out"; then
@@ -537,11 +524,11 @@ EOF
                 always {
                     sh '''
                         export PATH="${WORKSPACE}/bin:${PATH}"
-                        running="$(docker inspect -f '{{.State.Running}}' "${registry_name}" 2>/dev/null || true)"
+                        running="$(podman inspect -f '{{.State.Running}}' "${registry_name}" 2>/dev/null || true)"
                         if [ "${running}" = 'true' ]; then
                             echo "Stopping the registry container ${registry_name}"
-                            docker stop "${registry_name}"
-                            docker rm --force "${registry_name}"
+                            podman stop "${registry_name}"
+                            podman rm --force "${registry_name}"
                         fi
                         echo 'Remove old Kind cluster (if any)...'
                         if ! kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
