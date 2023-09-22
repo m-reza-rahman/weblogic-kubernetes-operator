@@ -330,9 +330,6 @@ pipeline {
                         sh '''
                             export PATH=${runtime_path}
 
-                            echo TEST
-                            podman container inspect "${registry_name}"
-
                             running="$(podman container inspect -f '{{.State.Running}}' "${registry_name}" 2>/dev/null || true)"
                             if [ "${running}" = 'true' ]; then
                               echo "Stopping the registry container ${registry_name}"
@@ -524,7 +521,7 @@ EOF
                 always {
                     sh '''
                         export PATH="${WORKSPACE}/bin:${PATH}"
-                        running="$(podman inspect -f '{{.State.Running}}' "${registry_name}" 2>/dev/null || true)"
+                        running="$(podman container inspect -f '{{.State.Running}}' "${registry_name}" 2>/dev/null || true)"
                         if [ "${running}" = 'true' ]; then
                             echo "Stopping the registry container ${registry_name}"
                             podman stop "${registry_name}"
