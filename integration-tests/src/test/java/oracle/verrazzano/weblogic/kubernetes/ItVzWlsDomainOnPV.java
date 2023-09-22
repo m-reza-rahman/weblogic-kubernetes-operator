@@ -5,14 +5,17 @@ package oracle.verrazzano.weblogic.kubernetes;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
 import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Yaml;
 import oracle.verrazzano.weblogic.ApplicationConfiguration;
@@ -38,10 +41,14 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.DomainUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
@@ -50,8 +57,13 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
+import static oracle.weblogic.kubernetes.actions.TestActions.now;
+import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
+import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -70,6 +82,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 // Test to create model in image domain and verify the domain started successfully
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Test to a create model in image domain and start the domain in verrazzano")
 @VzIntegrationTest
 @Tag("v8o")
@@ -82,7 +95,10 @@ class ItVzWlsDomainOnPV {
   private static final String clusterName = "cluster-1";
   private static final int replicaCount = 2;
   private final String wlsModelFilePrefix = "model-wlsdomain-onpv-simplified";
-  
+  private Map<String, OffsetDateTime> podsWithTimeStamps;
+  private final String adminServerPodName = domainUid + "-admin-server";
+  private String managedServerPrefix = domainUid + "-managed-server";
+
   private static LoggingFacade logger;
 
   /**
@@ -106,13 +122,12 @@ class ItVzWlsDomainOnPV {
   /**
    * Create a persistent volume WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
    */
+  @Order(1)
   @Test
   @DisplayName("Create domain on persistent volume using new simplified domain on pv feature and"
       + " verify services and pods are created and ready in verrazzano.")
   void testCreateVzDPVDomain() {
 
-    final String adminServerPodName = domainUid + "-admin-server";
-    String managedServerPrefix = domainUid + "-managed-server";
     final String pvName = getUniqueName(domainUid + "-pv-");
     final String pvcName = getUniqueName(domainUid + "-pvc-");
     final int t3ChannelPort = getNextFreePort();
@@ -228,6 +243,45 @@ class ItVzWlsDomainOnPV {
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
   }
 
+  /**
+   * Modify the domain scope restartVersion on the domain resource.
+   * Verify all pods are restarted and back to ready state.
+   * Verifies that the domain roll starting/pod cycle starting events are logged.
+   */
+  @Order(2)
+  @Test
+  @DisplayName("Restart pods using restartVersion flag")
+  void testRestartVersion() {
+    // get the original domain resource before update
+    DomainUtils.getAndValidateInitialDomain(domainNamespace, domainUid);
+
+    // get the map with server pods and their original creation timestamps
+    podsWithTimeStamps = getPodsWithTimeStamps();
+
+    String oldVersion = assertDoesNotThrow(()
+        -> getDomainCustomResource(domainUid, domainNamespace).getSpec().getRestartVersion());
+    int newVersion = oldVersion == null ? 1 : Integer.valueOf(oldVersion) + 1;
+
+    OffsetDateTime timestamp = now();
+
+    logger.info("patch the domain resource with new WebLogic secret, restartVersion and introspectVersion");
+    String patchStr
+        = "["
+        + "{\"op\": \"add\", \"path\": \"/spec/restartVersion\", "
+        + "\"value\": \"" + newVersion + "\"}"
+        + "]";
+    logger.info("Updating domain configuration using patch string: {0}\n", patchStr);
+    V1Patch patch = new V1Patch(patchStr);
+    assertTrue(patchDomainCustomResource(domainUid, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
+        "Failed to patch domain");
+
+    // verify the server pods are rolling restarted and back to ready state
+    logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
+        domainUid, domainNamespace);
+    assertTrue(verifyRollingRestartOccurred(podsWithTimeStamps, 1, domainNamespace),
+        String.format("Rolling restart failed for domain %s in namespace %s", domainUid, domainNamespace));
+  }
+
   private DomainCreationImage createDomainCreationImage() {
     final String wlsModelFile = wlsModelFilePrefix + ".yaml";
     // create a model property file
@@ -267,4 +321,23 @@ class ItVzWlsDomainOnPV {
 
     return domainPropertiesFile;
   }
+
+  private Map<String, OffsetDateTime> getPodsWithTimeStamps() {
+    // create the map with server pods and their original creation timestamps
+    podsWithTimeStamps = new LinkedHashMap<>();
+    podsWithTimeStamps.put(adminServerPodName,
+        assertDoesNotThrow(() -> getPodCreationTimestamp(domainNamespace, "", adminServerPodName),
+            String.format("getPodCreationTimestamp failed with ApiException for pod %s in namespace %s",
+                adminServerPodName, domainNamespace)));
+
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      podsWithTimeStamps.put(managedServerPodName,
+          assertDoesNotThrow(() -> getPodCreationTimestamp(domainNamespace, "", managedServerPodName),
+              String.format("getPodCreationTimestamp failed with ApiException for pod %s in namespace %s",
+                  managedServerPodName, domainNamespace)));
+    }
+    return podsWithTimeStamps;
+  }
+
 }
