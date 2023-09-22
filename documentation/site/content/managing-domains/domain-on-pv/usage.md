@@ -206,8 +206,7 @@ If the PV and PVC already exist in your environment, you do not need
 to specify any `persistentVolume` or `persistentVolumeClaim`  under the `intializedDomainOnPV` section.
 
 
-If you are running in OpenShift's default restricted security context constraint (SCC) and you want 
-to have the operator create a PV for you, you would need to create a custom SCC to give the necessary permissions. A preferable approach would be to manually create the PV in advance, allowing you to configure the security context settings to match your application??s specific requirements.
+If you are running in OpenShift's default restricted security context constraint (SCC) and you want to have the operator create a PV for you, you would need to create a custom SCC to give the necessary permissions. A preferable approach would be to manually create the PV in advance, allowing you to configure the security context settings to match your application's specific requirements.
 
 
 #### References
