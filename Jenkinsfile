@@ -211,7 +211,7 @@ pipeline {
                             java -version
                             mvn --version
                             python --version
-                            docker version
+                            podman version
                             ulimit -a
                             ulimit -aH
                         '''
@@ -329,14 +329,18 @@ pipeline {
                     steps {
                         sh '''
                             export PATH=${runtime_path}
-                            running="$(docker inspect -f '{{.State.Running}}' "${registry_name}" 2>/dev/null || true)"
+
+                            echo TEST
+                            podman container inspect "${registry_name}"
+
+                            running="$(podman container inspect -f '{{.State.Running}}' "${registry_name}" 2>/dev/null || true)"
                             if [ "${running}" = 'true' ]; then
                               echo "Stopping the registry container ${registry_name}"
-                              docker stop "${registry_name}"
-                              docker rm --force "${registry_name}"
+                              podman stop "${registry_name}"
+                              podman rm --force "${registry_name}"
                             fi
         
-                            docker run -d --restart=always -p "127.0.0.1:${registry_port}:5000" --name "${registry_name}" \
+                            podman run -d --restart=always -p "127.0.0.1:${registry_port}:5000" --name "${registry_name}" \
                                 ${ocir_host}/${wko_tenancy}/test-images/docker/registry:2.8.2
                             echo "Registry Host: ${registry_host}"
                         '''
@@ -361,7 +365,7 @@ pipeline {
                             if kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
                                 echo "Deleted orphaned kind cluster ${kind_name}"
                             fi
-                            cat <<EOF | kind create cluster --verbosity 99 --name "${kind_name}" --kubeconfig "${kubeconfig_file}" --config=-
+                            cat <<EOF | kind create cluster --name "${kind_name}" --kubeconfig "${kubeconfig_file}" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
