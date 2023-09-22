@@ -75,20 +75,20 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("v8o")
 class ItVzWlsDomainOnPV {
 
-  private static String domainNamespace = null;
+  private static String domainNamespace;
   private final String domainUid = "domain1";
-  private static LoggingFacade logger = null;
-
   private static final String storageClassName = "weblogic-domain-storage-class";
-  private static String DOMAINHOMEPREFIX = null;
+  private static String DOMAINHOMEPREFIX;
   private static final String clusterName = "cluster-1";
   private static final int replicaCount = 2;
   private final String wlsModelFilePrefix = "model-wlsdomain-onpv-simplified";
+  
+  private static LoggingFacade logger;
 
   /**
    * Label domain namespace.
    *
-   * @param namespaces list of namespaces injected by JUnit.
+   * @param namespaces list of namespaces created by test infra.
    */
   @BeforeAll
   public static void initAll(@Namespaces(1) List<String> namespaces) throws Exception {
@@ -104,7 +104,7 @@ class ItVzWlsDomainOnPV {
   }
 
   /**
-   * Create a WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
+   * Create a persistent volume WebLogic domain VerrazzanoWebLogicWorkload component in verrazzano.
    */
   @Test
   @DisplayName("Create domain on persistent volume using new simplified domain on pv feature and"
@@ -117,28 +117,10 @@ class ItVzWlsDomainOnPV {
     final String pvcName = getUniqueName(domainUid + "-pvc-");
     final int t3ChannelPort = getNextFreePort();
     final String wlSecretName = domainUid + "-weblogic-credentials";
-    final String wlsModelFile = wlsModelFilePrefix + ".yaml";
 
     // create WLS domain credential secret
-    createSecretWithUsernamePassword(wlSecretName, domainNamespace,
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
-
-    // create a model property file
-    File wlsModelPropFile = createWdtPropertyFile("wlsonpv-simplified1");
-
-    // create domainCreationImage
-    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "wls-domain-on-pv-image";
-    // create image with model and wdt installation files
-    WitParams witParams
-        = new WitParams()
-            .modelImageName(domainCreationImageName)
-            .modelImageTag(MII_BASIC_IMAGE_TAG)
-            .modelFiles(Collections.singletonList(MODEL_DIR + "/" + wlsModelFile))
-            .modelVariableFiles(Collections.singletonList(wlsModelPropFile.getAbsolutePath()));
-    createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
-
-    DomainCreationImage domainCreationImage
-        = new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
+    createSecretWithUsernamePassword(wlSecretName, domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
+    DomainCreationImage domainCreationImage = createDomainCreationImage();
 
     // create a domain resource
     logger.info("Creating domain custom resource");
@@ -147,6 +129,7 @@ class ItVzWlsDomainOnPV {
 
     Map<String, Quantity> pvcRequest = new HashMap<>();
     pvcRequest.put("storage", new Quantity("2Gi"));
+
     Configuration configuration = null;
     if (OKE_CLUSTER) {
       configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
@@ -158,6 +141,7 @@ class ItVzWlsDomainOnPV {
         .createMode(CreateIfNotExists.DOMAIN)
         .domainCreationImages(Collections.singletonList(domainCreationImage))
         .domainType(DomainOnPVType.WLS));
+
     DomainResource domain = createDomainResourceOnPv(
         domainUid,
         domainNamespace,
@@ -242,6 +226,26 @@ class ItVzWlsDomainOnPV {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
+  }
+
+  private DomainCreationImage createDomainCreationImage() {
+    final String wlsModelFile = wlsModelFilePrefix + ".yaml";
+    // create a model property file
+    File wlsModelPropFile = createWdtPropertyFile("wlsonpv-simplified1");
+    // create domainCreationImage
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "wls-domain-on-pv-image";
+    // create image with model and wdt installation files
+    WitParams witParams
+        = new WitParams()
+            .modelImageName(domainCreationImageName)
+            .modelImageTag(MII_BASIC_IMAGE_TAG)
+            .modelFiles(Collections.singletonList(MODEL_DIR + "/" + wlsModelFile))
+            .modelVariableFiles(Collections.singletonList(wlsModelPropFile.getAbsolutePath()));
+    createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
+
+    DomainCreationImage domainCreationImage
+        = new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
+    return domainCreationImage;
   }
 
   private File createWdtPropertyFile(String domainName) {
