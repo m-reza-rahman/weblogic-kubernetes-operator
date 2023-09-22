@@ -57,6 +57,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -85,9 +86,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 @DisplayName("Test sticky sessions management with Traefik and ClusterService")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItStickySession {
 
   // constants for creating domain image using model in image
@@ -461,10 +462,12 @@ class ItStickySession {
 
     if (clusterAddress.length == 0) {
       //use a LBer ingress controller to build the curl command to run on local
+      final String ingressServiceName = traefikHelmParams.getReleaseName();
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
-      String hostAndPort = getHostAndPort(hostName, servicePort);
+      String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : getHostAndPort(hostName, servicePort);
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
           .append(hostName)
