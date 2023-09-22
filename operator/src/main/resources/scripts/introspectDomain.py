@@ -615,6 +615,7 @@ class TopologyGenerator(Generator):
 
   def validateDynamicCluster(self, cluster):
     self.validateDynamicClusterReferencedByOneServerTemplate(cluster)
+    self.validateDynamicClusterWithCoherenceClusterSystemResource(cluster)
     self.validateDynamicClusterDynamicServersDoNotUseCalculatedListenPorts(cluster)
     self.validateDynamicClusterNotReferencedByAnyServers(cluster)
     if not self.env.skipLeasingValidations():
@@ -633,6 +634,30 @@ class TopologyGenerator(Generator):
             return
     if server_template is None:
       self.addError("The WebLogic dynamic cluster " + self.name(cluster) + " is not referenced by any server template.")
+
+  def validateDynamicClusterWithCoherenceClusterSystemResource(self, cluster):
+    ccsr = cluster.getCoherenceClusterSystemResource()
+    if ccsr is None:
+      return
+    server_template=None
+    for template in self.env.getDomain().getServerTemplates():
+      self.validateServerTemplateNapListenPortIsSet(template)
+      if self.env.getClusterOrNone(template) is cluster:
+        if server_template is None:
+          server_template = template
+    self.getCoherenceMemberConfig(server_template.getCoherenceMemberConfig())
+
+  def validateCoherenceMemberConfig(self, cmc)
+    if cmc is None:
+      self.addError("TODO: validation error about missing CoherenceMemberConfig")
+    else:
+      ulp = cmc.getUnicastListenPort()
+      if ulp <= 0:
+        self.addError("TODO: validation error about ephemeral UnicastListenPort")
+      else:
+        upaaa = cmc.getUnicastPortAutoAdjustAttempts()
+        if upaaa != ulp + 1:
+          self.addError("TODO: validation error about UnicastPortAutoAdjustAttempts not being exactly UnicastListenPort plus one")
 
   def validateServerTemplateNapListenPortIsSet(self, server_or_template):
     naps = server_or_template.getNetworkAccessPoints()

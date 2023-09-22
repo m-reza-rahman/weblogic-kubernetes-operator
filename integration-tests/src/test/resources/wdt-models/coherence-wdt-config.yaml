@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 domainInfo:
@@ -31,6 +31,10 @@ topology:
         'cluster-1-template':
             ListenPort: 8001
             Cluster: 'cluster-1'
+            CoherenceMemberConfig:
+                'cluster-1-coherence-config':
+                    UnicastListenPort: 7575
+                    UnicastPortAutoAdjustAttempts: 7576
 resources:
     CoherenceClusterSystemResource:
         CoherenceCluster:
