@@ -97,7 +97,7 @@ class ItVzWlsDomainOnPV {
   private static String DOMAINHOMEPREFIX;
   private static final String clusterName = "cluster-1";
   private static final int replicaCount = 2;
-  private final String wlsModelFilePrefix = "model-wlsdomain-onpv-simplified";
+  private final String wlsModelFilePrefix = "vz-model-wlsdomain-onpv-simplified";
   private Map<String, OffsetDateTime> podsWithTimeStamps;
   private final String adminServerPodName = domainUid + "-admin-server";
   private String managedServerPrefix = domainUid + "-managed-server";
