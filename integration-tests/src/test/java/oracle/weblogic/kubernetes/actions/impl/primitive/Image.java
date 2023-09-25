@@ -128,7 +128,7 @@ public class Image {
         .execute();
     cmdToExecute = String.format(
         WLSIMG_BUILDER
-            + " buildx build --load  %s -t %s  %s",
+            + " buildx build --load  %s -t %s  %s --builder=buildx_instance",
         imageBuildDir, image, extraArgs);
     Command
         .withParams(new CommandParams()
