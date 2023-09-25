@@ -435,7 +435,7 @@ EOF
 
                             export KUBECONFIG=${kubeconfig_file}
                             kubectl cluster-info --context "kind-${kind_name}"
-                            kubectl apply -f apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.11/config/manifests/metallb-native.yaml
+                            kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.13.11/config/manifests/metallb-native.yaml
                             echo "Waiting for metallb pods to be ready before applying IPAddressPool and L2Advertisement"
                             kubectl wait deploy --timeout=10m --for=condition=Available -l app=metallb -n metallb-system
                             SUBNET=$(docker inspect kind | jq '.[0].IPAM.Config[0].Subnet' -r | sed 's|/.*||g')
