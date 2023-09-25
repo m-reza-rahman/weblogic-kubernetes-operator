@@ -56,7 +56,10 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
+import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.now;
@@ -212,7 +215,14 @@ class ItVzWlsDomainOnPV {
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(adminServerPodName)
-                                        .port(7001)))))))))));
+                                        .port(7001)),
+                                new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/sample-war")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(domainUid + "-cluster-" + clusterName)
+                                        .port(8001)))))))))));
 
     logger.info(Yaml.dump(component));
     logger.info(Yaml.dump(application));
@@ -241,6 +251,11 @@ class ItVzWlsDomainOnPV {
     String message = "Oracle WebLogic Server Administration Console";
     String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
     assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
+    
+    // verify sample running in cluster is accessible through istio/loadbalancer
+    message = "Hello World, you have reached server managed-server";
+    String appUrl = "https://" + host + "/sample-war/index.jsp --resolve " + host + ":443:" + address;
+    assertTrue(verifyVzApplicationAccess(appUrl, message), "Failed to get access to sample application");    
   }
 
   /**
@@ -288,13 +303,24 @@ class ItVzWlsDomainOnPV {
     File wlsModelPropFile = createWdtPropertyFile("wlsonpv-simplified1");
     // create domainCreationImage
     String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "wls-domain-on-pv-image";
+    String appName = "sample-app";
     // create image with model and wdt installation files
+    // build an application archive using what is in resources/apps/APP_NAME
+    logger.info("Build an application archive using resources/apps/{0}", appName);
+    assertTrue(buildAppArchive(defaultAppParams()
+        .srcDirList(Collections.singletonList(appName))),
+        String.format("Failed to create app archive for %s", appName));
+
+    // build the archive list
+    String zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, appName);
+    final List<String> archiveList = Collections.singletonList(zipFile);   
     WitParams witParams
         = new WitParams()
             .modelImageName(domainCreationImageName)
             .modelImageTag(MII_BASIC_IMAGE_TAG)
             .modelFiles(Collections.singletonList(MODEL_DIR + "/" + wlsModelFile))
-            .modelVariableFiles(Collections.singletonList(wlsModelPropFile.getAbsolutePath()));
+            .modelVariableFiles(Collections.singletonList(wlsModelPropFile.getAbsolutePath()))
+            .modelArchiveFiles(archiveList);
     createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
 
     DomainCreationImage domainCreationImage
