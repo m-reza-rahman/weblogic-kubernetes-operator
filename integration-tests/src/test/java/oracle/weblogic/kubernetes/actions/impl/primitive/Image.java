@@ -113,7 +113,14 @@ public class Image {
   public static boolean createImage(String imageBuildDir, String image, String extraArgs) {
     String cmdToExecute = String.format(
         WLSIMG_BUILDER
-        + " buildx build --platform linux/amd64,linux/arm64 %s -t %s  %s",
+        + " buildx create --use --name buildx_instance");
+    Command
+        .withParams(new CommandParams()
+            .command(cmdToExecute))
+        .execute();
+    cmdToExecute = String.format(
+        WLSIMG_BUILDER
+            + " buildx build --platform linux/amd64,linux/arm64 %s -t %s  %s",
         imageBuildDir, image, extraArgs);
     return Command
         .withParams(new CommandParams()
