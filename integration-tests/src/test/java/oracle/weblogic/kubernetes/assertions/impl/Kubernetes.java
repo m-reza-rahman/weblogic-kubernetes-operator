@@ -36,11 +36,15 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.ClientBuilder;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static io.kubernetes.client.util.Yaml.dump;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodRestartVersion;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getPodIntrospectVersion;
@@ -373,6 +377,22 @@ public class Kubernetes {
     String labelSelector = String.format("weblogic.operatorName in (%s)", namespace);
     V1Pod pod = getPod(namespace, labelSelector, "weblogic-operator-");
     if (pod != null && pod.getStatus() != null && pod.getStatus().getConditions() != null) {
+      LoggingFacade logger = getLogger();
+      logger.info(getPodLog(pod.getMetadata().getName(), namespace));
+      String cmdToExecute = String.format(
+          KUBERNETES_CLI
+              + " describe pods " + pod.getMetadata().getName() +  "  -n " + namespace);
+      Command
+          .withParams(new CommandParams()
+              .command(cmdToExecute))
+          .execute();
+      cmdToExecute = String.format(
+          KUBERNETES_CLI
+              + " get events  " +   "  -n " + namespace);
+      Command
+          .withParams(new CommandParams()
+              .command(cmdToExecute))
+          .execute();
       // get the podCondition with the 'Ready' type field
       V1PodCondition v1PodReadyCondition = pod.getStatus().getConditions().stream()
           .filter(v1PodCondition -> "Ready".equals(v1PodCondition.getType()))
