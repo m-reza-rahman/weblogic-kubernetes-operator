@@ -489,9 +489,9 @@ class ItCrossDomainTransaction {
   private boolean checkLocalQueue() {
     String curlString = String.format("curl -v --show-error --noproxy '*' "
             + "\"http://%s/jmsservlet/jmstest?"
-            + "url=t3://localhost:7001&"
+            + "url=t3://%s.%s:7001&"
             + "action=receive&dest=jms.testAccountingQueue\"",
-            hostAndPort);
+            hostAndPort, domain1AdminServerPodName, domain1Namespace);
 
     logger.info("curl command {0}", curlString);
 
