@@ -39,12 +39,15 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createConfigMap;
 import static oracle.weblogic.kubernetes.actions.TestActions.createNamespacedJob;
 import static oracle.weblogic.kubernetes.actions.TestActions.getJob;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.actions.TestActions.listPods;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.jobCompleted;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
+import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
+import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -215,6 +218,62 @@ public class DeployUtil {
       }
     }
 
+  }
+
+  /**
+   * Deploy an application to a set of target using REST API with curl utility.
+   * Note the targets parameter should be a string with following format
+   *  {identity: [clusters,'cluster-1']}   for cluster target
+   *  {identity: [servers, 'admin-server']} for server target
+   *  OR a combination for multiple targets, for example
+   *  {identity: [clusters,'mycluster']}, {identity: [servers,'admin-server']}
+   * @param hostAndPort name of the admin server host and port
+   * @param domainNamespace domain namespace
+   * @param adminServerPodName admin server pod name
+   * @param managedServerPodPrefix managed server pod prefix
+   * @param userName admin server user name
+   * @param password admin server password
+   * @param replicaCount domain replica count
+   * @param targets  the target string to deploy application
+   * @param srcArchivePath original path of the application archive
+   * @param destArchivePath destination path of the application archive
+   * @param hostHeader Host header for the curl command
+   * @param appName name of the application
+   * @return ExecResult
+   */
+  public static ExecResult deployAppInPodUsingRest(String hostAndPort,
+                                                   String domainNamespace,
+                                                   String adminServerPodName,
+                                                   String managedServerPodPrefix,
+                                                   String userName,
+                                                   String password,
+                                                   int replicaCount,
+                                                   String targets,
+                                                   Path srcArchivePath,
+                                                   Path destArchivePath,
+                                                   String hostHeader,
+                                                   String appName) {
+    // Copy App archive to admin pod
+    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+        adminServerPodName, "", srcArchivePath, destArchivePath));
+
+    // chown of App archive in admin pod
+    V1Pod adminPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, adminServerPodName));
+    execInPod(adminPod, null, true, "chown 1000:root  " + destArchivePath.toString());
+
+    for (int i = 1; i <= replicaCount; i++) {
+      // Copy App archive to managed server pod
+      String managedServerPodName = managedServerPodPrefix + i;
+      assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+          managedServerPodName, "", srcArchivePath, destArchivePath));
+
+      // chown of App archive in managed server pod
+      V1Pod msPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, managedServerPodName));
+      execInPod(msPod, null, true, "chown 1000:root  " + destArchivePath.toString());
+    }
+
+    ExecResult result = deployUsingRest(hostAndPort, userName, password, targets, destArchivePath, hostHeader, appName);
+    return result;
   }
 
   /**
