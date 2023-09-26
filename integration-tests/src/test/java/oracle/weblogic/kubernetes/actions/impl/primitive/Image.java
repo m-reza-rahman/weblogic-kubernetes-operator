@@ -111,26 +111,12 @@ public class Image {
    * @return true if delete image is successful
    */
   public static boolean createImage(String imageBuildDir, String image, String extraArgs) {
+
     String cmdToExecute = String.format(
         WLSIMG_BUILDER
-            + " buildx create --use --name buildx_instance");
-    Command
-        .withParams(new CommandParams()
-            .command(cmdToExecute))
-        .execute();
-    cmdToExecute = String.format(
-        WLSIMG_BUILDER
-            + " buildx build --pull  --platform linux/amd64,linux/arm64 %s -t %s  %s",
+            + " build  --platform linux/arm64 %s -t %s  %s",
         imageBuildDir, image, extraArgs);
     boolean result = Command
-        .withParams(new CommandParams()
-            .command(cmdToExecute))
-        .execute();
-    cmdToExecute = String.format(
-        WLSIMG_BUILDER
-            + " buildx build --load  %s -t %s  %s ",
-        imageBuildDir, image, extraArgs);
-    Command
         .withParams(new CommandParams()
             .command(cmdToExecute))
         .execute();
