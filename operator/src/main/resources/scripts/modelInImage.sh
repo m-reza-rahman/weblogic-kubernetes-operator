@@ -17,10 +17,12 @@ INTROSPECTCM_WLS_VERSION="/weblogic-operator/introspectormii/wls.version"
 INTROSPECTCM_JDK_PATH="/weblogic-operator/introspectormii/jdk.path"
 INTROSPECTCM_SECRETS_AND_ENV_MD5="/weblogic-operator/introspectormii/secrets_and_env.md5"
 PRIMORDIAL_DOMAIN_ZIPPED="/weblogic-operator/introspectormii/primordial_domainzip.secure"
+WLSDOMAIN_CONFIG_ZIPPED="/weblogic-operator/introspectormii//domainzip.secure"
 INTROSPECTJOB_IMAGE_MD5="/tmp/inventory_image.md5"
 INTROSPECTJOB_CM_MD5="/tmp/inventory_cm.md5"
 INTROSPECTJOB_PASSPHRASE_MD5="/tmp/inventory_passphrase.md5"
 LOCAL_PRIM_DOMAIN_ZIP="/tmp/prim_domain.tar.gz"
+LOCAL_WLSDOMAIN_CONFIG_ZIP="/tmp/wlsdomain_config.gz"
 LOCAL_PRIM_DOMAIN_TAR="/tmp/prim_domain.tar"
 NEW_MERGED_MODEL="/tmp/new_merged_model.json"
 WDT_CONFIGMAP_ROOT="/weblogic-operator/wdt-config-map"
@@ -59,6 +61,7 @@ SECURITY_INFO_UPDATED=4
 RCU_PASSWORD_CHANGED=5
 NOT_FOR_ONLINE_UPDATE=6
 SCRIPT_ERROR=255
+SCRIPTPATH="$( cd "$(dirname "$0")" > /dev/null 2>&1 ; pwd -P )"
 
 WDT_ONLINE_MIN_VERSION="1.9.9"
 WDT_OFFLINE_MIN_VERSION="1.7.3"
@@ -710,10 +713,37 @@ createPrimordialDomain() {
       fi
     fi
 
+    trace "Checking existing domain configuration "
+    local cur_wl_ver="`getWebLogicVersion`"
+    local exp_wl_ver="14.1.2.0.0"
+    trace "Current pod version " $cur_wl_ver
+    # Only do this if the wls version in the pod is higher than 14.1.2.0
+    if versionGE "${cur_wl_ver}" "${exp_wl_ver}" ; then
+      trace "Checking if upgrade to 14.1.2.0 or higher needs model patch"
+      mkdir /tmp/miiupgdomain
+      cd /tmp/miiupgdomain && base64 -d ${PRIMORDIAL_DOMAIN_ZIPPED} > ${LOCAL_PRIM_DOMAIN_ZIP}.tmp && tar -pxzf ${LOCAL_PRIM_DOMAIN_ZIP}.tmp
+      createFolder "/tmp/miiupgdomain${DOMAIN_HOME}/lib" "This is the './lib' directory within directory 'domain.spec.domainHome'." || exitOrLoop
+      local MII_PASSPHRASE=$(cat ${RUNTIME_ENCRYPTION_SECRET_PASSWORD})
+      encrypt_decrypt_domain_secret "decrypt" /tmp/miiupgdomain${DOMAIN_HOME} ${MII_PASSPHRASE}
+      cd /tmp/miiupgdomain && base64 -d ${WLSDOMAIN_CONFIG_ZIPPED} > ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp && tar -pxzf ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp
+      ${SCRIPTPATH}/wlst.sh ${SCRIPTPATH}/mii-domain-upgrade.py /tmp/miiupgdomain$DOMAIN_HOME || exitOrLoop
+      rm -fr /tmp/miiupgdomain
+    fi
+    # find out existing introspect pod wls version first
+    # if target version is 14.1.2 and higher
+    # need to unzip the primodial/config zip, check the version, production, secure mode using wlst offline
+    # if it is in prod mode
+    #    if it has secure mode set to false/not set i.e. false
+    #       pass something (x - may be a file marker) to filter to
+    #         filter shouldn't do anything if existing model has secure mode set
+    #         filter should inject securemode=false if x is set.
+
+
+
   fi
 
   # If there is no primordial domain or needs to recreate one due to security changes
-
+  trace "recreate domain "${recreate_domain}
   if [ ! -f ${PRIMORDIAL_DOMAIN_ZIPPED} ] || [ ${recreate_domain} -eq 1 ]; then
 
     if [ "true" == "$MII_USE_ONLINE_UPDATE" ] \
@@ -728,6 +758,10 @@ createPrimordialDomain() {
     fi
 
     trace "No primordial domain or need to create again because of changes require domain recreation"
+
+    #if } -eq 1 ] && [ -f ${PRIMORDIAL_DOMAIN_ZIPPED} ]; then
+
+
     wdtCreatePrimordialDomain
     create_primordial_tgz=1
     MII_USE_ONLINE_UPDATE=false
@@ -915,6 +949,23 @@ wdtUpdateModelDomain() {
   stop_trap
   # make sure wdt create write out the merged model to a file in the root of the domain
   export __WLSDEPLOY_STORE_MODEL__=1
+
+  if [ "${WDT_DOMAIN_TYPE}" == "JRF" ] ; then
+    local pod_version=$(getWebLogicVersion)
+    local config_version=$(grep '<domain-version>' $DOMAIN_HOME/config/config.xml | sed -n 's/.*<domain-version>\(.*\)<\/domain-version>.*/\1/p')
+    local major_pod_version=$(echo $pod_version | cut -d'.' -f1)
+    local major_config_version=$(echo $config_version | cut -d'.' -f1)
+    if versionGT $major_pod_version $major_config_version  ; then
+      trace SEVERE "The domain resource 'spec.domainHomeSourceType'" \
+        "is 'FromModel' and the 'spec.configuration.model.domainType' is 'JRF';" \
+        "the domain configured version is $config_version " \
+        ", and the introspector pod's WebLogic version is $pod_version, " \
+        "you cannot update a domain with a major new version of WebLogic on an existing older version " \
+        "of the domain. Note: JRF domain for Model in Image has been deprecated, you should use Domain on " \
+        " Persistent Volume instead."
+      exitOrLoop
+    fi
+  fi
 
   local wdtArgs=""
   wdtArgs+=" -oracle_home ${ORACLE_HOME}"
