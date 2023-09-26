@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1ServiceAccount;
@@ -639,7 +638,7 @@ public class OperatorUtils {
                                                         int domainPresenceFailureRetryMaxCount,
                                                         int domainPresenceFailureRetrySeconds,
                                                         boolean openshiftIstioInjection,
-                                                        String... domainNamespace) throws ApiException {
+                                                        String... domainNamespace) {
     LoggingFacade logger = getLogger();
 
     // Create a service account for the unique opNamespace
@@ -752,8 +751,10 @@ public class OperatorUtils {
     logger.info("Operator release {0} status is deployed in namespace {1}",
         OPERATOR_RELEASE_NAME, opNamespace);
     String labelSelector = String.format("weblogic.operatorName in (%s)", opNamespace);
-    V1Pod pod = getPod(opNamespace, labelSelector, "weblogic-operator-");
-    logger.info(getPodLog(pod.getMetadata().getName(), opNamespace));
+    assertDoesNotThrow(() -> {
+      V1Pod pod = getPod(opNamespace, labelSelector, "weblogic-operator-");
+      logger.info(getPodLog(pod.getMetadata().getName(), opNamespace));
+    });
     String cmdToExecute = String.format(
         KUBERNETES_CLI
             + " describe pods " + "  -n " + opNamespace);
