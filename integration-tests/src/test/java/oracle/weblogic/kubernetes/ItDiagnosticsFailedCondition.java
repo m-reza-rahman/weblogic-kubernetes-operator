@@ -543,8 +543,6 @@ class ItDiagnosticsFailedCondition {
                           .nodePort(getNextFreePort())))));
       setPodAntiAffinity(domain);
 
-
-
       ClusterResource cluster = createClusterResource(clusterResName, wlClusterName, domainNamespace, replicaCount);
       logger.info("Creating cluster {0} in namespace {1}", clusterResName, domainNamespace);
       createClusterAndVerify(cluster);

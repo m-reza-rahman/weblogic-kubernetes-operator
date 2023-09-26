@@ -77,6 +77,8 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.END_PORT;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.START_PORT;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -118,14 +120,15 @@ public class CommonLBTestUtils {
    * @return List of PV and PVC name
    */
   public static List<String> createMultipleDomainsSharingPVUsingWlstAndVerify(String domainNamespace,
-                                                                      String wlSecretName,
-                                                                      String testClassName,
-                                                                      int numberOfDomains,
-                                                                      List<String> domainUids,
-                                                                      int replicaCount,
-                                                                      String clusterName,
-                                                                      int adminServerPort,
-                                                                      int managedServerPort) {
+                                                                              String wlSecretName,
+                                                                              String testClassName,
+                                                                              int numberOfDomains,
+                                                                              List<String> domainUids,
+                                                                              int replicaCount,
+                                                                              String clusterName,
+                                                                              int adminServerPort,
+                                                                              int managedServerPort) {
+
     // create pull secrets for WebLogic image
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(domainNamespace);
@@ -173,7 +176,8 @@ public class CommonLBTestUtils {
       String domainScriptConfigMapName = getUniqueName("create-domain" + i + "-scripts-cm-");
       String createDomainInPVJobName = getUniqueName("create-domain" + i + "-onpv-job-");
 
-      int t3ChannelPort = getNextFreePort();
+      int  t3ChannelPort = getNextFreePort(START_PORT, START_PORT + 380);
+
       getLogger().info("t3ChannelPort for domain {0} is {1}", domainUid, t3ChannelPort);
 
       // run create a domain on PV job using WLST
@@ -396,7 +400,7 @@ public class CommonLBTestUtils {
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
                         .channelName("default")
-                        .nodePort(getNextFreePort()))
+                        .nodePort(getNextFreePort(START_PORT + 381, END_PORT)))
                     .addChannelsItem(new Channel()
                         .channelName("T3Channel")
                         .nodePort(t3ChannelPort)))));
