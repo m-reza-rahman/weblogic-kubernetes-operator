@@ -101,9 +101,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to a create model in image domain with Cluster Resourcees")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-srg")
+@Tag("oke-gate")
 class ItMiiClusterResource {
 
   private static String opNamespace = null;
@@ -750,7 +750,7 @@ class ItMiiClusterResource {
         () -> generateFileFromTemplate(srcDomainYaml.toString(), "domain.yaml", templateMap));
     logger.info("Generated domain yaml file path is {0}", destDomainYaml);
 
-    assertTrue(new Command()
+    assertTrue(Command
         .withParams(new CommandParams()
             .command(KUBERNETES_CLI + " create -f " + destDomainYaml))
         .execute(), KUBERNETES_CLI + " create failed");

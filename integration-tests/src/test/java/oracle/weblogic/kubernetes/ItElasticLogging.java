@@ -99,9 +99,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to use Elasticsearch API to query WebLogic logs")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItElasticLogging {
 
   // constants for creating domain image using model in image
@@ -420,7 +420,7 @@ class ItElasticLogging {
     // create a domain resource
     logger.info("Create model-in-image domain {0} in namespace {1}, and wait until it comes up",
         domainUid, domainNamespace);
-    List<String> clusterNames = new ArrayList();
+    List<String> clusterNames = new ArrayList<>();
     clusterNames.add("cluster-1");
     createMiiDomainAndVerify(
         domainNamespace,
