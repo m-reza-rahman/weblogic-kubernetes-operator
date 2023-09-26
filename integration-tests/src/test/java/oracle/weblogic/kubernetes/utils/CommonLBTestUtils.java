@@ -723,7 +723,12 @@ public class CommonLBTestUtils {
   public static void checkIngressReady(boolean isHostRouting, String ingressHost, boolean isTLS,
                                         int httpNodeport, int httpsNodeport, String pathString,
                                        String... ingressExtIP) {
-    String hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : K8S_NODEPORT_HOST + ":" + httpsNodeport;
+    String hostAndPort;
+    if (isTLS) {
+      hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : K8S_NODEPORT_HOST + ":" + httpsNodeport;
+    } else {
+      hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : K8S_NODEPORT_HOST + ":" + httpNodeport;
+    }
     getLogger().info("hostAndPort to check ingress ready is: {0}", hostAndPort);
 
     // check the ingress is ready to route the app to the server pod
@@ -872,7 +877,12 @@ public class CommonLBTestUtils {
                                              String pathLocation,
                                              String... host) {
     StringBuffer consoleUrl = new StringBuffer();
-    String hostAndPort = OKE_CLUSTER_PRIVATEIP ? host[0] : host[0] + ":" + lbNodePort;
+    String hostAndPort;
+    if (host != null && host.length > 0) {
+      hostAndPort = OKE_CLUSTER_PRIVATEIP ? host[0] : host[0] + ":" + lbNodePort;
+    } else {
+      hostAndPort = K8S_NODEPORT_HOST + ":" + lbNodePort;
+    }
 
     if (isTLS) {
       consoleUrl.append("https://");
