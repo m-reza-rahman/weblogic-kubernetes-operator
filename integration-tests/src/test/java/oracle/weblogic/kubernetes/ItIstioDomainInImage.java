@@ -34,6 +34,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -208,12 +209,12 @@ class ItIstioDomainInImage {
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
     //TODO to be removed
-    String cmd = KUBERNETES_CLI + " get svc --all-namespaces";
-    logger.info("========== Command to get svc --all-namespaces is {0} ",  cmd);
+    String cmd = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("========== Command to get all --all-namespaces is {0} ",  cmd);
     CommandParams params = new CommandParams().defaults();
     params.command(cmd);
     ExecResult result1 = Command.withParams(params).executeAndReturnResult();
-    logger.info("============== get svc --all-namespaces returns: {0}", result1.toString());
+    logger.info("============== get all --all-namespaces returns: {0}", result1.toString());
     // to be removed
 
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort

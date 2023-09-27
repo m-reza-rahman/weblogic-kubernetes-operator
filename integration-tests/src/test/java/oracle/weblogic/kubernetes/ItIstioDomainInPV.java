@@ -29,6 +29,8 @@ import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -47,6 +49,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -374,6 +377,15 @@ class ItIstioDomainInPV  {
       logger.info("Skipping Security warning check, since Security Warning tool "
             + " is not available in the WLS Release {0}", WEBLOGIC_IMAGE_TAG);
     }
+
+    //TODO to be removed
+    String cmd = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("========== Command to get all --all-namespaces is {0} ",  cmd);
+    CommandParams params = new CommandParams().defaults();
+    params.command(cmd);
+    ExecResult result1 = Command.withParams(params).executeAndReturnResult();
+    logger.info("============== get all --all-namespaces returns: {0}", result1.toString());
+    // to be removed
 
     Path archivePath = Paths.get(testWebAppWarLoc);
     ExecResult result = null;
