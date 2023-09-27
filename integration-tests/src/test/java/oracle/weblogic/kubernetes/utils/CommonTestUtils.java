@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1184,9 +1185,11 @@ public class CommonTestUtils {
    */
   public static synchronized int getNextFreePort(int startingPort, int endingPort) {
     LoggingFacade logger = getLogger();
-    int freePort = 0;
+    int freePort;
+    Random random = new Random();
+
     while (startingPort <= endingPort) {
-      freePort = startingPort++;
+      freePort = startingPort + random.nextInt(endingPort - startingPort);
       try {
         isLocalPortFree(freePort, K8S_NODEPORT_HOST);
         if (OKE_CLUSTER) {

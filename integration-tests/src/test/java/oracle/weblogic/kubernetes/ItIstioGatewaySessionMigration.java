@@ -212,7 +212,12 @@ class ItIstioGatewaySessionMigration {
     String primaryServerName = httpDataInfo.get(primaryServerAttr);
     String sessionCreateTime = httpDataInfo.get(sessionCreateTimeAttr);
     String countStr = httpDataInfo.get(countAttr);
-    int count = Optional.ofNullable(countStr).map(Integer::valueOf).orElse(0);
+    int count;
+    if (countStr.equalsIgnoreCase("null")) {
+      count = 0;
+    } else {
+      count = Optional.ofNullable(countStr).map(Integer::valueOf).orElse(0);
+    }
     logger.info("After patching the domain, the primary server changes to {0} "
         + ", session create time {1} and session state {2}",
         primaryServerName, sessionCreateTime, countStr);
