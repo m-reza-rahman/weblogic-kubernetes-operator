@@ -452,7 +452,8 @@ class ItIstioCrossDomainTransaction {
 
     String curlRequest = OKE_CLUSTER ? String.format("curl -v --show-error --noproxy '*' "
         + "-H 'host:domain1-" + domain1Namespace + ".org' "
-        + "http://%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
+        + " --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
+        + " --url http://%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
             istioIngressIP, domain1Namespace, domain2Namespace)
         : String.format("curl -v --show-error --noproxy '*' "
             + "-H 'host:domain1-" + domain1Namespace + ".org' "

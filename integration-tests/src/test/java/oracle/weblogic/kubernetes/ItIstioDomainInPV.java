@@ -393,7 +393,7 @@ class ItIstioDomainInPV  {
       if (OKE_CLUSTER) {
         // In internal OKE env, deploy App in domain pods using WLST
         String destLocation = "/u01/testwebapp.war";
-        String managedServerPrefix = domainUid + "-managed-server";
+        String managedServerPrefix = domainUid + "-managed-";
 
         // Copy App archive to admin pod
         assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
