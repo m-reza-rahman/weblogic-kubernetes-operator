@@ -465,7 +465,7 @@ EOF
                         rm -rf ${WORKSPACE}/.mvn
                         sudo rm -rf ${pv_root}
                         sudo umount ${pv_root_parent}
-                        kubectl delete pod $(kubectl get pod |grep recycler-for|awk '{print $1}')
+                        kubectl delete pod $(kubectl get pod |grep recycler-for|awk '{print $1}') || true
                     '''
                 }
             }
