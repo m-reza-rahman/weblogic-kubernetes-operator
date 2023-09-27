@@ -395,38 +395,38 @@ class ItIstioDomainInPV  {
 
     Path archivePath = Paths.get(testWebAppWarLoc);
     ExecResult result = null;
-    for (int i = 1; i <= 10; i++) {
-      if (OKE_CLUSTER) {
-        // In internal OKE env, deploy App in domain pods using WLST
-        String destLocation = "/u01/testwebapp.war";
-        String managedServerPrefix = domainUid + "-managed-";
+    if (OKE_CLUSTER) {
+      // In internal OKE env, deploy App in domain pods using WLST
+      String destLocation = "/u01/testwebapp.war";
+      String managedServerPrefix = domainUid + "-managed-";
 
-        // Copy App archive to admin pod
+      // Copy App archive to admin pod
+      assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+          adminServerPodName, "", archivePath, Paths.get(destLocation)));
+
+      // chown of App archive in admin pod
+      V1Pod adminPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, adminServerPodName));
+      execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
+
+      for (int j = 1; j <= replicaCount; j++) {
+        // Copy App archive to managed server pod
+        String managedServerPodName = managedServerPrefix + j;
         assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-            adminServerPodName, "", archivePath, Paths.get(destLocation)));
+            managedServerPodName, "",
+            archivePath,
+            Paths.get(destLocation)));
 
-        // chown of App archive in admin pod
-        V1Pod adminPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, adminServerPodName));
-        execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
+        // chown of App archive in managed server pod
+        V1Pod msPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, managedServerPodName));
+        execInPod(msPod, null, true, "chown 1000:root  " + destLocation);
+      }
 
-        for (int j = 1; j <= replicaCount; j++) {
-          // Copy App archive to managed server pod
-          String managedServerPodName = managedServerPrefix + j;
-          assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-              managedServerPodName, "",
-              archivePath,
-              Paths.get(destLocation)));
-
-          // chown of App archive in managed server pod
-          V1Pod msPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, managedServerPodName));
-          execInPod(msPod, null, true, "chown 1000:root  " + destLocation);
-        }
-
-        String target = "{identity: [clusters,'" + clusterName + "']}";
-        result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-            target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-        assertNotNull(result, "Application deployment failed");
-      } else {
+      String target = "{identity: [clusters,'" + clusterName + "']}";
+      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+      assertNotNull(result, "Application deployment failed");
+    } else {
+      for (int i = 1; i <= 10; i++) {
         result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
             String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
@@ -437,13 +437,13 @@ class ItIstioDomainInPV  {
           break;
         }
       }
-    }
-    assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
+      assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
 
-    String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
-    logger.info("Application Access URL {0}", url);
-    boolean checkApp = checkAppUsingHostHeader(url, domainNamespace + ".org");
-    assertTrue(checkApp, "Failed to access WebLogic application");
+      String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
+      logger.info("Application Access URL {0}", url);
+      boolean checkApp = checkAppUsingHostHeader(url, domainNamespace + ".org");
+      assertTrue(checkApp, "Failed to access WebLogic application");
+    }
 
     // Refer JIRA OWLS-86407
     // Stop and Start the managed server in absense of administration server
