@@ -416,6 +416,10 @@ def upgradeServerIfNeeded(model):
                     mode = model['domainInfo']['ServerStartMode']
                     if mode == 'secure' or mode == 'dev':
                         return
+                # if the model disabled `ProductionModeEnabled`  specifically now, do nothing
+                if 'ProductionModeEnabled' in topology and topology['ProductionModeEnabled'] == False:
+                  return
+
                 if not 'SecurityConfiguration' in topology:
                     topology['SecurityConfiguration'] = {}
                 if not 'SecureMode' in topology['SecurityConfiguration']:
