@@ -281,13 +281,12 @@ class ItIstioDomainInImage {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment returned {0}", result.toString());
       assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-    }
 
-    String url = "http://" + hostAndPort + "/testwebapp/index.jsp";
-    logger.info("Application Access URL {0}", url);
-    boolean checkApp = OKE_CLUSTER ? checkAppUsingHostHeader(url, domainNamespace + ".org", false)
-        : checkAppUsingHostHeader(url, domainNamespace + ".org");
-    assertTrue(checkApp, "Failed to access WebLogic application");
+      String url = "http://" + hostAndPort + "/testwebapp/index.jsp";
+      logger.info("Application Access URL {0}", url);
+      boolean checkApp = checkAppUsingHostHeader(url, domainNamespace + ".org");
+      assertTrue(checkApp, "Failed to access WebLogic application");
+    }
 
     // Verify that Security Warning Tool does not detect any security warning
     // messages on console.
