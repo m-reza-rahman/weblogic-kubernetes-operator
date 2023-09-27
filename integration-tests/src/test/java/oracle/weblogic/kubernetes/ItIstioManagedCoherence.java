@@ -51,6 +51,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourc
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createAndPushMiiImage;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainWithIstioMultiClusters;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
@@ -71,9 +72,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // Test to associate a Coherence Cluster with multiple WebLogic server clusters.
 @DisplayName("Test to associate a Coherence Cluster with multiple WebLogic server clusters")
 @IntegrationTest
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("olcne")
+@Tag("oke-gate")
 class ItIstioManagedCoherence {
 
   // constants for Coherence
@@ -103,6 +104,9 @@ class ItIstioManagedCoherence {
   private static String miiImage = null;
   private static String encryptionSecretName = "encryptionsecret";
 
+  private static final String istioNamespace = "istio-system";
+  private static final String istioIngressServiceName = "istio-ingressgateway";
+  private static String hostAndPort = null;
   private static LoggingFacade logger = null;
 
   /**
@@ -159,6 +163,15 @@ class ItIstioManagedCoherence {
     assertTrue(coherenceAppEarPath.toFile().exists(), "Application archive is not available");
     logger.info("Path of CoherenceApp EAR " + coherenceAppEarPath.toString());
     logger.info("Path of CoherenceApp GAR " + coherenceAppGarPath.toString());
+
+    // used ib internal OKE
+    int istioIngressPort = getIstioHttpIngressPort();
+    logger.info("Istio Ingress Port is {0}", istioIngressPort);
+
+    // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+    hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
+        ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
+        : K8S_NODEPORT_HOST + ":" + istioIngressPort;
   }
 
   /**
@@ -200,7 +213,7 @@ class ItIstioManagedCoherence {
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
     // Make sure ready app is accessible thru Istio Ingress Port
-    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort
+    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
@@ -249,7 +262,7 @@ class ItIstioManagedCoherence {
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
     // Make sure ready app is accessible thru Istio Ingress Port
-    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort
+    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
@@ -353,7 +366,7 @@ class ItIstioManagedCoherence {
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
     // Make sure ready app is accessible thru Istio Ingress Port
-    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort
+    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
@@ -479,7 +492,7 @@ class ItIstioManagedCoherence {
   }
 
   private boolean coherenceCacheTest(int ingressServiceNodePort) {
-    String hostAndPort = K8S_NODEPORT_HOST + ":" + ingressServiceNodePort;
+    //String hostAndPort = K8S_NODEPORT_HOST + ":" + ingressServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     // add the data to cache
