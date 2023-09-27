@@ -177,7 +177,7 @@ public class CommonLBTestUtils {
       String domainScriptConfigMapName = getUniqueName("create-domain" + i + "-scripts-cm-");
       String createDomainInPVJobName = getUniqueName("create-domain" + i + "-onpv-job-");
 
-      int  t3ChannelPort = getNextFreePort(START_PORT + 10, START_PORT + 380);
+      int  t3ChannelPort = getNextFreePort(START_PORT, START_PORT + 380);
 
       getLogger().info("t3ChannelPort for domain {0} is {1}", domainUid, t3ChannelPort);
 
