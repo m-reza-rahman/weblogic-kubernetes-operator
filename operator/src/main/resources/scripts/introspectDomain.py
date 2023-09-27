@@ -656,7 +656,7 @@ class TopologyGenerator(Generator):
           server_template = template
     self.validateCoherenceMemberConfig(server_template.getCoherenceMemberConfig())
 
-  def validateCoherenceMemberConfig(self, cmc)
+  def validateCoherenceMemberConfig(self, cmc):
     if cmc is None:
       self.addError("TODO: validation error about missing CoherenceMemberConfig")
     else:
