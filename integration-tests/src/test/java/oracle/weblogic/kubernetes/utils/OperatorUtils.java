@@ -446,7 +446,8 @@ public class OperatorUtils {
             .name(opServiceAccount))));
     logger.info("Created service account: {0}", opServiceAccount);
 
-    operatorImage = getOperatorImageName();
+    //operatorImage = getOperatorImageName(); FIXME
+    operatorImage = "ghcr.io/oracle/weblogic-kubernetes-operator:4.1.2";
 
     assertFalse(operatorImage.isEmpty(), "operator image name can not be empty");
     logger.info("operator image name {0}", operatorImage);

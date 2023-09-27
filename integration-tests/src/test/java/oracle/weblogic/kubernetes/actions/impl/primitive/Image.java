@@ -27,9 +27,11 @@ public class Image {
    * @return true if successful
    */
   public static boolean login(String registryName, String username, String password) {
-    String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p \"%s\"",
-        //String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p '%s'",
+    //String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p \"%s\"",
+    String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p '%s'",
         registryName, username, password);
+    LoggingFacade logger = getLogger();
+    logger.info(cmdToExecute);
     return Command
         .withParams(new CommandParams()
             .verbose(false)
@@ -114,7 +116,7 @@ public class Image {
 
     String cmdToExecute = String.format(
         WLSIMG_BUILDER
-            + " build  --platform linux/arm64 %s -t %s  %s",
+            + " build %s -t %s  %s",
         imageBuildDir, image, extraArgs);
     boolean result = Command
         .withParams(new CommandParams()
