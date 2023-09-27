@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl.primitive;
@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes.actions.impl.primitive;
 import java.util.List;
 import java.util.Objects;
 
+import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 
@@ -211,6 +212,10 @@ public class WebLogicImageTool {
       command += " --target " + params.target();
     }
 
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      command += " --builder " + TestConstants.WLSIMG_BUILDER;
+    }
+
     logger.info("Build image with command: {0} and domainType: {1}", command,  params.domainType());
     return command;
   }
@@ -221,6 +226,10 @@ public class WebLogicImageTool {
             IMAGE_TOOL
                     + " inspect "
                     + " -i " + imageName + ":" + imageTag;
+
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      command += " --builder " + TestConstants.WLSIMG_BUILDER;
+    }
 
     logger.info("Inspect image {0} with command: {1}",
             imageName + ":" + imageTag,
@@ -460,6 +469,10 @@ public class WebLogicImageTool {
 
     if (params.additionalBuildFiles() != null) {
       command += " --additionalBuildFiles " + params.additionalBuildFiles();
+    }
+
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      command += " --builder " + TestConstants.WLSIMG_BUILDER;
     }
 
     logger.info("Build auxiliary image with command: {0}", command);
