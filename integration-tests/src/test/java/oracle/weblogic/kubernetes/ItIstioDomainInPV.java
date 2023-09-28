@@ -20,7 +20,6 @@ import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
-//import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.AdminService;
@@ -29,8 +28,6 @@ import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -49,7 +46,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -61,7 +57,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
-//import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleAllClustersInDomain;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
@@ -81,7 +76,6 @@ import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRe
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
-//import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.createAdminServer;
@@ -94,7 +88,6 @@ import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDeleted;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
-//import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -329,10 +322,6 @@ class ItIstioDomainInPV  {
 
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = hostName.equals(K8S_NODEPORT_HOST) ? K8S_NODEPORT_HOST + ":" + istioIngressPort : hostName;
-    /*
-      getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
-        ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
-            : K8S_NODEPORT_HOST + ":" + istioIngressPort;*/
 
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
@@ -385,49 +374,9 @@ class ItIstioDomainInPV  {
             + " is not available in the WLS Release {0}", WEBLOGIC_IMAGE_TAG);
     }
 
-    //TODO to be removed
-    String cmd = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("========== Command to get all --all-namespaces is {0} ",  cmd);
-    CommandParams params = new CommandParams().defaults();
-    params.command(cmd);
-    ExecResult result1 = Command.withParams(params).executeAndReturnResult();
-    logger.info("============== get all --all-namespaces returns: {0}", result1.toString());
-    // to be removed
-
     Path archivePath = Paths.get(testWebAppWarLoc);
     ExecResult result = null;
     if (OKE_CLUSTER) {
-      /*
-      // In internal OKE env, deploy App in domain pods using WLST
-      String destLocation = "/u01/testwebapp.war";
-      String managedServerPrefix = domainUid + "-managed-";
-
-      // Copy App archive to admin pod
-      assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-          adminServerPodName, "", archivePath, Paths.get(destLocation)));
-
-      // chown of App archive in admin pod
-      V1Pod adminPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, adminServerPodName));
-      execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
-
-      for (int j = 1; j <= replicaCount; j++) {
-        // Copy App archive to managed server pod
-        String managedServerPodName = managedServerPrefix + j;
-        assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-            managedServerPodName, "",
-            archivePath,
-            Paths.get(destLocation)));
-
-        // chown of App archive in managed server pod
-        V1Pod msPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, managedServerPodName));
-        execInPod(msPod, null, true, "chown 1000:root  " + destLocation);
-      }
-
-      String target = "{identity: [clusters,'" + clusterName + "']}";
-      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-      assertNotNull(result, "Application deployment failed");*/
-
       // In internal OKE env, deploy App in domain pods using WLST
       String destLocation = "/u01/testwebapp.war";
       String managedServerPrefix = domainUid + "-managed-";
@@ -452,6 +401,7 @@ class ItIstioDomainInPV  {
           break;
         }
       }
+
       assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
 
       String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
@@ -566,6 +516,5 @@ class ItIstioDomainInPV  {
     annotMap.put("sidecar.istio.io/inject", "false");
     createDomainJob(WEBLOGIC_IMAGE_TO_USE_IN_SPEC, pvName, pvcName, domainScriptConfigMapName,
         namespace, jobCreationContainer, annotMap);
-
   }
 }

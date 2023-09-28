@@ -17,8 +17,6 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
-//import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-//import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -34,7 +32,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-//import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -125,7 +122,6 @@ class ItIstioDomainInImage {
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domainNamespace);
-
   }
 
   /**
@@ -281,7 +277,6 @@ class ItIstioDomainInImage {
 
     // Verify that Security Warning Tool does not detect any security warning
     // messages on console.
-
     istioIngressPort = getIstioHttpIngressPort();
 
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
