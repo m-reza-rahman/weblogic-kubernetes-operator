@@ -53,7 +53,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespac
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWeblogicMBean;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWeblogicMBeanInAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
@@ -365,7 +365,7 @@ class ItIstioMiiDomain {
       /*
       assertDoesNotThrow(()
           -> execCommand(domainNamespace, adminServerPodName, null,
-              true, "/bin/sh", "-c", wmRuntimeUrl));*/
+              true, "/bin/sh", "-c", wmRuntimeUrl));
 
       testUntil(() -> checkWeblogicMBean(
           hostAndPort,
@@ -373,6 +373,13 @@ class ItIstioMiiDomain {
           adminServerPodName,
           resourcePath,
           "200", false, "default-admin"),
+          logger, "to access WorkManagerRuntime for a new work manager runtime.");*/
+
+      testUntil(() -> checkWeblogicMBeanInAdminPod(
+          domainNamespace,
+          adminServerPodName,
+          resourcePath,
+          "200", false),
           logger, "to access WorkManagerRuntime for a new work manager runtime.");
     } else {
       boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
