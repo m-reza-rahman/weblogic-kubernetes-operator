@@ -164,7 +164,7 @@ class ItIstioManagedCoherence {
     logger.info("Path of CoherenceApp EAR " + coherenceAppEarPath.toString());
     logger.info("Path of CoherenceApp GAR " + coherenceAppGarPath.toString());
 
-    // used ib internal OKE
+    // used in internal OKE
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
@@ -492,7 +492,6 @@ class ItIstioManagedCoherence {
   }
 
   private boolean coherenceCacheTest(int ingressServiceNodePort) {
-    //String hostAndPort = K8S_NODEPORT_HOST + ":" + ingressServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     // add the data to cache
@@ -617,5 +616,4 @@ class ItIstioManagedCoherence {
 
     return result;
   }
-
 }
