@@ -49,6 +49,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
+import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
@@ -353,10 +354,15 @@ class ItIstioMiiDomain {
         + "/testwebapp/workManagerRuntimes/newWM/"
         + "maxThreadsConstraintRuntime ";
 
-    boolean checkWm =
-          checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
-    assertTrue(checkWm, "Failed to access WorkManagerRuntime");
-    logger.info("Found new work manager runtime");
+    if (OKE_CLUSTER) {
+      assertDoesNotThrow(()
+          -> execCommand(domainNamespace, adminServerPodName, null,
+              true, "/bin/sh", "-c", wmRuntimeUrl));
+    } else {
+      boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
+      assertTrue(checkWm, "Failed to access WorkManagerRuntime");
+      logger.info("Found new work manager runtime");
+    }
 
     verifyPodsNotRolled(domainNamespace, pods);
     verifyPodIntrospectVersionUpdated(pods.keySet(), introspectVersion, domainNamespace);
