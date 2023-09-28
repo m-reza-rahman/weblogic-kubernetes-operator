@@ -41,9 +41,9 @@ import static java.lang.System.currentTimeMillis;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_PREFIX_LENGTH;
 import static oracle.weblogic.kubernetes.TestConstants.DEFAULT_EXTERNAL_REST_IDENTITY_SECRET_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_ROLLING_TYPE;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HTTP_PORT;
@@ -60,7 +60,6 @@ import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
@@ -144,6 +143,7 @@ class ItLargeMiiDomainsClusters {
   private static int numOfServersToStart;
   private static int maxServersInCluster;
   private static int maxClusterUnavailable;
+  private static String baseImageName;
   private static String adminSecretName = "weblogic-credentials";
   private static String encryptionSecretName = "encryptionsecret";
   private static Properties largeDomainProps = new Properties();
@@ -177,6 +177,7 @@ class ItLargeMiiDomainsClusters {
         largeDomainProps.getProperty("MAXIMUM_SERVERS_IN_CLUSTER", "2")));
     maxServersInCluster = Integer.valueOf(largeDomainProps.getProperty("MAXIMUM_SERVERS_IN_CLUSTER", "2"));
     maxClusterUnavailable = Integer.valueOf(largeDomainProps.getProperty("MAX_CLUSTER_UNAVAILABLE", "1"));
+    baseImageName = BASE_IMAGES_PREFIX + largeDomainProps.getProperty("BASE_IMAGE_NAME", WEBLOGIC_IMAGE_NAME_DEFAULT);
 
     logger.info("Assign unique namespaces for Domains");
     domainNamespaces = namespaces.subList(1, numOfDomains + 1);
@@ -236,9 +237,10 @@ class ItLargeMiiDomainsClusters {
       // create domain custom resource using auxiliary images
       logger.info("Creating domain custom resource with domainUid {0} and auxiliary image {1}",
           domainUid, miiAuxiliaryImage);
-      String weblogicImageToUseInSpec = getKindRepoImageForSpec(KIND_REPO, WEBLOGIC_IMAGE_NAME,
+      String weblogicImageToUseInSpec = getKindRepoImageForSpec(KIND_REPO, baseImageName,
           largeDomainProps.containsKey("BASE_IMAGE_TAG") ? (String)largeDomainProps.get("BASE_IMAGE_TAG") :
           WEBLOGIC_IMAGE_TAG, BASE_IMAGES_REPO_PREFIX_LENGTH);
+      logger.info("weblogicImageToUseInSpec " + weblogicImageToUseInSpec);
       DomainResource domain = createDomainResourceWithAuxiliaryImage(domainUid, domainNamespaces.get(i),
           weblogicImageToUseInSpec, adminSecretName, createSecretsForImageRepos(domainNamespaces.get(i)),
           encryptionSecretName, auxiliaryImagePath,
@@ -355,11 +357,9 @@ class ItLargeMiiDomainsClusters {
     logger.info("Currently the image name used for the domain is: {0}", imageName);
 
     //change image name to imageUpdate
-    String upgradeImageTag = largeDomainProps.containsKey("UPGRADE_IMAGE_TAG")
-        ? (String)largeDomainProps.get("UPGRADE_IMAGE_TAG") : "14.1.1.0-11";
-    String imageUpdate = KIND_REPO != null ? KIND_REPO
-        + (WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + upgradeImageTag).substring(TestConstants.BASE_IMAGES_REPO.length() + 1)
-        : DOMAIN_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":"  + upgradeImageTag;
+    String imageUpdate = getKindRepoImageForSpec(KIND_REPO, baseImageName,
+        largeDomainProps.containsKey("UPGRADE_IMAGE_TAG") ? (String)largeDomainProps.get("UPGRADE_IMAGE_TAG") :
+            WEBLOGIC_IMAGE_TAG, BASE_IMAGES_REPO_PREFIX_LENGTH);
 
     StringBuffer patchStr;
     patchStr = new StringBuffer("[{");
@@ -400,10 +400,12 @@ class ItLargeMiiDomainsClusters {
    * with new restartVersion when non dynamic changes are made.
    * Modify the dynamic cluster max size by patching the domain CRD.
    * Update domainRestartVersion to trigger a rolling restart of server pods.
-   * Make sure all the server pods are re-started in a rolling fashion.
+   * Make sure the domain is rolled successfully by checking the events.
    * Make sure the cluster can be scaled beyond the initial maximum size.
    * Keep NUMBER_OF_SERVERSTOSTART less than MAXIMUM_SERVERS_IN_CLUSTER in the
-   * properties for this test to test cluster scaling.
+   * properties for this test to test cluster scaling before and after changing the
+   * max cluster size. Increase MAX_CLUSTER_UNAVAILABLE for large domains to reduce
+   * domain restart/roll time.
    */
   @Test
   @Order(3)
