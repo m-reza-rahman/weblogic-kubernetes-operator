@@ -293,7 +293,7 @@ class ItIstioTwoDomainsInImage {
     String target = "{identity: [clusters,'" + clusterName + "']}";
     if (OKE_CLUSTER) {
       // In internal OKE env, deploy App in domain pods using WLST
-      String managedServerPrefix = domainNamespace1 + "-managed-";
+      String managedServerPrefix = domainNamespace1 + "-managed-server";
 
       deployAppInPodUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
@@ -329,7 +329,7 @@ class ItIstioTwoDomainsInImage {
 
     if (OKE_CLUSTER) {
       // In internal OKE env, deploy App in domain pods using WLST
-      String managedServerPrefix = domainNamespace2 + "-managed-";
+      String managedServerPrefix = domainNamespace2 + "-managed-server";
 
       deployAppInPodUsingRest(hostAndPort, domainNamespace2, adminServerPodName2,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
