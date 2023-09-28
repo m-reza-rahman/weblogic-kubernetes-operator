@@ -49,10 +49,11 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
-import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
+//import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWeblogicMBean;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
@@ -62,6 +63,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppW
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testPortForwarding;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
@@ -348,16 +350,30 @@ class ItIstioMiiDomain {
 
     verifyIntrospectorRuns(domainUid, domainNamespace);
 
-    String wmRuntimeUrl  = "http://" + hostAndPort
-        + "/management/weblogic/latest/domainRuntime"
+    String resourcePath = "/management/weblogic/latest/domainRuntime"
         + "/serverRuntimes/managed-server1/applicationRuntimes"
         + "/testwebapp/workManagerRuntimes/newWM/"
         + "maxThreadsConstraintRuntime ";
+    String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
+    /*
+        + "/management/weblogic/latest/domainRuntime"
+        + "/serverRuntimes/managed-server1/applicationRuntimes"
+        + "/testwebapp/workManagerRuntimes/newWM/"
+        + "maxThreadsConstraintRuntime ";*/
 
     if (OKE_CLUSTER) {
+      /*
       assertDoesNotThrow(()
           -> execCommand(domainNamespace, adminServerPodName, null,
-              true, "/bin/sh", "-c", wmRuntimeUrl));
+              true, "/bin/sh", "-c", wmRuntimeUrl));*/
+
+      testUntil(() -> checkWeblogicMBean(
+          hostAndPort,
+          domainNamespace,
+          adminServerPodName,
+          resourcePath,
+          "200", false, "default-admin"),
+          logger, "to access WorkManagerRuntime for a new work manager runtime.");
     } else {
       boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
       assertTrue(checkWm, "Failed to access WorkManagerRuntime");
