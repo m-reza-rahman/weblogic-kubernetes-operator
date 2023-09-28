@@ -256,19 +256,24 @@ class ItIstioMiiDomain {
 
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
-    
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
-    if (!WEBLOGIC_SLIM) {
-      testPortForwarding(domainUid, domainNamespace, istioIngressPort);
-    } else {
-      logger.info("Skipping WebLogic console in WebLogic slim image");
-    }
 
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
             : K8S_NODEPORT_HOST + ":" + istioIngressPort;
+    logger.info("hostAndPort is {0}", hostAndPort);
+    
+    // We can not verify Rest Management console thru Adminstration NodePort
+    // in istio, as we can not enable Adminstration NodePort
+    if (!WEBLOGIC_SLIM) {
+      if (OKE_CLUSTER) {
+        testPortForwarding(domainUid, domainNamespace, istioIngressPort, hostAndPort);
+      } else {
+        testPortForwarding(domainUid, domainNamespace, istioIngressPort);
+      }
+    } else {
+      logger.info("Skipping WebLogic console in WebLogic slim image");
+    }
 
     if (isWebLogicPsuPatchApplied()) {
       String curlCmd2 = "curl -j -sk --show-error --noproxy '*' "
