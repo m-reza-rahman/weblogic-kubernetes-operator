@@ -42,6 +42,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespac
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWeblogicMBeanInAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -289,6 +290,7 @@ class ItIstioTwoDomainsInImage {
 
     Path archivePath = Paths.get(testWebAppWarLoc);
     ExecResult result = null;
+    String resourcePath = "/testwebapp/index.jsp";
     String destLocation = "/u01/testwebapp.war";
     String target = "{identity: [clusters,'" + clusterName + "']}";
     if (OKE_CLUSTER) {
@@ -302,6 +304,14 @@ class ItIstioTwoDomainsInImage {
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
           target, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
       assertNotNull(result, "Application deployment failed");
+
+      // check Application Access inside admin pod
+      testUntil(() -> checkWeblogicMBeanInAdminPod(
+          domainNamespace1,
+          adminServerPodName1,
+          resourcePath,
+          "200", false),
+          logger, "check Application Access.");
     } else {
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(istioIngressPort),
@@ -311,7 +321,7 @@ class ItIstioTwoDomainsInImage {
       logger.info("Application deployment on domain1 returned {0}", result.toString());
       assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
 
-      String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
+      String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + resourcePath;
       logger.info("Application Access URL {0}", url);
       boolean checkApp = checkAppUsingHostHeader(url, domainNamespace1 + ".org");
       assertTrue(checkApp, "Failed to access WebLogic application on domain1");
@@ -339,7 +349,7 @@ class ItIstioTwoDomainsInImage {
           target, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");
       assertNotNull(result, "Application deployment failed");
     } else {
-      String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
+      String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + resourcePath;
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(istioIngressPort),
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
