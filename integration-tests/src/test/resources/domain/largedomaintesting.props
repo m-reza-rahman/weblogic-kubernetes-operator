@@ -1,12 +1,12 @@
 # properties for large domain testing
 #number of domains to create
-NUMBER_OF_DOMAINS=1
+NUMBER_OF_DOMAINS=2
 #number of clusters in each domain
-NUMBER_OF_CLUSTERS=1
+NUMBER_OF_CLUSTERS=2
 #number of servers to start in each cluster
-NUMBER_OF_SERVERSTOSTART=10
+NUMBER_OF_SERVERSTOSTART=2
 #Max number of servers in each cluster
-MAXIMUM_SERVERS_IN_CLUSTER=20
+MAXIMUM_SERVERS_IN_CLUSTER=10
 #The maximum number of cluster members that can be temporarily unavailable. THis is for rolling.
 MAX_CLUSTER_UNAVAILABLE=1
 #cpu requests at server pod

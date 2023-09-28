@@ -436,7 +436,7 @@ class ItLargeMiiDomainsClusters {
 
     long timeBeforeRollingRestart = currentTimeMillis();
     OffsetDateTime timestamp = now();
-    // create config map with model for all clusters
+    // create config map with model for dynamic cluster size
     String configMapName = "dynamic-cluster-size-cm";
     createClusterModelConfigMap(
         domainUid1, configMapName, domainNamespaces.get(0),
