@@ -310,13 +310,13 @@ class ItIstioTwoDomainsInImage {
       logger.info("Application deployment on domain1 returned {0}", result.toString());
 
       // check Application Access inside admin pod
-
+      /*
       String consoleUrl = "http://" + hostAndPort + resourcePath;
       boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace1 + ".org");
       //assertTrue(checkConsole, "Failed to access WebLogic testwebapp/index.jsp on domain1");
-      logger.info("WebLogic console on testwebapp/index.jsp is accessible: {0}", checkConsole);
+      logger.info("WebLogic console on testwebapp/index.jsp is accessible: {0}", checkConsole);*/
 
-      checkConsole =
+      boolean checkConsole =
           runCommandInServerPod(domainNamespace1, managedServerPrefix1 + 1,8001, resourcePath,"200");
       logger.info("runCommandInServerPod returns: {0}", checkConsole);
       /*
