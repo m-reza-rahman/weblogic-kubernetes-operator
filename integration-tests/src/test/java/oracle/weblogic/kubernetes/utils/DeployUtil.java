@@ -257,6 +257,7 @@ public class DeployUtil {
     // chown of App archive in admin pod
     V1Pod adminPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, adminServerPodName));
     execInPod(adminPod, null, true, "chown 1000:root  " + destArchivePath.toString());
+    execInPod(adminPod, null, true, "ls -lrt /u01  " + destArchivePath.toString());
 
     for (int i = 1; i <= replicaCount; i++) {
       // Copy App archive to managed server pod

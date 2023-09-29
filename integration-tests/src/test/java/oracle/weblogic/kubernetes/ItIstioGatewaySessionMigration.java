@@ -290,54 +290,17 @@ class ItIstioGatewaySessionMigration {
 
     ExecResult result = null;
     Path archivePath = Paths.get(testWebAppWarLoc);
-    // Use WebLogic restful management services to deploy Web App
     if (OKE_CLUSTER) {
-      /*
-      // In internal OKE env, deploy App in domain pods using WLST
-      String destLocation = "/u01/testwebapp.war";
-
-      // Copy App archive to admin pod
-      assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-          adminServerPodName, "",
-          archivePath,
-          Paths.get(destLocation)));
-
-      // chown of App archive in admin pod
-      V1Pod adminPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, adminServerPodName));
-      execInPod(adminPod, null, true, "chown 1000:root  " + destLocation);
-
-      for (int i = 1; i <= replicaCount; i++) {
-        // Copy App archive to managed server pod
-        String managedServerPodName = managedServerPrefix + i;
-        assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-            managedServerPodName, "",
-            archivePath,
-            Paths.get(destLocation)));
-
-        // chown of App archive in managed server pod
-        V1Pod msPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, managedServerPodName));
-        execInPod(msPod, null, true, "chown 1000:root  " + destLocation);
-      }
-
-      String target = "{identity: [clusters,'" + clusterName + "']}";
-      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-        target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-      assertNotNull(result, "Application deployment failed");*/
-      // In internal OKE env, deploy App in domain pods using WLST
       String destLocation = "/u01/testwebapp.war";
       String target = "{identity: [clusters,'" + clusterName + "']}";
 
-      logger.info("======Calling copyAppToPodAndDeployUsingRest");
+      // Use WebLogic restful management services to deploy Web App
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace, adminServerPodName,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-
-      /*
-      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
       assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment on domain1 returned {0}", result.toString());
     } else {
+      // Use WebLogic restful management services to deploy Web App
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
         String.valueOf(istioIngressPort),
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
