@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -63,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("oke-gate")
-@Tag("olcne")
+@Tag("olcne-mrg")
 class ItWlsDomainOnPV {
 
   private static String domainNamespace = null;
@@ -169,6 +170,7 @@ class ItWlsDomainOnPV {
           clusterName,
           pvName,
           pvcName,
+          new String[]{BASE_IMAGES_REPO_SECRET_NAME},
           DOMAINHOMEPREFIX,
           replicaCount,
           t3ChannelPort,
