@@ -95,6 +95,8 @@ public class Command {
         params.stderr(result.stderr());
       }
 
+      getLogger().info("========== result in executeAndVerify: {0}.", result.toString());
+
       // check exitValue to determine if the command execution has failed.
       if (params.verbose()) {
         if (result.exitValue() != 0) {

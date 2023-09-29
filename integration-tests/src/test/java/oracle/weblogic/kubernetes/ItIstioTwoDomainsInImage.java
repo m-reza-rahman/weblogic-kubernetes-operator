@@ -341,7 +341,7 @@ class ItIstioTwoDomainsInImage {
       curlString = curlString + " --silent --show-error -o /dev/null -w %{http_code}";*/
 
       logger.info("checkSystemResource: curl command {0}", curlString);
-      boolean returns = Command.withParams(new CommandParams().command(curlString.toString()))
+      boolean returns = Command.withParams(new CommandParams().command(curlString.toString()).verbose(true))
           .executeAndVerify("200");
       logger.info("Command.withParams returns {0}", returns);
       /*
