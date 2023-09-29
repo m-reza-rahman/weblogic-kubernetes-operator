@@ -300,12 +300,13 @@ class ItIstioTwoDomainsInImage {
       // In internal OKE env, deploy App in domain pods using WLST
       String managedServerPrefix = domainUid1 + "-managed-server";
 
-      deployAppInPodUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
+      result = deployAppInPodUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
 
+      /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
+          target, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");*/
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());
 
