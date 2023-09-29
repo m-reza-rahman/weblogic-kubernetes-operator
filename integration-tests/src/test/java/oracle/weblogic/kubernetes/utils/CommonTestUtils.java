@@ -2110,26 +2110,26 @@ public class CommonTestUtils {
   }
 
   /**
-   * Run a command inside admin pod.
+   * Run a command inside WebLogic server pod.
    *
    * @param domainNamespace Kubernetes namespace that the domain is hosted
-   * @param adminServerPodName Name of the admin server pod to which the REST requests should be sent to
-   * @param adminPort admin port number
+   * @param serverPodName Name of the WebLogic server pod to which the command should be sent to
+   * @param serverPort server port number
    * @param resourcePath Path of the system resource to be used in the REST API call
    * @param expectedStatusCode the expected response to verify
    * @return true if command exe reply contains the expected response
    */
-  public static boolean runCommandInAdminPod(String domainNamespace,
-                                             String adminServerPodName,
-                                             int adminPort,
+  public static boolean runCommandInServerPod(String domainNamespace,
+                                             String serverPodName,
+                                             int serverPort,
                                              String resourcePath,
                                              String expectedStatusCode) {
     LoggingFacade logger = getLogger();
 
     String commandToRun = KUBERNETES_CLI + " exec -n "
-        + domainNamespace + "  " + adminServerPodName + " -- curl http://"
-        + adminServerPodName + ":" + adminPort + resourcePath;
-    logger.info("curl command to run in admin pod {0} is: {1}", adminServerPodName, commandToRun);
+        + domainNamespace + "  " + serverPodName + " -- curl http://"
+        + serverPodName + ":" + serverPort + resourcePath;
+    logger.info("curl command to run in admin pod {0} is: {1}", serverPodName, commandToRun);
 
     ExecResult result = null;
     try {

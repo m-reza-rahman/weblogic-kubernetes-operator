@@ -31,6 +31,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -45,7 +46,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHos
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInAdminPod;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
@@ -81,6 +82,8 @@ class ItIstioTwoDomainsInImage {
   private final String domainUid2 = "istio-dii-wdt-2";
   private final String adminServerPodName1 = domainUid1 + "-" + adminServerName;
   private final String adminServerPodName2 = domainUid2 + "-" + adminServerName;
+  private final String managedServerPrefix1 = domainUid1 + "-" + MANAGED_SERVER_NAME_BASE;
+  private final String managedServerPrefix2 = domainUid2 + "-" + MANAGED_SERVER_NAME_BASE;
 
   private static String testWebAppWarLoc = null;
 
@@ -314,10 +317,10 @@ class ItIstioTwoDomainsInImage {
       logger.info("WebLogic console on testwebapp/index.jsp is accessible: {0}", checkConsole);
 
       checkConsole =
-          runCommandInAdminPod(domainNamespace1, adminServerPodName1,7001, resourcePath,"200");
-      logger.info("runCommandInAdminPod returns: {0}", checkConsole);
+          runCommandInServerPod(domainNamespace1, managedServerPrefix1 + 1,8001, resourcePath,"200");
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);
       /*
-      testUntil(() -> runCommandInAdminPod(
+      testUntil(() -> runCommandInServerPod(
           domainNamespace1,
           adminServerPodName1,
           7001,
