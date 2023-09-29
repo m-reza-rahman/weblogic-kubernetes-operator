@@ -69,7 +69,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testPortForwardin
 //import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
-//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
@@ -315,8 +315,8 @@ class ItIstioMiiDomain {
       String destLocation = "/u01/testwebapp.war";
       String target = "{identity: [clusters,'" + clusterName + "']}";
 
-      logger.info("======calling deployAppInPodUsingRest \n");
-      result = deployAppInPodUsingRest(hostAndPort, domainNamespace, adminServerPodName,
+      logger.info("======calling copyAppToPodAndDeployUsingRest \n");
+      result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace, adminServerPodName,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
 
@@ -327,6 +327,7 @@ class ItIstioMiiDomain {
       List<String> domainUids = new ArrayList<>();
       domainUids.add(domainUid);
       buildAndDeployClusterviewApp(domainNamespace, domainUids);
+
       assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
           String.valueOf(7001),
           ADMIN_USERNAME_DEFAULT,

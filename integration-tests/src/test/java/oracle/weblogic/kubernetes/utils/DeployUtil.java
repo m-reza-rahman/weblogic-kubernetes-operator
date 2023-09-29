@@ -232,12 +232,8 @@ public class DeployUtil {
   }
 
   /**
-   * Deploy an application to a set of target using REST API with curl utility.
-   * Note the targets parameter should be a string with following format
-   *  {identity: [clusters,'cluster-1']}   for cluster target
-   *  {identity: [servers, 'admin-server']} for server target
-   *  OR a combination for multiple targets, for example
-   *  {identity: [clusters,'mycluster']}, {identity: [servers,'admin-server']}
+   * Copy an application to WLS server pods and deploy it using REST API with curl utility.
+   *
    * @param hostAndPort name of the admin server host and port
    * @param domainNamespace domain namespace
    * @param adminServerPodName admin server pod name
@@ -252,18 +248,18 @@ public class DeployUtil {
    * @param appName name of the application
    * @return ExecResult
    */
-  public static ExecResult deployAppInPodUsingRest(String hostAndPort,
-                                                   String domainNamespace,
-                                                   String adminServerPodName,
-                                                   String managedServerPodPrefix,
-                                                   String userName,
-                                                   String password,
-                                                   int replicaCount,
-                                                   String targets,
-                                                   Path srcArchivePath,
-                                                   Path destArchivePath,
-                                                   String hostHeader,
-                                                   String appName) {
+  public static ExecResult copyAppToPodAndDeployUsingRest(String hostAndPort,
+                                                          String domainNamespace,
+                                                          String adminServerPodName,
+                                                          String managedServerPodPrefix,
+                                                          String userName,
+                                                          String password,
+                                                          int replicaCount,
+                                                          String targets,
+                                                          Path srcArchivePath,
+                                                          Path destArchivePath,
+                                                          String hostHeader,
+                                                          String appName) {
     // Copy App archive to admin pod
     assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
         adminServerPodName, "", srcArchivePath, destArchivePath));

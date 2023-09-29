@@ -48,7 +48,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppW
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
@@ -300,7 +300,7 @@ class ItIstioTwoDomainsInImage {
       // In internal OKE env, deploy App in domain pods using WLST
       String managedServerPrefix = domainUid1 + "-managed-server";
 
-      result = deployAppInPodUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
+      result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
 
@@ -357,7 +357,7 @@ class ItIstioTwoDomainsInImage {
       // In internal OKE env, deploy App in domain pods using WLST
       String managedServerPrefix = domainUid2 + "-managed-server";
 
-      result = deployAppInPodUsingRest(hostAndPort, domainNamespace2, adminServerPodName2,
+      result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace2, adminServerPodName2,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");
 
