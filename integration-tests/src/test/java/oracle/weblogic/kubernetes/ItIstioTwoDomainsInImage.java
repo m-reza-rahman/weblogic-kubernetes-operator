@@ -17,6 +17,8 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -31,6 +33,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
@@ -300,37 +303,53 @@ class ItIstioTwoDomainsInImage {
       // In internal OKE env, deploy App in domain pods using WLST
       String managedServerPrefix = domainUid1 + "-managed-server";
 
-      hostAndPort = adminServerPodName1 + ":7001";
+      //hostAndPort = adminServerPodName1 + ":7001";
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
 
-      /*
-      StringBuffer curlString = new StringBuffer("status=$(curl --noproxy '*' ");
-      curlString.append(" --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
-      curlString.append(" -w %{http_code} --show-error -o /dev/null ")
-        .append(headerString.toString())
-        .append("-H X-Requested-By:MyClient ")
-        .append("-H Accept:application/json  ")
-        .append("-H Content-Type:multipart/form-data ")
-        .append("-H Prefer:respond-async ")
-        .append("-F \"model={ name: '")
-        .append(appName)
-        .append("', targets: [ ")
-        .append(targets)
-        .append(" ] }\" ")
-        .append(" -F \"sourcePath=@")
-        .append(archivePath.toString() + "\" ")
-        .append("-X POST http://" + hostAndPort)
-        .append("/management/weblogic/latest/edit/appDeployments); ")
-        .append("echo ${status}");*/
+      StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n ")
+          .append(domainNamespace1)
+          .append(" ")
+          .append(adminServerPodName1)
+          .append(" -- curl -k --noproxy '*' ")
+          .append(" --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+          .append(" -w %{http_code} --show-error -o /dev/null ")
+          .append("-H 'host: ")
+          .append(domainNamespace1 + ".org" + "' ")
+          .append("-H X-Requested-By:MyClient ")
+          .append("-H Accept:application/json  ")
+          .append("-H Content-Type:multipart/form-data ")
+          .append("-H Prefer:respond-async ")
+          .append("-F \"model={ name: '")
+          .append("testwebapp")
+          .append("', targets: [ ")
+          .append(target)
+          .append(" ] }\" ")
+          .append(" -F \"sourcePath=@")
+          .append(archivePath.toString() + "\" ")
+          .append("-X POST http://" + hostAndPort)
+          .append("/management/weblogic/latest/edit/appDeployments");
 
+      /*
+      String curlString = String.format(
+        KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -k %s://"
+          + ADMIN_USERNAME_DEFAULT
+          + ":"
+          + ADMIN_PASSWORD_DEFAULT
+          + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
+      curlString = curlString + " --silent --show-error -o /dev/null -w %{http_code}";*/
+
+      logger.info("checkSystemResource: curl command {0}", curlString);
+      boolean returns = Command.withParams(new CommandParams().command(curlString.toString()))
+          .executeAndVerify("200");
+      logger.info("Command.withParams returns {0}", returns);
       /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");*/
+          target, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
 
       assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment on domain1 returned {0}", result.toString());
+      logger.info("Application deployment on domain1 returned {0}", result.toString());*/
 
       // check Application Access inside admin pod
       /*
