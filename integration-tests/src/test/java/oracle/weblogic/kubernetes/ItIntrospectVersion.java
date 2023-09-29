@@ -215,6 +215,7 @@ class ItIntrospectVersion {
         "Application archive is not available");
     clusterViewAppPath = Paths.get(distDir.toString(), "clusterview.war");
 
+    logger.info("=======clusterViewAppPath = {0}", distDir.toString() + "/clusterview.war");
     setupSample();
     createDomain();
   }

@@ -305,6 +305,7 @@ class ItIstioMiiDomain {
             + " is not available in the WLS Release {0}", WEBLOGIC_IMAGE_TAG);
     }
 
+    logger.info("=======testWebAppWarLoc = {0}", testWebAppWarLoc);
     Path archivePath = Paths.get(testWebAppWarLoc);
     if (OKE_CLUSTER) {
       /*
