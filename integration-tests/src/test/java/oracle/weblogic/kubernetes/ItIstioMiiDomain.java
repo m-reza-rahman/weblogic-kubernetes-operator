@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
@@ -66,8 +67,9 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testPortForwardin
 //import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -305,6 +307,7 @@ class ItIstioMiiDomain {
 
     Path archivePath = Paths.get(testWebAppWarLoc);
     if (OKE_CLUSTER) {
+      /*
       // In internal OKE env, deploy App in domain pods using WLST
       String destLocation = "/u01/testwebapp.war";
       String target = "{identity: [clusters,'" + clusterName + "']}";
@@ -312,11 +315,20 @@ class ItIstioMiiDomain {
       logger.info("======calling deployAppInPodUsingRest \n");
       result = deployAppInPodUsingRest(hostAndPort, domainNamespace, adminServerPodName,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
-          target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+          target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
 
       /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
           target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
+
+      assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
+          String.valueOf(7001),
+          ADMIN_USERNAME_DEFAULT,
+          ADMIN_PASSWORD_DEFAULT,
+          clusterName + "," + ADMIN_SERVER_NAME_BASE,
+          archivePath,
+          domainNamespace),"Deploying the application");
+
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());
     } else {
