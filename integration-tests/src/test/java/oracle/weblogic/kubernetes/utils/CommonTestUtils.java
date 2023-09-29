@@ -2108,5 +2108,40 @@ public class CommonTestUtils {
     Command.withParams(params.command("mkdir -p " + dstDir)).execute();
     Command.withParams(params.command("cp " + backupDir + "/* " + dstDir)).execute();
   }
-  
+
+  /**
+   * Run a command inside admin pod.
+   *
+   * @param domainNamespace Kubernetes namespace that the domain is hosted
+   * @param adminServerPodName Name of the admin server pod to which the REST requests should be sent to
+   * @param adminPort admin port number
+   * @param resourcePath Path of the system resource to be used in the REST API call
+   * @param expectedStatusCode the expected response to verify
+   * @return true if command exe reply contains the expected response
+   */
+  public static boolean runCommandInAdminPod(String domainNamespace,
+                                             String adminServerPodName,
+                                             int adminPort,
+                                             String resourcePath,
+                                             String expectedStatusCode) {
+    LoggingFacade logger = getLogger();
+
+    String commandToRun = KUBERNETES_CLI + " exec -n "
+        + domainNamespace + "  " + adminServerPodName + " -- curl http://"
+        + adminServerPodName + ":" + adminPort + resourcePath;
+    logger.info("curl command to run in admin pod {0} is: {1}", adminServerPodName, commandToRun);
+
+    ExecResult result = null;
+    try {
+      result = ExecCommand.exec(commandToRun, true);
+      logger.info("========result is: {0}", result.toString());
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+
+    return Command
+        .withParams(new CommandParams()
+            .command(commandToRun))
+        .executeAndVerify(expectedStatusCode);
+  }
 }

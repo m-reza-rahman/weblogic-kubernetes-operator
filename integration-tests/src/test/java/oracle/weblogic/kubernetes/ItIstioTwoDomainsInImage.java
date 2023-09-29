@@ -42,10 +42,10 @@ import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespac
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWeblogicMBeanInAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
@@ -306,11 +306,12 @@ class ItIstioTwoDomainsInImage {
       assertNotNull(result, "Application deployment failed");
 
       // check Application Access inside admin pod
-      testUntil(() -> checkWeblogicMBeanInAdminPod(
+      testUntil(() -> runCommandInAdminPod(
           domainNamespace1,
           adminServerPodName1,
+          7001,
           resourcePath,
-          "200", false),
+          "200"),
           logger, "check Application Access.");
     } else {
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
@@ -405,5 +406,4 @@ class ItIstioTwoDomainsInImage {
     assertTrue(domCreated, String.format("Create domain custom resource failed with ApiException "
                     + "for %s in namespace %s", domainUid, domNamespace));
   }
-
 }
