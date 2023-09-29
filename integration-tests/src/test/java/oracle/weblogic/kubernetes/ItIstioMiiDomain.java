@@ -309,6 +309,7 @@ class ItIstioMiiDomain {
       String destLocation = "/u01/testwebapp.war";
       String target = "{identity: [clusters,'" + clusterName + "']}";
 
+      logger.info("======calling deployAppInPodUsingRest \n");
       result = deployAppInPodUsingRest(hostAndPort, domainNamespace, adminServerPodName,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");

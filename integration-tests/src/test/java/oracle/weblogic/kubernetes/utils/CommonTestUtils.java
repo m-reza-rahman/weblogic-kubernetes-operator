@@ -2120,15 +2120,16 @@ public class CommonTestUtils {
    * @return true if command exe reply contains the expected response
    */
   public static boolean runCommandInServerPod(String domainNamespace,
-                                             String serverPodName,
-                                             int serverPort,
-                                             String resourcePath,
-                                             String expectedStatusCode) {
+                                              String serverPodName,
+                                              int serverPort,
+                                              String resourcePath,
+                                              String expectedStatusCode) {
     LoggingFacade logger = getLogger();
 
     String commandToRun = KUBERNETES_CLI + " exec -n "
-        + domainNamespace + "  " + serverPodName + " -- curl http://"
-        + serverPodName + ":" + serverPort + resourcePath;
+        + domainNamespace + "  " + serverPodName + " -- curl --user "
+        + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
+        + " http://" + serverPodName + ":" + serverPort + resourcePath;
     logger.info("curl command to run in admin pod {0} is: {1}", serverPodName, commandToRun);
 
     ExecResult result = null;
