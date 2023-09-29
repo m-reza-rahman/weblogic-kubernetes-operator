@@ -30,7 +30,6 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.awaitility.core.ConditionFactory;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
@@ -334,8 +333,7 @@ class ItLargeMiiDomainsClusters {
   @Test
   @Order(2)
   @DisplayName("Test to update Base Weblogic Image Name")
-  @Disabled
-  void testUpdateBaseImageName() {
+  void testBaseImageMinorUpdateRollingRestart() {
     String domainUid1 = baseDomainUid + "1";
     // get the original domain resource before update
     DomainResource domain1 = assertDoesNotThrow(() -> getDomainCustomResource(domainUid1, domainNamespaces.get(0)),
@@ -410,7 +408,7 @@ class ItLargeMiiDomainsClusters {
   @Test
   @Order(3)
   @DisplayName("Test modification to Dynamic cluster size parameters")
-  void testUpdateDynamicClusterSize() {
+  void testNonDynamicUpdateRollingRestart() {
     String domainUid1 = baseDomainUid + "1";
     String clusterName = domainUid1 + "-" + "cluster-1";
     String managedServerPrefix = "c1-managed-server";
