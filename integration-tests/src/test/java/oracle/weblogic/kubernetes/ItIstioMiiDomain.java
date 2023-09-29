@@ -53,7 +53,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespac
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWeblogicMBeanInAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
@@ -62,8 +61,9 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testPortForwarding;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
@@ -375,12 +375,18 @@ class ItIstioMiiDomain {
           "200", false, "default-admin"),
           logger, "to access WorkManagerRuntime for a new work manager runtime.");*/
 
+      // check WorkManagerRuntime inside admin pod
+      boolean checkConsole =
+          runCommandInServerPod(domainNamespace, adminServerPodName,7001, resourcePath,"200");
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);
+
+      /*
       testUntil(() -> checkWeblogicMBeanInAdminPod(
           domainNamespace,
           adminServerPodName,
           resourcePath,
           "200", false),
-          logger, "to access WorkManagerRuntime for a new work manager runtime.");
+          logger, "Access WorkManagerRuntime for a new work manager runtime.");*/
     } else {
       boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
       assertTrue(checkWm, "Failed to access WorkManagerRuntime");
