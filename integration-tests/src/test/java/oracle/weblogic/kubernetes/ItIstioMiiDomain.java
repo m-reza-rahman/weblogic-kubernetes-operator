@@ -68,7 +68,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetry
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
@@ -309,13 +309,15 @@ class ItIstioMiiDomain {
       String destLocation = "/u01/testwebapp.war";
       String target = "{identity: [clusters,'" + clusterName + "']}";
 
-      deployAppInPodUsingRest(hostAndPort, domainNamespace, adminServerPodName,
+      result = deployAppInPodUsingRest(hostAndPort, domainNamespace, adminServerPodName,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
 
+      /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
       assertNotNull(result, "Application deployment failed");
+      logger.info("Application deployment on domain1 returned {0}", result.toString());
     } else {
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(istioIngressPort),

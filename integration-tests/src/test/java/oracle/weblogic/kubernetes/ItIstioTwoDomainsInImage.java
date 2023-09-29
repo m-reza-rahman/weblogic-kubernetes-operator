@@ -50,7 +50,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServe
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployAppInPodUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.deployHttpIstioGatewayAndVirtualservice;
@@ -357,12 +357,13 @@ class ItIstioTwoDomainsInImage {
       // In internal OKE env, deploy App in domain pods using WLST
       String managedServerPrefix = domainUid2 + "-managed-server";
 
-      deployAppInPodUsingRest(hostAndPort, domainNamespace2, adminServerPodName2,
+      result = deployAppInPodUsingRest(hostAndPort, domainNamespace2, adminServerPodName2,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");
 
+      /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");
+          target, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");*/
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain2 returned {0}", result.toString());
     } else {
