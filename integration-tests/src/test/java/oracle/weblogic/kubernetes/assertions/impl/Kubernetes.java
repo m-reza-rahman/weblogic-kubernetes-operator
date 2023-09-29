@@ -826,6 +826,8 @@ public class Kubernetes {
         } else {
           logger.warning("======== jobCondition is NULL");
         }
+      } else {
+        logger.warning("======== job.getStatus().getConditions() is NULL");
       }
     } else {
       logger.warning("Job doesn't exist");
