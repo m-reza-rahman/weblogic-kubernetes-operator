@@ -802,7 +802,7 @@ public class Kubernetes {
 
     V1Job job = getJob(namespace, labelSelectors, jobName);
     if (job != null && job.getStatus() != null) {
-      logger.info("\n" + dump(job.getStatus()));
+      logger.info("======== dump(job.getStatus())\n" + dump(job.getStatus()));
       if (job.getStatus().getConditions() != null) {
         V1JobCondition jobCondition = job.getStatus().getConditions().stream().filter(
             v1JobCondition
@@ -811,6 +811,11 @@ public class Kubernetes {
             .findAny()
             .orElse(null);
         if (jobCondition != null) {
+          logger.severe("========jobCondition.getStatus(): {0}", jobCondition.getStatus().toString());
+          logger.severe("-------jobCondition.getStatus(): {0}", dump(jobCondition.getStatus()));
+          logger.severe("========jobCondition.getType(): {0}", jobCondition.getType().toString());
+          logger.severe("-------jobCondition.getType(): {0}", dump(jobCondition.getType()));
+          logger.severe("Job {0} failed", jobName);
           completionStatus = jobCondition.getStatus().equalsIgnoreCase("true");
           if (jobCondition.getType().equals("Failed")) {
             logger.severe("Job {0} failed", jobName);
