@@ -803,6 +803,7 @@ public class Kubernetes {
     V1Job job = getJob(namespace, labelSelectors, jobName);
     if (job != null && job.getStatus() != null) {
       logger.info("======== dump(job.getStatus())\n" + dump(job.getStatus()));
+      logger.info("-------- job.getStatus()\n" + job.getStatus().toString());
       if (job.getStatus().getConditions() != null) {
         V1JobCondition jobCondition = job.getStatus().getConditions().stream().filter(
             v1JobCondition
@@ -822,6 +823,8 @@ public class Kubernetes {
           } else if (jobCondition.getType().equals("Complete")) {
             logger.info("Job {0} completed successfully ", jobName);
           }
+        } else {
+          logger.warning("======== jobCondition is NULL");
         }
       }
     } else {
