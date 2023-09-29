@@ -50,7 +50,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServe
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.deployHttpIstioGatewayAndVirtualservice;
@@ -300,13 +300,34 @@ class ItIstioTwoDomainsInImage {
       // In internal OKE env, deploy App in domain pods using WLST
       String managedServerPrefix = domainUid1 + "-managed-server";
 
-      /*
+      hostAndPort = adminServerPodName1 + ":7001";
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
-          target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");*/
+          target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
 
+      /*
+      StringBuffer curlString = new StringBuffer("status=$(curl --noproxy '*' ");
+      curlString.append(" --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
+      curlString.append(" -w %{http_code} --show-error -o /dev/null ")
+        .append(headerString.toString())
+        .append("-H X-Requested-By:MyClient ")
+        .append("-H Accept:application/json  ")
+        .append("-H Content-Type:multipart/form-data ")
+        .append("-H Prefer:respond-async ")
+        .append("-F \"model={ name: '")
+        .append(appName)
+        .append("', targets: [ ")
+        .append(targets)
+        .append(" ] }\" ")
+        .append(" -F \"sourcePath=@")
+        .append(archivePath.toString() + "\" ")
+        .append("-X POST http://" + hostAndPort)
+        .append("/management/weblogic/latest/edit/appDeployments); ")
+        .append("echo ${status}");*/
+
+      /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
+          target, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");*/
 
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());
