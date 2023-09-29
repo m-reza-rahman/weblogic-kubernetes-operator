@@ -364,7 +364,8 @@ class ItIstioTwoDomainsInImage {
           ADMIN_USERNAME_DEFAULT,
           ADMIN_PASSWORD_DEFAULT,
           clusterName,
-          Paths.get(destLocation),
+          archivePath,
+          //Paths.get(destLocation),
           domainNamespace1),"Deploying the application");
 
       assertNotNull(result, "Application deployment failed");
