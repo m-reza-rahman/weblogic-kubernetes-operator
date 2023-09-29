@@ -303,7 +303,7 @@ class ItIstioTwoDomainsInImage {
       // In internal OKE env, deploy App in domain pods using WLST
       String managedServerPrefix = domainUid1 + "-managed-server";
 
-      //hostAndPort = adminServerPodName1 + ":7001";
+      hostAndPort = adminServerPodName1 + ":7001";
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
@@ -327,7 +327,7 @@ class ItIstioTwoDomainsInImage {
           .append(target)
           .append(" ] }\" ")
           .append(" -F \"sourcePath=@")
-          .append(archivePath.toString() + "\" ")
+          .append(destLocation + "\" ")
           .append("-X POST http://" + hostAndPort)
           .append("/management/weblogic/latest/edit/appDeployments");
 
