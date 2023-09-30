@@ -17,8 +17,8 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
-//import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-//import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -33,7 +33,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-//import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
@@ -308,6 +308,7 @@ class ItIstioTwoDomainsInImage {
       // create secret for internal OKE cluster
       createBaseRepoSecret(domainNamespace1);
 
+      /*
       logger.info("==== Calling copyAppToPodAndDeployUsingRest !!!");
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
@@ -318,10 +319,9 @@ class ItIstioTwoDomainsInImage {
         logger.info("Application deployment on domain1 returned {0}", result.toString());
       } else {
         logger.info("logger.info is null !!!!!!");
-      }
+      }*/
 
-      /*
-      hostAndPort = adminServerPodName1 + ":7001";
+      String adminhHostAndPort = adminServerPodName1 + ":7001";
       StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n ")
           .append(domainNamespace1)
           .append(" ")
@@ -342,14 +342,13 @@ class ItIstioTwoDomainsInImage {
           .append(" ] }\" ")
           .append(" -F \"sourcePath=@")
           .append(destLocation + "\" ")
-          .append("-X POST http://" + hostAndPort)
+          .append("-X POST http://" + adminhHostAndPort)
           .append("/management/weblogic/latest/edit/appDeployments");
 
       logger.info("=======Deployment: curl command {0}", curlString);
       boolean returns = Command.withParams(new CommandParams().command(curlString.toString()).verbose(true))
-          .executeAndVerify("200");
-      logger.info("Command.withParams returns {0}", returns);*/
-
+          .executeAndVerify("testwebapp");
+      logger.info("Command.withParams returns {0}", returns);
 
       /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
