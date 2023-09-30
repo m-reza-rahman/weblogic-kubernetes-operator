@@ -308,10 +308,18 @@ class ItIstioTwoDomainsInImage {
       // create secret for internal OKE cluster
       createBaseRepoSecret(domainNamespace1);
 
+      logger.info("==== Calling copyAppToPodAndDeployUsingRest !!!");
       hostAndPort = adminServerPodName1 + ":7001";
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
+
+      if (result != null) {
+        assertNotNull(result, "Application deployment failed");
+        logger.info("Application deployment on domain1 returned {0}", result.toString());
+      } else {
+        logger.info("logger.info is null !!!!!!");
+      }
 
       StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n ")
           .append(domainNamespace1)
