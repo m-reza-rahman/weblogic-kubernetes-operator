@@ -47,6 +47,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomR
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.copyAppWLSServersToPods;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
@@ -308,6 +309,7 @@ class ItIstioTwoDomainsInImage {
       // create secret for internal OKE cluster
       createBaseRepoSecret(domainNamespace1);
 
+      /*
       logger.info("==== Calling copyAppToPodAndDeployUsingRest !!!");
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
@@ -318,9 +320,11 @@ class ItIstioTwoDomainsInImage {
         logger.info("Application deployment on domain1 returned {0}", result.toString());
       } else {
         logger.info("logger.info is null !!!!!!");
-      }
+      }*/
 
       logger.info("==== Calling Command.withParams !!!");
+      copyAppWLSServersToPods(domainNamespace1, adminServerPodName1,
+          managedServerPrefix, replicaCount, archivePath, Paths.get(destLocation));
       String adminhHostAndPort = adminServerPodName1 + ":7001";
       StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n ")
           .append(domainNamespace1)

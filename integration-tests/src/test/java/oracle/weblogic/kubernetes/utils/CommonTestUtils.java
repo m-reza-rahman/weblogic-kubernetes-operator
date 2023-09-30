@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.domain.DomainResource;
@@ -80,6 +81,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE_DOWNLOAD_FI
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE_DOWNLOAD_URL_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
@@ -95,6 +97,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndChe
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToImageContainer;
+import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.isFileExistAndNotEmpty;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createDiiImageAndVerify;
@@ -103,6 +106,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodEvictedStatusInOperatorLogs;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
+import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.WLSTUtils.executeWLSTScriptInImageContainer;
@@ -2132,18 +2136,56 @@ public class CommonTestUtils {
         + " http://" + serverPodName + ":" + serverPort + resourcePath;
     logger.info("curl command to run in admin pod {0} is: {1}", serverPodName, commandToRun);
 
-    /*
     ExecResult result = null;
     try {
       result = ExecCommand.exec(commandToRun, true);
       logger.info("========result is: {0}", result.toString());
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
-    }*/
+    }
 
+    return (result.exitValue() == 0);
+    /*
     return Command
         .withParams(new CommandParams()
             .command(commandToRun))
-        .executeAndVerify(expectedStatusCode);
+        .executeAndVerify(expectedStatusCode);*/
+  }
+
+  /**
+   * Copy an application to WLS server pods.
+   *
+   * @param domainNamespace domain namespace
+   * @param adminServerPodName admin server pod name
+   * @param managedServerPodPrefix managed server pod prefix
+   * @param replicaCount domain replica count
+   * @param srcArchivePath original path of the application archive
+   * @param destArchivePath destination path of the application archive
+   */
+  public static void copyAppWLSServersToPods(String domainNamespace,
+                                             String adminServerPodName,
+                                             String managedServerPodPrefix,
+                                             int replicaCount,
+                                             Path srcArchivePath,
+                                             Path destArchivePath) {
+    // Copy App archive to admin pod
+    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+        adminServerPodName, "", srcArchivePath, destArchivePath));
+
+    // chown of App archive in admin pod
+    V1Pod adminPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, adminServerPodName));
+    execInPod(adminPod, null, true, "chown 1000:root  " + destArchivePath.toString());
+    execInPod(adminPod, null, true, "ls -lrt /u01  " + destArchivePath.toString());
+
+    for (int i = 1; i <= replicaCount; i++) {
+      // Copy App archive to managed server pod
+      String managedServerPodName = managedServerPodPrefix + i;
+      assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+          managedServerPodName, "", srcArchivePath, destArchivePath));
+
+      // chown of App archive in managed server pod
+      V1Pod msPod = assertDoesNotThrow(() -> getPod(domainNamespace, null, managedServerPodName));
+      execInPod(msPod, null, true, "chown 1000:root  " + destArchivePath.toString());
+    }
   }
 }
