@@ -2132,13 +2132,14 @@ public class CommonTestUtils {
         + " http://" + serverPodName + ":" + serverPort + resourcePath;
     logger.info("curl command to run in admin pod {0} is: {1}", serverPodName, commandToRun);
 
+    /*
     ExecResult result = null;
     try {
       result = ExecCommand.exec(commandToRun, true);
       logger.info("========result is: {0}", result.toString());
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
-    }
+    }*/
 
     return Command
         .withParams(new CommandParams()
