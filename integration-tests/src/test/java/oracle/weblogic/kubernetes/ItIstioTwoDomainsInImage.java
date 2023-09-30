@@ -308,7 +308,6 @@ class ItIstioTwoDomainsInImage {
       // create secret for internal OKE cluster
       createBaseRepoSecret(domainNamespace1);
 
-      /*
       logger.info("==== Calling copyAppToPodAndDeployUsingRest !!!");
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
@@ -319,8 +318,9 @@ class ItIstioTwoDomainsInImage {
         logger.info("Application deployment on domain1 returned {0}", result.toString());
       } else {
         logger.info("logger.info is null !!!!!!");
-      }*/
+      }
 
+      logger.info("==== Calling Command.withParams !!!");
       String adminhHostAndPort = adminServerPodName1 + ":7001";
       StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n ")
           .append(domainNamespace1)
@@ -432,6 +432,10 @@ class ItIstioTwoDomainsInImage {
           target, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");*/
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain2 returned {0}", result.toString());
+
+      boolean checkConsole =
+          runCommandInServerPod(domainNamespace1, managedServerPrefix1 + 1,8001, resourcePath,"200");
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);
     } else {
       String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + resourcePath;
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
