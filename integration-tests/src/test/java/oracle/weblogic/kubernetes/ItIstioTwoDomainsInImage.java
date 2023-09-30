@@ -354,10 +354,11 @@ class ItIstioTwoDomainsInImage {
       //assertTrue(checkConsole, "Failed to access WebLogic testwebapp/index.jsp on domain1");
       logger.info("WebLogic console on testwebapp/index.jsp is accessible: {0}", checkConsole);*/
 
+      /*
       logger.info("======calling copyAppToPodAndDeployUsingRest \n");
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
         managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
-        target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
+        target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");*/
 
       assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName1,
           String.valueOf(7001),

@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
+//import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
@@ -332,16 +332,16 @@ class ItIstioMiiDomain {
       domainUids.add(domainUid);
       buildAndDeployClusterviewApp(domainNamespace, domainUids);
 
+      assertNotNull(result, "Application deployment failed");
+      logger.info("Application deployment on domain1 returned {0}", result.toString());
+
       assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
           String.valueOf(7001),
           ADMIN_USERNAME_DEFAULT,
           ADMIN_PASSWORD_DEFAULT,
-          clusterName + "," + ADMIN_SERVER_NAME_BASE,
+          clusterName,
           archivePath,
           domainNamespace),"Deploying the application");
-
-      assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment on domain1 returned {0}", result.toString());
     } else {
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(istioIngressPort),
