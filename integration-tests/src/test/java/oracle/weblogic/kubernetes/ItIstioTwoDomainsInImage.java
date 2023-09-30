@@ -17,8 +17,8 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
+//import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+//import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -33,7 +33,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+//import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
@@ -47,15 +47,15 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomR
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.copyAppWLSServersToPods;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.copyAppWLSServersToPods;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
-//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
@@ -322,6 +322,7 @@ class ItIstioTwoDomainsInImage {
         logger.info("logger.info is null !!!!!!");
       }*/
 
+      /*
       logger.info("==== Calling Command.withParams !!!");
       copyAppWLSServersToPods(domainNamespace1, adminServerPodName1,
           managedServerPrefix, replicaCount, archivePath, Paths.get(destLocation));
@@ -352,7 +353,7 @@ class ItIstioTwoDomainsInImage {
       logger.info("=======Deployment: curl command {0}", curlString);
       boolean returns = Command.withParams(new CommandParams().command(curlString.toString()).verbose(true))
           .executeAndVerify("testwebapp");
-      logger.info("Command.withParams returns {0}", returns);
+      logger.info("Command.withParams returns {0}", returns);*/
 
       /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
@@ -387,17 +388,15 @@ class ItIstioTwoDomainsInImage {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());*/
 
-      boolean checkConsole =
-          runCommandInServerPod(domainNamespace1, managedServerPrefix1 + 1,8001, resourcePath,"200");
+      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          target, archivePath, domainNamespace1 + ".org", "testwebapp");
+
+      assertNotNull(result, "Application deployment failed");
+      logger.info("Application deployment on domain1 returned {0}", result.toString());
+
+      boolean checkConsole = runCommandInServerPod(domainNamespace1,
+          managedServerPrefix1 + 1,8001, resourcePath,"testwebapp");
       logger.info("runCommandInServerPod returns: {0}", checkConsole);
-      /*
-      testUntil(() -> runCommandInServerPod(
-          domainNamespace1,
-          adminServerPodName1,
-          7001,
-          resourcePath,
-          "200"),
-          logger, "check Application Access.");*/
     } else {
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(istioIngressPort),
@@ -427,19 +426,24 @@ class ItIstioTwoDomainsInImage {
       // In internal OKE env, deploy App in domain pods using WLST
       String managedServerPrefix = domainUid2 + "-managed-server";
 
+      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          target, archivePath, domainNamespace2 + ".org", "testwebapp");
+
+      assertNotNull(result, "Application deployment failed");
+      logger.info("Application deployment on domain2 returned {0}", result.toString());
+
+      boolean checkConsole = runCommandInServerPod(domainNamespace1,
+          managedServerPrefix2 + 1,8001, resourcePath,"testwebapp");
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);
+
+      /*
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace2, adminServerPodName2,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
-          target, archivePath, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");
+          target, archivePath, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");*/
 
       /*
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
           target, Paths.get(destLocation), domainNamespace2 + ".org", "testwebapp");*/
-      assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment on domain2 returned {0}", result.toString());
-
-      boolean checkConsole =
-          runCommandInServerPod(domainNamespace1, managedServerPrefix1 + 1,8001, resourcePath,"200");
-      logger.info("runCommandInServerPod returns: {0}", checkConsole);
     } else {
       String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + resourcePath;
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
