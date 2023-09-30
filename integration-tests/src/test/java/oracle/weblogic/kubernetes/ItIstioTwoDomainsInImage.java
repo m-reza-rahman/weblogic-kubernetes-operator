@@ -309,7 +309,6 @@ class ItIstioTwoDomainsInImage {
       createBaseRepoSecret(domainNamespace1);
 
       logger.info("==== Calling copyAppToPodAndDeployUsingRest !!!");
-      hostAndPort = adminServerPodName1 + ":7001";
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace1, adminServerPodName1,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");
@@ -321,6 +320,7 @@ class ItIstioTwoDomainsInImage {
         logger.info("logger.info is null !!!!!!");
       }
 
+      hostAndPort = adminServerPodName1 + ":7001";
       StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n ")
           .append(domainNamespace1)
           .append(" ")
