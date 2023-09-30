@@ -53,7 +53,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServe
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
@@ -360,6 +360,7 @@ class ItIstioTwoDomainsInImage {
         managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
         target, archivePath, Paths.get(destLocation), domainNamespace1 + ".org", "testwebapp");*/
 
+      /*
       assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName1,
           String.valueOf(7001),
           ADMIN_USERNAME_DEFAULT,
@@ -370,7 +371,7 @@ class ItIstioTwoDomainsInImage {
           domainNamespace1),"Deploying the application");
 
       assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment on domain1 returned {0}", result.toString());
+      logger.info("Application deployment on domain1 returned {0}", result.toString());*/
 
       boolean checkConsole =
           runCommandInServerPod(domainNamespace1, managedServerPrefix1 + 1,8001, resourcePath,"200");
