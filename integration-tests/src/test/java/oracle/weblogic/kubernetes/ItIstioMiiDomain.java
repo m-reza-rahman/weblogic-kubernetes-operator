@@ -317,7 +317,7 @@ class ItIstioMiiDomain {
     assertNotNull(result, "Application deployment failed");
     logger.info("Application deployment returned {0}", result.toString());
     assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-    logger.info("Application {0} deployed successfully at {1}", archivePath, domainUid + "-" + clusterName);
+    logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid + "-" + clusterName);
 
     if (OKE_CLUSTER) {
       testUntil(

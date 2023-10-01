@@ -386,7 +386,7 @@ class ItIstioDomainInPV  {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment returned {0}", result.toString());
       assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
-      logger.info("Application {0} deployed successfully at {1}", archivePath, domainUid + "-" + clusterName);
+      logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid + "-" + clusterName);
 
       testUntil(
           isAppInServerPodReady(domainNamespace,
@@ -406,6 +406,7 @@ class ItIstioDomainInPV  {
         }
       }
       assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
+      logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid + "-" + clusterName);
 
       String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
       logger.info("Application Access URL {0}", url);

@@ -308,7 +308,7 @@ class ItIstioTwoDomainsInImage {
     assertNotNull(result, "Application deployment failed on domain1");
     logger.info("Application deployment on domain1 returned {0}", result.toString());
     assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-    logger.info("Application {0} deployed successfully at {1}", archivePath, domainUid1 + "-" + clusterName);
+    logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid1 + "-" + clusterName);
 
     if (OKE_CLUSTER) {
       testUntil(
@@ -349,7 +349,7 @@ class ItIstioTwoDomainsInImage {
     assertNotNull(result, "Application deployment on domain2 failed");
     logger.info("Application deployment on domain2 returned {0}", result.toString());
     assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-    logger.info("Application {0} deployed successfully at {1}", archivePath, domainUid2 + "-" + clusterName);
+    logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid2 + "-" + clusterName);
 
     if (OKE_CLUSTER) {
       testUntil(
