@@ -50,7 +50,8 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExist
 //import static oracle.weblogic.kubernetes.utils.CommonTestUtils.copyAppWLSServersToPods;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
@@ -392,6 +393,13 @@ class ItIstioTwoDomainsInImage {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());
 
+      testUntil(
+          isAppInServerPodReady(domainNamespace2,
+              managedServerPrefix2 + 1,8001, resourcePath,"testwebapp"),
+          logger, "Check Deployed App {0} in server {1}",
+          archivePath,
+          target);
+      /*
       try {
         Thread.sleep(60000);
       } catch (Exception ex) {
@@ -399,7 +407,7 @@ class ItIstioTwoDomainsInImage {
       }
       boolean checkConsole = runCommandInServerPod(domainNamespace1,
           managedServerPrefix1 + 1,8001, resourcePath,"testwebapp");
-      logger.info("runCommandInServerPod returns: {0}", checkConsole);
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);*/
     } else {
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(istioIngressPort),
@@ -435,6 +443,13 @@ class ItIstioTwoDomainsInImage {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain2 returned {0}", result.toString());
 
+      testUntil(
+          isAppInServerPodReady(domainNamespace2,
+              managedServerPrefix2 + 1,8001, resourcePath,"testwebapp"),
+          logger, "Check Deployed App {0} in server {1}",
+          archivePath,
+          target);
+      /*
       try {
         Thread.sleep(60000);
       } catch (Exception ex) {
@@ -444,7 +459,7 @@ class ItIstioTwoDomainsInImage {
       boolean checkConsole = runCommandInServerPod(domainNamespace2,
           managedServerPrefix2 + 1,8001, resourcePath,"testwebapp");
       logger.info("runCommandInServerPod returns: {0}", checkConsole);
-
+      */
       /*
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace2, adminServerPodName2,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,

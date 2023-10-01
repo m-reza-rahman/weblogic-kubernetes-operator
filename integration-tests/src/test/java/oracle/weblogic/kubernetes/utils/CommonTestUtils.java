@@ -2156,6 +2156,24 @@ public class CommonTestUtils {
   }
 
   /**
+   * Check if a deployed App is ready.
+   *
+   * @param domainNamespace Kubernetes namespace that the domain is hosted
+   * @param serverPodName Name of the WebLogic server pod to which the command should be sent to
+   * @param serverPort server port number
+   * @param resourcePath Path of the system resource to be used in the REST API call
+   * @param expectedStatusCode the expected response to verify
+   * @return true if command exe reply contains the expected response
+   */
+  public static Callable<Boolean> isAppInServerPodReady(String domainNamespace,
+                                                        String serverPodName,
+                                                        int serverPort,
+                                                        String resourcePath,
+                                                        String expectedStatusCode) {
+    return () -> runCommandInServerPod(domainNamespace, serverPodName, serverPort, resourcePath, expectedStatusCode);
+  }
+
+  /**
    * Copy an application to WLS server pods.
    *
    * @param domainNamespace domain namespace
