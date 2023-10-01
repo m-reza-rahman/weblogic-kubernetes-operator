@@ -73,7 +73,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardP
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
-//import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
@@ -376,27 +375,17 @@ class ItIstioDomainInPV  {
             + " is not available in the WLS Release {0}", WEBLOGIC_IMAGE_TAG);
     }
 
-    Path archivePath = Paths.get(testWebAppWarLoc);
     ExecResult result = null;
+    Path archivePath = Paths.get(testWebAppWarLoc);
     if (OKE_CLUSTER) {
-      // In internal OKE env, deploy App in domain pods using WLST
-      String destLocation = "/u01/testwebapp.war";
       String managedServerPrefix = domainUid + "-managed-";
       String target = "{identity: [clusters,'" + clusterName + "']}";
-
-      /*
-      copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace, adminServerPodName,
-          managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
-          target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-
-      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-      assertNotNull(result, "Application deployment failed");*/
 
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
           target, archivePath, domainNamespace + ".org", "testwebapp");
       assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment on domain1 returned {0}", result.toString());
+      logger.info("Application deployment returned {0}", result.toString());
+      assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
 
       testUntil(
           isAppInServerPodReady(domainNamespace,
@@ -404,20 +393,9 @@ class ItIstioDomainInPV  {
           logger, "Check Deployed App {0} in server {1}",
           archivePath,
           target);
-      /*
-      try {
-        Thread.sleep(60000);
-      } catch (Exception ex) {
-        //
-      }
-
-      boolean checkConsole = runCommandInServerPod(domainNamespace,
-          managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp");
-      logger.info("runCommandInServerPod returns: {0}", checkConsole);*/
     } else {
       for (int i = 1; i <= 10; i++) {
-        result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
-            String.valueOf(istioIngressPort),
+        result = deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
             clusterName, archivePath, domainNamespace + ".org", "testwebapp");
         assertNotNull(result, "Application deployment failed");
@@ -426,7 +404,6 @@ class ItIstioDomainInPV  {
           break;
         }
       }
-
       assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
 
       String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
