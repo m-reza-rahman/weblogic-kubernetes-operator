@@ -47,8 +47,9 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHos
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -267,6 +268,14 @@ class ItIstioDomainInImage {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());
 
+      testUntil(
+          isAppInServerPodReady(domainNamespace,
+              managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp"),
+          logger, "Check Deployed App {0} in server {1}",
+          archivePath,
+          target);
+
+      /*
       try {
         Thread.sleep(60000);
       } catch (Exception ex) {
@@ -275,7 +284,7 @@ class ItIstioDomainInImage {
 
       boolean checkConsole = runCommandInServerPod(domainNamespace,
           managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp");
-      logger.info("runCommandInServerPod returns: {0}", checkConsole);
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);*/
     } else {
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(istioIngressPort),

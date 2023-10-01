@@ -67,10 +67,11 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppW
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
@@ -397,6 +398,13 @@ class ItIstioDomainInPV  {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());
 
+      testUntil(
+          isAppInServerPodReady(domainNamespace,
+              managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp"),
+          logger, "Check Deployed App {0} in server {1}",
+          archivePath,
+          target);
+      /*
       try {
         Thread.sleep(60000);
       } catch (Exception ex) {
@@ -405,7 +413,7 @@ class ItIstioDomainInPV  {
 
       boolean checkConsole = runCommandInServerPod(domainNamespace,
           managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp");
-      logger.info("runCommandInServerPod returns: {0}", checkConsole);
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);*/
     } else {
       for (int i = 1; i <= 10; i++) {
         result = deployToClusterUsingRest(K8S_NODEPORT_HOST,

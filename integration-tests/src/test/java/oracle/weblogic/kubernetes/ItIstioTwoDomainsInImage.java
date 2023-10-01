@@ -394,8 +394,8 @@ class ItIstioTwoDomainsInImage {
       logger.info("Application deployment on domain1 returned {0}", result.toString());
 
       testUntil(
-          isAppInServerPodReady(domainNamespace2,
-              managedServerPrefix2 + 1,8001, resourcePath,"testwebapp"),
+          isAppInServerPodReady(domainNamespace1,
+              managedServerPrefix1 + 1,8001, resourcePath,"testwebapp"),
           logger, "Check Deployed App {0} in server {1}",
           archivePath,
           target);
