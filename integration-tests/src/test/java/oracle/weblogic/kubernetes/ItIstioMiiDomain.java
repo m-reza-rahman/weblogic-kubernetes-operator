@@ -6,7 +6,6 @@ package oracle.weblogic.kubernetes;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
-//import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
@@ -51,11 +49,9 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
-//import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
-import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
@@ -63,16 +59,14 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotR
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testPortForwarding;
-//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
-//import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
-//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
@@ -308,49 +302,30 @@ class ItIstioMiiDomain {
             + " is not available in the WLS Release {0}", WEBLOGIC_IMAGE_TAG);
     }
 
-    logger.info("=======testWebAppWarLoc = {0}", testWebAppWarLoc);
+    // create secret for internal OKE cluster
+    createBaseRepoSecret(domainNamespace);
+
     Path archivePath = Paths.get(testWebAppWarLoc);
+    String target = "{identity: [clusters,'" + clusterName + "']}";
+    result = OKE_CLUSTER
+        ? deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+              target, archivePath, domainNamespace + ".org", "testwebapp")
+        : deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
+              ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+              clusterName, archivePath, domainNamespace + ".org", "testwebapp");
+
+    assertNotNull(result, "Application deployment failed");
+    logger.info("Application deployment returned {0}", result.toString());
+    assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
+
     if (OKE_CLUSTER) {
-      /*
-      // In internal OKE env, deploy App in domain pods using WLST
-      String destLocation = "/u01/testwebapp.war";
-      String target = "{identity: [clusters,'" + clusterName + "']}";
-
-      logger.info("======calling copyAppToPodAndDeployUsingRest \n");
-      result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace, adminServerPodName,
-          managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
-          target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
-
-      /*
-      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
-
-      // create secret for internal OKE cluster
-      createBaseRepoSecret(domainNamespace);
-
-      List<String> domainUids = new ArrayList<>();
-      domainUids.add(domainUid);
-      buildAndDeployClusterviewApp(domainNamespace, domainUids);
-
-      assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment on domain1 returned {0}", result.toString());
-
-      assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
-          String.valueOf(7001),
-          ADMIN_USERNAME_DEFAULT,
-          ADMIN_PASSWORD_DEFAULT,
-          clusterName,
+      testUntil(
+          isAppInServerPodReady(domainNamespace,
+              managedServerPrefix + 1, 8001, "/testwebapp/index.jsp", "testwebapp"),
+          logger, "Check Deployed App {0} in server {1}",
           archivePath,
-          domainNamespace),"Deploying the application");
+          target);
     } else {
-      result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
-          String.valueOf(istioIngressPort),
-          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          clusterName, archivePath, domainNamespace + ".org", "testwebapp");
-      assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment returned {0}", result.toString());
-      assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-
       String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
       logger.info("Application Access URL {0}", url);
       boolean checkApp = checkAppUsingHostHeader(url, domainNamespace + ".org");
@@ -381,43 +356,19 @@ class ItIstioMiiDomain {
         + "/testwebapp/workManagerRuntimes/newWM/"
         + "maxThreadsConstraintRuntime ";
     String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
-    /*
-        + "/management/weblogic/latest/domainRuntime"
-        + "/serverRuntimes/managed-server1/applicationRuntimes"
-        + "/testwebapp/workManagerRuntimes/newWM/"
-        + "maxThreadsConstraintRuntime ";*/
 
     if (OKE_CLUSTER) {
-      /*
-      assertDoesNotThrow(()
-          -> execCommand(domainNamespace, adminServerPodName, null,
-              true, "/bin/sh", "-c", wmRuntimeUrl));
-
-      testUntil(() -> checkWeblogicMBean(
-          hostAndPort,
-          domainNamespace,
-          adminServerPodName,
-          resourcePath,
-          "200", false, "default-admin"),
-          logger, "to access WorkManagerRuntime for a new work manager runtime.");*/
-
-      // check WorkManagerRuntime inside admin pod
-      boolean checkConsole =
-          runCommandInServerPod(domainNamespace, adminServerPodName,7001, resourcePath,"200");
-      logger.info("runCommandInServerPod returns: {0}", checkConsole);
-
-      /*
-      testUntil(() -> checkWeblogicMBeanInAdminPod(
-          domainNamespace,
-          adminServerPodName,
-          resourcePath,
-          "200", false),
-          logger, "Access WorkManagerRuntime for a new work manager runtime.");*/
+      testUntil(
+          isAppInServerPodReady(domainNamespace, adminServerPodName, 7001, resourcePath, "200"),
+          logger, "access WorkManagerRuntime {0} in server pod {1}",
+          archivePath,
+          adminServerPodName);
     } else {
       boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
       assertTrue(checkWm, "Failed to access WorkManagerRuntime");
-      logger.info("Found new work manager runtime");
     }
+
+    logger.info("Found new work manager runtime");
 
     verifyPodsNotRolled(domainNamespace, pods);
     verifyPodIntrospectVersionUpdated(pods.keySet(), introspectVersion, domainNamespace);
