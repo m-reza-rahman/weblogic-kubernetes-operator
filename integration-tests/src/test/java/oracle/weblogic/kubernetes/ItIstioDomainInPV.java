@@ -386,6 +386,7 @@ class ItIstioDomainInPV  {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment returned {0}", result.toString());
       assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
+      logger.info("Application {0} deployed successfully at {1}", archivePath, domainUid + "-" + clusterName);
 
       testUntil(
           isAppInServerPodReady(domainNamespace,
@@ -411,6 +412,7 @@ class ItIstioDomainInPV  {
       boolean checkApp = checkAppUsingHostHeader(url, domainNamespace + ".org");
       assertTrue(checkApp, "Failed to access WebLogic application");
     }
+    logger.info("Application /testwebapp/index.jsp is accessble to {0}", domainUid);
 
     // Refer JIRA OWLS-86407
     // Stop and Start the managed server in absense of administration server

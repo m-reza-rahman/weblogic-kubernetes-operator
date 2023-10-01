@@ -2123,12 +2123,11 @@ public class CommonTestUtils {
    * @param expectedStatusCode the expected response to verify
    * @return true if command exe reply contains the expected response
    */
-  //public static Callable<Boolean>  runCommandInServerPod(String domainNamespace,
-  public static boolean runCommandInServerPod(String domainNamespace,
-                                              String serverPodName,
-                                              int serverPort,
-                                              String resourcePath,
-                                              String expectedStatusCode) {
+  public static boolean checkAppIsRunningInServerPod(String domainNamespace,
+                                                     String serverPodName,
+                                                     int serverPort,
+                                                     String resourcePath,
+                                                     String expectedStatusCode) {
     LoggingFacade logger = getLogger();;
 
     String commandToRun = KUBERNETES_CLI + " exec -n "
@@ -2140,19 +2139,12 @@ public class CommonTestUtils {
     ExecResult result = null;
     try {
       result = ExecCommand.exec(commandToRun, true);
-      //return () -> (ExecCommand.exec(commandToRun, true).exitValue() == 0);
-      logger.info("========result is: {0}", result.toString());
+      logger.info("result is: {0}", result.toString());
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
 
     return (result.exitValue() == 0 && result.stdout().contains(expectedStatusCode));
-    //return () -> (result.exitValue() == 0);
-    /*
-    return Command
-        .withParams(new CommandParams()
-            .command(commandToRun))
-        .executeAndVerify(expectedStatusCode);*/
   }
 
   /**
@@ -2170,7 +2162,8 @@ public class CommonTestUtils {
                                                         int serverPort,
                                                         String resourcePath,
                                                         String expectedStatusCode) {
-    return () -> runCommandInServerPod(domainNamespace, serverPodName, serverPort, resourcePath, expectedStatusCode);
+    return () -> checkAppIsRunningInServerPod(domainNamespace,
+        serverPodName, serverPort, resourcePath, expectedStatusCode);
   }
 
   /**
