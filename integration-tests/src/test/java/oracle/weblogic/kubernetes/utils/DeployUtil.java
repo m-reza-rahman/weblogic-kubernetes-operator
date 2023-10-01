@@ -270,9 +270,9 @@ public class DeployUtil {
       execInPod(msPod, null, true, "chown 1000:root  " + destArchivePath.toString());
     }
 
+    ExecResult result = deployUsingRest(hostAndPort, userName, password, targets, destArchivePath, hostHeader, appName);
     //ExecResult result =
-    // deployUsingRest(hostAndPort, userName, password, targets, destArchivePath, hostHeader, appName);
-    ExecResult result = deployUsingRest(hostAndPort, userName, password, targets, srcArchivePath, hostHeader, appName);
+    // deployUsingRest(hostAndPort, userName, password, targets, srcArchivePath, hostHeader, appName);
     return result;
   }
 

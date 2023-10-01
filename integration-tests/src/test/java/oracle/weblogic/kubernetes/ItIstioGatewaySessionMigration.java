@@ -35,9 +35,9 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.configIstioMod
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
-//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
@@ -289,16 +289,28 @@ class ItIstioGatewaySessionMigration {
     }
 
     ExecResult result = null;
+    String resourcePath = "/testwebapp/index.jsp";
     Path archivePath = Paths.get(testWebAppWarLoc);
     if (OKE_CLUSTER) {
       String destLocation = "/u01/testwebapp.war";
       String target = "{identity: [clusters,'" + clusterName + "']}";
 
       // Use WebLogic restful management services to deploy Web App
+      /*
       result = copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace, adminServerPodName,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+      assertNotNull(result, "Application deployment failed");*/
+
+      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          target, archivePath, domainNamespace + ".org", "testwebapp");
       assertNotNull(result, "Application deployment failed");
+      logger.info("Application deployment on domain1 returned {0}", result.toString());
+
+      boolean checkConsole = runCommandInServerPod(domainNamespace,
+          managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp");
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);
+
     } else {
       // Use WebLogic restful management services to deploy Web App
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,

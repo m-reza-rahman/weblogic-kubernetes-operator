@@ -48,10 +48,11 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -253,13 +254,22 @@ class ItIstioDomainInImage {
       String destLocation = "/u01/testwebapp.war";
       String target = "{identity: [clusters,'" + clusterName + "']}";
 
+      /*
       copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace, adminServerPodName,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
 
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
+
+      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          target, archivePath, domainNamespace + ".org", "testwebapp");
       assertNotNull(result, "Application deployment failed");
+      logger.info("Application deployment on domain1 returned {0}", result.toString());
+
+      boolean checkConsole = runCommandInServerPod(domainNamespace,
+          managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp");
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);
     } else {
       result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
           String.valueOf(istioIngressPort),

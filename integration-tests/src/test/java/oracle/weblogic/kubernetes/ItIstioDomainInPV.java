@@ -68,10 +68,11 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
@@ -382,13 +383,23 @@ class ItIstioDomainInPV  {
       String managedServerPrefix = domainUid + "-managed-";
       String target = "{identity: [clusters,'" + clusterName + "']}";
 
+      /*
       copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace, adminServerPodName,
           managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
           target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
 
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
           target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
+      assertNotNull(result, "Application deployment failed");*/
+
+      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          target, archivePath, domainNamespace + ".org", "testwebapp");
       assertNotNull(result, "Application deployment failed");
+      logger.info("Application deployment on domain1 returned {0}", result.toString());
+
+      boolean checkConsole = runCommandInServerPod(domainNamespace,
+          managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp");
+      logger.info("runCommandInServerPod returns: {0}", checkConsole);
     } else {
       for (int i = 1; i <= 10; i++) {
         result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
