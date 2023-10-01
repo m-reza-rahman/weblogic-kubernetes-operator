@@ -304,8 +304,6 @@ class ItIstioTwoDomainsInImage {
     String target = "{identity: [clusters,'" + clusterName + "']}";
     if (OKE_CLUSTER) {
       // In internal OKE env, deploy App in domain pods using WLST
-      String managedServerPrefix = domainUid1 + "-managed-server";
-
       // create secret for internal OKE cluster
       createBaseRepoSecret(domainNamespace1);
 
@@ -394,6 +392,11 @@ class ItIstioTwoDomainsInImage {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());
 
+      try {
+        Thread.sleep(60000);
+      } catch (Exception ex) {
+        //
+      }
       boolean checkConsole = runCommandInServerPod(domainNamespace1,
           managedServerPrefix1 + 1,8001, resourcePath,"testwebapp");
       logger.info("runCommandInServerPod returns: {0}", checkConsole);
@@ -424,13 +427,19 @@ class ItIstioTwoDomainsInImage {
 
     if (OKE_CLUSTER) {
       // In internal OKE env, deploy App in domain pods using WLST
-      String managedServerPrefix = domainUid2 + "-managed-server";
+      createBaseRepoSecret(domainNamespace2);
 
       result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
           target, archivePath, domainNamespace2 + ".org", "testwebapp");
 
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain2 returned {0}", result.toString());
+
+      try {
+        Thread.sleep(60000);
+      } catch (Exception ex) {
+        //
+      }
 
       boolean checkConsole = runCommandInServerPod(domainNamespace1,
           managedServerPrefix2 + 1,8001, resourcePath,"testwebapp");
