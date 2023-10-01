@@ -49,11 +49,9 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppW
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
-//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runCommandInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-//import static oracle.weblogic.kubernetes.utils.DeployUtil.copyAppToPodAndDeployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -249,51 +247,26 @@ class ItIstioDomainInImage {
     }
 
     Path archivePath = Paths.get(testWebAppWarLoc);
-    ExecResult result = null;
+    String target = "{identity: [clusters,'" + clusterName + "']}";
+    ExecResult result = OKE_CLUSTER
+        ? deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+            target, archivePath, domainNamespace + ".org", "testwebapp")
+        : deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
+            ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+            clusterName, archivePath, domainNamespace + ".org", "testwebapp");
+
+    assertNotNull(result, "Application deployment failed");
+    logger.info("Application deployment returned {0}", result.toString());
+    assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
+
     if (OKE_CLUSTER) {
-      // In internal OKE env, deploy App in domain pods using WLST
-      String destLocation = "/u01/testwebapp.war";
-      String target = "{identity: [clusters,'" + clusterName + "']}";
-
-      /*
-      copyAppToPodAndDeployUsingRest(hostAndPort, domainNamespace, adminServerPodName,
-          managedServerPrefix, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, replicaCount,
-          target, archivePath, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");
-
-      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, Paths.get(destLocation), domainNamespace + ".org", "testwebapp");*/
-
-      result = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          target, archivePath, domainNamespace + ".org", "testwebapp");
-      assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment on domain1 returned {0}", result.toString());
-
       testUntil(
           isAppInServerPodReady(domainNamespace,
-              managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp"),
+              managedServerPrefix + 1, 8001, "/testwebapp/index.jsp", "testwebapp"),
           logger, "Check Deployed App {0} in server {1}",
           archivePath,
           target);
-
-      /*
-      try {
-        Thread.sleep(60000);
-      } catch (Exception ex) {
-        //
-      }
-
-      boolean checkConsole = runCommandInServerPod(domainNamespace,
-          managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp");
-      logger.info("runCommandInServerPod returns: {0}", checkConsole);*/
     } else {
-      result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
-          String.valueOf(istioIngressPort),
-          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-          clusterName, archivePath, domainNamespace + ".org", "testwebapp");
-      assertNotNull(result, "Application deployment failed");
-      logger.info("Application deployment returned {0}", result.toString());
-      assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-
       String url = "http://" + hostAndPort + "/testwebapp/index.jsp";
       logger.info("Application Access URL {0}", url);
       boolean checkApp = checkAppUsingHostHeader(url, domainNamespace + ".org");
