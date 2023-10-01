@@ -397,6 +397,12 @@ class ItIstioDomainInPV  {
       assertNotNull(result, "Application deployment failed");
       logger.info("Application deployment on domain1 returned {0}", result.toString());
 
+      try {
+        Thread.sleep(60000);
+      } catch (Exception ex) {
+        //
+      }
+
       boolean checkConsole = runCommandInServerPod(domainNamespace,
           managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp");
       logger.info("runCommandInServerPod returns: {0}", checkConsole);

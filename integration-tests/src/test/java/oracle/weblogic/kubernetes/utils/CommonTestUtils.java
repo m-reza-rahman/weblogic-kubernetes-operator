@@ -2123,12 +2123,13 @@ public class CommonTestUtils {
    * @param expectedStatusCode the expected response to verify
    * @return true if command exe reply contains the expected response
    */
+  //public static Callable<Boolean>  runCommandInServerPod(String domainNamespace,
   public static boolean runCommandInServerPod(String domainNamespace,
                                               String serverPodName,
                                               int serverPort,
                                               String resourcePath,
                                               String expectedStatusCode) {
-    LoggingFacade logger = getLogger();
+    LoggingFacade logger = getLogger();;
 
     String commandToRun = KUBERNETES_CLI + " exec -n "
         + domainNamespace + "  " + serverPodName + " -- curl --user "
@@ -2139,12 +2140,14 @@ public class CommonTestUtils {
     ExecResult result = null;
     try {
       result = ExecCommand.exec(commandToRun, true);
+      //return () -> (ExecCommand.exec(commandToRun, true).exitValue() == 0);
       logger.info("========result is: {0}", result.toString());
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
 
-    return (result.exitValue() == 0);
+    return (result.exitValue() == 0 && result.stdout().contains(expectedStatusCode));
+    //return () -> (result.exitValue() == 0);
     /*
     return Command
         .withParams(new CommandParams()
