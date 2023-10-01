@@ -441,7 +441,7 @@ class ItIstioTwoDomainsInImage {
         //
       }
 
-      boolean checkConsole = runCommandInServerPod(domainNamespace1,
+      boolean checkConsole = runCommandInServerPod(domainNamespace2,
           managedServerPrefix2 + 1,8001, resourcePath,"testwebapp");
       logger.info("runCommandInServerPod returns: {0}", checkConsole);
 
