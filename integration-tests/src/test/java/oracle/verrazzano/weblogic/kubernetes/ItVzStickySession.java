@@ -3,7 +3,6 @@
 
 package oracle.verrazzano.weblogic.kubernetes;
 
-import oracle.weblogic.kubernetes.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

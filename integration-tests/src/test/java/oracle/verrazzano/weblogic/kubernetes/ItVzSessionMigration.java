@@ -3,8 +3,8 @@
 
 package oracle.verrazzano.weblogic.kubernetes;
 
-import oracle.weblogic.kubernetes.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -15,6 +15,20 @@ import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.util.Yaml;
+import oracle.verrazzano.weblogic.ApplicationConfiguration;
+import oracle.verrazzano.weblogic.ApplicationConfigurationSpec;
+import oracle.verrazzano.weblogic.Component;
+import oracle.verrazzano.weblogic.ComponentSpec;
+import oracle.verrazzano.weblogic.Components;
+import oracle.verrazzano.weblogic.Destination;
+import oracle.verrazzano.weblogic.IngressRule;
+import oracle.verrazzano.weblogic.IngressTrait;
+import oracle.verrazzano.weblogic.IngressTraitSpec;
+import oracle.verrazzano.weblogic.IngressTraits;
+import oracle.verrazzano.weblogic.Path;
+import oracle.verrazzano.weblogic.Workload;
+import oracle.verrazzano.weblogic.WorkloadSpec;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -27,7 +41,6 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -40,7 +53,10 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -48,19 +64,21 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
-import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
-import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodExists;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getOrigModelFile;
 import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getServerAndSessionInfoAndVerify;
 import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.shutdownServerAndVerify;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAddress;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -118,21 +136,13 @@ class ItVzSessionMigration {
    *                   JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void init(@Namespaces(2) List<String> namespaces) {
+  public static void init(@Namespaces(1) List<String> namespaces) {
     logger = getLogger();
-
-    // get a unique operator namespace
-    logger.info("Get a unique namespace for operator");
-    assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
 
     // get a unique domain namespace
     logger.info("Get a unique namespace for WebLogic domain");
-    assertNotNull(namespaces.get(1), "Namespace list is null");
-    domainNamespace = namespaces.get(1);
-
-    // install and verify operator
-    installAndVerifyOperator(opNamespace, domainNamespace);
+    assertNotNull(namespaces.get(0), "Namespace list is null");
+    domainNamespace = namespaces.get(0);
 
     // create and verify WebLogic domain image using model in image with model files
     String imageName = createAndVerifyDomainImage();
@@ -148,10 +158,6 @@ class ItVzSessionMigration {
     httpAttrMap.put("primary", "(.*)primary>(.*)</primary(.*)");
     httpAttrMap.put("secondary", "(.*)secondary>(.*)</secondary(.*)");
     httpAttrMap.put("count", "(.*)countattribute>(.*)</countattribute(.*)");
-  }
-
-  @AfterAll
-  void tearDown() {
   }
 
   /**
@@ -270,7 +276,7 @@ class ItVzSessionMigration {
 
     // Generate the model.sessmigr.yaml file at RESULTS_ROOT
     String destSessionMigrYamlFile =
-        generateNewModelFileWithUpdatedDomainUid(domainUid, "ItSessionMigration", getOrigModelFile());
+        generateNewModelFileWithUpdatedDomainUid(domainUid, "ItVzSessionMigration", getOrigModelFile());
 
     List<String> appList = new ArrayList<>();
     appList.add(SESSMIGR_APP_NAME);
@@ -308,30 +314,93 @@ class ItVzSessionMigration {
         "weblogicenc", "weblogicenc"),
         String.format("create encryption secret failed for %s", encryptionSecretName));
 
-    // create domain and verify
-    logger.info("Create model in image domain {0} in namespace {1} using image {2}",
-        domainUid, domainNamespace, miiImage);
-    createDomainCrAndVerify(adminSecretName, TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, miiImage);
+    // create cluster object
+    String clusterName = "cluster-1";
 
-    // check that admin server pod exists in the domain namespace
-    logger.info("Checking that admin server pod {0} exists in namespace {1}",
-        adminServerPodName, domainNamespace);
-    checkPodExists(adminServerPodName, domainUid, domainNamespace);
+    DomainResource domain = createDomainResource(domainUid, domainNamespace,
+        miiImage,
+        adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
+        encryptionSecretName, replicaCount, Arrays.asList(clusterName));
 
-    // check that admin server pod is ready and admin service exists in the domain namespace
-    logger.info("Checking that admin server pod {0} is ready in namespace {1}",
+    Component component = new Component()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("Component")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid)
+            .namespace(domainNamespace))
+        .spec(new ComponentSpec()
+            .workLoad(new Workload()
+                .apiVersion("oam.verrazzano.io/v1alpha1")
+                .kind("VerrazzanoWebLogicWorkload")
+                .spec(new WorkloadSpec()
+                    .template(domain))));
+
+    Map<String, String> keyValueMap = new HashMap<>();
+    keyValueMap.put("version", "v1.0.0");
+    keyValueMap.put("description", "My vz wls application");
+
+    ApplicationConfiguration application = new ApplicationConfiguration()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("ApplicationConfiguration")
+        .metadata(new V1ObjectMeta()
+            .name("myvzdomain")
+            .namespace(domainNamespace)
+            .annotations(keyValueMap))
+        .spec(new ApplicationConfigurationSpec()
+            .components(Arrays.asList(new Components()
+                .componentName(domainUid)
+                .traits(Arrays.asList(new IngressTraits()
+                    .trait(new IngressTrait()
+                        .apiVersion("oam.verrazzano.io/v1alpha1")
+                        .kind("IngressTrait")
+                        .metadata(new V1ObjectMeta()
+                            .name("mydomain-ingress")
+                            .namespace(domainNamespace))
+                        .spec(new IngressTraitSpec()
+                            .ingressRules(Arrays.asList(
+                                new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/console")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(adminServerPodName)
+                                        .port(7001)),
+                                new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/sessmigr-app")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(domainUid + "-cluster-" + clusterName)
+                                        .port(8001)))))))))));
+
+    logger.info(Yaml.dump(component));
+    logger.info(Yaml.dump(application));
+
+    logger.info("Deploying components");
+    assertDoesNotThrow(() -> createComponent(component));
+    logger.info("Deploying application");
+    assertDoesNotThrow(() -> createApplication(application));
+
+    // check admin server pod is ready
+    logger.info("Wait for admin server pod {0} to be ready in namespace {1}",
         adminServerPodName, domainNamespace);
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
-
-    // check for managed server pods existence in the domain namespace
+    // check managed server pods are ready
     for (int i = 1; i <= replicaCount; i++) {
-      String managedServerPodName = managedServerPrefix + i;
-
-      // check that the managed server pod is ready and the service exists in the domain namespace
-      logger.info("Checking that managed server pod {0} is ready in namespace {1}",
-          managedServerPodName, domainNamespace);
-      checkPodReadyAndServiceExists(managedServerPodName, domainUid, domainNamespace);
+      logger.info("Wait for managed server pod {0} to be ready in namespace {1}",
+          managedServerPrefix + i, domainNamespace);
+      checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
+
+    // get istio gateway host and loadbalancer address
+    String host = getIstioHost(domainNamespace);
+    String address = getLoadbalancerAddress();
+
+    // verify WebLogic console page is accessible through istio/loadbalancer
+    String message = "Oracle WebLogic Server Administration Console";
+    String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
+    assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
+
   }
 
   private static void createDomainCrAndVerify(String adminSecretName,
