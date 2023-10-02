@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1172,19 +1173,23 @@ public class CommonTestUtils {
         "Waiting until each managed server can see other cluster members");
   }
 
-  private static int port = 32000;
-  private static final int END_PORT = 32767;
+  public static final int START_PORT = 32000;
+  public static final int END_PORT = 32767;
 
   /**
    * Get the next free port between port and END_PORT.
+   * @param startingPort starting port number
+   * @param endingPort ending port number
    *
    * @return the next free port number, if there is no free port below END_PORT return -1.
    */
-  public static synchronized int getNextFreePort() {
+  public static synchronized int getNextFreePort(int startingPort, int endingPort) {
     LoggingFacade logger = getLogger();
-    int freePort = 0;
-    while (port <= END_PORT) {
-      freePort = port++;
+    int freePort;
+    Random random = new Random();
+
+    while (startingPort <= endingPort) {
+      freePort = startingPort + random.nextInt(endingPort - startingPort);
       try {
         isLocalPortFree(freePort, K8S_NODEPORT_HOST);
         if (OKE_CLUSTER) {
@@ -1196,6 +1201,15 @@ public class CommonTestUtils {
     }
     logger.warning("Could not get free port below " + END_PORT);
     return -1;
+  }
+
+  /**
+   * Get the next free port between port and END_PORT.
+   *
+   * @return the next free port number, if there is no free port below END_PORT return -1.
+   */
+  public static synchronized int getNextFreePort() {
+    return getNextFreePort(START_PORT, END_PORT);
   }
 
   /**
@@ -1239,8 +1253,8 @@ public class CommonTestUtils {
   /**
    * Get external IP address of a service.
    *
-   * @param nameSpace - nameSpace of service
    * @param serviceName - service name
+   * @param nameSpace - nameSpace of service
    * @return external IP address of the given service on OKE
    */
   public static String getServiceExtIPAddrtOke(String serviceName, String nameSpace) {
@@ -1249,17 +1263,18 @@ public class CommonTestUtils {
 
     if (OKE_CLUSTER) {
       testUntil(
+          withLongRetryPolicy,
           isServiceExtIPAddrtOkeReady(serviceName, nameSpace),
           logger,
           "Waiting until external IP address of the service available");
 
       serviceExtIPAddr =
-          assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
-              "Can't find external IP address of the service " + serviceName);
+        assertDoesNotThrow(() -> getLbExternalIp(serviceName, nameSpace),
+          "Can't find external IP address of the service " + serviceName);
 
       logger.info("External IP address of the service is {0} ", serviceExtIPAddr);
     }
-    
+
     return serviceExtIPAddr;
   }
 
