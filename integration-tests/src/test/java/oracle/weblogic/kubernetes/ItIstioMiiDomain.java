@@ -361,7 +361,7 @@ class ItIstioMiiDomain {
 
     if (OKE_CLUSTER) {
       testUntil(
-          isAppInServerPodReady(domainNamespace, adminServerPodName, 7001, resourcePath, "200"),
+          isAppInServerPodReady(domainNamespace, managedServerPrefix + 1, 8001, resourcePath, "200"),
           logger, "access WorkManagerRuntime {0} in server pod {1}",
           archivePath,
           adminServerPodName);
