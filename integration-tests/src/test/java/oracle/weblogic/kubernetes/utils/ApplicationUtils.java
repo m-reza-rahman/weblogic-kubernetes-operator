@@ -62,7 +62,9 @@ public class ApplicationUtils {
           url);
     } else {
       try {
-        return exec(new String(curlString), true).stdout().contains("200");
+        ExecResult result = exec(new String(curlString), true);
+        logger.info("exec returns {0}", result.toString());
+        return result.stdout().contains("200");
       } catch (Exception ex) {
         logger.info("Failed to exec command {0}. Caught exception {1}", curlString.toString(), ex.getMessage());
         return false;
