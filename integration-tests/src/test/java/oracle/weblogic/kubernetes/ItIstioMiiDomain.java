@@ -361,19 +361,6 @@ class ItIstioMiiDomain {
 
     boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
     assertTrue(checkWm, "Failed to access WorkManagerRuntime");
-
-    /*
-    if (OKE_CLUSTER) {
-      testUntil(
-          isAppInServerPodReady(domainNamespace, managedServerPrefix + 1, 8001, resourcePath, "200"),
-          logger, "access WorkManagerRuntime {0} in server pod {1}",
-          archivePath,
-          adminServerPodName);
-    } else {
-      boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
-      assertTrue(checkWm, "Failed to access WorkManagerRuntime");
-    }*/
-
     logger.info("Found new work manager runtime");
 
     verifyPodsNotRolled(domainNamespace, pods);
