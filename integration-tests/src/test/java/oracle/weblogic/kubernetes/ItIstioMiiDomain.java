@@ -359,6 +359,10 @@ class ItIstioMiiDomain {
         + "maxThreadsConstraintRuntime ";
     String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
 
+    boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
+    assertTrue(checkWm, "Failed to access WorkManagerRuntime");
+
+    /*
     if (OKE_CLUSTER) {
       testUntil(
           isAppInServerPodReady(domainNamespace, managedServerPrefix + 1, 8001, resourcePath, "200"),
@@ -368,7 +372,7 @@ class ItIstioMiiDomain {
     } else {
       boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
       assertTrue(checkWm, "Failed to access WorkManagerRuntime");
-    }
+    }*/
 
     logger.info("Found new work manager runtime");
 
