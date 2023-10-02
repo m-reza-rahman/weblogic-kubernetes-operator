@@ -72,6 +72,7 @@ import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.shutdownServ
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAddress;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.setLabelToNamespace;
 import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -140,6 +141,7 @@ class ItVzSessionMigration {
     logger.info("Get a unique namespace for WebLogic domain");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
+    assertDoesNotThrow(() -> setLabelToNamespace(Arrays.asList(domainNamespace)));
 
     // create and verify WebLogic domain image using model in image with model files
     String imageName = createAndVerifyDomainImage();
@@ -149,7 +151,7 @@ class ItVzSessionMigration {
     createAndVerifyDomain(imageName);
 
     // map to save HTTP response data
-    httpAttrMap = new HashMap<String, String>();
+    httpAttrMap = new HashMap<>();
     httpAttrMap.put("sessioncreatetime", "(.*)sessioncreatetime>(.*)</sessioncreatetime(.*)");
     httpAttrMap.put("sessionid", "(.*)sessionid>(.*)</sessionid(.*)");
     httpAttrMap.put("primary", "(.*)primary>(.*)</primary(.*)");
