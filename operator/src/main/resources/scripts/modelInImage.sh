@@ -957,12 +957,12 @@ wdtUpdateModelDomain() {
     local major_config_version=$(echo $config_version | cut -d'.' -f1)
     if versionGT $major_pod_version $major_config_version  ; then
       trace SEVERE "The domain resource 'spec.domainHomeSourceType'" \
-        "is 'FromModel' and the 'spec.configuration.model.domainType' is 'JRF';" \
-        "the domain configured version is $config_version " \
-        ", and the introspector pod's WebLogic version is $pod_version, " \
-        "you cannot update a domain with a major new version of WebLogic on an existing older version " \
-        "of the domain. Note: JRF domain for Model in Image has been deprecated, you should use Domain on " \
-        " Persistent Volume instead."
+        " is 'FromModel' and the 'spec.configuration.model.domainType' is 'JRF';" \
+        " the domain is configured with version $config_version" \
+        ", and the introspector pod WebLogic version is $pod_version," \
+        " you cannot update a JRF domain using a WebLogic installation which has a major version" \
+        " that is higher than the configured domain.  Note: the JRF domain for Model in Image has been deprecated," \
+        " you should use Domain onPersistent Volume instead."
       exitOrLoop
     fi
   fi
