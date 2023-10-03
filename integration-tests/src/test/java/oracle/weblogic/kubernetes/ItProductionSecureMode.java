@@ -247,7 +247,7 @@ class ItProductionSecureMode {
     setTargetPortForRoute("admin-server-sslport-ext", domainNamespace, defaultAdminSecurePort);
     String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, defaultAdminPort);
     logger.info("The hostAndPort is {0}", hostAndPort);
-    
+
     if (!WEBLOGIC_SLIM) {
       String curlCmd = "curl -sk --show-error --noproxy '*' "
           + " https://" + hostAndPort
@@ -333,7 +333,7 @@ class ItProductionSecureMode {
 
     verifyIntrospectorRuns(domainUid, domainNamespace);
 
-    String serverPodName = OKE_CLUSTER ? MANAGED_SERVER_NAME_BASE + "1" : adminServerPodName;
+    String serverPodName = OKE_CLUSTER ? managedServerPrefix + "1" : adminServerPodName;
     testUntil(
         () -> checkWeblogicMBean(
             adminSvcSslPortExtHost,
