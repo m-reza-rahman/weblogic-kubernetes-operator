@@ -41,6 +41,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
@@ -246,8 +247,7 @@ class ItProductionSecureMode {
     setTargetPortForRoute("admin-server-sslport-ext", domainNamespace, defaultAdminSecurePort);
     String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, defaultAdminPort);
     logger.info("The hostAndPort is {0}", hostAndPort);
-
-
+    
     if (!WEBLOGIC_SLIM) {
       String curlCmd = "curl -sk --show-error --noproxy '*' "
           + " https://" + hostAndPort
@@ -333,11 +333,12 @@ class ItProductionSecureMode {
 
     verifyIntrospectorRuns(domainUid, domainNamespace);
 
+    String serverPodName = OKE_CLUSTER ? MANAGED_SERVER_NAME_BASE + "1" : adminServerPodName;
     testUntil(
         () -> checkWeblogicMBean(
             adminSvcSslPortExtHost,
             domainNamespace,
-            adminServerPodName,
+            serverPodName,
             "/management/weblogic/latest/domainRuntime/serverRuntimes/"
                 + MANAGED_SERVER_NAME_BASE + "1"
                 + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
