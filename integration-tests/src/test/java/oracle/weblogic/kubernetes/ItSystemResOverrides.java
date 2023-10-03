@@ -36,6 +36,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -68,7 +69,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExist
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -286,27 +286,23 @@ class ItSystemResOverrides {
   }
 
   private void verifyJMSResourceOverride() {
-    int port = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
-        "default");
-    if (adminSvcExtHost == null) {
-      adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
-    }
-    logger.info("admin svc host = {0}", adminSvcExtHost);
-
-    /*
-    // In internal OKE env, use Treafik EXTERNAL-IP; in non-OKE env, use adminSvcExtHost
-    String ingressServiceName = traefikHelmParams.getReleaseName();
-    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-        : getHostAndPort(adminSvcExtHost, port);*/
-    String hostAndPort = getHostAndPort(adminSvcExtHost, port);
-
-    String uri = "http://" + hostAndPort + "/sitconfig/SitconfigServlet";
+    String resourcePath = "/sitconfig/SitconfigServlet";
 
     if (OKE_CLUSTER) {
-      exeAppInServerPod(domainNamespace, managedServerPodNamePrefix + 1,
-          8001, "/sitconfig/SitconfigServlet", "PASSED");
+      ExecResult result = exeAppInServerPod(domainNamespace, managedServerPodNamePrefix + 1,
+          8001, resourcePath, "PASSED");
+      assertTrue(result.stdout().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
+      assertTrue(result.stdout().contains("RedeliveryLimit:20"), "Didn't get RedeliveryLimit:20");
+      assertTrue(result.stdout().contains("Notes:mysitconfigdomain"), "Didn't get Correct Notes description");
     } else {
+      int port = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+      if (adminSvcExtHost == null) {
+        adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+      }
+      logger.info("admin svc host = {0}", adminSvcExtHost);
+      String hostAndPort = getHostAndPort(adminSvcExtHost, port);
+      String uri = "http://" + hostAndPort + resourcePath;
+
       HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(uri, true));
       assertEquals(200, response.statusCode(), "Status code not equals to 200");
       assertTrue(response.body().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
@@ -316,30 +312,36 @@ class ItSystemResOverrides {
   }
 
   private void verifyWLDFResourceOverride() {
-    int port = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
-        "default");
-    if (adminSvcExtHost == null) {
-      adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+    String resourcePath = "/sitconfig/SitconfigServlet";
+
+    if (OKE_CLUSTER) {
+      ExecResult result = exeAppInServerPod(domainNamespace, managedServerPodNamePrefix + 1,
+          8001, resourcePath, "PASSED");
+      assertTrue(result.stdout().contains("MONITORS:PASSED"), "Didn't get MONITORS:PASSED");
+      assertTrue(result.stdout().contains("HARVESTORS:PASSED"), "Didn't get HARVESTORS:PASSED");
+      assertTrue(result.stdout().contains("HARVESTOR MATCHED:weblogic.management.runtime.JDBCServiceRuntimeMBean"),
+          "Didn't get HARVESTOR MATCHED:weblogic.management.runtime.JDBCServiceRuntimeMBean");
+      assertTrue(result.stdout().contains("HARVESTOR MATCHED:weblogic.management.runtime.ServerRuntimeMBean"),
+          "Didn't get HARVESTOR MATCHED:weblogic.management.runtime.ServerRuntimeMBean");
+    } else {
+      int port = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
+          "default");
+      if (adminSvcExtHost == null) {
+        adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+      }
+      logger.info("admin svc host = {0}", adminSvcExtHost);
+      String hostAndPort = getHostAndPort(adminSvcExtHost, port);
+      String uri = "http://" + hostAndPort + resourcePath;
+
+      HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(uri, true));
+      assertEquals(200, response.statusCode(), "Status code not equals to 200");
+      assertTrue(response.body().contains("MONITORS:PASSED"), "Didn't get MONITORS:PASSED");
+      assertTrue(response.body().contains("HARVESTORS:PASSED"), "Didn't get HARVESTORS:PASSED");
+      assertTrue(response.body().contains("HARVESTOR MATCHED:weblogic.management.runtime.JDBCServiceRuntimeMBean"),
+          "Didn't get HARVESTOR MATCHED:weblogic.management.runtime.JDBCServiceRuntimeMBean");
+      assertTrue(response.body().contains("HARVESTOR MATCHED:weblogic.management.runtime.ServerRuntimeMBean"),
+          "Didn't get HARVESTOR MATCHED:weblogic.management.runtime.ServerRuntimeMBean");
     }
-    logger.info("admin svc host = {0}", adminSvcExtHost);
-
-    // In internal OKE env, use Treafik EXTERNAL-IP; in non-OKE env, use adminSvcExtHost
-    String ingressServiceName = traefikHelmParams.getReleaseName();
-    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-        : getHostAndPort(adminSvcExtHost, port);
-
-    //String hostAndPort = getHostAndPort(adminSvcExtHost, port);
-    String uri = "http://" + hostAndPort + "/sitconfig/SitconfigServlet";
-
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(uri, true));
-    assertEquals(200, response.statusCode(), "Status code not equals to 200");
-    assertTrue(response.body().contains("MONITORS:PASSED"), "Didn't get MONITORS:PASSED");
-    assertTrue(response.body().contains("HARVESTORS:PASSED"), "Didn't get HARVESTORS:PASSED");
-    assertTrue(response.body().contains("HARVESTOR MATCHED:weblogic.management.runtime.JDBCServiceRuntimeMBean"),
-        "Didn't get HARVESTOR MATCHED:weblogic.management.runtime.JDBCServiceRuntimeMBean");
-    assertTrue(response.body().contains("HARVESTOR MATCHED:weblogic.management.runtime.ServerRuntimeMBean"),
-        "Didn't get HARVESTOR MATCHED:weblogic.management.runtime.ServerRuntimeMBean");
   }
 
 
@@ -590,5 +592,4 @@ class ItSystemResOverrides {
       checkPodReadyAndServiceExists(managedServerPodNamePrefix + i, domainUid, domainNamespace);
     }
   }
-
 }
