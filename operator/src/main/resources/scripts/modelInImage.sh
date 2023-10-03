@@ -950,20 +950,37 @@ wdtUpdateModelDomain() {
   # make sure wdt create write out the merged model to a file in the root of the domain
   export __WLSDEPLOY_STORE_MODEL__=1
 
+  local pod_version=$(getWebLogicVersion)
+  local config_version=$(grep '<domain-version>' $DOMAIN_HOME/config/config.xml | sed -n 's/.*<domain-version>\(.*\)<\/domain-version>.*/\1/p')
+  local major_pod_version=$(echo $pod_version | cut -d'.' -f1)
+  local major_config_version=$(echo $config_version | cut -d'.' -f1)
+
+  # Legacy JRF checks
   if [ "${WDT_DOMAIN_TYPE}" == "JRF" ] ; then
-    local pod_version=$(getWebLogicVersion)
-    local config_version=$(grep '<domain-version>' $DOMAIN_HOME/config/config.xml | sed -n 's/.*<domain-version>\(.*\)<\/domain-version>.*/\1/p')
-    local major_pod_version=$(echo $pod_version | cut -d'.' -f1)
-    local major_config_version=$(echo $config_version | cut -d'.' -f1)
     if versionGT $major_pod_version $major_config_version  ; then
       trace SEVERE "The domain resource 'spec.domainHomeSourceType'" \
         " is 'FromModel' and the 'spec.configuration.model.domainType' is 'JRF';" \
-        " the domain is configured with WebLogic version $config_version" \
-        ", and the introspector pod WebLogic version is $pod_version." \
-        " You cannot update an existing JRF domain using a WebLogic installation which has a major version" \
+        " the domain is configured with WebLogic Server version $config_version" \
+        ", and the WebLogic server version in the introspector pod is $pod_version." \
+        " You cannot update an existing JRF domain using a WebLogic server which has a major version" \
         " that is higher than the existing domain.  Note: The JRF domain for Model in Image has been deprecated," \
         " you should use Domain on Persistent Volume instead."
       exitOrLoop
+    fi
+  fi
+
+  if [ "${WDT_DOMAIN_TYPE}" == "WLS" ] ; then
+    if versionGT $major_pod_version $major_config_version  ; then
+      if [ ! -z ${MII_RUNNING_SERVERS_STATES} ] ; then
+        trace SEVERE "The domain resource 'spec.domainHomeSourceType'" \
+          " is 'FromModel' and the 'spec.configuration.model.domainType' is 'WLS';" \
+          " the domain is configured with WebLogic Server version $config_version" \
+          ", and the WebLogic server version in the introspector pod is $pod_version." \
+          " When updating an existing WLS domain with a new version of WebLogic Server.  All servers in" \
+          " the entire domain must be shut down first. The following servers are not in SHUTDOWN state:" \
+          " ${MII_RUNNING_SERVERS_STATES}"
+        exitOrLoop
+      fi
     fi
   fi
 
