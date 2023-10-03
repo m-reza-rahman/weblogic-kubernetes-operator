@@ -2114,21 +2114,31 @@ public class CommonTestUtils {
   }
 
   /**
-   * Run a command inside WebLogic server pod.
+   * Exec a command inside WebLogic server pod.
    *
    * @param domainNamespace Kubernetes namespace that the domain is hosted
    * @param serverPodName Name of the WebLogic server pod to which the command should be sent to
    * @param serverPort server port number
    * @param resourcePath Path of the system resource to be used in the REST API call
    * @param expectedStatusCode the expected response to verify
-   * @return true if command exe reply contains the expected response
+   * @return Exec result
    */
-  public static boolean checkAppIsRunningInServerPod(String domainNamespace,
-                                                     String serverPodName,
-                                                     int serverPort,
-                                                     String resourcePath,
-                                                     String expectedStatusCode) {
+  public static ExecResult exeAppInServerPod(String domainNamespace,
+                                             String serverPodName,
+                                             int serverPort,
+                                             String resourcePath,
+                                             String expectedStatusCode) {
     LoggingFacade logger = getLogger();;
+
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
 
     String commandToRun = KUBERNETES_CLI + " exec -n "
         + domainNamespace + "  " + serverPodName + " -- curl --user "
@@ -2143,6 +2153,27 @@ public class CommonTestUtils {
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
+
+    return result;
+  }
+
+  /**
+   * Run a command inside WebLogic server pod and check the result.
+   *
+   * @param domainNamespace Kubernetes namespace that the domain is hosted
+   * @param serverPodName Name of the WebLogic server pod to which the command should be sent to
+   * @param serverPort server port number
+   * @param resourcePath Path of the system resource to be used in the REST API call
+   * @param expectedStatusCode the expected response to verify
+   * @return true if command exe reply contains the expected response
+   */
+  public static boolean checkAppIsRunningInServerPod(String domainNamespace,
+                                                     String serverPodName,
+                                                     int serverPort,
+                                                     String resourcePath,
+                                                     String expectedStatusCode) {
+    ExecResult result = exeAppInServerPod(domainNamespace,
+        serverPodName, serverPort, resourcePath, expectedStatusCode);
 
     return (result.exitValue() == 0 && result.stdout().contains(expectedStatusCode));
   }

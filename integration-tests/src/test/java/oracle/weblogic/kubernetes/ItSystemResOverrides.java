@@ -65,6 +65,7 @@ import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -292,20 +293,26 @@ class ItSystemResOverrides {
     }
     logger.info("admin svc host = {0}", adminSvcExtHost);
 
+    /*
     // In internal OKE env, use Treafik EXTERNAL-IP; in non-OKE env, use adminSvcExtHost
     String ingressServiceName = traefikHelmParams.getReleaseName();
     String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-        : getHostAndPort(adminSvcExtHost, port);
-    //String hostAndPort = getHostAndPort(adminSvcExtHost, port);
+        : getHostAndPort(adminSvcExtHost, port);*/
+    String hostAndPort = getHostAndPort(adminSvcExtHost, port);
 
     String uri = "http://" + hostAndPort + "/sitconfig/SitconfigServlet";
 
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(uri, true));
-    assertEquals(200, response.statusCode(), "Status code not equals to 200");
-    assertTrue(response.body().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
-    assertTrue(response.body().contains("RedeliveryLimit:20"), "Didn't get RedeliveryLimit:20");
-    assertTrue(response.body().contains("Notes:mysitconfigdomain"), "Didn't get Correct Notes description");
+    if (OKE_CLUSTER) {
+      exeAppInServerPod(domainNamespace, managedServerPodNamePrefix + 1,
+          8001, "/sitconfig/SitconfigServlet", "PASSED");
+    } else {
+      HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(uri, true));
+      assertEquals(200, response.statusCode(), "Status code not equals to 200");
+      assertTrue(response.body().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
+      assertTrue(response.body().contains("RedeliveryLimit:20"), "Didn't get RedeliveryLimit:20");
+      assertTrue(response.body().contains("Notes:mysitconfigdomain"), "Didn't get Correct Notes description");
+    }
   }
 
   private void verifyWLDFResourceOverride() {
