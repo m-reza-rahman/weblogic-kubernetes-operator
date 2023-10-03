@@ -32,10 +32,12 @@ import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -47,6 +49,7 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -55,6 +58,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.TestActions.startDomain;
+import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podStateNotChanged;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
@@ -63,7 +67,9 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapFromFiles;
@@ -72,6 +78,8 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.JobUtils.createDomainJob;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
@@ -84,6 +92,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -96,13 +105,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify the JMS and WLDF system resources are overridden with values from override files")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItSystemResOverrides {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
+  private static String traefikNamespace = null;
+  private static HelmParams traefikHelmParams = null;
   final String domainUid = "mysitconfigdomain";
   final String clusterName = "mycluster";
   final String adminServerName = "admin-server";
@@ -134,7 +145,7 @@ class ItSystemResOverrides {
    * @param namespaces injected by JUnit
    */
   @BeforeAll
-  public void initAll(@Namespaces(2) List<String> namespaces) {
+  public void initAll(@Namespaces(3) List<String> namespaces) {
     logger = getLogger();
 
     logger.info("Assign a unique namespace for operator");
@@ -143,9 +154,21 @@ class ItSystemResOverrides {
     logger.info("Assign a unique namespace for domain namspace");
     assertNotNull(namespaces.get(1), "Namespace is null");
     domainNamespace = namespaces.get(1);
+    logger.info("Assign a unique namespace for Traefik");
+    assertNotNull(namespaces.get(1), "Namespace list is null");
+    traefikNamespace = namespaces.get(2);
 
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domainNamespace);
+
+    if (OKE_CLUSTER) {
+      // install and verify Traefik
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+
+      // create Traefik ingress resource
+      final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";
+      createTraefikIngressRoutingRules(domainNamespace, traefikNamespace, ingressResourceFileName, domainUid);
+    }
 
     // create pull secrets for WebLogic image when running in non Kind Kubernetes cluster
     // this secret is used only for non-kind cluster
@@ -164,6 +187,17 @@ class ItSystemResOverrides {
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName);
 
+  }
+
+  @AfterAll
+  void tearDown() {
+    // uninstall Traefik
+    if (OKE_CLUSTER && traefikHelmParams != null) {
+      assertThat(uninstallTraefik(traefikHelmParams))
+          .as("Test uninstallTraefik returns true")
+          .withFailMessage("uninstallTraefik() did not return true")
+          .isTrue();
+    }
   }
 
   /**
@@ -207,10 +241,19 @@ class ItSystemResOverrides {
     verifyPodsStateNotChanged();
 
     //wait until config is updated upto 5 minutes
-    testUntil(
-        configUpdated(),
-        logger,
-        "jms server configuration to be updated");
+    if (OKE_CLUSTER) {
+      testUntil(
+          isAppInServerPodReady(domainNamespace,
+              managedServerPodNamePrefix + 1, 8001, "/sitconfig/SitconfigServlet", "PASSED"),
+          logger, "Check Deployed App {0} in server {1}",
+              "/sitconfig/SitconfigServlet",
+              managedServerPodNamePrefix + 1);
+    } else {
+      testUntil(
+          configUpdated(),
+          logger,
+          "jms server configuration to be updated");
+    }
 
     verifyJMSResourceOverride();
     verifyWLDFResourceOverride();
@@ -248,7 +291,13 @@ class ItSystemResOverrides {
       adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
     }
     logger.info("admin svc host = {0}", adminSvcExtHost);
-    String hostAndPort = getHostAndPort(adminSvcExtHost, port);
+
+    // In internal OKE env, use Treafik EXTERNAL-IP; in non-OKE env, use adminSvcExtHost
+    String ingressServiceName = traefikHelmParams.getReleaseName();
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+        : getHostAndPort(adminSvcExtHost, port);
+    //String hostAndPort = getHostAndPort(adminSvcExtHost, port);
 
     String uri = "http://" + hostAndPort + "/sitconfig/SitconfigServlet";
 
@@ -266,7 +315,14 @@ class ItSystemResOverrides {
       adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
     }
     logger.info("admin svc host = {0}", adminSvcExtHost);
-    String hostAndPort = getHostAndPort(adminSvcExtHost, port);
+
+    // In internal OKE env, use Treafik EXTERNAL-IP; in non-OKE env, use adminSvcExtHost
+    String ingressServiceName = traefikHelmParams.getReleaseName();
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+        : getHostAndPort(adminSvcExtHost, port);
+
+    //String hostAndPort = getHostAndPort(adminSvcExtHost, port);
     String uri = "http://" + hostAndPort + "/sitconfig/SitconfigServlet";
 
     HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(uri, true));
