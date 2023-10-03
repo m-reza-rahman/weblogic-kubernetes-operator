@@ -3,7 +3,8 @@
 //
 
 CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=olcne-srg
-                   H 8 * * * % MAVEN_PROFILE_NAME=olcne-mrg'''
+                   H 7 * * * % MAVEN_PROFILE_NAME=olcne-mrg
+                   H 16 * * * % MAVEN_PROFILE_NAME=olcne-sequential'''
 
 pipeline {
     agent { label 'large' }
@@ -13,7 +14,7 @@ pipeline {
     }
     triggers {
         // timer trigger for "nightly build"
-        parameterizedCron(env.JOB_NAME == 'wko-ocne-main-nightly-new' ?
+        parameterizedCron(env.JOB_NAME == 'wko-ocne-main-nightly' ?
         CRON_SETTINGS : '')
     }
 
@@ -53,15 +54,15 @@ pipeline {
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root_parent = "${outdir}/k8s-pvroot"
         pv_root = "${pv_root_parent}/newpvroot"
+        pv_root_for_sampletest = "/shared"
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
 
-        CLUSTER_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'mycluster1' : 'mycluster1'}"
+        CLUSTER_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'mycluster1' : 'mycluster1'}"
         kubeconfig_file = "${WORKSPACE}/ocne_kubeconfig1"
-        //MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'olcne-srg' : 'olcne-mrg'}"
-        availability_domain = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
-        PARALLEL_RUN = "${env.JOB_NAME == 'wko-ocne-main-nightly-new' ? true : false}"
+        availability_domain = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
+        PARALLEL_RUN = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? true : false}"
     }
 
     parameters {
@@ -271,6 +272,9 @@ pipeline {
                         sh 'sudo mount 100.105.4.71:/fs-ocne-test ${pv_root_parent}'
                         sh 'mkdir -m777 -p ${pv_root}'
                         echo "Persistent volume files, if any, will be in ${pv_root}"
+                        echo "Create pv root for sample test in ${pv_root_for_sampletest}"
+                        sh 'mkdir -m777 -p ${pv_root_for_sampletest}'
+                        sh 'sudo mount 100.105.4.71:/fs-ocne-test ${pv_root_for_sampletest}'
                     }
                 }
 
@@ -359,7 +363,7 @@ EOF
                                 if [ -n "${IT_TEST}" ]; then
                                     echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
                                 fi
-                                if [ "${MAVEN_PROFILE_NAME}" == "olcne-srg" ]; then
+                                if [ "${MAVEN_PROFILE_NAME}" == "olcne-srg" || "${MAVEN_PROFILE_NAME}" == "olcne-sequential"]; then
                                     PARALLEL_RUN='false'
                                 fi
                                 if [ "${MAVEN_PROFILE_NAME}" == "olcne-mrg" ]; then
@@ -465,6 +469,9 @@ EOF
                         rm -rf ${WORKSPACE}/.mvn
                         sudo rm -rf ${pv_root}
                         sudo umount ${pv_root_parent}
+                        sudo rm -rf ${pv_root_for_sampletest}/domains
+                        sudo rm -rf ${pv_root_for_sampletest}/logs
+                        sudo umount ${pv_root_for_sampletest}
                         kubectl delete pod $(kubectl get pod |grep recycler-for|awk '{print $1}') || true
                     '''
                 }
