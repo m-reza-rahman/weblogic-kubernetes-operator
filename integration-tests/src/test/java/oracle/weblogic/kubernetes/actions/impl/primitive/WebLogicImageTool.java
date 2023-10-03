@@ -472,7 +472,7 @@ public class WebLogicImageTool {
     }
 
     if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      command += " --builder " + TestConstants.WLSIMG_BUILDER + " -- --ulimit nofile=65535:65535";
+      command += " --builder " + TestConstants.WLSIMG_BUILDER + " -- --ulimit=host";
     }
 
     logger.info("Build auxiliary image with command: {0}", command);
