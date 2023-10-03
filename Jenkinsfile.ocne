@@ -273,7 +273,7 @@ pipeline {
                         sh 'mkdir -m777 -p ${pv_root}'
                         echo "Persistent volume files, if any, will be in ${pv_root}"
                         echo "Create pv root for sample test in ${pv_root_for_sampletest}"
-                        sh 'mkdir -m777 -p ${pv_root_for_sampletest}'
+                        sh 'sudo mkdir -m777 -p ${pv_root_for_sampletest}'
                         sh 'sudo mount 100.105.4.71:/fs-ocne-test ${pv_root_for_sampletest}'
                     }
                 }
