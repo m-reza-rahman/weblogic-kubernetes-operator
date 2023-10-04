@@ -115,7 +115,6 @@ class ItVzSessionMigration {
   // default ListenPort for each dynamic server is set to 7100
   private static int managedServerPort = 7100;
   private static int replicaCount = 2;
-  private static String opNamespace = null;
   private static String domainNamespace = null;
   private static LoggingFacade logger = null;
 
