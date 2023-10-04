@@ -66,7 +66,7 @@ public class VerrazzanoUtils {
   public static String getIstioHost(String namespace) {
     //String curlCmd = KUBERNETES_CLI + " get gateways.networking.istio.io -n "
     //    + namespace + " -o jsonpath='{.items[0].spec.servers[0].hosts[0]}'";
-    String curlCmd = KUBERNETES_CLI + " get gateways.networking.istio.io -n " + namespace;
+    String curlCmd = KUBERNETES_CLI + " get gateways.networking.istio.io -A ";
     ExecResult result = null;
     logger.info("curl command {0}", curlCmd);
     result = assertDoesNotThrow(() -> exec(curlCmd, true));

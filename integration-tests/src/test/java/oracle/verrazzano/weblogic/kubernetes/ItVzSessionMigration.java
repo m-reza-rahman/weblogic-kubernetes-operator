@@ -29,6 +29,7 @@ import oracle.verrazzano.weblogic.IngressTraits;
 import oracle.verrazzano.weblogic.Path;
 import oracle.verrazzano.weblogic.Workload;
 import oracle.verrazzano.weblogic.WorkloadSpec;
+import oracle.verrazzano.weblogic.kubernetes.annotations.VzIntegrationTest;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -38,7 +39,6 @@ import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
-import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.junit.jupiter.api.BeforeAll;
@@ -91,7 +91,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * to the server pod
  */
 @DisplayName("Test the HTTP session replication features of WebLogic")
-@IntegrationTest
+@VzIntegrationTest
 @Tag("v8o")    
 class ItVzSessionMigration {
 
