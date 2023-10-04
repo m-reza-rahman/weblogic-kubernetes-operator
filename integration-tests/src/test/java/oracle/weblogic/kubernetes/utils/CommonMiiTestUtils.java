@@ -1205,16 +1205,14 @@ public class CommonMiiTestUtils {
       port = "7002";
     }
     LoggingFacade logger = getLogger();
-    /*
     String curlString = String.format(
-        KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName
-            + " -- curl --user "
+        KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -k %s://"
             + ADMIN_USERNAME_DEFAULT
             + ":"
             + ADMIN_PASSWORD_DEFAULT
-            + " -k %s://%s:%s/%s"
-            + protocol,adminServerPodName, port, resourcePath);*/
-
+            + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
+    curlString = curlString + " --silent --show-error -o /dev/null -w %{http_code}";
+    /*
     StringBuffer curlString = new StringBuffer(KUBERNETES_CLI);
     curlString.append(" exec -n ")
         .append(domainNamespace + "  " + adminServerPodName)
@@ -1229,10 +1227,10 @@ public class CommonMiiTestUtils {
         .append(":")
         .append(port)
         .append("/")
-        .append(resourcePath);
+        .append(resourcePath);*/
 
-    curlString = curlString.append(" --silent --show-error -o /dev/null -w %{http_code}");
-    logger.info("checkSystemResource: curl command {0}", curlString.toString());
+    //curlString = curlString.append(" --silent --show-error -o /dev/null -w %{http_code}");
+    logger.info("checkSystemResource: curl command {0}", curlString);
 
     try {
       ExecResult execResult = ExecCommand.exec(curlString.toString(), true);
