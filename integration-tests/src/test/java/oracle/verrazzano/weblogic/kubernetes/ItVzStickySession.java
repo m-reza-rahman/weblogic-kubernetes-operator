@@ -3,6 +3,7 @@
 
 package oracle.verrazzano.weblogic.kubernetes;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,6 +14,21 @@ import java.util.regex.Pattern;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.util.Yaml;
+import oracle.verrazzano.weblogic.ApplicationConfiguration;
+import oracle.verrazzano.weblogic.ApplicationConfigurationSpec;
+import oracle.verrazzano.weblogic.Component;
+import oracle.verrazzano.weblogic.ComponentSpec;
+import oracle.verrazzano.weblogic.Components;
+import oracle.verrazzano.weblogic.Destination;
+import oracle.verrazzano.weblogic.IngressRule;
+import oracle.verrazzano.weblogic.IngressTrait;
+import oracle.verrazzano.weblogic.IngressTraitSpec;
+import oracle.verrazzano.weblogic.IngressTraits;
+import oracle.verrazzano.weblogic.Path;
+import oracle.verrazzano.weblogic.Workload;
+import oracle.verrazzano.weblogic.WorkloadSpec;
+import oracle.verrazzano.weblogic.kubernetes.annotations.VzIntegrationTest;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -23,53 +39,50 @@ import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
-import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.LOGS_DIR;
-import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
-import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
-import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
-import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static org.assertj.core.api.Assertions.assertThat;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getIstioHost;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.getLoadbalancerAddress;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.setLabelToNamespace;
+import static oracle.weblogic.kubernetes.utils.VerrazzanoUtils.verifyVzApplicationAccess;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -78,11 +91,8 @@ import static org.junit.jupiter.api.Assertions.fail;
  * as well as cluster service.
  */
 @DisplayName("Test sticky sessions management with Traefik and ClusterService")
-@IntegrationTest
-@Tag("olcne")
-@Tag("kind-parallel")
-@Tag("okd-wls-mrg")
-@Tag("oke-gate")
+@VzIntegrationTest
+@Tag("v8o")    
 class ItVzStickySession {
 
   // constants for creating domain image using model in image
@@ -117,7 +127,7 @@ class ItVzStickySession {
    *                   JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void init(@Namespaces(3) List<String> namespaces) {
+  public static void init(@Namespaces(2) List<String> namespaces) {
     logger = getLogger();
 
     // get a unique Traefik namespace
@@ -125,25 +135,16 @@ class ItVzStickySession {
     assertNotNull(namespaces.get(0), "Namespace list is null");
     traefikNamespace = namespaces.get(0);
 
-    // get a unique operator namespace
-    logger.info("Get a unique namespace for operator");
-    assertNotNull(namespaces.get(1), "Namespace list is null");
-    opNamespace = namespaces.get(1);
-
     // get a unique domain namespace
     logger.info("Get a unique namespace for WebLogic domain");
-    assertNotNull(namespaces.get(2), "Namespace list is null");
-    domainNamespace = namespaces.get(2);
-
-    // install and verify Traefik
-    if (!OKD) {
-      traefikHelmParams =
+    assertNotNull(namespaces.get(1), "Namespace list is null");
+    domainNamespace = namespaces.get(1);
+    
+    assertDoesNotThrow(() -> setLabelToNamespace(Arrays.asList(domainNamespace)));
+    
+    traefikHelmParams =
           installAndVerifyTraefik(traefikNamespace, 0, 0);
-    }
-
-    // install and verify operator
-    installAndVerifyOperator(opNamespace, domainNamespace);
-
+    
     // create and verify WebLogic domain image using model in image with model files
     String imageName = createAndVerifyDomainImage();
 
@@ -159,16 +160,7 @@ class ItVzStickySession {
     httpAttrMap.put("count", "(.*)countattribute>(.*)</countattribute(.*)");
   }
 
-  @AfterAll
-  void tearDown() {
-    // uninstall Traefik
-    if (traefikHelmParams != null) {
-      assertThat(uninstallTraefik(traefikHelmParams))
-          .as("Test uninstallTraefik returns true")
-          .withFailMessage("uninstallTraefik() did not return true")
-          .isTrue();
-    }
-  }
+  
 
   /**
    * Verify that using Traefik ingress controller, two HTTP requests sent to WebLogic
@@ -178,8 +170,7 @@ class ItVzStickySession {
    */
   @Test
   @DisplayName("Create a Traefik ingress resource and verify that two HTTP connections are sticky to the same server")
-  @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
-  void testSameSessionStickinessUsingTraefik() {
+  void testSameSessionStickinessUsingTraefik() {    
     final String ingressServiceName = traefikHelmParams.getReleaseName();
     final String channelName = "web";
 
@@ -204,36 +195,6 @@ class ItVzStickySession {
   }
 
   /**
-   * Verify that using OKD routes, two HTTP requests sent to WebLogic
-   * are directed to same WebLogic server.
-   * The test uses a web application deployed on WebLogic cluster to track HTTP session.
-   * server-affinity is achieved by Traefik ingress controller based on HTTP session information.
-   */
-  @Test
-  @DisplayName("Create a Traefik ingress resource and verify that two HTTP connections are sticky to the same server")
-  @EnabledIfEnvironmentVariable(named = "OKD", matches = "true")
-  void testSameSessionStickinessinOKD() {
-    final String serviceName = domainUid + "-cluster-" + clusterName;
-    //final String channelName = "web";
-
-    // create route for cluster service
-    String ingressHost = createRouteForOKD(serviceName, domainNamespace);
-
-    // Since the app seems to take a bit longer to be available,
-    // checking if the app is running by executing the curl command
-    String curlString
-        = buildCurlCommand(ingressHost, 0, SESSMIGR_APP_WAR_NAME + "/?getCounter", " -b ");
-    logger.info("Command to set HTTP request or get HTTP response {0} ", curlString);
-    testUntil(
-        assertDoesNotThrow(()
-            -> () -> exec(curlString, true).stdout().contains("managed-server")),
-        logger,
-        "Checking if app is available");
-    // verify that two HTTP connections are sticky to the same server
-    sendHttpRequestsToTestSessionStickinessAndVerify(ingressHost, 0);
-  }
-
-  /**
    * Verify that using cluster service, two HTTP requests sent to WebLogic
    * are directed to same WebLogic server.
    * The test uses a web application deployed on WebLogic cluster to track HTTP session.
@@ -241,7 +202,6 @@ class ItVzStickySession {
    */
   @Test
   @DisplayName("Verify that two HTTP connections are sticky to the same server using cluster service")
-  @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testSameSessionStickinessUsingClusterService() {
     //build cluster hostname
     String hostName = new StringBuffer()
@@ -297,25 +257,93 @@ class ItVzStickySession {
         "weblogicenc", "weblogicenc"),
         String.format("create encryption secret failed for %s", encryptionSecretName));
 
-    // create domain and verify
-    logger.info("Create model in image domain {0} in namespace {1} using image {2}",
-        domainUid, domainNamespace, miiImage);
-    createDomainCrAndVerify(adminSecretName, TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, miiImage);
+    // create cluster object
+    String clusterName = "cluster-1";
 
-    // check that admin server pod is ready and the service exists in the domain namespace
-    logger.info("Checking that admin server pod {0} is ready in namespace {1}",
+    DomainResource domain = createDomainResource(domainUid, domainNamespace,
+        miiImage,
+        adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
+        encryptionSecretName, replicaCount, Arrays.asList(clusterName));
+
+    Component component = new Component()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("Component")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid)
+            .namespace(domainNamespace))
+        .spec(new ComponentSpec()
+            .workLoad(new Workload()
+                .apiVersion("oam.verrazzano.io/v1alpha1")
+                .kind("VerrazzanoWebLogicWorkload")
+                .spec(new WorkloadSpec()
+                    .template(domain))));
+
+    Map<String, String> keyValueMap = new HashMap<>();
+    keyValueMap.put("version", "v1.0.0");
+    keyValueMap.put("description", "My vz wls application");
+
+    ApplicationConfiguration application = new ApplicationConfiguration()
+        .apiVersion("core.oam.dev/v1alpha2")
+        .kind("ApplicationConfiguration")
+        .metadata(new V1ObjectMeta()
+            .name("myvzdomain")
+            .namespace(domainNamespace)
+            .annotations(keyValueMap))
+        .spec(new ApplicationConfigurationSpec()
+            .components(Arrays.asList(new Components()
+                .componentName(domainUid)
+                .traits(Arrays.asList(new IngressTraits()
+                    .trait(new IngressTrait()
+                        .apiVersion("oam.verrazzano.io/v1alpha1")
+                        .kind("IngressTrait")
+                        .metadata(new V1ObjectMeta()
+                            .name("mydomain-ingress")
+                            .namespace(domainNamespace))
+                        .spec(new IngressTraitSpec()
+                            .ingressRules(Arrays.asList(
+                                new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/console")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(adminServerPodName)
+                                        .port(7001)),
+                                new IngressRule()
+                                    .paths(Arrays.asList(new Path()
+                                        .path("/sessmigr-app")
+                                        .pathType("Prefix")))
+                                    .destination(new Destination()
+                                        .host(domainUid + "-cluster-" + clusterName)
+                                        .port(8001)))))))))));
+
+    logger.info(Yaml.dump(component));
+    logger.info(Yaml.dump(application));
+
+    logger.info("Deploying components");
+    assertDoesNotThrow(() -> createComponent(component));
+    logger.info("Deploying application");
+    assertDoesNotThrow(() -> createApplication(application));
+
+    // check admin server pod is ready
+    logger.info("Wait for admin server pod {0} to be ready in namespace {1}",
         adminServerPodName, domainNamespace);
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
-
-    // check for managed server pods existence in the domain namespace
+    // check managed server pods are ready
     for (int i = 1; i <= replicaCount; i++) {
-      String managedServerPodName = managedServerPrefix + i;
-
-      // check that the managed server pod is ready and the service exists in the domain namespace
-      logger.info("Checking that managed server pod {0} is ready in namespace {1}",
-          managedServerPodName, domainNamespace);
-      checkPodReadyAndServiceExists(managedServerPodName, domainUid, domainNamespace);
+      logger.info("Wait for managed server pod {0} to be ready in namespace {1}",
+          managedServerPrefix + i, domainNamespace);
+      checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
+
+    // get istio gateway host and loadbalancer address
+    String host = getIstioHost(domainNamespace);
+    String address = getLoadbalancerAddress();
+
+    // verify WebLogic console page is accessible through istio/loadbalancer
+    String message = "Oracle WebLogic Server Administration Console";
+    String consoleUrl = "https://" + host + "/console/login/LoginForm.jsp --resolve " + host + ":443:" + address;
+    assertTrue(verifyVzApplicationAccess(consoleUrl, message), "Failed to get WebLogic administration console");
+
   }
 
   private static void createDomainCrAndVerify(String adminSecretName,
