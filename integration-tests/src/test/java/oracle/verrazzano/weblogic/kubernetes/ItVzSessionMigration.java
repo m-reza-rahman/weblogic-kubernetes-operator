@@ -319,6 +319,13 @@ class ItVzSessionMigration {
         miiImage,
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
         encryptionSecretName, replicaCount, Arrays.asList(clusterName));
+    
+    Map<String, String> annotationKeyValues = new HashMap<>();
+    annotationKeyValues.put(annotationKey, annotationValue);
+    annotationKeyValues.put(annotationKey2, annotationValue2);
+    annotationKeyValues.put(annotationKey3, annotationValue3);
+    
+    domain.spec().serverPod().setAnnotations(annotationKeyValues);
 
     Component component = new Component()
         .apiVersion("core.oam.dev/v1alpha2")
