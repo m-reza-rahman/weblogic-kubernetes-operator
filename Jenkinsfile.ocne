@@ -3,8 +3,8 @@
 //
 
 CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=olcne-srg
-                   H 7 * * * % MAVEN_PROFILE_NAME=olcne-mrg
-                   H 16 * * * % MAVEN_PROFILE_NAME=olcne-sequential'''
+                   H 8 * * * % MAVEN_PROFILE_NAME=olcne-mrg
+                   H 17 * * * % MAVEN_PROFILE_NAME=olcne-sequential'''
 
 pipeline {
     agent { label 'large' }
