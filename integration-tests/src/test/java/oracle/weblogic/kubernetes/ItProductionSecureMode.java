@@ -26,6 +26,7 @@ import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -59,6 +60,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
@@ -248,14 +250,21 @@ class ItProductionSecureMode {
     String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, defaultAdminPort);
     logger.info("The hostAndPort is {0}", hostAndPort);
 
+    String resourcePath = "/console/login/LoginForm.jsp";
     if (!WEBLOGIC_SLIM) {
-      String curlCmd = "curl -sk --show-error --noproxy '*' "
-          + " https://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} "
-          + " -o /dev/null";
-      logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
-      assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-      logger.info("WebLogic console is accessible thru default-admin service");
+      if (OKE_CLUSTER) {
+        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,
+            7001, resourcePath, "200");
+        logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      } else {
+        String curlCmd = "curl -sk --show-error --noproxy '*' "
+            + " https://" + hostAndPort
+            + "/console/login/LoginForm.jsp --write-out %{http_code} "
+            + " -o /dev/null";
+        logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
+        assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
+        logger.info("WebLogic console is accessible thru default-admin service");
+      }
 
       String localhost = "localhost";
       String forwardPort =
@@ -263,7 +272,7 @@ class ItProductionSecureMode {
            domainUid, 9002);
       assertNotNull(forwardPort, "port-forward fails to assign local port");
       logger.info("Forwarded admin-port is {0}", forwardPort);
-      curlCmd = "curl -sk --show-error --noproxy '*' "
+      String curlCmd = "curl -sk --show-error --noproxy '*' "
           + " https://" + localhost + ":" + forwardPort
           + "/console/login/LoginForm.jsp --write-out %{http_code} "
           + " -o /dev/null";
@@ -333,7 +342,8 @@ class ItProductionSecureMode {
 
     verifyIntrospectorRuns(domainUid, domainNamespace);
 
-    String serverPodName = OKE_CLUSTER ? managedServerPrefix + "1" : adminServerPodName;
+    //String serverPodName = OKE_CLUSTER ? managedServerPrefix + "1" : adminServerPodName;
+    String serverPodName = OKE_CLUSTER ? adminServerPodName : adminServerPodName;
     testUntil(
         () -> checkWeblogicMBean(
             adminSvcSslPortExtHost,
