@@ -54,6 +54,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -111,10 +112,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test logHome on PV, add SystemResources, Clusters to model in image domain")
 @IntegrationTest
 @Tag("olcne")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("toolkits-srg")
 @Tag("okd-wls-srg")
+@Tag("oke-gate")
 class ItMiiUpdateDomainConfig {
 
   private static String opNamespace = null;
@@ -264,17 +265,25 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
+    String hostAndPort =
+        OKE_CLUSTER ? managedServerPrefix + 1 + ":8001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     String curlString = new StringBuffer()
           .append("curl --user ")
           .append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
           .append(" ")
-          .append("\"http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort))
+          .append("\"http://" + hostAndPort)
           .append("/management/weblogic/latest/domainConfig")
           .append("/JMSServers/TestClusterJmsServer")
           .append("?fields=notes&links=none\"")
           .append(" --silent ").toString();
+
+    if (OKE_CLUSTER) {
+      curlString = KUBERNETES_CLI + " exec -n "
+        + domainNamespace + "  " + managedServerPrefix + 1 + " -- " + curlString;
+    }
+
     logger.info("checkJmsServerConfig: curl command {0}", curlString);
     verifyCommandResultContainsMsg(curlString, "${DOMAIN_UID}~##!'%*$(ls)");
   }
@@ -1005,7 +1014,5 @@ class ItMiiUpdateDomainConfig {
     assertFalse(result.exitValue() != 0 && result.stderr() != null && !result.stderr().isEmpty(),
         String.format("Command %s failed with exit value %s, stderr %s, stdout %s",
             commandToExecuteInsidePod, result.exitValue(), result.stderr(), result.stdout()));
-
   }
-
 }
