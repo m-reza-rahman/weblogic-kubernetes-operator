@@ -38,13 +38,13 @@ Licensed under the Universal Permissive License v 1.0 as shown at https://oss.or
                     out.println("Session did not exist, created a new session");
                }
                if (request.getParameter("setCounter") != null) {
-                    out.println("setCounter called with parameter value " + request.getParameter("setCounter"))
+                    out.println("setCounter called with parameter value " + request.getParameter("setCounter"));
                     session.setAttribute("count", Integer.valueOf(request.getParameter("setCounter")));
                } else if (request.getParameter("getCounter") != null) {
-                    out.println("getCounter called with parameter value " + request.getParameter("getCounter"))
+                    out.println("getCounter called with parameter value " + request.getParameter("getCounter"));
                     session.setAttribute("count", ((Integer) session.getAttribute("count")));
                } else if (request.getParameter("setCounter") == null && session.isNew()) {
-                    out.println("setCounter called, creating a new session")
+                    out.println("setCounter called, creating a new session");
                     session.setAttribute("count", new Integer(1));
                } else {
                     int count = ((Integer) session.getAttribute("count")).intValue();
