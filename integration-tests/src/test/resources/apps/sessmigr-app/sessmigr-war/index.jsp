@@ -44,13 +44,11 @@ Licensed under the Universal Permissive License v 1.0 as shown at https://oss.or
                     int count = ((Integer) session.getAttribute("count")).intValue();
                     session.setAttribute("count", new Integer(++count));
                }
-               out.println(
-                       "<sessioncreatetime>" + session.getCreationTime() + "</sessioncreatetime>");
+               out.println("<sessioncreatetime>" + session.getCreationTime() + "</sessioncreatetime>");
                out.println("<sessionid>" + session.getId() + "</sessionid>");
                out.println("<primary>" + getPrimaryServer(session.getId()) + "</primary>");
                out.println("<secondary>" + getSecondaryServer(session.getId()) + "</secondary>");
-               out.println(
-                       "<countattribute>" + session.getAttribute("count") + "</countattribute>");
+               out.println("<countattribute>" + session.getAttribute("count") + "</countattribute>");
           }
      } else {
           out.println("<sessioncreatetime>NA</sessioncreatetime>");

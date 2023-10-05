@@ -144,7 +144,7 @@ public class SessionMigrationUtil {
     // check if primary server is ready
     testUntil(withStandardRetryPolicy,
         () -> checkSessionReplicatorServerReady(domainNamespace, adminServerPodName, "secondary", curlCmd),
-        logger, "check if primary server is ready in namespace {0}", domainNamespace);    
+        logger, "check if secondary server is ready in namespace {0}", domainNamespace);    
 
     logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
