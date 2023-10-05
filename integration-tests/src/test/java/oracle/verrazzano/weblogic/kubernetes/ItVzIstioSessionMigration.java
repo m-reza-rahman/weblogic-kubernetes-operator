@@ -160,7 +160,7 @@ class ItVzIstioSessionMigration {
         String.format("createSecret failed for %s", encryptionSecretName));
     
     domain = createDomainCrAndVerify(adminSecretName, encryptionSecretName, miiImage);
-    
+    createVzApplication();    
 
     // map to save HTTP response data
     httpAttrMap = new HashMap<String, String>();
@@ -243,7 +243,7 @@ class ItVzIstioSessionMigration {
         primaryServerName, origPrimaryServerName, SESSION_STATE);
   }
   
-  private static void createVzApplication(String miiImage) {
+  private static void createVzApplication() {
 
     Component component = new Component()
         .apiVersion("core.oam.dev/v1alpha2")

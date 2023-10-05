@@ -94,7 +94,7 @@ public class SessionMigrationUtil {
 
     // send a HTTP request to set http session state(count number) and save HTTP session cookie info
     // or get http session state(count number usind saved HTTP session cookie info
-    logger.info("Process HTTP request with web service URL {0} in the pod {1} ", webServiceUrl, serverName);
+    logger.info("Process HTTP request with web service URL {0}", webServiceUrl);
     Map<String, String> httpAttrInfo =
         processHttpRequest(domainNamespace, adminServerPodName, hostName, port, webServiceUrl, headerOption);
 
@@ -113,7 +113,7 @@ public class SessionMigrationUtil {
     );
 
     // map to save server and session info
-    Map<String, String> httpDataInfo = new HashMap<String, String>();
+    Map<String, String> httpDataInfo = new HashMap<>();
     httpDataInfo.put(primaryServerAttr, primaryServerName);
     httpDataInfo.put(secondaryServerAttr, secondaryServerName);
     httpDataInfo.put(sessionCreateTimeAttr, sessionCreateTime);
