@@ -5,7 +5,6 @@ package oracle.weblogic.kubernetes.utils;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -139,8 +138,6 @@ public class SessionMigrationUtil {
     testUntil(withStandardRetryPolicy,
         () -> checkSessionReplicatorServerReady(domainNamespace, adminServerPodName, "primary", curlCmd),
         logger, "check if primary server is ready in namespace {0}", domainNamespace);
-    
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(1));
 
     logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
