@@ -459,10 +459,14 @@ public class CommonLBTestUtils {
       }
     } else {
       // generic/dev Image
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
       getLogger().info("Check administration Console for generic/dev image");
       String consoleUrl = new StringBuffer()
           .append("http://")
-          .append(K8S_NODEPORT_HOST)
+          .append(host)
           .append(":")
           .append(nodePort)
           .append("/console/login/LoginForm.jsp").toString();
