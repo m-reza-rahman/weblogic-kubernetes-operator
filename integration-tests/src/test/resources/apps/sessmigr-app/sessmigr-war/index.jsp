@@ -34,6 +34,9 @@ Licensed under the Universal Permissive License v 1.0 as shown at https://oss.or
                session.invalidate();
                out.println("Your session is invalidated");
           } else {
+               if (session.isNew()) {
+                    out.println("Session did not exist, created a new session");
+               }
                if (request.getParameter("setCounter") != null) {
                     out.println("setCounter called with parameter value " + request.getParameter("setCounter"))
                     session.setAttribute("count", Integer.valueOf(request.getParameter("setCounter")));
