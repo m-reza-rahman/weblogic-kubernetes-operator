@@ -19,10 +19,8 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Utility class for session migration tests.
@@ -146,24 +144,24 @@ public class SessionMigrationUtil {
 
     logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
-    ExecResult execResult = assertDoesNotThrow(
-        () -> execCommand(domainNamespace, adminServerPodName,
-        null, true, "/bin/sh", "-c", curlCmd));
-    if (execResult.exitValue() == 0 && execResult.stderr() != null && execResult.stderr().isEmpty()) {
-      logger.info("\n HTTP response is \n" + execResult.stdout());
-      assertAll("Check that primary server name is not null or empty",
-          () -> assertNotNull(execResult.stdout(), "Primary server name shouldn’t be null"),
-          () -> assertFalse(execResult.stdout().isEmpty(), "Primary server name shouldn’t be  empty")
-      );
-
-      for (String httpAttrKey : httpAttrArray) {
-        String httpAttrValue = getHttpResponseAttribute(execResult.stdout(), httpAttrKey);
-        httpAttrInfo.put(httpAttrKey, httpAttrValue);
+    testUntil(withStandardRetryPolicy, () -> {
+      ExecResult execResult = execCommand(domainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", curlCmd);
+      if (execResult.exitValue() == 0 && execResult.stderr() != null && execResult.stderr().isEmpty()) {
+        logger.info("\n HTTP response is \n" + execResult.stdout());
+        if (execResult.stdout() == null || execResult.stdout().isEmpty()) {
+          logger.info("Null or empty output");
+          return false;
+        }
+        for (String httpAttrKey : httpAttrArray) {
+          String httpAttrValue = getHttpResponseAttribute(execResult.stdout(), httpAttrKey);
+          httpAttrInfo.put(httpAttrKey, httpAttrValue);
+        }
+        return true;
+      } else {
+        logger.info("Didn't get correct exit code or there is an error");
+        return false;
       }
-    } else {
-      fail("Failed to process HTTP request " + execResult.stderr());
-    }
-
+    }, logger, "");
     return httpAttrInfo;
   }
 
