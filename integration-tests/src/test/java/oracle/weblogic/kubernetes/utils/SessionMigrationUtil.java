@@ -141,6 +141,7 @@ public class SessionMigrationUtil {
         () -> checkPrimaryServerReady(domainNamespace, adminServerPodName, curlCmd),
         logger, "check if primary server is ready in namespace {0}", domainNamespace);
 
+    logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
     ExecResult execResult = assertDoesNotThrow(
         () -> execCommand(domainNamespace, adminServerPodName,
@@ -169,6 +170,7 @@ public class SessionMigrationUtil {
     boolean primaryServerReady = false;
     LoggingFacade logger = getLogger();
 
+    logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
     ExecResult execResult = assertDoesNotThrow(
         () -> execCommand(domainNamespace, adminServerPodName,
