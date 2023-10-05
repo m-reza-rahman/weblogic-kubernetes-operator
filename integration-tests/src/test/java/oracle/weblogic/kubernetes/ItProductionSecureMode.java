@@ -253,9 +253,9 @@ class ItProductionSecureMode {
     String resourcePath = "/console/login/LoginForm.jsp";
     if (!WEBLOGIC_SLIM) {
       if (OKE_CLUSTER) {
-        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,
-            7002, resourcePath, "200");
+        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
         logger.info("result in OKE_CLUSTER is {0}", result.toString());
+        assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
       } else {
         String curlCmd = "curl -sk --show-error --noproxy '*' "
             + " https://" + hostAndPort
@@ -263,8 +263,8 @@ class ItProductionSecureMode {
             + " -o /dev/null";
         logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
         assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-        logger.info("WebLogic console is accessible thru default-admin service");
       }
+      logger.info("WebLogic console is accessible thru default-admin service");
 
       String localhost = "localhost";
       String forwardPort =
@@ -283,8 +283,7 @@ class ItProductionSecureMode {
       // When port-forwarding is happening on admin-port, port-forwarding will
       // not work for SSL port i.e. 7002
       forwardPort =
-           startPortForwardProcess(localhost, domainNamespace,
-           domainUid, 7002);
+           startPortForwardProcess(localhost, domainNamespace, domainUid, 7002);
       assertNotNull(forwardPort, "port-forward fails to assign local port");
       logger.info("Forwarded ssl port is {0}", forwardPort);
       curlCmd = "curl -sk --show-error --noproxy '*' "
@@ -342,16 +341,14 @@ class ItProductionSecureMode {
 
     verifyIntrospectorRuns(domainUid, domainNamespace);
 
-    //String serverPodName = OKE_CLUSTER ? managedServerPrefix + "1" : adminServerPodName;
-    //String serverPodName = OKE_CLUSTER ? adminServerPodName : adminServerPodName;
     String resourcePath = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
         + MANAGED_SERVER_NAME_BASE + "1"
         + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
         + "/workManagerRuntimes/newWM";
     if (OKE_CLUSTER) {
-      ExecResult result = exeAppInServerPod(domainNamespace, managedServerPrefix + "1",
-          9002, resourcePath, "200");
+      ExecResult result = exeAppInServerPod(domainNamespace, managedServerPrefix + "1",9002, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
     } else {
       testUntil(
           () -> checkWeblogicMBean(

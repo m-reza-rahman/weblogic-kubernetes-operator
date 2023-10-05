@@ -2120,14 +2120,12 @@ public class CommonTestUtils {
    * @param serverPodName Name of the WebLogic server pod to which the command should be sent to
    * @param serverPort server port number
    * @param resourcePath Path of the system resource to be used in the REST API call
-   * @param expectedStatusCode the expected response to verify
    * @return Exec result
    */
   public static ExecResult exeAppInServerPod(String domainNamespace,
                                              String serverPodName,
                                              int serverPort,
-                                             String resourcePath,
-                                             String expectedStatusCode) {
+                                             String resourcePath) {
     LoggingFacade logger = getLogger();;
 
     String command = KUBERNETES_CLI + " get all --all-namespaces";
@@ -2172,8 +2170,7 @@ public class CommonTestUtils {
                                                      int serverPort,
                                                      String resourcePath,
                                                      String expectedStatusCode) {
-    ExecResult result = exeAppInServerPod(domainNamespace,
-        serverPodName, serverPort, resourcePath, expectedStatusCode);
+    ExecResult result = exeAppInServerPod(domainNamespace, serverPodName, serverPort, resourcePath);
 
     return (result.exitValue() == 0 && result.stdout().contains(expectedStatusCode));
   }

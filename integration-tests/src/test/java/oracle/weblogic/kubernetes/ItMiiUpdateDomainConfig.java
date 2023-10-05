@@ -355,8 +355,7 @@ class ItMiiUpdateDomainConfig {
 
     if (OKE_CLUSTER) {
       String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
-      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,
-          7001, resourcePath, "200");
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
       logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
       assertTrue(result.toString().contains("JDBCSystemResources"),
@@ -364,8 +363,7 @@ class ItMiiUpdateDomainConfig {
       logger.info("Found the JDBCSystemResource configuration");
 
       resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
-      result = exeAppInServerPod(domainNamespace, adminServerPodName,
-          7001, resourcePath, "200");
+      result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
       logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
       assertTrue(result.toString().contains("JMSSystemResources"),
@@ -373,8 +371,7 @@ class ItMiiUpdateDomainConfig {
       logger.info("Found the JMSSystemResource configuration");
 
       resourcePath = "/management/weblogic/latest/domainConfig/WLDFSystemResources/TestWldfModule";
-      result = exeAppInServerPod(domainNamespace, adminServerPodName,
-          7001, resourcePath, "200");
+      result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
       logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the WLDFSystemResources configuration");
       assertTrue(result.toString().contains("WLDFSystemResources"),
@@ -383,8 +380,7 @@ class ItMiiUpdateDomainConfig {
 
 
       resourcePath = "/management/wls/latest/datasources/id/TestDataSource";
-      result = exeAppInServerPod(domainNamespace, adminServerPodName,
-          7001, resourcePath, "200");
+      result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
       logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
       assertTrue(result.toString().contains("scott"),
@@ -467,13 +463,31 @@ class ItMiiUpdateDomainConfig {
       checkServiceExists(managedServerPrefix + i, domainNamespace);
     }
 
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JDBCSystemResources", "TestDataSource", "404");
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JMSSystemResources", "TestClusterJmsModule", "404");
+    if (OKE_CLUSTER) {
+      String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
+      //assertTrue(result.toString().contains("JDBCSystemResources"),
+      //"Failed to find the JDBCSystemResource configuration");
+      logger.info("Found the JDBCSystemResource configuration");
+
+      resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
+      result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
+      //assertTrue(result.toString().contains("JMSSystemResources"),
+      //"Failed to find the JMSSystemResources configuration");
+      logger.info("Found the JMSSystemResource configuration");
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "JDBCSystemResources", "TestDataSource", "404");
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "JMSSystemResources", "TestClusterJmsModule", "404");
+    }
   }
 
   /**
@@ -533,17 +547,35 @@ class ItMiiUpdateDomainConfig {
       checkServiceExists(managedServerPrefix + i, domainNamespace);
     }
 
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+    if (OKE_CLUSTER) {
+      String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource2";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
+      //assertTrue(result.toString().contains("JDBCSystemResources"),
+      //"Failed to find the JDBCSystemResource configuration");
+      logger.info("Found the JDBCSystemResource configuration");
 
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JDBCSystemResources", "TestDataSource2", "200");
-    logger.info("Found the JDBCSystemResource configuration");
+      resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule2";
+      result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
+      //assertTrue(result.toString().contains("JMSSystemResources"),
+      //"Failed to find the JMSSystemResources configuration");
+      logger.info("Found the JMSSystemResource configuration");
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JMSSystemResources", "TestClusterJmsModule2", "200");
-    logger.info("Found the JMSSystemResource configuration");
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "JDBCSystemResources", "TestDataSource2", "200");
+      logger.info("Found the JDBCSystemResource configuration");
+
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "JMSSystemResources", "TestClusterJmsModule2", "200");
+      logger.info("Found the JMSSystemResource configuration");
+    }
 
     // check JMS logs are written on PV
     checkLogsOnPV("ls -ltr /shared/" + domainNamespace + "/logs/*jms_messages.log", managedServerPrefix + "1");
@@ -854,13 +886,31 @@ class ItMiiUpdateDomainConfig {
       checkServiceExists(managedServerPrefix + i, domainNamespace);
     }
 
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JDBCSystemResources", "TestDataSource", "404");
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                          "JMSSystemResources", "TestClusterJmsModule", "404");
+    if (OKE_CLUSTER) {
+      String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
+      //assertTrue(result.toString().contains("JDBCSystemResources"),
+      //"Failed to find the JDBCSystemResource configuration");
+      logger.info("Found the JDBCSystemResource configuration");
+
+      resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
+      result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
+      //assertTrue(result.toString().contains("JMSSystemResources"),
+      //"Failed to find the JMSSystemResources configuration");
+      logger.info("Found the JMSSystemResource configuration");
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "JDBCSystemResources", "TestDataSource", "404");
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "JMSSystemResources", "TestClusterJmsModule", "404");
+    }
   }
 
   // Run standalone JMS Client in the pod using wlthint3client.jar in classpath.

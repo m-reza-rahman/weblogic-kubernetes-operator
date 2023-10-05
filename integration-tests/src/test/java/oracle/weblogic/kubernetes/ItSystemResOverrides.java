@@ -258,7 +258,7 @@ class ItSystemResOverrides {
 
     if (OKE_CLUSTER) {
       ExecResult result = exeAppInServerPod(domainNamespace, managedServerPodNamePrefix + 1,
-          8001, resourcePath, "PASSED");
+          8001, resourcePath);
       assertTrue(result.stdout().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
       assertTrue(result.stdout().contains("RedeliveryLimit:20"), "Didn't get RedeliveryLimit:20");
       assertTrue(result.stdout().contains("Notes:mysitconfigdomain"), "Didn't get Correct Notes description");
@@ -284,7 +284,7 @@ class ItSystemResOverrides {
 
     if (OKE_CLUSTER) {
       ExecResult result = exeAppInServerPod(domainNamespace, managedServerPodNamePrefix + 1,
-          8001, resourcePath, "PASSED");
+          8001, resourcePath);
       assertTrue(result.stdout().contains("MONITORS:PASSED"), "Didn't get MONITORS:PASSED");
       assertTrue(result.stdout().contains("HARVESTORS:PASSED"), "Didn't get HARVESTORS:PASSED");
       assertTrue(result.stdout().contains("HARVESTOR MATCHED:weblogic.management.runtime.JDBCServiceRuntimeMBean"),
