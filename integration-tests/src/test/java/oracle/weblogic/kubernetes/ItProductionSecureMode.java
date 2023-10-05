@@ -254,7 +254,7 @@ class ItProductionSecureMode {
     if (!WEBLOGIC_SLIM) {
       if (OKE_CLUSTER) {
         ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,
-            7001, resourcePath, "200");
+            7002, resourcePath, "200");
         logger.info("result in OKE_CLUSTER is {0}", result.toString());
       } else {
         String curlCmd = "curl -sk --show-error --noproxy '*' "
@@ -343,19 +343,28 @@ class ItProductionSecureMode {
     verifyIntrospectorRuns(domainUid, domainNamespace);
 
     //String serverPodName = OKE_CLUSTER ? managedServerPrefix + "1" : adminServerPodName;
-    String serverPodName = OKE_CLUSTER ? adminServerPodName : adminServerPodName;
-    testUntil(
-        () -> checkWeblogicMBean(
-            adminSvcSslPortExtHost,
-            domainNamespace,
-            serverPodName,
-            "/management/weblogic/latest/domainRuntime/serverRuntimes/"
-                + MANAGED_SERVER_NAME_BASE + "1"
-                + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
-                + "/workManagerRuntimes/newWM",
-            "200", true, "default-admin"),
-        logger,
-        "work manager configuration to be updated.");
+    //String serverPodName = OKE_CLUSTER ? adminServerPodName : adminServerPodName;
+    String resourcePath = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
+        + MANAGED_SERVER_NAME_BASE + "1"
+        + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
+        + "/workManagerRuntimes/newWM";
+    if (OKE_CLUSTER) {
+      ExecResult result = exeAppInServerPod(domainNamespace, managedServerPrefix + "1",
+          9002, resourcePath, "200");
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+    } else {
+      testUntil(
+          () -> checkWeblogicMBean(
+              adminSvcSslPortExtHost,
+              domainNamespace,
+              adminServerPodName,
+              "/management/weblogic/latest/domainRuntime/serverRuntimes/"
+                  + MANAGED_SERVER_NAME_BASE + "1"
+                  + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
+                  + "/workManagerRuntimes/newWM",
+              "200", true, "default-admin"),
+              logger, "work manager configuration to be updated.");
+    }
 
     logger.info("Found new work manager configuration");
 
