@@ -652,7 +652,11 @@ public class CommonTestUtils {
                                                    String resourcesName, String expectedStatusCode) {
     final LoggingFacade logger = getLogger();
 
-    String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + nodePort;
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     StringBuffer curlString = new StringBuffer("status=$(curl --user ");
@@ -767,7 +771,11 @@ public class CommonTestUtils {
                                        String resourcesPath, String expectedValue) {
     final LoggingFacade logger = getLogger();
 
-    String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + nodePort;
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     StringBuffer curlString = new StringBuffer("curl --user ");
@@ -827,7 +835,11 @@ public class CommonTestUtils {
                                                         String expectedValue) {
     final LoggingFacade logger = getLogger();
 
-    String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + nodePort;
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     StringBuffer curlString = new StringBuffer("curl --user ");
@@ -1245,7 +1257,11 @@ public class CommonTestUtils {
    */
   public static String getHostAndPort(String hostName, int servicePort) {
     LoggingFacade logger = getLogger();
-    String hostAndPort = ((OKD) ? hostName : K8S_NODEPORT_HOST + ":" + servicePort);
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String hostAndPort = ((OKD) ? hostName : host + ":" + servicePort);
     logger.info("hostAndPort = {0} ", hostAndPort);
     return hostAndPort;
   }
@@ -1487,7 +1503,11 @@ public class CommonTestUtils {
     LoggingFacade logger = getLogger();
 
     // verify WebLogic console is accessible before port forwarding using ingress port
-    String consoleUrl = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
 
     boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
     assertTrue(checkConsole, "Failed to access WebLogic console");

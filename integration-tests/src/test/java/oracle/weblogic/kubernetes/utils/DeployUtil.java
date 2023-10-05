@@ -276,6 +276,9 @@ public class DeployUtil {
             String userName, String password, String targets, 
             Path archivePath, String hostHeader, String appName) {
     ExecResult result = null;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
     result = deployUsingRest(host + ":" + port, userName, password, targets, archivePath,
            hostHeader, appName);
     return result;

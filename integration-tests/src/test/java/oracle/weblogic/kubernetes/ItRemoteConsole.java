@@ -327,8 +327,12 @@ class ItRemoteConsole {
     String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
         "Getting Nginx loadbalancer service node port failed");
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
     String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + ":" + nginxNodePort;
+        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host + ":" + nginxNodePort;
 
     String curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
@@ -371,8 +375,12 @@ class ItRemoteConsole {
 
     String ingressServiceName = traefikHelmParams.getReleaseName();
     String traefikNamespace = traefikHelmParams.getNamespace();
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
     String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST + ":" + nodePortOfLB;
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : host + ":" + nodePortOfLB;
 
     String curlCmd = "curl -v --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " http://localhost:8012/api/providers/AdminServerConnection -H "

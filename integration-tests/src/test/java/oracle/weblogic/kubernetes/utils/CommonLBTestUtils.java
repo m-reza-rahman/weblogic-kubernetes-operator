@@ -433,11 +433,15 @@ public class CommonLBTestUtils {
     if (WEBLOGIC_SLIM) {
       getLogger().info("Check REST Console for WebLogic slim image");
       StringBuffer curlCmd = new StringBuffer("status=$(curl --user ");
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
       curlCmd.append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
           .append(" http://")
-          .append(K8S_NODEPORT_HOST)
+          .append(host)
           .append(":")
           .append(nodePort)
           .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code}); ")
@@ -723,11 +727,15 @@ public class CommonLBTestUtils {
   public static void checkIngressReady(boolean isHostRouting, String ingressHost, boolean isTLS,
                                         int httpNodeport, int httpsNodeport, String pathString,
                                        String... ingressExtIP) {
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
     String hostAndPort;
     if (isTLS) {
-      hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : K8S_NODEPORT_HOST + ":" + httpsNodeport;
+      hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : host + ":" + httpsNodeport;
     } else {
-      hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : K8S_NODEPORT_HOST + ":" + httpNodeport;
+      hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : host + ":" + httpNodeport;
     }
     getLogger().info("hostAndPort to check ingress ready is: {0}", hostAndPort);
 
@@ -777,7 +785,11 @@ public class CommonLBTestUtils {
                                           boolean hostRouting,
                                           String locationString,
                                           String... args) {
-    String host = (args.length == 0) ? K8S_NODEPORT_HOST : args[0];
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String hostName = (args.length == 0) ? host : args[0];
     verifyClusterLoadbalancing(domainUid,
         ingressHostName,
         protocol,
@@ -785,7 +797,7 @@ public class CommonLBTestUtils {
         replicaCount,
         hostRouting,
         locationString,
-        host);
+        hostName);
   }
 
   /**
@@ -868,20 +880,24 @@ public class CommonLBTestUtils {
    * @param isHostRouting whether it is host routing
    * @param ingressHostName ingress host name
    * @param pathLocation path location in the console url
-   * @param host external IP address on OKE or k8s node IP address on non-OKE env
+   * @param hostName external IP address on OKE or k8s node IP address on non-OKE env
    */
   public static void verifyAdminServerAccess(boolean isTLS,
                                              int lbNodePort,
                                              boolean isHostRouting,
                                              String ingressHostName,
                                              String pathLocation,
-                                             String... host) {
+                                             String... hostName) {
     StringBuffer consoleUrl = new StringBuffer();
     String hostAndPort;
-    if (host != null && host.length > 0) {
-      hostAndPort = OKE_CLUSTER_PRIVATEIP ? host[0] : host[0] + ":" + lbNodePort;
+    if (hostName != null && hostName.length > 0) {
+      hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;
     } else {
-      hostAndPort = K8S_NODEPORT_HOST + ":" + lbNodePort;
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      hostAndPort = host + ":" + lbNodePort;
     }
 
     if (isTLS) {

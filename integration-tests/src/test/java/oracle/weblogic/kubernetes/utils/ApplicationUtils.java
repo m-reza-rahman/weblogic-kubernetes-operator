@@ -434,6 +434,9 @@ public class ApplicationUtils {
       // and explicitly allows curl to perform “insecure” SSL connections and transfers
       httpKey = " --insecure https://";
     }
+    if (hostName.contains(":")) {
+      hostName = "[" + hostName + "]";
+    }
     String consoleUrl = httpKey + hostName + ":" + port + "/console/login/LoginForm.jsp";
 
     boolean checkConsole = assertDoesNotThrow(() ->

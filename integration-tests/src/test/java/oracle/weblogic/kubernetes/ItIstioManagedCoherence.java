@@ -199,7 +199,11 @@ class ItIstioManagedCoherence {
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
     // Make sure ready app is accessible thru Istio Ingress Port
-    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + host + ":" + istioIngressPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
@@ -248,7 +252,11 @@ class ItIstioManagedCoherence {
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
     // Make sure ready app is accessible thru Istio Ingress Port
-    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + host + ":" + istioIngressPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
@@ -352,7 +360,11 @@ class ItIstioManagedCoherence {
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
     // Make sure ready app is accessible thru Istio Ingress Port
-    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + host + ":" + istioIngressPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
@@ -478,7 +490,11 @@ class ItIstioManagedCoherence {
   }
 
   private boolean coherenceCacheTest(int ingressServiceNodePort) {
-    String hostAndPort = K8S_NODEPORT_HOST + ":" + ingressServiceNodePort;
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String hostAndPort = host + ":" + ingressServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     // add the data to cache

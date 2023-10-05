@@ -1053,7 +1053,11 @@ public class CommonMiiTestUtils {
       int adminServiceNodePort
           = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
-      String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + adminServiceNodePort;
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
       logger.info("hostAndPort = {0} ", hostAndPort);
       curlString = String.format(
           "curl --user "
@@ -1167,7 +1171,11 @@ public class CommonMiiTestUtils {
       curlString = new StringBuffer("status=$(curl --user weblogic:welcome1 http://");
     }
 
-    String hostAndPort = (OKD) ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + adminServiceNodePort;
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     curlString.append(hostAndPort)

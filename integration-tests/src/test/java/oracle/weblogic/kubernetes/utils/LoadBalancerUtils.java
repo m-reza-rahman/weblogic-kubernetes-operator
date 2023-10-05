@@ -409,8 +409,12 @@ public class LoadBalancerUtils {
     // check the ingress is ready to route the app to the server pod
     if (nodeport != 0) {
       for (String ingressHost : ingressHostList) {
+        String host = K8S_NODEPORT_HOST;
+        if (host.contains(":")) {
+          host = "[" + host + "]";
+        }
         String curlCmd = "curl --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-            + "' http://" + K8S_NODEPORT_HOST + ":" + nodeport
+            + "' http://" + host + ":" + nodeport
             + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
         logger.info("Executing curl command {0}", curlCmd);
@@ -468,8 +472,12 @@ public class LoadBalancerUtils {
     // check the ingress is ready to route the app to the server pod
     if (nodeport != 0) {
       for (String ingressHost : ingressHostList) {
+        String host = K8S_NODEPORT_HOST;
+        if (host.contains(":")) {
+          host = "[" + host + "]";
+        }
         String curlCmd = "curl --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-            + "' http://" + K8S_NODEPORT_HOST + ":" + nodeport
+            + "' http://" + host + ":" + nodeport
             + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
         logger.info("Executing curl command {0}", curlCmd);

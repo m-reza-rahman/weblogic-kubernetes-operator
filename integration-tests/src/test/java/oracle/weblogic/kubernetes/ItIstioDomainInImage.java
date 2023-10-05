@@ -200,7 +200,11 @@ class ItIstioDomainInImage {
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
     if (!WEBLOGIC_SLIM) {
-      String consoleUrl = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
       boolean checkConsole =
           checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console");
@@ -244,7 +248,11 @@ class ItIstioDomainInImage {
     logger.info("Application deployment returned {0}", result.toString());
     assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
 
-    String url = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/testwebapp/index.jsp";
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String url = "http://" + host + ":" + istioIngressPort + "/testwebapp/index.jsp";
     logger.info("Application Access URL {0}", url);
     boolean checkApp = checkAppUsingHostHeader(url, domainNamespace + ".org");
     assertTrue(checkApp, "Failed to access WebLogic application");
@@ -259,7 +267,7 @@ class ItIstioDomainInImage {
       String curlCmd2 = "curl -j -sk --show-error --noproxy '*' "
           + " -H 'Host: " + domainNamespace + ".org'"
           + " --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
-          + " --url http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort
+          + " --url http://" + host + ":" + istioIngressPort
           + "/management/weblogic/latest/domainRuntime/domainSecurityRuntime?"
           + "link=none";
 

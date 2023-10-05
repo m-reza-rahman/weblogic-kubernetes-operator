@@ -552,9 +552,13 @@ class ItMultiDomainModelsScale {
           routeHost, appContextRoot);
 
     } else {
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
       return String.format("curl -v --show-error --noproxy '*' -H 'host: %s' http://%s:%s/%s/index.jsp",
           domainUid + "." + domainNamespace + "." + clusterName + ".test",
-          K8S_NODEPORT_HOST, nodeportshttp, appContextRoot);
+          host, nodeportshttp, appContextRoot);
     }
   }
 
@@ -780,9 +784,13 @@ class ItMultiDomainModelsScale {
     if (!OKD) {
       assumeFalse(WEBLOGIC_SLIM, "Skipping the Console Test for slim image");
 
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
       String curlCmd = "curl --silent --show-error --noproxy '*' -H 'host: "
           + domainUid + "." + domainNamespace + ".adminserver.test"
-          + "' http://" + K8S_NODEPORT_HOST + ":" + nodeportshttp
+          + "' http://" + host + ":" + nodeportshttp
           + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
 
       logger.info("Executing curl command {0}", curlCmd);

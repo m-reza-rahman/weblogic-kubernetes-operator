@@ -1119,12 +1119,16 @@ public class MonitoringUtils {
     }
 
     // check that NGINX can access the sample apps from all managed servers in the domain
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
     String curlCmd =
         String.format("curl --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s:%s/wls-exporter/metrics",
             nginxHost,
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT,
-            K8S_NODEPORT_HOST,
+            host,
             nodeport);
     testUntil(withLongRetryPolicy,
         callTestWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 50),

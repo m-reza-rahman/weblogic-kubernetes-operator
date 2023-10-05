@@ -359,7 +359,11 @@ class ItIstioCrossDomainTransaction {
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
     if (!WEBLOGIC_SLIM) {
-      String consoleUrl = "http://" + K8S_NODEPORT_HOST + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
       boolean checkConsole =
           checkAppUsingHostHeader(consoleUrl, "domain1-" + domain1Namespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console on domain1");
@@ -471,6 +475,10 @@ class ItIstioCrossDomainTransaction {
              "MDB application can not be activated on domain1/cluster");
 
     logger.info("MDB application is activated on domain1/cluster");
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
     String curlRequest = String.format("curl -v --show-error --noproxy '*' "
             + "-H 'host:domain1-" + domain1Namespace + ".org' "
             + "\"http://%s:%s/jmsservlet/jmstest?"
@@ -478,7 +486,7 @@ class ItIstioCrossDomainTransaction {
             + "cf=jms.ClusterConnectionFactory&"
             + "action=send&"
             + "dest=jms/testCdtUniformTopic\"",
-        K8S_NODEPORT_HOST, istioIngressPort, domain2Namespace);
+        host, istioIngressPort, domain2Namespace);
 
     ExecResult result = null;
     logger.info("curl command {0}", curlRequest);
@@ -496,12 +504,16 @@ class ItIstioCrossDomainTransaction {
   }
 
   private boolean checkLocalQueue() {
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
     String curlString = String.format("curl -v --show-error --noproxy '*' "
             + "-H 'host:domain1-" + domain1Namespace + ".org' "
             + "\"http://%s:%s/jmsservlet/jmstest?"
             + "url=t3://localhost:7001&"
             + "action=receive&dest=jms.testAccountingQueue\"",
-        K8S_NODEPORT_HOST, istioIngressPort);
+        host, istioIngressPort);
 
     logger.info("curl command {0}", curlString);
     testUntil(
