@@ -358,23 +358,55 @@ class ItMiiUpdateDomainConfig {
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,
           7001, resourcePath, "200");
       logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
+      assertTrue(result.toString().contains("JDBCSystemResources"),
+          "Failed to find the JDBCSystemResource configuration");
+      logger.info("Found the JDBCSystemResource configuration");
+
+      resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
+      result = exeAppInServerPod(domainNamespace, adminServerPodName,
+          7001, resourcePath, "200");
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
+      assertTrue(result.toString().contains("JMSSystemResources"),
+          "Failed to find the JMSSystemResources configuration");
+      logger.info("Found the JMSSystemResource configuration");
+
+      resourcePath = "/management/weblogic/latest/domainConfig/WLDFSystemResources/TestWldfModule";
+      result = exeAppInServerPod(domainNamespace, adminServerPodName,
+          7001, resourcePath, "200");
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the WLDFSystemResources configuration");
+      assertTrue(result.toString().contains("WLDFSystemResources"),
+          "Failed to find the WLDFSystemResources configuration");
+      logger.info("Found the WLDFSystemResources configuration");
+
+
+      resourcePath = "/management/wls/latest/datasources/id/TestDataSource";
+      result = exeAppInServerPod(domainNamespace, adminServerPodName,
+          7001, resourcePath, "200");
+      logger.info("------ result {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
+      assertTrue(result.toString().contains("scott"),
+          "Failed to find the JDBCSystemResource configuration");
+      logger.info("Found the JDBCSystemResource configuration");
     } else {
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
           "JDBCSystemResources", "TestDataSource", "200");
+      logger.info("Found the JDBCSystemResource configuration");
+
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "JMSSystemResources", "TestClusterJmsModule", "200");
+      logger.info("Found the JMSSystemResource configuration");
+
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "WLDFSystemResources", "TestWldfModule", "200");
+      logger.info("Found the WLDFSystemResource configuration");
+
+      verifyJdbcRuntime("TestDataSource", "jdbc:oracle:thin:localhost");
+      verifyJdbcRuntime("TestDataSource", "scott");
+      logger.info("Found the JDBCSystemResource configuration");
     }
-    logger.info("Found the JDBCSystemResource configuration");
-
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                      "JMSSystemResources", "TestClusterJmsModule", "200");
-    logger.info("Found the JMSSystemResource configuration");
-
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                      "WLDFSystemResources", "TestWldfModule", "200");
-    logger.info("Found the WLDFSystemResource configuration");
-
-    verifyJdbcRuntime("TestDataSource", "jdbc:oracle:thin:localhost");
-    verifyJdbcRuntime("TestDataSource", "scott");
-    logger.info("Found the JDBCSystemResource configuration");
   }
 
   /**
