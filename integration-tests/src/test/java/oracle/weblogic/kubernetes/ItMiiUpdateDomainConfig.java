@@ -126,7 +126,6 @@ class ItMiiUpdateDomainConfig {
   private static final String pvName = getUniqueName(domainUid + "-pv-");
   private static final String pvcName = getUniqueName(domainUid + "-pvc-");
   private StringBuffer curlString = null;
-  private StringBuffer checkCluster = null;
   private V1Patch patch = null;
   private final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-managed-server";
@@ -642,7 +641,6 @@ class ItMiiUpdateDomainConfig {
 
     // Check if the admin server pod has been restarted
     // by comparing the PodCreationTime before and after rolling restart
-
     assertTrue(verifyRollingRestartOccurred(pods, 1, domainNamespace),
         "Rolling restart failed");
 
@@ -1023,7 +1021,7 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
-    checkCluster = new StringBuffer("status=$(curl --user ");
+    StringBuffer checkCluster = new StringBuffer("status=$(curl --user ");
     checkCluster.append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
@@ -1037,8 +1035,19 @@ class ItMiiUpdateDomainConfig {
           .append("echo ${status}");
     logger.info("checkManagedServerConfiguration: curl command {0}", new String(checkCluster));
 
-    verifyCommandResultContainsMsg(new String(checkCluster), "200");
+    if (OKE_CLUSTER) {
+      checkCluster.append(KUBERNETES_CLI)
+          .append(" exec -n ")
+          .append(domainNamespace)
+          .append(" ")
+          .append(adminServerPodName)
+          .append(" -- ")
+          .append(curlString);
+      //+ domainNamespace + "  " + adminServerPodName + " -- " + curlString;
+      // + domainNamespace + "  " + managedServerPrefix + 1 + " -- " + curlString;
+    }
 
+    verifyCommandResultContainsMsg(new String(checkCluster), "200");
   }
 
   // Crate a ConfigMap with a model file to add a new WebLogic cluster
