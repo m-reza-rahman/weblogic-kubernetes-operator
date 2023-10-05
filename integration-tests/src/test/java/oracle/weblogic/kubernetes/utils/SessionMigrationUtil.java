@@ -139,6 +139,12 @@ public class SessionMigrationUtil {
         () -> checkSessionReplicatorServerReady(domainNamespace, adminServerPodName, "primary", curlCmd),
         logger, "check if primary server is ready in namespace {0}", domainNamespace);
 
+    try {
+      execCommand(domainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", "ls -l /u01/domains");
+    } catch (Exception e) {
+      ;
+    }
+
     logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
     testUntil(withStandardRetryPolicy, () -> {
@@ -156,6 +162,11 @@ public class SessionMigrationUtil {
         return true;
       } else {
         logger.info("Didn't get correct exit code or there is an error");
+        try {
+          execCommand(domainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", "ls -l /u01/domains");
+        } catch (Exception e) {
+          ;
+        }
         return false;
       }
     }, logger, "");
