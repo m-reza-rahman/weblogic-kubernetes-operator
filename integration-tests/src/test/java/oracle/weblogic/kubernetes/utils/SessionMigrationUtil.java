@@ -138,8 +138,13 @@ public class SessionMigrationUtil {
 
     // check if primary server is ready
     testUntil(withStandardRetryPolicy,
-        () -> checkPrimaryServerReady(domainNamespace, adminServerPodName, curlCmd),
+        () -> checkSessionReplicatorServerReady(domainNamespace, adminServerPodName, "primary", curlCmd),
         logger, "check if primary server is ready in namespace {0}", domainNamespace);
+    
+    // check if primary server is ready
+    testUntil(withStandardRetryPolicy,
+        () -> checkSessionReplicatorServerReady(domainNamespace, adminServerPodName, "secondary", curlCmd),
+        logger, "check if primary server is ready in namespace {0}", domainNamespace);    
 
     logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
@@ -164,8 +169,9 @@ public class SessionMigrationUtil {
     return httpAttrInfo;
   }
 
-  private static boolean checkPrimaryServerReady(String domainNamespace,
+  private static boolean checkSessionReplicatorServerReady(String domainNamespace,
                                                  String adminServerPodName,
+                                                 String replicator,
                                                  String curlCmd) {
     boolean primaryServerReady = false;
     LoggingFacade logger = getLogger();
@@ -177,10 +183,10 @@ public class SessionMigrationUtil {
         null, true, "/bin/sh", "-c", curlCmd));
 
     if (execResult.exitValue() == 0 && execResult.stdout() != null && !execResult.stdout().isEmpty()) {
-      String primaryServerName = getHttpResponseAttribute(execResult.stdout(), "primary");
+      String primaryServerName = getHttpResponseAttribute(execResult.stdout(), replicator);
 
       if (primaryServerName != null && !primaryServerName.isEmpty()) {
-        logger.info("\n Primary server is ready: \n " + execResult.stdout());
+        logger.info("\n {0} server is ready: \n {1}", replicator, execResult.stdout());
         primaryServerReady = true;
       }
     }

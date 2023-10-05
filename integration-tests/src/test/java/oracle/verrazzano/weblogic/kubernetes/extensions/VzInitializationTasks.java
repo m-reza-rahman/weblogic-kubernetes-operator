@@ -38,32 +38,16 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_USERNAME;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_TENANCY;
-import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_REPO;
-import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
-import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_TAG;
-import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_DOMAINTYPE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
-import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
-import static oracle.weblogic.kubernetes.TestConstants.SKIP_BUILD_IMAGES_IF_EXISTS;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
-import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_IMAGE_DOMAINHOME;
-import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_IMAGE_DOMAINTYPE;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_IMAGE_TAG;
-import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_MODEL_FILE;
-import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_MODEL_PROPERTIES_FILE;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.DOWNLOAD_DIR;
@@ -83,8 +67,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.imagePull;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageRepoLogin;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
-import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
-import static oracle.weblogic.kubernetes.assertions.TestAssertions.imageExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
@@ -135,13 +117,13 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
         // Only the first thread will enter this block.
         logger.info("Building Images before any integration test classes are run");
         context.getRoot().getStore(GLOBAL).put("BuildSetup", this);
-        
+
         // login to BASE_IMAGES_REPO 
         logger.info(WLSIMG_BUILDER + " login to BASE_IMAGES_REPO {0}", BASE_IMAGES_REPO);
         testUntil(withVeryLongRetryPolicy,
-                () -> imageRepoLogin(BASE_IMAGES_REPO, BASE_IMAGES_REPO_USERNAME, BASE_IMAGES_REPO_PASSWORD),
-                logger,
-                WLSIMG_BUILDER + " login to BASE_IMAGES_REPO to be successful");
+            () -> imageRepoLogin(BASE_IMAGES_REPO, BASE_IMAGES_REPO_USERNAME, BASE_IMAGES_REPO_PASSWORD),
+            logger,
+            WLSIMG_BUILDER + " login to BASE_IMAGES_REPO to be successful");
         // The following code is for pulling WLS images if running tests in Kind cluster
         if (KIND_REPO != null) {
           // The kind clusters can't pull images from BASE_IMAGES_REPO using the image pull secret.
@@ -153,11 +135,6 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
           //   4. WLSIMG_BUILDER push this new image name
           //   5. use this image name to create the domain resource
           Collection<String> images = new ArrayList<>();
-
-          images.add(WEBLOGIC_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG);
-          images.add(FMWINFRA_IMAGE_NAME + ":" + FMWINFRA_IMAGE_TAG);
-          images.add(DB_IMAGE_NAME + ":" + DB_IMAGE_TAG);
-          images.add(LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG);
 
           for (String image : images) {
             testUntil(
@@ -172,87 +149,22 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
         miiBasicImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
         wdtBasicImage = WDT_BASIC_IMAGE_NAME + ":" + WDT_BASIC_IMAGE_TAG;
 
-        // build MII basic image if does not exits
-        logger.info("Build/Check mii-basic image with tag {0}", MII_BASIC_IMAGE_TAG);
-        if (! imageExists(MII_BASIC_IMAGE_NAME, MII_BASIC_IMAGE_TAG)) {
-          logger.info("Building mii-basic image {0}", miiBasicImage);
-          testUntil(
-                withVeryLongRetryPolicy,
-                createBasicImage(MII_BASIC_IMAGE_NAME, MII_BASIC_IMAGE_TAG, MII_BASIC_WDT_MODEL_FILE,
-                null, MII_BASIC_APP_NAME, MII_BASIC_IMAGE_DOMAINTYPE),
-                logger,
-                "createBasicImage to be successful");
-        } else {
-          logger.info("!!!! domain image {0} exists !!!!", miiBasicImage);
-        }
-
-        logger.info("Build/Check wdt-basic image with tag {0}", WDT_BASIC_IMAGE_TAG);
-        // build WDT basic image if does not exits
-        if (! imageExists(WDT_BASIC_IMAGE_NAME, WDT_BASIC_IMAGE_TAG)) {
-          logger.info("Building wdt-basic image {0}", wdtBasicImage);
-          testUntil(
-                withVeryLongRetryPolicy,
-                createBasicImage(WDT_BASIC_IMAGE_NAME, WDT_BASIC_IMAGE_TAG, WDT_BASIC_MODEL_FILE,
-                WDT_BASIC_MODEL_PROPERTIES_FILE, WDT_BASIC_APP_NAME, WDT_BASIC_IMAGE_DOMAINTYPE),
-                logger,
-                "createBasicImage to be successful");
-        } else {
-          logger.info("!!!! domain image {0} exists !!!!", wdtBasicImage);
-        }
-
-        /* Check image exists using WLSIMG_BUILDER images | grep image tag.
-         * Tag name is unique as it contains date and timestamp.
-         * This is a workaround for the issue on Jenkins machine
-         * as WLSIMG_BUILDER images imagename:imagetag is not working and
-         * the test fails even though the image exists.
-         */
-        assertTrue(doesImageExist(MII_BASIC_IMAGE_TAG),
-              String.format("Image %s doesn't exist", miiBasicImage));
-
-        assertTrue(doesImageExist(WDT_BASIC_IMAGE_TAG),
-              String.format("Image %s doesn't exist", wdtBasicImage));
-
         logger.info(WLSIMG_BUILDER + " login");
         testUntil(withVeryLongRetryPolicy,
-              () -> imageRepoLogin(BASE_IMAGES_REPO, BASE_IMAGES_REPO_USERNAME, BASE_IMAGES_REPO_PASSWORD),
-              logger,
-              WLSIMG_BUILDER + " login to BASE_IMAGES_REPO to be successful");
+            () -> imageRepoLogin(BASE_IMAGES_REPO, BASE_IMAGES_REPO_USERNAME, BASE_IMAGES_REPO_PASSWORD),
+            logger,
+            WLSIMG_BUILDER + " login to BASE_IMAGES_REPO to be successful");
 
-        // push the images to test images repository
-        if (!DOMAIN_IMAGES_REPO.isEmpty()) {
-
-          List<String> images = new ArrayList<>();
-          // add images only if SKIP_BUILD_IMAGES_IF_EXISTS is not set
-          if (!SKIP_BUILD_IMAGES_IF_EXISTS) {
-            images.add(miiBasicImage);
-            images.add(wdtBasicImage);
-          }
-
-          for (String image : images) {
-            if (KIND_REPO != null) {
-              logger.info("kind load docker-image {0} --name kind", image);
-            } else {
-              logger.info(WLSIMG_BUILDER + " push image {0} to {1}", image, DOMAIN_IMAGES_REPO);
-            }
-            testUntil(
-                withVeryLongRetryPolicy,
-                () -> imagePush(image),
-                logger,
-                WLSIMG_BUILDER + " push to TEST_IMAGES_REPO/kind for image {0} to be successful",
-                image);
-          }
-
-          // list images for Kind cluster
-          if (KIND_REPO != null) {
-            Command
-                .withParams(new CommandParams()
-                    .command(WLSIMG_BUILDER + " exec kind-worker crictl images")
-                    .verbose(true)
-                    .saveResults(true))
-                .execute();
-          }
+        // list images for Kind cluster
+        if (KIND_REPO != null) {
+          Command
+              .withParams(new CommandParams()
+                  .command(WLSIMG_BUILDER + " exec kind-worker crictl images")
+                  .verbose(true)
+                  .saveResults(true))
+              .execute();
         }
-        
+
         // set initialization success to true, not counting the istio installation as not all tests use istio
         isInitializationSuccessful = true;
       } finally {
@@ -274,7 +186,7 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
     // check initialization is already done and is not successful
     assertTrue(started.get() && isInitializationSuccessful,
         "Initialization(login/push to BASE_IMAGES_REPO) failed, "
-            + "check the actual error or stack trace in the first test that failed in the test suite");
+        + "check the actual error or stack trace in the first test that failed in the test suite");
 
   }
 
