@@ -209,6 +209,7 @@ public class SessionMigrationUtil {
     int waittime = 10;
     String curlCommand =  new StringBuilder()
         .append("curl -v --show-error")
+        .append(" --noproxy '*'")
         .append(" --connect-timeout ").append(waittime).append(" --max-time ").append(waittime)
         .append(" http://")
         .append(hostAndPort)
