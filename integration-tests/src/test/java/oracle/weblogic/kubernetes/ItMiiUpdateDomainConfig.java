@@ -72,6 +72,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToCha
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyUpdateWebLogicCredential;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -266,7 +267,8 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
     String hostAndPort =
-        OKE_CLUSTER ? managedServerPrefix + 1 + ":8001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+        OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+    //OKE_CLUSTER ? managedServerPrefix + 1 + ":8001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     String curlString = new StringBuffer()
           .append("curl --user ")
           .append(ADMIN_USERNAME_DEFAULT)
@@ -281,7 +283,8 @@ class ItMiiUpdateDomainConfig {
 
     if (OKE_CLUSTER) {
       curlString = KUBERNETES_CLI + " exec -n "
-        + domainNamespace + "  " + managedServerPrefix + 1 + " -- " + curlString;
+        + domainNamespace + "  " + adminServerPodName + " -- " + curlString;
+      // + domainNamespace + "  " + managedServerPrefix + 1 + " -- " + curlString;
     }
 
     logger.info("checkJmsServerConfig: curl command {0}", curlString);
@@ -350,8 +353,15 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
-    verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-                                      "JDBCSystemResources", "TestDataSource", "200");
+    if (OKE_CLUSTER) {
+      String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,
+          7001, resourcePath, "200");
+      logger.info("------ result {0}", result.toString());
+    } else {
+      verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
+          "JDBCSystemResources", "TestDataSource", "200");
+    }
     logger.info("Found the JDBCSystemResource configuration");
 
     verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
