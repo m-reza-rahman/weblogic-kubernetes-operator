@@ -193,11 +193,12 @@ pipeline {
                             java -version
                             mvn --version
                             python --version
-                            
+                            sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
+                            sudo chmod g+rwx "$HOME/.docker" -R
                             sudo usermod -aG docker ${USER}
                             sudo chmod 666 /var/run/docker.sock
                             sudo systemctl restart docker
-
+                            su -s ${USER}
                             docker version
 
                             ulimit -a
