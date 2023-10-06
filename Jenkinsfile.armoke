@@ -193,8 +193,9 @@ pipeline {
                             java -version
                             mvn --version
                             python --version
-                            docker version
                             sudo chmod -x /var/run/docker.sock
+                            docker version
+                           
                             ulimit -a
                             ulimit -aH
                         '''
