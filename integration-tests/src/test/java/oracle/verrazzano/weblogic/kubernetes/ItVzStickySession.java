@@ -312,7 +312,7 @@ class ItVzStickySession {
                                         .port(7001)),
                                 new IngressRule()
                                     .paths(Arrays.asList(new Path()
-                                        .path(SESSMIGR_APP_WAR_NAME)
+                                        .path("/" + SESSMIGR_APP_WAR_NAME)
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(domainUid + "-cluster-" + clusterName)
