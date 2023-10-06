@@ -198,8 +198,8 @@ pipeline {
                             ls -l /var/run/docker.sock
                             sudo chmod 666 /var/run/docker.sock
                             ls -l /var/run/docker.sock
-                            sudo systemctl restart docker
-                            su -s ${USER}
+                            systemctl restart docker.service
+
                             docker version
 
                             ulimit -a
