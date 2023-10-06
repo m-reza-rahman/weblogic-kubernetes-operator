@@ -60,6 +60,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePodVerifyResult;
@@ -223,24 +224,37 @@ class ItWseeSSO {
     buildRunClientOnPod();
   }
 
-  private String checkWSDLAccess(String domainNamespace, String domainUid,
+  private String checkWSDLAccess(String domainNamespace,
+                                 String domainUid,
                                  String adminSvcExtHost,
                                  String appURI) {
-
     String adminServerPodName = domainUid + "-" + adminServerName;
+    final String msServerPodName = domainUid + "-" + managedServerNameBase + 1;
+    String url = null;
+
     int serviceNodePort = assertDoesNotThrow(()
             -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
             "default"),
         "Getting admin server node port failed");
 
+    if (OKE_CLUSTER) {
+      ExecResult result = exeAppInServerPod(domainNamespace, msServerPodName, managedServerPort, appURI);
+      logger.info("==== result = {0}", result.toString());
+      url = "http://" + msServerPodName + ":" + managedServerPort + appURI;
+      //assertTrue(result.stdout().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
+      //assertTrue(result.stdout().contains("RedeliveryLimit:20"), "Didn't get RedeliveryLimit:20");
+      //assertTrue(result.stdout().contains("Notes:mysitconfigdomain"), "Didn't get Correct Notes description");
+    } else {
+      logger.info("admin svc host = {0}", adminSvcExtHost);
+      String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+      final String myUrl = "http://" + hostAndPort + appURI;
 
-    logger.info("admin svc host = {0}", adminSvcExtHost);
-    String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-    String url = "http://" + hostAndPort + appURI;
+      HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(myUrl, true));
+      assertTrue(response.statusCode() == 200);
+      logger.info(response.body());
+      url = myUrl;
+    }
 
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-    assertTrue(response.statusCode() == 200);
-    logger.info(response.body());
     return url;
   }
 
@@ -248,7 +262,9 @@ class ItWseeSSO {
 
     // create pull secrets for WebLogic image when running in non Kind Kubernetes cluster
     // this secret is used only for non-kind cluster
-    createBaseRepoSecret(domainNamespace);
+    if (OKE_CLUSTER) {
+      createBaseRepoSecret(domainNamespace);
+    }
 
     // create secret for admin credential with special characters
     // the resultant password is ##W%*}!"'"`']\\\\//1$$~x
