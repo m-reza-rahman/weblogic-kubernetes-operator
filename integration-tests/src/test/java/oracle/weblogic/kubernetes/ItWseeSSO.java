@@ -60,8 +60,9 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePodVerifyResult;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
@@ -129,6 +130,8 @@ class ItWseeSSO {
   static Path wseeServiceRefAppPath;
   static Path wseeServiceRefStubsPath;
 
+  private static String ingressIP = null;
+
   private static LoggingFacade logger = null;
 
   /**
@@ -170,6 +173,9 @@ class ItWseeSSO {
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("NGINX http node port: {0}", nodeportshttp);
 
+      String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
     }
     keyStoresPath = Paths.get(RESULTS_ROOT, "mydomainwsee", "keystores");
     assertDoesNotThrow(() -> deleteDirectory(keyStoresPath.toFile()));
@@ -230,13 +236,22 @@ class ItWseeSSO {
                                  String appURI) {
     String adminServerPodName = domainUid + "-" + adminServerName;
     final String msServerPodName = domainUid + "-" + managedServerNameBase + 1;
-    String url = null;
+    //String url = null;
 
     int serviceNodePort = assertDoesNotThrow(()
             -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
             "default"),
         "Getting admin server node port failed");
 
+    String hostAndPort = OKE_CLUSTER ? ingressIP : getHostAndPort(adminSvcExtHost, serviceNodePort);
+    logger.info("admin svc host = {0}", adminSvcExtHost);
+    //String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+    String url = "http://" + hostAndPort + appURI;
+
+    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
+    assertTrue(response.statusCode() == 200);
+    logger.info(response.body());
+    /*
     if (OKE_CLUSTER) {
       ExecResult result = exeAppInServerPod(domainNamespace, msServerPodName, managedServerPort, appURI);
       logger.info("==== result = {0}", result.toString());
@@ -253,7 +268,7 @@ class ItWseeSSO {
       assertTrue(response.statusCode() == 200);
       logger.info(response.body());
       url = myUrl;
-    }
+    }*/
 
     return url;
   }
@@ -262,9 +277,7 @@ class ItWseeSSO {
 
     // create pull secrets for WebLogic image when running in non Kind Kubernetes cluster
     // this secret is used only for non-kind cluster
-    if (OKE_CLUSTER) {
-      createBaseRepoSecret(domainNamespace);
-    }
+    createBaseRepoSecret(domainNamespace);
 
     // create secret for admin credential with special characters
     // the resultant password is ##W%*}!"'"`']\\\\//1$$~x
@@ -301,8 +314,11 @@ class ItWseeSSO {
         configMapName, domainUid, domainNamespace,
         Arrays.asList(RESULTS_ROOT + "/" + modelFileName));
 
-    // this secret is used only for non-kind cluster
-    createBaseRepoSecret(domainNamespace);
+    if (OKE_CLUSTER) {
+      // this secret is used only for non-kind cluster
+      createBaseRepoSecret(domainNamespace);
+    }
+
     String pvName = getUniqueName(domainUid + "-pv-");
     String pvcName = getUniqueName(domainUid + "-pvc-");
 
