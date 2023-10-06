@@ -60,7 +60,6 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -130,8 +129,6 @@ class ItWseeSSO {
   static Path wseeServiceRefAppPath;
   static Path wseeServiceRefStubsPath;
 
-  private static String ingressIP = null;
-
   private static LoggingFacade logger = null;
 
   /**
@@ -172,10 +169,6 @@ class ItWseeSSO {
       logger.info("NGINX service name: {0}", nginxServiceName);
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("NGINX http node port: {0}", nodeportshttp);
-
-      String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
     }
     keyStoresPath = Paths.get(RESULTS_ROOT, "mydomainwsee", "keystores");
     assertDoesNotThrow(() -> deleteDirectory(keyStoresPath.toFile()));
@@ -243,7 +236,9 @@ class ItWseeSSO {
             "default"),
         "Getting admin server node port failed");
 
-    String hostAndPort = OKE_CLUSTER ? ingressIP : getHostAndPort(adminSvcExtHost, serviceNodePort);
+    String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    String hostAndPort = OKE_CLUSTER ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace)
+        : getHostAndPort(adminSvcExtHost, serviceNodePort);
     logger.info("admin svc host = {0}", adminSvcExtHost);
     //String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
     String url = "http://" + hostAndPort + appURI;
