@@ -244,6 +244,7 @@ pipeline {
                                                             --name=kubectl/kubectl-v${KUBECTL_VERSION}-arm --file=${WORKSPACE}/bin/kubectl \
                                                             --auth=instance_principal
                             chmod +x ${WORKSPACE}/bin/kubectl
+                            ls -al ${WORKSPACE}/bin/kubectl
                             kubectl version --client=true
                         '''
                     }
