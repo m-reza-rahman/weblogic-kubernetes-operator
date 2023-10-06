@@ -140,7 +140,7 @@ public class SessionMigrationUtil {
         logger, "check if primary server is ready in namespace {0}", domainNamespace);
 
     try {
-      execCommand(domainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", "ls -lrt /tmp");
+      execCommand(domainNamespace, adminServerPodName, "weblogic-server", true, "/bin/sh", "-c", "ls -lrt /tmp");
     } catch (Exception e) {
       ;
     }
@@ -148,7 +148,8 @@ public class SessionMigrationUtil {
     logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
     testUntil(withStandardRetryPolicy, () -> {
-      ExecResult execResult = execCommand(domainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", curlCmd);
+      ExecResult execResult = execCommand(domainNamespace, adminServerPodName, 
+          "weblogic-server", true, "/bin/sh", "-c", curlCmd);
       if (execResult.exitValue() == 0 && execResult.stderr() != null && execResult.stderr().isEmpty()) {
         logger.info("\n HTTP response is \n" + execResult.stdout());
         if (execResult.stdout() == null || execResult.stdout().isEmpty()) {
@@ -166,7 +167,7 @@ public class SessionMigrationUtil {
         logger.info("Stdout \n" + execResult.stdout());
         logger.info("Stderr \n" + execResult.stderr());
         try {
-          ExecResult execCommand = execCommand(domainNamespace, adminServerPodName, null,
+          ExecResult execCommand = execCommand(domainNamespace, adminServerPodName, "weblogic-server",
               true, "/bin/sh", "-c", "ls -lrt /tmp");
           logger.info(execCommand.stdout());
         } catch (Exception e) {
@@ -189,7 +190,7 @@ public class SessionMigrationUtil {
     // set HTTP request and get HTTP response
     ExecResult execResult = assertDoesNotThrow(
         () -> execCommand(domainNamespace, adminServerPodName,
-        null, true, "/bin/sh", "-c", curlCmd));
+        "weblogic-server", true, "/bin/sh", "-c", curlCmd));
 
     if (execResult.exitValue() == 0 && execResult.stdout() != null && !execResult.stdout().isEmpty()) {
       String primaryServerName = getHttpResponseAttribute(execResult.stdout(), replicator);
