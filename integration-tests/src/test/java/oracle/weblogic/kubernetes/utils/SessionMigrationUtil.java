@@ -202,7 +202,7 @@ public class SessionMigrationUtil {
                                          String headerOption,
                                          String hostName,
                                          int port) {
-    final String httpHeaderFile = "/u01/domains/header";
+    final String httpHeaderFile = "/tmp/header";
     LoggingFacade logger = getLogger();
 
     // In OKE_CLUSTER env, the test uses LBer ext IP addr only.
