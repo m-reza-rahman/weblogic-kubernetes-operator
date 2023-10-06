@@ -162,14 +162,19 @@ public class SessionMigrationUtil {
         return true;
       } else {
         logger.info("Didn't get correct exit code or there is an error");
+        logger.info("Exit code \n" + execResult.exitValue());
+        logger.info("Stdout \n" + execResult.stdout());
+        logger.info("Stderr \n" + execResult.stderr());
         try {
-          execCommand(domainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", "ls -lrt /tmp");
+          ExecResult execCommand = execCommand(domainNamespace, adminServerPodName, null,
+              true, "/bin/sh", "-c", "ls -lrt /tmp");
+          logger.info(execCommand.stdout());
         } catch (Exception e) {
           ;
         }
         return false;
       }
-    }, logger, "");
+    }, logger, "curl command to return ext code 0, no error and cookie output");
     return httpAttrInfo;
   }
 
