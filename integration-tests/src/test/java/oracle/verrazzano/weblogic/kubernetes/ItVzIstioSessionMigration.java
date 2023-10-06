@@ -31,7 +31,6 @@ import oracle.verrazzano.weblogic.kubernetes.annotations.VzIntegrationTest;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -106,7 +105,7 @@ class ItVzIstioSessionMigration {
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *                   JUnit engine parameter resolution mechanism
    */
-  @BeforeAll
+  //@BeforeAll
   public static void initAll(@Namespaces(1) List<String> namespaces) {
     logger = getLogger();
 
@@ -181,6 +180,15 @@ class ItVzIstioSessionMigration {
   @Test
   @DisplayName("Verify session migration in an istio enabled environment")
   void testSessionMigrationIstioEnabled() {
+    logger = getLogger();
+    // map to save HTTP response data
+    domainNamespace = "ns-cbrdur";
+    httpAttrMap = new HashMap<String, String>();
+    httpAttrMap.put("sessioncreatetime", "(.*)sessioncreatetime>(.*)</sessioncreatetime(.*)");
+    httpAttrMap.put("sessionid", "(.*)sessionid>(.*)</sessionid(.*)");
+    httpAttrMap.put("primary", "(.*)primary>(.*)</primary(.*)");
+    httpAttrMap.put("secondary", "(.*)secondary>(.*)</secondary(.*)");
+    httpAttrMap.put("count", "(.*)countattribute>(.*)</countattribute(.*)");    
     final String primaryServerAttr = "primary";
     final String secondaryServerAttr = "secondary";
     final String sessionCreateTimeAttr = "sessioncreatetime";
