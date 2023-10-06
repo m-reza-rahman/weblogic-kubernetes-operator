@@ -61,14 +61,16 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.creat
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isServiceExtIPAddrtOkeReady;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.getLbExternalIp;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -110,8 +112,8 @@ class ItVzStickySession {
   private static String clusterName = "cluster-1";
   private static String adminServerPodName = domainUid + "-admin-server";
   private static String managedServerPrefix = domainUid + "-managed-server";
+  private static int managedServerPort = 8001;
   private static int replicaCount = 1;
-  private static String opNamespace = null;
   private static String domainNamespace = null;
   private static String traefikNamespace = null;
 
@@ -259,9 +261,9 @@ class ItVzStickySession {
 
     // create cluster object
     String clusterName = "cluster-1";
-
-    DomainResource domain = createDomainResource(domainUid, domainNamespace,
-        miiImage,
+    ClusterService myClusterService = new ClusterService();
+    myClusterService.setSessionAffinity("ClientIP");
+    DomainResource domain = createDomainResource(domainUid, domainNamespace, miiImage,
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
         encryptionSecretName, replicaCount, Arrays.asList(clusterName));
 
@@ -297,7 +299,7 @@ class ItVzStickySession {
                         .apiVersion("oam.verrazzano.io/v1alpha1")
                         .kind("IngressTrait")
                         .metadata(new V1ObjectMeta()
-                            .name("mydomain-ingress")
+                            .name("mysessiondomain-ingress")
                             .namespace(domainNamespace))
                         .spec(new IngressTraitSpec()
                             .ingressRules(Arrays.asList(
@@ -310,11 +312,11 @@ class ItVzStickySession {
                                         .port(7001)),
                                 new IngressRule()
                                     .paths(Arrays.asList(new Path()
-                                        .path("/sessmigr-app")
+                                        .path(SESSMIGR_APP_WAR_NAME)
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(domainUid + "-cluster-" + clusterName)
-                                        .port(8001)))))))))));
+                                        .port(managedServerPort)))))))))));
 
     logger.info(Yaml.dump(component));
     logger.info(Yaml.dump(application));
@@ -475,10 +477,10 @@ class ItVzStickySession {
   }
 
   private static String buildCurlCommand(String hostName,
-                                         int servicePort,
-                                         String curlUrlPath,
-                                         String headerOption,
-                                         String... clusterAddress) {
+      int servicePort,
+      String curlUrlPath,
+      String headerOption,
+      String... clusterAddress) {
 
     StringBuffer curlCmd = new StringBuffer("curl --show-error");
     logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
@@ -489,13 +491,17 @@ class ItVzStickySession {
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
-      String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : getHostAndPort(hostName, servicePort);
+      String serviceExtIPAddr = null;
+      testUntil(withLongRetryPolicy, isServiceExtIPAddrtOkeReady(ingressServiceName, traefikNamespace),
+          logger, "Waiting until external IP address of the service available");
+      serviceExtIPAddr = assertDoesNotThrow(() -> getLbExternalIp(ingressServiceName, traefikNamespace),
+              "Can't find external IP address of the service " + ingressServiceName);
+      logger.info("External IP address of the service is {0} ", serviceExtIPAddr);
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
           .append(hostName)
           .append("' http://")
-          .append(hostAndPort)
+          .append(serviceExtIPAddr + ":" + servicePort)
           .append("/")
           .append(curlUrlPath)
           .append(headerOption)
