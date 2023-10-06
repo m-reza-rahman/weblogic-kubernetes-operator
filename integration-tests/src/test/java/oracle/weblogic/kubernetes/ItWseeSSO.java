@@ -60,6 +60,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -229,28 +230,21 @@ class ItWseeSSO {
                                  String appURI) {
     String adminServerPodName = domainUid + "-" + adminServerName;
     final String msServerPodName = domainUid + "-" + managedServerNameBase + 1;
-    //String url = null;
+    String url = null;
 
     int serviceNodePort = assertDoesNotThrow(()
             -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
             "default"),
         "Getting admin server node port failed");
-
-    String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    String hostAndPort = OKE_CLUSTER ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace)
-        : getHostAndPort(adminSvcExtHost, serviceNodePort);
     logger.info("admin svc host = {0}", adminSvcExtHost);
-    //String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-    String url = "http://" + hostAndPort + appURI;
 
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-    assertTrue(response.statusCode() == 200);
-    logger.info(response.body());
-    /*
     if (OKE_CLUSTER) {
       ExecResult result = exeAppInServerPod(domainNamespace, msServerPodName, managedServerPort, appURI);
       logger.info("==== result = {0}", result.toString());
-      url = "http://" + msServerPodName + ":" + managedServerPort + appURI;
+      String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      url = "http://" + getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) + appURI;
+
+      //url = "http://" + msServerPodName + ":" + managedServerPort + appURI;
       //assertTrue(result.stdout().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
       //assertTrue(result.stdout().contains("RedeliveryLimit:20"), "Didn't get RedeliveryLimit:20");
       //assertTrue(result.stdout().contains("Notes:mysitconfigdomain"), "Didn't get Correct Notes description");
@@ -263,7 +257,7 @@ class ItWseeSSO {
       assertTrue(response.statusCode() == 200);
       logger.info(response.body());
       url = myUrl;
-    }*/
+    }
 
     return url;
   }
