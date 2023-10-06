@@ -198,7 +198,7 @@ pipeline {
                             ls -l /var/run/docker.sock
                             sudo chmod 666 /var/run/docker.sock
                             ls -l /var/run/docker.sock
-                            systemctl restart docker.service
+                            sudo systemctl restart docker
 
                             docker version
 
