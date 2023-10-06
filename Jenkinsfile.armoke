@@ -194,6 +194,7 @@ pipeline {
                             mvn --version
                             python --version
                             docker version
+                            sudo chmod -x /var/run/docker.sock
                             ulimit -a
                             ulimit -aH
                         '''
