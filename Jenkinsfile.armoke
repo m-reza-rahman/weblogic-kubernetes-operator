@@ -192,6 +192,7 @@ pipeline {
                             env|sort
                             java -version
                             mvn --version
+                            echo $OSTYPE
                             python --version
                             find . -name ".docker"
                             sudo usermod -aG docker ${USER}
