@@ -139,18 +139,12 @@ public class SessionMigrationUtil {
         () -> checkSessionReplicatorServerReady(domainNamespace, adminServerPodName, "primary", curlCmd),
         logger, "check if primary server is ready in namespace {0}", domainNamespace);
 
-    try {
-      execCommand(domainNamespace, adminServerPodName, "weblogic-server", true, "/bin/sh", "-c", "ls -lrt /tmp");
-    } catch (Exception e) {
-      ;
-    }
-
     logger.info("Sending request from inside admin server pod to cluster : {0}", curlCmd);
     // set HTTP request and get HTTP response
     testUntil(withStandardRetryPolicy, () -> {
       ExecResult execResult = execCommand(domainNamespace, adminServerPodName, 
           "weblogic-server", true, "/bin/sh", "-c", curlCmd);
-      if (execResult.exitValue() == 0 && execResult.stderr() != null && execResult.stderr().isEmpty()) {
+      if (execResult.exitValue() == 0 && execResult.stderr() != null) {
         logger.info("\n HTTP response is \n" + execResult.stdout());
         if (execResult.stdout() == null || execResult.stdout().isEmpty()) {
           logger.info("Null or empty output");
