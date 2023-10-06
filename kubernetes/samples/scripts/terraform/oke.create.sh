@@ -38,8 +38,8 @@ setupTerraform() {
     else
        echo "Unsupported OS"
     fi
-    curl -O https://releases.hashicorp.com/terraform/1.2.0/terraform_1.2.0_${os_type}_amd64.zip
-    unzip terraform_1.2.0_${os_type}_amd64.zip
+    curl -O https://releases.hashicorp.com/terraform/1.2.0/terraform_1.2.0_${os_type}_arm64.zip
+    unzip terraform_1.2.0_${os_type}_arm64.zip
     chmod +x ${terraformDir}/terraform
     export PATH=${terraformDir}:${PATH}
 }
