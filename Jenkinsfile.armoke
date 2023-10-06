@@ -201,7 +201,7 @@ pipeline {
                             sudo systemctl restart docker
                             sudo chown $(whoami) /var/run/docker.sock
                             newgrp docker
-                            reboot
+                            
 
                             docker version
 
