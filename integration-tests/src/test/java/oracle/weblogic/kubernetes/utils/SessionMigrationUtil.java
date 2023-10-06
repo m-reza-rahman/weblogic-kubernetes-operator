@@ -160,16 +160,9 @@ public class SessionMigrationUtil {
         logger.info("Exit code \n" + execResult.exitValue());
         logger.info("Stdout \n" + execResult.stdout());
         logger.info("Stderr \n" + execResult.stderr());
-        try {
-          ExecResult execCommand = execCommand(domainNamespace, adminServerPodName, "weblogic-server",
-              true, "/bin/sh", "-c", "ls -lrt /tmp");
-          logger.info(execCommand.stdout());
-        } catch (Exception e) {
-          ;
-        }
         return false;
       }
-    }, logger, "curl command to return ext code 0, no error and cookie output");
+    }, logger, "curl command to return exit code 0, no error, and cookie output");
     return httpAttrInfo;
   }
 
@@ -212,7 +205,7 @@ public class SessionMigrationUtil {
     // --max-time - Maximum time in seconds that you allow the whole operation to take
     int waittime = 10;
     String curlCommand =  new StringBuilder()
-        .append("curl --show-error -v ")
+        .append("curl --show-error ")
         .append(" --noproxy '*'")
         .append(" --connect-timeout ").append(waittime).append(" --max-time ").append(waittime)
         .append(" http://")
