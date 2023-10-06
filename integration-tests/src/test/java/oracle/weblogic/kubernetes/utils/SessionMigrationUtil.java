@@ -163,7 +163,7 @@ public class SessionMigrationUtil {
       } else {
         logger.info("Didn't get correct exit code or there is an error");
         try {
-          execCommand(domainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", "ls -l /u01/domains");
+          execCommand(domainNamespace, adminServerPodName, null, true, "/bin/sh", "-c", "ls -lrt /tmp");
         } catch (Exception e) {
           ;
         }
