@@ -726,19 +726,13 @@ createPrimordialDomain() {
       local MII_PASSPHRASE=$(cat ${RUNTIME_ENCRYPTION_SECRET_PASSWORD})
       encrypt_decrypt_domain_secret "decrypt" /tmp/miiupgdomain${DOMAIN_HOME} ${MII_PASSPHRASE}
       cd /tmp/miiupgdomain && base64 -d ${WLSDOMAIN_CONFIG_ZIPPED} > ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp && tar -pxzf ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp
+      # a file is written to a /tmp/mii_domain_upgrade.txt containing the status of SecureModeEnabled.
       ${SCRIPTPATH}/wlst.sh ${SCRIPTPATH}/mii-domain-upgrade.py /tmp/miiupgdomain$DOMAIN_HOME || exitOrLoop
+      if [ $(grep -i False /tmp/mii_domain_upgrade.txt | wc -l ) -gt 0 ] ; then
+        MERGED_MODEL_ENVVARS_SAME="false"
+      fi
       rm -fr /tmp/miiupgdomain
     fi
-    # find out existing introspect pod wls version first
-    # if target version is 14.1.2 and higher
-    # need to unzip the primodial/config zip, check the version, production, secure mode using wlst offline
-    # if it is in prod mode
-    #    if it has secure mode set to false/not set i.e. false
-    #       pass something (x - may be a file marker) to filter to
-    #         filter shouldn't do anything if existing model has secure mode set
-    #         filter should inject securemode=false if x is set.
-
-
 
   fi
 
