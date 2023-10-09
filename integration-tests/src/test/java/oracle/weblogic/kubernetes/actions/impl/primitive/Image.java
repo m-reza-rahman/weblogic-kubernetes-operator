@@ -116,9 +116,24 @@ public class Image {
 
     String cmdToExecute = String.format(
         WLSIMG_BUILDER
-            + " build --platform linux/arm64 %s -t %s  %s",
+            + " buildx create --use --name buildx_instance");
+    Command
+        .withParams(new CommandParams()
+            .command(cmdToExecute))
+        .execute();
+    cmdToExecute = String.format(
+        WLSIMG_BUILDER
+            + " buildx build --pull  --platform linux/amd64,linux/arm64 %s -t %s  %s",
         imageBuildDir, image, extraArgs);
     boolean result = Command
+        .withParams(new CommandParams()
+            .command(cmdToExecute))
+        .execute();
+    cmdToExecute = String.format(
+        WLSIMG_BUILDER
+            + " buildx build --load  %s -t %s  %s ",
+        imageBuildDir, image, extraArgs);
+    Command
         .withParams(new CommandParams()
             .command(cmdToExecute))
         .execute();
