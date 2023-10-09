@@ -116,7 +116,7 @@ public class Image {
 
     String cmdToExecute = String.format(
         WLSIMG_BUILDER
-            + " build %s -t %s  %s",
+            + " build --platform linux/arm64 %s -t %s  %s",
         imageBuildDir, image, extraArgs);
     boolean result = Command
         .withParams(new CommandParams()
