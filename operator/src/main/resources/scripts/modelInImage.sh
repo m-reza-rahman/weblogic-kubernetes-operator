@@ -394,8 +394,13 @@ createWLDomain() {
   # something changed in the wdt artifacts or wls version changed
   # create domain again
 
+  SECUREMODE_INJECTED=0
+  if [  -f ${PRIMORDIAL_DOMAIN_ZIPPED} ] ; then
+    checkSecureModeForUpgrade
+  fi
+
   if  [ ${WDT_ARTIFACTS_CHANGED} -ne 0 ] || [ ${jdk_changed} -eq 1 ] \
-    || [ ${SECRETS_AND_ENV_CHANGED} -ne 0 ] ; then
+    || [ ${SECRETS_AND_ENV_CHANGED} -ne 0 ] || [ ${SECUREMODE_INJECTED} -eq 1 ] ; then
 
     trace "Need to create domain ${WDT_DOMAIN_TYPE}"
     createModelDomain
@@ -713,27 +718,6 @@ createPrimordialDomain() {
       fi
     fi
 
-    trace "Checking existing domain configuration "
-    local cur_wl_ver="`getWebLogicVersion`"
-    local exp_wl_ver="14.1.2.0.0"
-    trace "Current pod version " $cur_wl_ver
-    # Only do this if the wls version in the pod is higher than 14.1.2.0
-    if versionGE "${cur_wl_ver}" "${exp_wl_ver}" ; then
-      trace "Checking if upgrade to 14.1.2.0 or higher needs model patch"
-      mkdir /tmp/miiupgdomain
-      cd /tmp/miiupgdomain && base64 -d ${PRIMORDIAL_DOMAIN_ZIPPED} > ${LOCAL_PRIM_DOMAIN_ZIP}.tmp && tar -pxzf ${LOCAL_PRIM_DOMAIN_ZIP}.tmp
-      createFolder "/tmp/miiupgdomain${DOMAIN_HOME}/lib" "This is the './lib' directory within directory 'domain.spec.domainHome'." || exitOrLoop
-      local MII_PASSPHRASE=$(cat ${RUNTIME_ENCRYPTION_SECRET_PASSWORD})
-      encrypt_decrypt_domain_secret "decrypt" /tmp/miiupgdomain${DOMAIN_HOME} ${MII_PASSPHRASE}
-      cd /tmp/miiupgdomain && base64 -d ${WLSDOMAIN_CONFIG_ZIPPED} > ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp && tar -pxzf ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp
-      # a file is written to a /tmp/mii_domain_upgrade.txt containing the status of SecureModeEnabled.
-      ${SCRIPTPATH}/wlst.sh ${SCRIPTPATH}/mii-domain-upgrade.py /tmp/miiupgdomain$DOMAIN_HOME || exitOrLoop
-      if [ $(grep -i False /tmp/mii_domain_upgrade.txt | wc -l ) -gt 0 ] ; then
-        MERGED_MODEL_ENVVARS_SAME="false"
-      fi
-      rm -fr /tmp/miiupgdomain
-    fi
-
   fi
 
   # If there is no primordial domain or needs to recreate one due to security changes
@@ -795,6 +779,34 @@ createPrimordialDomain() {
 
 }
 
+# check for secure production mode for upgrade scenario
+
+checkSecureModeForUpgrade() {
+    trace "Checking existing domain configuration "
+    local cur_wl_ver="`getWebLogicVersion`"
+    local exp_wl_ver="14.1.2.0.0"
+    trace "Current pod version " $cur_wl_ver
+    # Only do this if the wls version in the pod is higher than 14.1.2.0
+    if versionGE "${cur_wl_ver}" "${exp_wl_ver}" ; then
+      trace "Checking if upgrade to 14.1.2.0 or higher needs model patch"
+      mkdir /tmp/miiupgdomain
+      cd /tmp/miiupgdomain && base64 -d ${PRIMORDIAL_DOMAIN_ZIPPED} > ${LOCAL_PRIM_DOMAIN_ZIP}.tmp && tar -pxzf ${LOCAL_PRIM_DOMAIN_ZIP}.tmp
+      createFolder "/tmp/miiupgdomain${DOMAIN_HOME}/lib" "This is the './lib' directory within directory 'domain.spec.domainHome'." || exitOrLoop
+      local MII_PASSPHRASE=$(cat ${RUNTIME_ENCRYPTION_SECRET_PASSWORD})
+      encrypt_decrypt_domain_secret "decrypt" /tmp/miiupgdomain${DOMAIN_HOME} ${MII_PASSPHRASE}
+      cd /tmp/miiupgdomain && base64 -d ${WLSDOMAIN_CONFIG_ZIPPED} > ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp && tar -pxzf ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp
+      # a file is written to a /tmp/mii_domain_upgrade.txt containing the status of SecureModeEnabled.
+      ${SCRIPTPATH}/wlst.sh ${SCRIPTPATH}/mii-domain-upgrade.py /tmp/miiupgdomain$DOMAIN_HOME || exitOrLoop
+      # cd to an existing dir since we are deleting the /tmp/miiupgdomain
+      cd /
+      if [ -f /tmp/mii_domain_upgrade.txt ] && [ $(grep -i False /tmp/mii_domain_upgrade.txt | wc -l ) -gt 0 ] ; then
+        SECUREMODE_INJECTED=1
+      fi
+      rm -fr /tmp/miiupgdomain
+    fi
+}
+
+
 #
 # Generate model from wdt artifacts
 #
@@ -812,7 +824,6 @@ generateMergedModel() {
   wdtArgs+=" -domain_type ${WDT_DOMAIN_TYPE}"
 
   trace "About to call '${WDT_BINDIR}/validateModel.sh ${wdtArgs}'."
-
   ${WDT_BINDIR}/validateModel.sh ${wdtArgs} > ${WDT_OUTPUT} 2>&1
   ret=$?
   if [ $ret -ne 0 ]; then
