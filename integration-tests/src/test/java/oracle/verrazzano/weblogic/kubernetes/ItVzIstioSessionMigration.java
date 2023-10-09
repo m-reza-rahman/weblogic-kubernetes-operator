@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.verrazzano.weblogic.kubernetes;
@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@DisplayName("Test WLS Session Migration via istio enabled")
+@DisplayName("Test WLS Session Migration when istio is enabled")
 @VzIntegrationTest
 @Tag("v8o")
 class ItVzIstioSessionMigration {
@@ -100,8 +100,8 @@ class ItVzIstioSessionMigration {
   private static Map<String, Quantity> resourceLimit = new HashMap<>();
 
   /**
-   * Install operator, create a custom image using model in image with model files
-   * and create a WebLlogic domain with a dynamic cluster.
+   * Build custom image using model in image with model files
+   * and create a verrazzano application with a dynamic cluster.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *                   JUnit engine parameter resolution mechanism
@@ -117,13 +117,12 @@ class ItVzIstioSessionMigration {
 
     // Generate the model.sessmigr.yaml file at RESULTS_ROOT
     String destSessionMigrYamlFile =
-        generateNewModelFileWithUpdatedDomainUid(domainUid, "ItIstioSessionMigration", getOrigModelFile());
+        generateNewModelFileWithUpdatedDomainUid(domainUid, "ItVzIstioSessionMigration", getOrigModelFile());
 
     List<String> appList = new ArrayList<>();
     appList.add(SESSMIGR_APP_NAME);
 
     // build the model file list
-    //final List<String> modelList = Collections.singletonList(MODEL_DIR + "/" + SESSMIGR_MODEL_FILE);
     final List<String> modelList = Collections.singletonList(destSessionMigrYamlFile);
 
     // create image with model files
@@ -266,7 +265,7 @@ class ItVzIstioSessionMigration {
         .apiVersion("core.oam.dev/v1alpha2")
         .kind("ApplicationConfiguration")
         .metadata(new V1ObjectMeta()
-            .name("myvzdomain")
+            .name("myvzsessiondomain")
             .namespace(domainNamespace)
             .annotations(keyValueMap))
         .spec(new ApplicationConfigurationSpec()
