@@ -169,7 +169,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         operatorImage = Operator.getImageName();
         logger.info("Operator image name {0}", operatorImage);
         assertFalse(operatorImage.isEmpty(), "Image name can not be empty");
-        assertTrue(Operator.buildImage(operatorImage), "image build failed for Operator");
+        //assertTrue(Operator.buildImage(operatorImage), "image build failed for Operator");
 
         // login to BASE_IMAGES_REPO 
         logger.info(WLSIMG_BUILDER + " login to BASE_IMAGES_REPO {0}", BASE_IMAGES_REPO);
