@@ -11,11 +11,11 @@ description = "Guidelines for upgrading WLS and FMW infrastructure domains to v1
 
 ### Important considerations
 
-By default, version 14.1.2.0 WLS and FMW infrastructure domains _in production mode_ are set to secured production mode, in which their default security configuration
+By default, version 14.1.2.0 WLS and FMW infrastructure domains _in production mode_ are set to **secured production mode**, in which their default security configuration
 is more secure, insecure configurations are logged as warnings, and default authorization and
 role mapping policies are more restrictive.
 
-Some important Secure Production Mode changes are:
+Some important secured production mode changes are:
 
 *  Plain HTTP listen ports are disabled.  Any application code, utilities, or ingresses that use plain HTTP listen ports must be changed.
 
@@ -40,7 +40,7 @@ Before the upgrade, you must do the following:
 - Shut down the domain by setting `serverStartPolicy: Never` in the domain and cluster resource YAML file.
 - **Do not delete** the domain resource.
 
-WebLogic provides two utilities for performing major version upgrades of WebLogic domains: the Upgrade Assistant and the Reconfiguration Wizard.
+WebLogic provides two utilities for performing version upgrades of WebLogic domains: the Upgrade Assistant and the Reconfiguration Wizard.
 Because a typical Kubernetes environment lacks a graphical interface, you must run these utilities with the command-line options.
 
 #### Back up the OPSS wallet and save it in a secret
@@ -66,13 +66,11 @@ After the pod is deployed, you can follow the instructions to `kubectl exec` int
 
 #### Upgrade the JRF database
 
-The Upgrade Assistant is for upgrading schemas in a JRF database.  It will detect if any schema needs to be upgraded, then upgrade the schemas, and also upgrade the system-owned schema version table.
+The Upgrade Assistant is for upgrading schemas in a JRF database.  It will detect if any schema needs to be upgraded, then upgrade the schemas and also upgrade the system-owned schema version table.
 
 If you have not yet deployed a WebLogic Server pod, see [Deploy the server pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume).
 
-From the `pvhelper` pod:
-
-To discover all the command-line options.
+From the `pvhelper` pod, to discover all the command-line options:
 
 ```shell
 $ cd $ORACLE_HOME/oracle_common/upgrade/bin
@@ -275,7 +273,7 @@ Actual upgrades are not done when the -readiness command line option is set.
 If you want to perform an actual upgrade remove the -readiness flag from the command line.  If you intended to perform just the readiness phase, no action is necessary.
 ```
 
-If there are no errors and you are ready to upgrade, run the command again without the `-readiness` flag.
+If there are no errors and you are ready to upgrade, then run the command again without the `-readiness` flag.
 
 ```shell
 $ ./ua -response /tmp/response.txt -logDir /tmp
@@ -339,6 +337,11 @@ If there are any errors, you need to correct them or contact Oracle Support for 
 ### Upgrade use cases
 
 Consider the following use case scenarios, depending on your WebLogic domain type (WLS or FMW/JRF) and domain home source type (Domain on PV or Model in Image).
+
+- [WLS Domain on Persistent Volume](#wls-domain-on-persistent-volume)
+- [FMW/JRF Domain on Persistent Volume](#fmwjrf-domain-on-persistent-volume)
+- [WLS domain using Model in Image](#wls-domain-using-model-in-image)
+- [FMW/JRF domain using Model in Image](#fmwjrf-domain-using-model-in-image)
 
 #### WLS Domain on Persistent Volume
 
