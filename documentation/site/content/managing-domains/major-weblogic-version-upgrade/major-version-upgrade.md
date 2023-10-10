@@ -346,7 +346,7 @@ Consider the following use case scenarios, depending on your WebLogic domain typ
 #### WLS Domain on Persistent Volume
 
 1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).  You can skip the database related steps.
-2. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfiguration-of-the-domain).
+2. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfigure-the-domain).
 3. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file, and restart the domain.
 
 ```
@@ -358,7 +358,7 @@ spec:
 
 1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
 2. Run the Upgrade Assistant. See [Upgrade the JRF database](#upgrade-the-jrf-database).
-3. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfiguration-of-the-domain).
+3. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfigure-the-domain).
 4. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file, and restart the domain.
 
 ```
