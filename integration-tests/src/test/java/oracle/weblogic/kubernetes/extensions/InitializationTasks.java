@@ -257,7 +257,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         if (!DOMAIN_IMAGES_REPO.isEmpty()) {
 
           List<String> images = new ArrayList<>();
-          images.add(operatorImage);
+          //images.add(operatorImage);
           // add images only if SKIP_BUILD_IMAGES_IF_EXISTS is not set
           if (!SKIP_BUILD_IMAGES_IF_EXISTS) {
             images.add(miiBasicImage);
