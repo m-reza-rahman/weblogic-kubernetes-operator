@@ -366,11 +366,10 @@ EOF
                                 fi
                                 if [ "${MAVEN_PROFILE_NAME}" == "olcne-sequential"]; then
                                     PARALLEL_RUN='false'
-                                else
-                                    PARALLEL_RUN='true'
                                 fi
 
                                 echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME
+                                echo "PARALLEL_RUN:" $PARALLEL_RUN
                                 echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.result.root=\"${result_root}\""                                               >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.pv.root=\"${pv_root}\""                                                       >> ${WORKSPACE}/.mvn/maven.config
