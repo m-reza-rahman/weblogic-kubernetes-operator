@@ -56,6 +56,7 @@ ${KUBERNETES_CLI} create namespace istio-system
 # MAIN
 version=${1:-1.13.2}
 workdir=${2:-`pwd`}
+wko_tenancy=${3:-amd}
 
 if [ ! -d ${workdir} ]; then 
   mkdir -p $workdir
@@ -66,7 +67,7 @@ if [ -d ${istiodir} ]; then
    echo "Istio version [${version}] alreday installed at [${istiodir}]"
    exit 0 
 else 
-   install_istio ${version} ${workdir}
+   install_istio ${version} ${workdir} ${wko_tenancy}
    # Additional check for Istio Service. 
    # Make sure a not-null Service Port returned.
    HTTP2_PORT=$(${KUBERNETES_CLI} -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="http2")].nodePort}')
