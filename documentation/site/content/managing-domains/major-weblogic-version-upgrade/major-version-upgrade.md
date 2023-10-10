@@ -15,14 +15,14 @@ By default, version 14.1.2.0 WLS and FMW infrastructure domains _in production m
 is more secure, insecure configurations are logged as warnings, and default authorization and
 role mapping policies are more restrictive.
 
-Some important changes with Secure Production Mode:
+Some important Secure Production Mode changes are:
 
-*  Plain HTTP listen ports are disabled.  Any application code, utilities, or ingresses that uses plain HTTP listen ports must be changed.
+*  Plain HTTP listen ports are disabled.  Any application code, utilities, or ingresses that use plain HTTP listen ports must be changed.
 
-*  SSL listen ports must be enabled for every server in the domain.  Each server must have at least one SSL listen port set up, either in the default channel or in one of the custom network channels.  If none is explicitly enabled, WebLogic Server, by default, will enable the default SSL listen port and use the demo SSL certificate.   
-However, demo SSL certificates should **not** be used in a production environment; you should set up SSL listen ports with valid SSL certificates in all server instances.
+*  SSL listen ports must be enabled for every server in the domain.  Each server must have at least one SSL listen port set up, either in the default channel or in one of the custom network channels.  If none is explicitly enabled, WebLogic Server, will enable the default SSL listen port and use the demo SSL certificate.   
+Note that demo SSL certificates should **not** be used in a production environment; you should set up SSL listen ports with valid SSL certificates in all server instances.
 
-For more information about Secured Production Mode, see https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0.
+For more information, see the [Secured Production Mode](https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0) documentation.
 
 **NOTE**: If the domain is _not_ in production mode, then none of the security changes apply.
 
@@ -30,30 +30,30 @@ For more information about Secured Production Mode, see https://docs.oracle.com/
 
 In general, the process for upgrading WLS and FMW infrastructure domains in Kubernetes is similar to upgrading domains on premises. For a thorough understanding, we suggest that you read the [Fusion Middleware Upgrade](https://docs.oracle.com/en/middleware/fusion-middleware/12.2.1.4/asmas/planning-upgrade-oracle-fusion-middleware-12c.html#GUID-D9CEE7E2-5062-4086-81C7-79A33A200080) Guide.
 
-Before the upgrade, you must:
+Before the upgrade, you must do the following:
 
 - If your [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is Domain on Persistent Volume (DoPV), then back up the domain home.
 - If your domain type is JRF, then:
    - Back up the JRF database.
-   - Back up the OPSS wallet file. See [Saving OPSS wallet secret](#backup-opss-wallet-and-save-it-in-a-secret).
+   - Back up the OPSS wallet file. See [Saving the OPSS wallet secret](#back-up-the-opss-wallet-and-save-it-in-a-secret).
    - Make sure nothing else is accessing the database.
 - Shut down the domain by setting `serverStartPolicy: Never` in the domain and cluster resource YAML file. **Do not delete** the domain resource.
 
-WebLogic provides two utilities for performing major version upgrades of WebLogic domains.
-Because there is no graphical environment in a typical Kubernetes environment, you must run these utilities with the command-line option.
+WebLogic provides two utilities for performing major version upgrades of WebLogic domains: the Upgrade Assistant and the Reconfiguration Wizard.
+Because a typical Kubernetes environment lacks a graphical interface, you must run these utilities with the command-line options.
 
 #### Back up the OPSS wallet and save it in a secret
 
-1. The operator provides a utility script, [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh), for extracting the wallet file and storing it in a Kubernetes `walletFileSecret`. In addition, you should also save the wallet file in a safely backed-up location outside of Kubernetes. For example, the following command saves the OPSS wallet for the `sample-domain1` domain in the `sample-ns` namespace to a file named `ewallet.p12` in the `/tmp` directory and also stores it in the wallet secret named `sample-domain1-opss-walletfile-secret`.
+The operator provides a utility script, [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh), for extracting the wallet file and storing it in a Kubernetes `walletFileSecret`. In addition, you should save the wallet file in a safely backed-up location, outside of Kubernetes. For example, the following command saves the OPSS wallet for the `sample-domain1` domain in the `sample-ns` namespace to a file named `ewallet.p12` in the `/tmp` directory and also stores it in the wallet secret named `sample-domain1-opss-walletfile-secret`.
 
-   ```
-   $ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws sample-domain1-opss-walletfile-secret
-   ```
+```
+$ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws sample-domain1-opss-walletfile-secret
+```
 
 #### Deploy a WebLogic Server pod attaching a persistent volume
 
-For Domain on Persistent Volume, you will need to access the domain home on the shared volume with a new WebLogic Server version pod.
-You can launch a running pod with the PV and PVC helper script](https://github.com/oracle/weblogic-kubernetes-operator/blob/main/kubernetes/samples/scripts/domain-lifecycle/pv-pvc-helper.sh).
+For DoPV domains, you will need to access the domain home on the shared volume with a new WebLogic Server version pod.
+You can launch a running pod with the [PV and PVC helper script](https://github.com/oracle/weblogic-kubernetes-operator/blob/main/kubernetes/samples/scripts/domain-lifecycle/pv-pvc-helper.sh).
 
 For example,
 
@@ -61,24 +61,24 @@ For example,
 ./pv-pvc-helper.sh -n sample-domain1-ns -c sample-domain1-pvc-rwm1 -m /share -i wls14120:fmw
 ```
 
-Once the pod is deployed, you can follow the instruction to `kubectl exec` into the pod's terminal session.
+After the pod is deployed, you can follow the instruction to `kubectl exec` into the pod's terminal session.
 
 #### Upgrade Assistant
 
-This utility is for upgrading schemas in a JRF database.  It will detect if any schema needs to be upgraded, then upgrade the schemas, and also upgrade the system owned schema version table.
+This utility is for upgrading schemas in a JRF database.  It will detect if any schema needs to be upgraded, then upgrade the schemas, and also upgrade the system-owned schema version table.
 
-If you have not deploy a WebLogic Server pod yet, see [Deploy Server Pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume)
+If you have not yet deployed a WebLogic Server pod, see [Deploy Server Pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume).
 
-From the `pvhelper` pod,
+From the `pvhelper` pod:
 
-To discover all the command line options.
+To discover all the command-line options.
 
 ```shell
 cd $ORACLE_HOME/oracle_common/upgrade/bin
 ./ua -help
 ```
 
-Create a file named `response.txt` with this content and modify any `<TODO:`  matching your environment.
+Create a file named `response.txt` with this content and modify any `<TODO:` to match your environment.
 
 ```
 # This is a response file for the Fusion Middleware Upgrade Assistant.
@@ -239,19 +239,19 @@ STB.cleartextDbaPassword = <TODO: provides clear text dba password>
 
 ```
 
-Copy the response file to the pod
+Copy the response file to the pod.
 
 ```shell
 kubectl -n sample-domain1-ns cp response.txt pvhelper:/tmp
 ```
 
-Run the Upgrade Assistant readiness check to verify the inputs and whether the schema needs to be upgraded.
+Run the Upgrade Assistant readiness check to verify the input values and whether the schema needs to be upgraded.
 
 ```shell
 ./ua -readiness -response /tmp/response.txt -logDir /tmp
 ```
 
-Check the output to see if there is any error.
+Check the output to see if there are any errors.
 
 ```
 Oracle Fusion Middleware Upgrade Assistant 14.1.2.0.0
@@ -274,7 +274,7 @@ Actual upgrades are not done when the -readiness command line option is set.
 If you want to perform an actual upgrade remove the -readiness flag from the command line.  If you intended to perform just the readiness phase, no action is necessary.
 ```
 
-If there is no error and ready to upgrade, run the command again without `-readiness` flag.
+If there are no errors and you are ready to upgrade, run the command again without the `-readiness` flag.
 
 ```shell
 ./ua -response /tmp/response.txt -logDir /tmp
@@ -307,16 +307,16 @@ Schema Version Registry saved to: /u01/oracle/oracle_common/upgrade/logs/ua2023-
  Oracle Metadata Services schema upgrade finished with status: succeeded
 ```
 
-If there is any error, you need to correct the error or contact Oracle Support for assistance.
+If there are any errors, you need to correct them or contact Oracle Support for assistance.
 
 
 #####  Reconfiguration of the domain
 
 This utility will upgrade the domain configuration to the new WebLogic version.
 
-If you have not deploy a WebLogic Server pod yet, see [Deploy Server Pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume)
+If you have not yet deployed a WebLogic Server pod , see [Deploy Server Pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume).
 
-From the `pvhelper` pod, use the WLST commands to reconfigure a domain to a new version of WebLogic Server.
+From the `pvhelper` pod, use the following WLST commands to reconfigure a domain to a new version of WebLogic Server.
 
 
 ```shell
@@ -333,11 +333,11 @@ wls:/offline> updateDomain()
 wls:/offline> closeDomain()
 ```
 
-If there is any error, you need to correct the error or contact Oracle Support for assistance.
+If there are any errors, you need to correct them or contact Oracle Support for assistance.
 
-#### Upgrade Use Cases
+### Upgrade Use Cases
 
-##### WebLogic domain on Persistent Volume
+#### WebLogic domain on Persistent Volume
 
 1. Make sure you have followed the steps [General Upgrade procedures 1-5](#general-upgrade-procedures).  You can skip any database related steps.
 2. Upgrade the domain reconfiguration WLST commands [Reconfiguration](#reconfiguration-of-the-domain).
@@ -348,7 +348,7 @@ spec:
   image: <wls 14120 image>
 ```
 
-##### JRF domain on Persistent Volume
+#### JRF domain on Persistent Volume
 
 1. Make sure you have followed the steps [General Upgrade procedures 1-5](#general-upgrade-procedures).
 2. Run the Upgrade Assistant [Upgrade Assistant](#upgrade-assistant).
@@ -360,7 +360,7 @@ spec:
   image: <wls 14120 image>
 ```
 
-##### WebLogic domain using Model in Image
+#### WebLogic domain using Model in Image
 
 As described in [Upgrading WebLogic Version 14.1.2](#upgrading-weblogic-version-to-1412),  the plain HTTP listening port is disabled and SSL listening port is required.  
 
@@ -370,7 +370,7 @@ If you are not using Secure Production mode, the best approach is to switch to S
 
 If for some reasons, this cannot be done, you can continue your regular application lifecycle update process. In this case, you can still upgrade the WebLogic version to 14.1.2.  The operator will automatically disable the secure mode for you.
 
-##### JRF domain using Model in Image
+#### JRF domain using Model in Image
 
 JRF domain using Model in Image has been deprecated since WebLogic Kubernetes Operator 4.1.  We recommend moving to Domain on Persistent Volume [Domain On Persistent Volume]({{< relref "/managing-domains/domain-on-pv/overview.md" >}}) before upgrading to WebLogic version 14.1.2.
 
@@ -424,7 +424,7 @@ serverPod:
 
 Deploy the domain, if it is successful, the domain has been migrated to a persistent volume.  You can proceed upgrading to WebLogic version 14.1.2 [JRF domain on PV](#jrf-domain-on-persistent-volume)
 
-#### Sample WDT model for production secure mode and SSL
+### Sample WDT model for production secure mode and SSL
 
 The following is a sample snippet of a WDT model for setting up production mode and SSL.
 
