@@ -265,8 +265,9 @@ class ItWlsDomainOnPVSample {
     // uninstall traefik
     if (traefikNamespace != null) {
       logger.info("Uninstall Traefik");
+      String command = "helm uninstall " + envMap.get("TRAEFIK_NAME") + " -n " + traefikNamespace;
       Command.withParams(new CommandParams()
-          .command("helm uninstall traefik-operator -n " + traefikNamespace)
+          .command(command)
           .redirect(true)).execute();
     }
 

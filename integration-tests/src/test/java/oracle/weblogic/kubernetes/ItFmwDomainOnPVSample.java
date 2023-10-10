@@ -309,7 +309,7 @@ class ItFmwDomainOnPVSample {
     if (traefikNamespace != null) {
       logger.info("Uninstall Traefik");
       String command =
-          "helm uninstall " +  TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3) + " -n " + traefikNamespace;
+          "helm uninstall " + envMap.get("TRAEFIK_NAME") + " -n " + traefikNamespace;
       Command.withParams(new CommandParams()
           .command(command)
           .redirect(true)).execute();
