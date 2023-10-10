@@ -364,7 +364,7 @@ EOF
                                 if [ -n "${IT_TEST}" ]; then
                                     echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
                                 fi
-                                if [ "${MAVEN_PROFILE_NAME}" == "olcne-sequential"]; then
+                                if [ "${MAVEN_PROFILE_NAME}" == "olcne-sequential" ]; then
                                     PARALLEL_RUN='false'
                                 fi
 
