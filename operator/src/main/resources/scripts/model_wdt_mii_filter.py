@@ -393,7 +393,8 @@ def upgradeServerIfNeeded(model):
   # The marker file is created earlier when the introspector checking if
   # the secure mode is enabled in the config.xml.  This will compare with the incoming model
   # if secure mode is not set (or set to secure in option),  then inject the secure mode
-  # to false.  This is done to maintain compatibility from 12.2.1* to 14.1.2.
+  # to false.  This is done to maintain compatibility from 12.2.1* to 14.1.2 and the file
+  # is only created when the deploy version is newer than or equals to 14.1.2
 
   if os.path.exists('/tmp/mii_domain_upgrade.txt'):
     fh = open('/tmp/mii_domain_upgrade.txt', 'r')

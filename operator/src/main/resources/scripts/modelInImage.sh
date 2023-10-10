@@ -786,7 +786,7 @@ checkSecureModeForUpgrade() {
     local cur_wl_ver="`getWebLogicVersion`"
     local exp_wl_ver="14.1.2.0.0"
     trace "Current pod version " $cur_wl_ver
-    # Only do this if the wls version in the pod is higher than 14.1.2.0
+    # Only do this if the wls version in the pod is >= 14.1.2.0
     if versionGE "${cur_wl_ver}" "${exp_wl_ver}" ; then
       trace "Checking if upgrade to 14.1.2.0 or higher needs model patch"
       mkdir /tmp/miiupgdomain
