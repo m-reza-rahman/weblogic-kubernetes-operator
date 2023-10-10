@@ -1,49 +1,48 @@
 +++
-title = "Major WebLogic version upgrade 14.1.2"
+title = "Upgrade WLS and FMW domains to v14.1.2.0"
 date = 2023-10-05T16:45:16-05:00
 weight = 1
 pre = "<b> </b>"
-description = "Learn how to upgrade WebLogic version to 14.1.2."
+description = "Guidelines for upgrading WLS and FMW infrastructure domains to v14.1.2.0."
 +++
 
 {{< table_of_contents >}}
 
 
-### Upgrading WebLogic version to 14.1.2
+### Important considerations
 
+By default, version 14.1.2.0 WLS and FMW infrastructure domains _in production mode_ are set to Secured Production Mode, in which their default security configuration
+is more secure, insecure configurations are logged as warnings, and default authorization and
+role mapping policies are more restrictive.
 
-WebLogic Server has released version 14.1.2.  In 14.1.2 domains in production mode are by default set to Secured Production Mode which makes the security configuration
-defaults more secure (e.g. disable listen addresses and only enable SSL), insecure configurations are logged as warnings, and default authorization and
-role mapping policies are more restrictive. Please refer to https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.3/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0.
+Some important changes with Secure Production Mode:
 
-Some important changes with Secure Production Mode are:
+*  Plain HTTP listen ports are disabled.  Any application code, utilities, or ingresses that uses plain HTTP listen ports must be changed.
 
-*  The plain HTTP listen ports are disabled.  Any application codes, utilities or ingresses that uses the plain HTTP listen port must be changed.
+*  SSL listen ports must be enabled for every server in the domain.  Each server must have at least one SSL listen port set up, either in the default channel or in one of the custom network channels.  If none is explicitly enabled, WebLogic Server, by default, will enable the default SSL listen port and use the demo SSL certificate.   
+However, demo SSL certificates should **not** be used in a production environment; you should set up SSL listen ports with valid SSL certificates in all server instances.
 
-*  SSL listen port must be enabled for every server in the domain.  Each server must have at least one SSL listen port setup, either in the default channel or in one of the custom network channel.  If none is explicitly enabled, WebLogic by default will enable the default SSL listen port and use the demo SSL certificate.   
-However, user should setup actual SSL listen port in all the servers with real SSL certificates, the demo SSL certificate should not be used in a production environment.
+For more information about Secured Production Mode, see https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0.
 
-If the domain is not in production mode, then none of the security changes apply.
+**NOTE**: If the domain is _not_ in production mode, then none of the security changes apply.
 
-#### General upgrade procedures
+### General upgrade procedures
 
+In general, the process for upgrading WLS and FMW infrastructure domains in Kubernetes is similar to upgrading domains on premises. For a thorough understanding, we suggest that you read the [Fusion Middleware Upgrade](https://docs.oracle.com/en/middleware/fusion-middleware/12.2.1.4/asmas/planning-upgrade-oracle-fusion-middleware-12c.html#GUID-D9CEE7E2-5062-4086-81C7-79A33A200080) Guide.
 
-The process for upgrading FMW Infra domains is the same as upgrading domains on premises the customer should read and understand the Fusion Middleware Upgrade
-guide for 14.1.2 an example of the 12c guide is https://docs.oracle.com/middleware/1221/core/ASMAS/GUID-D9CEE7E2-5062-4086-81C7-79A33A200080.htm#ASMAS1048.
+Before the upgrade, you must:
 
-Before the upgrade, you must
+- If your [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is Domain on Persistent Volume (DoPV), then back up the domain home.
+- If your domain type is JRF, then:
+   - Back up the JRF database.
+   - Back up the OPSS wallet file. See [Saving OPSS wallet secret](#backup-opss-wallet-and-save-it-in-a-secret).
+   - Make sure nothing else is accessing the database.
+- Shut down the domain by setting `serverStartPolicy: Never` in the domain and cluster resource YAML file. **Do not delete** the domain resource.
 
-1. Backup the domain home if you are using Domain on Persistent Volume.
-2. Backup the JRF database if your domain type is JRF.
-3. Backup the OPSS wallet file if your domain type is JRF [Saving OPSS wallet secret](#backup-opss-wallet-and-save-it-in-a-secret)
-4. **Do not delete** the domain resource. Shutdown the domain by setting the `serverStartPolicy: Never` in the domain and cluster resource YAML.
-5. Make sure nothing else is accessing the database.
+WebLogic provides two utilities for performing major version upgrades of WebLogic domains.
+Because there is no graphical environment in a typical Kubernetes environment, you must run these utilities with the command-line option.
 
-
-WebLogic provides two utilities for performing major version upgrade of a WebLogic domain.
-Since there is no graphical environment in a typical Kubernetes environment, you will run these utilities with command line option.
-
-##### Backup OPSS wallet and save it in a secret
+#### Back up the OPSS wallet and save it in a secret
 
 1. The operator provides a utility script, [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh), for extracting the wallet file and storing it in a Kubernetes `walletFileSecret`. In addition, you should also save the wallet file in a safely backed-up location outside of Kubernetes. For example, the following command saves the OPSS wallet for the `sample-domain1` domain in the `sample-ns` namespace to a file named `ewallet.p12` in the `/tmp` directory and also stores it in the wallet secret named `sample-domain1-opss-walletfile-secret`.
 
@@ -51,9 +50,9 @@ Since there is no graphical environment in a typical Kubernetes environment, you
    $ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws sample-domain1-opss-walletfile-secret
    ```
 
-##### Deploy a WebLogic Server pod attaching a persistent volume
+#### Deploy a WebLogic Server pod attaching a persistent volume
 
-For Domain on Persistent Volume, you will need to access the domain home on the shared volume with a new WebLogic Server version pod. 
+For Domain on Persistent Volume, you will need to access the domain home on the shared volume with a new WebLogic Server version pod.
 You can launch a running pod with the PV and PVC helper script](https://github.com/oracle/weblogic-kubernetes-operator/blob/main/kubernetes/samples/scripts/domain-lifecycle/pv-pvc-helper.sh).
 
 For example,
@@ -64,7 +63,7 @@ For example,
 
 Once the pod is deployed, you can follow the instruction to `kubectl exec` into the pod's terminal session.
 
-##### Upgrade Assistant
+#### Upgrade Assistant
 
 This utility is for upgrading schemas in a JRF database.  It will detect if any schema needs to be upgraded, then upgrade the schemas, and also upgrade the system owned schema version table.
 
@@ -230,17 +229,17 @@ STB.cleartextDbaPassword = <TODO: provides clear text dba password>
 #pluginInstance = 7
 
 #WLS.databaseType = Oracle Database
-#WLS.databaseConnectionString = 
-#WLS.schemaConnectionString = 
-#WLS.schemaUserName = 
+#WLS.databaseConnectionString =
+#WLS.schemaConnectionString =
+#WLS.schemaUserName =
 #WLS.encryptedSchemaPassword = 05FEC474FC653B49B15ED79A53565A8B00F49ADADA72D30816
-#WLS.dbaUserName = 
-# WLS.cleartextDbaPassword = 
+#WLS.dbaUserName =
+# WLS.cleartextDbaPassword =
 #WLS.encryptedDbaPassword = 0543C93F9A28FBAFBF3FCC49E78EB2C6B3AA02F53098BB322C
 
 ```
 
-Copy the response file to the pod 
+Copy the response file to the pod
 
 ```shell
 kubectl -n sample-domain1-ns cp response.txt pvhelper:/tmp
@@ -367,7 +366,7 @@ As described in [Upgrading WebLogic Version 14.1.2](#upgrading-weblogic-version-
 
 If you domain is already using Secure Production mode, then you can just simply update tbe base image in the domain resource YAML and redeploy the domain.
 
-If you are not using Secure Production mode, the best approach is to switch to Secure Production mode, see [Sample WDT YAML](#sample-wdt-model-for-production-secure-mode-and-ssl) and change your application, utilities, and ingress to use SSL port before the upgrade. 
+If you are not using Secure Production mode, the best approach is to switch to Secure Production mode, see [Sample WDT YAML](#sample-wdt-model-for-production-secure-mode-and-ssl) and change your application, utilities, and ingress to use SSL port before the upgrade.
 
 If for some reasons, this cannot be done, you can continue your regular application lifecycle update process. In this case, you can still upgrade the WebLogic version to 14.1.2.  The operator will automatically disable the secure mode for you.
 
@@ -380,13 +379,13 @@ JRF domain using Model in Image has been deprecated since WebLogic Kubernetes Op
 3. Create a new domain resource YAML.  You should have at least the following changes:
 
 ```
-# Change type to PersistentVolume 
+# Change type to PersistentVolume
 domainHomeSourceType: PersistentVolume
 ...
 serverPod:
     ...
     # specify the volume and volume mount information
-    
+
     volumes:
     - name: weblogic-domain-storage-volume
       persistentVolumeClaim:
@@ -394,9 +393,9 @@ serverPod:
     volumeMounts:
     - mountPath: /share
       name: weblogic-domain-storage-volume
-      
+
   # specify a new configuration section, remove the old configuration section.
-     
+
   configuration:
 
     # secrets that are referenced by model yaml macros
@@ -444,12 +443,12 @@ topology:
             CustomIdentityKeyStoreType: JKS
             CustomTrustKeyStoreType: JKS           
             CustomIdentityKeyStorePassPhraseEncrypted:            
-            CustomTrustKeyStorePassPhraseEncrypted: 
+            CustomTrustKeyStorePassPhraseEncrypted:
             SSL:
                 ListenPort: 7002
                 Enabled : true            
                 ServerPrivateKeyAlias: adminkey
-                ServerPrivateKeyPassPhraseEncrypted: 
+                ServerPrivateKeyPassPhraseEncrypted:
     ServerTemplate:
        "cluster-1-template":
             CustomTrustKeyStoreFileName: 'wlsdeploy/servers/managed-server/trust-keystore.jks'
@@ -458,11 +457,11 @@ topology:
             CustomIdentityKeyStoreType: JKS
             CustomTrustKeyStoreType: JKS           
             CustomIdentityKeyStorePassPhraseEncrypted:            
-            CustomTrustKeyStorePassPhraseEncrypted: 
+            CustomTrustKeyStorePassPhraseEncrypted:
             SSL:
                 ListenPort: 7102
                 Enabled : true            
                 ServerPrivateKeyAlias: mykey
-                ServerPrivateKeyPassPhraseEncrypted: 
-  
+                ServerPrivateKeyPassPhraseEncrypted:
+
 ```
