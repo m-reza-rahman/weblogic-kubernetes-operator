@@ -19,7 +19,7 @@ Some important Secure Production Mode changes are:
 
 *  Plain HTTP listen ports are disabled.  Any application code, utilities, or ingresses that use plain HTTP listen ports must be changed.
 
-*  SSL listen ports must be enabled for every server in the domain.  Each server must have at least one SSL listen port set up, either in the default channel or in one of the custom network channels.  If none is explicitly enabled, WebLogic Server, will enable the default SSL listen port and use the demo SSL certificate.   
+*  SSL listen ports must be enabled for every server in the domain.  Each server must have at least one SSL listen port set up, either in the default channel or in one of the custom network channels.  If none is explicitly enabled, WebLogic Server, by default, will enable the default SSL listen port and use the demo SSL certificate.   
 Note that demo SSL certificates should **not** be used in a production environment; you should set up SSL listen ports with valid SSL certificates in all server instances.
 
 For more information, see the [Secured Production Mode](https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0) documentation.
@@ -28,23 +28,24 @@ For more information, see the [Secured Production Mode](https://docs.oracle.com/
 
 ### General upgrade procedures
 
-In general, the process for upgrading WLS and FMW infrastructure domains in Kubernetes is similar to upgrading domains on premises. For a thorough understanding, we suggest that you read the [Fusion Middleware Upgrade](https://docs.oracle.com/en/middleware/fusion-middleware/12.2.1.4/asmas/planning-upgrade-oracle-fusion-middleware-12c.html#GUID-D9CEE7E2-5062-4086-81C7-79A33A200080) Guide.
+In general, the process for upgrading WLS and FMW infrastructure domains in Kubernetes is similar to upgrading domains on premises. For a thorough understanding, we suggest that you read the [Fusion Middleware Upgrade Guide](https://docs.oracle.com/en/middleware/fusion-middleware/12.2.1.4/asmas/planning-upgrade-oracle-fusion-middleware-12c.html#GUID-D9CEE7E2-5062-4086-81C7-79A33A200080).
 
 Before the upgrade, you must do the following:
 
 - If your [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is Domain on Persistent Volume (DoPV), then back up the domain home.
 - If your domain type is JRF, then:
    - Back up the JRF database.
-   - Back up the OPSS wallet file. See [Saving the OPSS wallet secret](#back-up-the-opss-wallet-and-save-it-in-a-secret).
+   - Back up the OPSS wallet file. See [Save the OPSS wallet secret](#back-up-the-opss-wallet-and-save-it-in-a-secret).
    - Make sure nothing else is accessing the database.
-- Shut down the domain by setting `serverStartPolicy: Never` in the domain and cluster resource YAML file. **Do not delete** the domain resource.
+- Shut down the domain by setting `serverStartPolicy: Never` in the domain and cluster resource YAML file.
+- **Do not delete** the domain resource.
 
 WebLogic provides two utilities for performing major version upgrades of WebLogic domains: the Upgrade Assistant and the Reconfiguration Wizard.
 Because a typical Kubernetes environment lacks a graphical interface, you must run these utilities with the command-line options.
 
 #### Back up the OPSS wallet and save it in a secret
 
-The operator provides a utility script, [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh), for extracting the wallet file and storing it in a Kubernetes `walletFileSecret`. In addition, you should save the wallet file in a safely backed-up location, outside of Kubernetes. For example, the following command saves the OPSS wallet for the `sample-domain1` domain in the `sample-ns` namespace to a file named `ewallet.p12` in the `/tmp` directory and also stores it in the wallet secret named `sample-domain1-opss-walletfile-secret`.
+The operator provides a helper script, the [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh), for extracting the wallet file and storing it in a Kubernetes `walletFileSecret`. In addition, you should save the wallet file in a safely backed-up location, outside of Kubernetes. For example, the following command saves the OPSS wallet for the `sample-domain1` domain in the `sample-ns` namespace to a file named `ewallet.p12` in the `/tmp` directory and also stores it in the wallet secret named `sample-domain1-opss-walletfile-secret`.
 
 ```
 $ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws sample-domain1-opss-walletfile-secret
@@ -58,24 +59,24 @@ You can launch a running pod with the [PV and PVC helper script](https://github.
 For example,
 
 ```shell
-./pv-pvc-helper.sh -n sample-domain1-ns -c sample-domain1-pvc-rwm1 -m /share -i wls14120:fmw
+$ ./pv-pvc-helper.sh -n sample-domain1-ns -c sample-domain1-pvc-rwm1 -m /share -i wls14120:fmw
 ```
 
-After the pod is deployed, you can follow the instruction to `kubectl exec` into the pod's terminal session.
+After the pod is deployed, you can follow the instructions to `kubectl exec` into the pod's terminal session.
 
-#### Upgrade Assistant
+#### Upgrade the JRF database
 
-This utility is for upgrading schemas in a JRF database.  It will detect if any schema needs to be upgraded, then upgrade the schemas, and also upgrade the system-owned schema version table.
+The Upgrade Assistant is for upgrading schemas in a JRF database.  It will detect if any schema needs to be upgraded, then upgrade the schemas, and also upgrade the system-owned schema version table.
 
-If you have not yet deployed a WebLogic Server pod, see [Deploy Server Pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume).
+If you have not yet deployed a WebLogic Server pod, see [Deploy the server pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume).
 
 From the `pvhelper` pod:
 
 To discover all the command-line options.
 
 ```shell
-cd $ORACLE_HOME/oracle_common/upgrade/bin
-./ua -help
+$ cd $ORACLE_HOME/oracle_common/upgrade/bin
+$ ./ua -help
 ```
 
 Create a file named `response.txt` with this content and modify any `<TODO:` to match your environment.
@@ -242,13 +243,13 @@ STB.cleartextDbaPassword = <TODO: provides clear text dba password>
 Copy the response file to the pod.
 
 ```shell
-kubectl -n sample-domain1-ns cp response.txt pvhelper:/tmp
+$ kubectl -n sample-domain1-ns cp response.txt pvhelper:/tmp
 ```
 
 Run the Upgrade Assistant readiness check to verify the input values and whether the schema needs to be upgraded.
 
 ```shell
-./ua -readiness -response /tmp/response.txt -logDir /tmp
+$ ./ua -readiness -response /tmp/response.txt -logDir /tmp
 ```
 
 Check the output to see if there are any errors.
@@ -277,7 +278,7 @@ If you want to perform an actual upgrade remove the -readiness flag from the com
 If there are no errors and you are ready to upgrade, run the command again without the `-readiness` flag.
 
 ```shell
-./ua -response /tmp/response.txt -logDir /tmp
+$ ./ua -response /tmp/response.txt -logDir /tmp
 ```
 
 Check the output again.
@@ -310,17 +311,17 @@ Schema Version Registry saved to: /u01/oracle/oracle_common/upgrade/logs/ua2023-
 If there are any errors, you need to correct them or contact Oracle Support for assistance.
 
 
-#####  Reconfiguration of the domain
+####  Reconfigure the domain
 
-This utility will upgrade the domain configuration to the new WebLogic version.
+The Reconfiguration Wizard will upgrade the domain configuration to the new WebLogic version.
 
-If you have not yet deployed a WebLogic Server pod , see [Deploy Server Pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume).
+If you have not yet deployed a WebLogic Server pod, see [Deploy the server pod](#deploy-a-weblogic-server-pod-attaching-a-persistent-volume).
 
-From the `pvhelper` pod, use the following WLST commands to reconfigure a domain to a new version of WebLogic Server.
+From the `pvhelper` pod, use the following WLST commands to reconfigure a domain to the new version of WebLogic Server.
 
 
 ```shell
-/u01/oracle/oracle_common/bin/wlst.sh
+$ /u01/oracle/oracle_common/bin/wlst.sh
 
 Initializing WebLogic Scripting Tool (WLST) ...
 
