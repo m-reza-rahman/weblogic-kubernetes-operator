@@ -11,7 +11,7 @@ description = "Guidelines for upgrading WLS and FMW infrastructure domains to v1
 
 ### Important considerations
 
-By default, version 14.1.2.0 WLS and FMW infrastructure domains _in production mode_ are set to Secured Production Mode, in which their default security configuration
+By default, version 14.1.2.0 WLS and FMW infrastructure domains _in production mode_ are set to secured production mode, in which their default security configuration
 is more secure, insecure configurations are logged as warnings, and default authorization and
 role mapping policies are more restrictive.
 
@@ -22,7 +22,7 @@ Some important Secure Production Mode changes are:
 *  SSL listen ports must be enabled for every server in the domain.  Each server must have at least one SSL listen port set up, either in the default channel or in one of the custom network channels.  If none is explicitly enabled, WebLogic Server, by default, will enable the default SSL listen port and use the demo SSL certificate.   
 Note that demo SSL certificates should **not** be used in a production environment; you should set up SSL listen ports with valid SSL certificates in all server instances.
 
-For more information, see the [Secured Production Mode](https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0) documentation.
+For more information, see the [secured production mode](https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0) documentation.
 
 **NOTE**: If the domain is _not_ in production mode, then none of the security changes apply.
 
@@ -336,48 +336,50 @@ wls:/offline> closeDomain()
 
 If there are any errors, you need to correct them or contact Oracle Support for assistance.
 
-### Upgrade Use Cases
+### Upgrade use cases
 
-#### WebLogic domain on Persistent Volume
+Consider the following use case scenarios, depending on your WebLogic domain type (WLS or FMW/JRF) and domain home source type (Domain on PV or Model in Image).
 
-1. Make sure you have followed the steps [General Upgrade procedures 1-5](#general-upgrade-procedures).  You can skip any database related steps.
-2. Upgrade the domain reconfiguration WLST commands [Reconfiguration](#reconfiguration-of-the-domain).
-3. Update the domain resource to use the WebLogic 14120 base image and restart the domain, you also need to set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML.
+#### WLS Domain on Persistent Volume
 
-```
-spec:
-  image: <wls 14120 image>
-```
-
-#### JRF domain on Persistent Volume
-
-1. Make sure you have followed the steps [General Upgrade procedures 1-5](#general-upgrade-procedures).
-2. Run the Upgrade Assistant [Upgrade Assistant](#upgrade-assistant).
-3. Upgrade the domain reconfiguration WLST commands [Reconfiguration](#reconfiguration-of-the-domain).
-4. Update the domain resource to use the WebLogic 14120 base image and restart the domain, you also need to set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML.
+1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).  You can skip the database related steps.
+2. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfiguration-of-the-domain).
+3. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file, and restart the domain.
 
 ```
 spec:
   image: <wls 14120 image>
 ```
 
-#### WebLogic domain using Model in Image
+#### FMW/JRF Domain on Persistent Volume
 
-As described in [Upgrading WebLogic Version 14.1.2](#upgrading-weblogic-version-to-1412),  the plain HTTP listening port is disabled and SSL listening port is required.  
+1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
+2. Run the Upgrade Assistant. See [Upgrade the JRF database](#upgrade-the-jrf-database).
+3. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfiguration-of-the-domain).
+4. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file, and restart the domain.
 
-If you domain is already using Secure Production mode, then you can just simply update tbe base image in the domain resource YAML and redeploy the domain.
+```
+spec:
+  image: <wls 14120 image>
+```
 
-If you are not using Secure Production mode, the best approach is to switch to Secure Production mode, see [Sample WDT YAML](#sample-wdt-model-for-production-secure-mode-and-ssl) and change your application, utilities, and ingress to use SSL port before the upgrade.
+#### WLS domain using Model in Image
 
-If for some reasons, this cannot be done, you can continue your regular application lifecycle update process. In this case, you can still upgrade the WebLogic version to 14.1.2.  The operator will automatically disable the secure mode for you.
+As described in [Important considerations](#important-considerations), in v14.2.1.0 production domains, the plain HTTP listening port is disabled and an SSL listening port is required.  
 
-#### JRF domain using Model in Image
+If your domain is already using secured production mode, then you can simply update the base image in the domain resource YAML file and redeploy the domain.
 
-JRF domain using Model in Image has been deprecated since WebLogic Kubernetes Operator 4.1.  We recommend moving to Domain on Persistent Volume [Domain On Persistent Volume]({{< relref "/managing-domains/domain-on-pv/overview.md" >}}) before upgrading to WebLogic version 14.1.2.
+If your domain is not using secured production mode, the best approach is to switch to your domain to using it. See the [Sample WDT YAML](#sample-wdt-model-for-secured-production-mode-and-ssl). Before upgrading, change your applications, utilities, and ingresses to use SSL ports.
 
-1. Make sure you have followed the steps [General Upgrade procedures 1-5](#general-upgrade-procedures).
-2. If are not using Auxiliary image in your domain, create a [Domain Creation Image]({{< relref "/managing-domains/model-in-image/auxiliary-images.md" >}})
-3. Create a new domain resource YAML.  You should have at least the following changes:
+If for some reason, you cannot switch to your domain to secured production mode, you can still continue with the typical application lifecycle update process. In this case, when you upgrade the WebLogic version to 14.1.2.0, the operator will automatically disable the secure mode for you.
+
+#### FMW/JRF domain using Model in Image
+
+FMW/JRF domains using Model in Image has been deprecated since WebLogic Kubernetes Operator 4.1. Before upgrading to FMW v14.1.2.0, we recommend moving your domain home to Domain on Persistent Volume. For more information, see [Domain On Persistent Volume]({{< relref "/managing-domains/domain-on-pv/overview.md" >}}).
+
+1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
+2. If are not using an auxiliary image in your domain, then create a [Domain creation image]({{< relref "/managing-domains/domain-on-pv/domain-creation-images.md" >}}).
+3. Create a new domain resource YAML file.  You should have at least the following changes:
 
 ```
 # Change type to PersistentVolume
@@ -423,11 +425,11 @@ serverPod:
             walletPasswordSecret: sample-domain1-opss-wallet-password-secret
 ```
 
-Deploy the domain, if it is successful, the domain has been migrated to a persistent volume.  You can proceed upgrading to WebLogic version 14.1.2 [JRF domain on PV](#jrf-domain-on-persistent-volume)
+4. Deploy the domain. If it is successful, then the domain has been migrated to a persistent volume.  You can proceed upgrade to version 14.1.2, see [FMW/JRF domain on PV](#fmwjrf-domain-on-persistent-volume).
 
-### Sample WDT model for production secure mode and SSL
+### Sample WDT model for secured production mode and SSL
 
-The following is a sample snippet of a WDT model for setting up production mode and SSL.
+The following is a sample snippet of a WDT model for setting up secured production mode and SSL.
 
 ```
 topology:
