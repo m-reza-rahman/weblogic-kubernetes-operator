@@ -23,6 +23,7 @@ install_istio() {
 
 version=$1
 workdir=$2
+wko_tenancy=$3
 
 istiodir=${workdir}/istio-${version}
 echo "Installing Istio version [${version}] in location [${istiodir}]"
@@ -32,7 +33,10 @@ ${KUBERNETES_CLI} delete namespace istio-system --ignore-not-found
 ${KUBERNETES_CLI} create namespace istio-system
 
 ( cd $workdir;
-  curl -Lo "istio.tar.gz" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/istio-${version}-linux-arm64.tar.gz";
+  oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
+                                --name=istio/istio-${version}-linux-amd64.tar.gz --file=istio.tar.gz \
+                                --auth=instance_principal
+  #curl -Lo "istio.tar.gz" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/istio-${version}-linux-arm64.tar.gz";
   tar zxf istio.tar.gz
 )
 

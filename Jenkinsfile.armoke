@@ -396,7 +396,7 @@ EOF
 
                             chmod 777 ${WORKSPACE}/terraform/*.sh
                             mkdir -p ${WORKSPACE}/terraform/terraforminstall
-                            sh ${WORKSPACE}/terraform/oke.create.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
+                            sh ${WORKSPACE}/terraform/oke.create.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform arm
 
                             clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"$CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
                             echo "clusterIp : $clusterIP"
@@ -578,6 +578,7 @@ EOF
                                 sh '''
                                     export PATH=${runtime_path}
                                     export OKE_CLUSTER="true"
+                                    export ARM="true"
                                     export OKE_CLUSTER_PRIVATEIP="true"
                                     export OKD="false"
                                     export KUBECONFIG=${kubeconfig_file}

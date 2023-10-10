@@ -348,6 +348,9 @@ public interface TestConstants {
   //OKD constants
   public static final boolean OKD =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.okd.cluster", "false"));
+  //ARM constants
+  public static final boolean ARM =
+      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.arm.cluster", "false"));
 
   // OCNE constants
   public static final boolean OCNE =

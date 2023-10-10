@@ -52,7 +52,8 @@
         <wko.it.nfs.server>${env.NFS_SERVER}</wko.it.nfs.server>
         <wko.it.node.ip>${env.NODE_IP}</wko.it.node.ip>
         <wko.it.fss.dir>${env.FSS_DIR}</wko.it.fss.dir>
-        <wko.it.okd.cluster>${env.OKD}</wko.it.okd.cluster>
+        <wko.it.arm.cluster>${env.ARM}</wko.it.arm.cluster>
+        <wko.it.arm.cluster>${env.OKD}</wko.it.arm.cluster>
         <wko.it.ocne.cluster>${env.OCNE}</wko.it.ocne.cluster>
         <wko.it.oracle.db.operator.release>${env.ORACLE_DB_OPERATOR_RELEASE}</wko.it.oracle.db.operator.release>
         <wko.it.oraclelinux.test.version>${env.ORACLELINUX_TEST_VERSION}</wko.it.oraclelinux.test.version>
@@ -250,6 +251,7 @@
                                 <wko.it.nfs.server>${wko.it.nfs.server}</wko.it.nfs.server>
                                 <wko.it.fss.dir>${wko.it.fss.dir}</wko.it.fss.dir>
                                 <wko.it.okd.cluster>${wko.it.okd.cluster}</wko.it.okd.cluster>
+                                <wko.it.arm.cluster>${wko.it.arm.cluster}</wko.it.arm.cluster>
                                 <wko.it.ocne.cluster>${wko.it.ocne.cluster}</wko.it.ocne.cluster>
                                 <wko.it.oracle.db.operator.release>${wko.it.oracle.db.operator.release}</wko.it.oracle.db.operator.release>
                                 <wko.it.oraclelinux.test.version>${wko.it.oraclelinux.test.version}</wko.it.oraclelinux.test.version>
