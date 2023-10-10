@@ -32,7 +32,7 @@ ${KUBERNETES_CLI} delete namespace istio-system --ignore-not-found
 ${KUBERNETES_CLI} create namespace istio-system
 
 ( cd $workdir;
-  curl -Lo "istio.tar.gz" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/istio%2Fistio-${version}-linux-arm64.tar.gz";
+  curl -Lo "istio.tar.gz" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/istio-${version}-linux-arm64.tar.gz";
   tar zxf istio.tar.gz
 )
 
