@@ -39,15 +39,16 @@ Before the upgrade, you must do the following:
    - Back up the OPSS wallet file. See [Save the OPSS wallet secret](#back-up-the-opss-wallet-and-save-it-in-a-secret).
    - Make sure nothing else is accessing the database.
 - **Do not delete** the domain resource.
-- Shut down the domain by patching the domain and/or cluster spec `serverStartPolicy` to `Never`.
-   - For example, `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}]'
-     ` 
+- Shut down the domain by patching the domain and/or cluster spec `serverStartPolicy` to `Never`. For example:
+   ```
+   $ kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}]'
+   ```
 
 
-If your domain is on a persistent volume, WebLogic provides two utilities for performing version upgrades of WebLogic domains: the Upgrade Assistant for upgrading FMW JRF database schemas and the Reconfiguration Wizard for upgrading the domain configuration. You will need access to the existing domain home directory when running these utilities.
+If your domain is on a persistent volume, WebLogic provides two utilities for performing version upgrades of WebLogic domains: the Upgrade Assistant for upgrading FMW JRF database schemas and the Reconfiguration Wizard for upgrading the domain configuration. When running these utilities, you will need access to the existing domain home directory.
 Because a typical Kubernetes environment lacks a graphical interface, you must run these utilities with the command-line options.
 
-If you domain is using Model in Image, since the domain will be rebuilt when the model is updated, see [Update Use Cases](#upgrade-use-cases) for details.
+If your domain is using Model in Image, because the domain will be rebuilt when the model is updated, see the [Upgrade Use Cases](#upgrade-use-cases) for details.
 
 #### Back up the OPSS wallet and save it in a secret
 
@@ -437,7 +438,7 @@ serverPod:
             walletPasswordSecret: sample-domain1-opss-wallet-password-secret
 ```
 
-4. Deploy the domain. If it is successful, then the domain has been migrated to a persistent volume.  Now, you can proceed upgrade to version 14.1.2.0, see [FMW/JRF domain on PV](#fmwjrf-domain-on-persistent-volume).
+4. Deploy the domain. If it is successful, then the domain has been migrated to a persistent volume.  Now, you can proceed to upgrade to version 14.1.2.0, see [FMW/JRF domain on PV](#fmwjrf-domain-on-persistent-volume).
 
 ### Sample WDT model for secured production mode and SSL
 
