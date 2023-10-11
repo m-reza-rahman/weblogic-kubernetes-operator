@@ -38,11 +38,16 @@ Before the upgrade, you must do the following:
    - Back up the JRF database.
    - Back up the OPSS wallet file. See [Save the OPSS wallet secret](#back-up-the-opss-wallet-and-save-it-in-a-secret).
    - Make sure nothing else is accessing the database.
-- Shut down the domain by setting `serverStartPolicy: Never` in the domain and cluster resource YAML file.
 - **Do not delete** the domain resource.
+- Shut down the domain by patching the domain and/or cluster spec `serverStartPolicy` to `Never`.
+   - For example, `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}]'
+     ` 
 
-WebLogic provides two utilities for performing version upgrades of WebLogic domains: the Upgrade Assistant and the Reconfiguration Wizard.
+
+If your domain is on a persistent volume, WebLogic provides two utilities for performing version upgrades of WebLogic domains: the Upgrade Assistant for upgrading FMW JRF database schemas and the Reconfiguration Wizard for upgrading the domain configuration. You will need access to the existing domain home directory when running these utilities.
 Because a typical Kubernetes environment lacks a graphical interface, you must run these utilities with the command-line options.
+
+If you domain is using Model in Image, since the domain will be rebuilt when the model is updated, see [Update Use Cases](#upgrade-use-cases) for details.
 
 #### Back up the OPSS wallet and save it in a secret
 
@@ -52,9 +57,9 @@ The operator provides a helper script, the [OPSS wallet utility](https://orahub.
 $ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws sample-domain1-opss-walletfile-secret
 ```
 
-#### Deploy a WebLogic Server pod attaching a persistent volume
+#### Deploy a WebLogic Server pod to access the domain home on a persistent volume
 
-For DoPV domains, you will need to access the domain home on the shared volume with the 14.1.2.0 WebLogic Server version pod.
+For domain on persistent volume, you will need to access the domain home on the shared volume with the 14.1.2.0 WebLogic Server version pod.
 You can launch a running pod with the [PV and PVC helper script](https://github.com/oracle/weblogic-kubernetes-operator/blob/main/kubernetes/samples/scripts/domain-lifecycle/pv-pvc-helper.sh).
 
 For example,
@@ -63,7 +68,7 @@ For example,
 $ ./pv-pvc-helper.sh -n sample-domain1-ns -c sample-domain1-pvc-rwm1 -m /share -i wls14120:fmw
 ```
 
-After the pod is deployed, you can follow the instructions to `kubectl exec` into the pod's terminal session.
+After the pod is deployed, you can `kubectl -n sample-domain1-ns exec -it pvhelper -- /bin/sh'` into the pod's terminal session.
 
 #### Upgrade the JRF database
 
@@ -328,7 +333,7 @@ Welcome to WebLogic Server Administration Scripting Shell
 
 Type help() for help on available commands
 
-wls:/offline> readDomainForUpgrade('<your domain home directory path')
+wls:/offline> readDomainForUpgrade('<your domain home directory path>')
 wls:/offline> updateDomain()
 wls:/offline> closeDomain()
 ```
@@ -348,7 +353,8 @@ Consider the following use case scenarios, depending on your WebLogic domain typ
 
 1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).  You can skip the database related steps.
 2. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfigure-the-domain).
-3. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file, and restart the domain.
+3. Update the domain resource to use the WebLogic 14120 base image, and patch the `serverStartPolicy` to `IfNeeded` to restart the domain.
+   `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<WebLogic 14120 base image>"]'`
 
 ```
 spec:
@@ -360,7 +366,8 @@ spec:
 1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
 2. Run the Upgrade Assistant. See [Upgrade the JRF database](#upgrade-the-jrf-database).
 3. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfigure-the-domain).
-4. Update the domain resource to use the Fusion Middleware Infrastructure 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file, and restart the domain.
+4. Update the domain resource to use the Fusion Middleware Infrastructure 14120 base image, and patch the `serverStartPolicy` to `IfNeeded` to restart the domain.
+   `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<Fusion Middleware Infrastructure 14120>"]'`
 
 ```
 spec:
@@ -375,7 +382,7 @@ If your domain is already using secured production mode, then you can simply upd
 
 If your domain is not using secured production mode, the best approach is to switch your domain to using it. For an example, see the [Sample WDT YAML](#sample-wdt-model-for-secured-production-mode-and-ssl) code snippet. Before upgrading, change your applications, utilities, and ingresses to use SSL ports.
 
-If for some reason, you cannot switch your domain to secured production mode, you can still continue with the typical application lifecycle update process. In this case, when you upgrade the WebLogic version to 14.1.2.0, the operator will automatically disable secured production mode for you.
+If for any reason, you cannot switch your domain to secured production mode, you can still upgrade the WebLogic version to 14.1.2.0, the operator will automatically disable the secured production mode for you.
 
 #### FMW/JRF domain using Model in Image
 
@@ -425,6 +432,7 @@ serverPod:
           domainType: JRF
           domainCreationConfigMap: sample-domain1-wdt-config-map
           opss:
+            # Make sure you have already saved the wallet file.
             walletFileSecret: sample-domain1-opss-walletfile-secret
             walletPasswordSecret: sample-domain1-opss-wallet-password-secret
 ```
