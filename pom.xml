@@ -48,7 +48,7 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-plugin-version}</version>
           <configuration>
-            <release>11</release>
+            <release>21</release>
             <compilerArgs>
               <arg>-Xpkginfo:always</arg>
               <arg>-Xlint:all</arg>
@@ -638,9 +638,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <src-integration-test>${project.basedir}/src/test/java</src-integration-test>
     <resource-integration-test>${project.basedir}/src/test/resources</resource-integration-test>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <java.version.range>11</java.version.range>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <java.version.range>21</java.version.range>
     <maven.version.range>[3.8.1,)</maven.version.range>
     <maven-enforcer-plugin-version>3.4.1</maven-enforcer-plugin-version>
     <maven-clean-plugin-version>3.3.1</maven-clean-plugin-version>
@@ -653,12 +653,12 @@
     <maven-surefire-plugin-version>3.1.2</maven-surefire-plugin-version>
     <maven-checkstyle-plugin-version>3.3.0</maven-checkstyle-plugin-version>
     <maven-release-plugin-version>3.0.1</maven-release-plugin-version>
-    <maven-javadoc-plugin-version>3.5.0</maven-javadoc-plugin-version>
+    <maven-javadoc-plugin-version>3.6.0</maven-javadoc-plugin-version>
     <maven-failsafe-plugin-version>3.1.2</maven-failsafe-plugin-version>
     <maven-dependency-plugin-version>3.6.0</maven-dependency-plugin-version>
-    <maven-shade-plugin-version>3.5.0</maven-shade-plugin-version>
+    <maven-shade-plugin-version>3.5.1</maven-shade-plugin-version>
     <exec-maven-plugin-version>3.1.0</exec-maven-plugin-version>
-    <checkstyle-version>10.12.3</checkstyle-version>
+    <checkstyle-version>10.12.4</checkstyle-version>
     <directory-maven-version>1.0</directory-maven-version>
     <maven-jxr-plugin-version>3.3.0</maven-jxr-plugin-version>
     <maven-gpg-plugin-version>3.1.0</maven-gpg-plugin-version>
@@ -677,12 +677,12 @@
     <mojo-build-helper-version>3.4.0</mojo-build-helper-version>
     <maven-plugin-version>1.0.0</maven-plugin-version>
     <assertj.core.version>3.24.2</assertj.core.version>
-    <commons.io.version>2.13.0</commons.io.version>
+    <commons.io.version>2.14.0</commons.io.version>
     <awaitility-version>4.2.0</awaitility-version>
     <client-java-version>18.0.1</client-java-version>
     <kotlin-stdlib-version>1.9.10</kotlin-stdlib-version>
     <okhttp-version>4.11.0</okhttp-version>
-    <okio-version>3.5.0</okio-version>
+    <okio-version>3.6.0</okio-version>
     <bc-jdk18on-version>1.76</bc-jdk18on-version>
     <junit.jupiter.version>5.10.0</junit.jupiter.version>
     <junit.vintage.version>5.7.1</junit.vintage.version>
