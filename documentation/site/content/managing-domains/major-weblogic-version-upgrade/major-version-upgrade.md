@@ -327,7 +327,7 @@ Welcome to WebLogic Server Administration Scripting Shell
 
 Type help() for help on available commands
 
-wls:/offline> readDomainForUpgrade('<your domain home directory path')
+wls:/offline> readDomainForUpgrade('<your domain home directory path>')
 wls:/offline> updateDomain()
 wls:/offline> closeDomain()
 ```
@@ -347,7 +347,7 @@ Consider the following use case scenarios, depending on your WebLogic domain typ
 
 1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).  You can skip the database related steps.
 2. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfigure-the-domain).
-3. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file, and restart the domain.
+3. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file to restart the domain.
 
 ```
 spec:
@@ -359,7 +359,7 @@ spec:
 1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
 2. Run the Upgrade Assistant. See [Upgrade the JRF database](#upgrade-the-jrf-database).
 3. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfigure-the-domain).
-4. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file, and restart the domain.
+4. Update the domain resource to use the WebLogic 14120 base image, set `serverStartPolicy: IfNeeded` in the domain and cluster resource YAML file to restart the domain.
 
 ```
 spec:
@@ -374,7 +374,7 @@ If your domain is already using secured production mode, then you can simply upd
 
 If your domain is not using secured production mode, the best approach is to switch to your domain to using it. See the [Sample WDT YAML](#sample-wdt-model-for-secured-production-mode-and-ssl). Before upgrading, change your applications, utilities, and ingresses to use SSL ports.
 
-If for some reason, you cannot switch to your domain to secured production mode, you can still continue with the typical application lifecycle update process. In this case, when you upgrade the WebLogic version to 14.1.2.0, the operator will automatically disable the secure mode for you.
+If for any reason, you cannot switch to your domain to secured production mode, you can still continue with the typical application lifecycle update process. In this case, when you upgrade the WebLogic version to 14.1.2.0, the operator will automatically disable the secure mode for you.
 
 #### FMW/JRF domain using Model in Image
 
