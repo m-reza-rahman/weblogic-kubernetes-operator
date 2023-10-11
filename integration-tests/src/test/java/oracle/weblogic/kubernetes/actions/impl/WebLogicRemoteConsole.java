@@ -72,6 +72,31 @@ public class WebLogicRemoteConsole {
 
     String jarLocation = REMOTECONSOLE_FILE;
 
+    // assertDoesNotThrow(() -> copyFileFromPod(domainNamespace,
+    //         adminServerPodName, "weblogic-server",
+    //       "/u01/oracle/wlserver/server/lib/DemoTrust.jks",
+    //      Paths.get(WORK_DIR, "DemoTrust.jks")));
+    StringBuffer javaCmd = new StringBuffer("java");
+    // javaCmd.append(" -Dconsole.disableHostnameVerification=true");
+    // javaCmd.append(" -Djavax.net.ssl.trustStore=" + "\"" + WORK_DIR + "/DemoTrust.jks" + "\"");
+    // javaCmd.append(" -Djavax.net.ssl.trustStoreType=\"JKS\"");
+    javaCmd.append(" -jar ");
+    javaCmd.append(jarLocation);
+    javaCmd.append(" &");
+    logger.info("java command to start remote console {0}", javaCmd.toString());
+
+    ExecResult result = assertDoesNotThrow(() -> exec(new String(javaCmd), true));
+    logger.info("java returned {0}", result.toString());
+    logger.info("java returned EXIT value {0}", result.exitValue());
+
+    return ((result.exitValue() == 0) && accessRemoteconsole());
+
+  }
+
+  private static boolean xrunRemoteconsole(String domainNamespace, String adminServerPodName) {
+
+    String jarLocation = REMOTECONSOLE_FILE;
+
     assertDoesNotThrow(() -> copyFileFromPod(domainNamespace,
              adminServerPodName, "weblogic-server",
              "/u01/oracle/wlserver/server/lib/DemoTrust.jks",
@@ -96,6 +121,7 @@ public class WebLogicRemoteConsole {
     return ((result.exitValue() == 0) && accessRemoteconsole());
 
   }
+
 
   private static boolean accessRemoteconsole() {
 

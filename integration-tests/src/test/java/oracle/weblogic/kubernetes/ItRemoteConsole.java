@@ -43,6 +43,8 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE_DOWNLOAD_URL;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE_FILE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
@@ -119,6 +121,10 @@ class ItRemoteConsole {
     assertNotNull(namespaces.get(1), "Namespace list is null");
     domainNamespace = namespaces.get(1);
 
+    logger.info("REMOTECONSOLE_DOWNLOAD_URL [{0}]", REMOTECONSOLE_DOWNLOAD_URL);
+    logger.info("REMOTECONSOLE_FILE [{0}]", REMOTECONSOLE_FILE);
+    assertTrue(installAndVerifyWlsRemoteConsole(domainNamespace, adminServerPodName),
+        "Remote Console installation failed");
     logger.info("Assign a unique namespace for Traefik");
     assertNotNull(namespaces.get(2), "Namespace list is null");
     traefikNamespace = namespaces.get(2);
