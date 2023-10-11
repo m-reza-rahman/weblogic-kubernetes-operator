@@ -243,8 +243,12 @@ public interface TestConstants {
   public static final String MII_AUXILIARY_IMAGE_NAME = DOMAIN_IMAGES_PREFIX + "mii-ai-image";
   public static final boolean SKIP_BUILD_IMAGES_IF_EXISTS =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.skip.build.images.if.exists", "false"));
+  //ARM constants
+  public static final boolean ARM =
+      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.arm.cluster", "false"));
+
   public static final String BUSYBOX_IMAGE = TEST_IMAGES_PREFIX + "test-images/docker/busybox";
-  public static final String BUSYBOX_TAG = "1.34.1";
+  public static final String BUSYBOX_TAG = "1.36";
 
   // Skip the mii/wdt basic image build locally if needed
   public static final String MII_BASIC_IMAGE_TAG = SKIP_BUILD_IMAGES_IF_EXISTS ? "local" : getDateAndTimeStamp();
@@ -348,9 +352,6 @@ public interface TestConstants {
   //OKD constants
   public static final boolean OKD =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.okd.cluster", "false"));
-  //ARM constants
-  public static final boolean ARM =
-      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.arm.cluster", "false"));
 
   // OCNE constants
   public static final boolean OCNE =
