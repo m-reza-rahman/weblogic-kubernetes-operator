@@ -162,7 +162,7 @@ class ItIntrospectVersion {
   private static String introDomainNamespace = null;
   private static String miiDomainNamespace = null;
   private static final String BADMII_IMAGE = "bad-modelfile-mii-image";
-  private static final String BADMII_MODEL_FILE = "bad-model-file.yaml";
+  private static final String BADMII_MODEL_FILE = "mii-bad-model-file.yaml";
 
   private static final String domainUid = "myintrodomain";
   private static final String cluster1Name = "mycluster";
@@ -1065,7 +1065,7 @@ class ItIntrospectVersion {
         BADMII_IMAGE,
         "empty-cm",
         30L,
-        "my-cluster");
+        "mycluster");
 
     logger.info("Creating a domain resource with bad model file from configmap");
     createDomainAndVerify(domain, miiDomainNamespace);
