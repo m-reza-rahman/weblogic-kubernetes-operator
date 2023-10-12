@@ -66,7 +66,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE_DOWNLOAD_FILENAME_DEFAULT;
-// import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE_DOWNLOAD_URL_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.SNAKE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.SNAKE_DOWNLOADED_FILENAME;
@@ -2048,9 +2047,8 @@ public class CommonTestUtils {
         return WIT_DOWNLOAD_URL_DEFAULT.equals(location);
       case WLE:
         return WLE_DOWNLOAD_URL_DEFAULT.equals(location);
-      case REMOTECONSOLE:
-        // return REMOTECONSOLE_DOWNLOAD_URL_DEFAULT.equals(location);
-        return false;
+      //case REMOTECONSOLE:
+      //  return false;
       default:
         return false;
     }

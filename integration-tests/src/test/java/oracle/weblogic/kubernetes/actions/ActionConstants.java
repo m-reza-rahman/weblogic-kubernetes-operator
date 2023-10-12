@@ -67,9 +67,6 @@ public interface ActionConstants {
   public static final String REMOTECONSOLE = "REMOTECONSOLE";
   public static final String REMOTECONSOLE_VERSION =
       getNonEmptySystemProperty("remoteconsole.version", "2.4.6");
-  //remoteconsole jar file after unzipping
-  // public static final String REMOTECONSOLE_FILE = WORK_DIR 
-  //    + "/remote-console-" + REMOTECONSOLE_VERSION + "/backend/console.jar";
   public static final String REMOTECONSOLE_FILE = WORK_DIR + "/backend/console.jar";
   public static final String REMOTECONSOLE_DOWNLOAD_URL_DEFAULT =
       "https://github.com/oracle/weblogic-remote-console/releases/download/v" 
