@@ -354,36 +354,32 @@ Consider the following use case scenarios, depending on your WebLogic domain typ
 
 1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).  You can skip the database related steps.
 2. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfigure-the-domain).
-3. Update the domain resource to use the WebLogic 14120 base image, and patch the `serverStartPolicy` to `IfNeeded` to restart the domain.
+3. Update the domain resource to use the WebLogic 14120 base image, and patch the `serverStartPolicy` to `IfNeeded` to restart the domain.  For example,
    `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<WebLogic 14120 base image>"]'`
-
-```
-spec:
-  image: <wls 14120 image>
-```
 
 #### FMW/JRF Domain on Persistent Volume
 
 1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
 2. Run the Upgrade Assistant. See [Upgrade the JRF database](#upgrade-the-jrf-database).
 3. Upgrade the domain configuration using the reconfiguration WLST commands. See [Reconfigure the domain](#reconfigure-the-domain).
-4. Update the domain resource to use the Fusion Middleware Infrastructure 14120 base image, and patch the `serverStartPolicy` to `IfNeeded` to restart the domain.
-   `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<Fusion Middleware Infrastructure 14120>"]'`
+4. Update the domain resource to use the Fusion Middleware Infrastructure 14120 base image, and patch the `serverStartPolicy` to `IfNeeded` to restart the domain.  For example,
+   `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<Fusion Middleware Infrastructure 14120 image>"]'`
 
-```
-spec:
-  image: <fmw 14120 image>
-```
 
 #### WLS domain using Model in Image
 
-As described in [Important considerations](#important-considerations), in v14.2.1.0 production domains, the plain HTTP listening port is disabled and an SSL listening port is required.  
+1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
+2. Depending on whether your existing domain is using secured production mode, use one of the following options.
 
-If your domain is already using secured production mode, then you can simply update the base image in the domain resource YAML file and redeploy the domain.
 
-If your domain is not using secured production mode, the best approach is to switch your domain to using it. For an example, see the [Sample WDT YAML](#sample-wdt-model-for-secured-production-mode-and-ssl) code snippet. Before upgrading, change your applications, utilities, and ingresses to use SSL ports.
+| Existing Domain                                                                                      | Upgrade Actions                                                                                                                                                                                                                                      |
+|------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Domain is already using secured production mode                                                      | Update the domain resource to use the WebLogic 14120 base image and redeploy the domain.                                                                                                                                                             |
+| Domain is not using secured production mode but ready to switch to use secured production mode       | Enable secured production mode. See the [Sample WDT YAML](#sample-wdt-model-for-secured-production-mode-and-ssl), update the domain resource to use the WebLogic 14120 base image and redeploy the domain.                                           |
+| Domain is not using secured production mode but _not_ ready to switch to use secured production mode | Update the domain resource to use the WebLogic 14120 base image and redeploy the domain, the operator will automatically disable the secured production mode for you, but your domain will not have the added benefits of a secured production mode. |
 
-If for any reason, you cannot switch your domain to secured production mode, you can still upgrade the WebLogic version to 14.1.2.0, the operator will automatically disable the secured production mode for you.
+3. You can use this patch command to redeploy the domain with the new WebLogic 14120 image.  For example,
+   `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<WebLogic 14120 base image>"]'`
 
 #### FMW/JRF domain using Model in Image
 
@@ -396,6 +392,7 @@ FMW/JRF domains using Model in Image has been deprecated since WebLogic Kubernet
 ```
 # Change type to PersistentVolume
 domainHomeSourceType: PersistentVolume
+image: <Fusion Middleware Infrastructure 14120 base image>
 ...
 serverPod:
     ...
@@ -433,7 +430,8 @@ serverPod:
           domainType: JRF
           domainCreationConfigMap: sample-domain1-wdt-config-map
           opss:
-            # Make sure you have already saved the wallet file.
+            # Make sure you have already saved the wallet file secret. This allows the domain to use 
+            # an existing JRF database schemas.
             walletFileSecret: sample-domain1-opss-walletfile-secret
             walletPasswordSecret: sample-domain1-opss-wallet-password-secret
 ```
@@ -447,8 +445,8 @@ The following is a code snippet of a WDT model for setting up secured production
 ```
 topology:
   ProductionModeEnabled: true
-  # SecureMode is turned on by default in 14.1.2
   SecurityConfiguration:
+    # SecureMode is turned on by default in 14.1.2
     SecureMode:
       SecureModeEnabled: true
     Server:
