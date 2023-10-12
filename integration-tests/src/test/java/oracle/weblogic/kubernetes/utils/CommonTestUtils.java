@@ -2047,8 +2047,6 @@ public class CommonTestUtils {
         return WIT_DOWNLOAD_URL_DEFAULT.equals(location);
       case WLE:
         return WLE_DOWNLOAD_URL_DEFAULT.equals(location);
-      //case REMOTECONSOLE:
-      //  return false;
       default:
         return false;
     }
