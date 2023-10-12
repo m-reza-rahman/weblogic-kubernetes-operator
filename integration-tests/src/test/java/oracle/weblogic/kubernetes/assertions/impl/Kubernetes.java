@@ -44,7 +44,7 @@ import static io.kubernetes.client.util.Yaml.dump;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
-import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
+//import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodRestartVersion;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getPodIntrospectVersion;
@@ -378,7 +378,7 @@ public class Kubernetes {
     V1Pod pod = getPod(namespace, labelSelector, "weblogic-operator-");
     if (pod != null && pod.getStatus() != null && pod.getStatus().getConditions() != null) {
       LoggingFacade logger = getLogger();
-      logger.info(getPodLog(pod.getMetadata().getName(), namespace));
+      //logger.info(getPodLog(pod.getMetadata().getName(), namespace));
       String cmdToExecute = String.format(
           KUBERNETES_CLI
               + " describe pods " + pod.getMetadata().getName() +  "  -n " + namespace);
