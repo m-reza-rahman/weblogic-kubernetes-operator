@@ -372,13 +372,14 @@ Consider the following use case scenarios, depending on your WebLogic domain typ
 2. Depending on whether your existing domain is using secured production mode, use one of the following options.
 
 
-| Existing Domain                                                                                      | Upgrade Actions                                                                                                                                                                                                                                      |
-|------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Domain is already using secured production mode                                                      | Update the domain resource to use the WebLogic 14120 base image and redeploy the domain.                                                                                                                                                             |
-| Domain is not using secured production mode but ready to switch to use secured production mode       | Enable secured production mode. See the [Sample WDT YAML](#sample-wdt-model-for-secured-production-mode-and-ssl), update the domain resource to use the WebLogic 14120 base image and redeploy the domain.                                           |
+| Existing Domain                                                                                      | Upgrade Actions                                                                                                                                                                                                                                    |
+|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Domain is already using secured production mode                                                      | Update the domain resource to use the WebLogic 14120 base image and redeploy the domain.                                                                                                                                                           |
+| Domain is not using secured production mode but ready to switch to use secured production mode       | Enable secured production mode. See the [Sample WDT YAML](#sample-wdt-model-for-secured-production-mode-and-ssl), update the domain resource to use the WebLogic 14120 base image and redeploy the domain.                                         |
 | Domain is not using secured production mode but _not_ ready to switch to use secured production mode | Update the domain resource to use the WebLogic 14120 base image and redeploy the domain, the operator will automatically disable the secured production mode for you, but your domain will not have the added benefits of a secured production mode. |
+| Domain is not using secured production mode and wanted to start from scratch to rebuild the domain   | Delete the domain first, enable secure production mode. See the [Sample WDT YAML](#sample-wdt-model-for-secured-production-mode-and-ssl), update the domain resource YAML to use the WebLogic 14120 base image and deploy the domain.              |
 
-3. You can use this patch command to redeploy the domain with the new WebLogic 14120 image.  For example,
+3. You can use this patch command for redeploying the domain with the new WebLogic 14120 image.  For example,
    `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<WebLogic 14120 base image>"]'`
 
 #### FMW/JRF domain using Model in Image
@@ -444,11 +445,23 @@ The following is a code snippet of a WDT model for setting up secured production
 
 ```
 topology:
+  # Production mode must be true for secured production mode
+  #
   ProductionModeEnabled: true
   SecurityConfiguration:
-    # SecureMode is turned on by default in 14.1.2
+    # If you are updating existing domain (pre 14.1.2.0) first to use secured production mode, 
+    # make sure you turn on the secure mode. Operator will only update the existing domain stored in
+    # the introspector config map.
+    #
+    # You can optionally delete the existing domain and let the operator to completely rebuild the domain using 
+    # secured production mode, then you do not have to specify the SecureMode section.  This is the same use case
+    # deploying a brand new domain.
+    # 
     SecureMode:
       SecureModeEnabled: true
+    #
+    # Make sure SSL is set up in all servers and server templates.
+    #
     Server:
         "admin-server":
             CustomTrustKeyStoreFileName: 'wlsdeploy/servers/admin-server/trust-keystore.jks'
