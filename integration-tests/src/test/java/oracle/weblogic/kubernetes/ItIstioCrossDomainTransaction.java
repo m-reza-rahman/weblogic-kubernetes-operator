@@ -83,7 +83,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 @DisplayName("Verify cross domain transaction with istio enabled is successful")
 @IntegrationTest
 @Tag("kind-parallel")
@@ -170,6 +169,7 @@ class ItIstioCrossDomainTransaction {
     assertDoesNotThrow(() -> addLabelsToNamespace(domain1Namespace,labelMap));
     assertDoesNotThrow(() -> addLabelsToNamespace(domain2Namespace,labelMap));
     assertDoesNotThrow(() -> addLabelsToNamespace(opNamespace,labelMap));
+
     // install and verify operator
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
     buildApplicationsAndDomains();
@@ -378,9 +378,7 @@ class ItIstioCrossDomainTransaction {
     } else {
       logger.info("Skipping WebLogic console in WebLogic slim image");
     }
-
   }
-
 
   /*
    * Test verifies a cross-domain transaction in a istio enabled environment.
@@ -401,7 +399,8 @@ class ItIstioCrossDomainTransaction {
   @Test
   @DisplayName("Check cross domain transaction with istio works")
   void testIstioCrossDomainTransaction() {
-    // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+    // In internal OKE env, use Istio EXTERNAL-IP;
+    // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String istioIngressIP = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
 
@@ -480,7 +479,8 @@ class ItIstioCrossDomainTransaction {
   @Test
   @DisplayName("Check cross domain transcated MDB communication with istio")
   void testIstioCrossDomainTranscatedMDB() {
-    // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+    // In internal OKE env, use Istio EXTERNAL-IP;
+    // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : K8S_NODEPORT_HOST + ":" + istioIngressPort;
@@ -520,7 +520,8 @@ class ItIstioCrossDomainTransaction {
   }
 
   private boolean checkLocalQueue() {
-    // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+    // In internal OKE env, use Istio EXTERNAL-IP;
+    // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : K8S_NODEPORT_HOST + ":" + istioIngressPort;
@@ -544,9 +545,10 @@ class ItIstioCrossDomainTransaction {
     return true;
   }
 
-
-  private static void createDomain(String domainUid, String domainNamespace, String adminSecretName,
-                            String domainImage) {
+  private static void createDomain(String domainUid,
+                                   String domainNamespace,
+                                   String adminSecretName,
+                                   String domainImage) {
     // admin/managed server name here should match with model yaml in WDT_MODEL_FILE
     final String adminServerPodName = domainUid + "-admin-server";
     final String managedServerPrefix = domainUid + "-managed-server";

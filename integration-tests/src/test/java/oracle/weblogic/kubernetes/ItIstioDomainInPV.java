@@ -178,7 +178,8 @@ class ItIstioDomainInPV  {
     final int replicaCount = 2;
     final int t3ChannelPort = getNextFreePort();
 
-    // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST
+    // In internal OKE env, use Istio EXTERNAL-IP;
+    // in non-internal-OKE env, use K8S_NODEPORT_HOST
     String hostName = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
 
@@ -196,8 +197,7 @@ class ItIstioDomainInPV  {
     createPVC(pvName, pvcName, domainUid, domainNamespace);
 
     // create a temporary WebLogic domain property file
-    File domainPropertiesFile = assertDoesNotThrow(() ->
-            File.createTempFile("domain", "properties"),
+    File domainPropertiesFile = assertDoesNotThrow(() -> File.createTempFile("domain", "properties"),
         "Failed to create domain properties file");
     Properties p = new Properties();
     p.setProperty("domain_path", "/shared/" + domainNamespace + "/domains");
@@ -223,8 +223,7 @@ class ItIstioDomainInPV  {
     Path wlstScript = Paths.get(RESOURCE_DIR, "python-scripts", "wlst-create-istio-domain-onpv.py");
 
     // create configmap and domain on persistent volume using the WLST script and property file
-    createDomainOnPVUsingWlst(wlstScript, domainPropertiesFile.toPath(),
-        pvName, pvcName, domainNamespace);
+    createDomainOnPVUsingWlst(wlstScript, domainPropertiesFile.toPath(), pvName, pvcName, domainNamespace);
 
     // Use the WebLogic(12.2.1.4) Base Image with Japanese Locale
     // Add the LANG environment variable to ja_JP.utf8
@@ -321,26 +320,23 @@ class ItIstioDomainInPV  {
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio http ingress Port is {0}", istioIngressPort);
 
-    // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+    // In internal OKE env, use Istio EXTERNAL-IP;
+    // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = hostName.equals(K8S_NODEPORT_HOST) ? K8S_NODEPORT_HOST + ":" + istioIngressPort : hostName;
 
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
     if (!WEBLOGIC_SLIM) {
       String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
-      boolean checkConsole =
-          checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
+      boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console");
       logger.info("WebLogic console is accessible");
       String localhost = "localhost";
-      String forwardPort =
-           startPortForwardProcess(localhost, domainNamespace,
-           domainUid, 7001);
+      String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
       assertNotNull(forwardPort, "port-forward fails to assign local port");
       logger.info("Forwarded local port is {0}", forwardPort);
       consoleUrl = "http://" + localhost + ":" + forwardPort + "/console/login/LoginForm.jsp";
-      checkConsole =
-          checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
+      checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
       logger.info("WebLogic console is accessible thru port forwarding");
       stopPortForwardProcess(domainNamespace);
@@ -348,6 +344,7 @@ class ItIstioDomainInPV  {
       logger.info("Skipping WebLogic console in WebLogic slim image");
     }
 
+    ExecResult result = null;
     if (isWebLogicPsuPatchApplied()) {
       String curlCmd2 = "curl -j -sk --show-error --noproxy '*' "
           + " -H 'Host: " + domainNamespace + ".org'"
@@ -356,10 +353,8 @@ class ItIstioDomainInPV  {
           + "/management/weblogic/latest/domainRuntime/domainSecurityRuntime?"
           + "link=none";
 
-      ExecResult result = null;
       logger.info("curl command {0}", curlCmd2);
-      result = assertDoesNotThrow(
-        () -> exec(curlCmd2, true));
+      result = assertDoesNotThrow(() -> exec(curlCmd2, true));
 
       if (result.exitValue() == 0) {
         logger.info("curl command returned {0}", result.toString());
@@ -375,7 +370,6 @@ class ItIstioDomainInPV  {
             + " is not available in the WLS Release {0}", WEBLOGIC_IMAGE_TAG);
     }
 
-    ExecResult result = null;
     Path archivePath = Paths.get(testWebAppWarLoc);
     if (OKE_CLUSTER) {
       String managedServerPrefix = domainUid + "-managed-";
@@ -388,9 +382,8 @@ class ItIstioDomainInPV  {
       assertEquals("202", result.stdout(), "Application deployment failed with wrong HTTP code");
       logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid + "-" + clusterName);
 
-      testUntil(
-          isAppInServerPodReady(domainNamespace,
-              managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp"),
+      testUntil(isAppInServerPodReady(domainNamespace,
+          managedServerPrefix + 1,8001, "/testwebapp/index.jsp","testwebapp"),
           logger, "Check Deployed App {0} in server {1}",
           archivePath,
           target);
@@ -480,7 +473,6 @@ class ItIstioDomainInPV  {
     }
   } 
 
-
   /**
    * Create a WebLogic domain on a persistent volume by doing the following.
    * Create a configmap containing WLST script and property file.
@@ -502,9 +494,8 @@ class ItIstioDomainInPV  {
 
     logger.info("Creating a config map to hold domain creation scripts");
     String domainScriptConfigMapName = "create-domain-scripts-cm";
-    assertDoesNotThrow(
-        () -> createConfigMapForDomainCreation(domainScriptConfigMapName, domainScriptFiles,
-           namespace, this.getClass().getSimpleName()),
+    assertDoesNotThrow(() -> createConfigMapForDomainCreation(domainScriptConfigMapName, domainScriptFiles,
+        namespace, this.getClass().getSimpleName()),
         "Create configmap for domain creation failed");
 
     // create a V1Container with specific scripts and properties for creating domain

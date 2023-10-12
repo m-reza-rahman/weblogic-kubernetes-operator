@@ -70,7 +70,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
 @DisplayName("Verify istio enabled WebLogic domain in domainhome-in-image model")
 @IntegrationTest
 @Tag("kind-parallel")
@@ -109,7 +108,6 @@ class ItIstioDomainInImage {
     domainNamespace = namespaces.get(1);
 
     // Label the domain/operator namespace with istio-injection=enabled
-
     Map<String, String> labelMap = new HashMap<>();
     labelMap.put("istio-injection", "enabled");
 
@@ -203,41 +201,34 @@ class ItIstioDomainInImage {
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
-    // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+    // In internal OKE env, use Istio EXTERNAL-IP;
+    // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : K8S_NODEPORT_HOST + ":" + istioIngressPort;
-
 
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
     if (!WEBLOGIC_SLIM) {
       String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
-      boolean checkConsole =
-          checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
+      boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console");
       logger.info("WebLogic console is accessible");
       String localhost = "localhost";
       // Forward the non-ssl port 7001
-      String forwardPort =
-           startPortForwardProcess(localhost, domainNamespace,
-           domainUid, 7001);
+      String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
       assertNotNull(forwardPort, "port-forward fails to assign local port");
       logger.info("Forwarded local port is {0}", forwardPort);
       consoleUrl = "http://" + localhost + ":" + forwardPort + "/console/login/LoginForm.jsp";
-      checkConsole =
-          checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
+      checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
       logger.info("WebLogic console is accessible thru non-ssl port forwarding");
       // Forward the ssl port 7002
-      forwardPort =
-           startPortForwardProcess(localhost, domainNamespace,
-           domainUid, 7002);
+      forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7002);
       assertNotNull(forwardPort, "(ssl) port-forward fails to assign local port");
       logger.info("Forwarded local port is {0}", forwardPort);
       consoleUrl = "https://" + localhost + ":" + forwardPort + "/console/login/LoginForm.jsp";
-      checkConsole =
-          checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
+      checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
       logger.info("WebLogic console is accessible thru ssl port forwarding");
 
@@ -261,9 +252,8 @@ class ItIstioDomainInImage {
     logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid + "-" + clusterName);
 
     if (OKE_CLUSTER) {
-      testUntil(
-          isAppInServerPodReady(domainNamespace,
-              managedServerPrefix + 1, 8001, "/testwebapp/index.jsp", "testwebapp"),
+      testUntil(isAppInServerPodReady(domainNamespace,
+          managedServerPrefix + 1, 8001, "/testwebapp/index.jsp", "testwebapp"),
           logger, "Check Deployed App {0} in server {1}",
           archivePath,
           target);
@@ -288,7 +278,6 @@ class ItIstioDomainInImage {
           + "/management/weblogic/latest/domainRuntime/domainSecurityRuntime?"
           + "link=none";
 
-      result = null;
       logger.info("curl command {0}", curlCmd2);
       result = assertDoesNotThrow(
         () -> exec(curlCmd2, true));
@@ -310,8 +299,6 @@ class ItIstioDomainInImage {
 
   private void createDomainResource(String domainUid, String domNamespace, String adminSecretName,
                                     String repoSecretName, int replicaCount) {
-
-
     // In case of istio "default" channel can not be exposed through nodeport.
     // No AdminService on domain resource.
     DomainResource domain = new DomainResource()
