@@ -206,8 +206,7 @@ pipeline {
 
                             docker version
                             docker images
-                            docker rmi phx.ocir.io/devweblogic/test-images/nginx:v1.6.4
-                            docker rmi phx.ocir.io/devweblogic/test-images/traefik:v2.10.5
+                            
                             sudo yum install python36-oci-cli -y
                             ulimit -a
                             ulimit -aH
