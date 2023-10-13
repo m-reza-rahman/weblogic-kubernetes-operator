@@ -206,7 +206,7 @@ pipeline {
 
                             docker version
                             docker images
-                            
+
                             sudo yum install python36-oci-cli -y
                             ulimit -a
                             ulimit -aH

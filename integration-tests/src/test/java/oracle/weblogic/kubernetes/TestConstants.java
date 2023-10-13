@@ -191,10 +191,11 @@ public interface TestConstants {
   public static final String NGINX_REPO_NAME = "ingress-nginx";
   public static final String NGINX_CHART_NAME = "ingress-nginx";
   public static final String NGINX_CHART_VERSION = "4.0.17";
-  public static final String NGINX_INGRESS_IMAGE_DIGEST = 
-      "sha256:314435f9465a7b2973e3aa4f2edad7465cc7bcdc8304be5d146d70e4da136e51";  
-  //public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/nginx";
-  public static final String TEST_NGINX_IMAGE_NAME = "/nginx";
+  public static final String NGINX_INGRESS_IMAGE_DIGEST =
+      "sha256:e727015a639975f4fc0808b91f9e88a83c60938b640ee6c2f5606ddd779c858d";
+  //"sha256:314435f9465a7b2973e3aa4f2edad7465cc7bcdc8304be5d146d70e4da136e51";
+  public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/nginx";
+  //public static final String TEST_NGINX_IMAGE_NAME = "/nginx";
   public static final String NGINX_INGRESS_IMAGE_TAG = "v1.6.4";
 
   // Traefik constants
