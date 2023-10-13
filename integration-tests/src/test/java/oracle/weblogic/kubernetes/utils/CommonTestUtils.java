@@ -2030,7 +2030,7 @@ public class CommonTestUtils {
     String actualLocation = location;
     if (needToGetActualLocation(location, type)) {
       actualLocation = location + "/download/" + getInstallerFileName(type);
-    } else {
+    } else if (!needToGetActualLocation(location, type) && type.equalsIgnoreCase(REMOTECONSOLE)) {
       actualLocation = location + getInstallerFileName(type);
     }
     getLogger().info("The actual download location for {0} is {1}", type, actualLocation);
