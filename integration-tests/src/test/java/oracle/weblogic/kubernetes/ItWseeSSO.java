@@ -246,6 +246,7 @@ class ItWseeSSO {
       url = "http://" + getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) + appURI;
 
       //url = "http://" + msServerPodName + ":" + managedServerPort + appURI;
+      url = "http://" + adminServerPodName + ":7001" + appURI;
       //assertTrue(result.stdout().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
       //assertTrue(result.stdout().contains("RedeliveryLimit:20"), "Didn't get RedeliveryLimit:20");
       //assertTrue(result.stdout().contains("Notes:mysitconfigdomain"), "Didn't get Correct Notes description");
