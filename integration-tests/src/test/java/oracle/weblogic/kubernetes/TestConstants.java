@@ -194,7 +194,7 @@ public interface TestConstants {
   public static final String NGINX_INGRESS_IMAGE_DIGEST = 
       "sha256:314435f9465a7b2973e3aa4f2edad7465cc7bcdc8304be5d146d70e4da136e51";  
   public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/nginx";
-  public static final String NGINX_INGRESS_IMAGE_TAG = "1.25";
+  public static final String NGINX_INGRESS_IMAGE_TAG = "v1.6.4";
 
   // Traefik constants
   public static final String TRAEFIK_REPO_URL = "https://helm.traefik.io/traefik";
