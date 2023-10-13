@@ -193,7 +193,8 @@ public interface TestConstants {
   public static final String NGINX_CHART_VERSION = "4.0.17";
   public static final String NGINX_INGRESS_IMAGE_DIGEST = 
       "sha256:314435f9465a7b2973e3aa4f2edad7465cc7bcdc8304be5d146d70e4da136e51";  
-  public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/nginx";
+  //public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/nginx";
+  public static final String TEST_NGINX_IMAGE_NAME = "/nginx";
   public static final String NGINX_INGRESS_IMAGE_TAG = "v1.6.4";
 
   // Traefik constants
@@ -201,8 +202,9 @@ public interface TestConstants {
   public static final String TRAEFIK_RELEASE_NAME = "traefik-release" + BUILD_ID;
   public static final String TRAEFIK_REPO_NAME = "traefik";
   public static final String TRAEFIK_CHART_NAME = "traefik";
-  public static final String TRAEFIK_INGRESS_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/traefik";
-  public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
+  public static final String TRAEFIK_INGRESS_IMAGE_NAME = "/traefik";
+  //public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
+  public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = "";
 
   public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v2.10.5";
 
