@@ -239,7 +239,8 @@ class ItWseeSSO {
     logger.info("admin svc host = {0}", adminSvcExtHost);
 
     if (OKE_CLUSTER) {
-      ExecResult result = exeAppInServerPod(domainNamespace, msServerPodName, managedServerPort, appURI);
+      //ExecResult result = exeAppInServerPod(domainNamespace, msServerPodName, managedServerPort, appURI);
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, appURI);
       logger.info("==== result = {0}", result.toString());
       String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       url = "http://" + getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) + appURI;
