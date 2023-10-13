@@ -162,6 +162,7 @@ class ItIntrospectVersion {
   private static String introDomainNamespace = null;
   private static String miiDomainNamespace = null;
   private static final String BADMII_IMAGE = "bad-modelfile-mii-image";
+  private static String badMiiImage;
   private static final String BADMII_MODEL_FILE = "mii-bad-model-file.yaml";
 
   private static final String domainUid = "myintrodomain";
@@ -227,12 +228,12 @@ class ItIntrospectVersion {
     String destBadMiiYamlFile =
         generateNewModelFileWithUpdatedDomainUid(domainUid, "ItIntrospectVersion", BADMII_MODEL_FILE);    
     final List<String> modelList = Collections.singletonList(destBadMiiYamlFile);    
-    String badMiiImage = createMiiImageAndVerify(BADMII_IMAGE, modelList, null);   
+    badMiiImage = createMiiImageAndVerify(BADMII_IMAGE, modelList, null);   
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(badMiiImage);    
 
     // install operator and verify its running in ready state
-    installAndVerifyOperator(opNamespace, introDomainNamespace);
+    installAndVerifyOperator(opNamespace, introDomainNamespace, miiDomainNamespace);
 
     // build the clusterview application
     Path targetDir = Paths.get(WORK_DIR,
@@ -244,8 +245,8 @@ class ItIntrospectVersion {
         "Application archive is not available");
     clusterViewAppPath = Paths.get(distDir.toString(), "clusterview.war");
 
-    setupSample();
-    createDomain();
+    //setupSample();
+    //createDomain();
   }
 
   /**
@@ -1062,9 +1063,9 @@ class ItIntrospectVersion {
         TEST_IMAGES_REPO_SECRET_NAME,
         encryptionSecretName,
         2,
-        BADMII_IMAGE,
+        badMiiImage,
         "empty-cm",
-        30L,
+        180L,
         "mycluster");
 
     logger.info("Creating a domain resource with bad model file from configmap");
@@ -1084,7 +1085,7 @@ class ItIntrospectVersion {
         .append("\"}]");
     logger.info("PatchStr for imageUpdate: {0}", patchStr.toString());
 
-    assertTrue(patchDomainResource(domainUid, introDomainNamespace, patchStr),
+    assertTrue(patchDomainResource(domainUid, miiDomainNamespace, patchStr),
         "patchDomainCustomResource(imageUpdate) failed");
 
     final String adminServerPodName = domainUid + "-admin-server";
