@@ -117,7 +117,7 @@ class ItAddNewDynamicClusterUsingWlst {
     logger.info("Validating WebLogic admin server access by login to console");
     if (OKE_CLUSTER) {
       testUntil(isAppInServerPodReady(domainNamespace,
-          adminServerPodName, 7001, "/console/login/LoginForm.jsp", ""),
+          adminServerPodName, 7001, "/console/login/LoginForm.jsp", "Copyright"),
           logger, "Validating WebLogic admin server access by login to console");
     } else {
       testUntil(
