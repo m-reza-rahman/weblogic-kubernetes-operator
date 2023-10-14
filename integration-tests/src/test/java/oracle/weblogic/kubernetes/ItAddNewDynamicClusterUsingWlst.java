@@ -191,4 +191,5 @@ class ItAddNewDynamicClusterUsingWlst {
     assertNotNull(domain.getMetadata(), domain + " metadata is null");
     assertNotNull(domain.getSpec().getClusters(), domain.getSpec() + " getClusters() is null");
   }
+
 }
