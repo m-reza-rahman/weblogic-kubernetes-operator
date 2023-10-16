@@ -212,7 +212,8 @@ public interface TestConstants {
   // ELK Stack and WebLogic logging exporter constants
   public static final String ELASTICSEARCH_NAME = "elasticsearch";
   public static final String ELASTICSEARCH_IMAGE_NAME = TEST_IMAGES_PREFIX + "test-images/docker/elasticsearch";
-  public static final String ELK_STACK_VERSION = "7.8.1";
+  //public static final String ELK_STACK_VERSION = "7.8.1";
+  public static final String ELK_STACK_VERSION = "8.10.3-arm64";
   public static final String FLUENTD_IMAGE_VERSION =
       getNonEmptySystemProperty("wko.it.fluentd.image.version", "v1.14.5");
   public static final String ELASTICSEARCH_IMAGE = ELASTICSEARCH_IMAGE_NAME + ":" + ELK_STACK_VERSION;
