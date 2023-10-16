@@ -190,6 +190,10 @@ pipeline {
                description: 'URL to download WIT.',
                defaultValue: 'https://github.com/oracle/weblogic-image-tool/releases/latest'
         )
+        string(name: 'REMOTECONSOLE_VERSION',
+               description: 'RemoteConsole version.',
+               defaultValue: '2.4.7'
+        )
         string(name: 'TEST_IMAGES_REPO',
                description: '',
                defaultValue: "${env.WKT_OCIR_HOST}"
