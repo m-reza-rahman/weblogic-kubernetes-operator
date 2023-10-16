@@ -205,7 +205,7 @@ public interface TestConstants {
   public static final String TRAEFIK_CHART_NAME = "traefik";
   public static final String TRAEFIK_INGRESS_IMAGE_NAME = "traefik";
   //public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
-  public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = "docker.io";
+  public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = "";
 
   public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v2.10.5";
 
