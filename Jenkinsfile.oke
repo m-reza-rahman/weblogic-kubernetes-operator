@@ -500,10 +500,6 @@ EOF
                                 fi
 
                                 export K8S_NODEPORT_HOST=${NODE_IP}
-                                DOCKER_BUILD_KIT=1
-                                DOCKER_CLI_EXPERIMENTAL=enabled
-                                export DOCKER_BUILD_KIT=1
-                                export DOCKER_CLI_EXPERIMENTAL=enabled
                                 NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| head -n2 | tail -n1`
                                 echo "second node external IP ${NODE_IP}"
                                 export NODE_IP=${NODE_IP}
@@ -574,9 +570,7 @@ EOF
                                     export TEST_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
-                                    export DOCKER_BUILD_KIT=1
-                                    export DOCKER_CLI_EXPERIMENTAL=enabled
-
+                                    
                                     if ! mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/oketest.log"; then
                                         echo "integration-tests failed"
                                         exit 1

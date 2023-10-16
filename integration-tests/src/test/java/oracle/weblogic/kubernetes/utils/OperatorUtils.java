@@ -16,6 +16,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
+import static oracle.weblogic.kubernetes.TestConstants.ARM;
 import static oracle.weblogic.kubernetes.TestConstants.DEFAULT_EXTERNAL_REST_IDENTITY_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HTTP_PORT;
@@ -24,6 +25,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.LOGSTASH_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
+import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.createServiceAccount;
@@ -446,8 +448,10 @@ public class OperatorUtils {
             .name(opServiceAccount))));
     logger.info("Created service account: {0}", opServiceAccount);
 
-    //operatorImage = getOperatorImageName(); FIXME
-    operatorImage = "ghcr.io/oracle/weblogic-kubernetes-operator:4.1.2";
+    operatorImage = getOperatorImageName();
+    if (ARM) {
+      operatorImage = OPERATOR_RELEASE_IMAGE;
+    }
 
     assertFalse(operatorImage.isEmpty(), "operator image name can not be empty");
     logger.info("operator image name {0}", operatorImage);

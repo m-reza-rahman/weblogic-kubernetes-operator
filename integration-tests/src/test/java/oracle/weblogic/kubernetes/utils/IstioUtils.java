@@ -96,14 +96,13 @@ public class IstioUtils {
       assertDoesNotThrow(() -> replaceStringInFile(installScript, "gcr.io", "phx.ocir.io/devweblogic"),
           String.format("Failed to replace string in File %s", installScript));
     }
+    String arch = "linux-amd64";
     if (ARM) {
-      logger.info("replace istio installation platform in File {0}", installScript);
-      assertDoesNotThrow(() -> replaceStringInFile(installScript, "amd", "arm"),
-          String.format("Failed to replace string in File %s", installScript));
+      arch = "linux-arm64";
     }
 
     String command =
-        String.format("%s %s %s %s", installScript, ISTIO_VERSION, RESULTS_ROOT, TEST_IMAGES_TENANCY);
+        String.format("%s %s %s %s %s", installScript, ISTIO_VERSION, RESULTS_ROOT, TEST_IMAGES_TENANCY, arch);
     logger.info("Istio installation command {0}", command);
     assertTrue(() -> Command.withParams(
         defaultCommandParams()

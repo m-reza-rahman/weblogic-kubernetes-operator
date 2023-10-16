@@ -29,6 +29,9 @@ public interface TestConstants {
   public static final String K8S_NODEPORT_HOST1 = getNonEmptySystemProperty("wko.it.k8s.nodeport.host1");
   public static final String K8S_NODEPORT_HOST2 = getNonEmptySystemProperty("wko.it.k8s.nodeport.host2");
   public static final String OPDEMO = getNonEmptySystemProperty("wko.it.opdemo");
+  //ARM constants
+  public static final boolean ARM =
+      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.arm.cluster", "false"));
 
   // domain constants
   public static final String DOMAIN_VERSION =
@@ -52,6 +55,9 @@ public interface TestConstants {
   public static final String OPERATOR_RELEASE_NAME = "weblogic-operator";
   public static final String OPERATOR_CHART_DIR =
       "../kubernetes/charts/weblogic-operator";
+  public static final String OPERATOR_RELEASE_IMAGE =
+      getNonEmptySystemProperty("wko.it.release.image.name.operator",
+          "ghcr.io/oracle/weblogic-kubernetes-operator:4.1.2");
   public static final String IMAGE_NAME_OPERATOR =
       getNonEmptySystemProperty("wko.it.image.name.operator", "oracle/weblogic-kubernetes-operator");
   public static final String OPERATOR_SERVICE_NAME = "internal-weblogic-operator-svc";
@@ -191,7 +197,8 @@ public interface TestConstants {
   public static final String NGINX_REPO_NAME = "ingress-nginx";
   public static final String NGINX_CHART_NAME = "ingress-nginx";
   public static final String NGINX_CHART_VERSION = "4.0.17";
-  public static final String NGINX_INGRESS_IMAGE_DIGEST =
+  public static final String NGINX_INGRESS_IMAGE_DIGEST = ARM
+      ? "sha256:e727015a639975f4fc0808b91f9e88a83c60938b640ee6c2f5606ddd779c858d" :
       "sha256:e727015a639975f4fc0808b91f9e88a83c60938b640ee6c2f5606ddd779c858d";
   //"sha256:314435f9465a7b2973e3aa4f2edad7465cc7bcdc8304be5d146d70e4da136e51";
   public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/nginx";
@@ -247,9 +254,6 @@ public interface TestConstants {
   public static final String MII_AUXILIARY_IMAGE_NAME = DOMAIN_IMAGES_PREFIX + "mii-ai-image";
   public static final boolean SKIP_BUILD_IMAGES_IF_EXISTS =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.skip.build.images.if.exists", "false"));
-  //ARM constants
-  public static final boolean ARM =
-      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.arm.cluster", "false"));
 
   public static final String BUSYBOX_IMAGE = TEST_IMAGES_PREFIX + "test-images/docker/busybox";
   public static final String BUSYBOX_TAG = "1.36";
