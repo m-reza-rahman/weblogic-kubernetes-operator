@@ -243,7 +243,8 @@ public interface TestConstants {
   public static final String KIBANA_TYPE = "NodePort";
   public static final int KIBANA_PORT = 5601;
   public static final String LOGSTASH_NAME = "logstash";
-  public static final String LOGSTASH_IMAGE_NAME = TEST_IMAGES_PREFIX + "test-images/docker/logstash";
+  public static final String LOGSTASH_IMAGE_NAME = ARM ? TEST_IMAGES_PREFIX + "test-images/logstash" :
+      TEST_IMAGES_PREFIX + "test-images/docker/logstash";
   public static final String LOGSTASH_IMAGE = LOGSTASH_IMAGE_NAME + ":" + ELK_STACK_VERSION;
   public static final String FLUENTD_IMAGE = TEST_IMAGES_PREFIX
             + "test-images/docker/fluentd-kubernetes-daemonset:"
