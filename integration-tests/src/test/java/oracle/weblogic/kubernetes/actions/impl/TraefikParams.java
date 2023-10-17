@@ -80,7 +80,7 @@ public class TraefikParams {
     }
 
     values.put(TRAEFIK_IMAGE, traefikImage);
-    //values.put(TRAEFIK_IMAGE_REGISTRY, traefikRegistry);
+    values.put(TRAEFIK_IMAGE_REGISTRY, traefikRegistry);
     values.put(TRAEFIK_IMAGE_TAG, traefikImageTag);
 
     values.values().removeIf(Objects::isNull);

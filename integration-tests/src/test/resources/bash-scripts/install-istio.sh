@@ -37,7 +37,6 @@ ${KUBERNETES_CLI} create namespace istio-system
   oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
                                 --name=istio/istio-${version}-${arch}.tar.gz --file=istio.tar.gz \
                                 --auth=instance_principal
-  #curl -Lo "istio.tar.gz" "https://objectstorage.us-phoenix-1.oraclecloud.com/n/weblogick8s/b/wko-system-test-files/o/istio-${version}-linux-arm64.tar.gz";
   tar zxf istio.tar.gz
 )
 

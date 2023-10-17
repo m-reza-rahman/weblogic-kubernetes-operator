@@ -211,8 +211,7 @@ public interface TestConstants {
   public static final String TRAEFIK_REPO_NAME = "traefik";
   public static final String TRAEFIK_CHART_NAME = "traefik";
   public static final String TRAEFIK_INGRESS_IMAGE_NAME = "traefik";
-  //public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
-  public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = "";
+  public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
 
   public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v2.10.5";
 
@@ -220,7 +219,6 @@ public interface TestConstants {
   public static final String ELASTICSEARCH_NAME = "elasticsearch";
   public static final String ELASTICSEARCH_IMAGE_NAME = ARM ? TEST_IMAGES_PREFIX + "test-images/elasticsearch"
       : TEST_IMAGES_PREFIX + "test-images/docker/elasticsearch";
-  //public static final String ELK_STACK_VERSION = "7.8.1";
   public static final String ELK_STACK_VERSION = ARM ? "8.10.3-arm64" : "7.8.1";
   public static final String FLUENTD_IMAGE_VERSION =
       getNonEmptySystemProperty("wko.it.fluentd.image.version", "v1.14.5");
@@ -419,7 +417,7 @@ public interface TestConstants {
   public static final String SIDB_YAML_URL = "https://raw.githubusercontent.com/oracle/oracle-database-operator/main/"
       + "config/samples/sidb/singleinstancedatabase.yaml";
   public static final String ORACLELINUX_TEST_VERSION =
-      getNonEmptySystemProperty("wko.it.oraclelinux.test.version", "8");
+      getNonEmptySystemProperty("wko.it.oraclelinux.test.version", "7");
 
   // retry improvement
   // Defaulting to 120 seconds
