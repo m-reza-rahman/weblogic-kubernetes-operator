@@ -30,6 +30,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
@@ -66,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("olcne-mrg")
 @Tag("kind-parallel")
 @Tag("oke-gate")
+@DisabledIfEnvironmentVariable(named = "ARM", matches = "true")
 class ItLBTwoDomainsNginx {
 
   private static final int numberOfDomains = 2;
