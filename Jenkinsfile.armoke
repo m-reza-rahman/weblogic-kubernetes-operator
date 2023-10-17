@@ -185,11 +185,13 @@ pipeline {
                 }
                 stage ('Echo environment') {
                     environment {
-                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                        runtime_path = "${PATH}:${WORKSPACE}/bin"
                     }
                     steps {
                         sh '''
+                            export PATH=${runtime_path}
                             env|sort
+                            echo $PATH
                             java -version
                             mvn --version
                             echo $OSTYPE
