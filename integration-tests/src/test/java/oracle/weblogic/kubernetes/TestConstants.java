@@ -222,7 +222,7 @@ public interface TestConstants {
   public static final String ELASTICSEARCH_IMAGE = ELASTICSEARCH_IMAGE_NAME + ":" + ELK_STACK_VERSION;
   public static final String ELASTICSEARCH_HOST = "elasticsearch.default.svc.cluster.local";
   public static final int DEFAULT_LISTEN_PORT = 7100;
-  public static final int ELASTICSEARCH_HTTP_PORT = ARM ? 9600 : 9200;
+  public static final int ELASTICSEARCH_HTTP_PORT = 9200;
   public static final int ELASTICSEARCH_HTTPS_PORT = 9300;
   public static final int DEFAULT_SSL_LISTEN_PORT = 8100;
   public static final String ELKSTACK_NAMESPACE = "default";
