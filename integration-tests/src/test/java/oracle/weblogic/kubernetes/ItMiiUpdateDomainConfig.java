@@ -353,7 +353,6 @@ class ItMiiUpdateDomainConfig {
     if (OKE_CLUSTER) {
       String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
       assertTrue(result.toString().contains("JDBCSystemResources"),
           "Failed to find the JDBCSystemResource configuration");
@@ -361,7 +360,6 @@ class ItMiiUpdateDomainConfig {
 
       resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
       result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
       assertTrue(result.toString().contains("JMSSystemResources"),
           "Failed to find the JMSSystemResources configuration");
@@ -369,7 +367,6 @@ class ItMiiUpdateDomainConfig {
 
       resourcePath = "/management/weblogic/latest/domainConfig/WLDFSystemResources/TestWldfModule";
       result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the WLDFSystemResources configuration");
       assertTrue(result.toString().contains("WLDFSystemResources"),
           "Failed to find the WLDFSystemResources configuration");
@@ -377,7 +374,6 @@ class ItMiiUpdateDomainConfig {
 
       resourcePath = "/management/wls/latest/datasources/id/TestDataSource";
       result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
       assertTrue(result.toString().contains("scott"),
           "Failed to find the JDBCSystemResource configuration");
@@ -462,18 +458,18 @@ class ItMiiUpdateDomainConfig {
     if (OKE_CLUSTER) {
       String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
-      //assertTrue(result.toString().contains("JDBCSystemResources"),
-      //"Failed to find the JDBCSystemResource configuration");
+      logger.info("------ JDBCSystemResources result {0}", result.toString());
+      assertTrue(result.toString().contains("JDBCSystemResources"),
+          "Failed to find the JDBCSystemResource configuration");
       logger.info("Found the JDBCSystemResource configuration");
 
       resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
       result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
+      logger.info("------ JMSSystemResources result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
-      //assertTrue(result.toString().contains("JMSSystemResources"),
-      //"Failed to find the JMSSystemResources configuration");
+      assertTrue(result.toString().contains("JMSSystemResources"),
+          "Failed to find the JMSSystemResources configuration");
       logger.info("Found the JMSSystemResource configuration");
     } else {
       int adminServiceNodePort
@@ -546,18 +542,18 @@ class ItMiiUpdateDomainConfig {
     if (OKE_CLUSTER) {
       String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource2";
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
+      logger.info("------JDBCSystemResource2 result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
-      //assertTrue(result.toString().contains("JDBCSystemResources"),
-      //"Failed to find the JDBCSystemResource configuration");
+      assertTrue(result.toString().contains("JDBCSystemResources"),
+          "Failed to find the JDBCSystemResource configuration");
       logger.info("Found the JDBCSystemResource configuration");
 
       resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule2";
       result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
+      logger.info("------JMSSystemResources2 result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
-      //assertTrue(result.toString().contains("JMSSystemResources"),
-      //"Failed to find the JMSSystemResources configuration");
+      assertTrue(result.toString().contains("JMSSystemResources"),
+          "Failed to find the JMSSystemResources configuration");
       logger.info("Found the JMSSystemResource configuration");
     } else {
       int adminServiceNodePort
@@ -638,13 +634,11 @@ class ItMiiUpdateDomainConfig {
 
     // Check if the admin server pod has been restarted
     // by comparing the PodCreationTime before and after rolling restart
-
     assertTrue(verifyRollingRestartOccurred(pods, 1, domainNamespace),
         "Rolling restart failed");
 
     // The ServerNamePrefix for the new dynamic cluster is dynamic-server
     // Make sure the managed server from the new cluster is running
-
     String newServerPodName = domainUid + "-dynamic-server1";
     checkPodReady(newServerPodName, domainUid, domainNamespace);
     checkServiceExists(newServerPodName, domainNamespace);
@@ -885,18 +879,18 @@ class ItMiiUpdateDomainConfig {
     if (OKE_CLUSTER) {
       String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
+      logger.info("------JDBCSystemResource3 result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
-      //assertTrue(result.toString().contains("JDBCSystemResources"),
-      //"Failed to find the JDBCSystemResource configuration");
+      assertTrue(result.toString().contains("JDBCSystemResources"),
+          "Failed to find the JDBCSystemResource configuration");
       logger.info("Found the JDBCSystemResource configuration");
 
       resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
       result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      //logger.info("------ result {0}", result.toString());
+      logger.info("------JMSSystemResources3 result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
-      //assertTrue(result.toString().contains("JMSSystemResources"),
-      //"Failed to find the JMSSystemResources configuration");
+      assertTrue(result.toString().contains("JMSSystemResources"),
+          "Failed to find the JMSSystemResources configuration");
       logger.info("Found the JMSSystemResource configuration");
     } else {
       int adminServiceNodePort
@@ -1041,8 +1035,6 @@ class ItMiiUpdateDomainConfig {
           .append(adminServerPodName)
           .append(" -- ")
           .append(curlString);
-      //+ domainNamespace + "  " + adminServerPodName + " -- " + curlString;
-      // + domainNamespace + "  " + managedServerPrefix + 1 + " -- " + curlString;
     }
   }
 
