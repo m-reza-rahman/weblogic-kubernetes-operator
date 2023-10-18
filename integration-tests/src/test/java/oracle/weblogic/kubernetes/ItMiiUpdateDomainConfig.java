@@ -458,19 +458,15 @@ class ItMiiUpdateDomainConfig {
     if (OKE_CLUSTER) {
       String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
-      logger.info("------ JDBCSystemResources result {0}", result.toString());
-      assertTrue(result.toString().contains("JDBCSystemResources"),
-          "Failed to find the JDBCSystemResource configuration");
-      logger.info("Found the JDBCSystemResource configuration");
+      assertEquals(0, result.exitValue(), "Failed to delete the JDBCSystemResource configuration");
+      assertTrue(result.toString().contains("404"), "Failed to delete the JDBCSystemResource configuration");
+      logger.info("The JDBCSystemResource configuration is deleted");
 
       resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
       result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      logger.info("------ JMSSystemResources result {0}", result.toString());
-      assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
-      assertTrue(result.toString().contains("JMSSystemResources"),
-          "Failed to find the JMSSystemResources configuration");
-      logger.info("Found the JMSSystemResource configuration");
+      assertEquals(0, result.exitValue(), "Failed to delete the JMSSystemResources configuration");
+      assertTrue(result.toString().contains("404"), "Failed to delete the JMSSystemResources configuration");
+      logger.info("The JMSSystemResource configuration is deleted");
     } else {
       int adminServiceNodePort
           = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
@@ -879,19 +875,15 @@ class ItMiiUpdateDomainConfig {
     if (OKE_CLUSTER) {
       String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource";
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      logger.info("------JDBCSystemResource3 result {0}", result.toString());
-      assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
-      assertTrue(result.toString().contains("JDBCSystemResources"),
-          "Failed to find the JDBCSystemResource configuration");
-      logger.info("Found the JDBCSystemResource configuration");
+      assertEquals(0, result.exitValue(), "Failed to delete the JDBCSystemResource configuration");
+      assertTrue(result.toString().contains("404"), "Failed to delete the JDBCSystemResource configuration");
+      logger.info("The JDBCSystemResource configuration is deleted");
 
       resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule";
       result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      logger.info("------JMSSystemResources3 result {0}", result.toString());
-      assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
-      assertTrue(result.toString().contains("JMSSystemResources"),
-          "Failed to find the JMSSystemResources configuration");
-      logger.info("Found the JMSSystemResource configuration");
+      assertEquals(0, result.exitValue(), "Failed to delete the JMSSystemResources configuration");
+      assertTrue(result.toString().contains("404"), "Failed to delete the JMSSystemResources configuration");
+      logger.info("The JMSSystemResource configuration is deleted");
     } else {
       int adminServiceNodePort
           = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
