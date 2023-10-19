@@ -103,6 +103,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
 @Tag("oke-gate")
+@DisabledIfEnvironmentVariable(named = "ARM", matches = "true")
 class ItElasticLogging {
 
   // constants for creating domain image using model in image
