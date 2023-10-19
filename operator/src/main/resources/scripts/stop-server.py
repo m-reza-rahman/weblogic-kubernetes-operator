@@ -106,7 +106,9 @@ def checkCoherenceClusterExist(configData):
 def waitUntilCoherenceSafe():
   print ('Shutdown: getting all service Coherence MBeans')
   query='Coherence:type=PartitionAssignment,service=*,*'
-
+  if 'SHUTDOWN_SKIP_WAIT_COH_ENDANGERED_STATE' in os.environ and \
+          os.environ['SHUTDOWN_SKIP_WAIT_COH_ENDANGERED_STATE'] == 'true':
+      return
   # By default, Coherence will use a single WebLogic Runtime MBean server to managed
   # its MBeans.  That server will correspond to the current Coherence senior member,
   # which means that the Coherence MBeans will migrate to the oldest cluster member

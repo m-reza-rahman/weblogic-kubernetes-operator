@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 4e9bc302cc90c693067e0645995c734147ca2d17a652e8755d2ff41e56b8b0fb
+    weblogic.sha256: edb9896d76694ece8db21769c3de4452776124595c05c9ba2358d031d225a06c
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -3331,6 +3331,12 @@ spec:
                         description: Configures how the operator should shut down
                           the server instance.
                         properties:
+                          skipWaitingCohEndangeredState:
+                            default: false
+                            description: For graceful shutdown only, set to true to
+                              avoid waiting for Coherence Cache Cluster HAStatus to
+                              not in ENDANGERDED status. Defaults to true.
+                            type: boolean
                           ignoreSessions:
                             default: false
                             description: For graceful shutdown only, indicates to
@@ -6414,6 +6420,12 @@ spec:
                     description: Configures how the operator should shut down the
                       server instance.
                     properties:
+                      skipWaitingCohEndangeredState:
+                        default: false
+                        description: For graceful shutdown only, set to true to avoid
+                          waiting for Coherence Cache Cluster HAStatus to not in ENDANGERDED
+                          status. Defaults to true.
+                        type: boolean
                       ignoreSessions:
                         default: false
                         description: For graceful shutdown only, indicates to ignore
@@ -9155,6 +9167,12 @@ spec:
                             the server instance.
                           type: object
                           properties:
+                            skipWaitingCohEndangeredState:
+                              default: false
+                              description: For graceful shutdown only, set to true
+                                to avoid waiting for Coherence Cache Cluster HAStatus
+                                to not in ENDANGERDED status. Defaults to true.
+                              type: boolean
                             ignoreSessions:
                               default: false
                               description: For graceful shutdown only, indicates to

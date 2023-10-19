@@ -376,6 +376,11 @@
     "Shutdown": {
       "type": "object",
       "properties": {
+        "skipWaitingCohEndangeredState": {
+          "default": false,
+          "description": "For graceful shutdown only, set to true to avoid waiting for Coherence Cache Cluster HAStatus to not in ENDANGERDED status. Defaults to true.",
+          "type": "boolean"
+        },
         "ignoreSessions": {
           "default": false,
           "description": "For graceful shutdown only, indicates to ignore pending HTTP sessions during in-flight work handling. Defaults to false.",
