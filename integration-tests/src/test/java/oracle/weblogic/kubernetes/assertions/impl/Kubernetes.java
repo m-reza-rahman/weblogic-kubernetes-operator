@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.assertions.impl;
@@ -56,6 +56,7 @@ public class Kubernetes {
   private static final String OPERATOR_NAME = "weblogic-operator-";
 
   private static final String RESOURCE_VERSION_MATCH_UNSET = null;
+  private static final Boolean SEND_INITIAL_EVENTS_UNSET = null;
 
   private static ApiClient apiClient = null;
   private static CoreV1Api coreV1Api = null;
@@ -492,6 +493,7 @@ public class Kubernetes {
             null, // maximum number of responses to return for a list call.
             null, // shows changes that occur after that particular version of a resource.
             RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
+            SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
             null, // Timeout for the list/watch call.
             Boolean.FALSE // Watch for changes to the described resources.
         );
@@ -590,6 +592,7 @@ public class Kubernetes {
         Boolean.FALSE.toString(), // pretty print output.
         null, // shows changes that occur after that particular version of a resource.
         RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
+        SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
         null, // Timeout for the list/watch call.
         Boolean.FALSE // Watch for changes to the described resources.
     );
@@ -706,6 +709,7 @@ public class Kubernetes {
         null, // maximum number of responses to return for a list call.
         null, // shows changes that occur after that particular version of a resource.
         RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
+        SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
         null, // Timeout for the list/watch call.
         Boolean.FALSE // Watch for changes to the described resources.
     );
@@ -731,6 +735,7 @@ public class Kubernetes {
         Boolean.FALSE.toString(), // pretty print output.
         null, // shows changes that occur after that particular version of a resource.
         RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
+        SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
         null, // Timeout for the list/watch call.
         Boolean.FALSE // Watch for changes to the described resources.
     );
@@ -778,6 +783,7 @@ public class Kubernetes {
           null, // Integer | limit is a maximum number of responses to return for a list call.
           "", // String | Shows changes that occur after that particular version of a resource.
           RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
+          SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
           5, // Integer | Timeout for the list/watch call.
           Boolean.FALSE // Boolean | Watch for changes to the described resources
       );
@@ -898,6 +904,7 @@ public class Kubernetes {
           null, // maximum number of responses to return for a list call
           "", // shows changes that occur after that particular version of a resource
           RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
+          SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
           5, // Timeout for the list/watch call
           false // Watch for changes to the described resources
       );
@@ -927,6 +934,7 @@ public class Kubernetes {
           null, // maximum number of responses to return for a list call
           "", // shows changes that occur after that particular version of a resource
           RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
+          SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
           5, // Timeout for the list/watch call
           false // Watch for changes to the described resources
       );
