@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
 
@@ -11,17 +12,21 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
+import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.scaleClusterWithRestApi;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
@@ -42,9 +47,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test scaling usability ")
 @IntegrationTest
 @Tag("olcne-mrg")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
+@Tag("oke-gate")
 class ItClusterResourceScaling {
 
   private static String opNamespace = null;
@@ -61,7 +66,7 @@ class ItClusterResourceScaling {
   private static String secretToken;
   private static String decodedToken;
   private static LoggingFacade logger = null;
-
+  private static String operatorPodName = null;
 
   /**
    * Get namespaces for operator, domain.
@@ -96,6 +101,19 @@ class ItClusterResourceScaling {
     DomainResource domain = createMiiDomainAndVerify(domainNamespace, domainUid,
         miiImage, adminServerPodName, managedServerPrefix, replicaCount);
     assertNotNull(domain, "Can't create and verify domain");
+
+    //TODO debug
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+    // TODO end
+
     externalRestHttpsPort = getServiceNodePort(opNamespace, "external-weblogic-operator-svc");
     assertNotEquals(-1, externalRestHttpsPort,
         "Could not get the Operator external service node port");
@@ -105,6 +123,8 @@ class ItClusterResourceScaling {
     // decode the secret encoded token
     decodedToken = new String(Base64.getDecoder().decode(secretToken));
     assertNotNull(decodedToken, "Can't decode token");
+
+    operatorPodName = assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
   }
 
   /**
