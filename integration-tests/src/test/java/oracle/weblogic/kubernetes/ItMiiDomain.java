@@ -60,6 +60,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_TWO_APP_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_PASSWORD;
@@ -100,6 +101,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkClusterRepli
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -131,9 +133,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to a create model in image domain and start the domain")
 @IntegrationTest
 @Tag("olcne-mrg")
-@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-srg")
+@Tag("oke-gate")
 class ItMiiDomain {
 
   private static String opNamespace = null;
@@ -283,13 +285,24 @@ class ItMiiDomain {
           "Could not get the default-secure external service node port");
     logger.info("Found the administration service nodePort {0}", sslNodePort);
     String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
+
+    final String resourcePath = "/console/login/LoginForm.jsp";
     if (!WEBLOGIC_SLIM) {
-      String curlCmd = "curl -sk --show-error --noproxy '*' "
-          + " https://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
-      logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
-      assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-      logger.info("WebLogic console is accessible thru default-secure service");
+      if (OKE_CLUSTER) {
+        testUntil(
+            isAppInServerPodReady(domainNamespace,
+                adminServerPodName, 7001, resourcePath, ""),
+            logger, "verify EM console access {0} in server {1}",
+            resourcePath,
+            adminServerPodName);
+      } else {
+        String curlCmd = "curl -sk --show-error --noproxy '*' "
+            + " https://" + hostAndPort
+            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+        logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
+        assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
+        logger.info("WebLogic console is accessible thru default-secure service");
+      }
     } else {
       logger.info("Skipping WebLogic console in WebLogic slim image");
     }
@@ -302,11 +315,20 @@ class ItMiiDomain {
     hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
 
     if (!WEBLOGIC_SLIM) {
-      String curlCmd2 = "curl -s --show-error --noproxy '*' "
-          + " http://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
-      logger.info("Executing default nodeport curl command {0}", curlCmd2);
-      assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
+      if (OKE_CLUSTER) {
+        testUntil(
+            isAppInServerPodReady(domainNamespace,
+                adminServerPodName, 7001, resourcePath, ""),
+            logger, "verify EM console access {0} in server {1}",
+            resourcePath,
+            adminServerPodName);
+      } else {
+        String curlCmd2 = "curl -s --show-error --noproxy '*' "
+            + " http://" + hostAndPort
+            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+        logger.info("Executing default nodeport curl command {0}", curlCmd2);
+        assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
+      }
       logger.info("WebLogic console is accessible thru default service");
     } else {
       logger.info("Checking Rest API management console in WebLogic slim image");

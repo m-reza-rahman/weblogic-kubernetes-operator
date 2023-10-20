@@ -24,11 +24,13 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.scaleClusterWithRestApi;
+import static oracle.weblogic.kubernetes.utils.ClusterUtils.scaleClusterWithRestApiInPod;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -67,6 +69,7 @@ class ItClusterResourceScaling {
   private static String decodedToken;
   private static LoggingFacade logger = null;
   private static String operatorPodName = null;
+  private static int adminServerPort = 7001;
 
   /**
    * Get namespaces for operator, domain.
@@ -135,12 +138,19 @@ class ItClusterResourceScaling {
   void testScaleClusterViaRestApi() {
 
     int replicaCountCluster = replicaCount;
-    // scale domain
-    assertTrue(scaleClusterWithRestApi(domainUid, clusterName, replicaCountCluster + 1,
-            externalRestHttpsPort, opNamespace, decodedToken, "",
-            true, true),
-        "domain in namespace " + domainNamespace + " scaling operation failed");
-
+    if (OKE_CLUSTER) {
+      // scale domain
+      assertTrue(scaleClusterWithRestApiInPod(domainUid, clusterName, replicaCountCluster + 1,
+              domainNamespace, adminServerPodName, adminServerPort, decodedToken, "",
+              true, true),
+          "domain in namespace " + domainNamespace + " scaling operation failed");
+    } else {
+      // scale domain
+      assertTrue(scaleClusterWithRestApi(domainUid, clusterName, replicaCountCluster + 1,
+              externalRestHttpsPort, opNamespace, decodedToken, "",
+              true, true),
+          "domain in namespace " + domainNamespace + " scaling operation failed");
+    }
     String managedServerPodName = managedServerPrefix + (replicaCountCluster + 1);
     logger.info("Checking that the managed server pod {0} exists in namespace {1}",
         managedServerPodName, domainNamespace);
@@ -161,9 +171,17 @@ class ItClusterResourceScaling {
 
     String negativeTestCase = "Invalid domainUid";
     logger.info("Testing {0}", negativeTestCase);
-    assertTrue(scaleClusterWithRestApi(domainUid + "invalid", clusterName, replicaCount + 2,
-        externalRestHttpsPort, opNamespace, decodedToken,  "404 Not Found", true,
-        true), "Did not received expected message for  " + negativeTestCase);
+    if (OKE_CLUSTER) {
+      // scale domain
+      assertTrue(scaleClusterWithRestApiInPod(domainUid + "invalid", clusterName, replicaCount + 2,
+              domainNamespace, adminServerPodName, adminServerPort, decodedToken, "404 Not Found",
+              true, true),
+          "Did not received expected message for  " + negativeTestCase);
+    } else {
+      assertTrue(scaleClusterWithRestApi(domainUid + "invalid", clusterName, replicaCount + 2,
+          externalRestHttpsPort, opNamespace, decodedToken, "404 Not Found", true,
+          true), "Did not received expected message for  " + negativeTestCase);
+    }
   }
 
   /**
@@ -228,9 +246,18 @@ class ItClusterResourceScaling {
     // decode the secret encoded token
     String decodedTokenBad = decodedToken + "badbad";
     logger.info("Testing {0}", negativeTestCase);
-    assertTrue(scaleClusterWithRestApi(domainUid, clusterName, replicaCount + 2,
-        externalRestHttpsPort, opNamespace, decodedTokenBad, "401 Unauthorized", true,
-        true), "Did not received expected message for  " + negativeTestCase);
+
+    if (OKE_CLUSTER) {
+      // scale domain
+      assertTrue(scaleClusterWithRestApiInPod(domainUid + "invalid", clusterName, replicaCount + 2,
+              domainNamespace, adminServerPodName, adminServerPort, decodedToken, "401 Unauthorized",
+              true, true),
+          "Did not received expected message for  " + negativeTestCase);
+    } else {
+      assertTrue(scaleClusterWithRestApi(domainUid, clusterName, replicaCount + 2,
+          externalRestHttpsPort, opNamespace, decodedTokenBad, "401 Unauthorized", true,
+          true), "Did not received expected message for  " + negativeTestCase);
+    }
   }
 
   /**
