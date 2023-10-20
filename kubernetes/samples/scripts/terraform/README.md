@@ -23,12 +23,6 @@ To use these Terraform scripts, you will need fulfill the following prerequisite
 * Have an API key defined for use with the OCI API, as documented [here](https://docs.cloud.oracle.com/iaas/Content/Identity/Tasks/managingcredentials.htm).
 * Have an [SSH key pair](https://docs.oracle.com/en/cloud/iaas/compute-iaas-cloud/stcsg/generating-ssh-key-pair.html) for configuring SSH access to the nodes in the cluster.
 
-Create a directory `myterraformscripts`
-
-Copy template.tfvars to `myterraformscripts`
-
-Copy *.sh to `myterraformscripts`
-
 Copy provided `oci.props.template` file to `oci.props` in `myterraformscripts` and add all required values:
 * `user.ocid` - OCID for the tenancy user - can be obtained from the user settings in the OCI console.
 * `tfvars.filename` - File name for generated tfvar file.
@@ -46,8 +40,6 @@ Copy provided `oci.props.template` file to `oci.props` in `myterraformscripts` a
 * `nodepool.ssh.pubkey` - SSH public key (key contents as a string).
 * `nodepool.imagename` - A valid image name for Node Pool creation.
 * `terraform.installdir` - Location to install Terraform binaries.
-
-Copy integration-tests/src/test/resources/oke/terraform/*.tf to `myterraformscripts` directory
 
 Optional, to modify the shape of the node, edit node-pool.tf 
 ```aidl
@@ -101,4 +93,42 @@ The script collects the values from `oci.props` file and performs the following 
 * Downloads and installs all needed binaries for Terraform, Terraform OCI Provider, based on OS system (macOS or Linux)
 * Applies the configuration and creates OKE Cluster using Terraform
 
+Output of the oke.create.sh script
+If there are errors in the configuration, output will be displayed like this
+```
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.
+\u2577
+\u2502 Error: Reference to undeclared resource
+\u2502 
+\u2502   on node-pool.tf line 12, in resource "oci_containerengine_node_pool" "tfsample_node_pool":
+\u2502   12:   subnet_ids = [oci_core_subnet.oke-subnet-worker-1.id, oci_core_subnet.oke-subnet-worker-2.id, oci_core_subnet.oke-subnet-worker-3.id, oci_core_subnet.oke-subnet-worker-4.id, oci_core_subnet.oke-subnet-worker-5.id]
+\u2502 
+\u2502 A managed resource "oci_core_subnet" "oke-subnet-worker-5" has not been declared in the root module.
+\u2575
+\u2577
+\u2502 Error: Reference to undeclared resource
+\u2502 
+\u2502   on node-pool.tf line 12, in resource "oci_containerengine_node_pool" "tfsample_node_pool":
+\u2502   12:   subnet_ids = [oci_core_subnet.oke-subnet-worker-1.id, oci_core_subnet.oke-subnet-worker-2.id, oci_core_subnet.oke-subnet-worker-3.id, oci_core_subnet.oke-subnet-worker-4.id, oci_core_subnet.oke-subnet-worker-5.id]
+\u2502 
+\u2502 A managed resource "oci_core_subnet" "oke-subnet-worker-5" has not been declared in the root module.
+\u2575
+```
 
+If the cluster is created successfully, below output will be displayed
+```aidl
+Confirm access to cluster...
+- able to access cluster
+myokecluster cluster is up and running
+```
+
+To add new nodes to the cluster after its created, make changes in vcn.tf and node-pool.tf files and
+run the below commands.
+```aidl
+${terraform.installdir}/terraform plan -var-file=<tfvars.filename>
+${terraform.installdir}/terraform apply -var-file=<tfvars.filename>
+```
+
+To delete the cluster, run `oke.delete.sh` script. It reads the `oci.props` file from the current directory and deletes the cluster.
