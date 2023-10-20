@@ -31,8 +31,6 @@ public class Image {
     //String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p \"%s\"",
     String cmdToExecute = String.format(WLSIMG_BUILDER + " login %s -u %s -p '%s'",
         registryName, username, password);
-    LoggingFacade logger = getLogger();
-    logger.info(cmdToExecute);
     return Command
         .withParams(new CommandParams()
             .verbose(false)
