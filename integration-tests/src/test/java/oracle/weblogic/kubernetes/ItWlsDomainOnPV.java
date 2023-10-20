@@ -66,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("kind-parallel")
 @Tag("oke-gate")
 @Tag("olcne-mrg")
-@DisabledIfEnvironmentVariable(named = "ARM", matches = "true")
 class ItWlsDomainOnPV {
 
   private static String domainNamespace = null;

@@ -58,7 +58,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("olcne-mrg")
 @Tag("kind-parallel")
 @Tag("oke-gate")
-@DisabledIfEnvironmentVariable(named = "ARM", matches = "true")
 class ItLBTwoDomainsTraefik {
 
   private static final int numberOfDomains = 2;

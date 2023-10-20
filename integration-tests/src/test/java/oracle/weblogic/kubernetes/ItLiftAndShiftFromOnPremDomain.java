@@ -101,7 +101,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Tag("okd-wls-mrg")
 @Tag("olcne-mrg")
 @Tag("oke-gate")
-@DisabledIfEnvironmentVariable(named = "ARM", matches = "true")
 @IntegrationTest
 class ItLiftAndShiftFromOnPremDomain {
   private static String opNamespace = null;

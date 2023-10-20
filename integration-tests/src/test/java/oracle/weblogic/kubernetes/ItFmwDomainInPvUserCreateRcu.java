@@ -100,7 +100,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-sequential")
 @Tag("oke-gate")
-@DisabledIfEnvironmentVariable(named = "ARM", matches = "true")
 public class ItFmwDomainInPvUserCreateRcu {
 
   private static String opNamespace = null;

@@ -72,7 +72,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @IntegrationTest
 @Tag("olcne-mrg")
 @Tag("oke-gate")
-@DisabledIfEnvironmentVariable(named = "ARM", matches = "true")
 class ItFmwDomainInPVUsingWLST {
 
   private static String dbNamespace = null;

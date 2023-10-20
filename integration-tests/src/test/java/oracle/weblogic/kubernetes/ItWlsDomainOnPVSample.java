@@ -68,7 +68,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("kind-sequential")
 @Tag("olcne-sequential")
 @DisabledIfEnvironmentVariable(named = "SKIP_WLS_SAMPLES", matches = "true")
-@DisabledIfEnvironmentVariable(named = "ARM", matches = "true")
 class ItWlsDomainOnPVSample {
 
   private static final String domainOnPvSampleScript = "../operator/integration-tests/domain-on-pv/run-test.sh";
