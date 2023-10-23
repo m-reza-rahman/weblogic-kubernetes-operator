@@ -23,7 +23,7 @@ To use these Terraform scripts, you will need fulfill the following prerequisite
 * Have an API key defined for use with the OCI API, as documented [here](https://docs.cloud.oracle.com/iaas/Content/Identity/Tasks/managingcredentials.htm).
 * Have an [SSH key pair](https://docs.oracle.com/en/cloud/iaas/compute-iaas-cloud/stcsg/generating-ssh-key-pair.html) for configuring SSH access to the nodes in the cluster.
 
-Copy provided `oci.props.template` file to `oci.props` in `myterraformscripts` and add all required values:
+Copy provided `oci.props.template` file to `oci.props` and add all required values:
 * `user.ocid` - OCID for the tenancy user - can be obtained from the user settings in the OCI console.
 * `tfvars.filename` - File name for generated tfvar file.
 * `okeclustername` - The name for OCI Container Engine for Kubernetes cluster.
