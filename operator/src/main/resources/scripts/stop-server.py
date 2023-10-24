@@ -171,6 +171,10 @@ def waitUntilServiceSafeToShutdown(objectName):
       if status != "ENDANGERED":
         break
 
+      count = mbs.getAttribute(objectName, 'RemainingDistributionCount')
+      if count == 0:
+        break
+
       # Coherence caches are ENDANGERED meaning that we may lose data
       print ('Shutdown: Waiting until it is safe to shutdown Coherence server ...')
       systime.sleep(5)
