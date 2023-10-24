@@ -3,7 +3,7 @@
 
 # Properties to generate TF variables file for cluster creation from property file oci.props
 #
-# Copy this file to oci.props and update it with your own info, see example values provided for each property
+# Copy this file to oci.props and update it with custom attribute value, see example values provided for each property
 #
 
 # OCID can be obtained from the user info page in the OCI console
