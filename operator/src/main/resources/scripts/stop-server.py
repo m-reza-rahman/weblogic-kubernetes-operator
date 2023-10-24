@@ -171,7 +171,7 @@ def waitUntilServiceSafeToShutdown(objectName):
       if status != "ENDANGERED":
         break
 
-      count = mbs.getAttribute(objectName, 'RemainingDistributionCount')
+      count = _getRemaingDistributedCount(objectName)
       if count == 0:
         break
 
@@ -185,6 +185,17 @@ def waitUntilServiceSafeToShutdown(objectName):
       dumpStack()
       systime.sleep(10)
       pass
+
+def _getRemaingDistributedCount(objectName):
+  count = 0
+  try:
+    count = mbs.getAttribute(objectName, 'RemainingDistributionCount')
+  except:
+    print("Error getting RemainingDistributionCount")
+    dumpStack()
+
+  return count
+
 
 
 #----------------------------------
