@@ -1005,12 +1005,15 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
+    String hostAndPort =
+        OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+
     StringBuffer checkCluster = new StringBuffer("status=$(curl --user ");
     checkCluster.append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
           .append(" ")
-          .append("http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort))
+          .append("http://" + hostAndPort)
           .append("/management/tenant-monitoring/servers/")
           .append(managedServer)
           .append(" --silent --show-error ")
@@ -1025,7 +1028,11 @@ class ItMiiUpdateDomainConfig {
           .append(" ")
           .append(adminServerPodName)
           .append(" -- ")
-          .append(curlString);
+          .append(checkCluster);
+
+      logger.info("checkManagedServerConfiguration in OKE: curl command {0}", new String(checkCluster));
+    } else {
+      logger.info("checkManagedServerConfiguration in else: curl command {0}", new String(checkCluster));
     }
 
     logger.info("checkManagedServerConfiguration: curl command {0}", new String(checkCluster));
