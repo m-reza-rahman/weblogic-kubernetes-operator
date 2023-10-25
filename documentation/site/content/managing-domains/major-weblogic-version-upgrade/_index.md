@@ -27,11 +27,23 @@ Before the upgrade, you must do the following:
    $ kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}]'
    ```
 
-If your domain is using Model in Image, because the domain will be rebuilt when the model is updated, see the [Upgrade Use Cases](#upgrade-use-cases) for details.
+After the shutdown completes, upgrade base image in the domain resource YAML file and redeploy the domain, see [Upgrade and deploy](#upgrading-base-image-in-domain-resource-yaml).
 
-**Note** If you are using a FMW/JRF domain and upgrading from 12.2.1.3 to 12.2.14, you do not need to run any Upgrade Assistant or Reconfigure domain according to Oracle Doc 2752458.1. You simply have to update the base image with the latest version of FMW/JRF.
+**Note** If you are using a FMW/JRF domain and upgrading from 12.2.1.3 to 12.2.14, you do not need to run any Upgrade Assistant or Reconfigure domain according to Oracle Doc 2752458.1 before the upgrade, but we recommend moving the domain to a persistent volume.  See [Moving JRF domain to PV](#moving-jrf-domain-on-persistent-volume)
 
-#### Back up the OPSS wallet and save it in a secret
+#### Upgrading base image in domain resource YAML
+
+Once the shutdown is complete, you can patch the domain resource YAML and update the base image and `serverStartPolicy` to `IfNeeded` again.
+
+`kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "IfNeeded"}, {"op": "replace", "path":"/spec/image", "value":"<New WebLogic or Fusion Middleware base image>"]'`
+
+#### Moving JRF domain on Persistent Volume
+
+FMW/JRF domains using Model in Image has been deprecated since WebLogic Kubernetes Operator 4.1.  We recommend moving your domain home to Domain on Persistent Volume. For more information, see [Domain On Persistent Volume]({{< relref "/managing-domains/domain-on-pv/overview.md" >}}).
+
+If you cannot move the domain to Persistent Volume at the moment, you can use simple procedures outlined in [Here](#fmwjrf-domain-on-persistent-volume).
+
+1. Back up the OPSS wallet and save it in a secret
 
 The operator provides a helper script, the [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh), for extracting the wallet file and storing it in a Kubernetes `walletFileSecret`. In addition, you should save the wallet file in a safely backed-up location, outside of Kubernetes. For example, the following command saves the OPSS wallet for the `sample-domain1` domain in the `sample-ns` namespace to a file named `ewallet.p12` in the `/tmp` directory and also stores it in the wallet secret named `sample-domain1-opss-walletfile-secret`.
 
@@ -39,42 +51,10 @@ The operator provides a helper script, the [OPSS wallet utility](https://orahub.
 $ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws sample-domain1-opss-walletfile-secret
 ```
 
-### Upgrade use cases
-
-Consider the following use case scenarios, depending on your WebLogic domain type (`WLS` or `JRF`) and domain home source type (Domain on PV or Model in Image).
-
-- [WLS Domain on Persistent Volume](#wls-domain-on-persistent-volume)
-- [FMW/JRF Domain on Persistent Volume](#fmwjrf-domain-on-persistent-volume)
-- [WLS domain using Model in Image](#wls-domain-using-model-in-image)
-- [FMW/JRF domain using Model in Image](#fmwjrf-domain-using-model-in-image)
-
-#### WLS Domain on Persistent Volume
-
-1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).  You can skip the database related steps.
-2. Update the domain resource to use the new WebLogic version base image, and patch the `serverStartPolicy` to `IfNeeded` to restart the domain.  For example,
-   `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<New WebLogic version base image>"]'`
-
-#### FMW/JRF Domain on Persistent Volume
-
-1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
-2. Update the domain resource to use the Fusion Middleware Infrastructure version base image, and patch the `serverStartPolicy` to `IfNeeded` to restart the domain.  For example,
-   `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<New Fusion Middleware Infrastructure version image>"]'`
-
-#### WLS domain using Model in Image
-
-1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
-2. You can use this patch command for redeploying the domain with the new WebLogic version base image.  For example,
-   `kubectl -n sample-domain1-ns patch domain sample-domain1 --type=json -p='[ {"op": "replace", "path": "/spec/serverStartPolicy", "value": "Never"}, {"op": "replace", "path":"/spec/image", "value":"<New WebLogic version base image>"]'`
-
-#### FMW/JRF domain using Model in Image
-
-FMW/JRF domains using Model in Image has been deprecated since WebLogic Kubernetes Operator 4.1.  We recommend moving your domain home to Domain on Persistent Volume. For more information, see [Domain On Persistent Volume]({{< relref "/managing-domains/domain-on-pv/overview.md" >}}).
-
-If you cannot move the domain to Persistent Volume at the moment, you can use simple procedures outlined in [Here](#fmwjrf-domain-on-persistent-volume).
-
-1. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
-2. If are not using an auxiliary image in your domain, then create a [Domain creation image]({{< relref "/managing-domains/domain-on-pv/domain-creation-images.md" >}}).
-3. Create a new domain resource YAML file.  You should have at least the following changes:
+2. Follow the steps in the [General upgrade procedures](#general-upgrade-procedures).
+3. If are not using an auxiliary image in your domain, then create a [Domain creation image]({{< relref "/managing-domains/domain-on-pv/domain-creation-images.md" >}}).
+4. Create a new domain resource YAML file.  You should have at least the following changes:
+5. You can delete the old domain resource YAML by `kubectl delete -f <original domain resource YAML>`
 
 ```
 # Change type to PersistentVolume
