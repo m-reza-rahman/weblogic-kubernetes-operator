@@ -14,10 +14,17 @@ In general, the process for upgrading WLS and FMW/JRF infrastructure domains in 
 Before the upgrade, you must do the following:
 
 - If your [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is Domain on Persistent Volume (DoPV), then back up the domain home.
-- If your domain type is `JRF`, see [FMW/JRF domain using Model In Image](#fmwjrf-domain-using-model-in-image):
+- If your domain type is `JRF`:
    - Back up the JRF database.
-   - Back up the OPSS wallet file. See [Save the OPSS wallet secret](#back-up-the-opss-wallet-and-save-it-in-a-secret).
-   - Make sure nothing else is accessing the database.
+   - Back up the OPSS wallet file, this allows you to reuse the same JRF database schemas if you need to recreate the domain.
+
+     The operator provides a helper script, the [OPSS wallet utility](https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-kubernetes-operator/-/blob/main/kubernetes/samples/scripts/domain-lifecycle/opss-wallet.sh), for extracting the wallet file and storing it in a Kubernetes `walletFileSecret`. In addition, you should save the wallet file in a safely backed-up location, outside of Kubernetes. For example, the following command saves the OPSS wallet for the `sample-domain1` domain in the `sample-ns` namespace to a file named `ewallet.p12` in the `/tmp` directory and also stores it in the wallet secret named `sample-domain1-opss-walletfile-secret`.
+
+    ```
+    $ opss-wallet.sh -n sample-ns -d sample-domain1 -s -r -wf /tmp/ewallet.p12 -ws sample-domain1-opss-walletfile-secret
+    ```
+
+- Make sure nothing else is accessing the database.
 - **Do not delete** the domain resource.
 
 {{% notice note %}} According to My Oracle Support [Doc ID 2752458.1](https://support.oracle.com/epmos/faces/DocumentDisplay?id=2752458.1), if you are using an FMW/JRF domain and upgrading from 12.2.1.3 to 12.2.1.4, then before upgrading, you do _not_ need to run the Upgrade Assistant or Reconfiguration Wizard, but we recommend moving the domain to a persistent volume.  See [Move MII/JRF domains to PV]({{< relref "/managing-domains/model-in-image/move-to-pv.md" >}}).
