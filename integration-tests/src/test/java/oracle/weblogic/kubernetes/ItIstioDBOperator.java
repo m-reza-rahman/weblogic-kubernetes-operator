@@ -91,7 +91,6 @@ import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
 import static oracle.weblogic.kubernetes.utils.DbUtils.deleteOracleDB;
 import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
-import static oracle.weblogic.kubernetes.utils.DbUtils.uninstallDBOperator;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -584,7 +583,6 @@ class ItIstioDBOperator {
   public void tearDownAll() throws ApiException {
     if (!SKIP_CLEANUP) {
       deleteOracleDB(dbNamespace, dbName);
-      uninstallDBOperator(dbNamespace);
     }
   }
 
