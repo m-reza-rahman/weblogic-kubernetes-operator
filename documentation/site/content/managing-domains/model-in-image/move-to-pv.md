@@ -25,51 +25,51 @@ If you cannot move the domain to a persistent volume right now, you can use the 
 5. Create a new domain resource YAML file.  You should have at least the following changes:
 
 
-```
-# Change type to PersistentVolume
-domainHomeSourceType: PersistentVolume
-image: <Fusion Middleware Infrastructure base image>
-...
-serverPod:
-    ...
-    # specify the volume and volume mount information
+   ```
+   # Change type to PersistentVolume
+   domainHomeSourceType: PersistentVolume
+   image: <Fusion Middleware Infrastructure base image>
+   ...
+   serverPod:
+       ...
+       # specify the volume and volume mount information
 
-    volumes:
-    - name: weblogic-domain-storage-volume
-      persistentVolumeClaim:
-         claimName: sample-domain1-pvc-rwm1
-    volumeMounts:
-    - mountPath: /share
-      name: weblogic-domain-storage-volume
+       volumes:
+       - name: weblogic-domain-storage-volume
+         persistentVolumeClaim:
+            claimName: sample-domain1-pvc-rwm1
+       volumeMounts:
+       - mountPath: /share
+         name: weblogic-domain-storage-volume
 
-  # specify a new configuration section, remove the old configuration section.
+     # specify a new configuration section, remove the old configuration section.
 
-  configuration:
+     configuration:
 
-    # secrets that are referenced by model yaml macros
-    # sample-domain1-rcu-access is used for JRF domains
-    secrets: [ sample-domain1-rcu-access ]
+       # secrets that are referenced by model yaml macros
+       # sample-domain1-rcu-access is used for JRF domains
+       secrets: [ sample-domain1-rcu-access ]
 
-    initializeDomainOnPV:
-      persistentVolumeClaim:
-        metadata:
-            name: sample-domain1-pvc-rwm1
-        spec:
-            storageClassName: my-storage-class
-            resources:
-                requests:
-                    storage: 10Gi
-      domain:
-          createIfNotExists: Domain
-          domainCreationImages:
-          - image: 'myaux:v6'
-          domainType: JRF
-          domainCreationConfigMap: sample-domain1-wdt-config-map
-          opss:
-            # Make sure you have already saved the wallet file secret. This allows the domain to use
-            # an existing JRF database schemas.
-            walletFileSecret: sample-domain1-opss-walletfile-secret
-            walletPasswordSecret: sample-domain1-opss-wallet-password-secret
-```
+       initializeDomainOnPV:
+         persistentVolumeClaim:
+           metadata:
+               name: sample-domain1-pvc-rwm1
+           spec:
+               storageClassName: my-storage-class
+               resources:
+                   requests:
+                       storage: 10Gi
+         domain:
+             createIfNotExists: Domain
+             domainCreationImages:
+             - image: 'myaux:v6'
+             domainType: JRF
+             domainCreationConfigMap: sample-domain1-wdt-config-map
+             opss:
+               # Make sure you have already saved the wallet file secret. This allows the domain to use
+               # an existing JRF database schemas.
+               walletFileSecret: sample-domain1-opss-walletfile-secret
+               walletPasswordSecret: sample-domain1-opss-wallet-password-secret
+   ```
 
 6. Deploy the domain. If it is successful, then the domain has been migrated to a persistent volume.
