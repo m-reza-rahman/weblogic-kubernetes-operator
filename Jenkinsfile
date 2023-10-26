@@ -419,6 +419,7 @@ pipeline {
                             if kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
                                 echo "Deleted orphaned kind cluster ${kind_name}"
                             fi
+			    echo "Creating kind cluster with ipv6 address"
                             cat <<EOF | kind create cluster --name "${kind_name}" --kubeconfig "${kubeconfig_file}" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -444,6 +445,7 @@ EOF
                             for node in $(kind get nodes --name "${kind_name}"); do
                                 kubectl annotate node ${node} tilt.dev/registry=localhost:${registry_port};
                             done
+			    kubectl get all -A
 
                             if [ "${kind_network}" != "bridge" ]; then
                                 containers=$(docker network inspect ${kind_network} -f "{{range .Containers}}{{.Name}} {{end}}")
