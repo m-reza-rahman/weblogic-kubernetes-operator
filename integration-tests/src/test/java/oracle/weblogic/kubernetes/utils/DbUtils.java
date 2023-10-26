@@ -809,7 +809,7 @@ public class DbUtils {
 
     // wait for the pod to be deleted
     String dbOpPodName = "oracle-database-operator-controller-manager";
-    getLogger().info("Wait for the database operator {0} pod to be ready in namespace {1}",
+    getLogger().info("Wait for the database operator {0} pod to be deleted in namespace {1}",
         dbOpPodName, namespace);
     PodUtils.checkPodDoesNotExist(dbOpPodName, null, namespace);
   }
