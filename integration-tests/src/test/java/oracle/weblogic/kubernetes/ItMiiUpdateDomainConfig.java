@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
@@ -37,6 +38,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -1002,14 +1004,41 @@ class ItMiiUpdateDomainConfig {
 
   private void verifyManagedServerConfiguration(String managedServer) {
 
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-
+    String msServerPod = domainUid + "-" + managedServer;
     String hostAndPort =
-        OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+        OKE_CLUSTER ? msServerPod + ":8001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+    StringBuffer checkCluster = null;
 
-    StringBuffer checkCluster = new StringBuffer("status=$(curl --user ");
-    checkCluster.append(ADMIN_USERNAME_DEFAULT)
+    if (OKE_CLUSTER) {
+      checkCluster = new StringBuffer(KUBERNETES_CLI)
+          .append(" exec -n ")
+          .append(domainNamespace)
+          .append(" ")
+          .append(msServerPod)
+          .append(" -- curl --user ")
+          .append(ADMIN_USERNAME_DEFAULT)
+          .append(":")
+          .append(ADMIN_PASSWORD_DEFAULT)
+          .append(" ")
+          .append("http://" + hostAndPort)
+          .append("/management/tenant-monitoring/servers/")
+          .append(managedServer)
+          .append(" --silent --show-error -o /dev/null -w %{http_code}");
+    } else {
+      checkCluster = new StringBuffer("status=$(curl --user ");
+      checkCluster.append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
           .append(" ")
@@ -1020,22 +1049,9 @@ class ItMiiUpdateDomainConfig {
           .append(" -o /dev/null")
           .append(" -w %{http_code});")
           .append("echo ${status}");
-
-    if (OKE_CLUSTER) {
-      checkCluster.append(KUBERNETES_CLI)
-          .append(" exec -n ")
-          .append(domainNamespace)
-          .append(" ")
-          .append(adminServerPodName)
-          .append(" -- ")
-          .append(checkCluster);
-
-      logger.info("checkManagedServerConfiguration in OKE: curl command {0}", new String(checkCluster));
-    } else {
-      logger.info("checkManagedServerConfiguration in else: curl command {0}", new String(checkCluster));
     }
 
-    logger.info("checkManagedServerConfiguration: curl command {0}", new String(checkCluster));
+    logger.info("checkManagedServerConfiguration: curl command {0}!!!", new String(checkCluster));
     verifyCommandResultContainsMsg(new String(checkCluster), "200");
   }
 
