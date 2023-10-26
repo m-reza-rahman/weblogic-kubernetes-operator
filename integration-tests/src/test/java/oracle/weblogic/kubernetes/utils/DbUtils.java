@@ -756,6 +756,14 @@ public class DbUtils {
    * @throws IOException when fails to modify operator yaml file
    */
   public static void installDBOperator(String namespace) throws IOException {
+    // install DB operator CRD
+    Path operatorCRDYamlFile = Paths.get(RESOURCE_DIR, "dboperator", "oracle-database-operator-crd.yaml");
+    CommandParams params = new CommandParams().defaults();
+    params.command(KUBERNETES_CLI + " apply -f " + operatorCRDYamlFile);
+    boolean response = Command.withParams(params).execute();
+    assertTrue(response, "Failed to install Oracle database operator CRD");
+
+    // install DB operator namespaced services
     Path operatorYamlSrcFile = Paths.get(RESOURCE_DIR, "dboperator", "oracle-database-operator.yaml");
     Path operatorYamlDestFile = Paths.get(DOWNLOAD_DIR, namespace, "oracle-database-operator.yaml");
 
@@ -770,9 +778,8 @@ public class DbUtils {
     createTestRepoSecret(namespace);
     createBaseRepoSecret(namespace);
 
-    CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f " + operatorYamlDestFile);
-    boolean response = Command.withParams(params).execute();
+    response = Command.withParams(params).execute();
     assertTrue(response, "Failed to install Oracle database operator");
 
     String dbOpPodName = "oracle-database-operator-controller-manager";
@@ -784,7 +791,6 @@ public class DbUtils {
         assertDoesNotThrow(()
             -> podIsReady(namespace, null, dbOpPodName), "Checking for database pod ready threw exception"),
         getLogger(), "Waiting for database operator {0} to be ready in namespace {1}", dbOpPodName, namespace);
-
   }
 
   /**

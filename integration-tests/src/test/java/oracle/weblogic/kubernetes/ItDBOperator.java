@@ -73,6 +73,7 @@ import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
 import static oracle.weblogic.kubernetes.utils.DbUtils.deleteOracleDB;
 import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
+import static oracle.weblogic.kubernetes.utils.DbUtils.uninstallDBOperator;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
@@ -506,6 +507,7 @@ class ItDBOperator {
       TestActions.shutdownDomain(fmwDomainUid, fmwDomainNamespace);
       TestActions.shutdownDomain(wlsDomainUid, wlsDomainNamespace);
       deleteOracleDB(dbNamespace, dbName);
+      uninstallDBOperator(dbNamespace);
     }
   }
 
