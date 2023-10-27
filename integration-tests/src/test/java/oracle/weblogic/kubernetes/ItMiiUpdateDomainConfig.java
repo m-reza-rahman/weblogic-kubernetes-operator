@@ -1016,26 +1016,24 @@ class ItMiiUpdateDomainConfig {
 
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    String msServerPod = domainUid + "-" + managedServer;
+    //String msServerPod = domainUid + "-" + managedServer;
     String hostAndPort =
-        OKE_CLUSTER ? msServerPod + ":8001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+        OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
     StringBuffer checkCluster = null;
 
     if (OKE_CLUSTER) {
       String resourcePath = "/management/tenant-monitoring/servers/" + managedServer;
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      logger.info("------JDBCSystemResource2 result {0}", result.toString());
+      logger.info("------checkManagedServerConfiguration result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to check managed server configuration:" + resourcePath);
-      //assertTrue(result.toString().contains("JDBCSystemResources"),
-      //"Failed to find the JDBCSystemResource configuration");
+      assertTrue(result.toString().contains("RUNNING"), "Failed to check managed server configuration");
       logger.info("checkManagedServerConfiguration succeeded");
 
-      /*
       checkCluster = new StringBuffer(KUBERNETES_CLI)
           .append(" exec -n ")
           .append(domainNamespace)
           .append(" ")
-          .append(msServerPod)
+          .append(adminServerPodName)
           .append(" -- curl --user ")
           .append(ADMIN_USERNAME_DEFAULT)
           .append(":")
@@ -1044,7 +1042,7 @@ class ItMiiUpdateDomainConfig {
           .append("http://" + hostAndPort)
           .append("/management/tenant-monitoring/servers/")
           .append(managedServer)
-          .append(" --silent --show-error -o /dev/null -w %{http_code}");*/
+          .append(" --silent --show-error -o /dev/null -w %{http_code}");
     } else {
       checkCluster = new StringBuffer("status=$(curl --user ");
       checkCluster.append(ADMIN_USERNAME_DEFAULT)
@@ -1058,10 +1056,10 @@ class ItMiiUpdateDomainConfig {
           .append(" -o /dev/null")
           .append(" -w %{http_code});")
           .append("echo ${status}");
-
-      logger.info("checkManagedServerConfiguration: curl command {0}", new String(checkCluster));
-      verifyCommandResultContainsMsg(new String(checkCluster), "200");
     }
+
+    logger.info("checkManagedServerConfiguration: curl command {0}", new String(checkCluster));
+    verifyCommandResultContainsMsg(new String(checkCluster), "200");
   }
 
   // Crate a ConfigMap with a model file to add a new WebLogic cluster
