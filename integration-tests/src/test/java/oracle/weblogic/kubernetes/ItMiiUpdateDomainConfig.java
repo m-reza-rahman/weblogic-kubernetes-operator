@@ -3,7 +3,6 @@
 
 package oracle.weblogic.kubernetes;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
@@ -38,7 +37,6 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -540,7 +538,6 @@ class ItMiiUpdateDomainConfig {
     if (OKE_CLUSTER) {
       String resourcePath = "/management/weblogic/latest/domainConfig/JDBCSystemResources/TestDataSource2";
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      logger.info("------JDBCSystemResource2 result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JDBCSystemResource configuration");
       assertTrue(result.toString().contains("JDBCSystemResources"),
           "Failed to find the JDBCSystemResource configuration");
@@ -548,7 +545,6 @@ class ItMiiUpdateDomainConfig {
 
       resourcePath = "/management/weblogic/latest/domainConfig/JMSSystemResources/TestClusterJmsModule2";
       result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      logger.info("------JMSSystemResources2 result {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to find the JMSSystemResources configuration");
       assertTrue(result.toString().contains("JMSSystemResources"),
           "Failed to find the JMSSystemResources configuration");
@@ -1003,32 +999,38 @@ class ItMiiUpdateDomainConfig {
   }
 
   private void verifyManagedServerConfiguration(String managedServer) {
-
-    String command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-    try {
-      ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("result is: {0}", result0.toString());
-    } catch (IOException | InterruptedException ex) {
-      ex.printStackTrace();
-    }
-
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    //String msServerPod = domainUid + "-" + managedServer;
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
-    StringBuffer checkCluster = null;
+
+    StringBuffer checkCluster = new StringBuffer();
+    checkCluster.append("curl --user ")
+        .append(ADMIN_USERNAME_DEFAULT)
+        .append(":")
+        .append(ADMIN_PASSWORD_DEFAULT)
+        .append(" ")
+        .append("http://" + hostAndPort)
+        .append("/management/tenant-monitoring/servers/")
+        .append(managedServer)
+        .append(" --silent --show-error -o /dev/null -w %{http_code}");
 
     if (OKE_CLUSTER) {
-      String resourcePath = "/management/tenant-monitoring/servers/" + managedServer;
-      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-      logger.info("------checkManagedServerConfiguration result {0}", result.toString());
-      assertEquals(0, result.exitValue(), "Failed to check managed server configuration:" + resourcePath);
-      assertTrue(result.toString().contains("RUNNING"), "Failed to check managed server configuration");
-      logger.info("checkManagedServerConfiguration succeeded");
-
+      checkCluster = new StringBuffer(KUBERNETES_CLI)
+        .append(" exec -n ")
+        .append(domainNamespace)
+        .append(" ")
+        .append(adminServerPodName)
+        .append(" -- ")
+        .append(checkCluster);
+    } else {
+      checkCluster = new StringBuffer("status=$(");
+      checkCluster.append(checkCluster)
+          .append(");")
+          .append("echo ${status}");
+    }
+    /*
+    if (OKE_CLUSTER) {
       checkCluster = new StringBuffer(KUBERNETES_CLI)
           .append(" exec -n ")
           .append(domainNamespace)
@@ -1056,10 +1058,11 @@ class ItMiiUpdateDomainConfig {
           .append(" -o /dev/null")
           .append(" -w %{http_code});")
           .append("echo ${status}");
-    }
+    }*/
 
     logger.info("checkManagedServerConfiguration: curl command {0}", new String(checkCluster));
     verifyCommandResultContainsMsg(new String(checkCluster), "200");
+    logger.info("Command to check managedServer configuration: {0} succeeded", new String(checkCluster));
   }
 
   // Crate a ConfigMap with a model file to add a new WebLogic cluster
