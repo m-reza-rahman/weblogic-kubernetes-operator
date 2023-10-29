@@ -1004,8 +1004,7 @@ class ItMiiUpdateDomainConfig {
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
 
-    StringBuffer checkCluster = new StringBuffer();
-    checkCluster.append("curl --user ")
+    StringBuffer checkClusterBaseCmd = new StringBuffer("curl --user ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
@@ -1015,6 +1014,8 @@ class ItMiiUpdateDomainConfig {
         .append(managedServer)
         .append(" --silent --show-error -o /dev/null -w %{http_code}");
 
+    StringBuffer checkCluster = new StringBuffer();
+
     if (OKE_CLUSTER) {
       checkCluster = new StringBuffer(KUBERNETES_CLI)
         .append(" exec -n ")
@@ -1022,10 +1023,10 @@ class ItMiiUpdateDomainConfig {
         .append(" ")
         .append(adminServerPodName)
         .append(" -- ")
-        .append(checkCluster);
+        .append(checkClusterBaseCmd);
     } else {
       checkCluster = new StringBuffer("status=$(");
-      checkCluster.append(checkCluster)
+      checkCluster.append(checkClusterBaseCmd)
           .append(");")
           .append("echo ${status}");
     }
