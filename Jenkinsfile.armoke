@@ -2,25 +2,16 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
-CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=olcne-srg
-                   H 5 * * * % MAVEN_PROFILE_NAME=olcne-mrg
-                   H 14 * * * % MAVEN_PROFILE_NAME=olcne-sequential'''
-
 pipeline {
-    agent { label 'large' }
+    agent { label 'large-arm' }
     options {
         timeout(time: 1800, unit: 'MINUTES')
         disableConcurrentBuilds()
     }
-    triggers {
-        // timer trigger for "nightly build"
-        parameterizedCron(env.JOB_NAME == 'wko-ocne-main-nightly' ?
-        CRON_SETTINGS : '')
-    }
 
     tools {
         maven 'maven-3.8.7'
-        jdk 'jdk21'
+        jdk 'jdk21-arm'
     }
 
     environment {
@@ -35,12 +26,11 @@ pipeline {
         oci_profile = 'DEFAULT'
         jenkins_user = sh(returnStdout: true, script: "id -nu").trim()
         jenkins_home_directory = sh(returnStdout: true, script: "getent passwd ${jenkins_user} | cut -d: -f6").trim()
-        OCI_CLI_CONFIG_FILE = "${jenkins_home_directory}/.oci/config"
-
+        
         oci_config_file_creds = 'wkt-oci-config-file'
         oci_signing_key_creds = 'wkt-oci-signing-key'
 
-        //terraform_property_file = 'tvarsFile'
+        terraform_property_file = 'tvarsFile'
         compartmentName='test'
 
         wkobuild_cert_fingerprint = 'wkotestcert_fingerprint'
@@ -49,59 +39,45 @@ pipeline {
         wkotest_ssh_pubcert = "${WORKSPACE}/.ssh/wkotestkey.pub"
         wkotest_ssh_pk = "${WORKSPACE}/.ssh/wkotestkey"
 
-        OCNE='true'
+        OKE_CLUSTER='true'
 
         outdir = "${WORKSPACE}/staging"
         result_root = "${outdir}/wl_k8s_test_results"
-        pv_root_parent = "${outdir}/k8s-pvroot"
-        pv_root = "${pv_root_parent}/newpvroot"
-        pv_root_for_sampletest = "/shared"
+        pv_root = "${outdir}/k8s-pvroot"
+
+        OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
 
-        CLUSTER_NAME = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'mycluster1' : 'mycluster1'}"
-        kubeconfig_file = "${WORKSPACE}/ocne_kubeconfig1"
-        availability_domain = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
-        PARALLEL_RUN = "${env.JOB_NAME == 'wko-ocne-main-nightly' ? true : false}"
+        CLUSTER_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'parcluster' : 'armcluster'}"
+        kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
+        MAVEN_PROFILE_NAME = "oke-arm"
+        availability_domain = "mFEn:PHX-AD-1"
+        PARALLEL_RUN = "false"
     }
 
     parameters {
-
-        string(name: 'BRANCH',
-               description: 'The branch for weblogic-kubernetes-operator project',
-               defaultValue: "main"
-        )
-
-        choice(name: 'MAVEN_PROFILE_NAME',
-                description: 'Profile to use in mvn command to run the tests.  Possible values are olcne (the default), wko-olcne-cert and integration-tests. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
-                choices: [
-                        'olcne-srg',
-                        'olcne-mrg',
-                        'olcne-sequential',
-                        'integration-tests'
-                ]
-        )
 
         string(name: 'IT_TEST',
                description: 'Comma separated list of individual It test classes to be run e.g., ItParameterizedDomain, ItMiiUpdateDomainConfig, ItMiiDynamicUpdate*, ItMiiMultiMode',
                defaultValue: ''
         )
 
-        string(name: 'OCNE_KUBE_VERSION',
-               description: 'kube version for OCNE cluster',
-               defaultValue: '1.26.2'
+        string(name: 'OKE_KUBE_VERSION',
+               description: 'kube version for oke cluster',
+               defaultValue: '1.27.2'
         )
         string(name: 'IMAGE_ID',
-               description: 'oci image id for node pool, find image OCID for your region from https://docs.oracle.com/iaas/images/',
-               //defaultValue7.6: 'ocid1.image.oc1.phx.aaaaaaaancucg25pze6m52agxwxmmfszvsdnhp3kvim53pts2tw6mik4xtha'
-               defaultValue: 'ocid1.image.oc1.phx.aaaaaaaaaizmtmozeudeeuq7o5ir7dkl2bkxbbb3tgomshqbqn6jpomrsjza'
+                       description: 'oci image id for node pool, find image OCID for your region from https://docs.oracle.com/iaas/images/',
+                       //defaultValue OKE1.26.2: 'ocid1.image.oc1.phx.aaaaaaaaaizmtmozeudeeuq7o5ir7dkl2bkxbbb3tgomshqbqn6jpomrsjza'
+                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaa77h3zkjcfjoaou4aa3cz63fswtcglleuslt6d6zbqwacng43nqiq'
                        
-        )
+                )
         string(name: 'KUBECTL_VERSION',
-               description: 'kubectl version',
-               defaultValue: '1.26.2'
-        )
+                       description: 'kubectl version',
+                       defaultValue: '1.26.2'
+                )
         string(name: 'HELM_VERSION',
                description: 'Helm version',
                defaultValue: '3.11.2'
@@ -120,8 +96,8 @@ pipeline {
         )
 
         string(name: 'NUMBER_OF_THREADS',
-               description: 'Number of threads to run the classes in parallel, default is 2.',
-               defaultValue: "2"
+               description: 'Number of threads to run the classes in parallel, default is 3.',
+               defaultValue: "3"
         )
         string(name: 'WDT_DOWNLOAD_URL',
                description: 'URL to download WDT.',
@@ -136,8 +112,12 @@ pipeline {
                defaultValue: "${env.WKT_OCIR_HOST}"
         )
         string(name: 'NODE_SHAPE',
-               description: '',
-               defaultValue: "VM.Standard.E3.Flex"
+                       description: '',
+                       defaultValue: "VM.Standard.A1.Flex"
+        )
+        string(name: 'BRANCH',
+                       description: '',
+                       defaultValue: "arm"
         )
         choice(name: 'BASE_IMAGES_REPO',
                choices: ["${env.WKT_OCIR_HOST}", 'container-registry.oracle.com'],
@@ -149,19 +129,19 @@ pipeline {
         )
         string(name: 'WEBLOGIC_IMAGE_NAME',
                description: 'WebLogic base image name. Default is the image name in OCIR. Use middleware/weblogic for OCR.',
-               defaultValue: 'test-images/weblogic'
+               defaultValue: 'test-images/weblogic_cpu'
         )
         string(name: 'WEBLOGIC_IMAGE_TAG',
-               description: '12.2.1.3  (12.2.1.3-ol7) , 12.2.1.3-dev  (12.2.1.3-dev-ol7), 12.2.1.3-ol8, 12.2.1.3-dev-ol8, 12.2.1.4,  12.2.1.4-dev(12.2.1.4-dev-ol7) , 12.2.1.4-slim(12.2.1.4-slim-ol7), 12.2.1.4-ol8, 12.2.1.4-dev-ol8, 12.2.1.4-slim-ol8, 14.1.1.0-11-ol7, 14.1.1.0-dev-11-ol7, 14.1.1.0-slim-11-ol7, 14.1.1.0-8-ol7, 14.1.1.0-dev-8-ol7, 14.1.1.0-slim-8-ol7, 14.1.1.0-11-ol8, 14.1.1.0-dev-11-ol8, 14.1.1.0-slim-11-ol8, 14.1.1.0-8-ol8, 14.1.1.0-dev-8-ol8, 14.1.1.0-slim-8-ol8',
-               defaultValue: '12.2.1.4'
+               description: '12.2.1.4,  12.2.1.4-dev(12.2.1.4-dev-ol7) , 12.2.1.4-slim(12.2.1.4-slim-ol7), 12.2.1.4-ol8, 12.2.1.4-dev-ol8, 12.2.1.4-slim-ol8, 14.1.1.0-11-ol7, 14.1.1.0-dev-11-ol7, 14.1.1.0-slim-11-ol7, 14.1.1.0-8-ol7, 14.1.1.0-dev-8-ol7, 14.1.1.0-slim-8-ol7, 14.1.1.0-11-ol8, 14.1.1.0-dev-11-ol8, 14.1.1.0-slim-11-ol8, 14.1.1.0-8-ol8, 14.1.1.0-dev-8-ol8, 14.1.1.0-slim-8-ol8',
+               defaultValue: '12.2.1.4-generic-jdk8-ol7'
         )
         string(name: 'FMWINFRA_IMAGE_NAME',
                description: 'FWM Infra image name. Default is the image name in OCIR. Use middleware/fmw-infrastructure for OCR.',
-               defaultValue: 'test-images/fmw-infrastructure'
+               defaultValue: 'test-images/fmw-infrastructure_test'
         )
         string(name: 'FMWINFRA_IMAGE_TAG',
                description: 'FWM Infra image tag',
-               defaultValue: '12.2.1.4'
+               defaultValue: '12.2.1.4.0-linuxarm64'
         )
         string(name: 'DB_IMAGE_NAME',
                description: 'Oracle DB image name. Default is the image name in OCIR, use database/enterprise for OCR.',
@@ -169,7 +149,7 @@ pipeline {
         )
         string(name: 'DB_IMAGE_TAG',
                description: 'Oracle DB image tag',
-               defaultValue: '12.2.0.1-slim'
+               defaultValue: '19.19.0.0'
         )
         string(name: 'MONITORING_EXPORTER_BRANCH',
                description: '',
@@ -191,11 +171,8 @@ pipeline {
                      description: 'Collect logs for successful runs. Default is false.',
                      defaultValue: false
         )
-        string(name: 'REMOTECONSOLE_VERSION',
-               description: 'RemoteConsole version.',
-               defaultValue: '2.4.7'
-        )
     }
+
 
     stages {
         stage('Filter unwanted branches') {
@@ -208,15 +185,32 @@ pipeline {
                 }
                 stage ('Echo environment') {
                     environment {
-                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                        runtime_path = "${PATH}:${WORKSPACE}/bin"
                     }
                     steps {
                         sh '''
+                            export PATH=${runtime_path}
                             env|sort
+                            echo $PATH
+                            ls /tmp/tools/hudson.model.JDK/jdk21-arm
                             java -version
                             mvn --version
+                            echo $OSTYPE
                             python --version
+                            find . -name ".docker"
+                            sudo usermod -aG docker ${USER}
+                            ls -l /var/run/docker.sock
+                            sudo chmod 666 /var/run/docker.sock
+                            ls -l /var/run/docker.sock
+                            sudo systemctl restart docker
+                            sudo chown $(whoami) /var/run/docker.sock
+                            newgrp docker
+
+
                             docker version
+                            docker images
+
+                            sudo yum install python36-oci-cli -y
                             ulimit -a
                             ulimit -aH
                         '''
@@ -235,11 +229,11 @@ pipeline {
                         sh '''
                             export PATH=${runtime_path}
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
-                                --name=helm/helm-v${HELM_VERSION}.tar.gz --file=helm.tar.gz \
+                                --name=helm/helm-v${HELM_VERSION}-linux-arm.tar.gz --file=helm.tar.gz \
                                 --auth=instance_principal
                             tar zxf helm.tar.gz
-                            mv linux-amd64/helm ${WORKSPACE}/bin/helm
-                            rm -rf linux-amd64
+                            mv linux-arm/helm ${WORKSPACE}/bin/helm
+                            rm -rf linux-arm
                             helm version
                         '''
                     }
@@ -253,29 +247,115 @@ pipeline {
                         sh '''
                             export PATH=${runtime_path}
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
-                                                            --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
+                                                            --name=kubectl/kubectl-v${KUBECTL_VERSION}-arm --file=${WORKSPACE}/bin/kubectl \
                                                             --auth=instance_principal
                             chmod +x ${WORKSPACE}/bin/kubectl
+                            ls -al ${WORKSPACE}/bin/kubectl
                             kubectl version --client=true
                         '''
                     }
                 }
 
-                stage('Setup OCI config file  ') {
+                // Creating terraform property file.
 
+                stage('Setup terraform property file  ') {
+                    environment {
+                        OKE_CLUSTER_NAME="${CLUSTER_NAME}"
+                        NODE_SHAPE="${NODE_SHAPE}"
+                        IMAGE_ID="${IMAGE_ID}"
+                        OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
+                        FINGERPRINT = 'wkobuild_cert_fingerprint'
+                        USER_OCID = 'wkobuild_user_ocid'
+                        WKOBUILD_PUBLIC_CERT = "${wkotest_ssh_pubcert}"
+                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+
+                    }
                     steps {
+
                         withCredentials([file(credentialsId: "${oci_config_file_creds}", variable: 'OCI_CONFIG_FILE'),
                                                         file(credentialsId: "${oci_signing_key_creds}", variable: 'OCI_SIGNING_KEY')]) {
                                            sh "mkdir -p ${jenkins_home_directory}/.oci"
                                            sh "sed -e \"s:__jenkins_home__:${jenkins_home_directory}:g\" \"\$OCI_CONFIG_FILE\" > ${jenkins_home_directory}/.oci/config"
                                            sh "cp \"\$OCI_SIGNING_KEY\" ${jenkins_home_directory}/.oci/oci-signing-key.pem"
                                        }
+
+
                         sh '''
-                            cat ${jenkins_home_directory}/.oci/config
+                        TENANCY_OCID=$(grep -Po '(?<=tenancy=).*' ${jenkins_home_directory}/.oci/config)
+                        USER_OCID=$(grep -Po '(?<=user=).*' ${jenkins_home_directory}/.oci/config)
+                        FINGERPRINT=$(grep -Po '(?<=fingerprint=).*' ${jenkins_home_directory}/.oci/config)
+                        compname="wkt"
+                        wkt_compartment_ocid=$(oci iam compartment list --compartment-id-in-subtree true --all | jq --arg compname "$compname" '.data[] | select(."name"==$compname)' | jq -r ."id")
+                        vcn_ocid=$(oci network vcn list --compartment-id=${wkt_compartment_ocid}| jq -r '.data[] | .id')
+                        pub_subnet_ocid=$(oci network subnet list --compartment-id=${wkt_compartment_ocid}  | jq '.data[] | select(."display-name" == "Public-Subnet-wktiso1")' | jq -r ."id")
+                        private_subnet_ocid=$(oci network subnet list --compartment-id=${wkt_compartment_ocid}  | jq '.data[] | select(."display-name" == "Private-Subnet-wktiso1")' | jq -r ."id")
+                        export WKT_TENANCY_OCID=${TENANCY_OCID}
+                        export WKT_USER_OCID=${USER_OCID}
+                        mkdir -p ${WORKSPACE}/terraform
+                        mkdir -p ${WORKSPACE}/oci
+                        cat ${jenkins_home_directory}/.oci/config
+                        mkdir -p ${WORKSPACE}/.ssh
+                        cd ${WORKSPACE}/.ssh
+                        ssh-keygen -b 2048 -t rsa -q  -f wkotestkey -N "" <<< y
+                        chmod 600 ${wkotest_ssh_pk}
+
+                        COMPARTMENT_OCID=${compartment_id}
+                        export OCI_CLI_SUPPRESS_FILE_PERMISSIONS_WARNING=True
+
+                        echo 'Set env vars needed for integration tests...'
+
+
+                        export OKE_CLUSTER="true"
+
+                        VCN_CIDR_PREFIX="10.196"
+                        export VCN_CIDR_PREFIX=${VCN_CIDR_PREFIX}
+
+                        export OKE_CLUSTER_NAME=${OKE_CLUSTER_NAME}
+                        export NODE_SHAPE=${NODE_SHAPE}
+                        export IMAGE_ID=${IMAGE_ID}
+
+                        export OCI_PROP_FILE=${OCI_PROP_FILE}
+
+                        #export IMAGE_TAG_WEBLOGIC="12.2.1.4"
+                        #export IMAGE_TAG_FMWINFRA="12.2.1.4"
+                        ssh_pubkey=`cat ${wkotest_ssh_pubcert}`
+
+                        #################
+                        echo "Generating property file oci.prop for terraform scripts"
+
+cat > $OCI_PROP_FILE <<EOF
+
+user.ocid=${WKT_USER_OCID}
+okeclustername=${OKE_CLUSTER_NAME}
+tfvars.filename=${OKE_CLUSTER_NAME}
+region=${wko_region}
+tenancy.ocid=${WKT_TENANCY_OCID}
+compartment.ocid=${COMPARTMENT_OCID}
+sub.comp.ocid=${wkt_compartment_ocid}
+compartment.name=${compartmentName}
+ociapi.pubkey.fingerprint=${FINGERPRINT}
+ocipk.path=${jenkins_home_directory}/.oci/oci-signing-key.pem
+vcn.cidr.prefix=${VCN_CIDR_PREFIX}
+vcn.cidr=${VCN_CIDR_PREFIX}.1.0/24
+vcn.ocid=${vcn_ocid}
+pub.subnet.ocid=${pub_subnet_ocid}
+private.subnet.ocid=${private_subnet_ocid}
+nodepool.shape=${NODE_SHAPE}
+nodepool.imagename=${IMAGE_ID}
+k8s.version=v${OKE_KUBE_VERSION}
+nodepool.ssh.pubkey=${ssh_pubkey}
+terraform.installdir=${WORKSPACE}/terraform/terraforminstall
+EOF
+
+                        ##################
+                        echo "prop files "
+                        cat $OCI_PROP_FILE
+                        cp -rf ${WORKSPACE}/kubernetes/samples/scripts/terraform/template.tfvars ${WORKSPACE}/terraform/.
+                        mkdir -p ${WORKSPACE}/terraform/terraforminstall
                         '''
+
                     }
                 }
-
                 stage('Build WebLogic Kubernetes Operator') {
 
                     steps {
@@ -285,63 +365,102 @@ pipeline {
                     }
                 }
 
+
+
                 stage('Preparing Integration Test Environment') {
                     steps {
+                        sh 'mkdir -m777 -p ${result_root}'
+                        echo "Results will be in ${result_root}"
+                        sh 'mkdir -m777 -p ${pv_root}'
+                        echo "Persistent volume files, if any, will be in ${pv_root}"
+                    }
+                }
+
+                stage('Create OKE cluster') {
+                    environment {
+                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                        
+                        OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
+                        CLUSTER_NAME="${CLUSTER_NAME}"
+                        KUBECONFIG ="${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
+                        terraform_script_dir_name = "${WORKSPACE}/integration-tests/src/test/resources/oke/terraform/okeint"
+
+                    }
+                    steps {
+
                         sh '''
+                            export PATH=${runtime_path}
+                            export KUBECONFIG=${KUBECONFIG}
 
-                            mt_privateip_id=`oci fs mount-target list --compartment-id=${compartment_id} --display-name="mt-ocne-test" --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
-                            mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
+                            export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
+                            export OCI_CLI_PROFILE=${oci_profile}
 
-                            mkdir -m777 -p ${result_root}
-                            echo "Results will be in ${result_root}"
-                            mkdir -m777 -p ${pv_root_parent}
-                            sudo mount ${mt_private_ip}:/fs-ocne-test ${pv_root_parent}
-                            mkdir -m777 -p ${pv_root}
-                            echo "Persistent volume files, if any, will be in ${pv_root}"
-                            echo "Create pv root for sample test in ${pv_root_for_sampletest}"
-                            sudo mkdir -m777 -p ${pv_root_for_sampletest}
-                            sudo mount ${mt_private_ip}:/fs-ocne-test ${pv_root_for_sampletest}
+                            echo 'Create a OKE cluster ${CLUSTER_NAME}'
+
+                            cp -rf ${terraform_script_dir_name}/*.* ${WORKSPACE}/terraform/.
+
+                            chmod 777 ${WORKSPACE}/terraform/*.sh
+                            mkdir -p ${WORKSPACE}/terraform/terraforminstall
+
+                            sh ${WORKSPACE}/terraform/oke.create.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform arm
+
+                            clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"$CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+                            echo "clusterIp : $clusterIP"
+                            clusterPublicIP=${clusterIP:1:-6}
+                            echo " clusterPublicIP : ${clusterPublicIP}"
+                            export NO_PROXY=$NO_PROXY,${clusterPublicIP}
+                            echo "NO_PROXY:" $NO_PROXY
+
+
+                            export SERVICE_ACCOUNT_NAME=${CLUSTER_NAME}-sa
+                            ${KUBERNETES_CLI:-kubectl} -n kube-system create serviceaccount ${SERVICE_ACCOUNT_NAME}
+                            ${KUBERNETES_CLI:-kubectl} create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:${SERVICE_ACCOUNT_NAME}
+                            sed -i 's@%SERVICE_ACCOUNT_NAME%@'"${SERVICE_ACCOUNT_NAME}"'@' ${WORKSPACE}/integration-tests/src/test/resources/oke/secret.yaml
+                            ${KUBERNETES_CLI:-kubectl} apply -f ${WORKSPACE}/integration-tests/src/test/resources/oke/secret.yaml
+
+                            TOKEN=`${KUBERNETES_CLI:-kubectl} -n kube-system get secret secret-${SERVICE_ACCOUNT_NAME} -o jsonpath='{.data.token}'| base64 --decode`
+                            ${KUBERNETES_CLI:-kubectl} config set-credentials ${SERVICE_ACCOUNT_NAME} --token=$TOKEN
+                            ${KUBERNETES_CLI:-kubectl} config set-context --current --user=${SERVICE_ACCOUNT_NAME}
                         '''
                     }
                 }
 
-                stage('Populate kubeconfig file') {
+                stage('Setup OFSS') {
+                    environment {
+                        runtime_path = "${WORKSPACE}/bin:${PATH}:${WORKSPACE}/terraform/terraforminstall"
+                        OCI_PROP_FILE = "${WORKSPACE}/terraform/oci.prop"
+
+                        clusterName = "${CLUSTER_NAME}"
+                        terraform_script_dir_name = "${WORKSPACE}/integration-tests/src/test/resources/oke/terraform/"
+
+
+                    }
                     steps {
-
                         sh '''
-                        #################
+                        export KUBECONFIG=${kubeconfig_file}
+                        export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
+                        export OCI_CLI_PROFILE=${oci_profile}
+                        export PATH=${runtime_path}
+                        compartment_ocid=${compartment_id}
+                        echo "creating storage class to setup OFSS ..."
+                        echo "getting MountTarget ID"
+                        mount_target_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`
 
-                        k8s_master_instance_id=`oci compute instance list --compartment-id=${compartment_id} --display-name=ocne-new2 |jq -r '.data[]."id"'`
-                        k8s_master_instance_private_ip=`oci compute instance list-vnics --compartment-id=${compartment_id} --instance-id=${k8s_master_instance_id} |jq -r '.data[]."private-ip"'`
+                        clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"${CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+                        echo "clusterIp : $clusterIP"
+                        clusterPublicIP=${clusterIP:1:-6}
+                        echo " clusterPublicIP : ${clusterPublicIP}"
+                        export NO_PROXY=$NO_PROXY,${clusterPublicIP}
+                        echo "NO_PROXY:" $NO_PROXY
+                        echo "Creating Storage Class to mount OFSS"
+                        export MOUNT_TARGET_ID=${mount_target_id}
+                        export AVAILABILITY_DOMAIN=${availability_domain}
+                        sed -i 's@%AVAILABILITY_DOMAIN%@'"$AVAILABILITY_DOMAIN"'@' ${WORKSPACE}/integration-tests/src/test/resources/oke/ofssnew.yaml
+                        sed -i 's@%MOUNT_TARGET_ID%@'"$MOUNT_TARGET_ID"'@' ${WORKSPACE}/integration-tests/src/test/resources/oke/ofssnew.yaml
+                        kubectl apply -f ${WORKSPACE}/integration-tests/src/test/resources/oke/ofssnew.yaml
+                        kubectl delete csiDriver fss.csi.oraclecloud.com
+                        kubectl create -f ${WORKSPACE}/integration-tests/src/test/resources/oke/fss_csi_driver.yaml
 
-                        echo "Generating kubeconfig file"
-
-cat > $kubeconfig_file <<EOF
-
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUMvakNDQWVhZ0F3SUJBZ0lCQURBTkJna3Foa2lHOXcwQkFRc0ZBREFWTVJNd0VRWURWUVFERXdwcmRXSmwKY201bGRHVnpNQjRYRFRJek1Ea3lNekF5TXpZeU1Gb1hEVE16TURreU1EQXlNell5TUZvd0ZURVRNQkVHQTFVRQpBeE1LYTNWaVpYSnVaWFJsY3pDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUJBT2NzCkxucXZreE56Y1ZIS292SW5mMXQ0OHJ1d3BQU215ZjE5NHMvdDB4OGllMnRhT25uRmNNUjhrT0E3eU5jL3h3eGEKQTl2RUNmL2xrOXZzVUNTSFZoa1pjYnpPU1JCUWRZampPSmFZNHZDd0RqVU5xc0lPeVhGU1EyWUROMFRwUUFJQwppMGZ6dmRqYytkREFkKzN6RmQvV2JBRzc0Z0JlZU0zZGxyenMvcGorZ2g3dzdMdlZ0Mjhra1hOTUUxNEFrTHV5Ck9SQXI1aHpVZ0txQ2dSSjIyTkxwc2xvSHpXL2w1WGVIa0F4OGU1YlZPbkREYmFidXFQZXNBVlIwYVdLb3BmWjUKTFFFUnU4WXhVcUREYXBsTVY5UTZCOXV2bDV0VEdzTmRjRXRqLzZWSnBEZ3RZTFJwc3FrdXZ1TDFEQVJubnNnagp1VGhRaDNGTTFkK3ZWK1FBYjE4Q0F3RUFBYU5aTUZjd0RnWURWUjBQQVFIL0JBUURBZ0trTUE4R0ExVWRFd0VCCi93UUZNQU1CQWY4d0hRWURWUjBPQkJZRUZKYm1QWmFRYWFDdVBUSUdGa1lUbDdxeXJTdE1NQlVHQTFVZEVRUU8KTUF5Q0NtdDFZbVZ5Ym1WMFpYTXdEUVlKS29aSWh2Y05BUUVMQlFBRGdnRUJBSUlmVmpzcHBCTCtrU2p4V2ZSNgpqbng2T1BkSElkY29PZ29SbllUc3E4cDlYK3JhMkRBaGdXMXhrbTJUcnBmai9VRzBiWEoyZHBuTFF4eU5YT05WCmN3SnA2SkxlODZ0T0k0UGRXKy9lTFZFdzRMWGRubHlLOGxGSzFLK1UzbUpPaGp6MDlvR0xhbEFJUndhSEY5UmkKRlltWXFFZUQ0OVJkUHljQXAyTFl0S1RUNitlRWV0U3o2eEo3VVp6OXo1ZU52dHB6L2dVWkQwZjhRbWduWm1EcwpKVk56Q2pJc2JsOXkxZFVaZGtITzIvaDU3d0tsdEF0TXlYN25ibDNoUG1OSmppR1AxcHBZeWNkMXRqK3JlV2MwCkVWQXVEazNxZlR6MjJBeno2TjVTYkRsRitXNGh0dEJRN2lPV21BUVRkVlRDWDJhTVZsT2dDUm10dU5ydTFiZ2MKTWpVPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
-    server: https://${k8s_master_instance_private_ip}:6443
-  name: kubernetes
-contexts:
-- context:
-    cluster: kubernetes
-    user: kubernetes-admin
-  name: kubernetes-admin@kubernetes
-current-context: kubernetes-admin@kubernetes
-kind: Config
-preferences: {}
-users:
-- name: kubernetes-admin
-  user:
-    client-certificate-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJVENDQWdtZ0F3SUJBZ0lJU1JvR3JlZTEzNm93RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TXpBNU1qTXdNak0yTWpCYUZ3MHlOREE1TWpJd01qTTJNak5hTURReApGekFWQmdOVkJBb1REbk41YzNSbGJUcHRZWE4wWlhKek1Sa3dGd1lEVlFRREV4QnJkV0psY201bGRHVnpMV0ZrCmJXbHVNSUlCSWpBTkJna3Foa2lHOXcwQkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQTlVQlYzZGx1eURCYjJJMFYKeFlFcjlJZUc5Y1JmRTNLTlovV2o1SnErMHRDcE1JZHVybHM2dHBUU1pTa29Zd1BXT2l0M1R6Z0dLU2lwRDBjMwppaG1kSUxLcWpwa2R0Slg3ZlZmZTh4TDZPaW8yMFk5UVp4ZkNIdHNTdllWZ0ZCMXNvQktiM3laSVFkUFNXOHNlCnk4SHFscWVINjNTU25ibnI5L2RGaGdNZVAwcG9rQ0xtV3FkbDR1YmZyaUtBRHRBWnZmczA3aDZxMUp1eG5EbEIKRjRUQjgxYlNQTzRGRm96NE5QMFRoNjFUUmVNYlRVUlUyRzBneDdnUWZya0Q1L2l6OE0yODR3dmg5c2NLZDZCcAp1dzJzUU8rdUgwZXJLblZDL3RPVUJFQ3JPU0FWREx5OXlPSjdtNVNpSllOMXRpczVmTWNnYjRYaXZvNFdrNWhUCm9QRy9CUUlEQVFBQm8xWXdWREFPQmdOVkhROEJBZjhFQkFNQ0JhQXdFd1lEVlIwbEJBd3dDZ1lJS3dZQkJRVUgKQXdJd0RBWURWUjBUQVFIL0JBSXdBREFmQmdOVkhTTUVHREFXZ0JTVzVqMldrR21ncmoweUJoWkdFNWU2c3EwcgpUREFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBRWFmTWtuVUpzUm9kc1QwQTVPd21RamxMR2VqQUp3dzQ4ZExLClBaSkNRejdzV1k0OVFYbGo2WUs1cmtMQU5lbzk2Q0FHYkI1WXY5UVdWaHlZbmJ4VGhaOVZTcHJFbC8yeHMvaWcKc3JxK09VU1BsVFdtQlo4d2lxZW1XYXdPL2NGaXV6Nlg3Si9uUUFMdEpPMnVWc2JVNXRRWWZYRDU3cWJyTk94Qgp2cTNBVU5IbW1XN003TC84aUwxQU92Z0I0RlBkdzVlK3pXV08yNHlnQnk0ZUhMVS9ZNmNRTXNEcUdFUGR0RVRlClBpQ1RzcHo4b2RnM3Mxdnk4eVNqUlRvRVRicjBwM0tVekRSNkc1NmVtZGVuUHRNOWVJTERUMFdhWU9SWnVRTFIKYU1ZZnR2REpWU0NlVjJjU2ZmeGhjUmxvMjJWUWdPRmZkTmVMRmttKy9ldVRucERncEE9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
-    client-key-data: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFcEFJQkFBS0NBUUVBOVVCVjNkbHV5REJiMkkwVnhZRXI5SWVHOWNSZkUzS05aL1dqNUpxKzB0Q3BNSWR1CnJsczZ0cFRTWlNrb1l3UFdPaXQzVHpnR0tTaXBEMGMzaWhtZElMS3FqcGtkdEpYN2ZWZmU4eEw2T2lvMjBZOVEKWnhmQ0h0c1N2WVZnRkIxc29CS2IzeVpJUWRQU1c4c2V5OEhxbHFlSDYzU1NuYm5yOS9kRmhnTWVQMHBva0NMbQpXcWRsNHViZnJpS0FEdEFadmZzMDdoNnExSnV4bkRsQkY0VEI4MWJTUE80RkZvejROUDBUaDYxVFJlTWJUVVJVCjJHMGd4N2dRZnJrRDUvaXo4TTI4NHd2aDlzY0tkNkJwdXcyc1FPK3VIMGVyS25WQy90T1VCRUNyT1NBVkRMeTkKeU9KN201U2lKWU4xdGlzNWZNY2diNFhpdm80V2s1aFRvUEcvQlFJREFRQUJBb0lCQUgvUlkrOFhuekVlWXYvZApwL2NqZHpFZVlTdzloLyt1dUJ2eVhkU0xBZUVGZHVnZjdZTlpjS1F2cytlZEo3dFRDSmVRaDhIMXhPQTJuTVdsCnJFQ0JVTzcxcndaYXJxeXJia0xKUlIwU1N1OTlpTXgzRU1ScUVYWGJYMHorOGpBSmxjOW5ZMjFObW1NVWJwSUEKcnJBckJJUTRGQktXMHNMNVh3NEJCVzd1dVJqcVBaYkxkWi80L0VIOXJpNHI1YmZ4VW8rRkxQamZEWXA5bG04cwpwdFpHY1dVSXV1dWJQQW9yUER0ZGFIZnZhU1NwMGxtSWdLY05rd0JUYmVBRHdjNzhmRm00NWJ5T1VtazNpVlhpCnczQmRkTERaNlJNdVpPWlJwYnZwRnA4blMrcFExRVJzZ0VCVzI0dGN2dWNVVUVFOCt4ODVtTFgzRDFVWjRFQ3QKdWJyd1NvRUNnWUVBL2xZVlBVbGNVSnFSenhCVGl3VkxOOUt3Mmc4TWdiZkZQdCtjNU9yQXQyY1NPY3hOay9MbQpmb3Y1ZFFqN3FJOXozTW9oaXVFaHoycDhZTG45VEhOaVBhYXBreGxTaFZYdE1xc3dtMUUyNS9Hb29KeEFVZ0s2ClR2M2wxMnhXdm4wL0lpS2hCZFN0K1J1ODcwdWxqa0NrSXdsWklqSFZuOTFOUVJ1Tjd0YVg4ZDBDZ1lFQTl0c0oKNFRsNkhzT1EzN2hUUXBqTkZmVk9SMWJJQUhLMUN4NnV1UWdBSjF6YWZ3dFdlOVRsNVNZNml6elVJc2hIekR1awpXTFJjcVRFTjQvZk9udEk2ZFVpaUJoSWdKQzNraHRkMyt4N0t4RktHb0VsQzFBSWR2TFZxNmlHZ3dCVGFvanFLCkFxREc5cUFvc0JnY2dlOVQyVm1VMlFuNWZpM25Qa0taNjVzZDgwa0NnWUVBK0gza3JJZGpnWUV6bXFwcDVYY2IKb1lQaHRIdGxqY3VlRktybm9LVlgreGppTHNSVXU0dGo5aG9PZFhGOFo1a1k2NHcxcjNuOHphbE5zamVscXE5RgpPZFQrOHpDWGRweVlicHZobHE2SHhhQlBUL1M1eHliUkh1SmtVTkNTQS9WYzNKNFcweHFUaThLMUd0dSsramhmCjViZDVkYlpZOEtPSW1tY3dpanp5SWFVQ2dZQkZsZFVoSWZ5a3MyZ2hTR3BmK1liR1M5SDNGaVZteXU3eDVZSkgKTWxRb3hHbnJLaDBFNXl5dS9hbS9HalNLWVg2cnVaeElUUDlaeWpRcU1PNlRvcHRMK0YrRDZwUVkzcjd1cThwcwpoVytQQzl4YlRvdUNDOTZxRlZIQUVoNm9ScmlpeG5HazhBRm1BQnU0Ri9QaFJMK1VJMFpzTC8yZWJmNGpkTTdDCnRZVXAwUUtCZ1FDNDgvUVlkcnQ3N1RZSm9JMmhXYVpKUkRmOER4NEwrbzByOE9CTlFteE1PYThmNS9SNjIra3kKelJsUHZvVG9qUW5Jamt3WjJtQWhtN2JYRVR0cVZkQnhCQUZaNFVrZGpnK0tKd09OZ1VaUzF4ck1uMnphMS9RbAoxT25Ib0h4dk5MYUxBS3RiVmhGWWQvK0NNRHFSdjJML2w3MngvZ2RMeG1Xbk9uRzNxeTFiOHc9PQotLS0tLUVORCBSU0EgUFJJVkFURSBLRVktLS0tLQo=
-EOF
-
-                        ##################
-                        echo "kubeconfig file: "
-                        cat $kubeconfig_file
                         '''
                     }
                 }
@@ -350,6 +469,7 @@ EOF
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
                         clusterName = "${CLUSTER_NAME}"
+                        FSS_DIR = "/oketest1,/oketest2,/oketest3,/oketest4,/oketest5,/oketest6,/oketest7,/oketest8,/oketest9,/oketest10,/oketest11,/oketest12,/oketest13,/oketest14,/oketest15"
 
                     }
                     steps {
@@ -378,30 +498,54 @@ EOF
                                 fi
 
                                 export PATH=${runtime_path}
+                                export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
                                 export OCI_CLI_PROFILE=${oci_profile}
                                 compartment_ocid=${compartment_id}
                                 mkdir -m777 -p "${WORKSPACE}/.mvn"
                                 touch ${WORKSPACE}/.mvn/maven.config
                                 export KUBECONFIG=${kubeconfig_file}
 
-                                k8s_master_instance_id=`oci compute instance list --compartment-id=${compartment_id} --display-name=ocne-new2 |jq -r '.data[]."id"'`
-                                k8s_master_instance_private_ip=`oci compute instance list-vnics --compartment-id=${compartment_id} --instance-id=${k8s_master_instance_id} |jq -r '.data[]."private-ip"'`
-
-                                clusterIP=${k8s_master_instance_private_ip}
-                                export NO_PROXY=$NO_PROXY,${clusterIP}
+                                clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"${CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+                                echo "clusterIp : $clusterIP"
+                                clusterPublicIP=${clusterIP:1:-6}
+                                echo " clusterPublicIP : ${clusterPublicIP}"
+                                export NO_PROXY=$NO_PROXY,${clusterPublicIP}
                                 echo "NO_PROXY:" $NO_PROXY
+                                NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
+                                if [ -z "${NODE_IP}" ]; then
+                                        echo "retry get node ip ";
+                                  sleep 15;
+                                  NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| tail -n+3`
+                                fi
 
-                                export K8S_NODEPORT_HOST=${clusterIP}
+                                export K8S_NODEPORT_HOST=${NODE_IP}
+                                DOCKER_BUILD_KIT=1
+                                DOCKER_CLI_EXPERIMENTAL=enabled
+                                export DOCKER_BUILD_KIT=1
+                                export DOCKER_CLI_EXPERIMENTAL=enabled
+                                NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| head -n2 | tail -n1`
+                                echo "second node external IP ${NODE_IP}"
+                                export NODE_IP=${NODE_IP}
+
+                                mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
+
+                                mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
+
+                                if [ -z "${mt_private_ip}" ]; then
+                                   echo "Mount Target was not setup properly , clean up Kubernetes cluster"
+                                   sh ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
+                                   exit -1
+                                fi
+                                export NFS_SERVER=$mt_private_ip
+                                export FSS_DIR=${FSS_DIR}
+                                echo "Using NFS Server ${NFS_SERVER}"
 
                                 if [ -n "${IT_TEST}" ]; then
+                                    echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
+                                    MAVEN_PROFILE_NAME="integration-tests"
                                     echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
                                 fi
-                                if [ "${MAVEN_PROFILE_NAME}" == "olcne-sequential" ]; then
-                                    PARALLEL_RUN='false'
-                                fi
 
-                                echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME
-                                echo "PARALLEL_RUN:" $PARALLEL_RUN
                                 echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.result.root=\"${result_root}\""                                               >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.pv.root=\"${pv_root}\""                                                       >> ${WORKSPACE}/.mvn/maven.config
@@ -427,7 +571,6 @@ EOF
                                 echo "-Dwko.it.prometheus.chart.version=\"${PROMETHEUS_CHART_VERSION}\""                     >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.grafana.chart.version=\"${GRAFANA_CHART_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.collect.logs.on.success=\"${COLLECT_LOGS_ON_SUCCESS}\""                       >> ${WORKSPACE}/.mvn/maven.config
-                                echo "-Dwko.it.remoteconsole.version=\"${REMOTECONSOLE_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
 
                                 echo "${WORKSPACE}/.mvn/maven.config contents:"
                                 cat "${WORKSPACE}/.mvn/maven.config"
@@ -439,20 +582,10 @@ EOF
                                 usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS')
                             ]) {
                                 sh '''
-
-                                    k8s_master_instance_id=`oci compute instance list --compartment-id=${compartment_id} --display-name=ocne-new2 |jq -r '.data[]."id"'`
-                                    k8s_master_instance_private_ip=`oci compute instance list-vnics --compartment-id=${compartment_id} --instance-id=${k8s_master_instance_id} |jq -r '.data[]."private-ip"'`
-
-                                    export HTTPS_PROXY='http://www-proxy-hqdc.us.oracle.com:80'
-                                    export https_proxy='http://www-proxy-hqdc.us.oracle.com:80'
-                                    export HTTP_PROXY='http://www-proxy-hqdc.us.oracle.com:80'
-                                    export http_proxy='http://www-proxy-hqdc.us.oracle.com:80'
-
-                                    export NO_PROXY="localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,${k8s_master_instance_private_ip}"
-                                    export no_proxy="localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,${k8s_master_instance_private_ip}"
                                     export PATH=${runtime_path}
-                                    export OKE_CLUSTER="false"
-                                    export OCNE="true"
+                                    export OKE_CLUSTER="true"
+                                    export ARM="true"
+                                    export OKE_CLUSTER_PRIVATEIP="true"
                                     export OKD="false"
                                     export KUBECONFIG=${kubeconfig_file}
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
@@ -461,11 +594,9 @@ EOF
                                     export TEST_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
-                                    if [[ -n "${IT_TEST}" && "${IT_TEST}" != "**/It*" ]]; then
-                                        echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
-                                        export MAVEN_PROFILE_NAME="integration-tests"
-                                    fi
-                                    echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME
+                                    export DOCKER_BUILD_KIT=1
+                                    export DOCKER_CLI_EXPERIMENTAL=enabled
+
                                     if ! mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/oketest.log"; then
                                         echo "integration-tests failed"
                                         exit 1
@@ -479,10 +610,12 @@ EOF
                             sh '''
                                 export PATH="${WORKSPACE}/bin:${PATH}"
                                 export KUBECONFIG=${kubeconfig_file}
+                                export OCI_CLI_CONFIG_FILE=${WORKSPACE}/oci/config
                                 export OCI_CLI_PROFILE=${oci_profile}
                                 mkdir -m777 -p ${result_root}/kubelogs
                                 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 sudo mv -f ${result_root}/* "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
+                                ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
 
                             '''
 
@@ -499,21 +632,20 @@ EOF
                         export PATH="${WORKSPACE}/bin:${PATH}"
                         export KUBECONFIG=${kubeconfig_file}
 
+                        echo 'Remove old OKE cluster (if any)...'
+
+                        if [ -f "$OCI_PROP_FILE" ] && [ -f "${WORKSPACE}/terraform/oke.delete.sh" ]; then
+                            ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
+                        fi
                         rm -f ${jenkins_home_directory}/.oci/config
                         rm -f ${jenkins_home_directory}/.oci/oci-signing-key.pem
                         rm -f ${WORKSPACE}/.ssh/*
                         rm -rf ${WORKSPACE}/.mvn
-                        sudo rm -rf ${pv_root}
-                        sudo umount ${pv_root_parent}
-                        sudo rm -rf ${pv_root_for_sampletest}/domains
-                        sudo rm -rf ${pv_root_for_sampletest}/logs
-                        sudo umount ${pv_root_for_sampletest}
-                        kubectl delete pod $(kubectl get pod |grep recycler-for|awk '{print $1}') || true
+
                     '''
                 }
             }
         }
-
         stage ('Sync') {
              when {
                  anyOf {
@@ -532,5 +664,3 @@ EOF
         }
     }
 }
-
-
