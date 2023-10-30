@@ -20,6 +20,9 @@ traceTiming "POD '${SERVICE_NAME}' MAIN START"
 
 trace "Starting WebLogic Server '${SERVER_NAME}'."
 
+ulimit -a
+ulimit -aH
+
 if [ ${DOMAIN_SOURCE_TYPE} == "FromModel" ]; then
   source ${SCRIPTPATH}/modelInImage.sh
 

@@ -8,7 +8,7 @@ import java.util.Map;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 
-import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 
 /**
  * The Sample utility class for tests.
@@ -21,7 +21,7 @@ public class SampleUtils {
    * @param envMap - envMap for running the docker command
    */
   public static void createPVHostPathAndChangePermissionInKindCluster(String hostPath, Map<String, String> envMap) {
-    String command = WLSIMG_BUILDER_DEFAULT
+    String command = WLSIMG_BUILDER
         + " exec kind-worker sh -c \"mkdir "
         + hostPath
         + " && chmod g+w "
