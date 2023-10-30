@@ -5,7 +5,7 @@ weight: 11
 draft: false
 ---
 
-The following functionality has been deprecated and is no longer supported in WebLogic Kubernetes Operator.
+The following functionality has been deprecated and no longer is supported in WebLogic Kubernetes Operator.
 
 #### Domain in Image
 The Domain in Image [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is deprecated in WebLogic Kubernetes Operator version 4.0. Oracle recommends that you choose either Domain on PV or Model in Image, depending on your needs.
