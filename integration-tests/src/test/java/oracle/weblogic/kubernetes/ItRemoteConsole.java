@@ -340,7 +340,7 @@ class ItRemoteConsole {
     String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
         ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host + ":" + nginxNodePort;
 
-    String curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
+    String curlCmd = "curl -g --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
     logger.info("Executing curl command {0}", curlCmd);
@@ -361,7 +361,7 @@ class ItRemoteConsole {
     logger.info("admin svc host = {0}", adminSvcExtHost);
     String hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
 
-    String curlCmd = "curl -v --show-error --noproxy '*' --user "
+    String curlCmd = "curl -g -v --show-error --noproxy '*' --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " http://localhost:8012/api/providers/AdminServerConnection -H "
         + "\"" + "Content-Type:application/json" + "\""
@@ -388,7 +388,7 @@ class ItRemoteConsole {
     String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : host + ":" + nodePortOfLB;
 
-    String curlCmd = "curl -v --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
+    String curlCmd = "curl -g -v --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " http://localhost:8012/api/providers/AdminServerConnection -H "
         + "\"" + "Content-Type:application/json" + "\""
         + " --data "

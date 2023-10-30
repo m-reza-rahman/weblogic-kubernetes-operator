@@ -282,7 +282,7 @@ class ItIstioDomainInImage {
 
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
     if (isWebLogicPsuPatchApplied()) {
-      String curlCmd2 = "curl -j -sk --show-error --noproxy '*' "
+      String curlCmd2 = "curl -g -j -sk --show-error --noproxy '*' "
           + " -H 'Host: " + domainNamespace + ".org'"
           + " --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
           + " --url http://" + host + ":" + istioIngressPort

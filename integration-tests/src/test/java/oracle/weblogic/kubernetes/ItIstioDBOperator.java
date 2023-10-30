@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -361,7 +361,7 @@ class ItIstioDBOperator {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
-      String curlCmd2 = "curl -j -sk --show-error --noproxy '*' "
+      String curlCmd2 = "curl -g -j -sk --show-error --noproxy '*' "
           + " -H 'Host: " + fmwDomainNamespace + ".org'"
           + " --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
           + " --url http://" + host + ":" + istioIngressPort
@@ -634,7 +634,7 @@ class ItIstioDBOperator {
    **/
   private boolean checkJmsServerRuntime(String jmsServer, String managedServer) {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, wlDomainIstioIngressPort);
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
+    StringBuffer curlString = new StringBuffer("status=$(curl -g --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " -H 'host: " + hostHeader + " ' ");
     curlString.append("http://" + hostAndPort)
@@ -663,7 +663,7 @@ class ItIstioDBOperator {
    **/
   private boolean checkStoreRuntime(String storeName, String managedServer) {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, wlDomainIstioIngressPort);
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
+    StringBuffer curlString = new StringBuffer("status=$(curl -g --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " "
         + " -H 'host: " + hostHeader + " ' ");
     curlString.append("http://" + hostAndPort)
@@ -694,7 +694,7 @@ class ItIstioDBOperator {
    **/
   private boolean checkJtaRecoveryServiceRuntime(String managedServer, String recoveryService, String active) {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, wlDomainIstioIngressPort);
-    StringBuffer curlString = new StringBuffer("curl --user "
+    StringBuffer curlString = new StringBuffer("curl -g --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " -H 'host: " + hostHeader + " ' ");
     curlString.append("\"http://" + hostAndPort)

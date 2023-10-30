@@ -432,7 +432,7 @@ public class CommonLBTestUtils {
       throws IOException {
     if (WEBLOGIC_SLIM) {
       getLogger().info("Check REST Console for WebLogic slim image");
-      StringBuffer curlCmd = new StringBuffer("status=$(curl --user ");
+      StringBuffer curlCmd = new StringBuffer("status=$(curl -g --user ");
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
         host = "[" + host + "]";
@@ -514,7 +514,7 @@ public class CommonLBTestUtils {
       StringBuffer curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
           + namespace + " " + adminServerPodName)
           .append(" -- /bin/bash -c \"")
-          .append("curl --user ")
+          .append("curl -g --user ")
           .append(userName)
           .append(":")
           .append(password)
@@ -748,20 +748,20 @@ public class CommonLBTestUtils {
       String curlCmd;
       if (isHostRouting) {
         if (isTLS) {
-          curlCmd = "curl -k --silent --show-error --noproxy '*' -H 'host: " + ingressHost
+          curlCmd = "curl -g -k --silent --show-error --noproxy '*' -H 'host: " + ingressHost
               + "' https://" + hostAndPort
               + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         } else {
-          curlCmd = "curl --silent --show-error --noproxy '*' -H 'host: " + ingressHost
+          curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
               + "' http://" + hostAndPort
               + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         }
       } else {
         if (isTLS) {
-          curlCmd = "curl -k --silent --show-error --noproxy '*' https://" + hostAndPort
+          curlCmd = "curl -g -k --silent --show-error --noproxy '*' https://" + hostAndPort
               + "/" + pathString + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         } else {
-          curlCmd = "curl --silent --show-error --noproxy '*' http://" + hostAndPort
+          curlCmd = "curl -g --silent --show-error --noproxy '*' http://" + hostAndPort
               + "/" + pathString + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         }
       }
@@ -828,7 +828,7 @@ public class CommonLBTestUtils {
     getLogger().info("Accessing the clusterview app through load balancer to verify all servers in cluster");
     String curlRequest;
     if (hostRouting) {
-      curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl --show-error -ks --noproxy '*' "
+      curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl -g --show-error -ks --noproxy '*' "
           + "-H 'host: %s' %s://%s/clusterview/ClusterViewServlet"
           + "\"?user=" + ADMIN_USERNAME_DEFAULT
           + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"", ingressHostName, protocol, host)
@@ -837,7 +837,7 @@ public class CommonLBTestUtils {
           + "\"?user=" + ADMIN_USERNAME_DEFAULT
           + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"", ingressHostName, protocol, host, lbPort);
     } else {
-      curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl --show-error -ks --noproxy '*' "
+      curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl -g --show-error -ks --noproxy '*' "
           + "%s://%s" + locationString + "/clusterview/ClusterViewServlet"
           + "\"?user=" + ADMIN_USERNAME_DEFAULT
           + "&password=" + ADMIN_PASSWORD_DEFAULT + "\"", protocol, host)
@@ -917,14 +917,14 @@ public class CommonLBTestUtils {
     consoleUrl.append("/console/login/LoginForm.jsp");
     String curlCmd;
     if (isHostRouting) {
-      curlCmd = String.format("curl -ks --show-error --noproxy '*' -H 'host: %s' %s",
+      curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
           ingressHostName, consoleUrl.toString());
     } else {
       if (isTLS) {
-        curlCmd = String.format("curl -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
+        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
             + "-H 'WL-Proxy-SSL: false' %s", consoleUrl.toString());
       } else {
-        curlCmd = String.format("curl -ks --show-error --noproxy '*' %s", consoleUrl.toString());
+        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' %s", consoleUrl.toString());
       }
     }
 

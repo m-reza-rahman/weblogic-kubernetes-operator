@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -548,7 +548,7 @@ class ItMultiDomainModelsScale {
     if (OKD) {
       String routeHost = getRouteHost(domainNamespace, domainUid + "-cluster-" + clusterName);
       logger.info("routeHost = {0}", routeHost);
-      return String.format("curl -v --show-error --noproxy '*' http://%s/%s/index.jsp",
+      return String.format("curl -g -v --show-error --noproxy '*' http://%s/%s/index.jsp",
           routeHost, appContextRoot);
 
     } else {
@@ -556,7 +556,7 @@ class ItMultiDomainModelsScale {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
-      return String.format("curl -v --show-error --noproxy '*' -H 'host: %s' http://%s:%s/%s/index.jsp",
+      return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s:%s/%s/index.jsp",
           domainUid + "." + domainNamespace + "." + clusterName + ".test",
           host, nodeportshttp, appContextRoot);
     }
@@ -788,7 +788,7 @@ class ItMultiDomainModelsScale {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
-      String curlCmd = "curl --silent --show-error --noproxy '*' -H 'host: "
+      String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
           + domainUid + "." + domainNamespace + ".adminserver.test"
           + "' http://" + host + ":" + nodeportshttp
           + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";

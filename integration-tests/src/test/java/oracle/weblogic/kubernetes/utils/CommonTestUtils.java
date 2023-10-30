@@ -658,7 +658,7 @@ public class CommonTestUtils {
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
-    StringBuffer curlString = new StringBuffer("status=$(curl --user ");
+    StringBuffer curlString = new StringBuffer("status=$(curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" http://" + hostAndPort)
         .append("/management/weblogic/latest/domainConfig")
@@ -696,7 +696,7 @@ public class CommonTestUtils {
 
     StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
-        .append("curl -k --user ")
+        .append("curl -g -k --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" " + protocol + "://")
         .append(adminServerPodName + ":" + port)
@@ -738,7 +738,7 @@ public class CommonTestUtils {
         .append("/")
         .append(resourcesName)
         .append("/")
-        .append(" --silent --show-error ")
+        .append(" -g --silent --show-error ")
         .append(" -o /dev/null ")
         .append(" -w %{http_code});")
         .append("echo ${status}");
@@ -777,7 +777,7 @@ public class CommonTestUtils {
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
-    StringBuffer curlString = new StringBuffer("curl --user ");
+    StringBuffer curlString = new StringBuffer("curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" http://" + hostAndPort)
         .append("/management/weblogic/latest/domainConfig")
@@ -807,7 +807,7 @@ public class CommonTestUtils {
     StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n "
         + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
-        .append("curl --user ")
+        .append("curl -g --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" http://" + adminServerPodName + ":" + adminListenPort)
         .append("/management/weblogic/latest/domainConfig")
@@ -841,7 +841,7 @@ public class CommonTestUtils {
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
-    StringBuffer curlString = new StringBuffer("curl --user ");
+    StringBuffer curlString = new StringBuffer("curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" http://" + hostAndPort)
         .append("/management/weblogic/latest/domainConfig/");
@@ -868,7 +868,7 @@ public class CommonTestUtils {
     StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n "
         + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
-        .append("curl --user ")
+        .append("curl -g --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
         .append(" http://" + adminServerPodName + ":" + adminListenPort)
         .append("/management/weblogic/latest/domainRuntime")

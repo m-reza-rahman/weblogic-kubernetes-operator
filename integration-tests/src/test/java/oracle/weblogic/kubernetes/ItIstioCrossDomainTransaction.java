@@ -501,7 +501,7 @@ class ItIstioCrossDomainTransaction {
       host = "[" + host + "]";
     }
     String curlRequest = OKE_CLUSTER
-        ? String.format("curl -v --show-error --noproxy '*' "
+        ? String.format("curl -g -v --show-error --noproxy '*' "
             + "-H 'host:domain1-" + domain1Namespace + ".org' "
             + "\"http://%s/jmsservlet/jmstest?"
             + "url=t3://domain2-cluster-cluster-1.%s:8001&"
@@ -542,7 +542,7 @@ class ItIstioCrossDomainTransaction {
         : host + ":" + istioIngressPort;
 
     String curlString = OKE_CLUSTER
-        ? String.format("curl -v --show-error --noproxy '*' "
+        ? String.format("curl -g -v --show-error --noproxy '*' "
             + "-H 'host:domain1-" + domain1Namespace + ".org' "
             + "\"http://%s/jmsservlet/jmstest?"
             + "url=t3://localhost:7001&"

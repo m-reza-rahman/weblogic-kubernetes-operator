@@ -242,7 +242,7 @@ public class MonitoringUtils {
     LoggingFacade logger = getLogger();
     // url
     String curlCmd =
-        String.format("curl --silent --show-error --noproxy '*'  http://%s/api/v1/query?query=%s",
+        String.format("curl -g --silent --show-error --noproxy '*'  http://%s/api/v1/query?query=%s",
             hostPortPrometheus, searchKey);
 
     logger.info("Executing Curl cmd {0}", curlCmd);
@@ -1124,7 +1124,7 @@ public class MonitoringUtils {
       host = "[" + host + "]";
     }
     String curlCmd =
-        String.format("curl --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s:%s/wls-exporter/metrics",
+        String.format("curl -g --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s:%s/wls-exporter/metrics",
             nginxHost,
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT,
@@ -1152,7 +1152,7 @@ public class MonitoringUtils {
 
     // check the access to monitoring exporter apps from all managed servers in the domain
     String curlCmd =
-        String.format("curl --silent --show-error --noproxy '*'  http://%s:%s@%s/wls-exporter/metrics",
+        String.format("curl -g --silent --show-error --noproxy '*'  http://%s:%s@%s/wls-exporter/metrics",
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT,
             hostPort);
