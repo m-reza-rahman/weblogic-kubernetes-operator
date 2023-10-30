@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: edb9896d76694ece8db21769c3de4452776124595c05c9ba2358d031d225a06c
+    weblogic.sha256: 065ca357e98551db1b17e71645ddeacffe5acdac43d4eae44c154952a7474a40
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -3334,8 +3334,10 @@ spec:
                           skipWaitingCohEndangeredState:
                             default: false
                             description: For graceful shutdown only, set to true to
-                              avoid waiting for Coherence Cache Cluster HAStatus to
-                              not in ENDANGERDED status. Defaults to true.
+                              skip waiting for Coherence Cache Cluster service MBean
+                              HAStatus in safe state before shutdown. By default,
+                              the operator will wait until it is safe to shutdown
+                              the Coherence Cache Cluster. Defaults to false.
                             type: boolean
                           ignoreSessions:
                             default: false
@@ -6422,9 +6424,11 @@ spec:
                     properties:
                       skipWaitingCohEndangeredState:
                         default: false
-                        description: For graceful shutdown only, set to true to avoid
-                          waiting for Coherence Cache Cluster HAStatus to not in ENDANGERDED
-                          status. Defaults to true.
+                        description: For graceful shutdown only, set to true to skip
+                          waiting for Coherence Cache Cluster service MBean HAStatus
+                          in safe state before shutdown. By default, the operator
+                          will wait until it is safe to shutdown the Coherence Cache
+                          Cluster. Defaults to false.
                         type: boolean
                       ignoreSessions:
                         default: false
@@ -9170,8 +9174,10 @@ spec:
                             skipWaitingCohEndangeredState:
                               default: false
                               description: For graceful shutdown only, set to true
-                                to avoid waiting for Coherence Cache Cluster HAStatus
-                                to not in ENDANGERDED status. Defaults to true.
+                                to skip waiting for Coherence Cache Cluster service
+                                MBean HAStatus in safe state before shutdown. By default,
+                                the operator will wait until it is safe to shutdown
+                                the Coherence Cache Cluster. Defaults to false.
                               type: boolean
                             ignoreSessions:
                               default: false

@@ -46,9 +46,10 @@ public class Shutdown {
   private Boolean waitForAllSessions;
 
   @Description(
-          "For graceful shutdown only, set to true to avoid waiting for Coherence Cache Cluster"
-                  + " HAStatus to not in ENDANGERDED status."
-                  + " Defaults to true.")
+          "For graceful shutdown only, set to true to skip waiting for Coherence Cache Cluster service MBean HAStatus"
+                  + " in safe state before shutdown. By default, the operator will wait until it is"
+                  + " safe to shutdown the Coherence Cache Cluster."
+                  + " Defaults to false.")
   @Default(boolDefault = false)
   private Boolean skipWaitingCohEndangeredState;
 
