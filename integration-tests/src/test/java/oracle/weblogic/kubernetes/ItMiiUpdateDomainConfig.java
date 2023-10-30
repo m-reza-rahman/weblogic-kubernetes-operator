@@ -1030,36 +1030,6 @@ class ItMiiUpdateDomainConfig {
           .append(");")
           .append("echo ${status}");
     }
-    /*
-    if (OKE_CLUSTER) {
-      checkCluster = new StringBuffer(KUBERNETES_CLI)
-          .append(" exec -n ")
-          .append(domainNamespace)
-          .append(" ")
-          .append(adminServerPodName)
-          .append(" -- curl --user ")
-          .append(ADMIN_USERNAME_DEFAULT)
-          .append(":")
-          .append(ADMIN_PASSWORD_DEFAULT)
-          .append(" ")
-          .append("http://" + hostAndPort)
-          .append("/management/tenant-monitoring/servers/")
-          .append(managedServer)
-          .append(" --silent --show-error -o /dev/null -w %{http_code}");
-    } else {
-      checkCluster = new StringBuffer("status=$(curl --user ");
-      checkCluster.append(ADMIN_USERNAME_DEFAULT)
-          .append(":")
-          .append(ADMIN_PASSWORD_DEFAULT)
-          .append(" ")
-          .append("http://" + hostAndPort)
-          .append("/management/tenant-monitoring/servers/")
-          .append(managedServer)
-          .append(" --silent --show-error ")
-          .append(" -o /dev/null")
-          .append(" -w %{http_code});")
-          .append("echo ${status}");
-    }*/
 
     logger.info("checkManagedServerConfiguration: curl command {0}", new String(checkCluster));
     verifyCommandResultContainsMsg(new String(checkCluster), "200");
