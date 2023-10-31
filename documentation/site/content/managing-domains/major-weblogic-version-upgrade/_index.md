@@ -11,7 +11,7 @@ This document provides guidelines for upgrading WLS and FMW/JRF infrastructure d
 
 In general, the process for upgrading WLS and FMW/JRF infrastructure domains in Kubernetes is similar to upgrading domains on premises. For a thorough understanding, we suggest that you read the [Fusion Middleware Upgrade Guide](https://docs.oracle.com/en/middleware/fusion-middleware/12.2.1.4/asmas/planning-upgrade-oracle-fusion-middleware-12c.html#GUID-D9CEE7E2-5062-4086-81C7-79A33A200080).
 
-Before the upgrade, you must do the following:
+**Before the upgrade**, you must do the following:
 
 - If your [domain home source type]({{< relref "/managing-domains/choosing-a-model/_index.md" >}}) is Domain on Persistent Volume (DoPV), then back up the domain home.
 - If your domain type is `JRF`:
@@ -29,6 +29,8 @@ Before the upgrade, you must do the following:
 
 {{% notice note %}} According to My Oracle Support [Doc ID 2752458.1](https://support.oracle.com/epmos/faces/DocumentDisplay?id=2752458.1), if you are using an FMW/JRF domain and upgrading from 12.2.1.3 to 12.2.1.4, then before upgrading, you do _not_ need to run the Upgrade Assistant or Reconfiguration Wizard, but we recommend moving the domain to a persistent volume.  See [Move MII/JRF domains to PV]({{< relref "/managing-domains/model-in-image/move-to-pv.md" >}}).
 {{% /notice %}}
+
+To upgrade WLS and FMW/JRF infrastructure domains, use the following procedure.
 
 1. Shut down the domain by patching the domain and/or cluster spec `serverStartPolicy` to `Never`. For example:
    ```

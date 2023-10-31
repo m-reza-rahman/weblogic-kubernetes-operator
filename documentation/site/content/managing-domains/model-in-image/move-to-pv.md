@@ -22,7 +22,7 @@ If you cannot move the domain to a persistent volume right now, you can use the 
 2. Follow the steps in [Upgrade managed domains]({{< relref "/managing-domains/major-weblogic-version-upgrade/_index.md" >}}).
 3. If you are using an auxiliary image in your MII/JRF domain, then it will be used as a domain creation image. If you are _not_ using an auxiliary image in your MII/JRF domain, then create a [Domain creation image]({{< relref "/managing-domains/domain-on-pv/domain-creation-images.md" >}}).
 4. You can delete the old domain resource YAML file by using this command: `$ kubectl delete -f <original domain resource YAML>`.
-5. Create a new domain resource YAML file.  You should have at least the following changes:
+5. Then, create a new domain resource YAML file.  You should have at least the following changes:
 
 
    ```
