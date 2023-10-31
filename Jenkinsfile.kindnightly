@@ -60,7 +60,7 @@ def kind_k8s_map = [
     ]
 ]
 def _kind_image = null
-CRON_SETTINGS = '''H 2 * * * % MAVEN_PROFILE_NAME=kind-parallel'''
+CRON_SETTINGS = '''H 20 * * * % MAVEN_PROFILE_NAME=kind-parallel'''
 
 
 pipeline {
