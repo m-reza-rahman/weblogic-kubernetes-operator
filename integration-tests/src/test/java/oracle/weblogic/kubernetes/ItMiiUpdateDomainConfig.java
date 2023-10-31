@@ -265,7 +265,7 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
     String curlString = new StringBuffer()
-          .append("curl --user ")
+          .append("curl -g --user ")
           .append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
@@ -922,7 +922,7 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
-    checkCluster = new StringBuffer("status=$(curl --user ");
+    checkCluster = new StringBuffer("status=$(curl -g --user ");
     checkCluster.append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
@@ -970,7 +970,7 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
     ExecResult result = null;
-    curlString = new StringBuffer("curl --user ")
+    curlString = new StringBuffer("curl -g --user ")
          .append(ADMIN_USERNAME_DEFAULT)
          .append(":")
          .append(ADMIN_PASSWORD_DEFAULT)

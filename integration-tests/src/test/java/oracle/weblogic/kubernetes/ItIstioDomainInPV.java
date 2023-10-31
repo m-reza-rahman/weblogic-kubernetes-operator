@@ -324,14 +324,14 @@ class ItIstioDomainInPV  {
     // In internal OKE env, use Istio EXTERNAL-IP;
     // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = hostName.equals(K8S_NODEPORT_HOST) ? K8S_NODEPORT_HOST + ":" + istioIngressPort : hostName;
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
 
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
-    if (!WEBLOGIC_SLIM) {
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
+    if (!WEBLOGIC_SLIM) {      
       String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
       boolean checkConsole =
           checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
@@ -352,10 +352,6 @@ class ItIstioDomainInPV  {
 
     ExecResult result = null;
     if (isWebLogicPsuPatchApplied()) {
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
       String curlCmd2 = "curl -g -j -sk --show-error --noproxy '*' "
           + " -H 'Host: " + domainNamespace + ".org'"
           + " --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
@@ -381,10 +377,6 @@ class ItIstioDomainInPV  {
     }
 
     Path archivePath = Paths.get(testWebAppWarLoc);
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
     if (OKE_CLUSTER) {
       String managedServerPrefix = domainUid + "-managed-";
       String target = "{identity: [clusters,'" + clusterName + "']}";

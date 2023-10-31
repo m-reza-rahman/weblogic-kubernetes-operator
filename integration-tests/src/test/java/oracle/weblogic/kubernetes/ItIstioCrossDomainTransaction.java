@@ -449,7 +449,7 @@ class ItIstioCrossDomainTransaction {
   @DisplayName("Check cross domain transaction with istio and with TMAfterTLogBeforeCommitExit property commits")
   @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER", matches = "true")
   void testIstioCrossDomainTransactionWithFailInjection() {
-    String curlRequest = String.format("curl -v --show-error --noproxy '*' "
+    String curlRequest = String.format("curl -g -v --show-error --noproxy '*' "
         + "-H 'host:domain1-" + domain1Namespace + ".org' "
         + "http://%s:%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
             K8S_NODEPORT_HOST, istioIngressPort, domain1Namespace, domain2Namespace);
@@ -508,7 +508,7 @@ class ItIstioCrossDomainTransaction {
             + "cf=jms.ClusterConnectionFactory&"
             + "action=send&"
             + "dest=jms/testCdtUniformTopic\"", hostAndPort, domain2Namespace)
-        : String.format("curl -v --show-error --noproxy '*' "
+        : String.format("curl -g -v --show-error --noproxy '*' "
             + "-H 'host:domain1-" + domain1Namespace + ".org' "
             + "\"http://%s:%s/jmsservlet/jmstest?"
             + "url=t3://domain2-cluster-cluster-1.%s:8001&"
@@ -547,7 +547,7 @@ class ItIstioCrossDomainTransaction {
             + "\"http://%s/jmsservlet/jmstest?"
             + "url=t3://localhost:7001&"
             + "action=receive&dest=jms.testAccountingQueue\"", hostAndPort)
-        : String.format("curl -v --show-error --noproxy '*' "
+        : String.format("curl -g -v --show-error --noproxy '*' "
             + "-H 'host:domain1-" + domain1Namespace + ".org' "
             + "\"http://%s:%s/jmsservlet/jmstest?"
             + "url=t3://localhost:7001&"

@@ -463,7 +463,7 @@ class ItManagedCoherence {
 
   private boolean checkCoheranceApp(String hostName, String hostAndPort) {
 
-    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-X POST -H 'host: ")
