@@ -102,6 +102,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+
 /**
  * This test class verifies dynamic changes to domain resource and configuration
  * by modifying the associated configmap with a model-in-image domain.
