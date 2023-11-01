@@ -33,6 +33,7 @@ import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_REPO_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_REPO_URL;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_CHART_NAME;
@@ -216,6 +217,10 @@ public class LoadBalancerUtils {
         .repoUrl(TRAEFIK_REPO_URL)
         .repoName(TRAEFIK_REPO_NAME)
         .chartName(TRAEFIK_CHART_NAME);
+    if (OKE_CLUSTER) {
+      traefikHelmParams.annotations(
+          "service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode=\"None\"");
+    }
 
     // Traefik chart values to override
     TraefikParams traefikParams = new TraefikParams()

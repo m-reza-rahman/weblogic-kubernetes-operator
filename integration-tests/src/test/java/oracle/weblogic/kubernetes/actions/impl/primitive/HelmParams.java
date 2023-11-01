@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl.primitive;
@@ -17,6 +17,8 @@ public class HelmParams {
   private String chartValuesFile;
   private String filter;
   private String chartVersion;
+
+  private String annotations;
 
   public HelmParams releaseName(String releaseName) {
     this.releaseName = releaseName;
@@ -63,6 +65,11 @@ public class HelmParams {
     return this;
   }
 
+  public HelmParams annotations(String annotations) {
+    this.annotations = annotations;
+    return this;
+  }
+
   public String getReleaseName() {
     return releaseName;
   }
@@ -97,6 +104,10 @@ public class HelmParams {
 
   public String getChartVersion() {
     return chartVersion;
+  }
+
+  public String getAnnotations() {
+    return annotations;
   }
 
 }
