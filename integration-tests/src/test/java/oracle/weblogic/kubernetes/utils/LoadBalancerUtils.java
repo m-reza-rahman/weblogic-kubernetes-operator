@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -171,6 +172,11 @@ public class LoadBalancerUtils {
       nginxParams
           .nodePortsHttp(nodeportshttp)
           .nodePortsHttps(nodeportshttps);
+    }
+    if (K8S_NODEPORT_HOST.contains(":")) {
+      nginxParams.ipFamilies(Arrays.asList("IPv6"));
+    } else {
+      nginxParams.ipFamilies(Arrays.asList("IPv4"));
     }
 
     // install NGINX

@@ -4,6 +4,7 @@
 package oracle.weblogic.kubernetes.actions.impl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -46,8 +47,8 @@ public class NginxParams {
   private String nginxImageTag = NGINX_INGRESS_IMAGE_TAG;
   private String nginxImageDigest = NGINX_INGRESS_IMAGE_DIGEST;
   private String imageRepoSecret;
-  private String ipFamilies = null;
-  private String ipFamilyPolicy = null;
+  private List<String> ipFamilies;
+  private String ipFamilyPolicy = "SingleStack";
 
   public NginxParams() {
     ingressClassName = UniqueName.uniqueName("nginx-");
@@ -101,7 +102,7 @@ public class NginxParams {
     return this;
   }
   
-  public NginxParams ipFamilies(String ipFamilies) {
+  public NginxParams ipFamilies(List<String> ipFamilies) {
     this.ipFamilies = ipFamilies;
     return this;
   }
@@ -139,10 +140,10 @@ public class NginxParams {
     values.put(NGINX_IMAGE_DIGEST, nginxImageDigest);    
     if (imageRepoSecret != null) {
       values.put(IMAGE_PULL_SECRET, imageRepoSecret);
-    }    
-    values.values().removeIf(Objects::isNull);
+    }
     values.put(IP_FAMILY_POLICY, ipFamilyPolicy);
     values.put(IP_FAMILIES, ipFamilies);
+    values.values().removeIf(Objects::isNull);
     return values;
   }
 }
