@@ -136,15 +136,13 @@ public class NginxParams {
     values.put(NGINX_IMAGE_REGISTRY, imageRegistry);
     values.put(NGINX_IMAGE, nginxImage);
     values.put(NGINX_IMAGE_TAG, nginxImageTag);
-    values.put(NGINX_IMAGE_DIGEST, nginxImageDigest);
-    values.put(IP_FAMILY_POLICY, ipFamilyPolicy);
-    values.put(IP_FAMILIES, ipFamilies);
-    
+    values.put(NGINX_IMAGE_DIGEST, nginxImageDigest);    
     if (imageRepoSecret != null) {
       values.put(IMAGE_PULL_SECRET, imageRepoSecret);
-    }
-    
+    }    
     values.values().removeIf(Objects::isNull);
+    values.put(IP_FAMILY_POLICY, ipFamilyPolicy);
+    values.put(IP_FAMILIES, ipFamilies);
     return values;
   }
 }
