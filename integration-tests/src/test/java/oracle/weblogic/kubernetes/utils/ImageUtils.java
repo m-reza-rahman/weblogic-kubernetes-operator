@@ -323,6 +323,14 @@ public class ImageUtils {
     final String imageName = DOMAIN_IMAGES_PREFIX + imageNameBase;
     final String image = imageName + ":" + imageTag;
 
+    // Generates a "unique" name by choosing a random name from
+    // 26^4 possible combinations.
+    Random random = new Random(System.currentTimeMillis());
+    char[] cacheSfx = new char[4];
+    for (int i = 0; i < cacheSfx.length; i++) {
+      cacheSfx[i] = (char) (random.nextInt(25) + (int) 'a');
+    }
+
     List<String> archiveList = new ArrayList<>();
     if (appSrcDirList != null && appSrcDirList.size() != 0 && appSrcDirList.get(0) != null) {
       List<String> archiveAppsList = new ArrayList<>();
@@ -343,7 +351,8 @@ public class ImageUtils {
 
       if (archiveAppsList.size() != 0 && archiveAppsList.get(0) != null) {
         assertTrue(archiveApp(defaultAppParams()
-            .srcDirList(archiveAppsList)));
+            .srcDirList(archiveAppsList)
+            .appArchiveDir(ARCHIVE_DIR + cacheSfx)));
         String appPath = archiveAppsList.get(0);
 
         //archive provided ear or war file
@@ -363,6 +372,7 @@ public class ImageUtils {
           for (String buildAppDirs : buildAppDirList) {
             assertTrue(buildAppArchive(defaultAppParams()
                     .srcDirList(Collections.singletonList(buildAppDirs))
+                    .appArchiveDir(ARCHIVE_DIR + cacheSfx)
                     .appName(buildAppDirs)),
                 String.format("Failed to create app archive for %s", buildAppDirs));
             zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, buildAppDirs);
@@ -372,7 +382,8 @@ public class ImageUtils {
         } else if (buildCoherence) {
           // build the Coherence GAR file
           assertTrue(buildCoherenceArchive(defaultAppParams()
-                  .srcDirList(buildAppDirList)),
+                  .srcDirList(buildAppDirList)
+                  .appArchiveDir(ARCHIVE_DIR + cacheSfx)),
               String.format("Failed to create app archive for %s", buildAppDirList.get(0)));
           zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, buildAppDirList.get(0));
           // build the archive list
@@ -381,6 +392,7 @@ public class ImageUtils {
           for (String appName : buildAppDirList) {
             assertTrue(buildAppArchive(defaultAppParams()
                     .srcDirList(Collections.singletonList(appName))
+                    .appArchiveDir(ARCHIVE_DIR + cacheSfx)
                     .appName(appName)),
                 String.format("Failed to create app archive for %s", appName));
             zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, appName);
@@ -392,14 +404,6 @@ public class ImageUtils {
     }
 
     // Set additional environment variables for WIT
-
-    // Generates a "unique" name by choosing a random name from
-    // 26^4 possible combinations.
-    Random random = new Random(System.currentTimeMillis());
-    char[] cacheSfx = new char[4];
-    for (int i = 0; i < cacheSfx.length; i++) {
-      cacheSfx[i] = (char) (random.nextInt(25) + (int) 'a');
-    }
     String cacheDir = WIT_BUILD_DIR + "/cache-" + new String(cacheSfx);
     logger.info("WLSIMG_CACHEDIR is set to {0}", cacheDir);
     logger.info("WLSIMG_BLDDIR is set to {0}", WIT_BUILD_DIR);
