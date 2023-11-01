@@ -188,8 +188,10 @@ public class Helm {
         Map<String, Object> item = (Map<String, Object>) entry.getValue();
         int index = 0;
         for (Map.Entry<String,Object> itemEntry : item.entrySet()) {
-          valuesString.append(" --set \"" + entry.getKey() + "[" + index + "]."
-              + itemEntry.getKey() + "=" + itemEntry.getValue() + "\"");
+          // valuesString.append(" --set \"" + entry.getKey() + "[" + index + "]."
+          //    + itemEntry.getKey() + "=" + itemEntry.getValue() + "\"");
+          valuesString.append(" --set " + entry.getKey() + "[" + index + "]."
+              + itemEntry.getKey() + "=" + itemEntry.getValue());
           ++index;
         }
       } else {

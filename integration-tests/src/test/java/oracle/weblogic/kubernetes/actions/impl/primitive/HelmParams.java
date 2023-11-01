@@ -62,7 +62,7 @@ public class HelmParams {
     this.chartVersion = chartVersion;
     return this;
   }
-  
+
   public String getReleaseName() {
     return releaseName;
   }

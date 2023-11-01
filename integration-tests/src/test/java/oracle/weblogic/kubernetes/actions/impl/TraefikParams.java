@@ -33,7 +33,7 @@ public class TraefikParams {
   private static final String TRAEFIK_IMAGE_TAG = "image.tag";
 
   private static final String SERVICE_ANNOTATIONS =
-      "service.annotations.'service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode'";
+      "service.annotations.'service\\.beta\\.kubernetes\\.io/oci-load-balancer-security-list-management-mode'";
 
   public TraefikParams nodePortsHttp(int nodePortsHttp) {
     this.nodePortsHttp = nodePortsHttp;
