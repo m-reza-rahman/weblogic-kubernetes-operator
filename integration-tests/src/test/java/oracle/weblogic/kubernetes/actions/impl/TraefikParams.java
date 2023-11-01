@@ -24,11 +24,16 @@ public class TraefikParams {
   private String traefikImageTag = TRAEFIK_INGRESS_IMAGE_TAG;
   private String traefikRegistry = TRAEFIK_INGRESS_IMAGE_REGISTRY;
 
+  private String serviceAnnotations;
+
   private static final String NODEPORTS_HTTP = "ports.web.nodePort";
   private static final String NODEPORTS_HTTPS = "ports.websecure.nodePort";
   private static final String TRAEFIK_IMAGE = "image.repository";
   private static final String TRAEFIK_IMAGE_REGISTRY = "image.registry";
   private static final String TRAEFIK_IMAGE_TAG = "image.tag";
+
+  private static final String SERVICE_ANNOTATIONS =
+      "service.annotations.'service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode'";
 
   public TraefikParams nodePortsHttp(int nodePortsHttp) {
     this.nodePortsHttp = nodePortsHttp;
@@ -37,6 +42,11 @@ public class TraefikParams {
 
   public TraefikParams nodePortsHttps(int nodePortsHttps) {
     this.nodePortsHttps = nodePortsHttps;
+    return this;
+  }
+
+  public TraefikParams serviceAnnotations(String serviceAnnotations) {
+    this.serviceAnnotations = serviceAnnotations;
     return this;
   }
 
@@ -82,6 +92,7 @@ public class TraefikParams {
     values.put(TRAEFIK_IMAGE, traefikImage);
     values.put(TRAEFIK_IMAGE_REGISTRY, traefikRegistry);
     values.put(TRAEFIK_IMAGE_TAG, traefikImageTag);
+    values.put(SERVICE_ANNOTATIONS, serviceAnnotations);
 
     values.values().removeIf(Objects::isNull);
     return values;

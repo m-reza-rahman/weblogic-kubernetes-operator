@@ -18,8 +18,6 @@ public class HelmParams {
   private String filter;
   private String chartVersion;
 
-  private String annotations;
-
   public HelmParams releaseName(String releaseName) {
     this.releaseName = releaseName;
     return this;
@@ -64,12 +62,7 @@ public class HelmParams {
     this.chartVersion = chartVersion;
     return this;
   }
-
-  public HelmParams annotations(String annotations) {
-    this.annotations = annotations;
-    return this;
-  }
-
+  
   public String getReleaseName() {
     return releaseName;
   }
@@ -104,10 +97,6 @@ public class HelmParams {
 
   public String getChartVersion() {
     return chartVersion;
-  }
-
-  public String getAnnotations() {
-    return annotations;
   }
 
 }

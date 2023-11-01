@@ -217,10 +217,6 @@ public class LoadBalancerUtils {
         .repoUrl(TRAEFIK_REPO_URL)
         .repoName(TRAEFIK_REPO_NAME)
         .chartName(TRAEFIK_CHART_NAME);
-    if (OKE_CLUSTER) {
-      traefikHelmParams.annotations(
-          "service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode=\"None\"");
-    }
 
     // Traefik chart values to override
     TraefikParams traefikParams = new TraefikParams()
@@ -228,6 +224,9 @@ public class LoadBalancerUtils {
     traefikParams
         .nodePortsHttp(nodeportshttp)
         .nodePortsHttps(nodeportshttps);
+    if (OKE_CLUSTER) {
+      traefikParams.serviceAnnotations("None");
+    }
 
     // install Traefik
     assertThat(installTraefik(traefikParams))
