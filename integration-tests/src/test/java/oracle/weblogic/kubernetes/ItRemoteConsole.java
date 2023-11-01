@@ -229,7 +229,7 @@ class ItRemoteConsole {
     logger.info("The hostAndPort is {0}", hostAndPort);
 
     //verify WebLogic console is accessible through default-secure nodeport
-    String curlCmd = "curl -sk --show-error --noproxy '*' "
+    String curlCmd = "curl -g -sk --show-error --noproxy '*' "
           + " https://" + hostAndPort
           + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
     logger.info("Executing WebLogic console default-secure nodeport curl command {0}", curlCmd);
@@ -241,7 +241,7 @@ class ItRemoteConsole {
     //curl -sk -v --show-error --user username:password http://localhost:8012/api/providers/AdminServerConnection -H
     //"Content-Type:application/json" --data "{ \"name\": \"asconn\", \"domainUrl\": \"https://myhost://nodeport\"}"
     //--write-out %{http_code} -o /dev/null
-    curlCmd = "curl -sk -v --show-error --noproxy '*' --user "
+    curlCmd = "curl -g -sk -v --show-error --noproxy '*' --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " http://localhost:8012/api/providers/AdminServerConnection -H  "
         + "\"" + "Content-Type:application/json" + "\""
