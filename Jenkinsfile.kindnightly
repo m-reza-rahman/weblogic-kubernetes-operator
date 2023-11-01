@@ -108,6 +108,14 @@ pipeline {
                description: 'The branch to run the tests on',
                defaultValue: 'main'
         )
+	choice(name: 'IP_FAMILY',
+               description: 'Ip Family.',
+               choices: [
+                   'ipv4',
+                   'ipv6',
+                   'dual'
+               ]
+        )
         choice(name: 'MAVEN_PROFILE_NAME',
                 description: 'Profile to use in mvn command to run the tests.  Possible values are kind-parallel (the default), kind-sequential, kind-upgrade,toolkits-srg, wls-srg and integration-tests. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                 choices: [
@@ -525,7 +533,11 @@ EOF
                                 export KUBECONFIG=${kubeconfig_file}
                                 mkdir -m777 -p "${WORKSPACE}/.mvn"
                                 touch ${WORKSPACE}/.mvn/maven.config
-                                K8S_NODEPORT_HOST=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
+				address_stack=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
+				addresses=($address_stack)
+				echo address_stack
+				echo "IPV4 address ${addresses[0]}"
+				K8S_NODEPORT_HOST=${addresses[0]}
                                 if [ "${MAVEN_PROFILE_NAME}" == "kind-sequential" ]; then
                                     PARALLEL_RUN='false'
                                 fi
