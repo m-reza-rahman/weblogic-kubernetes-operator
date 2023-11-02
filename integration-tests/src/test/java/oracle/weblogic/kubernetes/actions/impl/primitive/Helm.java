@@ -193,10 +193,16 @@ public class Helm {
           ++index;
         }
       } else {
-        valuesString.append(String.format(" --set %s=%s",
-            entry.getKey(), entry.getValue().toString()
-                .replaceAll("\\[", "{")
-                .replaceAll("\\]", "}")));
+        String value = entry.getValue().toString()
+            .replaceAll("\\[", "{")
+            .replaceAll("\\]", "}");
+        if (entry.getKey().contains("annotations")) {
+          valuesString.append(String.format(" --set %s=%s",
+              entry.getKey(), value));
+        } else {
+          valuesString.append(String.format(" --set \"%s=%s\"",
+              entry.getKey(), value));
+        }
 
       }
     }
