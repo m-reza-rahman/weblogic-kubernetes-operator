@@ -360,7 +360,7 @@ public class ImageUtils {
             appPath.lastIndexOf("."));
 
         // build the archive list
-        String zipAppFile = String.format("%s/%s.zip", ARCHIVE_DIR, appName);
+        String zipAppFile = String.format("%s/%s.zip", ARCHIVE_DIR + cacheSfx, appName);
         archiveList.add(zipAppFile);
 
       }
@@ -375,7 +375,7 @@ public class ImageUtils {
                     .appArchiveDir(ARCHIVE_DIR + cacheSfx)
                     .appName(buildAppDirs)),
                 String.format("Failed to create app archive for %s", buildAppDirs));
-            zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, buildAppDirs);
+            zipFile = String.format("%s/%s.zip", ARCHIVE_DIR + cacheSfx, buildAppDirs);
             // build the archive list
             archiveList.add(zipFile);
           }
@@ -385,7 +385,7 @@ public class ImageUtils {
                   .srcDirList(buildAppDirList)
                   .appArchiveDir(ARCHIVE_DIR + cacheSfx)),
               String.format("Failed to create app archive for %s", buildAppDirList.get(0)));
-          zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, buildAppDirList.get(0));
+          zipFile = String.format("%s/%s.zip", ARCHIVE_DIR + cacheSfx, buildAppDirList.get(0));
           // build the archive list
           archiveList.add(zipFile);
         } else {
@@ -395,7 +395,7 @@ public class ImageUtils {
                     .appArchiveDir(ARCHIVE_DIR + cacheSfx)
                     .appName(appName)),
                 String.format("Failed to create app archive for %s", appName));
-            zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, appName);
+            zipFile = String.format("%s/%s.zip", ARCHIVE_DIR + cacheSfx, appName);
             // build the archive list
             archiveList.add(zipFile);
           }
