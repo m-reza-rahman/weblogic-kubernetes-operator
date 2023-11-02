@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -497,6 +498,7 @@ class ItMultiDomainModelsScale {
     for (String appName : appSrcDirList) {
       assertTrue(buildAppArchive(defaultAppParams()
               .srcDirList(Collections.singletonList(appName))
+              .appArchiveDir(ARCHIVE_DIR + ThreadLocalRandom.current().nextInt(1000, 5000))
               .appName(appName)),
           String.format("Failed to create app archive for %s", appName));
 

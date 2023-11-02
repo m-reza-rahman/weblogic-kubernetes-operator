@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.annotations.DisabledOnSlimImage;
@@ -258,6 +259,7 @@ class ItMultiDomainModels {
     // build app
     assertTrue(buildAppArchive(defaultAppParams()
             .srcDirList(Collections.singletonList(MII_BASIC_APP_NAME))
+            .appArchiveDir(ARCHIVE_DIR + ThreadLocalRandom.current().nextInt(1000, 5000))
             .appName(MII_BASIC_APP_NAME)),
         String.format("Failed to create app archive for %s", MII_BASIC_APP_NAME));
 
