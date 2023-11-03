@@ -11,6 +11,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.kubernetes.actions.impl.AppParams;
 import oracle.weblogic.kubernetes.annotations.DisabledOnSlimImage;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -257,14 +258,16 @@ class ItMultiDomainModels {
         "weblogicenc", "weblogicenc");
 
     // build app
-    assertTrue(buildAppArchive(defaultAppParams()
-            .srcDirList(Collections.singletonList(MII_BASIC_APP_NAME))
-            .appArchiveDir(ARCHIVE_DIR + ThreadLocalRandom.current().nextInt(1000, 5000))
-            .appName(MII_BASIC_APP_NAME)),
+    AppParams appParams = defaultAppParams()
+        .srcDirList(Collections.singletonList(MII_BASIC_APP_NAME))
+        .appArchiveDir(ARCHIVE_DIR + ThreadLocalRandom.current().nextInt(1000, 5000))
+        .appName(MII_BASIC_APP_NAME);
+
+    assertTrue(buildAppArchive(appParams),
         String.format("Failed to create app archive for %s", MII_BASIC_APP_NAME));
 
     // image1 with model files for domain config, ds, app and wdt install files
-    List<String> archiveList = Collections.singletonList(ARCHIVE_DIR + "/" + MII_BASIC_APP_NAME + ".zip");
+    List<String> archiveList = Collections.singletonList(appParams.appArchiveDir() + "/" + MII_BASIC_APP_NAME + ".zip");
 
     List<String> modelList = new ArrayList<>();
     modelList.add(MODEL_DIR + "/" + MII_BASIC_WDT_MODEL_FILE);
