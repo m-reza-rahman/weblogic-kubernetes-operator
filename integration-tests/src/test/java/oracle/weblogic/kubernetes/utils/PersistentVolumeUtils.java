@@ -501,11 +501,9 @@ public class PersistentVolumeUtils {
           + mountPath
           + "/. -maxdepth 1 ! -name '.snapshot' ! -name '.' -print0 | xargs -r -0  chown -R 1000:1000";
     }
-
     createTestRepoSecret(namespace);
     createJobToChangePermissionsOnPvHostPath(pvName,
         pvcName, namespace,
         mountPath, argCommand);
   }
-
 }
