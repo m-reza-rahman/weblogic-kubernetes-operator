@@ -9,7 +9,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -499,7 +498,7 @@ class ItMultiDomainModelsScale {
     for (String appName : appSrcDirList) {
       AppParams appParams = defaultAppParams()
           .srcDirList(Collections.singletonList(appName))
-          .appArchiveDir(ARCHIVE_DIR + ThreadLocalRandom.current().nextInt(1000, 5000))
+          .appArchiveDir(ARCHIVE_DIR + ItMultiDomainModelsScale.class.getSimpleName())
           .appName(appName);
 
       assertTrue(buildAppArchive(appParams),

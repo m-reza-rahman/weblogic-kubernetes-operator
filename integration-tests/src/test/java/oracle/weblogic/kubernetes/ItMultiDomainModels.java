@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
 
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.AppParams;
@@ -260,7 +259,7 @@ class ItMultiDomainModels {
     // build app
     AppParams appParams = defaultAppParams()
         .srcDirList(Collections.singletonList(MII_BASIC_APP_NAME))
-        .appArchiveDir(ARCHIVE_DIR + ThreadLocalRandom.current().nextInt(1000, 5000))
+        .appArchiveDir(ARCHIVE_DIR + this.getClass().getSimpleName())
         .appName(MII_BASIC_APP_NAME);
 
     assertTrue(buildAppArchive(appParams),

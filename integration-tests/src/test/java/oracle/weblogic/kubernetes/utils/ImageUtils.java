@@ -19,6 +19,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
 import oracle.weblogic.kubernetes.TestConstants;
+import oracle.weblogic.kubernetes.actions.impl.AppParams;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Image;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
@@ -349,10 +350,10 @@ public class ImageUtils {
         }
       }
 
+      AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + cacheSfx);
+
       if (archiveAppsList.size() != 0 && archiveAppsList.get(0) != null) {
-        assertTrue(archiveApp(defaultAppParams()
-            .srcDirList(archiveAppsList)
-            .appArchiveDir(ARCHIVE_DIR + cacheSfx)));
+        assertTrue(archiveApp(appParams.srcDirList(archiveAppsList)));
         String appPath = archiveAppsList.get(0);
 
         //archive provided ear or war file
@@ -360,9 +361,8 @@ public class ImageUtils {
             appPath.lastIndexOf("."));
 
         // build the archive list
-        String zipAppFile = String.format("%s/%s.zip", ARCHIVE_DIR + cacheSfx, appName);
+        String zipAppFile = String.format("%s/%s.zip", appParams.appArchiveDir(), appName);
         archiveList.add(zipAppFile);
-
       }
 
       if (buildAppDirList.size() != 0 && buildAppDirList.get(0) != null) {
@@ -370,32 +370,28 @@ public class ImageUtils {
         String zipFile = "";
         if (oneArchiveContainsMultiApps) {
           for (String buildAppDirs : buildAppDirList) {
-            assertTrue(buildAppArchive(defaultAppParams()
+            assertTrue(buildAppArchive(appParams
                     .srcDirList(Collections.singletonList(buildAppDirs))
-                    .appArchiveDir(ARCHIVE_DIR + cacheSfx)
                     .appName(buildAppDirs)),
                 String.format("Failed to create app archive for %s", buildAppDirs));
-            zipFile = String.format("%s/%s.zip", ARCHIVE_DIR + cacheSfx, buildAppDirs);
+            zipFile = String.format("%s/%s.zip", appParams.appArchiveDir(), buildAppDirs);
             // build the archive list
             archiveList.add(zipFile);
           }
         } else if (buildCoherence) {
           // build the Coherence GAR file
-          assertTrue(buildCoherenceArchive(defaultAppParams()
-                  .srcDirList(buildAppDirList)
-                  .appArchiveDir(ARCHIVE_DIR + cacheSfx)),
+          assertTrue(buildCoherenceArchive(appParams.srcDirList(buildAppDirList)),
               String.format("Failed to create app archive for %s", buildAppDirList.get(0)));
-          zipFile = String.format("%s/%s.zip", ARCHIVE_DIR + cacheSfx, buildAppDirList.get(0));
+          zipFile = String.format("%s/%s.zip", appParams.appArchiveDir(), buildAppDirList.get(0));
           // build the archive list
           archiveList.add(zipFile);
         } else {
           for (String appName : buildAppDirList) {
-            assertTrue(buildAppArchive(defaultAppParams()
+            assertTrue(buildAppArchive(appParams
                     .srcDirList(Collections.singletonList(appName))
-                    .appArchiveDir(ARCHIVE_DIR + cacheSfx)
                     .appName(appName)),
                 String.format("Failed to create app archive for %s", appName));
-            zipFile = String.format("%s/%s.zip", ARCHIVE_DIR + cacheSfx, appName);
+            zipFile = String.format("%s/%s.zip", appParams.appArchiveDir(), appName);
             // build the archive list
             archiveList.add(zipFile);
           }
