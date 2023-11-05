@@ -1,4 +1,4 @@
-// Copyright (c) 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
@@ -10,8 +10,8 @@ pipeline {
     }
 
     tools {
-        maven 'maven-3.8.5'
-        jdk 'OpenJDK 17.0.2'
+        maven 'maven-3.8.7'
+        jdk 'jdk21'
     }
 
     environment {
@@ -61,12 +61,12 @@ pipeline {
 
         string(name: 'KUBE_VERSION',
                description: 'kube version for oke cluster',
-               defaultValue: '1.26.2'
+               defaultValue: '1.27.2'
         )
         string(name: 'IMAGE_ID',
                        description: 'oci image id for node pool, find image OCID for your region from https://docs.oracle.com/iaas/images/',
                        //defaultValue7.6: 'ocid1.image.oc1.phx.aaaaaaaancucg25pze6m52agxwxmmfszvsdnhp3kvim53pts2tw6mik4xtha'
-                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaanubtknjwx3bra4zvi3kuwgkpiku2brdjjzj5eiv7pimmzfjka4dq'
+                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaaypr5r5drojwytghw6e6mvpjsscrnkuwtmqlmvmix7kjb2zcnc7wa'
                 )
         string(name: 'KUBECTL_VERSION',
                        description: 'kubectl version',
@@ -164,6 +164,10 @@ pipeline {
         booleanParam(name: 'COLLECT_LOGS_ON_SUCCESS',
                      description: 'Collect logs for successful runs. Default is false.',
                      defaultValue: false
+        )
+        string(name: 'REMOTECONSOLE_VERSION',
+               description: 'RemoteConsole version.',
+               defaultValue: '2.4.7'
         )
     }
 
@@ -486,7 +490,7 @@ EOF
                             ssh -o StrictHostKeyChecking=no -i ${WORKSPACE}/rsaokepk opc@${K8S_NODEPORT_HOST} 'sudo /usr/libexec/oci-growfs -y'
                             ssh -o StrictHostKeyChecking=no -i ${WORKSPACE}/rsaokepk opc@${NODE_IP} 'sudo /usr/libexec/oci-growfs -y'
                             mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
-
+                           
                             mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
 
                             if [ -z "${mt_private_ip}" ]; then
@@ -527,6 +531,7 @@ EOF
                             echo "-Dwko.it.prometheus.chart.version=\"${PROMETHEUS_CHART_VERSION}\""                     >> ${WORKSPACE}/.mvn/maven.config
                             echo "-Dwko.it.grafana.chart.version=\"${GRAFANA_CHART_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
                             echo "-Dwko.it.collect.logs.on.success=\"${COLLECT_LOGS_ON_SUCCESS}\""                       >> ${WORKSPACE}/.mvn/maven.config
+                            echo "-Dwko.it.remoteconsole.version=\"${REMOTECONSOLE_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
 
                             echo "${WORKSPACE}/.mvn/maven.config contents:"
                             cat "${WORKSPACE}/.mvn/maven.config"
@@ -608,4 +613,3 @@ EOF
                 }
             }
 }
-

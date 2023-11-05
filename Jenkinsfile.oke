@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
@@ -11,7 +11,7 @@ pipeline {
 
     tools {
         maven 'maven-3.8.7'
-        jdk 'jdk17'
+        jdk 'jdk21'
     }
 
     environment {
@@ -26,7 +26,7 @@ pipeline {
         oci_profile = 'DEFAULT'
         jenkins_user = sh(returnStdout: true, script: "id -nu").trim()
         jenkins_home_directory = sh(returnStdout: true, script: "getent passwd ${jenkins_user} | cut -d: -f6").trim()
-
+        
         oci_config_file_creds = 'wkt-oci-config-file'
         oci_signing_key_creds = 'wkt-oci-signing-key'
 
@@ -66,13 +66,13 @@ pipeline {
 
         string(name: 'OKE_KUBE_VERSION',
                description: 'kube version for oke cluster',
-               defaultValue: '1.26.2'
+               defaultValue: '1.27.2'
         )
         string(name: 'IMAGE_ID',
                        description: 'oci image id for node pool, find image OCID for your region from https://docs.oracle.com/iaas/images/',
-                       //defaultValue7.6: 'ocid1.image.oc1.phx.aaaaaaaancucg25pze6m52agxwxmmfszvsdnhp3kvim53pts2tw6mik4xtha'
-                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaaaizmtmozeudeeuq7o5ir7dkl2bkxbbb3tgomshqbqn6jpomrsjza'
-
+                       //defaultValue OKE1.26.2: 'ocid1.image.oc1.phx.aaaaaaaaaizmtmozeudeeuq7o5ir7dkl2bkxbbb3tgomshqbqn6jpomrsjza'
+                       defaultValue: 'ocid1.image.oc1.phx.aaaaaaaaypr5r5drojwytghw6e6mvpjsscrnkuwtmqlmvmix7kjb2zcnc7wa'
+                       
                 )
         string(name: 'KUBECTL_VERSION',
                        description: 'kubectl version',
@@ -170,6 +170,10 @@ pipeline {
         booleanParam(name: 'COLLECT_LOGS_ON_SUCCESS',
                      description: 'Collect logs for successful runs. Default is false.',
                      defaultValue: false
+        )
+        string(name: 'REMOTECONSOLE_VERSION',
+               description: 'RemoteConsole version.',
+               defaultValue: '2.4.7'
         )
     }
 
@@ -361,7 +365,7 @@ EOF
                 stage('Create OKE cluster') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
-
+                        
                         OCI_PROP_FILE="${WORKSPACE}/terraform/oci.prop"
                         CLUSTER_NAME="${CLUSTER_NAME}"
                         KUBECONFIG ="${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
@@ -548,6 +552,7 @@ EOF
                                 echo "-Dwko.it.prometheus.chart.version=\"${PROMETHEUS_CHART_VERSION}\""                     >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.grafana.chart.version=\"${GRAFANA_CHART_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.collect.logs.on.success=\"${COLLECT_LOGS_ON_SUCCESS}\""                       >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.remoteconsole.version=\"${REMOTECONSOLE_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
 
                                 echo "${WORKSPACE}/.mvn/maven.config contents:"
                                 cat "${WORKSPACE}/.mvn/maven.config"
@@ -570,7 +575,7 @@ EOF
                                     export TEST_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
-
+                                    
                                     if ! mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/oketest.log"; then
                                         echo "integration-tests failed"
                                         exit 1
@@ -638,4 +643,3 @@ EOF
         }
     }
 }
-
