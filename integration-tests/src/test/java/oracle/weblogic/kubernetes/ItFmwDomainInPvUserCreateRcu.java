@@ -99,7 +99,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-sequential")
 @Tag("oke-sequential")
-@Tag("oke-gate")
 public class ItFmwDomainInPvUserCreateRcu {
 
   private static String opNamespace = null;

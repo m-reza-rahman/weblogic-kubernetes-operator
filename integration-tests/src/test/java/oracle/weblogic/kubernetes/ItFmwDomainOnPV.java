@@ -91,7 +91,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("oke-sequential")
-@Tag("oke-gate")
 @Tag("okd-fmw-cert")
 class ItFmwDomainOnPV {
 
