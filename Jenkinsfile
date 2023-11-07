@@ -93,11 +93,6 @@ pipeline {
     }
 
     parameters {
-        string(name: 'BRANCH',
-               description: 'The branch to run the tests on',
-               defaultValue: 'main'
-        )
-
         choice(name: 'MAVEN_PROFILE_NAME',
                 description: 'Profile to use in mvn command to run the tests. Possible values are wls-srg (the default), integration-tests, toolkits-srg, kind-sequential and kind-upgrade. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                 choices: [
@@ -424,12 +419,11 @@ pipeline {
                             if kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
                                 echo "Deleted orphaned kind cluster ${kind_name}"
                             fi
-			    echo "Creating kind cluster with ipv6 address"
                             cat <<EOF | kind create cluster --name "${kind_name}" --kubeconfig "${kubeconfig_file}" --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
-  ipFamily: ipv6
+  podSubnet: 192.168.0.0/16
 containerdConfigPatches:
 - |-
   [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${registry_port}"]
@@ -450,7 +444,6 @@ EOF
                             for node in $(kind get nodes --name "${kind_name}"); do
                                 kubectl annotate node ${node} tilt.dev/registry=localhost:${registry_port};
                             done
-			    kubectl get all -A
 
                             if [ "${kind_network}" != "bridge" ]; then
                                 containers=$(docker network inspect ${kind_network} -f "{{range .Containers}}{{.Name}} {{end}}")
