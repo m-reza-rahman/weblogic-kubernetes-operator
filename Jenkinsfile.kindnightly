@@ -124,7 +124,8 @@ pipeline {
                         'kind-upgrade',
                         'integration-tests',
                         'toolkits-srg',
-                        'wls-srg'
+                        'wls-srg',
+			'ipv6'
                 ]
         )
         string(name: 'IT_TEST',
