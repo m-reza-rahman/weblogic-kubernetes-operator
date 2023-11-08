@@ -606,20 +606,6 @@
             </properties>
         </profile>
         <profile>
-            <id>ipv6</id>
-            <properties>
-                <skipITs>false</skipITs>
-                <excludes-failsafe>
-                  **/*DB*,
-                  **/*Fmw*,
-                  **/*Cross*,
-                </excludes-failsafe>
-                <includes-failsafe>
-                  **/It*
-                </includes-failsafe>
-            </properties>
-        </profile>
-        <profile>
             <id>wko-okd-wls-cert</id>
             <properties>
                 <skipITs>false</skipITs>
