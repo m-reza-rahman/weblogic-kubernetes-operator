@@ -100,7 +100,7 @@ public class TraefikParams {
     values.put(TRAEFIK_IMAGE_REGISTRY, traefikRegistry);
     values.put(TRAEFIK_IMAGE_TAG, traefikImageTag);
     values.put(SERVICE_ANNOTATIONS, serviceAnnotations);
-    values.put(SERVICE_TYPE, )
+    values.put(SERVICE_TYPE, serviceType);
     values.values().removeIf(Objects::isNull);
     return values;
   }
