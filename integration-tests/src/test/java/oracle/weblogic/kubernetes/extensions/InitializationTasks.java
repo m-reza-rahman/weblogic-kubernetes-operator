@@ -295,7 +295,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         }
         
         //install webhook to prevent every operator installation trying to update crd
-        // installWebHookOnlyOperator("DomainOnPvSimplification=true");
+        installWebHookOnlyOperator("DomainOnPvSimplification=true");
 
         // set initialization success to true, not counting the istio installation as not all tests use istio
         isInitializationSuccessful = true;

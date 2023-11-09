@@ -3,7 +3,11 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -20,6 +24,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.BuildApplication;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +38,9 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -43,7 +50,10 @@ import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
+import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
+import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -119,7 +129,7 @@ class ItManagedCoherence {
     }
 
     // install and verify operator
-    /* installAndVerifyOperator(opNamespace, domainNamespace);
+    installAndVerifyOperator(opNamespace, domainNamespace);
 
     // build Coherence applications
     Path distDir = BuildApplication.buildApplication(Paths.get(APP_DIR, COHERENCE_APP_NAME),
@@ -129,7 +139,7 @@ class ItManagedCoherence {
     assertTrue(coherenceAppGarPath.toFile().exists(), "Application archive is not available");
     assertTrue(coherenceAppEarPath.toFile().exists(), "Application archive is not available");
     logger.info("Path of CoherenceApp EAR " + coherenceAppEarPath.toString());
-    logger.info("Path of CoherenceApp GAR " + coherenceAppGarPath.toString()); */
+    logger.info("Path of CoherenceApp GAR " + coherenceAppGarPath.toString());
   }
 
   /**
@@ -142,7 +152,7 @@ class ItManagedCoherence {
   @DisplayName("Two cluster domain with a Coherence cluster and test interaction with cache data")
   void testMultiClusterCoherenceDomain() {
     // create a DomainHomeInImage image using WebLogic Image Tool
-    /* String domImage = createAndVerifyDomainImage();
+    String domImage = createAndVerifyDomainImage();
 
     // create and verify a two-cluster WebLogic domain with a Coherence cluster
     createAndVerifyDomain(domImage);
@@ -186,7 +196,7 @@ class ItManagedCoherence {
       boolean testCompletedSuccessfully = assertDoesNotThrow(()
           -> coherenceCacheTest(clusterHostname, ingressServiceNodePort), "Test Coherence cache failed");
       assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
-    }*/
+    }
   }
 
   private static String createAndVerifyDomainImage() {
