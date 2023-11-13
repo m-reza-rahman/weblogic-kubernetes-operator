@@ -225,7 +225,7 @@ public class LoadBalancerUtils {
         .nodePortsHttp(nodeportshttp)
         .nodePortsHttps(nodeportshttps);
     if (OKE_CLUSTER) {
-       traefikParams.serviceAnnotations("None");
+      traefikParams.serviceAnnotations("None");
       // traefikParams.serviceType("NodePort");
     }
 
