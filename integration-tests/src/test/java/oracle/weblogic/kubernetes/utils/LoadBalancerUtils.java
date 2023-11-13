@@ -221,9 +221,9 @@ public class LoadBalancerUtils {
     // Traefik chart values to override
     TraefikParams traefikParams = new TraefikParams()
         .helmParams(traefikHelmParams);
-    traefikParams
+    /* traefikParams
         .nodePortsHttp(nodeportshttp)
-        .nodePortsHttps(nodeportshttps);
+        .nodePortsHttps(nodeportshttps); */
     if (OKE_CLUSTER) {
       traefikParams.serviceAnnotations("None");
       // traefikParams.serviceType("NodePort");
