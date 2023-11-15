@@ -27,20 +27,22 @@ Typically, this is the preferred method.
 
 **NOTE**: The WLST script uses the value of the environment variable `USER_MEM_ARGS` to control the heap settings of the JVM process.  If you have set the environment variable 
 `USER_MEM_ARGS` in the domain resource YAML, the WLST process will inherit the memory settings.  For example,
-if you have `USER_MEM_ARGS` value set to `-Xms2028m -Xmx2048m`, the WebLogic server process will use this heap settings, and if you run the WLST script in the server pod,
-the WLST script JAVA process will also use this settings. This may cause unexpected behavior in the server pod due to additional memory usage.  
+if you have `USER_MEM_ARGS` value set to `-Xms2048m -Xmx2048m`, the WebLogic server JAVA process will use this heap settings, and if you run the WLST script in the server pod,
+the WLST script JAVA process will also use this heap settings. This may cause unexpected behavior in the server pod due to additional memory usage.  
+
 In order to change the memory settings, you must do the following 
+
 
 ```shell
 USER_MEM_ARGS="" $ORACLE_HOME/oracle_common/common/bin/wlst.sh
 ```
-This will unset the `USER_MEM_ARGS` and let the WLST to use the default `-Xms32m -Xmx1024m`, and this only affect the WLST script process.  
-If you want to use different memory settings, you can also adjust it by 
+This will unset the `USER_MEM_ARGS` and let the WLST to use the default heap size `-Xms32m -Xmx1024m`, and this only affect the WLST script process.  
+
+If you want to use different memory settings, you can adjust it by 
 
 ```shell
 USER_MEM_ARGS="-Xms128m -Xmx128m" $ORACLE_HOME/oracle_common/common/bin/wlst.sh
 ```
-
 
 
 For example, if a `domainUID` is `sample-domain1`,
