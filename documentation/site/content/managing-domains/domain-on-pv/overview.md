@@ -26,8 +26,10 @@ The `initializeDomainOnPv` section:
 - Creates the RCU schema, if needed.
 - Creates the WebLogic domain home on the persistent volume based on the provided WDT models.
 
-Also, note that if you are running WebLogic Scripting Tool (WLST) inside a server pod, then
+{{% notice note %}}
+If you are running WebLogic Scripting Tool (WLST) inside a server pod, then
 please refer to [Use kubectl exec]({{< relref "/managing-domains/accessing-the-domain/wlst#use-kubectl-exec">}}) in the WLST documentation for very important information related to memory usage.
+{{% /notice %}}
 
 ### High-level use case
 
