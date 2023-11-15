@@ -21,7 +21,7 @@ this section is ignored. Subsequent domain lifecycle updates must be controlled 
 the WebLogic Server Administration Console, the WebLogic Remote Console, WebLogic Scripting Tool (WLST), or other mechanisms.  See the [High-level use case](#high-level-use-case).
 
 If you are running WebLogic Scripting Tool (WLST) inside a server pod, there is a very important information related to memory usage,
-please refer to ({{< relref "/managing-domains/assessing-the-domain/wlst.md">}}) for details.
+please refer to ({{< relref "/managing-domains/accessing-the-domain/wlst.md">}}) for details.
 
 
 The `initializeDomainOnPv` section:
