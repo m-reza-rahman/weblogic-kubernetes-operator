@@ -13,6 +13,12 @@ import java.util.List;
 import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
+import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
+import io.kubernetes.client.openapi.models.V1IngressBackend;
+import io.kubernetes.client.openapi.models.V1IngressRule;
+import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
+import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.MonitoringExporterConfiguration;
 import oracle.weblogic.domain.MonitoringExporterSpecification;
@@ -35,14 +41,17 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_F
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
@@ -50,6 +59,7 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getDo
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getImageBuilderExtraArgs;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeExists;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeHasExpectedStatus;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
@@ -88,7 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
     + "MonitoringExporter Side Car via Prometheus and Grafana")
 @IntegrationTest
 @Tag("olcne-mrg")
-@Tag("oke-sequential")
+@Tag("oke-gate")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
 class ItMonitoringExporterSideCar {
@@ -133,6 +143,7 @@ class ItMonitoringExporterSideCar {
   private static String grafanaReleaseName = "grafana" + releaseSuffix;
   private static String monitoringExporterDir;
   private static String hostPortPrometheus;
+  private static String ingressIP = null;
 
 
   /**
@@ -192,14 +203,25 @@ class ItMonitoringExporterSideCar {
         domain1Namespace, TEST_IMAGES_REPO_SECRET_NAME, getImageBuilderExtraArgs()),
         "Failed to create image for exporter");
     if (!OKD) {
+
       // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      logger.info("NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
-      logger.info("NGINX http node port: {0}", nodeportshttp);
-      logger.info("NGINX https node port: {0}", nodeportshttps);
+      // install Nginx ingress controller for all test cases using Nginx
+      installNginxIngressController();
+      if (!OKE_CLUSTER_PRIVATEIP) {
+
+        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        logger.info("NGINX service name: {0}", nginxServiceName);
+        nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+        nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+        logger.info("NGINX http node port: {0}", nodeportshttp);
+        logger.info("NGINX https node port: {0}", nodeportshttps);
+      }
+      // install Nginx ingress controller for all test cases using Nginx
+      installNginxIngressController();
+
+      String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
     }
     clusterNameMsPortMap = new HashMap<>();
     clusterNameMsPortMap.put(cluster1Name, managedServerPort);
@@ -480,6 +502,9 @@ class ItMonitoringExporterSideCar {
       host = "[" + host + "]";
     }
     hostPortPrometheus = host + ":" + nodeportPrometheus;
+    if (OKE_CLUSTER_PRIVATEIP) {
+      hostPortPrometheus = "http://" + ingressIP + "/" + "prometheus".substring(4);
+    }
     if (OKD) {
       hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
           + "-service", monitoringNS) + ":" + nodeportPrometheus;
@@ -493,6 +518,9 @@ class ItMonitoringExporterSideCar {
               grafanaChartVersion);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
       String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
+      if (OKE_CLUSTER_PRIVATEIP) {
+        hostPortGrafana = "http://" + ingressIP + "/" + "grafana".substring(4);
+      }
       if (OKD) {
         hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
       }
@@ -545,5 +573,71 @@ class ItMonitoringExporterSideCar {
     imageRepoLoginAndPushImageToRegistry(myImage);
 
     return myImage;
+  }
+
+  private static void installNginxIngressController() {
+    // install and verify Nginx
+    logger.info("Installing Nginx controller using helm");
+    nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+
+    // create ingress rules with path routing for NGINX
+    if (OKE_CLUSTER_PRIVATEIP) {
+      createNginxIngressPathRoutingForMonitoring();
+    }
+
+  }
+
+  private static void createNginxIngressPathRoutingForMonitoring() {
+    // create an ingress in monitoringNS namespace
+    String ingressName = monitoringNS + "-nginx-path-routing";
+
+    HashMap<String, String> annotations = new HashMap<>();
+    annotations.put("nginx.ingress.kubernetes.io/rewrite-target", "/$1");
+
+    String ingressClassName = nginxHelmParams.getIngressClassName();
+
+    // create ingress rules for two domains
+    List<V1IngressRule> ingressRules = new ArrayList<>();
+    List<V1HTTPIngressPath> httpIngressPaths = new ArrayList<>();
+
+    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
+        .path("/" + "prometheus".substring(4) + "(.+)")
+        .pathType("ImplementationSpecific")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name("prometheus-server")
+                .port(new V1ServiceBackendPort()
+                    .number(9090)))
+        );
+    httpIngressPaths.add(httpIngressPath);
+    httpIngressPath = new V1HTTPIngressPath()
+        .path("/" + "grafana".substring(4) + "(.+)")
+        .pathType("ImplementationSpecific")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name("grafana")
+                .port(new V1ServiceBackendPort()
+                    .number(80)))
+        );
+    httpIngressPaths.add(httpIngressPath);
+
+
+    V1IngressRule ingressRule = new V1IngressRule()
+        .host("")
+        .http(new V1HTTPIngressRuleValue()
+            .paths(httpIngressPaths));
+
+    ingressRules.add(ingressRule);
+
+    assertDoesNotThrow(() -> createIngress(ingressName, monitoringNS, annotations,
+        ingressClassName, ingressRules, null));
+
+    // check the ingress was found in the domain namespace
+    assertThat(assertDoesNotThrow(() -> listIngresses(monitoringNS)))
+        .as(String.format("Test ingress %s was found in namespace %s", ingressName, monitoringNS))
+        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, monitoringNS))
+        .contains(ingressName);
+
+    logger.info("ingress {0} was created in namespace {1}", ingressName, monitoringNS);
   }
 }
