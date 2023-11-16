@@ -71,6 +71,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MONITORING_EXPORTER_BRANC
 import static oracle.weblogic.kubernetes.TestConstants.MONITORING_EXPORTER_WEBAPP_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_ALERT_MANAGER_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_ALERT_MANAGER_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CONFIG_MAP_RELOAD_IMAGE_NAME;
@@ -369,14 +370,13 @@ public class MonitoringUtils {
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for prometheus");
 
     assertDoesNotThrow(() -> Files.createDirectories(fileTemp), "Failed to create temp dir for prometheus");
-
-    logger.info("copy the promvalues.yaml to staging location");
-    Path srcPromFile = Paths.get(RESOURCE_DIR, "exporter", "promvalues.yaml");
+    String promValuesFile = OKE_CLUSTER_PRIVATEIP ? "promvaluesoke.yaml" : "promvalues.yaml";
+    logger.info("copy the " + promValuesFile + "  to staging location");
+    Path srcPromFile = Paths.get(RESOURCE_DIR, "exporter", promValuesFile);
     Path targetPromFile = Paths.get(fileTemp.toString(), "promvalues.yaml");
     assertDoesNotThrow(() -> Files.copy(srcPromFile, targetPromFile,
         StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
     String oldValue = "regex: default;domain1";
-    logger.info("copy the promvalues.yaml to staging location");
     assertDoesNotThrow(() -> {
       replaceStringInFile(targetPromFile.toString(),
           oldValue,
@@ -559,14 +559,14 @@ public class MonitoringUtils {
                                                       String grafanaHelmValuesFileDir,
                                                       String grafanaVersion) {
     LoggingFacade logger = getLogger();
-    logger.info("create a staging location for prometheus scripts");
+    logger.info("create a staging location for grafana scripts");
     Path fileTemp = Paths.get(grafanaHelmValuesFileDir);
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for grafana");
 
     assertDoesNotThrow(() -> Files.createDirectories(fileTemp), "Failed to create temp dir for grafana");
-
-    logger.info("copy the grafanavalues.yaml to staging location");
-    Path srcGrafanaFile = Paths.get(RESOURCE_DIR, "exporter", "grafanavalues.yaml");
+    String grafanavaluesFile = OKE_CLUSTER_PRIVATEIP ? "grafanavaluesoke.yaml" : "grafanavalues.yaml";
+    logger.info("copy the " + grafanavaluesFile + " to staging location");
+    Path srcGrafanaFile = Paths.get(RESOURCE_DIR, "exporter", grafanavaluesFile);
     Path targetGrafanaFile = Paths.get(fileTemp.toString(), "grafanavalues.yaml");
     assertDoesNotThrow(() -> Files.copy(srcGrafanaFile, targetGrafanaFile,
             StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
@@ -617,13 +617,19 @@ public class MonitoringUtils {
     }
     // install grafana
     logger.info("Installing grafana in namespace {0}", grafanaNamespace);
-    int grafanaNodePort = getNextFreePort();
-    logger.info("Installing grafana with node port {0}", grafanaNodePort);
     assertDoesNotThrow(() -> logger.info(Files.readString(targetGrafanaFile)));
-    // grafana chart values to override
-    GrafanaParams grafanaParams = new GrafanaParams()
-        .helmParams(grafanaHelmParams)
-        .nodePort(grafanaNodePort);
+    GrafanaParams grafanaParams = null;
+    if (!OKE_CLUSTER_PRIVATEIP) {
+      int grafanaNodePort = getNextFreePort();
+      logger.info("Installing grafana with node port {0}", grafanaNodePort);
+      // grafana chart values to override
+      grafanaParams = new GrafanaParams()
+          .helmParams(grafanaHelmParams)
+          .nodePort(grafanaNodePort);
+    } else {
+      grafanaParams = new GrafanaParams()
+          .helmParams(grafanaHelmParams);
+    }
     boolean isGrafanaInstalled = false;
     if (OKD) {
       addSccToDBSvcAccount(grafanaReleaseName,grafanaNamespace);
