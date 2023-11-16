@@ -451,8 +451,10 @@ public class MonitoringUtils {
     // prometheus chart values to override
     PrometheusParams prometheusParams = new PrometheusParams()
         .helmParams(promHelmParams)
-        .nodePortServer(promServerNodePort)
         .nodePortAlertManager(alertManagerNodePort);
+    if (!OKE_CLUSTER_PRIVATEIP) {
+      prometheusParams.nodePortServer(promServerNodePort);
+    }
 
     if (OKD) {
       addSccToDBSvcAccount(prometheusReleaseName + "-server", promNamespace);
