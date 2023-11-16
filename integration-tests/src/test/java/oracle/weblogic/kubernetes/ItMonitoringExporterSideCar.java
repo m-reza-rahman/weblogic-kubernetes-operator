@@ -217,8 +217,7 @@ class ItMonitoringExporterSideCar {
         logger.info("NGINX http node port: {0}", nodeportshttp);
         logger.info("NGINX https node port: {0}", nodeportshttps);
       }
-      // install Nginx ingress controller for all test cases using Nginx
-      installNginxIngressController();
+      
 
       String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
