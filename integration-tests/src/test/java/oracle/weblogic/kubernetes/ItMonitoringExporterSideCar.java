@@ -29,6 +29,7 @@ import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_FAILED_TYPE;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
@@ -486,7 +488,11 @@ class ItMonitoringExporterSideCar {
           prometheusRegexValue,
           promHelmValuesFileDir);
       assertNotNull(promHelmParams, " Failed to install prometheus");
-      nodeportPrometheus = promHelmParams.getNodePortServer();
+      String command1 = KUBERNETES_CLI + " get svc -n " + monitoringNS;
+      assertDoesNotThrow(() -> ExecCommand.exec(command1));
+      if (!OKE_CLUSTER_PRIVATEIP) {
+        nodeportPrometheus = promHelmParams.getNodePortServer();
+      }
       prometheusDomainRegexValue = prometheusRegexValue;
     }
     //if prometheus already installed change CM for specified domain
@@ -501,9 +507,11 @@ class ItMonitoringExporterSideCar {
     if (host.contains(":")) {
       host = "[" + host + "]";
     }
-    hostPortPrometheus = host + ":" + nodeportPrometheus;
+
     if (OKE_CLUSTER_PRIVATEIP) {
       hostPortPrometheus = ingressIP + "/" + "prometheus";
+    } else {
+      hostPortPrometheus = host + ":" + nodeportPrometheus;
     }
     if (OKD) {
       hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
@@ -579,10 +587,14 @@ class ItMonitoringExporterSideCar {
     // install and verify Nginx
     logger.info("Installing Nginx controller using helm");
     nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+    String command = KUBERNETES_CLI + " get service  -n " + nginxNamespace;
+    assertDoesNotThrow(() -> ExecCommand.exec(command));
 
     // create ingress rules with path routing for NGINX
     if (OKE_CLUSTER_PRIVATEIP) {
       createNginxIngressPathRoutingForMonitoring();
+      String command1 = KUBERNETES_CLI + " get ingress -n " + monitoringNS;
+      assertDoesNotThrow(() -> ExecCommand.exec(command1));
     }
 
   }
