@@ -217,7 +217,7 @@ class ItMonitoringExporterSideCar {
         logger.info("NGINX http node port: {0}", nodeportshttp);
         logger.info("NGINX https node port: {0}", nodeportshttps);
       }
-      
+
 
       String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
@@ -503,7 +503,7 @@ class ItMonitoringExporterSideCar {
     }
     hostPortPrometheus = host + ":" + nodeportPrometheus;
     if (OKE_CLUSTER_PRIVATEIP) {
-      hostPortPrometheus = "http://" + ingressIP + "/" + "prometheus".substring(4);
+      hostPortPrometheus = ingressIP + "/" + "prometheus".substring(4);
     }
     if (OKD) {
       hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
@@ -605,7 +605,7 @@ class ItMonitoringExporterSideCar {
         .pathType("ImplementationSpecific")
         .backend(new V1IngressBackend()
             .service(new V1IngressServiceBackend()
-                .name("prometheus-server")
+                .name(prometheusReleaseName + "-server")
                 .port(new V1ServiceBackendPort()
                     .number(9090)))
         );
@@ -615,7 +615,7 @@ class ItMonitoringExporterSideCar {
         .pathType("ImplementationSpecific")
         .backend(new V1IngressBackend()
             .service(new V1IngressServiceBackend()
-                .name("grafana")
+                .name(grafanaReleaseName)
                 .port(new V1ServiceBackendPort()
                     .number(80)))
         );
