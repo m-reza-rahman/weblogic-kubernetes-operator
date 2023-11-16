@@ -503,7 +503,7 @@ class ItMonitoringExporterSideCar {
     }
     hostPortPrometheus = host + ":" + nodeportPrometheus;
     if (OKE_CLUSTER_PRIVATEIP) {
-      hostPortPrometheus = ingressIP + "/" + "prometheus".substring(4);
+      hostPortPrometheus = ingressIP + "/" + "prometheus";
     }
     if (OKD) {
       hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
@@ -519,7 +519,7 @@ class ItMonitoringExporterSideCar {
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
       String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
       if (OKE_CLUSTER_PRIVATEIP) {
-        hostPortGrafana = "http://" + ingressIP + "/" + "grafana".substring(4);
+        hostPortGrafana = "http://" + ingressIP + "/" + "grafana";
       }
       if (OKD) {
         hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
@@ -601,7 +601,7 @@ class ItMonitoringExporterSideCar {
     List<V1HTTPIngressPath> httpIngressPaths = new ArrayList<>();
 
     V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
-        .path("/" + "prometheus".substring(4) + "(.+)")
+        .path("/" + "prometheus" + "(.+)")
         .pathType("ImplementationSpecific")
         .backend(new V1IngressBackend()
             .service(new V1IngressServiceBackend()
@@ -611,7 +611,7 @@ class ItMonitoringExporterSideCar {
         );
     httpIngressPaths.add(httpIngressPath);
     httpIngressPath = new V1HTTPIngressPath()
-        .path("/" + "grafana".substring(4) + "(.+)")
+        .path("/" + "grafana" + "(.+)")
         .pathType("ImplementationSpecific")
         .backend(new V1IngressBackend()
             .service(new V1IngressServiceBackend()
