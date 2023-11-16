@@ -83,9 +83,6 @@ server:
     - port: 9090
       protocol: TCP
       targetPort: 9090
-    selector:
-      component: server
-      app: prometheus
 
     nodePort: 30500
   securityContext:

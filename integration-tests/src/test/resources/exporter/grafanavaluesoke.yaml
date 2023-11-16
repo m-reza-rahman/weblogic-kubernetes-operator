@@ -16,9 +16,6 @@ service:
   port: 80
   targetPort: 3000
   protocol: TCP
-  selector:
-    release: grafana
-    app: grafana
 
 admin:
   existingSecret: "grafana-secret"
