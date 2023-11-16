@@ -84,7 +84,6 @@ server:
       protocol: TCP
       targetPort: 9090
 
-    nodePort: 30500
   securityContext:
     runAsNonRoot: true
     runAsUser: 1000
