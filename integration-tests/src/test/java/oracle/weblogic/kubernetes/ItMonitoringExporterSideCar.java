@@ -109,6 +109,7 @@ class ItMonitoringExporterSideCar {
   private static String domain2Namespace = null;
   private static String domain3Namespace = null;
   private static String domain4Namespace = null;
+  private static String nginxNamespace = null;
 
   private static String domain1Uid = "monexp-domain-1";
   private static String domain2Uid = "monexp-domain-2";
@@ -174,7 +175,7 @@ class ItMonitoringExporterSideCar {
 
     logger.info("Get a unique namespace for NGINX");
     assertNotNull(namespaces.get(2), "Namespace list is null");
-    final String nginxNamespace = namespaces.get(2);
+    nginxNamespace = namespaces.get(2);
 
     logger.info("Get a unique namespace for domain1");
     assertNotNull(namespaces.get(3), "Namespace list is null");
