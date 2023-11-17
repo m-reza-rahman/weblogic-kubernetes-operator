@@ -299,7 +299,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, "inernal-admin");
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, "internal-admin");
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     //upgradeImage(domainNamespace, domainUid, auxImage);
   }
@@ -321,12 +321,12 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
     });
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodenotconfigured";
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prodoff";
     String auxImageTag = getDateAndTimeStamp();
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "12.2.1.4";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     //upgradeImage(domainNamespace, domainUid, auxImage);
@@ -349,12 +349,12 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
     });
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodenotconfigured";
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prodon";
     String auxImageTag = getDateAndTimeStamp();
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "12.2.1.4";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     //upgradeImage(domainNamespace, domainUid, auxImage);
