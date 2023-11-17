@@ -192,15 +192,15 @@ class ItMiiDomainUpgradeToSecureMode {
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(wdtVariableFile);
       Files.createDirectories(wdtVariableFile.getParent());
-      Files.writeString(wdtVariableFile, "SSLEnabled=false", StandardOpenOption.CREATE);
-      Files.writeString(wdtVariableFile, "ProductionModeEnabled=false", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "SecureModeEnabled=false", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
+      Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
     });
 
     String auxImageName = "dci-securemodeoff";
     String auxImageTag = "v1";
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "upgrade", "upgrade-model.yaml");
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
