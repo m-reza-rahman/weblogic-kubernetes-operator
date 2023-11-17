@@ -290,6 +290,34 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
           StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
+    });
+
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodenotconfigured";
+    String auxImageTag = getDateAndTimeStamp();
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
+
+    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, "inernal-admin");
+    String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
+    //upgradeImage(domainNamespace, domainUid, auxImage);
+  }
+
+  /**
+   * Test upgrade from 1411 to 1412 with production and secure mode off.
+   */
+  @Test
+  @DisplayName("Verify the secure service through administration port")
+  void testUpgrade1214to1412ProdOff() {
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
+      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
+          StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
     });
 
@@ -309,17 +337,27 @@ class ItMiiDomainUpgradeToSecureMode {
    */
   @Test
   @DisplayName("Verify the secure service through administration port")
-  void testUpgrade1214to1412ProdOff() {
-
-  }
-
-  /**
-   * Test upgrade from 1411 to 1412 with production and secure mode off.
-   */
-  @Test
-  @DisplayName("Verify the secure service through administration port")
   void testUpgrade12214to1412ProdOn() {
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "SSLEnabled=true\n", StandardOpenOption.CREATE);
+      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
+          StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
+    });
 
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodenotconfigured";
+    String auxImageTag = getDateAndTimeStamp();
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
+
+    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
+    String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
+    //upgradeImage(domainNamespace, domainUid, auxImage);
   }
   
   /**
