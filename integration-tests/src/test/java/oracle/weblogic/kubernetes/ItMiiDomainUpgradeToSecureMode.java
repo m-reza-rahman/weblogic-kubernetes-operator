@@ -208,7 +208,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage);
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     //upgradeImage(domainNamespace, domainUid, auxImage);
 
@@ -239,7 +239,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage);
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     //upgradeImage(domainNamespace, domainUid, auxImage);
   }
@@ -269,7 +269,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage);
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, "internal-admin");
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     //upgradeImage(domainNamespace, domainUid, auxImage);
   }
@@ -299,7 +299,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage);
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     //upgradeImage(domainNamespace, domainUid, auxImage);
   }
@@ -543,7 +543,7 @@ class ItMiiDomainUpgradeToSecureMode {
   }
   
   private DomainResource createDomainUsingAuxiliaryImage(String domainNamespace, String domainUid,
-      String baseImage, String auxImage) {
+      String baseImage, String auxImage, String channelName) {
     String clusterName = "mycluster";
     String adminServerPodName = domainUid + "-adminserver";
     String managedServerPrefix = domainUid + "-mycluster-ms-";
@@ -568,6 +568,11 @@ class ItMiiDomainUpgradeToSecureMode {
         = createDomainResourceWithAuxiliaryImage(domainUid, domainNamespace,
             baseImage, wlSecretName, createSecretsForImageRepos(domainNamespace),
             encryptionSecretName, auxiliaryImagePath, auxImage);
+    if (channelName != null) {
+      Channel channel = domainCR.getSpec().getAdminServer().getAdminService().channels().get(0);
+      channel.channelName(channelName);
+      domainCR.getSpec().adminServer().adminService().channels(Arrays.asList(channel));
+    }
     domainCR.getSpec().getServerPod()
         .addEnvItem(new V1EnvVar()
             .name("JAVA_OPTIONS")
