@@ -626,7 +626,7 @@ class ItMonitoringExporterSideCar {
             .service(new V1IngressServiceBackend()
                 .name(prometheusReleaseName + "-server")
                 .port(new V1ServiceBackendPort()
-                    .number(80)))
+                    .number(9090)))
         );
     httpIngressPaths.add(httpIngressPath);
     httpIngressPath = new V1HTTPIngressPath()
