@@ -33,4 +33,4 @@ appDeployments:
         myapp:
             Target:
               - mycluster
-            SourcePath: wlsdeploy/applications/archived_war.war
+            SourcePath: wlsdeploy/applications/sample-app.ear
