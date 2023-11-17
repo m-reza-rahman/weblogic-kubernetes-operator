@@ -490,6 +490,8 @@ class ItMonitoringExporterSideCar {
       assertNotNull(promHelmParams, " Failed to install prometheus");
       String command1 = KUBERNETES_CLI + " get svc -n " + monitoringNS;
       assertDoesNotThrow(() -> ExecCommand.exec(command1));
+      String command2 = KUBERNETES_CLI + " describe svc -n " + monitoringNS;
+      assertDoesNotThrow(() -> ExecCommand.exec(command2));
       if (!OKE_CLUSTER_PRIVATEIP) {
         nodeportPrometheus = promHelmParams.getNodePortServer();
       }
@@ -503,6 +505,10 @@ class ItMonitoringExporterSideCar {
       prometheusDomainRegexValue = prometheusRegexValue;
     }
     logger.info("Prometheus is running");
+    String command1 = KUBERNETES_CLI + " get svc -n " + monitoringNS;
+    assertDoesNotThrow(() -> ExecCommand.exec(command1));
+    String command2 = KUBERNETES_CLI + " describe svc -n " + monitoringNS;
+    assertDoesNotThrow(() -> ExecCommand.exec(command2));
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
       host = "[" + host + "]";
@@ -587,7 +593,7 @@ class ItMonitoringExporterSideCar {
     // install and verify Nginx
     logger.info("Installing Nginx controller using helm");
     nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-    String command = KUBERNETES_CLI + " get service  -n " + nginxNamespace;
+    String command = KUBERNETES_CLI + " get services  -n " + nginxNamespace;
     assertDoesNotThrow(() -> ExecCommand.exec(command));
 
     // create ingress rules with path routing for NGINX
@@ -619,7 +625,7 @@ class ItMonitoringExporterSideCar {
             .service(new V1IngressServiceBackend()
                 .name(prometheusReleaseName + "-server")
                 .port(new V1ServiceBackendPort()
-                    .number(9090)))
+                    .number(80)))
         );
     httpIngressPaths.add(httpIngressPath);
     httpIngressPath = new V1HTTPIngressPath()
