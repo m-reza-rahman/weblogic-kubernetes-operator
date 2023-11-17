@@ -486,7 +486,10 @@ public class MonitoringUtils {
         logger,
         "prometheus to be running in namespace {0}",
         promNamespace);
-
+    String command1 = KUBERNETES_CLI + " get svc -n " + promNamespace;
+    assertDoesNotThrow(() -> ExecCommand.exec(command1,true));
+    String command2 = KUBERNETES_CLI + " describe svc -n " + promNamespace;
+    assertDoesNotThrow(() -> ExecCommand.exec(command2, true));
     return prometheusParams;
   }
 
