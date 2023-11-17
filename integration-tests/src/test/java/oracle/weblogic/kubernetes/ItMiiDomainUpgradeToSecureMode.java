@@ -355,7 +355,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "12.2.1.4";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, "internal-admin");
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     //upgradeImage(domainNamespace, domainUid, auxImage);
   }
