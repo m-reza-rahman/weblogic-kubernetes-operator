@@ -42,7 +42,6 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
-import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
@@ -53,7 +52,6 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
-import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
@@ -69,7 +67,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.now;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
-import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
@@ -87,7 +84,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardP
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
-import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
@@ -168,49 +164,6 @@ class ItMiiDomainUpgradeToSecureMode {
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
     createTestRepoSecret(domainNamespace);
-
-    // create secret for admin credentials
-    logger.info("Create secret for admin credentials");
-    String adminSecretName = "weblogic-credentials";
-    createSecretWithUsernamePassword(adminSecretName, domainNamespace,
-            ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
-
-    // create encryption secret
-    logger.info("Create encryption secret");
-    String encryptionSecretName = "encryptionsecret";
-    createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
-            "weblogicenc", "weblogicenc");
-
-    // Add ServerStartMode section in domainInfo section 
-    // instead of SecurityConfiguration in topology section
-    // This will trigger a new path while WebLogic configuration
-    pathToEnableSSLYaml = Paths.get(WORK_DIR + "/enablessl.yaml");
-    String yamlString = "domainInfo:\n"
-        + "         ServerStartMode: 'secure' \n"
-        + "topology: \n"
-        + "  ServerTemplate: \n"
-        + "    \"cluster-1-template\": \n"
-        + "       ListenPort: '7001' \n"
-        + "       SSL: \n"
-        + "         Enabled: true \n"
-        + "         ListenPort: '7002' \n";
-
-    assertDoesNotThrow(() -> Files.write(pathToEnableSSLYaml, yamlString.getBytes()));
-    createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Arrays.asList(pathToEnableSSLYaml.toString()));
-
-    // create the domain CR with a pre-defined configmap
-    createDomainResource(domainUid, domainNamespace, adminSecretName,
-        TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName,
-        replicaCount, configMapName);
-
-    // wait for the domain to exist
-    logger.info("Check for domain custom resource in namespace {0}", domainNamespace);
-    testUntil(
-        domainExists(domainUid, DOMAIN_VERSION, domainNamespace),
-        logger,
-        "domain {0} to be created in namespace {1}",
-        domainUid,
-        domainNamespace);
   }
 
   /**
@@ -231,11 +184,15 @@ class ItMiiDomainUpgradeToSecureMode {
   /**
    * Test upgrade from 1411 to 1412 with production and secure mode off.
    */
+  @Test
+  @DisplayName("Verify the secure service through administration port")
   void testUpgrade1411to1412ProdOff() {
     //no changes
-    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getName(), "wdtVariable.properties");
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
     assertDoesNotThrow(() -> {
-      Files.writeString(wdtVariableFile, "SSLEnabled=false", StandardOpenOption.TRUNCATE_EXISTING);
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "SSLEnabled=false", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=false", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "SecureModeEnabled=false", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false", StandardOpenOption.APPEND);
