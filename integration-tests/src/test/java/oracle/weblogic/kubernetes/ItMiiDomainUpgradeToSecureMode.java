@@ -193,7 +193,8 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.deleteIfExists(wdtVariableFile);
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
-      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n", 
+          StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
