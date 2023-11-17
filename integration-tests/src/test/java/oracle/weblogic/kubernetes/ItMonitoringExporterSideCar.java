@@ -540,6 +540,12 @@ class ItMonitoringExporterSideCar {
       }
     }
     logger.info("Grafana is running");
+    // create ingress rules with path routing for NGINX
+    if (OKE_CLUSTER_PRIVATEIP) {
+      createNginxIngressPathRoutingForMonitoring();
+      String command3 = KUBERNETES_CLI + " get ingress -n " + monitoringNS;
+      assertDoesNotThrow(() -> ExecCommand.exec(command3, true));
+    }
   }
 
 
@@ -596,12 +602,7 @@ class ItMonitoringExporterSideCar {
     String command = KUBERNETES_CLI + " get services  -n " + nginxNamespace;
     assertDoesNotThrow(() -> ExecCommand.exec(command, true));
 
-    // create ingress rules with path routing for NGINX
-    if (OKE_CLUSTER_PRIVATEIP) {
-      createNginxIngressPathRoutingForMonitoring();
-      String command1 = KUBERNETES_CLI + " get ingress -n " + monitoringNS;
-      assertDoesNotThrow(() -> ExecCommand.exec(command1, true));
-    }
+
 
   }
 
