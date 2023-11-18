@@ -422,7 +422,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private boolean hasRetriableFailureNonRetryingOperation(MakeRightDomainOperation operation, DomainPresenceInfo info) {
-    return info.hasRetriableFailure() && !operation.isRetryOnFailure();
+    return info.hasRetryableFailure() && !operation.isRetryOnFailure();
   }
 
   private boolean isNewDomain(DomainPresenceInfo cachedInfo) {

@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -221,7 +220,7 @@ public class RollingHelper {
     }
 
     List<String> getServerNames(@Nonnull Queue<StepAndPacket> stepAndPackets) {
-      return stepAndPackets.stream().map(this::getServerName).collect(Collectors.toList());
+      return stepAndPackets.stream().map(this::getServerName).toList();
     }
 
     String getServerName(StepAndPacket stepAndPacket) {
@@ -279,7 +278,7 @@ public class RollingHelper {
               .map(WlsClusterConfig::getServerConfigs).orElse(Collections.emptyList()).stream()
               .map(WlsServerConfig::getName)
               .filter(this::isServerReady)
-              .collect(Collectors.toList());
+              .toList();
       }
 
       private WlsClusterConfig getClusterConfig(WlsDomainConfig config) {

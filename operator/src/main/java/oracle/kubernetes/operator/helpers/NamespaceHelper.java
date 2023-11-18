@@ -6,7 +6,6 @@ package oracle.kubernetes.operator.helpers;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static oracle.kubernetes.operator.KubernetesConstants.OPERATOR_NAMESPACE_ENV;
@@ -63,7 +62,7 @@ public class NamespaceHelper {
           = Stream.of(namespaceString.split(","))
           .filter(s -> !isNullOrEmpty(s))
           .map(String::trim)
-          .collect(Collectors.toUnmodifiableList());
+          .toList();
 
     return namespaces.isEmpty() ? Collections.singletonList(getOperatorNamespace()) : namespaces;
   }
