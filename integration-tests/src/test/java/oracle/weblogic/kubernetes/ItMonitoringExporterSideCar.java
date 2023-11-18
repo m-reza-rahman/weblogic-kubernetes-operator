@@ -209,9 +209,9 @@ class ItMonitoringExporterSideCar {
 
       // install and verify NGINX
       // install Nginx ingress controller for all test cases using Nginx
-      installNginxIngressController();
-      if (!OKE_CLUSTER_PRIVATEIP) {
 
+      if (!OKE_CLUSTER_PRIVATEIP) {
+        installNginxIngressController();
         String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
         logger.info("NGINX service name: {0}", nginxServiceName);
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
@@ -219,11 +219,6 @@ class ItMonitoringExporterSideCar {
         logger.info("NGINX http node port: {0}", nodeportshttp);
         logger.info("NGINX https node port: {0}", nodeportshttps);
       }
-
-
-      String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
     }
     clusterNameMsPortMap = new HashMap<>();
     clusterNameMsPortMap.put(cluster1Name, managedServerPort);
@@ -266,7 +261,30 @@ class ItMonitoringExporterSideCar {
         installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
             domain3Namespace,
             domain3Uid);
+        if ( OKE_CLUSTER_PRIVATEIP) {
+          installNginxIngressController();
+          String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+          ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
+              ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
 
+          // create ingress rules with path routing for NGINX
+
+          createNginxIngressPathRoutingForMonitoring();
+          String command3 = KUBERNETES_CLI + " get ingress -n " + monitoringNS;
+          assertDoesNotThrow(() -> ExecCommand.exec(command3, true));
+
+
+        }
+        String host = K8S_NODEPORT_HOST;
+        if (host.contains(":")) {
+          host = "[" + host + "]";
+        }
+
+        if (OKE_CLUSTER_PRIVATEIP) {
+          hostPortPrometheus = ingressIP + "/" + "prometheus";
+        } else {
+          hostPortPrometheus = host + ":" + nodeportPrometheus;
+        }
         String sessionAppPrometheusSearchKey =
             "wls_servlet_invocation_total_count%7Bapp%3D%22myear%22%7D%5B15s%5D";
         checkMetricsViaPrometheus(sessionAppPrometheusSearchKey, "sessmigr", hostPortPrometheus);
@@ -509,16 +527,7 @@ class ItMonitoringExporterSideCar {
     assertDoesNotThrow(() -> ExecCommand.exec(command1,true));
     String command2 = KUBERNETES_CLI + " describe svc -n " + monitoringNS;
     assertDoesNotThrow(() -> ExecCommand.exec(command2,true));
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
 
-    if (OKE_CLUSTER_PRIVATEIP) {
-      hostPortPrometheus = ingressIP + "/" + "prometheus";
-    } else {
-      hostPortPrometheus = host + ":" + nodeportPrometheus;
-    }
     if (OKD) {
       hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
           + "-service", monitoringNS) + ":" + nodeportPrometheus;
@@ -540,12 +549,6 @@ class ItMonitoringExporterSideCar {
       }
     }
     logger.info("Grafana is running");
-    // create ingress rules with path routing for NGINX
-    if (OKE_CLUSTER_PRIVATEIP) {
-      createNginxIngressPathRoutingForMonitoring();
-      String command3 = KUBERNETES_CLI + " get ingress -n " + monitoringNS;
-      assertDoesNotThrow(() -> ExecCommand.exec(command3, true));
-    }
   }
 
 
