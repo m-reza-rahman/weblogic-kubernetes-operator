@@ -261,7 +261,7 @@ class ItMonitoringExporterSideCar {
         installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
             domain3Namespace,
             domain3Uid);
-        if ( OKE_CLUSTER_PRIVATEIP) {
+        if (OKE_CLUSTER_PRIVATEIP) {
           installNginxIngressController();
           String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
           ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
@@ -540,6 +540,10 @@ class ItMonitoringExporterSideCar {
               grafanaHelmValuesFileDir,
               grafanaChartVersion);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
       String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
       if (OKE_CLUSTER_PRIVATEIP) {
         hostPortGrafana = "http://" + ingressIP + "/" + "grafana";
