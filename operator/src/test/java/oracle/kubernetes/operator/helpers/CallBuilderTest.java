@@ -1333,7 +1333,7 @@ class CallBuilderTest {
 
   @Test
   @ResourceLock(value = "server")
-  void replaceValodatingWebhookConfiguration_returnsUpdatedResource() throws InterruptedException {
+  void replaceValidatingWebhookConfiguration_returnsUpdatedResource() throws InterruptedException {
     V1ValidatingWebhookConfiguration validatingWebhookConfig
         = new V1ValidatingWebhookConfiguration()
         .metadata(createNameOnlyMetadata(TEST_VALIDATING_WEBHOOK_NAME))
@@ -1474,7 +1474,7 @@ class CallBuilderTest {
     return new V1ObjectMeta().name(name);
   }
 
-  /** defines a get request for an list of items. */
+  /** defines a get request for a list of items. */
   private JsonServlet defineHttpGetResponse(String resourceName, Object response) {
     JsonGetServlet servlet = new JsonGetServlet(response);
     defineResource(resourceName, servlet);

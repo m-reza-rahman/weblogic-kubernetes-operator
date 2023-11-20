@@ -1116,7 +1116,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       onDeleteActions.forEach(a -> a.accept(gracePeriodSeconds));
     }
 
-    class FieldMatcher {
+    static class FieldMatcher {
       private String path;
       private String op;
       private String value;
