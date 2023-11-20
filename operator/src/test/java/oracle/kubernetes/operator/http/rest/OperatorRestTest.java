@@ -134,7 +134,7 @@ class OperatorRestTest extends RestTestBase {
 
     assertThat(result, hasJsonPath("$.swagger", equalTo("2.0")));
     assertThat(result, hasJsonPath("$.info.version", equalTo("v1")));
-    assertThat(result, hasJsonPath("$.paths.operator.get.tags", withValues("Version")));
+    assertThat(result, hasJsonPath("$.paths./operator.get.tags", withValues("Version")));
   }
 
   @Test

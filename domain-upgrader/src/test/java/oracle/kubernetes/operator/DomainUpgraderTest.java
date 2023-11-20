@@ -46,7 +46,6 @@ class DomainUpgraderTest {
   @AfterEach
   public void tearDown() {
     mementos.forEach(Memento::revert);
-    System.setSecurityManager(null);
     System.setOut(console);
   }
 

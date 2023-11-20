@@ -150,7 +150,7 @@ public class AdmissionRequest {
   }
 
   public Object getProposedResource() {
-    return getRequestKind().readObject(this);
+    return getRequestKind().readProposedObject(this);
   }
 
   @Override
@@ -187,7 +187,7 @@ public class AdmissionRequest {
       }
 
       @Override
-      public Object readObject(AdmissionRequest request) {
+      public Object readProposedObject(AdmissionRequest request) {
         return readDomain(writeMap(request.getObject()));
       }
 
@@ -207,7 +207,7 @@ public class AdmissionRequest {
       }
 
       @Override
-      public Object readObject(AdmissionRequest request) {
+      public Object readProposedObject(AdmissionRequest request) {
         return readCluster(writeMap(request.getObject()));
       }
 
@@ -227,7 +227,7 @@ public class AdmissionRequest {
       }
 
       @Override
-      public Object readObject(AdmissionRequest request) {
+      public Object readProposedObject(AdmissionRequest request) {
         return readScale(writeMap(request.getObject()));
       }
 
@@ -262,7 +262,7 @@ public class AdmissionRequest {
       }
 
       @Override
-      public Object readObject(AdmissionRequest request) {
+      public Object readProposedObject(AdmissionRequest request) {
         throw new AssertionError(NOT_SUPPORTED_MSG);
       }
 
@@ -278,7 +278,7 @@ public class AdmissionRequest {
 
     public abstract Object readOldObject(AdmissionRequest request);
 
-    public abstract Object readObject(AdmissionRequest request);
+    public abstract Object readProposedObject(AdmissionRequest request);
 
     public abstract AdmissionChecker getAdmissionChecker(AdmissionRequest request) throws ApiException;
 
