@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -130,7 +129,7 @@ public class ConversionWebhookResource extends BaseResource {
                 .map(m -> (String) m.get("namespace")).orElse("default");
             return be.listClusters(namespace);
           }))
-          .collect(Collectors.toList());
+          .toList();
 
     List<Object> convertedDomains = new ArrayList<>();
     for (SchemaConversionUtils.Resources cr : convertedResources) {

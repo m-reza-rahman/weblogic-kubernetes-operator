@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.work;
@@ -234,7 +234,7 @@ public abstract class Step {
   }
 
   /**
-   * Create {@link NextAction} that indicates the the current step be retried after a delay.
+   * Create {@link NextAction} that indicates that the current step be retried after a delay.
    *
    * @param packet Packet to provide when retrying this step
    * @param delay Delay time
@@ -249,7 +249,7 @@ public abstract class Step {
   }
 
   /**
-   * Create {@link NextAction} that indicates the the current fiber resume with the indicated step
+   * Create {@link NextAction} that indicates that the current fiber resume with the indicated step
    * after a delay.
    *
    * @param step Step from which to resume
@@ -298,7 +298,7 @@ public abstract class Step {
 
   /**
    * Create a {@link NextAction} that suspends the current {@link Fiber} and that starts child
-   * fibers for each step and packet pair. When all of the created child fibers complete, then this
+   * fibers for each step and packet pair. When all the created child fibers complete, then this
    * fiber is resumed with the indicated step and packet.
    *
    * @param step Step to invoke next when resumed after child fibers complete
@@ -383,21 +383,6 @@ public abstract class Step {
     }
   }
 
-  public static class StepAndPacket {
-    public final Step step;
-    public final Packet packet;
-
-    public StepAndPacket(Step step, Packet packet) {
-      this.step = step;
-      this.packet = packet;
-    }
-
-    public Step getStep() {
-      return step;
-    }
-
-    public Packet getPacket() {
-      return packet;
-    }
+  public record StepAndPacket(Step step, Packet packet) {
   }
 }

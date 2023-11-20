@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.weblogic.domain.model;
@@ -243,7 +243,8 @@ public class MonitoringExporterConfiguration {
   @Override
   public boolean equals(Object o) {
     return (this == o)
-          || ((o instanceof MonitoringExporterConfiguration) && equals((MonitoringExporterConfiguration) o));
+        || ((o instanceof MonitoringExporterConfiguration monitoringExporterConfiguration)
+        && equals(monitoringExporterConfiguration));
   }
 
   private boolean equals(MonitoringExporterConfiguration that) {

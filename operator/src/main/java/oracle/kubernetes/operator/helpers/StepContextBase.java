@@ -60,13 +60,13 @@ public abstract class StepContextBase implements StepContextConstants {
 
           List<Pair<Method, Method>> typeBeans = typeBeans(cls);
           for (Pair<Method, Method> item : typeBeans) {
-            item.getRight()
+            item.right()
                 .invoke(
                     subObj,
                     doDeepSubstitution(
                         substitutionVariables,
-                        item.getLeft().invoke(obj),
-                        isDns1123Required(item.getLeft())));
+                        item.left().invoke(obj),
+                        isDns1123Required(item.left())));
           }
           return subObj;
         } catch (NoSuchMethodException

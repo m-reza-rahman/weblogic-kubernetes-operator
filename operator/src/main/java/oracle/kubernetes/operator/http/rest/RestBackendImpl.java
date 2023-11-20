@@ -208,7 +208,7 @@ public class RestBackendImpl implements RestBackend {
     verifyDomain(domainUid);
     authorize(domainUid, Operation.UPDATE);
 
-    switch (Optional.ofNullable(params.getAction()).orElse(DomainActionType.UNKNOWN)) {
+    switch (Optional.ofNullable(params.action()).orElse(DomainActionType.UNKNOWN)) {
       case INTROSPECT:
         introspect(domainUid);
         break;

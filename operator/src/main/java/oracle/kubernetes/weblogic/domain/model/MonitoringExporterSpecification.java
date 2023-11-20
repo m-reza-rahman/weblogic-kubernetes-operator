@@ -126,7 +126,8 @@ public class MonitoringExporterSpecification {
   @Override
   public boolean equals(Object o) {
     return (this == o)
-          || ((o instanceof MonitoringExporterSpecification) && equals((MonitoringExporterSpecification) o));
+        || ((o instanceof MonitoringExporterSpecification monitoringExporterSpecification)
+        && equals(monitoringExporterSpecification));
   }
 
   private boolean equals(MonitoringExporterSpecification that) {

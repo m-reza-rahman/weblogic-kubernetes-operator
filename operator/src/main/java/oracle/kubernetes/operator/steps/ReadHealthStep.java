@@ -338,8 +338,8 @@ public class ReadHealthStep extends Step {
 
       void recordStateAndHealth() throws IOException {
         Pair<String, ServerHealth> pair = parseServerHealthJson(getResponse().body());
-        String state = emptyToNull(Optional.ofNullable(pair).map(Pair::getLeft).orElse(null));
-        ServerHealth health = Optional.ofNullable(pair).map(Pair::getRight).orElse(null);
+        String state = emptyToNull(Optional.ofNullable(pair).map(Pair::left).orElse(null));
+        ServerHealth health = Optional.ofNullable(pair).map(Pair::right).orElse(null);
         recordStateAndHealth(state, health);
       }
 

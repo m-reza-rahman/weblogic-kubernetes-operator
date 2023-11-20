@@ -74,11 +74,10 @@ public class NetworkAccessPoint {
     if (other == this) {
       return true;
     }
-    if (!(other instanceof NetworkAccessPoint)) {
+    if (!(other instanceof NetworkAccessPoint rhs)) {
       return false;
     }
 
-    NetworkAccessPoint rhs = ((NetworkAccessPoint) other);
     EqualsBuilder builder =
         new EqualsBuilder()
             .append(name, rhs.name)

@@ -40,10 +40,9 @@ public class ErrorFilter implements ContainerResponseFilter {
     if (entity == null) {
       // don't wrap null entities
       LOGGER.finer("null entity");
-    } else if (entity instanceof String) {
+    } else if (entity instanceof String detail) {
       // Wrap the error in an 'Error' object that converts the error to a
       // json object matching the Oracle REST style guide:
-      String detail = (String) entity;
       LOGGER.finer("String entity=" + detail);
       ErrorModel error = new ErrorModel(status, detail);
       res.setEntity(error, res.getEntityAnnotations(), MediaType.APPLICATION_JSON_TYPE);

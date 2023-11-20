@@ -133,7 +133,7 @@ public class RollingHelper {
       }
 
       private String getClusterName(Map.Entry<String, StepAndPacket> rollingEntry) {
-        return rollingEntry.getValue().packet.getValue(ProcessingConstants.CLUSTER_NAME);
+        return rollingEntry.getValue().packet().getValue(ProcessingConstants.CLUSTER_NAME);
       }
 
       private boolean isServerNotReady(Map.Entry<String, StepAndPacket> rollingEntry) {
@@ -224,7 +224,7 @@ public class RollingHelper {
     }
 
     String getServerName(StepAndPacket stepAndPacket) {
-      return (String) Optional.ofNullable(stepAndPacket.getPacket())
+      return (String) Optional.ofNullable(stepAndPacket.packet())
         .map(p -> p.get(ProcessingConstants.SERVER_NAME))
         .orElse("");
     }

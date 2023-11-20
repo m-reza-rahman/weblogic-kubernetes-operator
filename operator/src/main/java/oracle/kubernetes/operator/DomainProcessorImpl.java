@@ -269,8 +269,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       case EventConstants.EVENT_KIND_POD:
         processPodEvent(name, event);
         break;
-      case EventConstants.EVENT_KIND_DOMAIN:
-      case EventConstants.EVENT_KIND_NAMESPACE:
+      case EventConstants.EVENT_KIND_DOMAIN, EventConstants.EVENT_KIND_NAMESPACE:
         updateEventK8SObjects(event);
         break;
       case EventConstants.EVENT_KIND_CLUSTER:
@@ -324,8 +323,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private void onDeleteEvent(@Nonnull String kind, @Nonnull String name, CoreV1Event event) {
     switch (kind) {
-      case EventConstants.EVENT_KIND_DOMAIN:
-      case EventConstants.EVENT_KIND_NAMESPACE:
+      case EventConstants.EVENT_KIND_DOMAIN, EventConstants.EVENT_KIND_NAMESPACE:
         deleteEventK8SObjects(event);
         break;
       case EventConstants.EVENT_KIND_POD:
@@ -631,8 +629,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
 
     switch (watchType) {
-      case ADDED:
-      case MODIFIED:
+      case ADDED, MODIFIED:
         updateDomainStatus(pod, info);
         break;
       case DELETED:
@@ -694,8 +691,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
 
     switch (item.type) {
-      case ADDED:
-      case MODIFIED:
+      case ADDED, MODIFIED:
         ServiceHelper.updatePresenceFromEvent(info, item.object);
         break;
       case DELETED:
@@ -726,8 +722,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
 
     switch (item.type) {
-      case ADDED:
-      case MODIFIED:
+      case ADDED, MODIFIED:
         PodDisruptionBudgetHelper.updatePDBFromEvent(info, item.object);
         break;
       case DELETED:
@@ -757,8 +752,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     V1ConfigMap c = item.object;
     if (c.getMetadata() != null) {
       switch (item.type) {
-        case MODIFIED:
-        case DELETED:
+        case MODIFIED, DELETED:
           delegate.runSteps(
               ConfigMapHelper.createScriptConfigMapStep(
                     c.getMetadata().getNamespace(), productVersion));
@@ -783,8 +777,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
 
     switch (item.type) {
-      case ADDED:
-      case MODIFIED:
+      case ADDED, MODIFIED:
         onCreateModifyEvent(ref.getKind(), ref.getName(), e);
         break;
       case DELETED:
@@ -943,12 +936,12 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private static void logThrowable(Throwable throwable) {
-    if (throwable instanceof Step.MultiThrowable) {
-      for (Throwable t : ((Step.MultiThrowable) throwable).getThrowables()) {
+    if (throwable instanceof Step.MultiThrowable multiThrowable) {
+      for (Throwable t : multiThrowable.getThrowables()) {
         logThrowable(t);
       }
-    } else if (throwable instanceof UnrecoverableCallException) {
-      ((UnrecoverableCallException) throwable).log();
+    } else if (throwable instanceof UnrecoverableCallException uce) {
+      uce.log();
     } else {
       LOGGER.severe(MessageKeys.EXCEPTION, throwable);
     }
@@ -1046,8 +1039,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       }
 
       private Step getFailureSteps(Throwable throwable) {
-        if (throwable instanceof IntrospectionJobHolder) {
-          return createIntrospectionFailureSteps(throwable, ((IntrospectionJobHolder) throwable).getIntrospectionJob());
+        if (throwable instanceof IntrospectionJobHolder ijh) {
+          return createIntrospectionFailureSteps(throwable, ijh.getIntrospectionJob());
         } else {
           return createInternalFailureSteps(throwable);
         }

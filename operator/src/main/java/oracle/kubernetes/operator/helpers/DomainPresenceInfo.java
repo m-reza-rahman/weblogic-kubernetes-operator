@@ -1081,7 +1081,7 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
   }
 
   public boolean hasRetryableFailure() {
-    return Optional.ofNullable(getDomain()).map(DomainResource::hasRetriableFailure).orElse(false);
+    return Optional.ofNullable(getDomain()).map(DomainResource::hasRetryableFailure).orElse(false);
   }
 
   /** Details about a specific managed server. */

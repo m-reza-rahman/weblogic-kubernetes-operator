@@ -1649,14 +1649,14 @@ class CallBuilderTest {
       Map<String, String[]> parameters = new HashMap<>();
       for (String s : query.split("&")) {
         Pair<String, String> p = splitQueryParameter(s);
-        if (!parameters.containsKey(p.getLeft())) {
-          parameters.put(p.getLeft(), new String[] { p.getRight() });
+        if (!parameters.containsKey(p.left())) {
+          parameters.put(p.left(), new String[] { p.right() });
         } else {
-          String[] current = parameters.get(p.getLeft());
+          String[] current = parameters.get(p.left());
           String[] updated = new String[current.length + 1];
           System.arraycopy(current, 0, updated, 0, current.length);
-          updated[current.length] = p.getRight();
-          parameters.put(p.getLeft(), updated);
+          updated[current.length] = p.right();
+          parameters.put(p.left(), updated);
         }
       }
       return parameters;

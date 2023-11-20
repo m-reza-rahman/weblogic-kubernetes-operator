@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.webhooks.model;
@@ -171,16 +171,12 @@ public class AdmissionRequest {
    * @return enum element.
    */
   public RequestKind getRequestKind() {
-    switch (getKind().get("kind")) {
-      case DOMAIN:
-        return RequestKind.DOMAIN;
-      case CLUSTER:
-        return RequestKind.CLUSTER;
-      case SCALE:
-        return RequestKind.SCALE;
-      default:
-        return RequestKind.NOT_SUPPORTED;
-    }
+    return switch (getKind().get("kind")) {
+      case DOMAIN -> RequestKind.DOMAIN;
+      case CLUSTER -> RequestKind.CLUSTER;
+      case SCALE -> RequestKind.SCALE;
+      default -> RequestKind.NOT_SUPPORTED;
+    };
   }
 
   public enum RequestKind {

@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.WeakHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -282,7 +281,7 @@ public class Namespaces {
     private List<StepAndPacket> getCreateNSStopEventSteps(Packet packet, NamespaceValidationContext validationContext) {
       return domainNamespaces.getNamespaces().stream()
           .filter(validationContext::isNotManaged)
-          .map(n -> createNSStopEventDetails(packet, n)).collect(Collectors.toList());
+          .map(n -> createNSStopEventDetails(packet, n)).toList();
     }
 
     private StepAndPacket createNSStopEventDetails(Packet packet, String namespace) {

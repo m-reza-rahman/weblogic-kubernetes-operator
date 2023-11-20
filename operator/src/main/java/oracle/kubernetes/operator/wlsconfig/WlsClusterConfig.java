@@ -228,11 +228,10 @@ public class WlsClusterConfig {
     if (other == this) {
       return true;
     }
-    if (!(other instanceof WlsClusterConfig)) {
+    if (!(other instanceof WlsClusterConfig rhs)) {
       return false;
     }
 
-    WlsClusterConfig rhs = ((WlsClusterConfig) other);
     EqualsBuilder builder =
         new EqualsBuilder()
             .append(name, rhs.name)
