@@ -3,14 +3,19 @@
 
 package oracle.kubernetes.operator.calls;
 
+import java.io.Serial;
+
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 
 public class UnrecoverableCallException extends Exception {
+  @Serial
+  private static final long serialVersionUID  = 1L;
+
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
-  private final FailureStatusSource failureStatusSource;
+  private final transient FailureStatusSource failureStatusSource;
 
   public UnrecoverableCallException(FailureStatusSource failureStatusSource) {
     this(failureStatusSource, null);

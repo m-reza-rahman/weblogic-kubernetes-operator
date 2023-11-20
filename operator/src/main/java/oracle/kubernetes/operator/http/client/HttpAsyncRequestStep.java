@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.http.client;
 
+import java.io.Serial;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -124,6 +125,7 @@ public class HttpAsyncRequestStep extends Step {
       return Optional.ofNullable(info).map(DomainPresenceInfo::getNamespace).orElse(null);
     }
 
+    @SuppressWarnings("try")
     private void resume(AsyncFiber fiber, HttpResponse<String> response, Throwable throwable) {
       DomainPresenceInfo info = getDomainPresenceInfo();
       try (ThreadLoggingContext ignored =
@@ -194,6 +196,9 @@ public class HttpAsyncRequestStep extends Step {
   }
 
   static class HttpTimeoutException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID  = 1L;
+
     private final String method;
     private final URI uri;
 

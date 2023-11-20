@@ -3,7 +3,11 @@
 
 package oracle.kubernetes.mojo.shunit2;
 
+import java.io.Serial;
+
 class TestSuiteFailedException extends RuntimeException {
+  @Serial
+  private static final long serialVersionUID  = 1L;
 
   public TestSuiteFailedException(String message, Throwable cause) {
     super(message, cause);

@@ -4,6 +4,7 @@
 package oracle.kubernetes.operator.helpers;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.io.StringReader;
 import java.io.Writer;
 import java.net.URI;
@@ -818,6 +819,8 @@ public class CrdHelper {
   }
 
   static class CrdCreationException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID  = 1L;
 
     public CrdCreationException(String message, Exception e) {
       super(message, e);

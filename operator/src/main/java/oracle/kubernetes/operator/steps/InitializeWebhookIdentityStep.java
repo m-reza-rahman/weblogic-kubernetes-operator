@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.steps;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serial;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -262,6 +263,9 @@ public class InitializeWebhookIdentityStep extends Step {
   }
 
   public static class IdentityInitializationException extends Exception {
+    @Serial
+    private static final long serialVersionUID  = 1L;
+
     public IdentityInitializationException(Exception e) {
       super(e);
     }

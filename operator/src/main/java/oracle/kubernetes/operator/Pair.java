@@ -20,6 +20,7 @@ public record Pair<L, R>(L left, R right) {
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public boolean equals(Object other) {
     if (other == this) {
       return true;

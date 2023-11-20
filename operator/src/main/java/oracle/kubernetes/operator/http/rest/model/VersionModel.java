@@ -22,6 +22,7 @@ public class VersionModel extends ItemModel {
    * @param lifecycle - the lifecycle of this version of the WebLogic operator REST api, either
    *     'activate' or 'deprecated'.
    */
+  @SuppressWarnings("this-escape")
   public VersionModel(String version, boolean latest, String lifecycle) {
     setVersion(version);
     setLatest(latest);

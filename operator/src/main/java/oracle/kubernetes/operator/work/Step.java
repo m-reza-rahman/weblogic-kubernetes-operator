@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.work;
 
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -337,7 +338,9 @@ public abstract class Step {
 
   /** Multi-exception. */
   public static class MultiThrowable extends RuntimeException {
-    private final List<Throwable> throwables;
+    @Serial
+    private static final long serialVersionUID  = 1L;
+    private final transient List<Throwable> throwables;
 
     private MultiThrowable(List<Throwable> throwables) {
       super(throwables.get(0));

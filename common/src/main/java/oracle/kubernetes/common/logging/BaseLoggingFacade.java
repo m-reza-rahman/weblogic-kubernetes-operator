@@ -22,6 +22,7 @@ public abstract class BaseLoggingFacade {
    * Construct logging facade.
    * @param logger logger
    */
+  @SuppressWarnings("this-escape")
   protected BaseLoggingFacade(Logger logger) {
     this.logger = logger;
 

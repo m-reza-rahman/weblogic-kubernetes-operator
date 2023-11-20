@@ -353,6 +353,7 @@ public class Namespaces {
       return !allDomainNamespaces.contains(ns);
     }
 
+    @SuppressWarnings("try")
     private void validateConfiguredNamespace(String namespace) {
       if (isNoLongerActiveDomainNamespace(namespace)) {
         try (ThreadLoggingContext ignored = ThreadLoggingContext.setThreadContext().namespace(namespace)) {

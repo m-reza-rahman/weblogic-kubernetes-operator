@@ -12,6 +12,7 @@ public class ErrorModel extends BaseModel {
   private String title;
 
   /** Construct an empty ErrorModel. */
+  @SuppressWarnings("this-escape")
   public ErrorModel() {
     setType("http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.1");
     setTitle("FAILURE");
@@ -23,6 +24,7 @@ public class ErrorModel extends BaseModel {
    * @param status - the error's the HTTP status code.
    * @param detail - details describing the error.
    */
+  @SuppressWarnings("this-escape")
   public ErrorModel(int status, String detail) {
     this();
     setStatus(status);

@@ -423,6 +423,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     }
 
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     protected ResponseStep resumeIfReady(WaitForReadyStep.Callback callback) {
       return new WaitForServerShutdownResponseStep(callback, serverName);
     }

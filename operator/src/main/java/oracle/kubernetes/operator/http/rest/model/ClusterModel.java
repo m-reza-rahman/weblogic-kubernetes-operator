@@ -17,6 +17,7 @@ public class ClusterModel extends ItemModel {
    *
    * @param cluster - the cluster's name.
    */
+  @SuppressWarnings("this-escape")
   public ClusterModel(String cluster) {
     setCluster(cluster);
   }

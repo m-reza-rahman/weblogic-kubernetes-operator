@@ -212,6 +212,7 @@ class DomainRecheck {
     return RunInParallel.perNamespace(domainNamespaces, this::startNamespaceSteps);
   }
 
+  @SuppressWarnings("try")
   private Step startNamespaceSteps(String ns) {
     try (ThreadLoggingContext ignored =
              setThreadContext().namespace(ns)) {
@@ -283,6 +284,7 @@ class DomainRecheck {
     }
 
     @Override
+    @SuppressWarnings("try")
     public NextAction apply(Packet packet) {
       if (domainNamespaces == null) {
         return doNext(packet);

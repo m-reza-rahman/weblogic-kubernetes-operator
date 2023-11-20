@@ -347,6 +347,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
+    @SuppressWarnings("try")
     public NextAction apply(Packet packet) {
       if (serverNames == null) {
         return doNext(packet);

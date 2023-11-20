@@ -2822,7 +2822,7 @@ class DomainProcessorTest {
     consoleHandlerMemento.ignoreMessage(NOT_STARTING_DOMAINUID_THREAD);
     processor.registerDomainPresenceInfo(originalInfo);
     domain.getSpec().withWebLogicCredentialsSecret(null);
-    int time = 0;
+    long time = 0;
 
     for (int numRetries = 0; numRetries < 5; numRetries++) {
       processor.createMakeRightOperation(originalInfo).withExplicitRecheck().execute();

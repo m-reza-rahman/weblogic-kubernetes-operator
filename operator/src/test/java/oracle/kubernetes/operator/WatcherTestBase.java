@@ -169,6 +169,7 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
   }
 
   @Test
+  @SuppressWarnings("rawtypes")
   void receivedEvents_areNotSentToListenersWhenWatchersPaused() {
     Object object1 = createObjectWithMetaData();
     Object object2 = createObjectWithMetaData();
@@ -182,12 +183,14 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
     assertThat(callBacks, contains(List.of(addEvent(object1), modifyEvent(object2))));
   }
 
+  @SuppressWarnings("rawtypes")
   private void resumeWatcher(Watcher watcher1) {
     watcher1.start(this);
     watcher1.resume();
     watcher1.waitForExit();
   }
 
+  @SuppressWarnings("rawtypes")
   private void pauseWatcher(Watcher watcher1) {
     watcher1.pause();
     watcher1.waitForExit();

@@ -111,6 +111,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
    * @param labelSelector Label selector
    * @param resourceVersion Resource version
    */
+  @SuppressWarnings("this-escape")
   public AsyncRequestStep(
           ResponseStep<T> next,
           RequestParams requestParams,
@@ -252,6 +253,8 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
       return didResume.compareAndSet(false, true);
     }
 
+    @SuppressWarnings("try")
+
     private void logTimeout() {
       // called from a code path where we don't have the necessary information for logging context,
       // so we need to use the thread context to pass in the logging context
@@ -272,6 +275,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
       }
     }
 
+    @SuppressWarnings("try")
     private void logSuccess(T result, int statusCode, Map<String, List<String>> responseHeaders) {
       // called from a code path where we don't have the necessary information for logging context,
       // so we need to use the thread context to pass in the logging context
@@ -289,6 +293,7 @@ public class AsyncRequestStep<T> extends Step implements RetryStrategyListener {
       }
     }
 
+    @SuppressWarnings("try")
     private void logFailure(ApiException ae, int statusCode, Map<String, List<String>> responseHeaders) {
       // called from a code path where we don't have the necessary information for logging context,
       // so we need to use the thread context to pass in the logging context

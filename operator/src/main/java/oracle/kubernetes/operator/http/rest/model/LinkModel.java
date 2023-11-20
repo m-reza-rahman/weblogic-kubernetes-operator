@@ -31,6 +31,7 @@ public class LinkModel extends BaseModel {
    * @param title -the link's title.
    * @param href - the link's hypertext reference.
    */
+  @SuppressWarnings("this-escape")
   public LinkModel(String rel, String title, String href) {
     setRel(rel);
     setTitle(title);

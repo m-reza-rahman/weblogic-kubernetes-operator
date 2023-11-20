@@ -157,6 +157,7 @@ abstract class Watcher<T> {
     this.stopping.set(false);
   }
 
+  @SuppressWarnings("try")
   private void watchForEvents() {
     long now = System.currentTimeMillis();
     long delay = (getWatchMinimumDelay() * 1000L) - (now - lastInitialize);

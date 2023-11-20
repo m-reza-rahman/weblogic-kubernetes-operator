@@ -21,6 +21,7 @@ public class DomainModel extends ItemModel {
    * @param domainUid - the unique identifier assigned to the WebLogic domain that contains this
    *     cluster.
    */
+  @SuppressWarnings("this-escape")
   public DomainModel(String domainUid) {
     setDomainUid(domainUid);
   }

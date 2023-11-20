@@ -1295,6 +1295,7 @@ class ManagedPodHelperTest extends PodHelperTestBase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void whenDomainSetShutdownSkippingCoherenceEndangeredStateHasEnvSet() {
     Shutdown shutdown = new Shutdown();
     shutdown.skipWaitingCohEndangeredState(true);

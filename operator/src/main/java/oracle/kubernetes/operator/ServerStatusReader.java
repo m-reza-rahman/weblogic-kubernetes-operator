@@ -134,6 +134,7 @@ public class ServerStatusReader {
     }
 
     @Override
+    @SuppressWarnings("try")
     public NextAction apply(Packet packet) {
       @SuppressWarnings("unchecked")
       final ConcurrentMap<String, String> serverStateMap =

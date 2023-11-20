@@ -154,6 +154,7 @@ public class StuckPodProcessing {
     }
 
     @Override
+    @SuppressWarnings("try")
     public NextAction onSuccess(Packet packet, CallResponse<Object> callResponse) {
       try (ThreadLoggingContext ignored =
                ThreadLoggingContext.setThreadContext().namespace(namespace).domainUid(domainUID)) {

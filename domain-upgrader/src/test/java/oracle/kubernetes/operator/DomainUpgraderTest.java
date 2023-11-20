@@ -1,10 +1,11 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.Serial;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -76,6 +77,9 @@ class DomainUpgraderTest {
   }
 
   protected static class ExitException extends SecurityException {
+    @Serial
+    private static final long serialVersionUID  = 1L;
+
     public final int status;
 
     public ExitException(int status) {

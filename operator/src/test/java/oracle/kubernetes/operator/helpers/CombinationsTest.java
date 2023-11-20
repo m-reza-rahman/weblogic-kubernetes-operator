@@ -15,6 +15,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 class CombinationsTest {
 
   @Test
+  @SuppressWarnings("unchecked")
   void whenSourceListHasOneElement_collectionIsListOfSame() {
     List<String> source = List.of("one");
 
@@ -23,6 +24,7 @@ class CombinationsTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void whenSourceListHasTwoElement_collectionContainsCombinations() {
     String first = "one";
     String second = "two";
@@ -33,6 +35,7 @@ class CombinationsTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   void whenSourceListHasThreeElement_collectionContainsCombinations() {
     String first = "one";
     String second = "two";

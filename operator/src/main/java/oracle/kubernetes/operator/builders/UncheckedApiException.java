@@ -3,6 +3,8 @@
 
 package oracle.kubernetes.operator.builders;
 
+import java.io.Serial;
+
 import io.kubernetes.client.openapi.ApiException;
 
 /**
@@ -11,6 +13,9 @@ import io.kubernetes.client.openapi.ApiException;
  * the function object.
  */
 class UncheckedApiException extends RuntimeException {
+  @Serial
+  private static final long serialVersionUID  = 1L;
+
   UncheckedApiException(ApiException e) {
     super(e);
   }

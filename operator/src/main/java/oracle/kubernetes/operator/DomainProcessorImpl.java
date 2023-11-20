@@ -353,6 +353,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   @Override
+  @SuppressWarnings("try")
   public void runMakeRight(MakeRightDomainOperation operation) {
     final DomainPresenceInfo liveInfo = operation.getPresenceInfo();
     if (delegate.isNamespaceRunning(liveInfo.getNamespace())) {
@@ -368,6 +369,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   @Override
+  @SuppressWarnings("try")
   public void runMakeRight(MakeRightClusterOperation operation) {
     final ClusterPresenceInfo liveInfo = operation.getPresenceInfo();
     if (delegate.isNamespaceRunning(liveInfo.getNamespace())) {
@@ -443,6 +445,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     return operation.isDeleting() || EventItem.DOMAIN_DELETED == getEventItem(operation);
   }
 
+  @SuppressWarnings("rawtypes")
   private EventItem getEventItem(MakeRightOperation operation) {
     return Optional.ofNullable(operation.getEventData()).map(EventData::getItem).orElse(null);
   }
@@ -539,6 +542,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
    * to kill or kick these fibers.
    */
   @Override
+  @SuppressWarnings("try")
   public void reportSuspendedFibers() {
     if (LOGGER.isFineEnabled()) {
       BiConsumer<String, FiberGate> consumer =
@@ -577,6 +581,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
   }
 
+  @SuppressWarnings("fallthrough")
   private void processServerPodWatch(V1Pod pod, String watchType) {
     String domainUid = getPodLabel(pod, LabelConstants.DOMAINUID_LABEL);
     DomainPresenceInfo info = getExistingDomainPresenceInfo(getPodNamespace(pod), domainUid);
@@ -1116,6 +1121,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
   }
 
+  @SuppressWarnings("rawtypes")
   private abstract static class Plan<T extends MakeRightOperation> {
 
     final T operation;
@@ -1167,6 +1173,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       this.loggingFilter = loggingFilter;
     }
 
+    @SuppressWarnings("try")
     private void updateStatus() {
       try {
         Step strategy = Step.chain(new DomainPresenceInfoStep(), ServerStatusReader.createStatusStep(timeoutSeconds));

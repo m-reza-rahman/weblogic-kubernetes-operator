@@ -70,6 +70,7 @@ public class FileGroupReader {
    *
    * @return a map of file paths to string contents.
    */
+  @SuppressWarnings("try")
   Map<String, String> loadFilesFromClasspath() {
     synchronized (FileGroupReader.class) {
       try {

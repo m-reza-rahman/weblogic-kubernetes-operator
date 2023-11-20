@@ -58,6 +58,7 @@ public class WlsDomainConfig implements WlsDomain {
    * @param wlsServerConfigs A Map containing servers configured in the WLS domain
    * @param wlsServerTemplates A Map containing server templates configured in this WLS domain
    */
+  @SuppressWarnings("this-escape")
   public WlsDomainConfig(
       String name,
       String adminServerName,

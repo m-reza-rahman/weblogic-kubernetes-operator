@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator;
 
+import java.io.Serial;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
@@ -419,7 +420,10 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
   }
 
   public static class DeadlineExceededException extends Exception implements IntrospectionJobHolder {
-    final V1Job job;
+    @Serial
+    private static final long serialVersionUID  = 1L;
+
+    final transient V1Job job;
 
     public DeadlineExceededException(V1Job job) {
       super();

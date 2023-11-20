@@ -641,6 +641,7 @@ public class JobHelper {
         logToOperator();
       }
 
+      @SuppressWarnings("fallthrough")
       private void logToOperator() {
         if (logMessage.isEmpty()) {
           return;

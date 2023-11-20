@@ -346,7 +346,7 @@ class ObjectPatch<T> {
       }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private P[] getListField(T item) {
       return (P[]) getter.apply(item).toArray(new PatchableComponent[0]);
     }
