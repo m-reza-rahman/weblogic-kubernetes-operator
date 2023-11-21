@@ -63,7 +63,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("Test the monitoring WebLogic Domain via istio provided Prometheus")
 @IntegrationTest
-@Tag("kind-parallel")
 class ItIstioMonitoringExporter {
 
   private static String opNamespace = null;

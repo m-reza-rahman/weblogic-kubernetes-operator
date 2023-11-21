@@ -124,7 +124,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Verify the overrideDistributionStrategy applies the overrides accordingly to the value set")
 @IntegrationTest
-@Tag("kind-parallel")
 class ItConfigDistributionStrategy {
 
   private static String opNamespace = null;

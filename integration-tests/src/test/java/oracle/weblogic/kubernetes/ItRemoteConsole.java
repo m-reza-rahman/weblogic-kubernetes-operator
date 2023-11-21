@@ -75,7 +75,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("Test WebLogic remote console connecting to mii domain")
 @IntegrationTest
-@Tag("kind-parallel")
 @DisabledOnSlimImage
 class ItRemoteConsole {
 
