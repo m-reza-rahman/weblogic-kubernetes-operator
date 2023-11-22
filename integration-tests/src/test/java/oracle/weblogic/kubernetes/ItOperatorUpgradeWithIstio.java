@@ -48,7 +48,6 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.checkIstioService;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.createIstioService;
-import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDeleted;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -64,28 +63,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Install a released version of Operator from GitHub chart repository.
  * Create a domain using Model-In-Image model with a dynamic cluster.
- * Configure Itsio on the domain resource with v8 schema
- * Make sure the console is accessible thru istio ingress port
+ * Configure Istio on the domain resource with v8 schema
+ * Make sure the console is accessible through istio ingress port
  * Upgrade operator with current Operator image build from current branch.
- * Make sure the console is accessible thru istio ingress port
+ * Make sure the console is accessible through istio ingress port
  */
 @DisplayName("Operator upgrade tests with Istio")
 @IntegrationTest
 @Tag("kind-upgrade")
 class ItOperatorUpgradeWithIstio {
 
-  private final String clusterName = "cluster-1"; // do not modify
   private static LoggingFacade logger = null;
-  private String domainUid = "istio-upg-domain";
-  private String adminServerPodName = domainUid + "-admin-server";
-  private String managedServerPodNamePrefix = domainUid + "-managed-server";
-  private int replicaCount = 2;
+  private final String domainUid = "istio-upg-domain";
+  private final String adminServerPodName = domainUid + "-admin-server";
+  private final String managedServerPodNamePrefix = domainUid + "-managed-server";
+  private final int replicaCount = 2;
   private List<String> namespaces;
-  private String latestOperatorImageName;
-  private String adminSecretName = "weblogic-credentials";
   private String opNamespace;
   private String domainNamespace;
-  private int istioIngressPort;
 
   /**
    * For each test:
@@ -183,7 +178,7 @@ class ItOperatorUpgradeWithIstio {
     logger.info("Run " + KUBERNETES_CLI + " to create the domain");
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f "
-            + Paths.get(WORK_DIR + "/domain.yaml").toString());
+            + Paths.get(WORK_DIR + "/domain.yaml"));
     boolean result = Command.withParams(params).execute();
     assertTrue(result, "Failed to create domain custom resource");
 
@@ -206,8 +201,9 @@ class ItOperatorUpgradeWithIstio {
     // before upgrading to Latest
     verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace,
         DOMAIN_STATUS_CONDITION_COMPLETED_TYPE, OLD_DOMAIN_VERSION);
-    istioIngressPort = 
-       createIstioService(domainUid,clusterName,adminServerPodName,domainNamespace);
+    // do not modify
+    String clusterName = "cluster-1";
+    int istioIngressPort = createIstioService(domainUid, clusterName, adminServerPodName, domainNamespace);
     checkIstioService(istioIngressPort,domainNamespace);
     upgradeOperatorToCurrent(opNamespace);
     checkDomainStatus(domainNamespace,domainUid);
@@ -223,6 +219,7 @@ class ItOperatorUpgradeWithIstio {
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
+    String adminSecretName = "weblogic-credentials";
     createSecretWithUsernamePassword(adminSecretName, domainNamespace,
          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
@@ -253,16 +250,4 @@ class ItOperatorUpgradeWithIstio {
       checkServiceExists(managedServerPodNamePrefix + i, domainNamespace);
     }
   }
-
-  private void checkDomainStopped(String domainUid, String domainNamespace) {
-    // verify admin server pod is deleted
-    checkPodDeleted(adminServerPodName, domainUid, domainNamespace);
-    // verify managed server pods are deleted
-    for (int i = 1; i <= replicaCount; i++) {
-      logger.info("Waiting for managed pod {0} to be deleted in namespace {1}",
-          managedServerPodNamePrefix + i, domainNamespace);
-      checkPodDeleted(managedServerPodNamePrefix + i, domainUid, domainNamespace);
-    }
-  }
-
 }

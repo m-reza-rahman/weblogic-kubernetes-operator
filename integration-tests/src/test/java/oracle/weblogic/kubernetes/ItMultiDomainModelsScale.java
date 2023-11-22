@@ -137,7 +137,6 @@ class ItMultiDomainModelsScale {
   private static String domainInImageNamespace = null;
   private static String domainOnPVNamespace = null;
   private static String miiImage = null;
-  private static String encryptionSecretName = "encryptionsecret";
   private String curlCmd = null;
 
   /**
@@ -239,7 +238,7 @@ class ItMultiDomainModelsScale {
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
           replicaCount, numberOfServers, curlCmd, managedServersBeforeScale);
 
-      // then scale cluster back to 1 servers
+      // then scale cluster back to 1 server
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
       managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
@@ -397,6 +396,7 @@ class ItMultiDomainModelsScale {
 
     // create encryption secret
     logger.info("Creating encryption secret");
+    String encryptionSecretName = "encryptionsecret";
     createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
         "weblogicenc", "weblogicenc");
 
@@ -721,7 +721,7 @@ class ItMultiDomainModelsScale {
    * Start domain and verify all the server pods were started.
    *
    * @param domainNamespace the namespace where the domain exists
-   * @param domainUid the uid of the domain to shutdown
+   * @param domainUid the uid of the domain to shut down
    * @param replicaCount replica count of the domain cluster
    * @param numClusters number of clusters in the domain
    */
@@ -775,9 +775,9 @@ class ItMultiDomainModelsScale {
 
     logger.info("Validating WebLogic admin server access by login to console");
     testUntil(
-        assertDoesNotThrow(() -> {
-          return adminNodePortAccessible(serviceNodePort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, routeHost);
-        }, "Access to admin server node port failed"),
+        assertDoesNotThrow(() -> adminNodePortAccessible(
+            serviceNodePort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, routeHost),
+            "Access to admin server node port failed"),
         logger,
         "Console login validation");
   }

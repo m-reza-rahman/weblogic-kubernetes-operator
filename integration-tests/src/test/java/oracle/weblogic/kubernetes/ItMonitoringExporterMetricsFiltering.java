@@ -3,7 +3,6 @@
 
 package oracle.weblogic.kubernetes;
 
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -83,18 +82,14 @@ class ItMonitoringExporterMetricsFiltering {
 
   // domain constants
   private static String domain1Namespace = null;
-  private static String domain1Uid = "monexp-domain-4";
+  private static final String domain1Uid = "monexp-domain-4";
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
   private static int nodeportshttps = 0;
-  private static List<String> ingressHost1List = null;
 
   private static String monitoringNS = null;
   static PrometheusParams promHelmParams = null;
   GrafanaParams grafanaHelmParams = null;
-  private static String monitoringExporterEndToEndDir = null;
-  private static String monitoringExporterSrcDir = null;
-  private static String monitoringExporterAppDir = null;
   // constants for creating domain image using model in image
   private static final String MONEXP_MODEL_FILE = "model.monexp.filter.yaml";
   private static final String JDBC_MODEL_FILE = "multi-model-one-ds.20.yaml";
@@ -102,19 +97,15 @@ class ItMonitoringExporterMetricsFiltering {
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
   private static final String STICKYSESS_APP_NAME = "stickysess-app";
 
-  private static String cluster1Name = "cluster-1";
-  private static String cluster2Name = "cluster-2";
+  private static final String cluster1Name = "cluster-1";
   private static String miiImage = null;
-  private static int managedServerPort = 8001;
-  private static int nodeportPrometheus;
   private static String exporterUrl = null;
   private static String prometheusDomainRegexValue = null;
   private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
-  private static List<String> clusterNames = new ArrayList<>();
-  private static String releaseSuffix = "testfilter";
-  private static String prometheusReleaseName = "prometheus" + releaseSuffix;
-  private static String grafanaReleaseName = "grafana" + releaseSuffix;
+  private static final String releaseSuffix = "testfilter";
+  private static final String prometheusReleaseName = "prometheus" + releaseSuffix;
+  private static final String grafanaReleaseName = "grafana" + releaseSuffix;
   private static  String monitoringExporterDir;
   private static String hostPortPrometheus = null;
 
@@ -133,9 +124,7 @@ class ItMonitoringExporterMetricsFiltering {
     logger = getLogger();
     monitoringExporterDir = Paths.get(RESULTS_ROOT,
         "ItMonitoringExporterMetricsFiltering", "monitoringexp").toString();
-    monitoringExporterSrcDir = Paths.get(monitoringExporterDir, "srcdir").toString();
-    monitoringExporterEndToEndDir = Paths.get(monitoringExporterSrcDir, "samples", "kubernetes", "end2end").toString();
-    monitoringExporterAppDir = Paths.get(monitoringExporterDir, "apps").toString();
+    String monitoringExporterAppDir = Paths.get(monitoringExporterDir, "apps").toString();
     logger.info("Get a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     final String opNamespace = namespaces.get(0);
@@ -178,10 +167,10 @@ class ItMonitoringExporterMetricsFiltering {
     logger.info("NGINX http node port: {0}", nodeportshttp);
     logger.info("NGINX https node port: {0}", nodeportshttps);
     clusterNameMsPortMap = new HashMap<>();
+    int managedServerPort = 8001;
     clusterNameMsPortMap.put(cluster1Name, managedServerPort);
+    String cluster2Name = "cluster-2";
     clusterNameMsPortMap.put(cluster2Name, managedServerPort);
-    clusterNames.add(cluster1Name);
-    clusterNames.add(cluster2Name);
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
       host = "[" + host + "]";
@@ -339,7 +328,7 @@ class ItMonitoringExporterMetricsFiltering {
 
   /**
    * Check filtering functionality of monitoring exporter for
-   * combo of includedKeyValues and excludedKeyValues on  sub level.
+   * combo of includedKeyValues and excludedKeyValues on sub-level.
    */
   @Test
   @DisplayName("Test Filtering of the Metrics with includedKeyValues and excludedKeyValues of Monitoring Exporter on "
@@ -459,19 +448,18 @@ class ItMonitoringExporterMetricsFiltering {
   }
 
   private void setupDomainAndMonitoringTools(String domainNamespace, String domainUid)
-      throws IOException, ApiException {
+      throws ApiException {
     // create and verify one cluster mii domain
     logger.info("Create domain and verify that it's running");
     createAndVerifyDomain(miiImage, domainUid, domainNamespace, "FromModel", 1, true, null, null);
 
     // create ingress for the domain
     logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-    String adminServerPodName = domainUid + "-admin-server";
     String clusterService = domainUid + "-cluster-cluster-1";
     if (!OKD) {
       String ingressClassName = nginxHelmParams.getIngressClassName();
-      ingressHost1List
-          = createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
+      List<String> ingressHost1List = createIngressForDomainAndVerify(
+          domainUid, domainNamespace, 0, clusterNameMsPortMap,
           false, ingressClassName, false, 0);
       verifyMonExpAppAccessThroughNginx(ingressHost1List.get(0), 1, nodeportshttp);
       // Need to expose the admin server external service to access the console in OKD cluster only
@@ -496,7 +484,7 @@ class ItMonitoringExporterMetricsFiltering {
                                                String grafanaChartVersion,
                                                String domainNS,
                                                String domainUid
-  ) throws IOException, ApiException {
+  ) throws ApiException {
     final String prometheusRegexValue = String.format("regex: %s;%s", domainNS, domainUid);
     if (promHelmParams == null) {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
@@ -508,7 +496,7 @@ class ItMonitoringExporterMetricsFiltering {
           prometheusRegexValue, promHelmValuesFileDir);
       assertNotNull(promHelmParams, " Failed to install prometheus");
       prometheusDomainRegexValue = prometheusRegexValue;
-      nodeportPrometheus = promHelmParams.getNodePortServer();
+      int nodeportPrometheus = promHelmParams.getNodePortServer();
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
         host = "[" + host + "]";
@@ -535,13 +523,8 @@ class ItMonitoringExporterMetricsFiltering {
           grafanaHelmValuesFileDir,
           grafanaChartVersion);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-      String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
       if (OKD) {
-        hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
+        createRouteForOKD(grafanaReleaseName, monitoringNS);
       }
     }
     logger.info("Grafana is running");
@@ -646,11 +629,6 @@ class ItMonitoringExporterMetricsFiltering {
         base64Encode(String.format("%s:%s",
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT));
-    webClient.addRequestHeader("Authorization", "Basic " + base64encodedUsernameAndPassword);
-  }
-
-  private static void setCredentials(WebClient webClient, String username, String password) {
-    String base64encodedUsernameAndPassword = base64Encode(username + ":" + password);
     webClient.addRequestHeader("Authorization", "Basic " + base64encodedUsernameAndPassword);
   }
 

@@ -120,25 +120,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-gate")
 class ItMiiUpdateDomainConfig {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
   private static final int replicaCount = 2;
   private static final String domainUid = "mii-add-config";
   private static final String pvName = getUniqueName(domainUid + "-pv-");
   private static final String pvcName = getUniqueName(domainUid + "-pvc-");
-  private StringBuilder curlString = null;
   private V1Patch patch = null;
   private final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-managed-server";
-  private final String adminServerName = "admin-server";
-  private final String clusterName = "cluster-1";
   private String adminSvcExtHost = null;
 
   private static LoggingFacade logger = null;
 
   /**
    * Install Operator.
-   * Create domain resource defintion.
+   * Create domain resource definition.
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    JUnit engine parameter resolution mechanism
    */
@@ -149,7 +145,7 @@ class ItMiiUpdateDomainConfig {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -185,7 +181,7 @@ class ItMiiUpdateDomainConfig {
 
     createConfigMapAndVerify(
         configMapName, domainUid, domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.sysresources.yaml"));
+        List.of(MODEL_DIR + "/model.sysresources.yaml"));
 
 
     // create pull secrets for WebLogic image when running in non Kind Kubernetes cluster
@@ -252,12 +248,12 @@ class ItMiiUpdateDomainConfig {
     List<V1EnvVar> envList = domain1.getSpec().getServerPod().getEnv();
 
     boolean found = false;
-    for (int i = 0; i < envList.size(); i++) {
-      logger.info("The name is: {0}, value is: {1}", envList.get(i).getName(), envList.get(i).getValue());
-      if (envList.get(i).getName().equalsIgnoreCase("CUSTOM_ENV")) {
+    for (V1EnvVar v1EnvVar : envList) {
+      logger.info("The name is: {0}, value is: {1}", v1EnvVar.getName(), v1EnvVar.getValue());
+      if (v1EnvVar.getName().equalsIgnoreCase("CUSTOM_ENV")) {
         assertTrue(
-            envList.get(i).getValue().equalsIgnoreCase("${DOMAIN_UID}~##!'%*$(ls)"),
-            "Expected value for CUSTOM_ENV variable does not mtach");
+            v1EnvVar.getValue().equalsIgnoreCase("${DOMAIN_UID}~##!'%*$(ls)"),
+            "Expected value for CUSTOM_ENV variable does not match");
         found = true;
       }
     }
@@ -269,17 +265,9 @@ class ItMiiUpdateDomainConfig {
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
 
-    String curlString = new StringBuilder()
-          .append("curl -g --user ")
-          .append(ADMIN_USERNAME_DEFAULT)
-          .append(":")
-          .append(ADMIN_PASSWORD_DEFAULT)
-          .append(" ")
-          .append("\"http://" + hostAndPort)
-          .append("/management/weblogic/latest/domainConfig")
-          .append("/JMSServers/TestClusterJmsServer")
-          .append("?fields=notes&links=none\"")
-          .append(" --silent ").toString();
+    String curlString = "curl -g --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " " + "\"http://"
+        + hostAndPort + "/management/weblogic/latest/domainConfig" + "/JMSServers/TestClusterJmsServer"
+        + "?fields=notes&links=none\"" + " --silent ";
 
     if (OKE_CLUSTER) {
       curlString = KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- " + curlString;
@@ -298,6 +286,7 @@ class ItMiiUpdateDomainConfig {
   @DisplayName("Check the server logs are written to PersistentVolume")
   void testMiiServerLogsAreOnPV() {
     // check server logs are written on PV and look for string RUNNING in log
+    String adminServerName = "admin-server";
     checkLogsOnPV("grep RUNNING /shared/" + domainNamespace + "/logs/servers/" + adminServerName + "/logs/"
         + adminServerName + ".log", adminServerPodName);
   }
@@ -429,11 +418,11 @@ class ItMiiUpdateDomainConfig {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
-        .append(" \"value\":  \"" + configMapName + "\"")
+        .append(" \"value\":  \"").append(configMapName).append("\"")
         .append(" }]");
     logger.log(Level.INFO, "Configmap patch string: {0}", patchStr);
 
@@ -494,7 +483,7 @@ class ItMiiUpdateDomainConfig {
   @DisplayName("Add new JDBC/JMS SystemResources to the domain")
   void testMiiAddSystemResources() {
 
-    logger.info("Use same database secret created in befreAll() method");
+    logger.info("Use same database secret created in beforeAll() method");
     String configMapName = "dsjmsconfigmap";
     createConfigMapAndVerify(
         configMapName, domainUid, domainNamespace,
@@ -509,11 +498,11 @@ class ItMiiUpdateDomainConfig {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
-        .append(" \"value\":  \"" + configMapName + "\"")
+        .append(" \"value\":  \"").append(configMapName).append("\"")
         .append(" }]");
     logger.log(Level.INFO, "Configmap patch string: {0}", patchStr);
 
@@ -597,11 +586,11 @@ class ItMiiUpdateDomainConfig {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
-        .append(" \"value\":  \"" + configMapName + "\"")
+        .append(" \"value\":  \"").append(configMapName).append("\"")
         .append(" }]");
     logger.log(Level.INFO, "Configmap patch string: {0}", patchStr);
 
@@ -703,7 +692,7 @@ class ItMiiUpdateDomainConfig {
     // Bring back the cluster to originally configured replica count
     logger.info("[Before Patching] updating the replica count to 2");
     boolean p2Success = scaleCluster(domainUid + "-cluster-1", domainNamespace, replicaCount);
-    assertTrue(p1Success,
+    assertTrue(p2Success,
         String.format("replica patching to 2 failed for domain %s in namespace %s", domainUid, domainNamespace));
     checkPodReadyAndServiceExists(managedServerPrefix + "2", domainUid, domainNamespace);
 
@@ -721,11 +710,11 @@ class ItMiiUpdateDomainConfig {
     String configMapName = "dynamic-cluster-size-cm";
     createClusterConfigMap(configMapName, "model.cluster.size.yaml");
 
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
-        .append(" \"value\":  \"" + configMapName + "\"")
+        .append(" \"value\":  \"").append(configMapName).append("\"")
         .append(" }]");
     logger.log(Level.INFO, "Configmap patch string: {0}", patchStr);
 
@@ -776,6 +765,7 @@ class ItMiiUpdateDomainConfig {
     javapCmd.append(" t3://");
     javapCmd.append(domainUid);
     javapCmd.append("-cluster-");
+    String clusterName = "cluster-1";
     javapCmd.append(clusterName);
     javapCmd.append(":8001 4 true");
     javapCmd.append(" \"");
@@ -818,7 +808,7 @@ class ItMiiUpdateDomainConfig {
 
   /**
    * Start a WebLogic domain using model-in-image with JMS/JDBC SystemResources.
-   * Create a empty configmap to delete JMS/JDBC SystemResources
+   * Create an empty configmap to delete JMS/JDBC SystemResources
    * Patch the domain resource with the configmap.
    * Update the restart version of the domain resource.
    * Verify rolling restart of the domain by comparing PodCreationTimestamp
@@ -833,7 +823,7 @@ class ItMiiUpdateDomainConfig {
     String configMapName = "deletesysrescm";
     createConfigMapAndVerify(
         configMapName, domainUid, domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.delete.sysresourcesbyconfigmap.yaml"));
+        List.of(MODEL_DIR + "/model.delete.sysresourcesbyconfigmap.yaml"));
 
     LinkedHashMap<String, OffsetDateTime> pods = new LinkedHashMap<>();
     // get the creation time of the admin server pod before patching
@@ -844,11 +834,11 @@ class ItMiiUpdateDomainConfig {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
-        .append(" \"value\":  \"" + configMapName + "\"")
+        .append(" \"value\":  \"").append(configMapName).append("\"")
         .append(" }]");
     logger.log(Level.INFO, "Configmap patch string: {0}", patchStr);
 
@@ -895,7 +885,7 @@ class ItMiiUpdateDomainConfig {
   }
 
   // Run standalone JMS Client in the pod using wlthint3client.jar in classpath.
-  // The client sends 300 messsage to a Uniform Distributed Queue.
+  // The client sends 300 message to a Uniform Distributed Queue.
   // Make sure that each destination get excatly 150 messages each.
   // and JMS connection is load balanced across all servers
   private static Callable<Boolean> runJmsClient(String javaCmd) {
@@ -1009,12 +999,12 @@ class ItMiiUpdateDomainConfig {
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
         .append(" ")
-        .append("http://" + hostAndPort)
+        .append("http://").append(hostAndPort)
         .append("/management/tenant-monitoring/servers/")
         .append(managedServer)
         .append(" --silent --show-error -o /dev/null -w %{http_code}");
 
-    StringBuilder checkCluster = new StringBuilder();
+    StringBuilder checkCluster;
 
     if (OKE_CLUSTER) {
       checkCluster = new StringBuilder(KUBERNETES_CLI)
@@ -1065,17 +1055,16 @@ class ItMiiUpdateDomainConfig {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
-    ExecResult result = null;
-    curlString = new StringBuilder("curl -g --user ")
-         .append(ADMIN_USERNAME_DEFAULT)
-         .append(":")
-         .append(ADMIN_PASSWORD_DEFAULT)
-         .append(" ")
-         .append("http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort))
-         .append("/management/wls/latest/datasources/id/")
-         .append(resourcesName)
-         .append("/")
-         .append(" --silent --show-error ");
+    StringBuilder curlString = new StringBuilder("curl -g --user ")
+        .append(ADMIN_USERNAME_DEFAULT)
+        .append(":")
+        .append(ADMIN_PASSWORD_DEFAULT)
+        .append(" ")
+        .append("http://").append(getHostAndPort(adminSvcExtHost, adminServiceNodePort))
+        .append("/management/wls/latest/datasources/id/")
+        .append(resourcesName)
+        .append("/")
+        .append(" --silent --show-error ");
     logger.info("checkJdbcRuntime: curl command {0}", new String(curlString));
 
     verifyCommandResultContainsMsg(new String(curlString), expectedOutput);

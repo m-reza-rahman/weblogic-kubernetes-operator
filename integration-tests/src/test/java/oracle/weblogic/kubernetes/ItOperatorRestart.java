@@ -64,13 +64,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItOperatorRestart {
   private static String opNamespace = null;
   private static String domainNamespace = null;
-  private static String domainUid = "domain1";
+  private static final String domainUid = "domain1";
 
-  private static String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
-  private static String managedServerPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
+  private static final String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
+  private static final String managedServerPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
   private static int replicaCount = 2;
   private static LoggingFacade logger = null;
-  private static String ingressHost = null; //only used for OKD
 
   /**
    * Perform initialization for all the tests in this class.
@@ -212,7 +211,7 @@ class ItOperatorRestart {
    * Test patching a running model-in-image domain with a new WebLogic credentials secret.
    * Perform two patching operations to the domain spec. First, change the webLogicCredentialsSecret to
    * a new secret, and then change the domainRestartVersion to trigger a rolling restart of the server pods.
-   * While the rolling is on-going, restart the operator pod.
+   * While the rolling is ongoing, restart the operator pod.
    * Verify that after the operator is restarted, the domain spec's webLogicCredentialsSecret and,
    * restartVersion are updated, and the server pods are recreated, the server pods' weblogic.domainRestartVersion
    * label is updated, and the new credentials are valid and can be used to access WebLogic RESTful
@@ -240,7 +239,7 @@ class ItOperatorRestart {
 
     pods.put(adminServerPodName, adminPodCreationTime);
 
-    List<OffsetDateTime> msLastCreationTime = new ArrayList<OffsetDateTime>();
+    List<OffsetDateTime> msLastCreationTime = new ArrayList<>();
     // get the creation time of the managed server pods before patching
     assertDoesNotThrow(
         () -> {
@@ -259,7 +258,7 @@ class ItOperatorRestart {
         },
         "Failed to get creationTimestamp for managed server pods");
 
-    ingressHost = createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
+    createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
 
     logger.info("Check that before patching current credentials are valid and new credentials are not");
     verifyCredentials(7001, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
@@ -307,7 +306,7 @@ class ItOperatorRestart {
       checkPodRestartVersionUpdated(podName, domainUid, domainNamespace, restartVersion);
     }
 
-    // check if the new credentials are valid and the old credentials are not valid any more
+    // check if the new credentials are valid and the old credentials are not valid
     logger.info("Check that after patching current credentials are not valid and new credentials are");
     verifyCredentials(7001, adminServerPodName, domainNamespace, ADMIN_USERNAME_DEFAULT,
         ADMIN_PASSWORD_DEFAULT, INVALID);

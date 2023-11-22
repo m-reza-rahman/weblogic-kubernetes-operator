@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -116,14 +115,11 @@ class ItMonitoringExporterSamples {
   private static int managedServersCount = 2;
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
-  private static String domain1Uid = "monexp-domain-1";
-  private static String domain2Uid = "monexp-domain-2";
+  private static final String domain1Uid = "monexp-domain-1";
+  private static final String domain2Uid = "monexp-domain-2";
 
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
-  private static int nodeportshttps = 0;
-  private static List<String> ingressHost1List = null;
-  private static List<String> ingressHost2List = null;
 
   private static String monitoringNS = null;
   private static String webhookNS = null;
@@ -140,22 +136,17 @@ class ItMonitoringExporterSamples {
   private static final String MONEXP_IMAGE_NAME = "monexp-image";
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
 
-  private static String cluster1Name = "cluster-1";
-  private static String cluster2Name = "cluster-2";
+  private static final String cluster1Name = "cluster-1";
   private static String miiImage = null;
   private static String wdtImage = null;
   private static String webhookImage = null;
-  private static String exporterImage = null;
   private static String  coordinatorImage = null;
-  private static int managedServerPort = 8001;
-  private static int nodeportPrometheus;
   private static String prometheusDomainRegexValue = null;
   private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
-  private static List<String> clusterNames = new ArrayList<>();
-  private static String releaseSuffix = "testsamples";
-  private static String prometheusReleaseName = "prometheus" + releaseSuffix;
-  private static String grafanaReleaseName = "grafana" + releaseSuffix;
+  private static final String releaseSuffix = "testsamples";
+  private static final String prometheusReleaseName = "prometheus" + releaseSuffix;
+  private static final String grafanaReleaseName = "grafana" + releaseSuffix;
   private static  String monitoringExporterDir;
   private static  String monitoringExporterSrcDir;
   private static  String monitoringExporterEndToEndDir;
@@ -224,15 +215,15 @@ class ItMonitoringExporterSamples {
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+      int nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
       logger.info("NGINX http node port: {0}", nodeportshttp);
       logger.info("NGINX https node port: {0}", nodeportshttps);
     }
     clusterNameMsPortMap = new HashMap<>();
+    int managedServerPort = 8001;
     clusterNameMsPortMap.put(cluster1Name, managedServerPort);
+    String cluster2Name = "cluster-2";
     clusterNameMsPortMap.put(cluster2Name, managedServerPort);
-    clusterNames.add(cluster1Name);
-    clusterNames.add(cluster2Name);
 
     HashMap<String, String> labels = new HashMap<>();
     labels.put("app", "monitoring");
@@ -248,7 +239,7 @@ class ItMonitoringExporterSamples {
   }
 
   /**
-   * Test covers end to end sample, provided in the Monitoring Exporter github project.
+   * Test covers end to end sample, provided in the Monitoring Exporter project.
    * Create Prometheus, Grafana, Webhook, Coordinator.
    * Create domain in Image with monitoring exporter.
    * Verify access to monitoring exporter WebLogic metrics via nginx.
@@ -266,9 +257,9 @@ class ItMonitoringExporterSamples {
           false, null, null);
 
       if (!OKD) {
-        ingressHost2List
-            = createIngressForDomainAndVerify(domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
-                false, nginxHelmParams.getIngressClassName(), false, 0);
+        List<String> ingressHost2List = createIngressForDomainAndVerify(
+            domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
+            false, nginxHelmParams.getIngressClassName(), false, 0);
         logger.info("verify access to Monitoring Exporter");
         verifyMonExpAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, nodeportshttp);
       } else {
@@ -367,7 +358,7 @@ class ItMonitoringExporterSamples {
           promHelmValuesFileDir,
           webhookNS);
       assertNotNull(promHelmParams, " Failed to install prometheus");
-      nodeportPrometheus = promHelmParams.getNodePortServer();
+      int nodeportPrometheus = promHelmParams.getNodePortServer();
       prometheusDomainRegexValue = prometheusRegexValue;
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
@@ -396,15 +387,9 @@ class ItMonitoringExporterSamples {
               grafanaHelmValuesFileDir,
               grafanaChartVersion);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-      String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
       if (OKD) {
-        hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
+        createRouteForOKD(grafanaReleaseName, monitoringNS);
       }
-      // installVerifyGrafanaDashBoard(hostPortGrafana, monitoringExporterEndToEndDir);
     }
     logger.info("Grafana is running");
   }
@@ -529,7 +514,7 @@ class ItMonitoringExporterSamples {
   private static void createWebHook(String image,
                                     String imagePullPolicy,
                                     String namespace,
-                                    String secretName) throws ApiException {
+                                    String secretName) {
     Map<String, String> labels = new HashMap<>();
     labels.put("app", "webhook");
 
@@ -548,12 +533,12 @@ class ItMonitoringExporterSamples {
                 .metadata(new V1ObjectMeta()
                     .labels(labels))
                 .spec(new V1PodSpec()
-                    .containers(Arrays.asList(
+                    .containers(Collections.singletonList(
                         new V1Container()
                             .image(image)
                             .imagePullPolicy(imagePullPolicy)
                             .name("webhook")))
-                    .imagePullSecrets(Arrays.asList(
+                    .imagePullSecrets(Collections.singletonList(
                         new V1LocalObjectReference()
                             .name(secretName))))));
 
@@ -579,7 +564,7 @@ class ItMonitoringExporterSamples {
             .namespace(namespace)
             .labels(labels))
         .spec(new V1ServiceSpec()
-            .ports(Arrays.asList(
+            .ports(Collections.singletonList(
                 new V1ServicePort()
                     .port(8080)
                     .protocol("TCP")))
@@ -650,7 +635,7 @@ class ItMonitoringExporterSamples {
   private static void createCoordinator(String image,
                                         String imagePullPolicy,
                                         String namespace,
-                                        String secretName) throws ApiException {
+                                        String secretName) {
     if (coordinatorDepl == null) {
       Map<String, String> labels = new HashMap<>();
       labels.put("app", "coordinator");
@@ -671,15 +656,15 @@ class ItMonitoringExporterSamples {
                   .metadata(new V1ObjectMeta()
                       .labels(labels))
                   .spec(new V1PodSpec()
-                      .containers(Arrays.asList(
+                      .containers(Collections.singletonList(
                           new V1Container()
                               .image(image)
                               .imagePullPolicy(imagePullPolicy)
                               .name("coordinator")
-                              .ports(Arrays.asList(
+                              .ports(Collections.singletonList(
                                   new V1ContainerPort()
                                       .containerPort(8999)))))
-                      .imagePullSecrets(Arrays.asList(
+                      .imagePullSecrets(Collections.singletonList(
                           new V1LocalObjectReference()
                               .name(secretName))))));
 
@@ -706,7 +691,7 @@ class ItMonitoringExporterSamples {
               .namespace(namespace)
               .labels(labels))
           .spec(new V1ServiceSpec()
-              .ports(Arrays.asList(
+              .ports(Collections.singletonList(
                   new V1ServicePort()
                       .port(8999)
                       .targetPort(new IntOrString(8999))))
@@ -756,7 +741,7 @@ class ItMonitoringExporterSamples {
     p.setProperty("ADMIN_PORT", "7001");
     p.setProperty("MYSQL_USER", "wluser1");
     p.setProperty("MYSQL_PWD", "wlpwd123");
-    // create a temporary WebLogic domain property file as a input for WDT model file
+    // create a temporary WebLogic domain property file as an input for WDT model file
     File domainPropertiesFile = assertDoesNotThrow(() ->
             File.createTempFile("domain", "properties"),
         "Failed to create domain properties file");

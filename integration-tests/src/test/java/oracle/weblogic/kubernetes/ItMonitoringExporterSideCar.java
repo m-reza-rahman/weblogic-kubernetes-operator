@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.domain.DomainResource;
@@ -23,7 +22,6 @@ import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -31,7 +29,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
-import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_FAILED_TYPE;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -50,8 +47,6 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getDo
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getImageBuilderExtraArgs;
-import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeExists;
-import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeHasExpectedStatus;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
@@ -70,7 +65,6 @@ import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResource;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPvAndPvc;
-import static oracle.weblogic.kubernetes.utils.PodUtils.verifyIntrospectorPodLogContainsExpectedErrorMsg;
 import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getOrigModelFile;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -98,39 +92,27 @@ class ItMonitoringExporterSideCar {
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
   private static String domain3Namespace = null;
-  private static String domain4Namespace = null;
-
-  private static String domain1Uid = "monexp-domain-1";
-  private static String domain2Uid = "monexp-domain-2";
-  private static String domain3Uid = "monexp-domain-3";
-  private static String domain4Uid = "monexp-domain-4";
 
   private static NginxParams nginxHelmParams = null;
-  private static int nodeportshttp = 0;
-  private static int nodeportshttps = 0;
 
   private static String monitoringNS = null;
   PrometheusParams promHelmParams = null;
   GrafanaParams grafanaHelmParams = null;
-  private static String monitoringExporterEndToEndDir = null;
   private static String monitoringExporterSrcDir = null;
 
   // constants for creating domain image using model in image
   private static final String MONEXP_IMAGE_NAME = "monexp-image";
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
 
-  private static String cluster1Name = "cluster-1";
-  private static String cluster2Name = "cluster-2";
+  private static final String cluster1Name = "cluster-1";
+  private static final String cluster2Name = "cluster-2";
   private static String exporterImage = null;
-  private static int managedServerPort = 8001;
   private static int nodeportPrometheus;
   private static String prometheusDomainRegexValue = null;
-  private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
-  private static List<String> clusterNames = new ArrayList<>();
-  private static String releaseSuffix = "test1";
-  private static String prometheusReleaseName = "prometheus" + releaseSuffix;
-  private static String grafanaReleaseName = "grafana" + releaseSuffix;
+  private static final String releaseSuffix = "test1";
+  private static final String prometheusReleaseName = "prometheus" + releaseSuffix;
+  private static final String grafanaReleaseName = "grafana" + releaseSuffix;
   private static String monitoringExporterDir;
   private static String hostPortPrometheus;
 
@@ -151,7 +133,6 @@ class ItMonitoringExporterSideCar {
     monitoringExporterDir = Paths.get(RESULTS_ROOT,
         "ItMonitoringExporterSideCar", "monitoringexp").toString();
     monitoringExporterSrcDir = Paths.get(monitoringExporterDir, "srcdir").toString();
-    monitoringExporterEndToEndDir = Paths.get(monitoringExporterSrcDir, "samples", "kubernetes", "end2end").toString();
 
     logger.info("Get a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
@@ -179,7 +160,7 @@ class ItMonitoringExporterSideCar {
 
     logger.info("Get a unique namespace for domain4");
     assertNotNull(namespaces.get(6), "Namespace list is null");
-    domain4Namespace = namespaces.get(6);
+    String domain4Namespace = namespaces.get(6);
 
     logger.info("install and verify operator");
     installAndVerifyOperator(opNamespace,
@@ -196,16 +177,11 @@ class ItMonitoringExporterSideCar {
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+      int nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+      int nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
       logger.info("NGINX http node port: {0}", nodeportshttp);
       logger.info("NGINX https node port: {0}", nodeportshttps);
     }
-    clusterNameMsPortMap = new HashMap<>();
-    clusterNameMsPortMap.put(cluster1Name, managedServerPort);
-    clusterNameMsPortMap.put(cluster2Name, managedServerPort);
-    clusterNames.add(cluster1Name);
-    clusterNames.add(cluster2Name);
 
     logger.info("create pv and pvc for monitoring");
     HashMap<String, String> labels = new HashMap<>();
@@ -230,6 +206,7 @@ class ItMonitoringExporterSideCar {
   @Test
   @DisplayName("Test Basic Functionality of Monitoring Exporter SideCar.")
   void testSideCarBasicFunctionality() throws Exception {
+    String domain3Uid = "monexp-domain-3";
     try {
       // create and verify one cluster mii domain
       logger.info("Create domain and verify that it's running");
@@ -284,47 +261,6 @@ class ItMonitoringExporterSideCar {
 
   }
 
-  /**
-   * Test Negative test to check error message in case
-   * if restfull management services are disabled.
-   * Create Model in Image with monitoring exporter and restfull services disabled.
-   * Check that introspector job fails with expected error message
-   * if domain crd contains exporter config with restfull services disabled
-   */
-  //@Test - test disabled until OWLS-111639 will be implemented
-  @DisplayName("Negative test to check error message in case if restfull"
-      + " services in the domain are disabled.")
-  void testSideCarRESTfullServicesDisabled() throws Exception {
-    boolean testPassed = false;
-    try {
-      // create and verify one cluster mii domain
-      logger.info("Create domain and verify that it's running");
-      String modelFile = generateNewModelFileWithUpdatedDomainUid(domain4Uid,
-          "ItMonitoringExporterSideCar", "model.sessmigr.restdisabled.yaml");
-      String miiImage1 = createAndVerifyMiiImage(modelFile);
-      String yaml = RESOURCE_DIR + "/exporter/rest_webapp.yaml";
-
-      createAndVerifyDomain(miiImage1, domain4Uid, domain4Namespace,
-          "FromModel", 2, false, yaml, exporterImage, false);
-      // verify the condition type Failed exists
-      checkDomainStatusConditionTypeExists(domain4Uid, domain4Namespace, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
-      // verify the condition Failed type has expected status
-      checkDomainStatusConditionTypeHasExpectedStatus(domain4Uid, domain4Namespace,
-          DOMAIN_STATUS_CONDITION_FAILED_TYPE, "True");
-      String errorMessage =
-          "[SEVERE] exporter config is specified and the topology has the REST port disabled ";
-      verifyIntrospectorPodLogContainsExpectedErrorMsg(domain4Uid, domain4Namespace, errorMessage);
-      testPassed = true;
-    } finally {
-      if (!testPassed) {
-        List<String> ns = new ArrayList<>();
-        ns.add(domain4Namespace);
-        LoggingUtil.generateLog(this, ns);
-        shutdownDomain(domain4Uid, domain4Namespace);
-      }
-    }
-  }
-
   private void changeMonitoringExporterSideCarConfig(String configYamlFile, String domainUid,
                                                      String domainNamespace,
                                                      String configSearchKey,
@@ -339,7 +275,7 @@ class ItMonitoringExporterSideCar {
     MonitoringExporterSpecification monexpSpec = new MonitoringExporterSpecification().configuration(contents);
     MonitoringExporterConfiguration monexpCong = monexpSpec.configuration();
 
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/monitoringExporter/configuration\",")
@@ -383,6 +319,7 @@ class ItMonitoringExporterSideCar {
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   @DisplayName("Test Basic Functionality of Monitoring Exporter SideCar for domain with two clusters.")
   void testSideCarBasicFunctionalityTwoClusters() throws Exception {
+    String domain1Uid = "monexp-domain-1";
     try {
       // create and verify one cluster mii domain
       logger.info("Create domain and verify that it's running");
@@ -414,6 +351,7 @@ class ItMonitoringExporterSideCar {
   @Test
   @DisplayName("Test Basic Functionality of Monitoring Exporter SideCar with ssl enabled.")
   void testSideCarBasicFunctionalityWithSSL() throws Exception {
+    String domain2Uid = "monexp-domain-2";
     try {
       // create and verify one cluster mii domain
       logger.info("Create domain and verify that it's running");
@@ -452,7 +390,7 @@ class ItMonitoringExporterSideCar {
                                         String grafanaChartVersion,
                                         String domainNS,
                                         String domainUid
-  ) throws IOException, ApiException {
+  ) throws ApiException {
     final String prometheusRegexValue = String.format("regex: %s;%s", domainNS, domainUid);
     if (promHelmParams == null) {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName,grafanaReleaseName);
@@ -492,9 +430,8 @@ class ItMonitoringExporterSideCar {
               grafanaHelmValuesFileDir,
               grafanaChartVersion);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
-      String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
       if (OKD) {
-        hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
+        createRouteForOKD(grafanaReleaseName, monitoringNS);
       }
     }
     logger.info("Grafana is running");

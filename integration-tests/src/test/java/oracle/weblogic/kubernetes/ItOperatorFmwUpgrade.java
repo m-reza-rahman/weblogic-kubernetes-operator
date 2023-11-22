@@ -8,7 +8,7 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Callable;
@@ -72,7 +72,6 @@ import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOpe
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.upgradeAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
-import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -97,13 +96,10 @@ class ItOperatorFmwUpgrade {
   private static String opNamespace = null;
   private static String domainNamespace = null;
   private static String dbNamespace = null;
-  private static String oracle_home = null;
-  private static String java_home = null;
   private List<String> namespaces;
 
   private static final String RCUSCHEMAPREFIX = "fmwdomainpv";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
-  private static String ORACLEDBSUFFIX = null;
   private static final String RCUSYSUSERNAME = "sys";
   private static final String RCUSYSPASSWORD = "Oradoc_db1";
   private static final String RCUSCHEMAUSERNAME = "myrcuuser";
@@ -118,15 +114,13 @@ class ItOperatorFmwUpgrade {
   private static final String managedServerNameBase = "managed-server";
   private static final String adminServerPodName = domainUid + "-" + adminServerName;
   private static final String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
-  private final int managedServerPort = 8001;
   private final String wlSecretName = domainUid + "-weblogic-credentials";
-  private final String rcuSecretName = domainUid + "-rcu-credentials";
   private static final int replicaCount = 1;
 
   private static String latestOperatorImageName;
 
   /**
-   * Initialization of logger, conditionfactory and current Operator image to all test methods.
+   * Initialization of logger, condition factory and current Operator image to all test methods.
    */
   @BeforeAll
   public static void initAll() {
@@ -151,8 +145,8 @@ class ItOperatorFmwUpgrade {
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
     final int dbListenerPort = getNextFreePort();
-    ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ORACLEDBSUFFIX;
+    String oracleDbSuffix = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
+    dbUrl = ORACLEDBURLPREFIX + dbNamespace + oracleDbSuffix;
 
     logger.info("Assign a unique namespace for operator1");
     assertNotNull(namespaces.get(1), "Namespace is null");
@@ -258,7 +252,7 @@ class ItOperatorFmwUpgrade {
          String externalServiceNameSuffix) {
 
     // install operator with older release
-    HelmParams opHelmParams = installOperator(operatorVersion);
+    installOperator(operatorVersion);
 
     // create FMW domain and verify
     createFmwDomainAndVerify(domainVersion);
@@ -306,22 +300,20 @@ class ItOperatorFmwUpgrade {
 
     // start a new thread to collect the availability data of
     // the application while the main thread performs operator upgrade
-    List<Integer> appAvailability = new ArrayList<Integer>();
+    List<Integer> appAvailability = new ArrayList<>();
     logger.info("Start a thread to keep track of the application's availability");
     Thread accountingThread =
           new Thread(
-              () -> {
-                collectAppAvailability(
-                    domainNamespace,
-                    opNamespace,
-                    appAvailability,
-                    adminServerPodName,
-                    managedServerPodNamePrefix,
-                    replicaCount,
-                    "7001",
-                    "8001",
-                    "testwebapp/index.jsp");
-              });
+              () -> collectAppAvailability(
+                  domainNamespace,
+                  opNamespace,
+                  appAvailability,
+                  adminServerPodName,
+                  managedServerPodNamePrefix,
+                  replicaCount,
+                  "7001",
+                  "8001",
+                  "testwebapp/index.jsp"));
     accountingThread.start();
 
     try {
@@ -346,25 +338,23 @@ class ItOperatorFmwUpgrade {
       // check operator image name after upgrade
       logger.info("Checking image name in operator container ");
       testUntil(
-            assertDoesNotThrow(() -> getOpContainerImageName(),
+            assertDoesNotThrow(this::getOpContainerImageName,
               "Exception while getting the operator image name"),
             logger,
             "Checking operator image name in namespace {0} after upgrade",
             opNamespace);
     } finally {
-      if (accountingThread != null) {
-        try {
-          accountingThread.join();
-        } catch (InterruptedException ie) {
-          // do nothing
-        }
-        // check the application availability data that we have collected,
-        // and see if the application has been available all the time
-        // during the upgrade
-        logger.info("Verify that the application was available when the operator was being upgraded");
-        assertTrue(appAlwaysAvailable(appAvailability),
-              "Application was not always available when the operator was getting upgraded");
+      try {
+        accountingThread.join();
+      } catch (InterruptedException ie) {
+        // do nothing
       }
+      // check the application availability data that we have collected,
+      // and see if the application has been available all the time
+      // during the upgrade
+      logger.info("Verify that the application was available when the operator was being upgraded");
+      assertTrue(appAlwaysAvailable(appAvailability),
+            "Application was not always available when the operator was getting upgraded");
     }
   }
 
@@ -382,6 +372,7 @@ class ItOperatorFmwUpgrade {
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create RCU credential secret
+    String rcuSecretName = domainUid + "-rcu-credentials";
     createRcuSecretWithUsernamePassword(rcuSecretName, domainNamespace,
         RCUSCHEMAUSERNAME, RCUSCHEMAPASSWORD, RCUSYSUSERNAME, RCUSYSPASSWORD);
 
@@ -437,7 +428,7 @@ class ItOperatorFmwUpgrade {
             .domainHomeSourceType("PersistentVolume")
             .image(FMWINFRA_IMAGE_TO_USE_IN_SPEC)
             .imagePullPolicy(IMAGE_PULL_POLICY)
-            .imagePullSecrets(Arrays.asList(
+            .imagePullSecrets(Collections.singletonList(
                 new V1LocalObjectReference()
                     .name(BASE_IMAGES_REPO_SECRET_NAME)))
             .webLogicCredentialsSecret(new V1LocalObjectReference()
@@ -512,17 +503,17 @@ class ItOperatorFmwUpgrade {
     //get ENV variable from the image
     assertNotNull(getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "ORACLE_HOME"),
         "envVar ORACLE_HOME from image is null");
-    oracle_home = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "ORACLE_HOME");
-    logger.info("ORACLE_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, oracle_home);
+    String oracleHome = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "ORACLE_HOME");
+    logger.info("ORACLE_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, oracleHome);
     assertNotNull(getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "JAVA_HOME"),
         "envVar JAVA_HOME from image is null");
-    java_home = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "JAVA_HOME");
-    logger.info("JAVA_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, java_home);
+    String javaHome = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "JAVA_HOME");
+    logger.info("JAVA_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, javaHome);
 
     // create wlst property file object
     Properties p = new Properties();
-    p.setProperty("oracleHome", oracle_home); //default $ORACLE_HOME
-    p.setProperty("javaHome", java_home); //default $JAVA_HOME
+    p.setProperty("oracleHome", oracleHome); //default $ORACLE_HOME
+    p.setProperty("javaHome", javaHome); //default $JAVA_HOME
     p.setProperty("domainParentDir", "/shared/" + domainNamespace + "/domains/");
     p.setProperty("domainName", domainUid);
     p.setProperty("domainUser", ADMIN_USERNAME_DEFAULT);
@@ -533,6 +524,7 @@ class ItOperatorFmwUpgrade {
     p.setProperty("adminListenPort", "7001");
     p.setProperty("adminName", adminServerName);
     p.setProperty("managedNameBase", managedServerNameBase);
+    int managedServerPort = 8001;
     p.setProperty("managedServerPort", Integer.toString(managedServerPort));
     p.setProperty("prodMode", "true");
     p.setProperty("managedCount", "4");
@@ -580,23 +572,5 @@ class ItOperatorFmwUpgrade {
     }
     return true;
   }
-
-  private static void verifyPodNotRunning(String domainNamespace) {
-    // check that admin server pod doesn't exists in the domain namespace
-    logger.info("Checking that admin server pod {0} doesn't exists in namespace {1}",
-        adminServerPodName, domainNamespace);
-    checkPodDoesNotExist(adminServerPodName, domainUid, domainNamespace);
-
-    // check for managed server pods existence in the domain namespace
-    for (int i = 1; i <= replicaCount; i++) {
-      String managedServerPodName = managedServerPodNamePrefix + i;
-
-      // check that managed server pod doesn't exists in the domain namespace
-      logger.info("Checking that managed server pod {0} doesn't exists in namespace {1}",
-          managedServerPodName, domainNamespace);
-      checkPodDoesNotExist(managedServerPodName, domainUid, domainNamespace);
-    }
-  }
-
 }
 

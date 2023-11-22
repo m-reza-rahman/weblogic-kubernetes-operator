@@ -93,7 +93,6 @@ class ItMultiDomainModelsUpgradeAndScale {
   private static final int NUMBER_OF_CLUSTERS_MIIDOMAIN = 2;
   private static final String CLUSTER_NAME_PREFIX = "cluster-";
   private static final int replicaCount = 1;
-  private static final String SAMPLE_APP_CONTEXT_ROOT = "sample-war";
   private static final String WLDF_OPENSESSION_APP = "opensessionapp";
   private static final String wlSecretName = "weblogic-credentials";
   private static final String miiImageName = "mdup-mii-image";
@@ -108,8 +107,7 @@ class ItMultiDomainModelsUpgradeAndScale {
   private static String domainInImageNamespace = null;
   private static String domainOnPVNamespace = null;
   private static String miiImage = null;
-  private static String encryptionSecretName = "encryptionsecret";
-  
+
   private static LoggingFacade logger = null;
   private static Map<String, String> domains;
 
@@ -213,7 +211,7 @@ class ItMultiDomainModelsUpgradeAndScale {
         scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
             replicaCount, numberOfServers, null, managedServersBeforeScale);
 
-        // then scale cluster back to 1 servers
+        // then scale cluster back to 1 server
         logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
             clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
         managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
@@ -250,6 +248,7 @@ class ItMultiDomainModelsUpgradeAndScale {
 
     // create encryption secret
     logger.info("Creating encryption secret");
+    String encryptionSecretName = "encryptionsecret";
     createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
         "weblogicenc", "weblogicenc");
 
@@ -510,7 +509,7 @@ class ItMultiDomainModelsUpgradeAndScale {
    * Start domain and verify all the server pods were started.
    *
    * @param domainNamespace the namespace where the domain exists
-   * @param domainUid the uid of the domain to shutdown
+   * @param domainUid the uid of the domain to shut down
    * @param replicaCount replica count of the domain cluster
    * @param numClusters number of clusters in the domain
    */

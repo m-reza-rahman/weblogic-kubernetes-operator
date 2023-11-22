@@ -68,26 +68,17 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- *
  * A sample mii domain tests running in Openshift service mesh. The test assumes that the service mesh istio operator is
  * running in istio-system namespace. All the service mesh related operators are installed and running as per this
  * documentation. https://docs.openshift.com/container-platform/4.10/service_mesh/v2x/installing-ossm.html
  */
-@DisplayName("Test Openshift servce mesh istio enabled WebLogic Domain in mii model")
+@DisplayName("Test Openshift service mesh istio enabled WebLogic Domain in mii model")
 @Tag("openshift")
 @IntegrationTest
 class ItOpenshiftIstioMiiDomain {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
-
-  private String domainUid = "openshift-istio-mii";
-  private String configMapName = "dynamicupdate-istio-configmap";
-  private final String clusterName = "cluster-1"; // do not modify
-  private final String adminServerPodName = domainUid + "-admin-server";
-  private final String managedServerPrefix = domainUid + "-managed-server";
-  private final String workManagerName = "newWM";
-  private final int replicaCount = 2;
 
   private static LoggingFacade logger = null;
 
@@ -109,7 +100,7 @@ class ItOpenshiftIstioMiiDomain {
     domainNamespace = namespaces.get(1);
     
     // edit service member roll to include operator and domain namespace so that 
-    // Openshift service mesh can add istio side cars to the operator and WebLogic pods.
+    // Openshift service mesh can add istio side-cars to the operator and WebLogic pods.
     Path smrYaml = Paths.get(WORK_DIR, "openshift", "servicememberroll.yaml");
     assertDoesNotThrow(() -> {
       deleteQuietly(smrYaml.getParent().toFile());
@@ -123,11 +114,11 @@ class ItOpenshiftIstioMiiDomain {
     });
     logger.info("Run " + KUBERNETES_CLI + " to create the service member roll");
     CommandParams params = new CommandParams().defaults();
-    params.command(KUBERNETES_CLI + " apply -f " + smrYaml.toString());
+    params.command(KUBERNETES_CLI + " apply -f " + smrYaml);
     boolean result = Command.withParams(params).execute();
     assertTrue(result, "Failed to create service member roll");
 
-    // install and verify operator with istio side car injection set to true
+    // install and verify operator with istio side-car injection set to true
     String opSa = opNamespace + "-sa";
     HelmParams opHelmParams
         = new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
@@ -159,9 +150,9 @@ class ItOpenshiftIstioMiiDomain {
    * Do not add any AdminService under AdminServer configuration.
    * Deploy istio gateways and virtual service.
    * Verify server pods are in ready state and services are created.
-   * Verify login to WebLogic console is successful thru istio ingress port.
-   * Deploy a web application thru istio http ingress port using REST api.  
-   * Access web application thru istio http ingress port using curl.
+   * Verify login to WebLogic console is successful through istio ingress port.
+   * Deploy a web application through istio http ingress port using REST api.
+   * Access web application through istio http ingress port using curl.
    */
   @Test
   @DisplayName("Create WebLogic Domain with mii model with openshift service mesh")  
@@ -192,29 +183,36 @@ class ItOpenshiftIstioMiiDomain {
                     String.format("createSecret failed for %s", encryptionSecretName));
 
     // create WDT config map without any files
+    String configMapName = "dynamicupdate-istio-configmap";
+    String domainUid = "openshift-istio-mii";
     createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Collections.emptyList());
     // create the domain object
+    int replicaCount = 2;
     DomainResource domain = createDomainResource(domainUid,
                                       domainNamespace,
                                       adminSecretName,
                                       TEST_IMAGES_REPO_SECRET_NAME,
                                       encryptionSecretName,
-                                      replicaCount,
+        replicaCount,
                               MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
-                              configMapName);
+        configMapName);
     logger.info(Yaml.dump(domain));
 
+    // do not modify
+    String clusterName = "cluster-1";
     domain = createClusterResourceAndAddReferenceToDomain(
         domainUid + "-" + clusterName, clusterName, domainNamespace, domain, replicaCount);
 
     // create model in image domain
     createDomainAndVerify(domain, domainNamespace);
 
+    String adminServerPodName = domainUid + "-admin-server";
     logger.info("Check admin service {0} is created in namespace {1}",
         adminServerPodName, domainNamespace);
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
     // check managed server services created
     for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = domainUid + "-managed-server";
       logger.info("Check managed service {0} is created in namespace {1}",
           managedServerPrefix + i, domainNamespace);
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
@@ -225,7 +223,7 @@ class ItOpenshiftIstioMiiDomain {
     Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("NAMESPACE", domainNamespace);
     templateMap.put("DUID", domainUid);
-    templateMap.put("ADMIN_SERVICE",adminServerPodName);
+    templateMap.put("ADMIN_SERVICE", adminServerPodName);
     templateMap.put("CLUSTER_SERVICE", clusterService);
     templateMap.put("testwebapp", "sample-war");
 

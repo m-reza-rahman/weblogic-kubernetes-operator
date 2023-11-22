@@ -8,7 +8,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,7 +19,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlRadioButtonInput;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
-import com.google.gson.Gson;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
@@ -37,7 +35,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.yaml.snakeyaml.Yaml;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
@@ -101,38 +98,31 @@ class ItMonitoringExporterWebApp {
   private static String domain2Namespace = null;
   private static String domain3Namespace = null;
 
-  private static String domain1Uid = "monexp-domain-1";
-  private static String domain2Uid = "monexp-domain-2";
-  private static String domain3Uid = "monexp-domain-3";
+  private static final String domain1Uid = "monexp-domain-1";
+  private static final String domain3Uid = "monexp-domain-3";
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
   private static int nodeportshttps = 0;
-  private static List<String> ingressHost1List = null;
 
   private static String monitoringNS = null;
   PrometheusParams promHelmParams = null;
   GrafanaParams grafanaHelmParams = null;
-  private static String monitoringExporterEndToEndDir = null;
-  private static String monitoringExporterSrcDir = null;
   private static String monitoringExporterAppDir = null;
   // constants for creating domain image using model in image
   private static final String MONEXP_MODEL_FILE = "model.monexp.yaml";
   private static final String MONEXP_IMAGE_NAME = "monexp-image";
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
 
-  private static String cluster1Name = "cluster-1";
-  private static String cluster2Name = "cluster-2";
+  private static final String cluster1Name = "cluster-1";
   private static String miiImage = null;
-  private static int managedServerPort = 8001;
-  private static int nodeportPrometheus;
   private static String exporterUrl = null;
   private static String prometheusDomainRegexValue = null;
   private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
-  private static List<String> clusterNames = new ArrayList<>();
-  private static String releaseSuffix = "testwebapp";
-  private static String prometheusReleaseName = "prometheus" + releaseSuffix;
-  private static String grafanaReleaseName = "grafana" + releaseSuffix;
+  private static final List<String> clusterNames = new ArrayList<>();
+  private static final String releaseSuffix = "testwebapp";
+  private static final String prometheusReleaseName = "prometheus" + releaseSuffix;
+  private static final String grafanaReleaseName = "grafana" + releaseSuffix;
   private static  String monitoringExporterDir;
   private static String hostPortPrometheus = null;
 
@@ -151,8 +141,6 @@ class ItMonitoringExporterWebApp {
     logger = getLogger();
     monitoringExporterDir = Paths.get(RESULTS_ROOT,
         "ItMonitoringExporterWebApp", "monitoringexp").toString();
-    monitoringExporterSrcDir = Paths.get(monitoringExporterDir, "srcdir").toString();
-    monitoringExporterEndToEndDir = Paths.get(monitoringExporterSrcDir, "samples", "kubernetes", "end2end").toString();
     monitoringExporterAppDir = Paths.get(monitoringExporterDir, "apps").toString();
     logger.info("Get a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
@@ -200,7 +188,9 @@ class ItMonitoringExporterWebApp {
     logger.info("NGINX http node port: {0}", nodeportshttp);
     logger.info("NGINX https node port: {0}", nodeportshttps);
     clusterNameMsPortMap = new HashMap<>();
+    int managedServerPort = 8001;
     clusterNameMsPortMap.put(cluster1Name, managedServerPort);
+    String cluster2Name = "cluster-2";
     clusterNameMsPortMap.put(cluster2Name, managedServerPort);
     clusterNames.add(cluster1Name);
     clusterNames.add(cluster2Name);
@@ -242,13 +232,12 @@ class ItMonitoringExporterWebApp {
 
       // create ingress for the domain
       logger.info("Creating ingress for domain {0} in namespace {1}", domain1Uid, domain1Namespace);
-      String adminServerPodName = domain1Uid + "-admin-server";
       String clusterService = domain1Uid + "-cluster-cluster-1";
       if (!OKD) {
         String ingressClassName = nginxHelmParams.getIngressClassName();
-        ingressHost1List
-            = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
-                false, ingressClassName, false, 0);
+        List<String> ingressHost1List = createIngressForDomainAndVerify(
+            domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
+            false, ingressClassName, false, 0);
         verifyMonExpAppAccessThroughNginx(ingressHost1List.get(0), 1, nodeportshttp);
         // Need to expose the admin server external service to access the console in OKD cluster only
       } else {
@@ -313,7 +302,8 @@ class ItMonitoringExporterWebApp {
    */
   @Test
   @DisplayName("Test Accessibility of Monitoring Exporter dashboard and metrics if admin port is enabled.")
-  void testAdminPortEnabled() throws Exception {
+  void testAdminPortEnabled() {
+    String domain2Uid = "monexp-domain-2";
     try {
       // create and verify one cluster mii domain with admin port enabled
       logger.info("Create domain and verify that it's running");
@@ -330,14 +320,14 @@ class ItMonitoringExporterWebApp {
 
       assertTrue(verifyMonExpAppAccess("wls-exporter",
           "type: WebAppComponentRuntime",
-          domain2Uid,
+              domain2Uid,
           domain2Namespace,
           true, null),
           "monitoring exporter dashboard page can't be accessed via https");
 
       assertTrue(verifyMonExpAppAccess("wls-exporter/metrics",
           "wls_servlet_invocation_total_count",
-          domain2Uid,
+              domain2Uid,
           domain2Namespace,
           true, null),
           "monitoring exporter metrics page can't be accessed via https");
@@ -367,7 +357,7 @@ class ItMonitoringExporterWebApp {
       //verify access to Monitoring Exporter
       logger.info("checking access to wls metrics via http connection");
 
-      clusterNames.stream().forEach((clusterName) -> {
+      clusterNames.forEach((clusterName) -> {
         assertFalse(verifyMonExpAppAccess("wls-exporter",
             "restPort",
             domain3Uid,
@@ -382,14 +372,12 @@ class ItMonitoringExporterWebApp {
       logger.info("checking access to wl metrics via https connection");
       //set to listen only ssl
       changeListenPort(domain3Uid, domain3Namespace,"False");
-      clusterNames.stream().forEach((clusterName) -> {
-        assertTrue(verifyMonExpAppAccess("wls-exporter/metrics",
-            "wls_servlet_invocation_total_count",
-            domain3Uid,
-            domain3Namespace,
-            true, clusterName),
-            "monitoring exporter metrics page can't be accessed via https");
-      });
+      clusterNames.forEach((clusterName) -> assertTrue(verifyMonExpAppAccess("wls-exporter/metrics",
+          "wls_servlet_invocation_total_count",
+          domain3Uid,
+          domain3Namespace,
+          true, clusterName),
+          "monitoring exporter metrics page can't be accessed via https"));
     } finally {
       logger.info("Shutting down domain3");
       shutdownDomain(domain3Uid, domain3Namespace);
@@ -407,7 +395,7 @@ class ItMonitoringExporterWebApp {
                                         String grafanaChartVersion,
                                         String domainNS,
                                         String domainUid
-                                        ) throws IOException, ApiException {
+                                        ) throws ApiException {
     final String prometheusRegexValue = String.format("regex: %s;%s", domainNS, domainUid);
     if (promHelmParams == null) {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
@@ -419,7 +407,7 @@ class ItMonitoringExporterWebApp {
               prometheusRegexValue, promHelmValuesFileDir);
       assertNotNull(promHelmParams, " Failed to install prometheus");
       prometheusDomainRegexValue = prometheusRegexValue;
-      nodeportPrometheus = promHelmParams.getNodePortServer();
+      int nodeportPrometheus = promHelmParams.getNodePortServer();
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
         host = "[" + host + "]";
@@ -447,13 +435,8 @@ class ItMonitoringExporterWebApp {
               grafanaHelmValuesFileDir,
               grafanaChartVersion);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-      String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
       if (OKD) {
-        hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
+        createRouteForOKD(grafanaReleaseName, monitoringNS);
       }
     }
     logger.info("Grafana is running");
@@ -497,7 +480,7 @@ class ItMonitoringExporterWebApp {
     assertNotNull(originalPage);
     HtmlPage page = submitConfigureForm(exporterUrl, effect, configFile);
     assertTrue((page.asNormalizedText()).contains(expectedErrorMsg));
-    assertTrue(!(page.asNormalizedText()).contains("Error 500--Internal Server Error"));
+    assertFalse((page.asNormalizedText()).contains("Error 500--Internal Server Error"));
   }
 
   private void changeConfigNegativeAuth(
@@ -506,7 +489,7 @@ class ItMonitoringExporterWebApp {
     try {
       final WebClient webClient = new WebClient();
       setCredentials(webClient, username, password);
-      HtmlPage page = submitConfigureForm(exporterUrl, effect, configFile, webClient);
+      submitConfigureForm(exporterUrl, effect, configFile, webClient);
       throw new RuntimeException("Expected exception was not thrown ");
     } catch (FailingHttpStatusCodeException ex) {
       assertTrue((ex.getMessage()).contains(expectedErrorMsg));
@@ -667,17 +650,6 @@ class ItMonitoringExporterWebApp {
   }
 
   /**
-   * Replace monitoring exporter configuration with empty configuration.
-   *
-   * @throws Exception if test fails
-   */
-  private void replaceWithEmptyConfiguration() throws Exception {
-    submitConfigureForm(exporterUrl, "replace", RESOURCE_DIR + "/exporter/rest_empty.yaml");
-    assertFalse(verifyMonExpAppAccess("wls-exporter","values", domain1Uid, domain1Namespace,false, cluster1Name));
-    assertTrue(verifyMonExpAppAccess("wls-exporter","queries", domain1Uid, domain1Namespace,false, cluster1Name));
-  }
-
-  /**
    * Try to append monitoring exporter configuration with empty configuration.
    *
    * @throws Exception if failed to apply configuration or check the expected values.
@@ -830,9 +802,8 @@ class ItMonitoringExporterWebApp {
     WebClient webClient = new WebClient();
     String expectedErrorMsg = "401 Unauthorized for " + exporterUrl;
     try {
-      HtmlPage page =
-              submitConfigureForm(
-                      exporterUrl, "append", RESOURCE_DIR + "/exporter/rest_snakecasetrue.yaml", webClient);
+      submitConfigureForm(
+          exporterUrl, "append", RESOURCE_DIR + "/exporter/rest_snakecasetrue.yaml", webClient);
       throw new RuntimeException("Form was submitted successfully with no credentials");
     } catch (FailingHttpStatusCodeException ex) {
       assertTrue((ex.getMessage()).contains(expectedErrorMsg));
@@ -928,28 +899,11 @@ class ItMonitoringExporterWebApp {
       return false;
     }
     logger.info("Changing ListenPortEnabled");
-    String command = new StringBuilder("/u01/callpyscript.sh /u01/changeListenPort.py ")
-        .append(ADMIN_USERNAME_DEFAULT)
-        .append(" ")
-        .append(ADMIN_PASSWORD_DEFAULT)
-        .append(" t3://")
-        .append(adminServerPodName)
-        .append(":7001 ")
-        .append(setListenPortEnabled)
-        .append(" ")
-        .append("managed-server1")
-        .toString();
+    String command = "/u01/callpyscript.sh /u01/changeListenPort.py " + ADMIN_USERNAME_DEFAULT + " "
+        + ADMIN_PASSWORD_DEFAULT + " t3://" + adminServerPodName + ":7001 " + setListenPortEnabled + " "
+        + "managed-server1";
 
     result = exec(adminPod, null, true, "/bin/sh", "-c", command);
-    if (result.exitValue() != 0) {
-      return false;
-    }
-    return true;
+    return result.exitValue() == 0;
   }
-
-  private static String convertToJson(String yaml) {
-    final Object loadedYaml = new Yaml().load(yaml);
-    return new Gson().toJson(loadedYaml, LinkedHashMap.class);
-  }
-
 }

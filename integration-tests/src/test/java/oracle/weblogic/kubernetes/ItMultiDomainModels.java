@@ -154,12 +154,12 @@ class ItMultiDomainModels {
     String domainNamespace = domain.getMetadata().getNamespace();
     String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
     logger.info("Getting node port for default channel");
-    int serviceNodePort = assertDoesNotThrow(() -> getServiceNodePort(
+    assertDoesNotThrow(() -> getServiceNodePort(
         domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
         "Getting admin server node port failed");
 
     // In OKD cluster, get the routeHost for the external admin service
-    String routeHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+    createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
 
     String dynamicServerPodName = domainUid + "-managed-server1";
     OffsetDateTime dynTs = getPodCreationTime(domainNamespace, dynamicServerPodName);
@@ -196,10 +196,8 @@ class ItMultiDomainModels {
     logger.info("Validating WebLogic admin server access by login to console");
     testUntil(
         assertDoesNotThrow(
-          () -> {
-            return () -> adminLoginPageAccessible(adminServerPodName, "7001",
-            domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
-          },
+          () -> () -> adminLoginPageAccessible(adminServerPodName, "7001",
+          domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
         "Access to admin console page failed"), logger, "Console login validation failed");
 
     // shutdown domain and verify the domain is shutdown
@@ -276,7 +274,7 @@ class ItMultiDomainModels {
     // admin/managed server name here should match with model yaml
     final String auxiliaryImagePath = "/auxiliary";
     String miiAuxiliaryImage1 = MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImage1Tag;
-    // create domain custom resource using a auxiliary image
+    // create domain custom resource using an auxiliary image
     logger.info("Creating domain custom resource with domainUid {0} and auxiliary images {1}",
         domainUid, miiAuxiliaryImage1);
 

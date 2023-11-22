@@ -49,15 +49,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class ItOCILoadBalancer {
   // domain constants
   private static final int replicaCount = 2;
-  private static int managedServersCount = 2;
   private static String domainNamespace = null;
-  private static String domainUid = "lboci-domain";
+  private static final String domainUid = "lboci-domain";
 
   // constants for creating domain image using model in image
-  private static final String SAMPLE_APP_NAME = "sample-app";
-  private static String clusterName = "cluster-1";
+  private static final String clusterName = "cluster-1";
   private static LoggingFacade logger = null;
-  private static String loadBalancerIP = null;
   private static final String OCI_LB_NAME = "ocilb";
 
   /**
@@ -93,7 +90,7 @@ class ItOCILoadBalancer {
   /**
    * Test covers basic functionality for OCI LoadBalancer .
    * Create domain and  OCI LoadBalancer.
-   * Check that application is accessabale via OCI LoadBalancer
+   * Check that application is accessible via OCI LoadBalancer
    */
   @Test
   @DisplayName("Test the sample-app app can be accessed"
@@ -118,14 +115,14 @@ class ItOCILoadBalancer {
     assertDoesNotThrow(() -> installAndVerifyOCILoadBalancer(domainNamespace,
         clusterHttpPort, clusterName, domainUid, OCI_LB_NAME),
         "Installation of OCI Load Balancer failed");
-    loadBalancerIP = getLoadBalancerIP(domainNamespace,OCI_LB_NAME);
+    String loadBalancerIP = getLoadBalancerIP(domainNamespace, OCI_LB_NAME);
     assertNotNull(loadBalancerIP, "External IP for Load Balancer is undefined");
     logger.info("LoadBalancer IP is " + loadBalancerIP);
     verifyWebAppAccessThroughOCILoadBalancer(loadBalancerIP, 2, clusterHttpPort);
   }
 
   /**
-   * Retreive external IP from OCI LoadBalancer.
+   * Retrieve external IP from OCI LoadBalancer.
    */
   private static String getLoadBalancerIP(String namespace, String lbName) throws Exception {
     Map<String, String> labels = new HashMap<>();
@@ -135,7 +132,7 @@ class ItOCILoadBalancer {
     logger.info("Found service with name {0} in {1} namespace ", lbName, namespace);
     List<V1LoadBalancerIngress> ingress = service.getStatus().getLoadBalancer().getIngress();
     if (ingress != null) {
-      logger.info("LoadBalancer Ingress " + ingress.toString());
+      logger.info("LoadBalancer Ingress " + ingress);
       V1LoadBalancerIngress lbIng = ingress.stream().filter(c ->
           !c.getIp().equals("pending")
       ).findAny().orElse(null);

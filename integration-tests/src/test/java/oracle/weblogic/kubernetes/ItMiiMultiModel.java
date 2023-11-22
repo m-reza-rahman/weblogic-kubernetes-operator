@@ -112,7 +112,6 @@ class ItMiiMultiModel {
   private static final String dsName3 = "TestDataSource3";
 
   private static LoggingFacade logger = null;
-  private static String ingressHost = null;
 
   /**
    * Perform initialization for all the tests in this class.
@@ -235,8 +234,6 @@ class ItMiiMultiModel {
 
     logger.info(String.format("Domain %s in namespace %s DataSource %s MaxCapacity is %s, as expected",
             domainUid1, domainNamespace, dsName3, expectedMaxCapacityDS3));
-
-    ingressHost = null;
   }
 
   /**
@@ -285,8 +282,6 @@ class ItMiiMultiModel {
 
     logger.info(String.format("Domain %s in namespace %s DataSource %s does not exist as expected",
             domainUid2, domainNamespace, dsName2));
-
-    ingressHost = null;
   }
 
   /**
@@ -366,8 +361,6 @@ class ItMiiMultiModel {
 
     logger.info(String.format("Domain %s in namespace %s DataSource %s does not exist as expected",
             domainUid3, domainNamespace, dsName2));
-
-    ingressHost = null;
   }
 
   /**
@@ -480,19 +473,10 @@ class ItMiiMultiModel {
       String namespace,
       String dsName) {
 
-    StringBuilder curlString = new StringBuilder(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
-        .append(" -- /bin/bash -c \"")
-        .append("curl -k --user ")
-        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://")
-        .append(adminServerPodName + ":7001")
-        .append("/management/wls/latest/datasources/id/" + dsName)
-        .append(" --noproxy '*'")
-        .append(" --silent --show-error ")
-        .append("| grep maxCapacity | tr -d -c 0-9 ")
-        .append("\"");
-
-    String command = curlString.toString();
+    String command = KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName + " -- /bin/bash -c \""
+        + "curl -k --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " http://" + adminServerPodName
+        + ":7001" + "/management/wls/latest/datasources/id/" + dsName + " --noproxy '*'" + " --silent --show-error "
+        + "| grep maxCapacity | tr -d -c 0-9 " + "\"";
 
     CommandParams params = Command
         .defaultCommandParams()
@@ -515,17 +499,10 @@ class ItMiiMultiModel {
       String namespace,
       String dsName) {
 
-    String command = new StringBuilder(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
-        .append(" -- /bin/bash -c \"")
-        .append("curl -k --user ")
-        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://")
-        .append(adminServerPodName + ":7001")
-        .append("/management/wls/latest/datasources")
-        .append("/id/" + dsName)
-        .append(" --noproxy '*'")
-        .append(" --silent --show-error ")
-        .append("\"").toString();
+    String command = KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName + " -- /bin/bash -c \""
+        + "curl -k --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " http://" + adminServerPodName
+        + ":7001" + "/management/wls/latest/datasources" + "/id/" + dsName + " --noproxy '*'"
+        + " --silent --show-error " + "\"";
 
     CommandParams params = Command
         .defaultCommandParams()
