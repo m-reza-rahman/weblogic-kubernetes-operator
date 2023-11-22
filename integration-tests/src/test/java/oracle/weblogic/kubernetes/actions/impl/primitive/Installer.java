@@ -186,7 +186,8 @@ public class Installer {
     }
     if (params.unzip()) {
       // only unzip WIT once
-      if (!(doesFileExist(IMAGE_TOOL)) || !(doesFileExist(REMOTECONSOLE_FILE))) {
+      if ((params.type().equalsIgnoreCase(WIT) && !(doesFileExist(IMAGE_TOOL)))
+          || (params.type().equalsIgnoreCase(REMOTECONSOLE) && !(doesFileExist(REMOTECONSOLE_FILE)))) {
         unzipSucceeded = unzip(downloadDir);
       }
     }

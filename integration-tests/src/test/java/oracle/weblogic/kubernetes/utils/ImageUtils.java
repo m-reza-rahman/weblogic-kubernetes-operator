@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes.utils;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -62,6 +63,7 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.listS
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -350,7 +352,7 @@ public class ImageUtils {
         }
       }
 
-      AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + cacheSfx);
+      AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + Arrays.toString(cacheSfx));
 
       if (!archiveAppsList.isEmpty() && archiveAppsList.get(0) != null) {
         assertTrue(archiveApp(appParams.srcDirList(archiveAppsList)));
@@ -420,27 +422,10 @@ public class ImageUtils {
     String witTarget = ((OKD) ? "OpenShift" : "Default");
     // build an image using WebLogic Image Tool
     logger.info("Creating image {0} using model directory {1}", image, MODEL_DIR);
-    boolean result;
+
+    WitParams witParams;
     if (!modelType) {  //create a domain home in image
-      result = createImage(
-          new WitParams()
-              .baseImageName(baseImageName)
-              .baseImageTag(baseImageTag)
-              .domainType(domainType)
-              .modelImageName(imageName)
-              .modelImageTag(imageTag)
-              .modelFiles(wdtModelList)
-              .modelVariableFiles(modelPropList)
-              .modelArchiveFiles(archiveList)
-              .domainHome(WDT_IMAGE_DOMAINHOME_BASE_DIR + "/" + domainHome)
-              .wdtModelOnly(modelType)
-              .wdtOperation("CREATE")
-              .wdtVersion(WDT_VERSION)
-              .target(witTarget)
-              .env(env)
-              .redirect(true));
-    } else {
-      WitParams witParams = new WitParams()
+      witParams = new WitParams()
           .baseImageName(baseImageName)
           .baseImageTag(baseImageTag)
           .domainType(domainType)
@@ -449,7 +434,25 @@ public class ImageUtils {
           .modelFiles(wdtModelList)
           .modelVariableFiles(modelPropList)
           .modelArchiveFiles(archiveList)
-          .wdtModelOnly(modelType)
+          .domainHome(WDT_IMAGE_DOMAINHOME_BASE_DIR + "/" + domainHome)
+          .wdtModelOnly(false)
+          .wdtOperation("CREATE")
+          .wdtVersion(WDT_VERSION)
+          .target(witTarget)
+          .env(env)
+          .redirect(true);
+
+    } else {
+      witParams = new WitParams()
+          .baseImageName(baseImageName)
+          .baseImageTag(baseImageTag)
+          .domainType(domainType)
+          .modelImageName(imageName)
+          .modelImageTag(imageTag)
+          .modelFiles(wdtModelList)
+          .modelVariableFiles(modelPropList)
+          .modelArchiveFiles(archiveList)
+          .wdtModelOnly(true)
           .wdtVersion(WDT_VERSION)
           .target(witTarget)
           .env(env)
@@ -470,10 +473,14 @@ public class ImageUtils {
         witParams.target("OpenShift");
       }
 
-      result = createImage(witParams);
     }
-
-    assertTrue(result, String.format("Failed to create the image %s using WebLogic Image Tool", image));
+    testUntil(
+        withStandardRetryPolicy,
+        () -> createImage(witParams),
+        getLogger(),
+        "creating image {0}:{1} succeeds",
+        imageName,
+        imageTag);
 
     // Check image exists using 'WLSIMG_BUILDER images | grep image tag'.
     assertTrue(doesImageExist(imageTag),
