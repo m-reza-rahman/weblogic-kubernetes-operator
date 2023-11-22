@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,7 +31,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Secret;
-import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.AdminServer;
@@ -42,7 +41,6 @@ import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -58,7 +56,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static io.kubernetes.client.util.Yaml.dump;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
@@ -78,7 +75,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getNextIntrospectVe
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
-import static oracle.weblogic.kubernetes.actions.TestActions.listServices;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.TestActions.startDomain;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
@@ -135,7 +131,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("olcne-mrg")
 class ItConfigDistributionStrategy {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
 
   final String domainUid = "mydomain";
@@ -156,13 +151,8 @@ class ItConfigDistributionStrategy {
   String overridecm = "configoverride-cm";
   LinkedHashMap<String, OffsetDateTime> podTimestamps;
 
-  static int mysqlDBPort1;
-  static int mysqlDBPort2;
   static String dsUrl1;
   static String dsUrl2;
-  static String mysql1SvcEndpoint = null;
-  static String mysql2SvcEndpoint = null;
-
   String dsName0 = "JdbcTestDataSource-0";
   String dsName1 = "JdbcTestDataSource-1";
   String dsSecret = domainUid.concat("-mysql-secret");
@@ -187,7 +177,7 @@ class ItConfigDistributionStrategy {
 
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
     logger.info("Assign a unique namespace for domain namspace");
     assertNotNull(namespaces.get(1), "Namespace is null");
     domainNamespace = namespaces.get(1);
@@ -750,18 +740,6 @@ class ItConfigDistributionStrategy {
         },
         logger,
         "clusterview app in admin server is accessible after restart");
-    /*
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(dsOverrideTestUrl, true));
-
-    assertEquals(200, response.statusCode(), "Status code not equals to 200");
-    if (configUpdated) {
-      assertTrue(response.body().contains("getMaxCapacity:12"), "Did get getMaxCapacity:12");
-      assertTrue(response.body().contains("getInitialCapacity:2"), "Did get getInitialCapacity:2");
-    } else {
-      assertTrue(response.body().contains("getMaxCapacity:15"), "Did get getMaxCapacity:15");
-      assertTrue(response.body().contains("getInitialCapacity:1"), "Did get getInitialCapacity:1");
-    }
-    */
 
     //test connection pool in all managed servers of dynamic cluster
     for (int i = 1; i <= replicaCount; i++) {
@@ -947,7 +925,7 @@ class ItConfigDistributionStrategy {
             .domainHomeSourceType("PersistentVolume") // set the domain home source type as pv
             .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
             .imagePullPolicy(IMAGE_PULL_POLICY)
-            .imagePullSecrets(Arrays.asList(
+            .imagePullSecrets(Collections.singletonList(
                 new V1LocalObjectReference()
                     .name(BASE_IMAGES_REPO_SECRET_NAME))) // this secret is used only in non-kind cluster
             .webLogicCredentialsSecret(new V1LocalObjectReference()
@@ -1077,7 +1055,6 @@ class ItConfigDistributionStrategy {
           "Getting admin server default port failed");
       logger.info("default channel port: {0}", defaultChannelPort);
       assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
-      String jdbcDsUrl = dsUrl;
 
       // based on WebLogic image, change the mysql driver to 
       // 12.2.1.3 - com.mysql.jdbc.Driver
@@ -1090,7 +1067,7 @@ class ItConfigDistributionStrategy {
       p.setProperty("admin_username", ADMIN_USERNAME_DEFAULT);
       p.setProperty("admin_password", ADMIN_PASSWORD_DEFAULT);
       p.setProperty("dsName", dsName);
-      p.setProperty("dsUrl", jdbcDsUrl);
+      p.setProperty("dsUrl", dsUrl);
       if (WEBLOGIC_12213) {
         p.setProperty("dsDriver", "com.mysql.jdbc.Driver");
       } else {
@@ -1151,57 +1128,18 @@ class ItConfigDistributionStrategy {
         namespace, jobCreationContainer);
   }
 
-  private static Integer getMySQLNodePort(String namespace, String dbName) {
-    logger.info(dump(Kubernetes.listServices(namespace)));
-    List<V1Service> services = listServices(namespace).getItems();
-    for (V1Service service : services) {
-      if (service.getMetadata().getName().startsWith(dbName)) {
-        return service.getSpec().getPorts().get(0).getNodePort();
-      }
-    }
-    return -1;
-  }
-
-  private static String getMySQLSvcName(String namespace, String dbName) {
-    logger.info(dump(Kubernetes.listServices(namespace)));
-    List<V1Service> services = listServices(namespace).getItems();
-    for (V1Service service : services) {
-      if (service.getMetadata().getName().startsWith(dbName)) {
-        return service.getMetadata().getName();
-      }
-    }
-    return null;
-  }
-
-  private static String getMySQLSvcEndpoint(String domainNamespace, String dbName) {
-    String svcName = getMySQLSvcName(domainNamespace, dbName);
-    String command = new String("oc -n " + domainNamespace + " get ep | grep " + svcName + " |  awk '{print $2}'");
-    ExecResult result = null;
-    try {
-      result = exec(new String(command), true);
-      getLogger().info("The command returned exit value: "
-          + result.exitValue() + " command output: "
-          + result.stderr() + "\n" + result.stdout());
-      assertTrue((result.exitValue() == 0),
-             "curl command returned non zero value");
-    } catch (Exception e) {
-      getLogger().info("Got exception, command failed with errors " + e.getMessage());
-    }
-    return  result.stdout();
-  }
-
   private static void runMysqlInsidePod(String podName, String namespace, String password) {
     final LoggingFacade logger = getLogger();
 
     logger.info("Sleeping for 1 minute before connecting to mysql db");
     assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(1));
-    StringBuffer mysqlCmd = new StringBuffer(KUBERNETES_CLI + " exec -i -n ");
+    StringBuilder mysqlCmd = new StringBuilder(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd.append(namespace);
     mysqlCmd.append(" ");
     mysqlCmd.append(podName);
     mysqlCmd.append(" -- /bin/bash -c \"");
     mysqlCmd.append("mysql --force ");
-    mysqlCmd.append("-u root -p" + password);
+    mysqlCmd.append("-u root -p").append(password);
     mysqlCmd.append(" < /tmp/grant.sql ");
     mysqlCmd.append(" \"");
     logger.info("mysql command {0}", mysqlCmd.toString());
@@ -1214,7 +1152,7 @@ class ItConfigDistributionStrategy {
   private void createFileInPod(String podName, String namespace, String password) throws IOException {
     final LoggingFacade logger = getLogger();
 
-    ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
+    ExecResult result = assertDoesNotThrow(() -> exec("hostname -i", true));
     String ip = result.stdout();
 
     Path sourceFile = Files.writeString(Paths.get(WORK_DIR, "grant.sql"),
@@ -1225,8 +1163,8 @@ class ItConfigDistributionStrategy {
         + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
         + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
         + "SELECT host, user FROM mysql.user;");
-    StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
-    mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
+    StringBuilder mysqlCmd = new StringBuilder("cat " + sourceFile.toString() + " | ");
+    mysqlCmd.append(KUBERNETES_CLI).append(" exec -i -n ");
     mysqlCmd.append(namespace);
     mysqlCmd.append(" ");
     mysqlCmd.append(podName);

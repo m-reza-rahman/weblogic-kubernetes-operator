@@ -82,7 +82,6 @@ class ItVzMiiDomain {
 
   private static String domainNamespace = null;
   private static String auxDomainNamespace = null;
-  private final String domainUid = "domain1";
   private static LoggingFacade logger = null;
 
   /**
@@ -109,6 +108,7 @@ class ItVzMiiDomain {
   void testCreateVzMiiDomain() {
 
     // admin/managed server name here should match with model yaml in MII_BASIC_WDT_MODEL_FILE
+    String domainUid = "domain1";
     final String adminServerPodName = domainUid + "-admin-server";
     final String managedServerPrefix = domainUid + "-managed-server";
     final int replicaCount = 2;
@@ -135,7 +135,7 @@ class ItVzMiiDomain {
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
-        encryptionSecretName, replicaCount, Arrays.asList(clusterName));
+        encryptionSecretName, replicaCount, List.of(clusterName));
 
     Component component = new Component()
         .apiVersion("core.oam.dev/v1alpha2")
@@ -162,9 +162,9 @@ class ItVzMiiDomain {
             .namespace(domainNamespace)
             .annotations(keyValueMap))
         .spec(new ApplicationConfigurationSpec()
-            .components(Arrays.asList(new Components()
+            .components(Collections.singletonList(new Components()
                 .componentName(domainUid)
-                .traits(Arrays.asList(new IngressTraits()
+                .traits(Collections.singletonList(new IngressTraits()
                     .trait(new IngressTrait()
                         .apiVersion("oam.verrazzano.io/v1alpha1")
                         .kind("IngressTrait")
@@ -174,14 +174,14 @@ class ItVzMiiDomain {
                         .spec(new IngressTraitSpec()
                             .ingressRules(Arrays.asList(
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/console")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(adminServerPodName)
                                         .port(7001)),
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/sample-war")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
@@ -318,9 +318,9 @@ class ItVzMiiDomain {
             .namespace(auxDomainNamespace)
             .annotations(keyValueMap))
         .spec(new ApplicationConfigurationSpec()
-            .components(Arrays.asList(new Components()
+            .components(Collections.singletonList(new Components()
                 .componentName(auxDomainUid)
-                .traits(Arrays.asList(new IngressTraits()
+                .traits(Collections.singletonList(new IngressTraits()
                     .trait(new IngressTrait()
                         .apiVersion("oam.verrazzano.io/v1alpha1")
                         .kind("IngressTrait")
@@ -330,21 +330,21 @@ class ItVzMiiDomain {
                         .spec(new IngressTraitSpec()
                             .ingressRules(Arrays.asList(
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/console")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(adminServerPodName)
                                         .port(7001)),
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/management")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(adminServerPodName)
                                         .port(7001)),
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/sample-war")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
@@ -400,15 +400,14 @@ class ItVzMiiDomain {
     String host = getIstioHost(namespace);
     String address = getLoadbalancerAddress();
 
-    StringBuffer curlString = new StringBuffer("status=$(curl -k --user ");
+    StringBuilder curlString = new StringBuilder("status=$(curl -k --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" https://" + host)
+        .append(" https://").append(host)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesType)
         .append("/")
-        .append(resourcesName)
-        .append("/ --resolve " + host + ":443:" + address)
+        .append(resourcesName).append("/ --resolve ").append(host).append(":443:").append(address)
         .append(" --silent --show-error ")
         .append(" -o /dev/null ")
         .append(" -w %{http_code});")

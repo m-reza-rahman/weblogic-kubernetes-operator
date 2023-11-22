@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,35 +17,25 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import io.kubernetes.client.openapi.ApiException;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Installer;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ExecResult;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.DOWNLOAD_DIR;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_DOWNLOAD_FILENAME_DEFAULT;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
-import static oracle.weblogic.kubernetes.actions.impl.primitive.Installer.installWdtParams;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.cleanDirectory;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The utility class for file operations.
@@ -55,7 +44,7 @@ public class FileUtils {
 
   /**
    * Check if the required directories exist.
-   * Currently the directories will be created if missing. We may remove this function
+   * Currently, the directories will be created if missing. We may remove this function
    * once we have all required working directives pre-created.
    *
    * @param dir the directory that needs to be checked
@@ -90,10 +79,7 @@ public class FileUtils {
    */
   public static boolean doesFileExist(String fileName) {
     File file = new File(fileName);
-    if (file.exists() && file.isFile()) {
-      return true;
-    }
-    return false;
+    return file.exists() && file.isFile();
   }
 
   /**
@@ -104,10 +90,7 @@ public class FileUtils {
    */
   public static boolean doesDirExist(String dirName) {
     File dir = new File(dirName);
-    if (dir.exists() && dir.isDirectory()) {
-      return true;
-    }
-    return false;
+    return dir.exists() && dir.isDirectory();
   }
 
   /**
@@ -145,7 +128,7 @@ public class FileUtils {
         } catch (IOException e) {
           String msg = String.format("Failed to copy file %s to %s", source, destDir);
           getLogger().severe(msg, e);
-          // cannot throw non runtime exception. the caller checks throwable
+          // cannot throw non-runtime exception. the caller checks throwable
           throw new RuntimeException(msg);
         }
       });
@@ -156,7 +139,7 @@ public class FileUtils {
    * Copy a file to a pod in specified namespace.
    * @param namespace namespace in which the pod exists
    * @param pod name of pod where the file will be copied to
-   * @param container name of the container inside of the pod
+   * @param container name of the container inside the pod
    * @param srcPath source location of the file
    * @param destPath destination location of the file
    * @return true if copy succeeds, false otherwise
@@ -175,7 +158,7 @@ public class FileUtils {
    * Copy a file to a pod in specified namespace.
    * @param namespace namespace in which the pod exists
    * @param pod name of pod where the file will be copied to
-   * @param container name of the container inside of the pod
+   * @param container name of the container inside the pod
    * @param srcPath source location of the file
    * @param destPath destination location of the file
    */
@@ -209,16 +192,14 @@ public class FileUtils {
    * @param container name of the container
    * @param srcPath source file location on the pod
    * @param destPath destination file location on local filesystem
-   * @throws IOException when copy fails
-   * @throws InterruptedException if the process was interrupted
    */
   public static void copyFileFromPodUsingK8sExec(String namespace,
                                                  String pod,
                                                  String container,
                                                  String srcPath,
-                                                 Path destPath) throws IOException, InterruptedException {
+                                                 Path destPath) {
     LoggingFacade logger = getLogger();
-    StringBuffer copyFileCmd = new StringBuffer(KUBERNETES_CLI + " exec ");
+    StringBuilder copyFileCmd = new StringBuilder(KUBERNETES_CLI + " exec ");
     copyFileCmd.append(" -n ");
     copyFileCmd.append(namespace);
     copyFileCmd.append(" pod/");
@@ -241,31 +222,31 @@ public class FileUtils {
    * Copy a directory to a pod in specified namespace.
    * @param namespace namespace in which the pod exists
    * @param pod name of pod where the file will be copied to
-   * @param container name of the container inside of the pod
+   * @param container name of the container inside the pod
    * @param srcPath source location of the directory
    * @param destPath destination location of the directory
-   * @throws ApiException if Kubernetes API client call fails
    * @throws IOException if copy fails
    */
   public static void copyFolderToPod(String namespace,
                                      String pod,
                                      String container,
                                      Path srcPath,
-                                     Path destPath) throws ApiException, IOException {
+                                     Path destPath) throws IOException {
 
     Stream<Path> walk = Files.walk(srcPath);
     // find only regular files
     List<String> result = walk.filter(Files::isRegularFile)
-        .map(x -> x.toString()).collect(Collectors.toList());
+        .map(Path::toString).toList();
 
     result.forEach(fileOnHost -> {
       // resolve the given path against this path.
-      Path fileInPod = destPath.resolve(srcPath.relativize(Paths.get(fileOnHost)));
+      Path srcPath1 = Paths.get(fileOnHost);
+      Path fileInPod = destPath.resolve(srcPath.relativize(srcPath1));
       getLogger().info("Copying {0} to {1} ", fileOnHost, fileInPod);
 
       try {
         // copy each file to the pod.
-        Kubernetes.copyFileToPod(namespace, pod, container, Paths.get(fileOnHost), fileInPod);
+        Kubernetes.copyFileToPod(namespace, pod, container, srcPath1, fileInPod);
         getLogger().info("File {0} copied to {1} in Pod {2} in namespace {3} ",
             fileOnHost, fileInPod, pod, namespace);
       } catch (Exception ex) {
@@ -355,15 +336,10 @@ public class FileUtils {
    */
   public static ExecResult copyFileToImageContainer(String containerName, String source, String dest) {
     LoggingFacade logger = getLogger();
-    ExecResult result = null;
+    ExecResult result;
 
     // create a WebLogic container
-    String cpToContainerCmd = new StringBuffer(WLSIMG_BUILDER + " cp ")
-        .append(source)
-        .append(" ")
-        .append(containerName)
-        .append(":")
-        .append(dest).toString();
+    String cpToContainerCmd = WLSIMG_BUILDER + " cp " + source + " " + containerName + ":" + dest;
     logger.info("Command to copy from {0} to {1} is {2}", source, dest, cpToContainerCmd);
 
     try {
@@ -393,7 +369,7 @@ public class FileUtils {
    *
    * @param containerName container name to check
    * @param dest path of target file
-   * @return true if file copied successfully, otherwise false
+   * @return callable that returns true if file copied successfully, otherwise false
    */
   public static Callable<Boolean> isFileCopiedToImageContainer(String containerName, String dest) {
     return () -> checkFileCopiedToImageContainer(containerName, dest);
@@ -411,12 +387,8 @@ public class FileUtils {
     ExecResult result = null;
 
     // check the file is copied over successfully
-    //String checkCmd = new StringBuffer(WLSIMG_BUILDER + " exec -it ")
-    String checkCmd = new StringBuffer(WLSIMG_BUILDER + " exec ")
-        .append(containerName)
-        .append(" /bin/sh -c \"find ")
-        .append(dest)
-        .append("\"").toString();
+    //String checkCmd = new StringBuilder(WLSIMG_BUILDER + " exec -it ")
+    String checkCmd = WLSIMG_BUILDER + " exec " + containerName + " /bin/sh -c \"find " + dest + "\"";
     logger.info("Command to check file {0} copied: {1}", dest, checkCmd);
 
     try {
@@ -436,19 +408,13 @@ public class FileUtils {
    */
   public static void readFileCopiedInImageContainer(String containerName, String dest) {
     LoggingFacade logger = getLogger();
-    ExecResult result = null;
 
     // check the file is copied over successfully
-    //String readCmd = new StringBuffer(WLSIMG_BUILDER + " exec -it "
-    String readCmd = new StringBuffer(WLSIMG_BUILDER + " exec ")
-        .append(containerName)
-        .append(" /bin/sh -c \"cat ")
-        .append(dest)
-        .append("\"").toString();
+    String readCmd = WLSIMG_BUILDER + " exec " + containerName + " /bin/sh -c \"cat " + dest + "\"";
     logger.info("Command to cat file {0}: ", dest, readCmd);
 
     try {
-      result = exec(readCmd, true);
+      exec(readCmd, true);
     } catch (Exception ex) {
       logger.info("checkCmd: caught unexpected exception {0}", ex.getMessage());
     }
@@ -464,7 +430,7 @@ public class FileUtils {
     String zipFileName = dirPath.toString().concat(".zip");
     try {
       final ZipOutputStream outputStream = new ZipOutputStream(new FileOutputStream(zipFileName));
-      Files.walkFileTree(dirPath, new SimpleFileVisitor<Path>() {
+      Files.walkFileTree(dirPath, new SimpleFileVisitor<>() {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attributes) {
           try {
@@ -500,12 +466,12 @@ public class FileUtils {
     LoggingFacade logger = getLogger();
     Path src = Paths.get(filePath);
     logger.info("Replacing {0} in {1} with {2}", regex, src.toString(), replacement);
-    String content = new String(Files.readAllBytes(src), StandardCharsets.UTF_8);
+    String content = Files.readString(src);
     if (!content.contains(regex)) {
       logger.info("search string {0} not found to replace with {1}", regex, replacement);
     }
     long oldModified = src.toFile().lastModified();
-    Files.write(src, content.replaceAll(regex, replacement).getBytes(StandardCharsets.UTF_8));
+    Files.writeString(src, content.replaceAll(regex, replacement));
     if (oldModified == src.toFile().lastModified()) {
       logger.info("No modification was done to the file");
     }
@@ -528,46 +494,14 @@ public class FileUtils {
     ExecResult result = execCommand(namespace, podName, null, true,
         "/bin/sh", "-c", "find " + filename);
 
-    if (result.stdout().contains(filename)) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /**
-   * Download and unzip the WDT installation files.
-   * @param unzipLocation location to unzip the files
-   */
-  public static void unzipWDTInstallationFile(String unzipLocation) {
-    unzipWDTInstallationFile(unzipLocation, WDT_DOWNLOAD_URL, DOWNLOAD_DIR);
-  }
-
-  /**
-   * Download and unzip the WDT installation files.
-   * @param unzipLocation location to unzip the files
-   * @param downloadDir location to download wdt zip file
-   */
-  public static void unzipWDTInstallationFile(String unzipLocation, String locationURL, String downloadDir) {
-    Path wlDeployZipFile = Paths.get(downloadDir, WDT_DOWNLOAD_FILENAME_DEFAULT);
-
-    if (!Files.exists(wlDeployZipFile)) {
-      assertTrue(Installer.withParams(
-          installWdtParams(locationURL))
-          .download(downloadDir), "WDT download failed");
-    }
-    String cmdToExecute = String.format("unzip -o %s -d %s", wlDeployZipFile, unzipLocation);
-    assertTrue(Command
-        .withParams(new CommandParams()
-            .command(cmdToExecute))
-        .execute(), String.format("Failed to unzip %s", wlDeployZipFile));
+    return result.stdout().contains(filename);
   }
 
   /**
    * Generate a text file in RESULTS_ROOT directory by replacing template value.
    * @param inputTemplateFile input template file
    * @param outputFile output file to be generated. This file will be copied to RESULTS_ROOT. If outputFile contains
-   *                   a directory, then the directory will created if it does not exist.
+   *                   a directory, then the directory will be created if it does not exist.
    *                   example - crossdomxaction/istio-cdt-http-srvice.yaml
    * @param templateMap map containing template variable(s) to be replaced
    * @return path of the generated file - will be under RESULTS_ROOT
@@ -602,14 +536,11 @@ public class FileUtils {
    * Check if the required file ls empty.
    *
    * @param fileName the name of the file that needs to be checked
-   * @return true if a file is not empty with the given fileName
+   * @return callable that returns true if a file is not empty with the given fileName
    */
   public static Callable<Boolean> isFileExistAndNotEmpty(String fileName) {
     File file = new File(fileName);
-    return () -> {
-      boolean fileReady = (file.exists() && file.length() != 0);
-      return fileReady;
-    };
+    return () -> (file.exists() && file.length() != 0);
   }
 
   /**

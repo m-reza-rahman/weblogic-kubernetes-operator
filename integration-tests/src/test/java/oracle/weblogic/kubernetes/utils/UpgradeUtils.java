@@ -42,7 +42,7 @@ public class UpgradeUtils {
   private static LoggingFacade logger = null;
 
   /**
-   * Install a released WebLogic Kubernates Operator Version.
+   * Install a released WebLogic Kubernetes Operator Version.
    */
   public static void installOldOperator(String operatorVersion, String opNamespace, String... domainNamespace) {
     logger = getLogger();
@@ -50,7 +50,7 @@ public class UpgradeUtils {
     assertNotNull(opNamespace, "Domain Namespace is null");
 
     // install operator with older release
-    HelmParams opHelmParams = installOperator(operatorVersion,
+    installOperator(operatorVersion,
                  opNamespace, domainNamespace);
   }
 
@@ -167,7 +167,7 @@ public class UpgradeUtils {
 
 
   /**
-   * Install a released WebLogic Kubernates Operator Version.
+   * Install a released WebLogic Kubernetes Operator Version.
    */
   public static void cleanUpCRD() {
     String[] crds = {"domains.weblogic.oracle", "clusters.weblogic.oracle"};

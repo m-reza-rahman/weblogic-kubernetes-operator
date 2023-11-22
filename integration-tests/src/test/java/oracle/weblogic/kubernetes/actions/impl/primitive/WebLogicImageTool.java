@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl.primitive;
@@ -229,7 +229,7 @@ public class WebLogicImageTool {
   }
 
   private String buildList(List<String> list) {
-    StringBuilder sbString = new StringBuilder("");
+    StringBuilder sbString = new StringBuilder();
 
     //iterate through ArrayList
     for (String item : list) {
@@ -237,11 +237,11 @@ public class WebLogicImageTool {
       sbString.append(item).append(",");
     }
 
-    //convert StringBuffer to String
+    //convert StringBuilder to String
     String strList = sbString.toString();
 
     //remove last comma from String if you want
-    if (strList.length() > 0) {
+    if (!strList.isEmpty()) {
       strList = strList.substring(0, strList.length() - 1);
     }
     return strList;
@@ -335,7 +335,7 @@ public class WebLogicImageTool {
 
   /**
    * Create an Auxiliary image using WIT command and return result output.
-   * @return true if the command succeeds
+   * @return result containing true if the command succeeds
    */
   public ExecResult createAuxImageAndReturnResult() {
     // download WIT if it is not in the expected location

@@ -3,7 +3,6 @@
 
 package oracle.weblogic.kubernetes;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -106,24 +105,16 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
   static String wlClusterName = "cluster-1";
   static String clusterResName = "hpacustomcluster";
 
-  private static String adminSecretName;
-  private static String encryptionSecretName;
   private static final String domainUid = "hpacustomdomain";
-  private static String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
-  private static String managedServerPrefix = String.format("%s-%s-%s",
+  private static final String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
+  private static final String managedServerPrefix = String.format("%s-%s-%s",
       domainUid, wlClusterName, MANAGED_SERVER_NAME_BASE);
   static DomainResource domain = null;
 
-  private static String opServiceAccount = null;
-  private static String opNamespace = null;
-
   private static LoggingFacade logger = null;
   private static  String monitoringExporterDir;
-  private static  String monitoringExporterSrcDir;
-  private static  String monitoringExporterAppDir;
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
-  private static String nginxNamespace = null;
   private static final String MONEXP_MODEL_FILE = "model.monexp.yaml";
   private static final String MONEXP_IMAGE_NAME = "monexp-image";
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
@@ -131,10 +122,9 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
   private static final String SESSMIGT_APP_URL = SESSMIGR_APP_WAR_NAME + "/?getCounter";
   private static String monitoringNS = null;
   static PrometheusParams promHelmParams = null;
-  private static String releaseSuffix = "hpatest";
-  private static String prometheusReleaseName = "prometheus" + releaseSuffix;
-  private static String prometheusAdapterReleaseName = "prometheus-adapter" + releaseSuffix;
-  private static String hostPortPrometheus = null;
+  private static final String releaseSuffix = "hpatest";
+  private static final String prometheusReleaseName = "prometheus" + releaseSuffix;
+  private static final String prometheusAdapterReleaseName = "prometheus-adapter" + releaseSuffix;
   private static String prometheusDomainRegexValue = null;
   private static int nodeportPrometheus;
   private Path targetHPAFile;
@@ -152,11 +142,10 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     logger = getLogger();
     monitoringExporterDir = Paths.get(RESULTS_ROOT,
         "ItMonitoringExporterWebApp", "monitoringexp").toString();
-    monitoringExporterSrcDir = Paths.get(monitoringExporterDir, "srcdir").toString();
-    monitoringExporterAppDir = Paths.get(monitoringExporterDir, "apps").toString();
+    String monitoringExporterAppDir = Paths.get(monitoringExporterDir, "apps").toString();
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Assign a unique namespace for WebLogic domain");
     assertNotNull(namespaces.get(1), "Namespace is null");
@@ -167,10 +156,10 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
 
     logger.info("Get a unique namespace for nginx");
     assertNotNull(namespaces.get(3), "Namespace list is null");
-    nginxNamespace = namespaces.get(3);
+    String nginxNamespace = namespaces.get(3);
 
     // set the service account name for the operator
-    opServiceAccount = opNamespace + "-sa";
+    String opServiceAccount = opNamespace + "-sa";
 
     // install and verify operator with REST API
     installAndVerifyOperator(opNamespace, opServiceAccount, true, 0, domainNamespace);
@@ -182,13 +171,13 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
-    adminSecretName = "weblogic-credentials";
+    String adminSecretName = "weblogic-credentials";
     createSecretWithUsernamePassword(adminSecretName, domainNamespace,
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create encryption secret
     logger.info("Create encryption secret");
-    encryptionSecretName = "encryptionsecret";
+    String encryptionSecretName = "encryptionsecret";
     createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
         "weblogicenc", "weblogicenc");
     logger.info("install monitoring exporter");
@@ -384,8 +373,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f " + targetHPAFile);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
-    assertTrue(result.exitValue() == 0,
-        "Failed to create hpa or autoscale, result " + result);
+    assertEquals(0, result.exitValue(), "Failed to create hpa or autoscale, result " + result);
     assertTrue(verifyHPA(domainNamespace, "custommetrics-hpa"));
   }
 
@@ -413,7 +401,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
   private void installPrometheus(String promChartVersion,
                                         String domainNS,
                                         String domainUid
-  ) throws IOException, ApiException {
+  ) throws ApiException {
     final String prometheusRegexValue = String.format("regex: %s;%s", domainNS, domainUid);
     if (promHelmParams == null) {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, null);
@@ -426,7 +414,6 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
       assertNotNull(promHelmParams, " Failed to install prometheus");
       prometheusDomainRegexValue = prometheusRegexValue;
       nodeportPrometheus = promHelmParams.getNodePortServer();
-      hostPortPrometheus = K8S_NODEPORT_HOST + ":" + nodeportPrometheus;
     }
     //if prometheus already installed change CM for specified domain
     if (!prometheusRegexValue.equals(prometheusDomainRegexValue)) {
@@ -455,8 +442,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " delete -f " + targetHPAFile);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
-    assertTrue(result.exitValue() == 0,
-        "Failed to delete hpa , result " + result);
+    assertEquals(0, result.exitValue(), "Failed to delete hpa , result " + result);
     if (prometheusAdapterHelmParams != null) {
       Helm.uninstall(prometheusAdapterHelmParams);
     }

@@ -96,7 +96,7 @@ public class Domain {
     LoggingFacade logger = getLogger();
     // change the /spec/serverStartPolicy to Never to shut down all servers in the domain
     // create patch string to shut down the domain
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"replace\", ")
         .append("\"path\": \"/spec/serverStartPolicy\", ")
         .append("\"value\": \"Never\"")
@@ -121,7 +121,7 @@ public class Domain {
     LoggingFacade logger = getLogger();
     // change the /spec/serverStartPolicy to IfNeeded to start all servers in the domain
     // create patch string to start the domain
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"replace\", ")
         .append("\"path\": \"/spec/serverStartPolicy\", ")
         .append("\"value\": \"IfNeeded\"")
@@ -217,11 +217,11 @@ public class Domain {
     String oldVersion = assertDoesNotThrow(
         () -> getDomainCustomResource(domainResourceName, namespace).getSpec().getRestartVersion(),
         String.format("Failed to get the restartVersion of %s in namespace %s", domainResourceName, namespace));
-    int newVersion = oldVersion == null ? 1 : Integer.valueOf(oldVersion) + 1;
+    int newVersion = oldVersion == null ? 1 : Integer.parseInt(oldVersion) + 1;
     logger.info("Update domain resource {0} in namespace {1} restartVersion from {2} to {3}",
         domainResourceName, namespace, oldVersion, newVersion);
 
-    StringBuffer patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = new StringBuilder("[{");
     patchStr.append(" \"op\": \"replace\",")
         .append(" \"path\": \"/spec/restartVersion\",")
         .append(" \"value\": \"")
@@ -249,10 +249,10 @@ public class Domain {
   public static void patchDomainResourceWithModelConfigMap(
       String domainResourceName, String namespace, String configMapName) {
     LoggingFacade logger = getLogger();
-    StringBuffer patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
-        .append(" \"path\": \"/spec/configuration/model/configMap\",")
-        .append(" \"value\":  \"" + configMapName + "\"")
+        .append(" \"path\": \"/spec/configuration/model/configMap\",").append(" \"value\":  \"")
+        .append(configMapName).append("\"")
         .append(" }]");
     logger.info("Configmap patch string: {0}", patchStr);
 
@@ -267,9 +267,9 @@ public class Domain {
    * Patch a running domain with spec.configuration.model.onlineUpdate.onNonDynamicChanges.
    * spec.configuration.model.onlineUpdate.onNonDynamicChanges accepts three values:
    *   CommitUpdateOnly    - Default value or if not set. All changes are committed, but if there are non-dynamic mbean
-   *                         changes. The domain needs to be restart manually.
+   *                         changes. The domain needs to be restarted manually.
    *   CommitUpdateAndRoll - All changes are committed, but if there are non-dynamic mbean changes,
-   *                         the domain will rolling restart automatically; if not, no restart is necessary
+   *                         the domain will perform a rolling restart automatically; if not, no restart is necessary
    *   CancelUpdate        - If there are non-dynamic mbean changes, all changes are canceled before
    *                         they are committed. The domain will continue to run, but changes to the configmap
    *                         and resources in the domain resource YAML should be reverted manually,
@@ -284,21 +284,21 @@ public class Domain {
   public static String patchDomainResourceWithOnNonDynamicChanges(
       String domainUid, String namespace, String onNonDynamicChanges) {
     LoggingFacade logger = getLogger();
-    StringBuffer patchStr;
+    StringBuilder patchStr;
     DomainResource res = assertDoesNotThrow(
         () -> getDomainCustomResource(domainUid, namespace),
         String.format("Failed to get the domain custom resource of %s in namespace %s", domainUid, namespace));
 
     // construct the patch string
     if (res.getSpec().getConfiguration().getModel().getOnlineUpdate().getOnNonDynamicChanges() == null) {
-      patchStr = new StringBuffer("[{")
+      patchStr = new StringBuilder("[{")
           .append("\"op\": \"add\", ")
           .append("\"path\": \"/spec/configuration/model/onlineUpdate/onNonDynamicChanges\", ")
           .append("\"value\": \"")
           .append(onNonDynamicChanges)
           .append("\"}]");
     } else {
-      patchStr = new StringBuffer("[{")
+      patchStr = new StringBuilder("[{")
           .append("\"op\": \"replace\", ")
           .append("\"path\": \"/spec/configuration/model/onlineUpdate/onNonDynamicChanges\", ")
           .append("\"value\": \"")
@@ -350,9 +350,8 @@ public class Domain {
       }
     }
 
-    // TODO: Below needs to be modified for v9
     // construct the patch string for scaling the cluster in the domain
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"replace\", ")
         .append("\"path\": \"/spec/clusters/")
         .append(index)
@@ -419,24 +418,11 @@ public class Domain {
     assertNotNull(decodedToken, "Couldn't get secret, token is null");
 
     // build the curl command to scale the cluster
-    String command = new StringBuffer()
-        .append("curl -g --noproxy '*' -v -k ")
-        .append("-H \"Authorization:Bearer ")
-        .append(decodedToken)
-        .append("\" ")
-        .append("-H Accept:application/json ")
-        .append("-H Content-Type:application/json ")
-        .append("-H X-Requested-By:MyClient ")
-        .append("-d '{\"spec\": {\"replicas\": ")
-        .append(numOfServers)
-        .append("} }' ")
-        .append("-X POST https://")
-        .append(getHostAndPort(opExternalSvc, externalRestHttpsPort))
-        .append("/operator/latest/domains/")
-        .append(domainUid)
-        .append("/clusters/")
-        .append(clusterName)
-        .append("/scale").toString();
+    String command = "curl -g --noproxy '*' -v -k " + "-H \"Authorization:Bearer " + decodedToken + "\" "
+        + "-H Accept:application/json " + "-H Content-Type:application/json " + "-H X-Requested-By:MyClient "
+        + "-d '{\"spec\": {\"replicas\": " + numOfServers + "} }' " + "-X POST https://"
+        + getHostAndPort(opExternalSvc, externalRestHttpsPort) + "/operator/latest/domains/" + domainUid
+        + "/clusters/" + clusterName + "/scale";
 
     CommandParams params = Command
         .defaultCommandParams()
@@ -498,24 +484,11 @@ public class Domain {
         secretName, opServiceAccount, opNamespace, decodedToken);
 
     // build the curl command to scale the cluster
-    String command = new StringBuffer()
-        .append("curl -g --noproxy '*' -v -k ")
-        .append("-H \"Authorization:Bearer ")
-        .append(decodedToken)
-        .append("\" ")
-        .append("-H Accept:application/json ")
-        .append("-H Content-Type:application/json ")
-        .append("-H X-Requested-By:MyClient ")
-        .append("-d '{\"spec\": {\"replicas\": ")
-        .append(numOfServers)
-        .append("} }' ")
-        .append("-X POST https://")
-        .append(getHostAndPort(opExternalSvc, externalRestHttpsPort))
-        .append("/operator/latest/domains/")
-        .append(domainUid)
-        .append("/clusters/")
-        .append(clusterName)
-        .append("/scale").toString();
+    String command = "curl -g --noproxy '*' -v -k " + "-H \"Authorization:Bearer " + decodedToken + "\" "
+        + "-H Accept:application/json " + "-H Content-Type:application/json " + "-H X-Requested-By:MyClient "
+        + "-d '{\"spec\": {\"replicas\": " + numOfServers + "} }' " + "-X POST https://"
+        + getHostAndPort(opExternalSvc, externalRestHttpsPort) + "/operator/latest/domains/"
+        + domainUid + "/clusters/" + clusterName + "/scale";
 
     CommandParams params = Command
         .defaultCommandParams()
@@ -625,30 +598,10 @@ public class Domain {
     }
 
     logger.info("Creating WLDF policy rule and action");
-    String command = new StringBuffer("echo ${DOMAIN_HOME}")
-        .append(" && export DOMAIN_HOME=" + domainHomeLocation)
-        .append(" && /u01/callpyscript.sh /u01/wldf.py ")
-        .append(ADMIN_USERNAME_DEFAULT)
-        .append(" ")
-        .append(ADMIN_PASSWORD_DEFAULT)
-        .append(" t3://")
-        .append(adminServerPodName)
-        .append(":7001 ")
-        .append(scalingAction)
-        .append(" ")
-        .append(domainUid)
-        .append(" ")
-        .append(clusterName)
-        .append(" ")
-        .append(domainNamespace)
-        .append(" ")
-        .append(opNamespace)
-        .append(" ")
-        .append(opServiceAccount)
-        .append(" ")
-        .append(scalingSize)
-        .append(" ")
-        .append(myWebAppName).toString();
+    String command = "echo ${DOMAIN_HOME}" + " && export DOMAIN_HOME=" + domainHomeLocation
+        + " && /u01/callpyscript.sh /u01/wldf.py " + ADMIN_USERNAME_DEFAULT + " " + ADMIN_PASSWORD_DEFAULT
+        + " t3://" + adminServerPodName + ":7001 " + scalingAction + " " + domainUid + " " + clusterName + " "
+        + domainNamespace + " " + opNamespace + " " + opServiceAccount + " " + scalingSize + " " + myWebAppName;
 
     logger.info("executing command {0} in admin server pod", command);
     testUntil(
@@ -692,9 +645,8 @@ public class Domain {
    */
   public static String getCurrentIntrospectVersion(String domainUid, String namespace) throws ApiException {
     DomainResource domain = getDomainCustomResource(domainUid, namespace);
-    String introspectVersion = domain.getSpec().getIntrospectVersion();
 
-    return introspectVersion;
+    return domain.getSpec().getIntrospectVersion();
   }
 
   /**
@@ -710,7 +662,6 @@ public class Domain {
    * @param opServiceAccount service account of operator
    * @return true if scaling the cluster succeeds, false otherwise
    * @throws ApiException if Kubernetes client API call fails
-   * @throws InterruptedException if any thread has interrupted the current thread
    */
   public static boolean scaleClusterWithScalingActionScript(String clusterName,
                                              String domainUid,
@@ -720,7 +671,7 @@ public class Domain {
                                              int scalingSize,
                                              String opNamespace,
                                              String opServiceAccount)
-      throws ApiException, InterruptedException {
+      throws ApiException {
     LoggingFacade logger = getLogger();
     // create RBAC API objects for WLDF script
     logger.info("Creating RBAC API objects for scaling script");
@@ -788,7 +739,7 @@ public class Domain {
     LoggingFacade logger = getLogger();
 
     // construct the patch string for scaling the cluster in the domain
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"replace\", ")
         .append("\"path\": \"/spec")
         .append("/replicas\", ")
@@ -997,33 +948,15 @@ public class Domain {
                                      String domainUid, String scalingAction, String clusterName,
                                      String opServiceAccount, int scalingSize,
                                      String domainHomeLocation,
-                                     V1Pod adminPod) throws ApiException, InterruptedException {
+                                     V1Pod adminPod) {
     LoggingFacade logger = getLogger();
-    StringBuffer scalingCommand = new StringBuffer()
-        //.append(Paths.get(domainHomeLocation + "/bin/scripts/scalingAction.sh"))
-        .append(Paths.get("cd /u01; /u01/scalingAction.sh"))
-        .append(" --action=")
-        .append(scalingAction)
-        .append(" --domain_uid=")
-        .append(domainUid)
-        .append(" --wls_domain_namespace=")
-        .append(domainNamespace)
-        .append(" --cluster_name=")
-        .append(clusterName)
-        .append(" --operator_namespace=")
-        .append(opNamespace)
-        .append(" --operator_service_account=")
-        .append(opServiceAccount)
-        .append(" --operator_service_name=")
-        .append("internal-weblogic-operator-svc")
-        .append(" --scaling_size=")
-        .append(scalingSize)
-        .append(" --kubernetes_master=")
-        .append("https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT")
-        .append(" 2>> /u01/scalingAction.out ");
 
-
-    String commandToExecuteInsidePod = scalingCommand.toString();
+    String commandToExecuteInsidePod = Paths.get("cd /u01; /u01/scalingAction.sh") + " --action=" + scalingAction
+        + " --domain_uid=" + domainUid + " --wls_domain_namespace=" + domainNamespace + " --cluster_name="
+        + clusterName + " --operator_namespace=" + opNamespace + " --operator_service_account=" + opServiceAccount
+        + " --operator_service_name=" + "internal-weblogic-operator-svc" + " --scaling_size=" + scalingSize
+        + " --kubernetes_master=" + "https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
+        + " 2>> /u01/scalingAction.out ";
 
     ExecResult result = null;
     try {

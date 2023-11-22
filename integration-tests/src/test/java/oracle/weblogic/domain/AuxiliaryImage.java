@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.domain;
@@ -119,11 +119,10 @@ public class AuxiliaryImage {
     if (other == this) {
       return true;
     }
-    if (!(other instanceof AuxiliaryImage)) {
+    if (!(other instanceof AuxiliaryImage rhs)) {
       return false;
     }
 
-    AuxiliaryImage rhs = ((AuxiliaryImage) other);
     EqualsBuilder builder =
             new EqualsBuilder()
                     .append(image, rhs.image)

@@ -164,7 +164,7 @@ class ItWlsDomainOnPVSample {
    */
   @Test
   @Order(1)
-  public void testInstallOperator() {
+  void testInstallOperator() {
     String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));
     execTestScriptAndAssertSuccess("-oper", "Failed to run -oper");
     restoreReports(backupReports);
@@ -175,7 +175,7 @@ class ItWlsDomainOnPVSample {
    */
   @Test
   @Order(2)
-  public void testInstallTraefik() {
+  void testInstallTraefik() {
     execTestScriptAndAssertSuccess("-traefik", "Failed to run -traefik");
   }
 
@@ -184,7 +184,7 @@ class ItWlsDomainOnPVSample {
    */
   @Test
   @Order(3)
-  public void testInitialImage() {
+  void testInitialImage() {
     imagePull(BUSYBOX_IMAGE + ":" + BUSYBOX_TAG);
     imageTag(BUSYBOX_IMAGE + ":" + BUSYBOX_TAG, "busybox");
     execTestScriptAndAssertSuccess("-initial-image", "Failed to run -initial-image");
@@ -207,7 +207,7 @@ class ItWlsDomainOnPVSample {
    */
   @Test
   @Order(4)
-  public void testInitialMain() {
+  void testInitialMain() {
     // load the base image to kind if using kind cluster
     if (KIND_REPO != null) {
       logger.info("loading image {0} to kind", WEBLOGIC_IMAGE_TO_USE_IN_SPEC);

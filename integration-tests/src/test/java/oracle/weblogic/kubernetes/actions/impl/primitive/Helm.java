@@ -180,7 +180,7 @@ public class Helm {
    * @return string with chart helmValues
    */
   public static String valuesToString(Map<String, Object> helmValues) {
-    StringBuffer valuesString = new StringBuffer("");
+    StringBuilder valuesString = new StringBuilder();
     // values can be Map or String
     for (Map.Entry<String,Object> entry : helmValues.entrySet()) {
       if (entry.getValue() instanceof Map) {
@@ -188,8 +188,8 @@ public class Helm {
         Map<String, Object> item = (Map<String, Object>) entry.getValue();
         int index = 0;
         for (Map.Entry<String,Object> itemEntry : item.entrySet()) {
-          valuesString.append(" --set \"" + entry.getKey() + "[" + index + "]."
-              + itemEntry.getKey() + "=" + itemEntry.getValue() + "\"");
+          valuesString.append(" --set \"").append(entry.getKey()).append("[").append(index).append("].")
+              .append(itemEntry.getKey()).append("=").append(itemEntry.getValue()).append("\"");
           ++index;
         }
       } else {

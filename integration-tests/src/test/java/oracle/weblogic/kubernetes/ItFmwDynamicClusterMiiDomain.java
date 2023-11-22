@@ -67,28 +67,22 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class ItFmwDynamicClusterMiiDomain {
 
   private static String dbNamespace = null;
-  private static String opNamespace = null;
   private static String domainNamespace = null;
-  private static String jrfMiiImage = null;
 
   private static final String RCUSCHEMAPREFIX = "jrfdomainmii";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
-  private static String ORACLEDBSUFFIX = null;
   private static final String RCUSCHEMAPASSWORD = "Oradoc_db1";
   private static final String modelFile = "model-fmw-dynamicdomain.yaml";
 
   private static String dbUrl = null;
   private static LoggingFacade logger = null;
 
-  private String domainUid = "jrf-dynamicdomain-mii";
-  private String adminServerPodName = domainUid + "-admin-server";
-  private String managedServerPrefix = domainUid + "-managed-server";
-  private String adminSecretName = domainUid + "-weblogic-credentials";
-  private String encryptionSecretName = domainUid + "-encryptionsecret";
-  private String rcuaccessSecretName = domainUid + "-rcu-access";
-  private String opsswalletpassSecretName = domainUid + "-opss-wallet-password-secret";
-  private int replicaCount = 1;
-  private String adminSvcExtHost = null;
+  private final String domainUid = "jrf-dynamicdomain-mii";
+  private final String adminSecretName = domainUid + "-weblogic-credentials";
+  private final String encryptionSecretName = domainUid + "-encryptionsecret";
+  private final String rcuaccessSecretName = domainUid + "-rcu-access";
+  private final String opsswalletpassSecretName = domainUid + "-opss-wallet-password-secret";
+  private final int replicaCount = 1;
 
   /**
    * Start DB service and create RCU schema.
@@ -106,12 +100,12 @@ class ItFmwDynamicClusterMiiDomain {
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
     final int dbListenerPort = getNextFreePort();
-    ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ORACLEDBSUFFIX;
+    String oracleDbSuffix = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
+    dbUrl = ORACLEDBURLPREFIX + dbNamespace + oracleDbSuffix;
 
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(1), "Namespace is null");
-    opNamespace = namespaces.get(1);
+    String opNamespace = namespaces.get(1);
 
     logger.info("Assign a unique namespace for JRF domain");
     assertNotNull(namespaces.get(2), "Namespace is null");
@@ -144,7 +138,8 @@ class ItFmwDynamicClusterMiiDomain {
     createFmwDomainAndVerify();
     verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
     // Expose the admin service external node port as  a route for OKD
-    adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+    String adminServerPodName = domainUid + "-admin-server";
+    String adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
     verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost);
   }
 
@@ -191,7 +186,7 @@ class ItFmwDynamicClusterMiiDomain {
 
     logger.info("Create an image with jrf model file");
     final List<String> modelList = Collections.singletonList(MODEL_DIR + "/" + modelFile);
-    jrfMiiImage = createMiiImageAndVerify(
+    String jrfMiiImage = createMiiImageAndVerify(
         "jrf-mii-image",
         modelList,
         Collections.singletonList(MII_BASIC_APP_NAME),

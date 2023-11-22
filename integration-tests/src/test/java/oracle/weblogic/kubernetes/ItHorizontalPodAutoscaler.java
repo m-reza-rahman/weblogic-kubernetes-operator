@@ -53,8 +53,8 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test Horizontal Pod Autoscaler using Kubernetes Metrics Server
@@ -71,15 +71,10 @@ public class ItHorizontalPodAutoscaler {
   static String wlClusterName = "cluster-1";
   static String clusterResName = "hpacluster";
 
-  private static String adminSecretName;
-  private static String encryptionSecretName;
   private static final String domainUid = "hpadomain";
-  private static String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
-  private static String managedServerPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
+  private static final String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
+  private static final String managedServerPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
   static DomainResource domain = null;
-
-  private static String opServiceAccount = null;
-  private static String opNamespace = null;
 
   private static LoggingFacade logger = null;
 
@@ -95,14 +90,14 @@ public class ItHorizontalPodAutoscaler {
     logger = getLogger();
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Assign a unique namespace for WebLogic domain");
     assertNotNull(namespaces.get(1), "Namespace is null");
     domainNamespace = namespaces.get(1);
 
     // set the service account name for the operator
-    opServiceAccount = opNamespace + "-sa";
+    String opServiceAccount = opNamespace + "-sa";
 
     // install and verify operator with REST API
     installAndVerifyOperator(opNamespace, opServiceAccount, true, 0, domainNamespace);
@@ -114,13 +109,13 @@ public class ItHorizontalPodAutoscaler {
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
-    adminSecretName = "weblogic-credentials";
+    String adminSecretName = "weblogic-credentials";
     createSecretWithUsernamePassword(adminSecretName, domainNamespace,
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create encryption secret
     logger.info("Create encryption secret");
-    encryptionSecretName = "encryptionsecret";
+    String encryptionSecretName = "encryptionsecret";
     createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
         "weblogicenc", "weblogicenc");
 
@@ -133,7 +128,7 @@ public class ItHorizontalPodAutoscaler {
         encryptionSecretName
     );
 
-    // create cluster resouce with limits and requests in serverPod
+    // create cluster resource with limits and requests in serverPod
     ClusterResource clusterResource =
         createClusterResource(clusterResName, wlClusterName, domainNamespace, replicaCount);
     clusterResource.getSpec()
@@ -205,7 +200,7 @@ public class ItHorizontalPodAutoscaler {
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f " + METRICS_SERVER_YAML);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
-    assertTrue(result.exitValue() == 0,
+    assertEquals(0, result.exitValue(),
         "Failed to install metrics server, result " + result);
 
     // patch metrics server for fix this error
@@ -216,7 +211,7 @@ public class ItHorizontalPodAutoscaler {
     new CommandParams().defaults();
     params.command(patchCmd);
     result = Command.withParams(params).executeAndReturnResult();
-    assertTrue(result.exitValue() == 0,
+    assertEquals(0, result.exitValue(),
         "Failed to patch metrics server, result " + result);
 
     // check pods are in ready status
@@ -237,8 +232,7 @@ public class ItHorizontalPodAutoscaler {
     params.command(KUBERNETES_CLI + " autoscale cluster " + clusterResName
         + " --cpu-percent=50 --min=2 --max=4 -n " + domainNamespace);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
-    assertTrue(result.exitValue() == 0,
-        "Failed to create hpa or autoscale, result " + result);
+    assertEquals(0, result.exitValue(), "Failed to create hpa or autoscale, result " + result);
     // wait till autoscaler could get the current cpu utilization to make sure it is ready
     testUntil(withStandardRetryPolicy,
         () -> verifyHPA(domainNamespace, clusterResName),
@@ -250,15 +244,14 @@ public class ItHorizontalPodAutoscaler {
 
   private void createLoadOnCpuAndVerifyAutoscaling() {
     // execute command to increase cpu usage
-    int duration = (OKE_CLUSTER == true) ? 60 : 30;
+    int duration = (OKE_CLUSTER) ? 60 : 30;
     String cmd = KUBERNETES_CLI + " exec -t " + managedServerPrefix + "1 -n "
         + domainNamespace + "  -- timeout --foreground -s 2 "
         + duration + " dd if=/dev/zero of=/dev/null";
     CommandParams params = new CommandParams().defaults();
     params.command(cmd);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
-    assertTrue(result.exitValue() == 124,
-        "Command failed to increase cpu usage, result " + result);
+    assertEquals(124, result.exitValue(), "Command failed to increase cpu usage, result " + result);
 
     // check cluster is scaled up
     for (int i = 1; i <= 4; i++) {
@@ -310,7 +303,7 @@ public class ItHorizontalPodAutoscaler {
      * kubectl get hpa --all-namespaces
      * NAMESPACE   NAME         REFERENCE            TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
      * ns-qsjlcw   hpacluster   Cluster/hpacluster   4%/50%    2         4         2          18m
-     * when its not ready, it looks
+     * when it's not ready, it looks
      * NAMESPACE   NAME         REFERENCE            TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
      * ns-qsjlcw   hpacluster   Cluster/hpacluster   <unknown>/50%    2         4         2          18m
      */

@@ -33,7 +33,6 @@ public class OperatorParams {
   private static final String DOMAIN_NS_LABEL_SELECTOR = "domainNamespaceLabelSelector";
   private static final String DOMAIN_NS_REG_EXP = "domainNamespaceRegExp";
   private static final String ENABLE_CLUSTER_ROLE_BINDING = "enableClusterRoleBinding";
-  private static final String DOMAIN_PRESENCE_FAILURE_RETRY_MAX_COUNT = "domainPresenceFailureRetryMaxCount";
   private static final String FEATURE_GATES = "featureGates";
   private static final String KUBERNETES_PLATFORM = "kubernetesPlatform";
   private static final String CREATE_LOGSTASH_CONFIGMAP = "createLogStashConfigMap";
@@ -64,8 +63,6 @@ public class OperatorParams {
   private String domainNamespaceSelectionStrategy;
   private String domainNamespaceLabelSelector;
   private String domainNamespaceRegExp;
-  private int domainPresenceFailureRetryMaxCount = 5;
-  private int domainPresenceFailureRetrySeconds = 10;
   private String featureGates;
   private String kubernetesPlatform;
   private boolean createLogStashConfigMap = true;
@@ -173,12 +170,10 @@ public class OperatorParams {
   }
 
   public OperatorParams domainPresenceFailureRetryMaxCount(int domainPresenceFailureRetryMaxCount) {
-    this.domainPresenceFailureRetryMaxCount = domainPresenceFailureRetryMaxCount;
     return this;
   }
 
   public OperatorParams domainPresenceFailureRetrySeconds(int domainPresenceFailureRetrySeconds) {
-    this.domainPresenceFailureRetrySeconds = domainPresenceFailureRetrySeconds;
     return this;
   }
 
@@ -259,25 +254,25 @@ public class OperatorParams {
     values.put(IMAGE, image);
     values.put(SERVICE_ACCOUNT, serviceAccount);
 
-    values.put(ENABLE_REST, Boolean.valueOf(enableRest));
-    values.put(EXTERNAL_REST_ENABLED, Boolean.valueOf(externalRestEnabled));
+    values.put(ENABLE_REST, enableRest);
+    values.put(EXTERNAL_REST_ENABLED, externalRestEnabled);
     values.put(EXTERNAL_REST_IDENTITY_SECRET, externalRestIdentitySecret);
 
     if (externalRestHttpsPort >= 0) {
-      values.put(EXTERNAL_REST_HTTPS_PORT, Integer.valueOf(externalRestHttpsPort));
+      values.put(EXTERNAL_REST_HTTPS_PORT, externalRestHttpsPort);
     }
 
     values.put(IMAGE_PULL_POLICY, Optional.ofNullable(imagePullPolicy).map(Object::toString).orElse(null));
     values.put(IMAGE_PULL_SECRETS, imagePullSecrets);
-    values.put(ELK_INTEGRATION_ENABLED, Boolean.valueOf(elkIntegrationEnabled));
-    values.put(ENABLE_CLUSTER_ROLE_BINDING, Boolean.valueOf(enableClusterRoleBinding));
+    values.put(ELK_INTEGRATION_ENABLED, elkIntegrationEnabled);
+    values.put(ENABLE_CLUSTER_ROLE_BINDING, enableClusterRoleBinding);
     values.put(FEATURE_GATES, featureGates);
 
     if (elasticSearchHost != null) {
       values.put(ELASTICSEARCH_HOST, elasticSearchHost);
     }
     if (elasticSearchPort > 0) {
-      values.put(ELASTICSEARCH_PORT, Integer.valueOf(elasticSearchPort));
+      values.put(ELASTICSEARCH_PORT, elasticSearchPort);
     }
     if (javaLoggingLevel != null) {
       values.put(JAVA_LOGGING_LEVEL, javaLoggingLevel);

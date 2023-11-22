@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests related to Domain status conditions logged by operator.
- * The tests check for the Completed/Available conditions for multiple usecases.
+ * The tests check for the Completed/Available conditions for multiple use cases.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Verify the domain status conditions for domain lifecycle")
@@ -71,8 +71,8 @@ class ItDiagnosticsCompleteAvailableCondition {
 
   private static LoggingFacade logger = null;
   private static String domainNamespace1 = null;
-  private static int replicaCount = 2;
-  private static int maxClusterSize = 5;
+  private static final int replicaCount = 2;
+  private static final int maxClusterSize = 5;
 
   /**
    * Assigns unique namespaces for operator and domains.

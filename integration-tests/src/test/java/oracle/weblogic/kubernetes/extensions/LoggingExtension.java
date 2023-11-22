@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.extensions;
@@ -11,14 +11,13 @@ public class LoggingExtension implements TestInstancePostProcessor {
 
   @Override
   public void postProcessTestInstance(
-      Object testInstance, ExtensionContext extensionContext) throws Exception {
+      Object testInstance, ExtensionContext extensionContext) {
 
     ThreadSafeLogger.globalLogger.info("Initializing logger in postProcessTestInstance for {0}",
         testInstance.getClass().getSimpleName());
 
     // initialize logger for each test
     ThreadSafeLogger.init(testInstance.getClass().getSimpleName());
-
   }
 
 }

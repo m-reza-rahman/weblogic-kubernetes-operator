@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
@@ -82,7 +82,7 @@ public class BuildApplication {
    * @param antTargets ant targets to call
    * @param archiveDistDir location of the archive built inside source directory
    * @param namespace name of the namespace to create the pod in
-   * @return Path path of the archive built
+   * @return Path of the archive built
    */
   public static Path buildApplication(
           Path appSrcPath, 
@@ -99,7 +99,7 @@ public class BuildApplication {
    * @param archiveDistDir location of the archive built inside source directory
    * @param namespace name of the namespace to create the pod in
    * @param targetPath the target path where the application will be archived
-   * @return Path path of the archive built
+   * @return Path of the archive built
    */
   public static Path buildApplication(
         Path appSrcPath, Map<String, String> antParams,
@@ -138,7 +138,6 @@ public class BuildApplication {
     // zip up the application source to be copied to pod for building
     Path zipFile = Paths.get(FileUtils.createZipFile(tempAppPath));
 
-
     // add ant properties as env variable in pod
     V1Container buildContainer = new V1Container();
 
@@ -150,9 +149,7 @@ public class BuildApplication {
     // set ant parameteres as env variable in pod
     if (antParams != null) {
       StringBuilder params = new StringBuilder();
-      antParams.entrySet().forEach((parameter) -> {
-        params.append("-D").append(parameter.getKey()).append("=").append(parameter.getValue()).append(" ");
-      });
+      antParams.forEach((key, value) -> params.append("-D").append(key).append("=").append(value).append(" "));
       buildContainer = buildContainer
           .addEnvItem(new V1EnvVar().name("sysprops").value(params.toString()));
     }
@@ -184,7 +181,7 @@ public class BuildApplication {
     logger.info(KUBERNETES_CLI + " copied " + BUILD_SCRIPT + " into the pod");
 
     // One of the test is failing in running the BUILD_SCRIPT (build_application.sh) - reason: the script does not exist
-    // Adding the following to check if the script is copied and it has execute permissions
+    // Adding the following to check if the script is copied, and it has execute permissions
     try {
       ExecResult ex = Exec.exec(webLogicPod, null, false, "/bin/ls", "-ls", "/u01");
       if (ex.stdout() != null) {
@@ -197,6 +194,7 @@ public class BuildApplication {
       logger.info("Exception while listing the files in /u01", ioex);
     }
 
+    Path path = Paths.get(APPLICATIONS_PATH, archiveDistDir);
     try {
       //Kubernetes.exec(webLogicPod, new String[]{"/bin/sh", "/u01/" + BUILD_SCRIPT});
       ExecResult exec = Exec.exec(webLogicPod, null, false, "/bin/sh", "/u01/" + BUILD_SCRIPT);
@@ -216,9 +214,9 @@ public class BuildApplication {
       //    + " to build an application failed with exit value " + exec.exitValue());
 
       Kubernetes.copyDirectoryFromPod(webLogicPod,
-          Paths.get(APPLICATIONS_PATH, archiveDistDir).toString(), destArchiveBaseDir);
+          path.toString(), destArchiveBaseDir);
     } catch (ApiException | IOException | InterruptedException | CopyNotSupportedException ioex) {
-      logger.info("Exception while copying file " + Paths.get(APPLICATIONS_PATH, archiveDistDir) + " from pod", ioex);
+      logger.info("Exception while copying file " + path + " from pod", ioex);
     }
 
     return destDir = Paths.get(destArchiveBaseDir.toString(), "u01/application", archiveDistDir);
@@ -239,20 +237,20 @@ public class BuildApplication {
     //want to create a pod with a unique name
     //If a test calls buildApplication for 2 (or more) different applications
     //to be built, since the pod will have been created for the first application already,
-    //this method will fail when called the second time around. Hence the need for a
+    //this method will fail when called the second time around. Hence, the need for a
     //unique name for the pod.
     String uniqueName = Namespace.uniqueName();
     final String podName = "weblogic-build-pod-" + uniqueName;
     //final String podName = "weblogic-build-pod-" + namespace;
     V1Pod podBody = new V1Pod()
         .spec(new V1PodSpec()
-            .containers(Arrays.asList(container
+            .containers(Collections.singletonList(container
                 .name("weblogic-container")
                 .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
                 .imagePullPolicy(IMAGE_PULL_POLICY)
                 .addCommandItem("sleep")
                 .addArgsItem("600")))
-            .imagePullSecrets(Arrays.asList(new V1LocalObjectReference()
+            .imagePullSecrets(Collections.singletonList(new V1LocalObjectReference()
                 .name(BASE_IMAGES_REPO_SECRET_NAME)))) // the persistent volume claim used by the test
         .metadata(new V1ObjectMeta().name(podName))
         .apiVersion("v1")

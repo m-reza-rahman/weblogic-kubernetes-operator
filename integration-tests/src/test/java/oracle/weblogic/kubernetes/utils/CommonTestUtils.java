@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
@@ -31,8 +32,6 @@ import java.util.stream.Stream;
 
 import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.domain.ClusterSpec;
-import oracle.weblogic.domain.DomainCondition;
-import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
@@ -79,7 +78,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE_DOWNLOAD_FILENAME_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE_DOWNLOAD_URL_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
-import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
@@ -141,12 +139,9 @@ public class CommonTestUtils {
   }
 
   public static ConditionFactory withStandardRetryPolicy = createStandardRetryPolicyWithAtMost(5);
-  public static ConditionFactory withStandardRetryPolicyIgnoringExceptions =
-      createStandardRetryPolicyWithAtMost(5).ignoreExceptions();
   public static ConditionFactory withLongRetryPolicy = createStandardRetryPolicyWithAtMost(15);
 
-  private static final String TMP_FILE_NAME = "temp-download-file.out";
-  private static int adminListenPort = 7001;
+  private static final int adminListenPort = 7001;
 
   /**
    * Create a condition factory with custom values for pollDelay, pollInterval and atMost time.
@@ -216,7 +211,7 @@ public class CommonTestUtils {
 
   private static <T> ConditionEvaluationListener<T> createConditionEvaluationListener(
       LoggingFacade logger, String msg, Object... params) {
-    return new ConditionEvaluationListener<T>() {
+    return new ConditionEvaluationListener<>() {
       @Override
       public void conditionEvaluated(EvaluatedCondition<T> condition) {
         int paramsSize = params != null ? params.length : 0;
@@ -366,7 +361,7 @@ public class CommonTestUtils {
   public static boolean checkClusterReplicaCountMatches(String clusterName,
                                                         String namespace, Integer replicaCount) throws ApiException {
     ClusterSpec clusterSpec = Kubernetes.getClusterCustomResource(clusterName, namespace, CLUSTER_VERSION).getSpec();
-    return Optional.ofNullable(clusterSpec).get().replicas() == replicaCount;
+    return Objects.equals(clusterSpec.replicas(), replicaCount);
   }
 
   /** Scale the WebLogic cluster to specified number of servers.
@@ -658,9 +653,8 @@ public class CommonTestUtils {
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
-    StringBuffer curlString = new StringBuffer("status=$(curl -g --user ");
-    curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + hostAndPort)
+    StringBuilder curlString = new StringBuilder("status=$(curl -g --user ");
+    curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT).append(" http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesType)
@@ -694,12 +688,11 @@ public class CommonTestUtils {
     String protocol = "http";
     String port = "7001";
 
-    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
+    StringBuilder curlString = new StringBuilder(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
         .append("curl -g -k --user ")
-        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" " + protocol + "://")
-        .append(adminServerPodName + ":" + port)
+        .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT).append(" ").append(protocol)
+        .append("://").append(adminServerPodName).append(":").append(port)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesType)
@@ -729,9 +722,9 @@ public class CommonTestUtils {
   public static void verifySystemResourceConfiguration(String adminRouteHost, int nodePort, String resourcesType,
                                                        String resourcesName, String expectedStatusCode) {
     final LoggingFacade logger = getLogger();
-    StringBuffer curlString = new StringBuffer("status=$(curl --user ");
+    StringBuilder curlString = new StringBuilder("status=$(curl --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + getHostAndPort(adminRouteHost, nodePort))
+        .append(" http://").append(getHostAndPort(adminRouteHost, nodePort))
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesType)
@@ -777,9 +770,9 @@ public class CommonTestUtils {
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
-    StringBuffer curlString = new StringBuffer("curl -g --user ");
+    StringBuilder curlString = new StringBuilder("curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + hostAndPort)
+        .append(" http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesPath)
@@ -804,12 +797,12 @@ public class CommonTestUtils {
                                                   String resourcesPath, String expectedValue) {
     final LoggingFacade logger = getLogger();
 
-    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n "
+    StringBuilder curlString = new StringBuilder(KUBERNETES_CLI + " exec -n "
         + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
         .append("curl -g --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + adminServerPodName + ":" + adminListenPort)
+        .append(" http://").append(adminServerPodName).append(":").append(adminListenPort)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesPath)
@@ -841,9 +834,9 @@ public class CommonTestUtils {
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
-    StringBuffer curlString = new StringBuffer("curl -g --user ");
+    StringBuilder curlString = new StringBuilder("curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + hostAndPort)
+        .append(" http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainConfig/");
 
     logger.info("checkSystemResource: curl command {0}", new String(curlString));
@@ -865,12 +858,12 @@ public class CommonTestUtils {
                                             String resourcesUrl, String expectedValue) {
     final LoggingFacade logger = getLogger();
 
-    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n "
+    StringBuilder curlString = new StringBuilder(KUBERNETES_CLI + " exec -n "
         + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
         .append("curl -g --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + adminServerPodName + ":" + adminListenPort)
+        .append(" http://").append(adminServerPodName).append(":").append(adminListenPort)
         .append("/management/weblogic/latest/domainRuntime")
         .append("/")
         .append(resourcesUrl)
@@ -895,7 +888,7 @@ public class CommonTestUtils {
     final LoggingFacade logger = getLogger();
 
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
-    StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    StringBuilder javacCmd = new StringBuilder(KUBERNETES_CLI + " exec -n ");
     javacCmd.append(namespace);
     javacCmd.append(" -it ");
     javacCmd.append(" -c weblogic-server ");
@@ -925,7 +918,7 @@ public class CommonTestUtils {
     final LoggingFacade logger = getLogger();
 
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
-    StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    StringBuilder javacCmd = new StringBuilder(KUBERNETES_CLI + " exec -n ");
     javacCmd.append(namespace);
     javacCmd.append(" -it ");
     javacCmd.append(" -c weblogic-server ");
@@ -954,14 +947,14 @@ public class CommonTestUtils {
    * @param javaClientLocation location(path) of java class
    * @param javaClientClass java class name
    * @param args       arguments to the java command
-   * @return true if the client ran successfully
+   * @return callable that returns true if the client ran successfully
    */
   public static Callable<Boolean> runClientInsidePod(String podName, String namespace, String javaClientLocation,
                                                      String javaClientClass, String... args) {
     final LoggingFacade logger = getLogger();
 
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
-    StringBuffer javapCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    StringBuilder javapCmd = new StringBuilder(KUBERNETES_CLI + " exec -n ");
     javapCmd.append(namespace);
     javapCmd.append(" -it ");
     javapCmd.append(" -c weblogic-server ");
@@ -997,7 +990,7 @@ public class CommonTestUtils {
    * @param javaClientClass java class name
    * @param expectedResult expected result
    * @param args       arguments to the java command
-   * @return true if the client ran successfully
+   * @return callable that returns true if the client ran successfully
    */
   public static Callable<Boolean> runClientInsidePodVerifyResult(String podName,
                                                                  String namespace,
@@ -1008,7 +1001,7 @@ public class CommonTestUtils {
     final LoggingFacade logger = getLogger();
 
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
-    StringBuffer javapCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    StringBuilder javapCmd = new StringBuilder(KUBERNETES_CLI + " exec -n ");
     javapCmd.append(namespace);
     javapCmd.append(" -it ");
     javapCmd.append(" -c weblogic-server ");
@@ -1039,15 +1032,15 @@ public class CommonTestUtils {
    * Adds proxy extra arguments for image builder command.
    **/
   public static String getImageBuilderExtraArgs() {
-    StringBuffer extraArgs = new StringBuffer("");
+    StringBuilder extraArgs = new StringBuilder();
 
     String httpsproxy = HTTPS_PROXY;
     String httpproxy = HTTP_PROXY;
     String noproxy = NO_PROXY;
     LoggingFacade logger = getLogger();
     logger.info(" httpsproxy : " + httpsproxy);
-    String proxyHost = "";
-    StringBuffer mvnArgs = new StringBuffer("");
+    String proxyHost;
+    StringBuilder mvnArgs = new StringBuilder();
     if (httpsproxy != null) {
       logger.info(" httpsproxy : " + httpsproxy);
       proxyHost = httpsproxy.substring(httpsproxy.lastIndexOf("www"), httpsproxy.lastIndexOf(":"));
@@ -1068,8 +1061,8 @@ public class CommonTestUtils {
       logger.info(" noproxy : " + noproxy);
       extraArgs.append(String.format(" --build-arg no_proxy=%s",noproxy));
     }
-    if (!mvnArgs.equals("")) {
-      extraArgs.append(" --build-arg MAVEN_OPTS=\" " + mvnArgs.toString() + "\"");
+    if (!mvnArgs.isEmpty()) {
+      extraArgs.append(" --build-arg MAVEN_OPTS=\" ").append(mvnArgs).append("\"");
     }
     return extraArgs.toString();
   }
@@ -1195,12 +1188,10 @@ public class CommonTestUtils {
    * @return the next free port number, if there is no free port below END_PORT return -1.
    */
   public static synchronized int getNextFreePort(int startingPort, int endingPort) {
-    LoggingFacade logger = getLogger();
-    int freePort;
     Random random = new Random();
 
-    while (startingPort <= endingPort) {
-      freePort = startingPort + random.nextInt(endingPort - startingPort);
+    while (true) {
+      int freePort = startingPort + random.nextInt(endingPort - startingPort);
       try {
         isLocalPortFree(freePort, K8S_NODEPORT_HOST);
         if (OKE_CLUSTER) {
@@ -1210,8 +1201,6 @@ public class CommonTestUtils {
         return freePort;
       }
     }
-    logger.warning("Could not get free port below " + END_PORT);
-    return -1;
   }
 
   /**
@@ -1225,7 +1214,7 @@ public class CommonTestUtils {
 
   /**
    * Check if the given port is free. Tries to connect to the given port, if it succeeds it means that
-   * the given port is already in use by an another process.
+   * the given port is already in use by another process.
    *
    * @param port port to check
    * @param host host to check
@@ -1341,7 +1330,7 @@ public class CommonTestUtils {
             getLogger().info("The command returned exit value: " + result.exitValue()
                 + " command output: " + result.stderr() + "\n" + result.stdout());
 
-            if (result == null || result.exitValue() != 0 || result.stdout() == null) {
+            if (result.exitValue() != 0 || result.stdout() == null) {
               return false;
             }
 
@@ -1361,44 +1350,7 @@ public class CommonTestUtils {
    * @return true if the WEBLOGIC_IMAGE_TAG contains the string psu
    */
   public static boolean isWebLogicPsuPatchApplied() {
-    return  WEBLOGIC_IMAGE_TAG.contains("psu") ? true : false;
-  }
-
-  /**
-   * Verify domain status conditions contains the given condition type and message.
-   *
-   * @param domainUid uid of the domain
-   * @param domainNamespace namespace of the domain
-   * @param conditionType condition type
-   * @param conditionMsg  messsage in condition
-   * @return true if the condition matches
-   */
-  public static boolean verifyDomainStatusCondition(String domainUid,
-                                              String domainNamespace,
-                                              String conditionType,
-                                              String conditionMsg) {
-    withLongRetryPolicy
-        .conditionEvaluationListener(
-            condition -> getLogger().info("Waiting for domain status condition message contains the expected msg "
-                    + "\"{0}\", (elapsed time {1}ms, remaining time {2}ms)",
-                conditionMsg,
-                condition.getElapsedTimeInMS(),
-                condition.getRemainingTimeInMS()))
-        .until(() -> {
-          DomainResource domain = getDomainCustomResource(domainUid, domainNamespace);
-          if ((domain != null) && (domain.getStatus() != null)) {
-            for (DomainCondition domainCondition : domain.getStatus().getConditions()) {
-              getLogger().info("Condition Type =" + domainCondition.getType()
-                  + " Condition Msg =" + domainCondition.getMessage());
-              if ((domainCondition.getType() != null && domainCondition.getType().equalsIgnoreCase(conditionType))
-                  && (domainCondition.getMessage() != null && domainCondition.getMessage().contains(conditionMsg))) {
-                return true;
-              }
-            }
-          }
-          return false;
-        });
-    return false;
+    return WEBLOGIC_IMAGE_TAG.contains("psu");
   }
 
   /**
@@ -1422,14 +1374,14 @@ public class CommonTestUtils {
     String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
 
     // Let kubectl choose and allocate a local port number that is not in use
-    StringBuffer cmd = new StringBuffer(KUBERNETES_CLI + " port-forward --address ")
+    StringBuilder cmd = new StringBuilder(KUBERNETES_CLI + " port-forward --address ")
         .append(hostName)
         .append(" pod/")
         .append(adminServerPodName)
         .append(" -n ")
         .append(domainNamespace)
         .append(" :")
-        .append(String.valueOf(port))
+        .append(port)
         .append(" > ")
         .append(pfFileName)
         .append(" 2>&1 &");
@@ -1445,13 +1397,13 @@ public class CommonTestUtils {
 
   /**
    * Stop port-forward process(es) started through startPortForwardProcess.
-   * @param domainNamespace namespace where port-forward procees were started
+   * @param domainNamespace namespace where port-forward process was started
    */
   public static void stopPortForwardProcess(String domainNamespace) {
     LoggingFacade logger = getLogger();
     logger.info("Stop port forward process");
-    final StringBuffer getPids = new StringBuffer("ps -ef | ")
-        .append("grep '" + KUBERNETES_CLI + "* port-forward ' | grep ")
+    final StringBuilder getPids = new StringBuilder("ps -ef | ")
+        .append("grep '").append(KUBERNETES_CLI).append("* port-forward ' | grep ")
         .append(domainNamespace)
         .append(" | awk ")
         .append(" '{print $2}'");
@@ -1502,7 +1454,6 @@ public class CommonTestUtils {
                                        String... hosts) {
     LoggingFacade logger = getLogger();
 
-    String hostAndPort = (hosts.length == 0) ? K8S_NODEPORT_HOST + ":" + istioIngressPort : hosts[0];
     // verify WebLogic console is accessible before port forwarding using ingress port
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
@@ -1528,9 +1479,9 @@ public class CommonTestUtils {
     logger.info("WebLogic console is accessible thru port forwarding");
 
     // test accessing WLS vis WLST using the forwarded port.
-    ExecResult result = accesseWLSViaWLSTUsingForwardedPort(domainUid, domainNamespace, forwardedPort);
+    ExecResult result = accessWLSViaWLSTUsingForwardedPort(domainUid, domainNamespace, forwardedPort);
     assertNotNull(result, "Connecting to WebLogic failed");
-    logger.info("Connecting to Weblogic via WLST using forwarded port {0} returned {1}", result.toString());
+    logger.info("Connecting to WebLogic via WLST using forwarded port {0} returned {1}", result.toString());
     assertTrue(result.stdout().contains("Successfully connected to Admin Server"),
         "Failed to connect to WebLogic via WLST using forwarded port");
 
@@ -1550,7 +1501,7 @@ public class CommonTestUtils {
    * @param forwardedPort forwarded local port number to access WebLogic
    * @return ExecResult output of executing WLST script
    */
-  public static ExecResult accesseWLSViaWLSTUsingForwardedPort(String domainUid,
+  public static ExecResult accessWLSViaWLSTUsingForwardedPort(String domainUid,
                                                               String domainNamespace,
                                                               String forwardedPort) {
     LoggingFacade logger = getLogger();
@@ -1628,15 +1579,9 @@ public class CommonTestUtils {
     ExecResult result = null;
 
     // create a WebLogic container
-    String createContainerCmd = new StringBuffer(WLSIMG_BUILDER + " run -d -p "
-        + adminListenPort + ":" + adminListenPort + " --name=")
-        .append(containerName)
-        .append(" --network=host ")
-        //.append(" --add-host=host.docker.internal:host-gateway ")
-        .append(imageName)
-        .append(" /u01/oracle/user_projects/domains/")
-        .append(domainUid)
-        .append("/startWebLogic.sh").toString();
+    String createContainerCmd = WLSIMG_BUILDER + " run -d -p "
+        + adminListenPort + ":" + adminListenPort + " --name=" + containerName + " --network=host "
+        + imageName + " /u01/oracle/user_projects/domains/" + domainUid + "/startWebLogic.sh";
     logger.info("Command to create a WLS container: {0}", createContainerCmd);
 
     try {
@@ -1665,7 +1610,7 @@ public class CommonTestUtils {
    * Check if a WebLogic container is ready.
    *
    * @param containerName container name to check
-   * @return true if a WebLogic container is ready, otherwise false
+   * @return callable that returns true if a WebLogic container is ready, otherwise false
    */
   public static Callable<Boolean> isImageContainerReady(String containerName) {
     return () -> checkImageContainerReady(containerName);
@@ -1682,7 +1627,7 @@ public class CommonTestUtils {
     ExecResult result = null;
 
     // check is a WebLogic container RUNNING mode
-    String checkContainerCmd = new StringBuffer(WLSIMG_BUILDER + " logs ").append(containerName).toString();
+    String checkContainerCmd = WLSIMG_BUILDER + " logs " + containerName;
     logger.info("Command to check if WLS container: {0}", checkContainerCmd);
 
     try {
@@ -1706,7 +1651,7 @@ public class CommonTestUtils {
     ExecResult result = null;
 
     // create a WebLogic container
-    String stopContainerCmd = new StringBuffer(WLSIMG_BUILDER + " stop ").append(containerName).toString();
+    String stopContainerCmd = WLSIMG_BUILDER + " stop " + containerName;
     logger.info("Command to stop a WLS container: {0}", stopContainerCmd);
 
     try {
@@ -1729,7 +1674,7 @@ public class CommonTestUtils {
     ExecResult result = null;
 
     // create a WebLogic container
-    String stopContainerCmd = new StringBuffer(WLSIMG_BUILDER + " rm ").append(containerName).toString();
+    String stopContainerCmd = WLSIMG_BUILDER + " rm " + containerName;
     logger.info("Command to stop a WLS container: {0}", stopContainerCmd);
 
     try {
@@ -1761,7 +1706,7 @@ public class CommonTestUtils {
     // create dest dir
     assertDoesNotThrow(() -> Files.createDirectories(
         Paths.get(RESULTS_ROOT + "/" + className)),
-        String.format("Could not create directory under %s", RESULTS_ROOT + "/" + className + ""));
+        String.format("Could not create directory under %s", RESULTS_ROOT + "/" + className));
 
     // copy model.sessmigr.yamlto results dir
     assertDoesNotThrow(() -> Files.copy(srcModelYamlPath, destModelYamlPath, REPLACE_EXISTING),
@@ -1769,7 +1714,7 @@ public class CommonTestUtils {
 
     // DOMAIN_NAME in model.sessmigr.yaml
     assertDoesNotThrow(() -> replaceStringInFile(
-        destModelYamlFile.toString(), "DOMAIN_NAME", domainUid),
+        destModelYamlFile, "DOMAIN_NAME", domainUid),
         "Could not modify DOMAIN_NAME in " + destModelYamlFile);
 
     return destModelYamlFile;
@@ -1788,13 +1733,8 @@ public class CommonTestUtils {
     // create testwebapp.war
     String sourceTestWebAppWarLoc = APP_DIR + "/testwebapp";
     String destTestWebAppWarLoc = RESULTS_ROOT + "/" + domainNamespace;
-    String createWarCmd = new StringBuffer("sh ")
-        .append(APP_DIR)
-        .append("/../bash-scripts/build-war-app.sh")
-        .append(" -s ")
-        .append(sourceTestWebAppWarLoc)
-        .append(" -d ")
-        .append(destTestWebAppWarLoc).toString();
+    String createWarCmd = "sh " + APP_DIR + "/../bash-scripts/build-war-app.sh" + " -s "
+        + sourceTestWebAppWarLoc + " -d " + destTestWebAppWarLoc;
     logger.info("command to build testwebapp.war {0}", createWarCmd);
 
     ExecResult execResult = assertDoesNotThrow(() -> exec(createWarCmd, true));
@@ -1842,8 +1782,9 @@ public class CommonTestUtils {
    * @param adminServerPodName  admin server pod name
    * @param adminSvcExtHost admin server external host
    */
-  public static void verifyConfiguredSystemResouceByPath(String domainNamespace, String adminServerPodName,
-                                                String adminSvcExtHost, String resourcePath, String expectedValue) {
+  public static void verifyConfiguredSystemResourceByPath(String domainNamespace, String adminServerPodName,
+                                                          String adminSvcExtHost, String resourcePath,
+                                                          String expectedValue) {
     LoggingFacade logger = getLogger();
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
@@ -1935,12 +1876,12 @@ public class CommonTestUtils {
   public static int getBaseImagesPrefixLength(String baseRepo, String baseTenancy) {
     int result = 0;
 
-    if (baseRepo != null && baseRepo.length() > 0) {
+    if (baseRepo != null && !baseRepo.isEmpty()) {
       // +1 for the trailing slash
       result += baseRepo.length() + 1;
 
       if (!baseRepo.equalsIgnoreCase("container-registry.oracle.com")) {
-        if (baseTenancy != null && baseTenancy.length() > 0) {
+        if (baseTenancy != null && !baseTenancy.isEmpty()) {
           // +1 for the trailing slash
           result += baseTenancy.length() + 1;
         }
@@ -1960,7 +1901,7 @@ public class CommonTestUtils {
    */
   public static String getKindRepoImageForSpec(String kindRepo, String imageName, String imageTag, int prefixLength) {
     String result = imageName + ":" + imageTag;
-    if (kindRepo != null && kindRepo.length() > 0) {
+    if (kindRepo != null && !kindRepo.isEmpty()) {
       String imageNoPrefix = result.substring(prefixLength);
       if (kindRepo.endsWith("/")) {
         kindRepo = kindRepo.substring(0, kindRepo.length() - 1);
@@ -1978,7 +1919,7 @@ public class CommonTestUtils {
    * @return the domain prefix
    */
   public static String getDomainImagePrefix(String repo, String tenancy) {
-    if (repo != null && repo.length() > 0) {
+    if (repo != null && !repo.isEmpty()) {
       if (repo.endsWith("/")) {
         repo = repo.substring(0, repo.length() - 1);
       }
@@ -2003,12 +1944,12 @@ public class CommonTestUtils {
     for (int i = 0; i < name.length; i++) {
       name[i] = (char) (random.nextInt(25) + (int) 'a');
     }
-    String cmName = prefix + new String(name);
+    StringBuilder cmName = new StringBuilder(prefix + new String(name));
     for (String s : suffix) {
-      cmName += s;
+      cmName.append(s);
     }
-    getLogger().info("Creating unique name {0}", cmName);
-    return cmName;
+    getLogger().info("Creating unique name {0}", cmName.toString());
+    return cmName.toString();
   }
 
   /**
@@ -2022,12 +1963,9 @@ public class CommonTestUtils {
     final LoggingFacade logger = getLogger();
 
     logger.info("check pod {0} evicted status", podName);
-    String regex = new StringBuffer()
-        .append(".*Pod\\s")
-        .append(podName)
-        .append("\\s*was\\s*evicted\\s*due\\s*to\\s*Pod\\s*ephemeral\\s*local\\s*storage")
-        .append("\\s*usage\\s*exceeds\\s*the\\s*total\\s*limit\\s*of\\s*containers\\s*")
-        .append(ephemeralStorage).toString();
+    String regex = ".*Pod\\s" + podName
+        + "\\s*was\\s*evicted\\s*due\\s*to\\s*Pod\\s*ephemeral\\s*local\\s*storage"
+        + "\\s*usage\\s*exceeds\\s*the\\s*total\\s*limit\\s*of\\s*containers\\s*" + ephemeralStorage;
 
     logger.info("Wait for regex {0} for pod {1} existing in Operator log", regex, podName);
     testUntil(
@@ -2062,16 +2000,12 @@ public class CommonTestUtils {
   private static boolean needToGetActualLocation(
       String location,
       String type) {
-    switch (type) {
-      case WDT:
-        return WDT_DOWNLOAD_URL_DEFAULT.equals(location);
-      case WIT:
-        return WIT_DOWNLOAD_URL_DEFAULT.equals(location);
-      case WLE:
-        return WLE_DOWNLOAD_URL_DEFAULT.equals(location);
-      default:
-        return false;
-    }
+    return switch (type) {
+      case WDT -> WDT_DOWNLOAD_URL_DEFAULT.equals(location);
+      case WIT -> WIT_DOWNLOAD_URL_DEFAULT.equals(location);
+      case WLE -> WLE_DOWNLOAD_URL_DEFAULT.equals(location);
+      default -> false;
+    };
   }
 
   /**
@@ -2080,20 +2014,14 @@ public class CommonTestUtils {
    */
   public static String getInstallerFileName(
       String type) {
-    switch (type) {
-      case WDT:
-        return WDT_DOWNLOAD_FILENAME_DEFAULT;
-      case WIT:
-        return WIT_DOWNLOAD_FILENAME_DEFAULT;
-      case WLE:
-        return WLE_DOWNLOAD_FILENAME_DEFAULT;
-      case SNAKE:
-        return SNAKE_DOWNLOADED_FILENAME;
-      case REMOTECONSOLE:
-        return REMOTECONSOLE_DOWNLOAD_FILENAME_DEFAULT;
-      default:
-        return "";
-    }
+    return switch (type) {
+      case WDT -> WDT_DOWNLOAD_FILENAME_DEFAULT;
+      case WIT -> WIT_DOWNLOAD_FILENAME_DEFAULT;
+      case WLE -> WLE_DOWNLOAD_FILENAME_DEFAULT;
+      case SNAKE -> SNAKE_DOWNLOADED_FILENAME;
+      case REMOTECONSOLE -> REMOTECONSOLE_DOWNLOAD_FILENAME_DEFAULT;
+      default -> "";
+    };
   }
 
   /**
@@ -2154,7 +2082,7 @@ public class CommonTestUtils {
                                              String serverPodName,
                                              int serverPort,
                                              String resourcePath) {
-    LoggingFacade logger = getLogger();;
+    LoggingFacade logger = getLogger();
 
     String command = KUBERNETES_CLI + " get all --all-namespaces";
     logger.info("curl command to get all --all-namespaces is: {0}", command);

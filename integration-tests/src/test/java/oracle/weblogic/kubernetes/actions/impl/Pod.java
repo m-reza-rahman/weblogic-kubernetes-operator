@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl;
@@ -154,18 +154,17 @@ public class Pod {
   }
 
   /**
-   * Patch domain to shutdown a WebLogic  server by changing the value of
+   * Patch domain to shut down a WebLogic  server by changing the value of
    * its serverStartPolicy property to Never.
    *
    * @param domainUid  unique domain identifier
    * @param namespace  name of the namespace
-   * @param serverName name of the WebLogic server to shutdown
+   * @param serverName name of the WebLogic server to shut down
    * @return true if patching domain operation succeeds or false if the operation fails
-   * @throws ApiException if Kubernetes client API call fails
    **/
   public static boolean shutdownManagedServerUsingServerStartPolicy(String domainUid,
                                                                     String namespace,
-                                                                    String serverName) throws ApiException {
+                                                                    String serverName) {
     return patchDomainUsingServerStartPolicy(domainUid, namespace, serverName, "Never");
   }
 
@@ -177,11 +176,10 @@ public class Pod {
    * @param namespace  name of the namespace
    * @param serverName name of the WebLogic server to start
    * @return true if patching domain operation succeeds or false if the operation fails
-   * @throws ApiException if Kubernetes client API call fails
    **/
   public static boolean startManagedServerUsingServerStartPolicy(String domainUid,
                                                                  String namespace,
-                                                                 String serverName) throws ApiException {
+                                                                 String serverName) {
     return patchDomainUsingServerStartPolicy(domainUid, namespace, serverName, "IfNeeded");
   }
 
@@ -193,14 +191,13 @@ public class Pod {
    * @param serverName name of the WebLogic server
    * @param policy     value for serverStartPolicy property
    * @return true if patching domain operation succeeds or false if the operation fails
-   * @throws ApiException if Kubernetes client API call fails
    **/
   public static boolean patchDomainUsingServerStartPolicy(String domainUid,
                                                           String namespace,
                                                           String serverName,
-                                                          String policy) throws ApiException {
+                                                          String policy) {
     final String patchFormat = "application/json-patch+json";
-    StringBuffer patchData = new StringBuffer("[{");
+    StringBuilder patchData = new StringBuilder("[{");
     patchData.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/managedServers\",")
         .append(" \"value\":[{\"serverName\":\"")

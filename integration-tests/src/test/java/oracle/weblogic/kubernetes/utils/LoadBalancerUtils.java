@@ -3,12 +3,10 @@
 
 package oracle.weblogic.kubernetes.utils;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +44,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createService;
 import static oracle.weblogic.kubernetes.actions.TestActions.installNginx;
 import static oracle.weblogic.kubernetes.actions.TestActions.installTraefik;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
-import static oracle.weblogic.kubernetes.actions.TestActions.upgradeTraefikImage;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isHelmReleaseDeployed;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isNginxReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isOCILoadBalancerReady;
@@ -55,7 +52,6 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWai
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyCommandResultContainsMsg;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -80,7 +76,7 @@ public class LoadBalancerUtils {
       int portshttp,
       String clusterName,
       String domainUID,
-      String loadBalancerName) throws ApiException {
+      String loadBalancerName) {
     Map<String, String> annotations = new HashMap<>();
     annotations.put("service.beta.kubernetes.io/oci-load-balancer-shape", "400Mbps");
     Map<String, String> selectors = new HashMap<>();
@@ -174,9 +170,9 @@ public class LoadBalancerUtils {
           .nodePortsHttps(nodeportshttps);
     }
     if (K8S_NODEPORT_HOST.contains(":")) {
-      nginxParams.ipFamilies(Arrays.asList("IPv6"));
+      nginxParams.ipFamilies(List.of("IPv6"));
     } else {
-      nginxParams.ipFamilies(Arrays.asList("IPv4"));
+      nginxParams.ipFamilies(List.of("IPv4"));
     }
 
     // install NGINX
@@ -244,41 +240,6 @@ public class LoadBalancerUtils {
             TRAEFIK_RELEASE_NAME, traefikNamespace));
     logger.info("Traefik release {0} status is deployed in namespace {1}",
         TRAEFIK_RELEASE_NAME, traefikNamespace);
-
-    // wait until the Traefik pod is ready.
-    testUntil(
-        assertDoesNotThrow(() -> isTraefikReady(traefikNamespace), "isTraefikReady failed with ApiException"),
-        logger,
-        "Traefik to be ready in namespace {0}",
-        traefikNamespace);
-
-    return traefikHelmParams;
-  }
-
-  /** Upgrade Traefik and wait for up to five minutes for the Traefik pod to be ready.
-   *
-   * @param traefikNamespace the namespace in which the Traefik ingress controller is installed
-   * @return the Traefik Helm upgrade parameters
-   */
-  public static HelmParams upgradeAndVerifyTraefik(String traefikNamespace) {
-    LoggingFacade logger = getLogger();
-    // Helm install parameters
-    HelmParams traefikHelmParams = new HelmParams()
-        .releaseName(TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3))
-        .namespace(traefikNamespace)
-        .repoUrl(TRAEFIK_REPO_URL)
-        .repoName(TRAEFIK_REPO_NAME)
-        .chartName(TRAEFIK_CHART_NAME);
-
-    // Traefik chart values to override
-    TraefikParams traefikParams = new TraefikParams()
-        .helmParams(traefikHelmParams);
-
-    // upgrade Traefik with new image infor
-    assertThat(upgradeTraefikImage(traefikParams))
-        .as("Test Traefik upgrade succeeds")
-        .withFailMessage("Traefik upgrade is failed")
-        .isTrue();
 
     // wait until the Traefik pod is ready.
     testUntil(
@@ -495,7 +456,7 @@ public class LoadBalancerUtils {
   }
 
   /**
-   * Create an ingress in specified namespace and retry up to maxRetries times if fail.
+   * Create an ingress in specified namespace and retry up to maxRetries times.
    * @param maxRetries max number of retries
    * @param isTLS whether the ingress uses TLS
    * @param ingressName ingress name
@@ -555,10 +516,9 @@ public class LoadBalancerUtils {
       Files.createDirectories(dstFile.getParent());
       String contentOfFile = Files.readString(srcFile);
       for (int i = 1; i <= domainUids.length; i++) {
-        Files.write(dstFile, contentOfFile
+        Files.writeString(dstFile, contentOfFile
             .replaceAll("@NS@", domainNamespace)
-            .replaceAll("@domain" + i + "uid@", domainUids[i - 1])
-            .getBytes(StandardCharsets.UTF_8));
+            .replaceAll("@domain" + i + "uid@", domainUids[i - 1]));
         contentOfFile = Files.readString(dstFile);
       }
     });
@@ -596,7 +556,6 @@ public class LoadBalancerUtils {
    * @throws Exception fails if not generated after MaxIterations number is reached.
    */
   public static String getLbExternalIp(String lbrelname, String lbns) throws Exception {
-    int i = 0;
     LoggingFacade logger = getLogger();
 
     String cmdip = KUBERNETES_CLI + " get svc --namespace " + lbns
@@ -609,7 +568,7 @@ public class LoadBalancerUtils {
     logger.info("The command returned exit value: " + result.exitValue()
         + " command output: " + result.stderr() + "\n" + result.stdout());
 
-    if (result == null || result.exitValue() != 0 || result.stdout() == null) {
+    if (result.exitValue() != 0 || result.stdout() == null) {
       return null;
     }
 

@@ -18,7 +18,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -118,11 +117,8 @@ import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 public class InitializationTasks implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
   private static final AtomicBoolean started = new AtomicBoolean(false);
   private static final CountDownLatch initializationLatch = new CountDownLatch(1);
-  private static String operatorImage;
-  private static String miiBasicImage;
-  private static String wdtBasicImage;
 
-  private static Collection<String> pushedImages = new ArrayList<>();
+  private static final Collection<String> pushedImages = new ArrayList<>();
   private static boolean isInitializationSuccessful = false;
 
   ConditionFactory withVeryLongRetryPolicy
@@ -156,9 +152,8 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         }
 
         //Install cert-manager for Database installation through DB operator
-        String certManager = CERT_MANAGER;
         CommandParams params = new CommandParams().defaults();
-        params.command(KUBERNETES_CLI + " apply -f " + certManager);
+        params.command(KUBERNETES_CLI + " apply -f " + CERT_MANAGER);
         boolean response = Command.withParams(params).execute();
         assertTrue(response, "Failed to install cert manager");
 
@@ -167,7 +162,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         context.getRoot().getStore(GLOBAL).put("BuildSetup", this);
 
         // build the operator image
-        operatorImage = Operator.getImageName();
+        String operatorImage = Operator.getImageName();
         logger.info("Operator image name {0}", operatorImage);
         assertFalse(operatorImage.isEmpty(), "Image name can not be empty");
         if (!ARM) {
@@ -183,7 +178,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         // The following code is for pulling WLS images if running tests in Kind cluster
         if (KIND_REPO != null) {
           // The kind clusters can't pull images from BASE_IMAGES_REPO using the image pull secret.
-          // It may be a containerd bug. We are going to workaround this issue.
+          // It may be a containerd bug. We are going to work around this issue.
           // The workaround will be to:
           //   1. WLSIMG_BUILDER login
           //   2. WLSIMG_BUILDER pull
@@ -207,10 +202,10 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
           }
         }
 
-        miiBasicImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
-        wdtBasicImage = WDT_BASIC_IMAGE_NAME + ":" + WDT_BASIC_IMAGE_TAG;
+        String miiBasicImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
+        String wdtBasicImage = WDT_BASIC_IMAGE_NAME + ":" + WDT_BASIC_IMAGE_TAG;
 
-        // build MII basic image if does not exits
+        // build MII basic image if it does not exist
         logger.info("Build/Check mii-basic image with tag {0}", MII_BASIC_IMAGE_TAG);
         if (! imageExists(MII_BASIC_IMAGE_NAME, MII_BASIC_IMAGE_TAG)) {
           logger.info("Building mii-basic image {0}", miiBasicImage);
@@ -225,7 +220,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         }
 
         logger.info("Build/Check wdt-basic image with tag {0}", WDT_BASIC_IMAGE_TAG);
-        // build WDT basic image if does not exits
+        // build WDT basic image if it does not exist
         if (! imageExists(WDT_BASIC_IMAGE_NAME, WDT_BASIC_IMAGE_TAG)) {
           logger.info("Building wdt-basic image {0}", wdtBasicImage);
           testUntil(
@@ -357,9 +352,10 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         cleanupDirectory(DOWNLOAD_DIR);
         cleanupDirectory(WIT_BUILD_DIR);
         cleanupDirectory(STAGE_DIR);
-        cleanupDirectory((Paths.get(WORK_DIR, "imagetool")).toString());
+        Path imagetool = Paths.get(WORK_DIR, "imagetool");
+        cleanupDirectory(imagetool.toString());
         // remove empty directory
-        Files.deleteIfExists(Paths.get(WORK_DIR, "imagetool"));
+        Files.deleteIfExists(imagetool);
         Files.deleteIfExists(Paths.get(STAGE_DIR));
         Files.deleteIfExists(Paths.get(WIT_BUILD_DIR));
         Files.deleteIfExists(Paths.get(DOWNLOAD_DIR));
@@ -383,16 +379,13 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
       if (token != null) {
         logger.info("Deleting these images from REPO_REGISTRY");
         logger.info(String.join(", ", pushedImages));
-        for (String image : pushedImages.stream().distinct().collect(Collectors.toList())) {
-          deleteImageOcir(token, image);
-        }
+        pushedImages.stream().distinct().forEach(image -> deleteImageOcir(token, image));
       }
     }
 
     //delete certificate manager
-    String certManager = CERT_MANAGER;
     CommandParams params = new CommandParams().defaults();
-    params.command(KUBERNETES_CLI + " delete -f " + certManager);
+    params.command(KUBERNETES_CLI + " delete -f " + CERT_MANAGER);
     if (!Command.withParams(params).execute()) {
       logger.warning("Failed to uninstall cert manager");
     }
@@ -407,10 +400,8 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     LoggingFacade logger = getLogger();
     Path scriptPath = Paths.get(RESOURCE_DIR, "bash-scripts", "ocirtoken.sh");
     StringBuilder cmd = new StringBuilder()
-        .append(scriptPath.toFile().getAbsolutePath())
-        .append(" -u " + BASE_IMAGES_REPO_USERNAME)
-        .append(" -p \"" + BASE_IMAGES_REPO_PASSWORD + "\"")
-        .append(" -e " + BASE_IMAGES_REPO);
+        .append(scriptPath.toFile().getAbsolutePath()).append(" -u ").append(BASE_IMAGES_REPO_USERNAME)
+        .append(" -p \"").append(BASE_IMAGES_REPO_PASSWORD).append("\"").append(" -e ").append(BASE_IMAGES_REPO);
     ExecResult result = null;
     try {
       result = ExecCommand.exec(cmd.toString(), true);
@@ -464,7 +455,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
                 JsonNode code = entry.path("code");
                 if (code != null) {
                   if ("SEMANTIC_VALIDATION_ERROR".equals(code.asText())) {
-                    // The delete of the tag failed because there is only one tag remaining in the
+                    // The deletion of the tag failed because there is only one tag remaining in the
                     // repository
                     // Note: there are probably other semantic validation errors, but I don't think
                     // it's worth
@@ -517,7 +508,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
    * @param varFile    variable file to build the image
    * @param appName    name of the application to build the image
    * @param domainType domain type to be built
-   * @return true if image is created successfully
+   * @return callabe that returns true if image is created successfully
    */
 
   public Callable<Boolean> createBasicImage(String imageName, String imageTag, String modelFile, String varFile,
@@ -597,10 +588,6 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
   
   HelmParams opHelmParams;
   String webhookNamespace = "ns-webhook";
-
-  private OperatorParams installWebHookOnlyOperator() {
-    return installWebHookOnlyOperator(null);
-  }
 
   private OperatorParams installWebHookOnlyOperator(String featureGates) {
     // recreate WebHook namespace

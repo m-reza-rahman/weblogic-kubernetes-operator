@@ -25,7 +25,6 @@ import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Installer;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.assertions.impl.Deployment;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -39,8 +38,6 @@ import static oracle.weblogic.kubernetes.TestConstants.KIBANA_INDEX_KEY;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
-import static oracle.weblogic.kubernetes.actions.impl.primitive.Installer.defaultInstallSnakeParams;
-import static oracle.weblogic.kubernetes.actions.impl.primitive.Installer.defaultInstallWleParams;
 import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.isPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -56,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 public class LoggingExporter {
 
-  private static LoggingFacade logger = getLogger();
+  private static final LoggingFacade logger = getLogger();
   private static final int maxIterationsPod = 10;
 
   /**
@@ -90,7 +87,7 @@ public class LoggingExporter {
     } catch (Exception ex) {
       ex.printStackTrace();
       if (ex.getMessage().contains("AlreadyExists")) {
-        getLogger().log(Level.WARNING, ex.getMessage());;
+        getLogger().log(Level.WARNING, ex.getMessage());
       } else {
         getLogger().log(Level.SEVERE, ex.getMessage());
         fail("Elastic search deployment failed with unknown reason, see above");
@@ -252,7 +249,7 @@ public class LoggingExporter {
    *
    * @param namespace in which to check ELK Stack pod is ready
    * @param podName name of ELK Stack pod
-   * @return true if ELK Stack pod is in the ready state, false otherwise
+   * @return callable that returns true if ELK Stack pod is in the ready state, false otherwise
    */
   public static Callable<Boolean> isReady(String namespace, String podName) {
     String labelSelector = null;
@@ -284,7 +281,7 @@ public class LoggingExporter {
     String indexStatus = parseString[1];
     String indexName = parseString[2];
 
-    Map<String, String> testVarMap = new HashMap<String, String>();
+    Map<String, String> testVarMap = new HashMap<>();
 
     if (!index.equalsIgnoreCase(KIBANA_INDEX_KEY)) {
       // Add the logstash and wls index name to a Map
@@ -311,20 +308,6 @@ public class LoggingExporter {
     return testVarMap;
   }
 
-  private static boolean downloadWle() {
-    // install WDT if needed
-    return Installer.withParams(
-        defaultInstallWleParams())
-        .download();
-  }
-
-  private static boolean downloadSnake() {
-    // install SnakeYAML if needed
-    return Installer.withParams(
-        defaultInstallSnakeParams())
-        .download();
-  }
-
   private static V1Deployment createElasticsearchDeploymentCr(LoggingExporterParams params) {
 
     String elasticsearchName = params.getElasticsearchName();
@@ -336,7 +319,8 @@ public class LoggingExporter {
     labels.put("app", elasticsearchName);
 
     // create Elasticsearch deployment CR object
-    V1Deployment elasticsearchDeployment = new V1Deployment()
+
+    return new V1Deployment()
         .apiVersion("apps/v1")
         .kind("Deployment")
         .metadata(new V1ObjectMeta()
@@ -364,17 +348,15 @@ public class LoggingExporter {
                             .capabilities(new V1Capabilities()
                                 .add(List.of("SYS_CHROOT"))))
                         .addPortsItem(new V1ContainerPort()
-                            .containerPort(Integer.valueOf(elasticsearchHttpPort)))
+                            .containerPort(elasticsearchHttpPort))
                         .addPortsItem(new V1ContainerPort()
-                            .containerPort(Integer.valueOf(elasticsearchHttpsPort)))
+                            .containerPort(elasticsearchHttpsPort))
                         .addEnvItem(new V1EnvVar()
                             .name("ES_JAVA_OPTS")
                             .value("-Xms1024m -Xmx1024m"))
                         .addEnvItem(new V1EnvVar()
                             .name("discovery.type")
                             .value("single-node")))))));
-
-    return elasticsearchDeployment;
   }
 
   private static V1Deployment createKibanaDeploymentCr(LoggingExporterParams params) {
@@ -387,7 +369,8 @@ public class LoggingExporter {
     labels.put("app", kibanaName);
 
     // create Kibana deployment CR object
-    V1Deployment kibanaDeployment = new V1Deployment()
+
+    return new V1Deployment()
         .apiVersion("apps/v1")
         .kind("Deployment")
         .metadata(new V1ObjectMeta()
@@ -406,9 +389,7 @@ public class LoggingExporter {
                         .name(kibanaName)
                         .image(kibanaImage)
                         .ports(List.of(new V1ContainerPort()
-                            .containerPort(Integer.valueOf(kibanaContainerPort)))))))));
-
-    return kibanaDeployment;
+                            .containerPort(kibanaContainerPort))))))));
   }
 
   private static V1Service createElasticsearchServiceCr(LoggingExporterParams params) {
@@ -421,7 +402,8 @@ public class LoggingExporter {
     labels.put("app", elasticsearchName);
 
     // create Elasticsearch service CR object
-    V1Service elasticsearchService = new V1Service()
+
+    return new V1Service()
         .apiVersion("v1")
         .metadata(new V1ObjectMeta()
             .name(elasticsearchName)
@@ -438,8 +420,6 @@ public class LoggingExporter {
                 .port(elasticsearchHttpsPort)
                 .targetPort(new IntOrString(elasticsearchHttpsPort)))
             .selector(labels));
-
-    return elasticsearchService;
   }
 
   private static V1Service createKibanaServiceCr(LoggingExporterParams params) {
@@ -452,7 +432,8 @@ public class LoggingExporter {
     labels.put("app", kibanaName);
 
     // create Kibana service CR object
-    V1Service elasticsearchService = new V1Service()
+
+    return new V1Service()
         .apiVersion("v1")
         .metadata(new V1ObjectMeta()
             .name(kibanaName)
@@ -462,20 +443,12 @@ public class LoggingExporter {
             .ports(List.of(new V1ServicePort()
                 .port(kibanaContainerPort)))
             .selector(labels));
-
-    return elasticsearchService;
   }
 
   private static String execLoggingExpStatusCheck(String opNamespace, String esNamespace,
       String labelSelector, String indexRegex) {
     String elasticSearchHost = "elasticsearch." + esNamespace + ".svc";
-    StringBuffer k8sExecCmdPrefixBuff = new StringBuffer("curl http://");
-    String cmd = k8sExecCmdPrefixBuff
-        .append(elasticSearchHost)
-        .append(":")
-        .append(ELASTICSEARCH_HTTP_PORT)
-        .append("/_cat/indices/")
-        .append(indexRegex).toString();
+    String cmd = "curl http://" + elasticSearchHost + ":" + ELASTICSEARCH_HTTP_PORT + "/_cat/indices/" + indexRegex;
     logger.info("Command to get logging exporter status line {0}", cmd);
 
     // get Operator pod name

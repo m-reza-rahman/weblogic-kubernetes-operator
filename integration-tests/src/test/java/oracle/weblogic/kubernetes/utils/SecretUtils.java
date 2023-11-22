@@ -17,7 +17,6 @@ import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1NamespaceStatus;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
-import oracle.weblogic.kubernetes.actions.impl.Secret;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
@@ -83,7 +82,7 @@ public class SecretUtils {
    * @param secretName secret name to create
    * @param namespace namespace in which the secret will be created
    * @param username username in the secret
-   * @param password passowrd in the secret
+   * @param password password in the secret
    */
   public static void createSecretWithUsernamePassword(String secretName,
                                                       String namespace,
@@ -126,28 +125,12 @@ public class SecretUtils {
   }
 
   /**
-   * Create a OPSS wallet file secret without file in the specified namespace.
-   * This is for a negative test scenario
-   * @param secretName secret name to create
-   * @param namespace namespace in which the secret will be created
-   */
-  public static void createOpsswalletFileSecretWithoutFile(String secretName, String namespace) {
-
-    boolean secretCreated = assertDoesNotThrow(() -> createSecret(new V1Secret()
-        .metadata(new V1ObjectMeta()
-            .name(secretName)
-            .namespace(namespace))),
-         "Create secret failed with ApiException");
-    assertTrue(secretCreated, String.format("create secret failed for %s", secretName));
-  }
-
-  /**
    * Create a secret with username and password and Elasticsearch host and port in the specified namespace.
    *
    * @param secretName secret name to create
    * @param namespace namespace in which the secret will be created
    * @param username username in the secret
-   * @param password passowrd in the secret
+   * @param password password in the secret
    * @param elasticsearchhost Elasticsearch host in the secret
    * @param elasticsearchport Elasticsearch port in the secret
    */
@@ -180,7 +163,7 @@ public class SecretUtils {
    */
   public static boolean createExternalRestIdentitySecret(String namespace, String secretName) {
 
-    StringBuffer command = new StringBuffer()
+    StringBuilder command = new StringBuilder()
         .append(GEN_EXTERNAL_REST_IDENTITY_FILE);
     if (K8S_NODEPORT_HOST != null && !K8S_NODEPORT_HOST.equals("<none>")) {
       if (K8S_NODEPORT_HOST.contains(":") || Character.isDigit(K8S_NODEPORT_HOST.charAt(0))) {
@@ -251,36 +234,5 @@ public class SecretUtils {
       secrets.add(BASE_IMAGES_REPO_SECRET_NAME);
     }
     return secrets.toArray(String[]::new);
-  }
-
-  /**
-   * Retrieve service account token stored in secret .
-   *
-   * @param serviceAccount service account name
-   * @param namespace namespace
-   * @return string service account token stored in secret
-   */
-  public static String getServiceAccountToken(String serviceAccount, String namespace) {
-    LoggingFacade logger = getLogger();
-    logger.info("Getting the secret of service account {0} in namespace {1}", serviceAccount, namespace);
-    String secretName = Secret.getSecretOfServiceAccount(namespace, serviceAccount);
-    if (secretName.isEmpty()) {
-      logger.info("Did not find secret of service account {0} in namespace {1}", serviceAccount, namespace);
-      return null;
-    }
-    logger.info("Got secret {0} of service account {1} in namespace {2}",
-        secretName, serviceAccount, namespace);
-
-    logger.info("Getting service account token stored in secret {0} to authenticate as service account {1}"
-        + " in namespace {2}", secretName, serviceAccount, namespace);
-    String secretToken = Secret.getSecretEncodedToken(namespace, secretName);
-    if (secretToken.isEmpty()) {
-      logger.info("Did not get encoded token for secret {0} associated with service account {1} in namespace {2}",
-          secretName, serviceAccount, namespace);
-      return null;
-    }
-    logger.info("Got encoded token for secret {0} associated with service account {1} in namespace {2}: {3}",
-        secretName, serviceAccount, namespace, secretToken);
-    return secretToken;
   }
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -101,28 +101,21 @@ class ItCrossDomainTransaction {
   private static final String WDT_MODEL_FILE_JDBC = "model-cdt-jdbc.yaml";
   private static final String WDT_MODEL_FILE_JMS2 = "model2-cdt-jms.yaml";
 
-  private static String opNamespace = null;
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
-  private static String domainUid1 = "domain1";
-  private static String domainUid2 = "domain2";
-  private static int  domain1AdminServiceNodePort = -1;
-  private static int  admin2ServiceNodePort = -1;
-  private static String domain1AdminServerPodName = domainUid1 + "-admin-server";
+  private static final String domainUid1 = "domain1";
+  private static final String domainUid2 = "domain2";
+  private static final String domain1AdminServerPodName = domainUid1 + "-admin-server";
   private final String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
-  private static String domain2AdminServerPodName = domainUid2 + "-admin-server";
+  private static final String domain2AdminServerPodName = domainUid2 + "-admin-server";
   private final String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
-  private static String ORACLEDBSUFFIX = null;
   private static LoggingFacade logger = null;
   static String dbUrl;
   static int dbNodePort;
-  private static String domain1AdminExtSvcRouteHost = null;
-  private static String domain2AdminExtSvcRouteHost = null;
   private static String adminExtSvcRouteHost = null;
   private static String hostAndPort = null;
   private static String dbPodIP = null;
-  private static int dbPort = 1521;
 
   /**
    * Install Operator.
@@ -136,7 +129,7 @@ class ItCrossDomainTransaction {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -147,8 +140,8 @@ class ItCrossDomainTransaction {
     domain2Namespace = namespaces.get(2);
 
     final int dbListenerPort = getNextFreePort();
-    ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + domain2Namespace + ORACLEDBSUFFIX;
+    String oracleDbSuffix = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
+    dbUrl = ORACLEDBURLPREFIX + domain2Namespace + oracleDbSuffix;
     createBaseRepoSecret(domain2Namespace);
 
     //Start oracleDB
@@ -223,9 +216,8 @@ class ItCrossDomainTransaction {
 
     FileOutputStream out = new FileOutputStream(PROPS_TEMP_DIR + "/" + propFileName);
     props.setProperty("NAMESPACE", domainNamespace);
-    //props.setProperty("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
-    //props.setProperty("DBPORT", Integer.toString(dbNodePort));
     props.setProperty("K8S_NODEPORT_HOST", dbPodIP);
+    int dbPort = 1521;
     props.setProperty("DBPORT", Integer.toString(dbPort));
     props.store(out, null);
     out.close();
@@ -243,7 +235,7 @@ class ItCrossDomainTransaction {
     assertTrue(Paths.get(distDir.toString(),
         "txforward.ear").toFile().exists(),
         "Application archive is not available");
-    String appSource = distDir.toString() + "/txforward.ear";
+    String appSource = distDir + "/txforward.ear";
     logger.info("Application is in {0}", appSource);
 
     //build application archive
@@ -255,7 +247,7 @@ class ItCrossDomainTransaction {
     assertTrue(Paths.get(distDir.toString(),
         "cdttxservlet.war").toFile().exists(),
         "Application archive is not available");
-    String appSource1 = distDir.toString() + "/cdttxservlet.war";
+    String appSource1 = distDir + "/cdttxservlet.war";
     logger.info("Application is in {0}", appSource1);
 
     //build application archive for JMS Send/Receive
@@ -267,7 +259,7 @@ class ItCrossDomainTransaction {
     assertTrue(Paths.get(distDir.toString(),
         "jmsservlet.war").toFile().exists(),
         "Application archive is not available");
-    String appSource2 = distDir.toString() + "/jmsservlet.war";
+    String appSource2 = distDir + "/jmsservlet.war";
     logger.info("Application is in {0}", appSource2);
 
     Path mdbSrcDir  = Paths.get(APP_DIR, "mdbtopic");
@@ -295,7 +287,7 @@ class ItCrossDomainTransaction {
     assertTrue(Paths.get(distDir.toString(),
         "mdbtopic.jar").toFile().exists(),
         "Application archive is not available");
-    String appSource3 = distDir.toString() + "/mdbtopic.jar";
+    String appSource3 = distDir + "/mdbtopic.jar";
     logger.info("Application is in {0}", appSource3);
 
     // create admin credential secret for domain1
@@ -345,19 +337,18 @@ class ItCrossDomainTransaction {
 
     //create domain1
     createDomain(domainUid1, domain1Namespace, domain1AdminSecretName, domain1Image);
-    domain1AdminExtSvcRouteHost = adminExtSvcRouteHost;
+    String domain1AdminExtSvcRouteHost = adminExtSvcRouteHost;
     //create domain2
     createDomain(domainUid2, domain2Namespace, domain2AdminSecretName, domain2Image);
-    domain2AdminExtSvcRouteHost = adminExtSvcRouteHost;
 
     logger.info("Getting admin server external service node port(s)");
-    domain1AdminServiceNodePort = assertDoesNotThrow(
+    int domain1AdminServiceNodePort = assertDoesNotThrow(
         () -> getServiceNodePort(domain1Namespace, getExternalServicePodName(domain1AdminServerPodName), "default"),
         "Getting admin server node port failed");
     assertNotEquals(-1, domain1AdminServiceNodePort, "admin server default node port is not valid");
 
-    admin2ServiceNodePort = assertDoesNotThrow(
-      () -> getServiceNodePort(domain2Namespace, getExternalServicePodName(domain2AdminServerPodName), "default"),
+    int admin2ServiceNodePort = assertDoesNotThrow(
+        () -> getServiceNodePort(domain2Namespace, getExternalServicePodName(domain2AdminServerPodName), "default"),
         "Getting admin server node port failed");
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
 
@@ -390,7 +381,7 @@ class ItCrossDomainTransaction {
         domain1ManagedServerPrefix, domain1Namespace, domain2ManagedServerPrefix, domain2Namespace,
         domain2ManagedServerPrefix, domain2Namespace);
 
-    ExecResult result = null;
+    ExecResult result;
     logger.info("curl command {0}", curlRequest);
     result = assertDoesNotThrow(
         () -> exec(curlRequest, true));
@@ -403,8 +394,8 @@ class ItCrossDomainTransaction {
 
   /**
    * This test verifies a cross-domain transaction with re-connection.
-   * It makes sure the disitibuted transaction is completed successfully
-   * when a coordinator server is re-started after writing to transcation log
+   * It makes sure the distributed transaction is completed successfully
+   * when a coordinator server is re-started after writing to translation log
    * A servlet is deployed to the admin server of domain1.
    * The servlet starts a transaction with TMAfterTLogBeforeCommitExit
    * transaction property set. The servlet inserts data into an Oracle DB
@@ -422,7 +413,7 @@ class ItCrossDomainTransaction {
             + "http://%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
         hostAndPort, domain1Namespace, domain2Namespace);
 
-    ExecResult result = null;
+    ExecResult result;
     logger.info("curl command {0}", curlRequest);
     result = assertDoesNotThrow(
         () -> exec(curlRequest, true));
@@ -451,7 +442,7 @@ class ItCrossDomainTransaction {
    * for both instance of MDB for a message sent to Distributed Topic
    */
   @Test
-  @DisplayName("Check cross domain transcated MDB communication ")
+  @DisplayName("Check cross domain transaction MDB communication ")
   void testCrossDomainTranscatedMDB() {
 
     // No extra header info
@@ -470,7 +461,7 @@ class ItCrossDomainTransaction {
             + "dest=jms/testCdtUniformTopic\"",
            hostAndPort, domain2Namespace);
 
-    ExecResult result = null;
+    ExecResult result;
     logger.info("curl command {0}", curlRequest);
     result = assertDoesNotThrow(
         () -> exec(curlRequest, true));
@@ -495,7 +486,7 @@ class ItCrossDomainTransaction {
     logger.info("curl command {0}", curlString);
 
     testUntil(
-        () -> exec(new String(curlString), true).stdout().contains("Messages are distributed"),
+        () -> exec(curlString, true).stdout().contains("Messages are distributed"),
         logger,
         "local queue to be updated");
     return true;
@@ -557,14 +548,13 @@ class ItCrossDomainTransaction {
     if (!WEBLOGIC_SLIM) {
       logger.info("Validating WebLogic admin console");
       testUntil(
-          assertDoesNotThrow(() -> {
-            return TestAssertions.adminNodePortAccessible(serviceNodePort,
-                 ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
-          }, "Access to admin server node port failed"),
+          assertDoesNotThrow(() -> TestAssertions.adminNodePortAccessible(serviceNodePort,
+               ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost),
+              "Access to admin server node port failed"),
           logger,
           "Console login validation");
     } else {
-      logger.info("Skipping WebLogic Console check for Weblogic slim images");
+      logger.info("Skipping WebLogic Console check for WebLogic slim images");
     }
   }
 

@@ -339,8 +339,8 @@ class ItMonitoringExporterSideCar {
     MonitoringExporterSpecification monexpSpec = new MonitoringExporterSpecification().configuration(contents);
     MonitoringExporterConfiguration monexpCong = monexpSpec.configuration();
 
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/monitoringExporter/configuration\",")
         .append("\"value\": ")

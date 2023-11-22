@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -83,7 +83,7 @@ public class ServerStartPolicyUtils {
 
   private static final int replicaCount = 1;
 
-  private static LoggingFacade logger = getLogger();
+  private static final LoggingFacade logger = getLogger();
 
   /**
    * Create operator and domain in specified namespaces, setup sample scripts directory.
@@ -156,7 +156,7 @@ public class ServerStartPolicyUtils {
                                String regex, boolean checkPodExist, String samplePathDir) {
     // use scaleCluster.sh to scale a given cluster
     logger.info("Scale cluster {0} using the script scaleCluster.sh", clusterResName);
-    String result =  assertDoesNotThrow(() ->
+    assertDoesNotThrow(() ->
             executeLifecycleScript(domainUid, domainNamespace, samplePathDir,
                 SCALE_CLUSTER_SCRIPT, CLUSTER_LIFECYCLE, clusterResName, " -r " + replicaNum, false),
         String.format("Failed to run %s", SCALE_CLUSTER_SCRIPT));
@@ -294,12 +294,12 @@ public class ServerStartPolicyUtils {
   public static boolean checkManagedServerConfiguration(String managedServer,
                                                         String domainNamespace, String adminServerPodName) {
     ExecResult result;
-    StringBuffer checkCluster = new StringBuffer(KUBERNETES_CLI + " exec -n "
+    StringBuilder checkCluster = new StringBuilder(KUBERNETES_CLI + " exec -n "
         + domainNamespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
         .append("curl --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + adminServerPodName + ":7001")
+        .append(" http://").append(adminServerPodName).append(":7001")
         .append("/management/tenant-monitoring/servers/")
         .append(managedServer)
         .append(" --silent --show-error ")
@@ -379,7 +379,7 @@ public class ServerStartPolicyUtils {
    * @param scriptType -script type
    * @param entityName - entity name
    * @param extraParams -extra params
-   * @param checkResult -specify if need to check result
+   * @param checkResult -specify if the test needs to check the result
    * @param args - extra args
    * @return result
    */
@@ -397,9 +397,10 @@ public class ServerStartPolicyUtils {
     Path domainLifecycleSamplePath = Paths.get(tempSamplePath + "/scripts/domain-lifecycle");
     String commonParameters = " -d " + domainName + " -n " + domainNamespace;
     params = new CommandParams().defaults();
+    Path path = Paths.get(domainLifecycleSamplePath.toString(), "/" + script);
     if (scriptType.equals(SERVER_LIFECYCLE)) {
       params.command("sh "
-          + Paths.get(domainLifecycleSamplePath.toString(), "/" + script).toString()
+          + path
           + commonParameters + " -s " + entityName + " " + extraParams);
     } else if (scriptType.equals(CLUSTER_LIFECYCLE)) {
       if (extraParams.contains("-r")) {
@@ -407,11 +408,11 @@ public class ServerStartPolicyUtils {
       }
 
       params.command("sh "
-          + Paths.get(domainLifecycleSamplePath.toString(), "/" + script).toString()
+          + path
           + commonParameters + " -c " + entityName);
     } else {
       params.command("sh "
-          + Paths.get(domainLifecycleSamplePath.toString(), "/" + script).toString()
+          + path
           + commonParameters);
     }
 

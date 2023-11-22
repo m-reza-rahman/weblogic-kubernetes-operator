@@ -68,8 +68,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
-
 /**
  * Simple JUnit test file used for testing server's pod init containers feature.
  */
@@ -81,25 +79,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-arm")
 class ItInitContainers {
 
-  private static String opNamespace = null;
-  private static HelmParams opHelmParams = null;
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
   private static String domain3Namespace = null;
   private static String domain4Namespace = null;
 
-  // domain constants
-  private final String domain1Uid = "initcontainersdomain1";
   private final String domain2Uid = "initcontainerdomain2";
   private final String domain3Uid = "initcontainerdomain3";
   private final String domain4Uid = "initcontainerdomain4";
-  private final String clusterName = "cluster-1";
   private final int replicaCount = 2;
   private final String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
-  private final String managedServerPrefix = "-" + MANAGED_SERVER_NAME_BASE;
-  private static String adminSecretName = "weblogic-credentials";
-  private static String encryptionSecretName = "encryptionsecret";
-  private static String miiImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
+  private static final String adminSecretName = "weblogic-credentials";
+  private static final String encryptionSecretName = "encryptionsecret";
+  private static final String miiImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
 
   private static LoggingFacade logger = null;
 
@@ -116,7 +108,7 @@ class ItInitContainers {
     // get a unique operator namespace
     logger.info("Getting a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     // get a unique domain1 namespace
     logger.info("Getting a unique namespace for WebLogic domain1");
@@ -141,7 +133,7 @@ class ItInitContainers {
     // install and verify operator
     logger.info("Installing and verifying operator");
 
-    opHelmParams = installAndVerifyOperator(opNamespace,
+    HelmParams opHelmParams = installAndVerifyOperator(opNamespace,
         domain1Namespace, domain2Namespace,
         domain3Namespace, domain4Namespace).getHelmParams();
 
@@ -180,11 +172,11 @@ class ItInitContainers {
    * Add initContainers at domain spec level and verify the admin server pod executes initContainer command.
    * Test fails if domain crd can't add the initContainers or
    * WebLogic server pods don't go through initialization and ready state.
-   * The following introspect version usecase was added based on issue
+   * The following introspect version use case was added based on issue
    * reported by OFSS team. With initContainer configured, the WebLogic server
    * pod should not roll with modified introspect version without any update to
    * domain resource.
-   * Update the introspect version with out any change to domain resource
+   * Update the introspect version without any change to domain resource
    * Make sure no WebLogic server pod get rolled.
    */
   @Test
@@ -192,28 +184,29 @@ class ItInitContainers {
       + " and starts the server pod")
   void testDomainInitContainer() {
     logger.info("Installing and verifying domain");
+    // domain constants
+    String domain1Uid = "initcontainersdomain1";
     assertTrue(createVerifyDomain(domain1Namespace, domain1Uid, "spec"),
         "can't start or verify domain in namespace " + domain1Namespace);
 
     //check if init container got executed in the server pods
     assertTrue(checkPodLogContainMsg(domain1Uid + "-admin-server",domain1Namespace,
-        domain1Uid,"Hi from Domain"),
+            domain1Uid,"Hi from Domain"),
          "failed to init init-container container command for admin server");
     assertTrue(checkPodLogContainMsg(domain1Uid + "-managed-server1",domain1Namespace,
-        domain1Uid, "Hi from Domain"),
+            domain1Uid, "Hi from Domain"),
         "failed to init init-container container command for managed server1");
     assertTrue(checkPodLogContainMsg(domain1Uid + "-managed-server2",domain1Namespace,
-        domain1Uid,"Hi from Domain"),
+            domain1Uid,"Hi from Domain"),
         "failed to init init-container container command for managed server2");
 
     // get the pod creation time stamps
     LinkedHashMap<String, OffsetDateTime> pods = new LinkedHashMap<>();
     // get the creation time of the admin server pod before patching
-    OffsetDateTime adminPodCreationTime = getPodCreationTime(domain1Namespace,domain1Uid + "-admin-server");
+    OffsetDateTime adminPodCreationTime = getPodCreationTime(domain1Namespace, domain1Uid + "-admin-server");
     String adminServerPodName = domain1Uid + adminServerPrefix;
     pods.put(adminServerPodName, adminPodCreationTime);
     // get the creation time of the managed server pods before patching
-    String managedServerNameBase = "managed-server";
     String managedServerPodNamePrefix = domain1Uid + "-managed-server";
     for (int i = 1; i <= replicaCount; i++) {
       pods.put(managedServerPodNamePrefix + i,
@@ -226,7 +219,7 @@ class ItInitContainers {
   }
 
   private boolean checkPodLogContainMsg(String podName, String podNamespace, String domainUid, String msg) {
-    String podLog = null;
+    String podLog;
     try {
       // check that pod is ready in the domain namespace
       logger.info("Checking that pod {0} exists in namespace {1}",
@@ -270,7 +263,7 @@ class ItInitContainers {
   /**
    * Add initContainers to adminServer and verify the managed server pods in cluster execute initContainer command
    * before starting the admin server pod.
-   * Test fails if if domain crd can't add the initContainers or
+   * Test fails if domain crd can't add the initContainers or
    * Weblogic server pods in the cluster don't go through initialization and ready state.
    */
   @Test
@@ -322,6 +315,7 @@ class ItInitContainers {
    */
   private void createAndVerifyMiiDomain(String domainNamespace, String domainUid, String testCaseName) {
 
+    String clusterName = "cluster-1";
     String clusterResName = domainUid + "-" + clusterName;
 
     // create the domain CR
@@ -437,6 +431,7 @@ class ItInitContainers {
 
     // check for managed server pods existence in the domain namespace
     for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = "-" + MANAGED_SERVER_NAME_BASE;
       String managedServerPodName = domainUid + managedServerPrefix + i;
       //check if pod in init state
       checkPodInitialized(managedServerPodName,domainUid, domainNamespace);

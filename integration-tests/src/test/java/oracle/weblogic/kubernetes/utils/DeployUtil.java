@@ -306,15 +306,15 @@ public class DeployUtil {
             Path archivePath, String hostHeader, String appName) {
     final LoggingFacade logger = getLogger();
     ExecResult result = null;
-    StringBuffer headerString = null;
+    StringBuilder headerString = null;
     if (hostHeader != null) {
-      headerString = new StringBuffer("-H 'host: ");
+      headerString = new StringBuilder("-H 'host: ");
       headerString.append(hostHeader)
                   .append(" ' ");
     } else {
-      headerString = new StringBuffer("");
+      headerString = new StringBuilder("");
     }
-    StringBuffer curlString = new StringBuffer("status=$(curl -g --noproxy '*' ");
+    StringBuilder curlString = new StringBuilder("status=$(curl -g --noproxy '*' ");
     curlString.append(" --user " + userName + ":" + password);
     curlString.append(" -w %{http_code} --show-error -o /dev/null ")
         .append(headerString.toString())

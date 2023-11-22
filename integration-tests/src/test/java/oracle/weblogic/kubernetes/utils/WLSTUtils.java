@@ -1,10 +1,11 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
 
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -24,8 +25,6 @@ import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
-import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -114,19 +113,19 @@ public class WLSTUtils {
             .template(new V1PodTemplateSpec()
                 .spec(new V1PodSpec()
                     .restartPolicy("Never")
-                    .containers(Arrays.asList(jobContainer
+                    .containers(Collections.singletonList(jobContainer
                         .name("execute-wlst-container")
                         .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
                         .imagePullPolicy(IMAGE_PULL_POLICY)
-                        .volumeMounts(Arrays.asList(
+                        .volumeMounts(Collections.singletonList(
                             new V1VolumeMount()
                                 .name("wlst-job-cm-volume") // WLST script volume
-                                .mountPath(MOUNT_POINT))))) // mounted under /sctipts inside pod
-                    .volumes(Arrays.asList(new V1Volume()
+                                .mountPath(MOUNT_POINT))))) // mounted under /scripts inside pod
+                    .volumes(Collections.singletonList(new V1Volume()
                         .name("wlst-job-cm-volume") // WLST scripts volume
                         .configMap(new V1ConfigMapVolumeSource()
                             .name(wlstScriptConfigMapName)))) //config map containing WLST script
-                    .imagePullSecrets(Arrays.asList(
+                    .imagePullSecrets(Collections.singletonList(
                         new V1LocalObjectReference()
                             .name(BASE_IMAGES_REPO_SECRET_NAME))))));  // this secret is used only for non-kind cluster
     String jobName = assertDoesNotThrow(()
@@ -176,46 +175,8 @@ public class WLSTUtils {
                                       String antTargets, String archiveDistDir,
                                       String namespace, Path targetPath) {
 
-    final LoggingFacade logger = getLogger();
-
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(namespace);
-
-    // add ant properties as env variable in pod
-    V1Container buildContainer = new V1Container();
-  }
-
-  /**
-   * Execute WLST script in local.
-   *
-   * @param wlstScriptFile WLST script file path
-   * @param t3Url t3 URL
-   * @return ExecResult output of executing WLST script
-   */
-  public static ExecResult executeWLSTScriptInLocal(String wlstScriptFile,
-                                                    String t3Url) {
-    final LoggingFacade logger = getLogger();
-    ExecResult result = null;
-
-    // create a V1Container with specific scripts and properties for running WLST script
-    StringBuffer cmdRunWlstScript = new StringBuffer("java weblogic.WLST ")
-        .append(wlstScriptFile)
-        .append(" -username ")
-        .append(ADMIN_USERNAME_DEFAULT)
-        .append(" -password ")
-        .append(ADMIN_PASSWORD_DEFAULT)
-        .append(" -url ")
-        .append(t3Url);
-
-    logger.info("execute WLST script in local: command {0}", cmdRunWlstScript.toString());
-    try {
-      result = exec(cmdRunWlstScript.toString(), true);
-    } catch (Exception ex) {
-      logger.info("cmdRunWlstScript: caught unexpected exception {0}", ex);
-      return null;
-    }
-
-    return result;
   }
 
   /**
@@ -242,8 +203,8 @@ public class WLSTUtils {
 
     // execute WLST script in a container
     logger.info("Preparing to run WLST script");
-    //StringBuffer cmdRunWlstScript = new StringBuffer(" " + WLSIMG_BUILDER + " exec -it ")
-    StringBuffer cmdRunWlstScript = new StringBuffer(WLSIMG_BUILDER + " exec ")
+    //StringBuilder cmdRunWlstScript = new StringBuilder(" " + WLSIMG_BUILDER + " exec -it ")
+    StringBuilder cmdRunWlstScript = new StringBuilder(WLSIMG_BUILDER + " exec ")
         .append(containerName)
         .append(" sh /u01/oracle/oracle_common/common/bin/wlst.sh ")
         .append(wlstScriptFile)

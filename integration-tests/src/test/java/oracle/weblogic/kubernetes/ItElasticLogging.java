@@ -47,7 +47,6 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
@@ -108,18 +107,12 @@ class ItElasticLogging {
   private static final String WLS_ELK_LOGGING_MODEL_FILE = "model.wlslogging.yaml";
   private static final String WLS_ELK_LOGGING_IMAGE_NAME = "wls-logging-image";
 
-  // constants for testing WebLogic Logging Exporter
-  private static final String wlsLoggingExporterYamlFileLoc = RESOURCE_DIR + "/loggingexporter";
-
   // constants for Domain
-  private static String domainUid = "elk-domain1";
-  private static String clusterName = "cluster-1";
-  private static String adminServerName = "admin-server";
-  private static String adminServerPodName = domainUid + "-" + adminServerName;
-  private static String managedServerPrefix = "managed-server";
-  private static String managedServerPodPrefix = domainUid + "-" + managedServerPrefix;
-  private static String managedServerFilter = managedServerPrefix + "1";
-  private static int replicaCount = 2;
+  private static final String domainUid = "elk-domain1";
+  private static final String adminServerName = "admin-server";
+  private static final String adminServerPodName = domainUid + "-" + adminServerName;
+  private static final String managedServerPrefix = "managed-server";
+  private static final String managedServerPodPrefix = domainUid + "-" + managedServerPrefix;
 
   private static String opNamespace = null;
   private static String opNamespace2 = null;
@@ -134,10 +127,10 @@ class ItElasticLogging {
   private static String k8sExecCmdPrefix;
   private static Map<String, String> testVarMap;
 
-  private static String sourceConfigFile = ITTESTS_DIR + "/../kubernetes/charts/weblogic-operator/logstash.conf";
-  private static String destConfigFile = WORK_DIR + "/logstash.conf";
-  private static String sourceSettingsFile = ITTESTS_DIR + "/../kubernetes/charts/weblogic-operator/logstash.yml";
-  private static String destSettingsFile = WORK_DIR + "/logstash.yml";
+  private static final String sourceConfigFile = ITTESTS_DIR + "/../kubernetes/charts/weblogic-operator/logstash.conf";
+  private static final String destConfigFile = WORK_DIR + "/logstash.conf";
+  private static final String sourceSettingsFile = ITTESTS_DIR + "/../kubernetes/charts/weblogic-operator/logstash.yml";
+  private static final String destSettingsFile = WORK_DIR + "/logstash.yml";
 
   /**
    * Install Elasticsearch, Kibana and Operator.
@@ -219,16 +212,11 @@ class ItElasticLogging {
     logger.info("Create domain and verify that it's running");
     createAndVerifyDomain(imageName);
 
-    StringBuffer elasticsearchUrlBuff =
-        new StringBuffer("curl http://")
-            .append(elasticSearchHost)
-            .append(":")
-            .append(ELASTICSEARCH_HTTP_PORT);
-    k8sExecCmdPrefix = elasticsearchUrlBuff.toString();
+    k8sExecCmdPrefix = "curl http://" + elasticSearchHost + ":" + ELASTICSEARCH_HTTP_PORT;
     logger.info("Elasticsearch URL {0}", k8sExecCmdPrefix);
 
     // Verify that ELK Stack is ready to use
-    testVarMap = new HashMap<String, String>();
+    testVarMap = new HashMap<>();
     testVarMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, LOGSTASH_INDEX_KEY);
     Map<String, String> kibanaMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, KIBANA_INDEX_KEY);
 
@@ -336,7 +324,7 @@ class ItElasticLogging {
     // verify that configMap weblogic-operator-logstash-cm is created when createLogStashConfigMap= = true
     Callable<Boolean> configMapExist = assertDoesNotThrow(() -> configMapExist(opNamespace, configMapName),
         "copy logstash.conf failed");
-    assertTrue(configMapExist.call().booleanValue(),
+    assertTrue(configMapExist.call(),
         String.format("configMap %s in namespace %s DO NOT exist", configMapName, opNamespace));
 
     // copy the logstash config file to workdir
@@ -362,7 +350,7 @@ class ItElasticLogging {
   @Test
   @DisplayName("Test that users can config and create their own configMap "
       + "when configMapcreateLogStashConfigMap = false")
-  void testCreateLogStashConfigMapFalse() throws Exception {
+  void testCreateLogStashConfigMapFalse() {
     boolean elkIntegrationEnabled = true;
     boolean createLogStashConfigMap = false;
     String defaultNamespace = "default";
@@ -387,7 +375,7 @@ class ItElasticLogging {
   }
 
   private static String createAndVerifyDomainImage() {
-    String miiImage = null;
+    String miiImage;
 
     // create image with model files
     if (!OKD) {
@@ -422,6 +410,7 @@ class ItElasticLogging {
         domainUid, domainNamespace);
     List<String> clusterNames = new ArrayList<>();
     clusterNames.add("cluster-1");
+    int replicaCount = 2;
     createMiiDomainAndVerify(
         domainNamespace,
         domainUid,
@@ -445,7 +434,7 @@ class ItElasticLogging {
   private boolean verifyCountsHitsInSearchResults(String queryCriteria, String regex,
                                                   String index, boolean checkCount, String... args) {
     String checkExist = (args.length == 0) ? "" : args[0];
-    boolean testResult = false;
+    boolean testResult;
     int count = -1;
     int failedCount = -1;
     String hits = "";
@@ -489,10 +478,9 @@ class ItElasticLogging {
 
     int waittime = 5;
     String indexName = testVarMap.get(index);
-    StringBuffer curlOptions = new StringBuffer(" --connect-timeout " + waittime)
-        .append(" --max-time " + waittime)
-        .append(" -X GET ");
-    StringBuffer k8sExecCmdPrefixBuff = new StringBuffer(k8sExecCmdPrefix);
+    StringBuilder curlOptions = new StringBuilder(" --connect-timeout " + waittime).append(" --max-time ")
+        .append(waittime).append(" -X GET ");
+    StringBuilder k8sExecCmdPrefixBuff = new StringBuilder(k8sExecCmdPrefix);
     int offset = k8sExecCmdPrefixBuff.indexOf("http");
     k8sExecCmdPrefixBuff.insert(offset, curlOptions);
     String cmd = k8sExecCmdPrefixBuff
@@ -520,7 +508,7 @@ class ItElasticLogging {
     logger.info("Operator pod name " + operatorPodName);
 
     // command to restart logstash container
-    StringBuffer restartLogstashCmd = new StringBuffer(KUBERNETES_CLI + " exec ");
+    StringBuilder restartLogstashCmd = new StringBuilder(KUBERNETES_CLI + " exec ");
     restartLogstashCmd.append(" -n ");
     restartLogstashCmd.append(opNamespace);
     restartLogstashCmd.append(" pod/");
@@ -565,9 +553,7 @@ class ItElasticLogging {
             containerName, sourceConfigFileInPod, Paths.get(newDestConfigFile)));
 
     // verify that the logstash config is modified successfully
-    boolean configFileModified =
-        assertDoesNotThrow(() -> searchStringInFile(newDestConfigFile, replaceStr), "searchStringInFile failed");
 
-    return configFileModified;
+    return assertDoesNotThrow(() -> searchStringInFile(newDestConfigFile, replaceStr), "searchStringInFile failed");
   }
 }

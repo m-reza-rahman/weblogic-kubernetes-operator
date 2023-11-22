@@ -3,11 +3,11 @@
 
 package oracle.weblogic.kubernetes.assertions;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import io.kubernetes.client.openapi.ApiException;
@@ -23,8 +23,6 @@ import oracle.weblogic.domain.ServerStatus;
 import oracle.weblogic.kubernetes.actions.impl.LoggingExporter;
 import oracle.weblogic.kubernetes.assertions.impl.Application;
 import oracle.weblogic.kubernetes.assertions.impl.Cluster;
-import oracle.weblogic.kubernetes.assertions.impl.ClusterRole;
-import oracle.weblogic.kubernetes.assertions.impl.ClusterRoleBinding;
 import oracle.weblogic.kubernetes.assertions.impl.Domain;
 import oracle.weblogic.kubernetes.assertions.impl.Grafana;
 import oracle.weblogic.kubernetes.assertions.impl.Helm;
@@ -61,7 +59,7 @@ public class TestAssertions {
    * Check if Operator is running.
    *
    * @param namespace in which is operator is running
-   * @return true if running false otherwise
+   * @return callable that returns true if running false otherwise
    */
   public static Callable<Boolean> operatorIsReady(String namespace) {
     return Operator.isReady(namespace);
@@ -71,27 +69,17 @@ public class TestAssertions {
    * Check if Operator WebHook pod is running.
    *
    * @param namespace in which is operator webhook pod is running
-   * @return true if running false otherwise
+   * @return callable that returns true if running false otherwise
    */
   public static Callable<Boolean> operatorWebhookIsReady(String namespace) {
     return Operator.isWebhookReady(namespace);
   }  
 
   /**
-   * Check if NGINX is running.
-   *
-   * @param namespace in which to check if NGINX is running
-   * @return true if NGINX is running, false otherwise
-   */
-  public static Callable<Boolean> isNginxRunning(String namespace) {
-    return Nginx.isRunning(namespace);
-  }
-
-  /**
    * Check if there are ready NGINX pods in the specified namespace.
    *
    * @param namespace in which to check if NGINX pods are in the ready state
-   * @return true if there are ready NGINX pods in the specified namespace , false otherwise
+   * @return callable that returns true if there are ready NGINX pods in the specified namespace , false otherwise
    */
   public static Callable<Boolean> isNginxReady(String namespace) {
     return Nginx.isReady(namespace);
@@ -101,7 +89,7 @@ public class TestAssertions {
    * Check traefik controller pod is ready in the specified namespace.
    *
    * @param namespace in which to check for traefik pod readiness
-   * @return true if traefik pod is ready, false otherwise
+   * @return callable that returns true if traefik pod is ready, false otherwise
    */
   public static Callable<Boolean> isTraefikReady(String namespace) {
     return Traefik.isReady(namespace);
@@ -112,7 +100,7 @@ public class TestAssertions {
    *
    * @param namespace in which to check ELK Stack pod is ready
    * @param podName name of ELK Stack pod
-   * @return true if ELK Stack pod is in the ready state, false otherwise
+   * @return callable that returns true if ELK Stack pod is in the ready state, false otherwise
    */
   public static Callable<Boolean> isElkStackPodReady(String namespace, String podName) {
     return LoggingExporter.isReady(namespace, podName);
@@ -122,7 +110,7 @@ public class TestAssertions {
    * Check if operator REST service is running.
    *
    * @param namespace in which the operator REST service exists
-   * @return true if REST service is running otherwise false
+   * @return callable that returns true if REST service is running otherwise false
    */
   public static Callable<Boolean> operatorRestServiceRunning(String namespace) {
     return () -> Operator.doesExternalRestServiceExists(namespace);
@@ -135,7 +123,7 @@ public class TestAssertions {
    * @param domainUid ID of the domain
    * @param domainVersion version of the domain resource definition
    * @param namespace in which the domain custom resource object exists
-   * @return true if domain object exists
+   * @return callable that returns true if domain object exists
    */
   public static Callable<Boolean> domainExists(String domainUid, String domainVersion, String namespace) {
     return () -> Domain.doesDomainExist(domainUid, domainVersion, namespace);
@@ -147,7 +135,7 @@ public class TestAssertions {
    * @param domainUid ID of the domain
    * @param domainVersion version of the domain resource definition
    * @param namespace in which the domain custom resource object exists
-   * @return true if domain object exists
+   * @return callable that returns true if domain object exists
    */
   public static Callable<Boolean> domainDoesNotExist(String domainUid, String domainVersion, String namespace) {
     return () -> !Domain.doesDomainExist(domainUid, domainVersion, namespace);
@@ -208,7 +196,7 @@ public class TestAssertions {
    * @param domainUid ID of the domain resource
    * @param namespace Kubernetes namespace in which the domain custom resource object exists
    * @param secretName name of the secret that was used to patch the domain resource
-   * @return true if the domain is patched correctly
+   * @return callable that returns true if the domain is patched correctly
    */
   public static Callable<Boolean> domainResourceCredentialsSecretPatched(
       String domainUid,
@@ -224,7 +212,7 @@ public class TestAssertions {
    * @param domainUid ID of the domain resource
    * @param namespace Kubernetes namespace in which the domain custom resource object exists
    * @param image name of the image that was used to patch the domain resource
-   * @return true if the domain is patched correctly
+   * @return callable that returns true if the domain is patched correctly
    */
   public static Callable<Boolean> domainResourceImagePatched(
       String domainUid,
@@ -242,7 +230,7 @@ public class TestAssertions {
    * @param podName name of the WebLogic server pod
    * @param containerName name of the container inside the pod where the image is used
    * @param image name of the image that was used to patch the domain resource
-   * @return true if the pod is patched correctly
+   * @return callable that returns true if the pod is patched correctly
    */
   public static Callable<Boolean> podImagePatched(
       String domainUid,
@@ -251,9 +239,7 @@ public class TestAssertions {
       String containerName,
       String image
   ) {
-    return () -> {
-      return Kubernetes.podImagePatched(namespace, domainUid, podName, containerName, image);
-    };
+    return () -> Kubernetes.podImagePatched(namespace, domainUid, podName, containerName, image);
   }
 
   /**
@@ -262,7 +248,7 @@ public class TestAssertions {
    * @param podName   name of the pod to check for
    * @param domainUid UID of WebLogic domain in which the pod exists
    * @param namespace in which the pod exists
-   * @return true if the pod exists in the namespace otherwise false
+   * @return callable that returns true if the pod exists in the namespace otherwise false
    */
   public static Callable<Boolean> podExists(String podName, String domainUid, String namespace) {
     return Pod.podExists(podName, domainUid, namespace);
@@ -274,7 +260,7 @@ public class TestAssertions {
    * @param podName name of the pod to check for
    * @param domainUid Uid of WebLogic domain
    * @param namespace namespace in which to check for the pod
-   * @return true if the pod does not exist in the namespace otherwise false
+   * @return callable that returns true if the pod does not exist in the namespace otherwise false
    */
   public static Callable<Boolean> podDoesNotExist(String podName, String domainUid, String namespace) {
     return Pod.podDoesNotExist(podName, domainUid, namespace);
@@ -286,7 +272,7 @@ public class TestAssertions {
    * @param podName   name of the pod to check for
    * @param domainUid WebLogic domain uid in which the pod belongs
    * @param namespace in which the pod is running
-   * @return true if the pod is running otherwise false
+   * @return callable that returns true if the pod is running otherwise false
    */
   public static Callable<Boolean> podReady(String podName, String domainUid, String namespace) {
     return Pod.podReady(namespace, domainUid, podName);
@@ -299,12 +285,11 @@ public class TestAssertions {
    * @param podName name of pod
    * @param labels label for pod
    * @param namespace in which to check for the pod existence
-   * @return true if pods are exist and running otherwise false
-   * @throws ApiException when there is error in querying the cluster
+   * @return callable that returns true if pods are exist and running otherwise false
    */
   public static Callable<Boolean> isPodReady(String namespace,
                                              Map<String, String> labels,
-                                             String podName) throws ApiException {
+                                             String podName) {
     return Pod.podReady(namespace, podName,labels);
   }
 
@@ -314,22 +299,10 @@ public class TestAssertions {
    * @param podName   name of the pod to check for
    * @param domainUid WebLogic domain uid in which the pod belongs
    * @param namespace in which the pod is initializing
-   * @return true if the pod is initializing otherwise false
+   * @return callable that returns true if the pod is initializing otherwise false
    */
   public static Callable<Boolean> podInitialized(String podName, String domainUid, String namespace) {
     return Pod.podInitialized(namespace, domainUid, podName);
-  }
-
-  /**
-   * Check if a pod given by the podName is in Terminating state.
-   *
-   * @param podName   name of the pod to check for Terminating status
-   * @param domainUid WebLogic domain uid in which the pod belongs
-   * @param namespace in which the pod is running
-   * @return true if the pod is terminating otherwise false
-   */
-  public static Callable<Boolean> podTerminating(String podName, String domainUid, String namespace) {
-    return Pod.podTerminating(namespace, domainUid, podName);
   }
 
   /**
@@ -351,7 +324,7 @@ public class TestAssertions {
    * @param serviceName the name of the service to check for
    * @param label       a Map of key value pairs the service is decorated with
    * @param namespace   in which the service is running
-   * @return true if the service exists otherwise false
+   * @return callable that returns true if the service exists otherwise false
    */
   public static Callable<Boolean> serviceExists(
       String serviceName,
@@ -367,15 +340,13 @@ public class TestAssertions {
    * @param serviceName the name of the service to check for
    * @param label       a Map of key value pairs the service is decorated with
    * @param namespace   in which the service is running
-   * @return true if the service Load Balancer External IP is generated otherwise false
+   * @return callable that returns true if the service Load Balancer External IP is generated otherwise false
    */
   public static Callable<Boolean> isOCILoadBalancerReady(
       String serviceName,
       Map<String, String> label,
       String namespace) {
-    return () -> {
-      return Kubernetes.isOCILoadBalancerReady(serviceName, label, namespace);
-    };
+    return () -> Kubernetes.isOCILoadBalancerReady(serviceName, label, namespace);
   }
 
   /**
@@ -384,7 +355,7 @@ public class TestAssertions {
    * @param serviceName the name of the service to check for
    * @param label       a Map of key value pairs the service is decorated with
    * @param namespace   in which to check whether the service exists
-   * @return true if the service does not exist, false otherwise
+   * @return callable that returns true if the service does not exist, false otherwise
    */
   public static Callable<Boolean> serviceDoesNotExist(String serviceName,
                                                       Map<String, String> label,
@@ -397,10 +368,10 @@ public class TestAssertions {
    * @param domainUid  domain uid
    * @param namespace namespace in which the domain resource exists
    * @param clusterName  name of cluster
-   * @return true if the status matches, false otherwise
+   * @return callable that returns true if the status matches, false otherwise
    */
   public static Callable<Boolean> clusterStatusMatchesDomain(String domainUid, String namespace,
-                                                   String clusterName) throws ApiException {
+                                                   String clusterName) {
     LoggingFacade logger = getLogger();
     return () -> {
       DomainResource domain =
@@ -408,7 +379,7 @@ public class TestAssertions {
       logger.info("Domain resource : " + Yaml.dump(domain));
       if (domain.getSpec().getClusters().stream().anyMatch(cluster -> cluster.getName().contains(clusterName))) {
 
-        if (domain != null && domain.getStatus() != null) {
+        if (domain.getStatus() != null) {
           List<ClusterStatus> clusterStatusList = domain.getStatus().getClusters();
           logger.info(Yaml.dump(clusterStatusList));
 
@@ -423,34 +394,37 @@ public class TestAssertions {
               assertNotNull(clusterRes.getStatus(), "ClusterResource status is null");
               logger.info("Cluster Resource status : " + Yaml.dump(clusterRes.getStatus()));
               ClusterStatus clusterResourceStatus = clusterRes.getStatus();
-              if (domainClusterStatus.getMaximumReplicas() != clusterResourceStatus.getMaximumReplicas()) {
+              if (!Objects.equals(domainClusterStatus.getMaximumReplicas(),
+                  clusterResourceStatus.getMaximumReplicas())) {
                 logger.info("MaximumReplicas {0} number in domain.status does not match  ClusterResource status {1}",
                     domainClusterStatus.getMaximumReplicas(), clusterResourceStatus.getMaximumReplicas());
                 match = false;
               }
-              if (domainClusterStatus.getMinimumReplicas() != clusterResourceStatus.getMinimumReplicas()) {
+              if (!Objects.equals(domainClusterStatus.getMinimumReplicas(),
+                  clusterResourceStatus.getMinimumReplicas())) {
                 logger.info("MinimumReplicas {0} number in domain.status does not match  ClusterResource status {1}",
                     domainClusterStatus.getMinimumReplicas(), clusterResourceStatus.getMinimumReplicas());
                 match = false;
               }
-              if (domainClusterStatus.getObservedGeneration() != clusterResourceStatus.getObservedGeneration()) {
+              if (!Objects.equals(domainClusterStatus.getObservedGeneration(),
+                  clusterResourceStatus.getObservedGeneration())) {
                 logger.info("ObservedGeneration {0} number in domain.status does not match  "
                         + "clusterResource ObservedGeneration status {1}",
                     domainClusterStatus.getObservedGeneration(), clusterResourceStatus.getObservedGeneration());
                 match = false;
               }
-              if (domainClusterStatus.getReplicasGoal() != clusterResourceStatus.getReplicasGoal()) {
+              if (!Objects.equals(domainClusterStatus.getReplicasGoal(), clusterResourceStatus.getReplicasGoal())) {
                 logger.info("ReplicasGoal {0} number in domain.status does not match  ClusterResource status {1}",
                     domainClusterStatus.getReplicasGoal(), clusterResourceStatus.getReplicasGoal());
                 match = false;
               }
               if (domainClusterStatus.getReplicasGoal() > 0) {
-                if (domainClusterStatus.getReadyReplicas() != clusterResourceStatus.getReadyReplicas()) {
+                if (!Objects.equals(domainClusterStatus.getReadyReplicas(), clusterResourceStatus.getReadyReplicas())) {
                   logger.info("ReadyReplicas {0} number in domain.status does not match  ClusterResource status {1}",
                       domainClusterStatus.getReadyReplicas(), clusterResourceStatus.getReadyReplicas());
                   match = false;
                 }
-                if (domainClusterStatus.getReplicas() != clusterResourceStatus.getReplicas()) {
+                if (!Objects.equals(domainClusterStatus.getReplicas(), clusterResourceStatus.getReplicas())) {
                   logger.info("Replicas {0} number in domain.status does not match  ClusterResource status {1}",
                       domainClusterStatus.getReplicas(), clusterResourceStatus.getReplicas());
                   match = false;
@@ -458,12 +432,6 @@ public class TestAssertions {
               }
               return match;
             }
-          }
-        } else {
-          if (domain == null) {
-            logger.info("domain is null");
-          } else {
-            logger.info("domain status is null");
           }
         }
       } else {
@@ -480,12 +448,11 @@ public class TestAssertions {
    * @param clusterName name of cluster
    * @param conditionType conditions type
    * @param expectedStatus expected status
-   * @return true if the status matches, false otherwise
+   * @return callable that returns true if the status matches, false otherwise
   */
   public static Callable<Boolean> clusterStatusConditionsMatchesDomain(String domainUid, String namespace,
                                                                        String clusterName,
-                                                                       String conditionType, String expectedStatus)
-      throws ApiException {
+                                                                       String conditionType, String expectedStatus) {
     LoggingFacade logger = getLogger();
     return () -> {
       DomainResource domain =
@@ -563,7 +530,7 @@ public class TestAssertions {
    * @param domainUid  domain uid
    * @param namespace namespace in which the domain resource exists
    * @param statusReason the expected status reason of the domain
-   * @return true if the status reason matches, false otherwise
+   * @return callable that returns true if the status reason matches, false otherwise
    */
   public static Callable<Boolean> domainStatusReasonMatches(String domainUid, String namespace,
       String statusReason) {
@@ -572,9 +539,8 @@ public class TestAssertions {
       DomainResource domain = getDomainCustomResource(domainUid, namespace);
       if (domain != null && domain.getStatus() != null && domain.getStatus().getConditions() != null
           && !domain.getStatus().getConditions().isEmpty()) {
-        boolean match = domain.getStatus().getConditions().stream()
+        return domain.getStatus().getConditions().stream()
             .anyMatch(condition -> condition.getReason() != null && condition.getReason().contains(statusReason));
-        return match;
       } else {
         if (domain == null) {
           logger.info("domain is null");
@@ -593,7 +559,7 @@ public class TestAssertions {
    * @param domainUid  domain uid
    * @param namespace namespace in which the domain resource exists
    * @param statusMsg the expected status message of the domain
-   * @return true if the status message contains the expected message, false otherwise
+   * @return callable that returns true if the status message contains the expected message, false otherwise
    */
   public static Callable<Boolean> domainStatusMessageContainsExpectedMsg(String domainUid, String namespace,
                                                                          String statusMsg) {
@@ -621,7 +587,7 @@ public class TestAssertions {
    * @param domainNamespace namespace of the domain
    * @param conditionType the type name of condition, accepted value: Completed, Available, Failed and
    *                      ConfigChangesPendingRestart
-   * @return true if the condition type exists, false otherwise
+   * @return callable that returns true if the condition type exists, false otherwise
    */
   public static Callable<Boolean> domainStatusConditionTypeExists(String domainUid,
                                                                   String domainNamespace,
@@ -636,7 +602,7 @@ public class TestAssertions {
    * @param conditionType the type name of condition, accepted value: Completed, Available, Failed and
    *                      ConfigChangesPendingRestart
    * @param domainVersion version of domain
-   * @return true if the condition type exists, false otherwise
+   * @return callable that returns true if the condition type exists, false otherwise
    */
   public static Callable<Boolean> domainStatusConditionTypeExists(String domainUid,
                                                                   String domainNamespace,
@@ -673,7 +639,7 @@ public class TestAssertions {
    * @param conditionType the type name of condition, accepted value: Completed, Available, Failed and
    *                      ConfigChangesPendingRestart
    * @param expectedStatus expected status value, either True or False
-   * @return true if the condition type has the expected status, false otherwise
+   * @return callable that returns true if the condition type has the expected status, false otherwise
    */
   public static Callable<Boolean> domainStatusConditionTypeHasExpectedStatus(String domainUid,
                                                                              String domainNamespace,
@@ -691,7 +657,7 @@ public class TestAssertions {
    *                      ConfigChangesPendingRestart
    * @param expectedStatus expected status value, either True or False
    * @param domainVersion version of domain
-   * @return true if the condition type has the expected status, false otherwise
+   * @return callable that returns true if the condition type has the expected status, false otherwise
    */
   public static Callable<Boolean> domainStatusConditionTypeHasExpectedStatus(String domainUid,
                                                                              String domainNamespace,
@@ -735,7 +701,7 @@ public class TestAssertions {
    *                      ConfigChangesPendingRestart
    * @param expectedStatus expected status value, either True or False
    * @param domainVersion version of domain
-   * @return true if the condition type has the expected status, false otherwise
+   * @return callable that returns true if the condition type has the expected status, false otherwise
    */
   public static Callable<Boolean> domainStatusClustersConditionTypeHasExpectedStatus(String domainUid,
                                                                                      String domainNamespace,
@@ -776,14 +742,14 @@ public class TestAssertions {
   }
 
   /**
-   * Check the staus of the given server in domain status.
+   * Check the status of the given server in domain status.
    *
    * @param domainUid uid of the domain
    * @param domainNamespace namespace of the domain
    * @param serverName name of the server
    * @param podPhase phase of the server pod
    * @param podReadyStatus status of the pod Ready condition
-   * @return true if the condition type has the expected status, false otherwise
+   * @return callable that returns true if the condition type has the expected status, false otherwise
    */
   public static Callable<Boolean> domainStatusServerStatusHasExpectedPodStatus(String domainUid,
                                                                              String domainNamespace,
@@ -818,70 +784,16 @@ public class TestAssertions {
     };
   }
 
-
   /**
-   * Check if a loadbalancer pod is ready.
-   *
-   * @param domainUid id of the WebLogic domain custom resource domain
-   * @return true, if the load balancer is ready
-   */
-  public static boolean loadbalancerReady(String domainUid) {
-    return Kubernetes.loadBalancerReady(domainUid);
-  }
-
-  /**
-   * Check if the admin server pod is ready.
-   *
-   * @param domainUid id of the domain in which admin server pod is running
-   * @param namespace in which the pod exists
-   * @return true if the admin server is ready otherwise false
-   */
-  public static boolean adminServerReady(String domainUid, String namespace) {
-    return Kubernetes.adminServerReady(domainUid, namespace);
-  }
-
-  /**
-   * Check if a adminserver T3 channel is accessible.
-   *
-   * @param domainUid id of the domain in which admin server pod is running
-   * @param namespace in which the WebLogic server pod exists
-   * @return true if the admin T3 channel is accessible otherwise false
-   */
-  public static boolean adminT3ChannelAccessible(String domainUid, String namespace) {
-    return Domain.adminT3ChannelAccessible(domainUid, namespace);
-  }
-
-  /**
-   * Check if a admin server pod admin node port is accessible.
+   * Check if an admin server pod admin node port is accessible.
    *
    * @param nodePort the node port of the WebLogic administration server service
-   * @param userName user name to access WebLogic administration server
+   * @param userName username to access WebLogic administration server
    * @param password password to access WebLogic administration server
-   * @return true if the WebLogic administration service node port is accessible otherwise false
-   * @throws java.io.IOException when connection to WebLogic administration server fails
+   * @return callable that returns true if the WebLogic administration service node port is accessible otherwise false
    */
   public static Callable<Boolean> adminNodePortAccessible(int nodePort, String userName,
-                                                     String password, String... routeHost)
-      throws IOException {
-    if (routeHost.length == 0) {
-      return () -> Domain.adminNodePortAccessible(nodePort, userName, password, null);
-    } else {
-      return () -> Domain.adminNodePortAccessible(nodePort, userName, password, routeHost[0]);
-    }
-  }
-
-  /**
-   * Check if a admin server pod admin node port is accessible.
-   *
-   * @param nodePort the node port of the WebLogic administration server service
-   * @param userName user name to access WebLogic administration server
-   * @param password password to access WebLogic administration server
-   * @return true if the WebLogic administration service node port is accessible otherwise false
-   * @throws java.io.IOException when connection to WebLogic administration server fails
-   */
-  public static Callable<Boolean> adminLoginPageAccessible(int nodePort, String userName,
-                                                          String password, String... routeHost)
-      throws IOException {
+                                                     String password, String... routeHost) {
     if (routeHost.length == 0) {
       return () -> Domain.adminNodePortAccessible(nodePort, userName, password, null);
     } else {
@@ -909,7 +821,7 @@ public class TestAssertions {
    * @param namespace name of the namespace that the pod is running in
    * @param username WebLogic admin username
    * @param password WebLogic admin password
-   * @return true if the RESTful Management Services command succeeded
+   * @return callable that returns true if the RESTful Management Services command succeeded
    */
   public static Callable<Boolean> credentialsValid(
       int port,
@@ -930,7 +842,7 @@ public class TestAssertions {
    * @param namespace name of the namespace that the pod is running in
    * @param username WebLogic admin username
    * @param password WebLogic admin password
-   * @return true if the RESTful Management Services command failed with exitCode 401
+   * @return callable that returns true if the RESTful Management Services command failed with exitCode 401
    */
   public static Callable<Boolean> credentialsNotValid(
       int port,
@@ -1013,16 +925,6 @@ public class TestAssertions {
   }
 
   /**
-   * Check Helm release status is deployed.
-   * @param releaseName release name which unique in a namespace
-   * @param namespace namespace name
-   * @return true on success
-   */
-  public static boolean isHelmReleaseFailed(String releaseName, String namespace) {
-    return Helm.isReleaseFailed(releaseName, namespace);
-  }
-
-  /**
    * Check Helm release revision against expected.
    * @param releaseName release name which is unique in a namespace
    * @param namespace namespace name
@@ -1039,32 +941,28 @@ public class TestAssertions {
    * @param podName the name of the pod to check for
    * @param namespace in which the pod is running
    * @param timestamp the initial podCreationTimestamp
-   * @return true if the pod new timestamp is not equal to initial PodCreationTimestamp otherwise false
+   * @return callable that returns true if the pod new timestamp is not equal to initial PodCreationTimestamp
    */
   public static Callable<Boolean> isPodRestarted(
       String podName,
       String namespace,
       OffsetDateTime timestamp
   ) {
-    return () -> {
-      return Kubernetes.isPodRestarted(podName, namespace,timestamp);
-    };
+    return () -> Kubernetes.isPodRestarted(podName, namespace,timestamp);
   }
 
   /**
-   * Check if the oeprator pod in a given namespace is restarted based on podCreationTimestamp.
+   * Check if the operator pod in a given namespace is restarted based on podCreationTimestamp.
    *
    * @param namespace in which the pod is running
    * @param timestamp the initial podCreationTimestamp
-   * @return true if the pod new timestamp is not equal to initial PodCreationTimestamp otherwise false
+   * @return callable that returns true if the pod new timestamp is not equal to initial PodCreationTimestamp
    */
   public static Callable<Boolean> isOperatorPodRestarted(
       String namespace,
       OffsetDateTime timestamp
   ) {
-    return () -> {
-      return Kubernetes.isOperatorPodRestarted(namespace, timestamp);
-    };
+    return () -> Kubernetes.isOperatorPodRestarted(namespace, timestamp);
   }
 
   /**
@@ -1089,7 +987,7 @@ public class TestAssertions {
    * @param jobName name of the job to check for its completion status
    * @param labelSelectors label selectors used to get the right pod object
    * @param namespace name of the namespace in which the job running
-   * @return true if completed false otherwise
+   * @return callable that returns true if completed false otherwise
    */
   public static Callable<Boolean> jobCompleted(String jobName, String labelSelectors, String namespace) {
     return Job.jobCompleted(namespace, labelSelectors, jobName);
@@ -1100,7 +998,7 @@ public class TestAssertions {
    *
    * @param namespace in which is prometheus is running
    * @param releaseName name of prometheus helm chart release
-   * @return true if running false otherwise
+   * @return callable that returns true if running false otherwise
    */
   public static Callable<Boolean> isPrometheusReady(String namespace, String releaseName) {
     return Prometheus.isReady(namespace, releaseName);
@@ -1110,33 +1008,31 @@ public class TestAssertions {
    * Check if the prometheus pods are running in a given namespace.
    * @param namespace in which to check for the prometheus pods
    * @param podName prometheus adapter pod name
-   * @return true if found and running otherwise false
+   * @return callable that returns true if found and running otherwise false
    */
   public static Callable<Boolean> isPrometheusAdapterReady(String namespace, String podName) {
     Map<String,String> labelMapPromSvc = new HashMap<>();
     labelMapPromSvc.put("name", "prometheus-adapter");
 
-    return () -> {
-      return (Kubernetes.isPodReady(namespace, (Map<String, String>) null, podName));
-    };
+    return () -> (Kubernetes.isPodReady(namespace, (Map<String, String>) null, podName));
   }
 
   /**
    * Check if Grafana is running.
    *
    * @param namespace in which is grafana is running
-   * @return true if running false otherwise
+   * @return callable that returns true if running false otherwise
    */
   public static Callable<Boolean> isGrafanaReady(String namespace) {
     return Grafana.isReady(namespace);
   }
 
-  /*
+  /**
    * Check whether persistent volume with pvName exists.
    *
    * @param pvName persistent volume to check
    * @param labelSelector String containing the labels the PV is decorated with
-   * @return true if the persistent volume exists, false otherwise
+   * @return callable that returns true if the persistent volume exists, false otherwise
    */
   public static Callable<Boolean> pvExists(String pvName, String labelSelector) {
     return PersistentVolume.pvExists(pvName, labelSelector);
@@ -1147,13 +1043,11 @@ public class TestAssertions {
    * Check whether persistent volume with pvName not exists.
    *
    * @param pvName name of the persistent volume
-   * @param labelSelector labelselector for pv
-   * @return true if pv not exists otherwise false
+   * @param labelSelector label selector for pv
+   * @return callable that returns true if pv not exists otherwise false
    */
   public static Callable<Boolean> pvNotExists(String pvName, String labelSelector) {
-    return () -> {
-      return !PersistentVolume.pvExists(pvName, labelSelector).call();
-    };
+    return () -> !PersistentVolume.pvExists(pvName, labelSelector).call();
   }
 
   /**
@@ -1161,32 +1055,10 @@ public class TestAssertions {
    *
    * @param pvcName persistent volume claim to check
    * @param namespace the namespace in which the persistent volume claim to be checked
-   * @return true if the persistent volume claim exists in the namespace, false otherwise
+   * @return callable that returns true if the persistent volume claim exists in the namespace, false otherwise
    */
   public static Callable<Boolean> pvcExists(String pvcName, String namespace) {
     return PersistentVolumeClaim.pvcExists(pvcName, namespace);
-  }
-
-  /**
-   * Check whether the cluster role exists.
-   *
-   * @param clusterRoleName name of the cluster role
-   * @return true if cluster role exists, false otherwise
-   * @throws ApiException if Kubernetes client API call fails
-   */
-  public static boolean clusterRoleExists(String clusterRoleName) throws ApiException {
-    return ClusterRole.clusterRoleExists(clusterRoleName);
-  }
-
-  /**
-   * Check whether the cluster role binding exists.
-   *
-   * @param clusterRoleBindingName name of the cluster role binding
-   * @return true if cluster role binding exists, false otherwise
-   * @throws ApiException if Kubernetes client API call fails
-   */
-  public static boolean clusterRoleBindingExists(String clusterRoleBindingName) throws ApiException {
-    return ClusterRoleBinding.clusterRoleBindingExists(clusterRoleBindingName);
   }
 
   /**
@@ -1214,7 +1086,7 @@ public class TestAssertions {
    * @param curlCmd curl command to call the sample app
    * @param managedServerNames managed server names that the sample app response should return
    * @param maxIterations max iterations to call the curl command
-   * @return true if the web app can hit all managed servers, false otherwise
+   * @return callable that returns true if the web app can hit all managed servers, false otherwise
    */
   public static Callable<Boolean> callTestWebAppAndCheckForServerNameInResponse(String curlCmd,
                                                                             List<String> managedServerNames,
@@ -1228,7 +1100,7 @@ public class TestAssertions {
    *
    * @param pod   V1Pod object
    * @param searchKey expected string in the log
-   * @return true if the output matches searchKey otherwise false
+   * @return callable that returns true if the output matches searchKey otherwise false
    */
   public static Callable<Boolean> searchPodLogForKey(V1Pod pod, String searchKey) {
     return () -> oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getPodLog(pod.getMetadata().getName(),
@@ -1242,7 +1114,7 @@ public class TestAssertions {
    * @param clusterResName cluster resource name
    * @param clusterVersion version value for Kind Cluster
    * @param namespace in which the cluster custom resource object exists
-   * @return true if cluster object exists
+   * @return callable that returns true if cluster object exists
    */
   public static Callable<Boolean> clusterExists(String clusterResName, String clusterVersion, String namespace) {
     return () -> Cluster.doesClusterExist(clusterResName, clusterVersion, namespace);
@@ -1254,90 +1126,9 @@ public class TestAssertions {
    * @param clusterResName cluster resource name
    * @param clusterVersion version value for Kind Cluster
    * @param namespace in which the cluster custom resource object exists
-   * @return true if cluster object exists
+   * @return callable that returns true if cluster object exists
    */
   public static Callable<Boolean> clusterDoesNotExist(String clusterResName, String clusterVersion, String namespace) {
     return () -> !Cluster.doesClusterExist(clusterResName, clusterVersion, namespace);
-  }
-
-  /**
-   * Get the value of the domain status condition type.
-   * @param domainUid uid of the domain
-   * @param domainNamespace namespace of the domain
-   * @param conditionType the type name of condition, accepted value: Completed, Available, Failed and
-   *                      ConfigChangesPendingRestart
-   * @param domainVersion version of domain
-   * @return value of the status condition type, True or False
-   */
-  public static String getDomainStatusConditionTypeValue(String domainUid,
-                                                         String domainNamespace,
-                                                         String conditionType,
-                                                         String domainVersion) {
-    LoggingFacade logger = getLogger();
-
-    DomainResource domain =
-        assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace, domainVersion));
-
-    if (domain != null && domain.getStatus() != null) {
-      List<DomainCondition> domainConditionList = domain.getStatus().getConditions();
-      logger.info(Yaml.dump(domainConditionList));
-      for (DomainCondition domainCondition : domainConditionList) {
-        if (domainCondition.getType().equalsIgnoreCase(conditionType)) {
-          return domainCondition.getStatus();
-        }
-      }
-    } else {
-      if (domain == null) {
-        logger.info("domain is null");
-      } else {
-        logger.info("domain status is null");
-      }
-    }
-    return "";
-  }
-
-  /**
-   * Get the value of the domain status cluster condition type.
-   * @param domainUid uid of the domain
-   * @param domainNamespace namespace of the domain
-   * @param clusterName cluster name of the domain
-   * @param conditionType the type name of condition, accepted value: Completed, Available, Failed and
-   *                      ConfigChangesPendingRestart
-   * @param domainVersion version of domain
-   * @return true if the condition type has the expected status, false otherwise
-   */
-  public static String getDomainStatusClustersConditionTypeValue(String domainUid,
-                                                                 String domainNamespace,
-                                                                 String clusterName,
-                                                                 String conditionType,
-                                                                 String domainVersion) {
-    LoggingFacade logger = getLogger();
-
-
-    DomainResource domain =
-        assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace, domainVersion));
-
-    if (domain != null && domain.getStatus() != null) {
-      List<ClusterStatus> clusterStatusList = domain.getStatus().getClusters();
-      logger.info(Yaml.dump(clusterStatusList));
-      for (ClusterStatus clusterStatus : clusterStatusList) {
-        if (clusterStatus.getClusterName() != null && clusterStatus.getClusterName().equals(clusterName)) {
-          List<ClusterCondition> clusterConditions = clusterStatus.getConditions();
-          for (ClusterCondition clusterCondition : clusterConditions) {
-            if (clusterCondition.getType() != null && clusterCondition.getType().equalsIgnoreCase(conditionType)
-                && clusterCondition.getStatus() != null) {
-              return clusterCondition.getStatus();
-            }
-          }
-        }
-      }
-    } else {
-      if (domain == null) {
-        logger.info("domain is null");
-      } else {
-        logger.info("domain status is null");
-      }
-    }
-    return "";
   }
 }

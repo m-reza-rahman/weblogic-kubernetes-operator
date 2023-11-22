@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.assertions.impl;
@@ -18,7 +18,7 @@ public class PersistentVolumeClaim {
    *
    * @param pvcName persistent volume claim to check
    * @param namespace the namespace in which the persistent volume claim to be checked
-   * @return true if the persistent volume claim exists in the namespace, false otherwise
+   * @return callable that returns true if the persistent volume claim exists in the namespace, false otherwise
    */
   public static Callable<Boolean> pvcExists(String pvcName, String namespace) {
     return () -> doesPVCExist(pvcName, namespace);
@@ -29,7 +29,7 @@ public class PersistentVolumeClaim {
    *
    * @param pvcName persistent volume claim to check
    * @param namespace the namespace in which the persistent volume claim to be checked
-   * @return true if the persistent volume claim exists in the namespace, false otherwise
+   * @return callable that returns true if the persistent volume claim exists in the namespace, false otherwise
    */
   public static Callable<Boolean> pvcNotExist(String pvcName, String namespace) {
     return () -> !doesPVCExist(pvcName, namespace);

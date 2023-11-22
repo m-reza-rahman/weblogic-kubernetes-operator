@@ -64,7 +64,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapFromFiles;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileFromPod;
-import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
@@ -89,7 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * correspond to the address and port remote clients will use to access the
  * WebLogic cluster resources. Configure a WebLogic dynamic cluster domain using
  * Model In Image. Add a cluster targeted JMS distributed destination.
- * Configure a NodePort Sevice that redirects HTTP traffic to custom channel.
+ * Configure a NodePort Service that redirects HTTP traffic to custom channel.
  */
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -101,13 +100,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("olcne-mrg")
 class ItExternalNodePortService {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
-  private static int replicaCount = 2;
+  private static final int replicaCount = 2;
   private static int nextFreePort = -1;
-  private static String clusterName = "cluster-1";
+  private static final String clusterName = "cluster-1";
   private final String adminServerPodName = domainUid + "-admin-server";
-  private final String managedServerPrefix = domainUid + "-managed-server";
   private static final String TUNNELING_MODEL_FILE = "nodeport.tunneling.model.yaml";
   private static final String domainUid = "mii-nodeport-tunneling";
   private static LoggingFacade logger = null;
@@ -126,7 +123,7 @@ class ItExternalNodePortService {
     // get a new unique opNamespace
     logger.info("Assigning unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Assigning unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -198,6 +195,7 @@ class ItExternalNodePortService {
     for (int i = 1; i <= replicaCount; i++) {
       logger.info("Wait for managed server services and pods are created in namespace {0}",
           domainNamespace);
+      String managedServerPrefix = domainUid + "-managed-server";
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
   }
@@ -231,7 +229,7 @@ class ItExternalNodePortService {
         "nodeport.tunneling.yaml", templateMap));
     logger.info("Generated NodePort Tunneling file {0}", targetTunnelingFile);
 
-    StringBuffer deployNodePort = new StringBuffer(KUBERNETES_CLI + " apply -f ");
+    StringBuilder deployNodePort = new StringBuilder(KUBERNETES_CLI + " apply -f ");
     deployNodePort.append(Paths.get(RESULTS_ROOT, "nodeport.tunneling.yaml"));
     // Deploy the NodePort Service
     ExecResult result = assertDoesNotThrow(
@@ -263,10 +261,9 @@ class ItExternalNodePortService {
   // from the Pod in the method buildClient()
   private void runExtClient(String hostAndPort, int serverCount, boolean checkConnection) {
     // Generate java command to execute client with classpath
-    StringBuffer httpUrl = new StringBuffer("http://");
-    httpUrl.append(hostAndPort);
-    // StringBuffer javaCmd = new StringBuffer("java -cp ");
-    StringBuffer javaCmd = new StringBuffer("");
+    String httpUrl = "http://" + hostAndPort;
+    // StringBuilder javaCmd = new StringBuilder("java -cp ");
+    StringBuilder javaCmd = new StringBuilder();
     javaCmd.append(Paths.get(RESULTS_ROOT, "/jdk/bin/java "));
     javaCmd.append("-cp ");
     javaCmd.append(Paths.get(RESULTS_ROOT, "wlthint3client.jar"));
@@ -275,12 +272,12 @@ class ItExternalNodePortService {
     javaCmd.append(" JmsTestClient ");
     javaCmd.append(httpUrl);
     javaCmd.append(" ");
-    javaCmd.append(String.valueOf(serverCount));
+    javaCmd.append(serverCount);
     javaCmd.append(" ");
-    javaCmd.append(String.valueOf(checkConnection));
+    javaCmd.append(checkConnection);
     logger.info("java command to be run {0}", javaCmd.toString());
     // Note it takes a couples of iterations before the client success
-    testUntil(runJmsClient(new String(javaCmd)), logger, "Wait for Http JMS Client to access WLS");
+    testUntil(runJmsClient(javaCmd.toString()), logger, "Wait for Http JMS Client to access WLS");
   }
 
   // Download the wlthint3client.jar from Adminserver pod to local filesystem.
@@ -299,7 +296,7 @@ class ItExternalNodePortService {
     assertDoesNotThrow(() -> copyFileFromPod(domainNamespace,
              adminServerPodName, "weblogic-server",
              "/u01/jdk", Paths.get(RESULTS_ROOT, "jdk")));
-    StringBuffer chmodCmd = new StringBuffer("chmod +x ");
+    StringBuilder chmodCmd = new StringBuilder("chmod +x ");
     chmodCmd.append(Paths.get(RESULTS_ROOT, "jdk/bin/java "));
     chmodCmd.append(Paths.get(RESULTS_ROOT, "jdk/bin/javac "));
     ExecResult cresult = assertDoesNotThrow(
@@ -307,8 +304,8 @@ class ItExternalNodePortService {
     logger.info("chmod command {0}", chmodCmd.toString());
     logger.info("chmod command returned {0}", cresult.toString());
 
-    // StringBuffer javacCmd = new StringBuffer("javac -cp ");
-    StringBuffer javacCmd = new StringBuffer("");
+    // StringBuilder javacCmd = new StringBuilder("javac -cp ");
+    StringBuilder javacCmd = new StringBuilder();
     javacCmd.append(Paths.get(RESULTS_ROOT, "/jdk/bin/javac "));
     javacCmd.append(Paths.get(" -cp "));
     javacCmd.append(Paths.get(RESULTS_ROOT, "wlthint3client.jar "));
@@ -317,44 +314,18 @@ class ItExternalNodePortService {
     javacCmd.append(Paths.get(RESULTS_ROOT));
     logger.info("javac command {0}", javacCmd.toString());
     ExecResult result = assertDoesNotThrow(
-        () -> exec(new String(javacCmd), true));
-    logger.info("javac returned {0}", result.toString());
-    logger.info("javac returned EXIT value {0}", result.exitValue());
-    assertEquals(0, result.exitValue(), "Client compilation fails");
-  }
-
-  // Build JMS Client inside the Admin Server Pod
-  private void buildClientOnPod() {
-    String destLocation = "/u01/JmsTestClient.java";
-    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-             adminServerPodName, "weblogic-server",
-             Paths.get(RESOURCE_DIR, "tunneling", "JmsTestClient.java"),
-             Paths.get(destLocation)));
-
-    String jarLocation = "/u01/oracle/wlserver/server/lib/wlthint3client.jar";
-    StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
-    javacCmd.append(domainNamespace);
-    javacCmd.append(" -it ");
-    javacCmd.append(adminServerPodName);
-    javacCmd.append(" -- /bin/bash -c \"");
-    javacCmd.append("cd /u01; javac -cp ");
-    javacCmd.append(jarLocation);
-    javacCmd.append(" JmsTestClient.java ");
-    javacCmd.append(" \"");
-    logger.info("javac command {0}", javacCmd.toString());
-    ExecResult result = assertDoesNotThrow(
-        () -> exec(new String(javacCmd), true));
+        () -> exec(javacCmd.toString(), true));
     logger.info("javac returned {0}", result.toString());
     logger.info("javac returned EXIT value {0}", result.exitValue());
     assertEquals(0, result.exitValue(), "Client compilation fails");
   }
 
   // Run external standalone JMS Client using wlthint3client.jar in classpath.
-  // The client sends 300 messsage to a Uniform Distributed Queue.
+  // The client sends 300 message to a Uniform Distributed Queue.
   // Make sure that each destination get excatly 150 messages each.
   private static Callable<Boolean> runJmsClient(String javaCmd) {
     return (()  -> {
-      ExecResult result = assertDoesNotThrow(() -> exec(new String(javaCmd), true));
+      ExecResult result = assertDoesNotThrow(() -> exec(javaCmd, true));
       logger.info("java returned {0}", result.toString());
       logger.info("java returned EXIT value {0}", result.exitValue());
       return ((result.exitValue() == 0));
@@ -364,7 +335,7 @@ class ItExternalNodePortService {
   @AfterAll
   public void tearDownAll() {
     if (!SKIP_CLEANUP) {
-      StringBuffer removeNodePort = new StringBuffer(KUBERNETES_CLI + " delete -f ");
+      StringBuilder removeNodePort = new StringBuilder(KUBERNETES_CLI + " delete -f ");
       removeNodePort.append(Paths.get(RESULTS_ROOT, "cluster.nodeport.svc.yaml"));
       assertDoesNotThrow(() -> exec(new String(removeNodePort), true));
     }

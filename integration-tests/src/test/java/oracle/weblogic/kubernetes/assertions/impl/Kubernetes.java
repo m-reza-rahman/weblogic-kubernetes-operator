@@ -18,7 +18,6 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
 import io.kubernetes.client.openapi.apis.BatchV1Api;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1Deployment;
 import io.kubernetes.client.openapi.models.V1DeploymentCondition;
@@ -49,14 +48,11 @@ import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 
 public class Kubernetes {
 
-  private static final String OPERATOR_NAME = "weblogic-operator-";
-
   private static final String RESOURCE_VERSION_MATCH_UNSET = null;
   private static final Boolean SEND_INITIAL_EVENTS_UNSET = null;
 
-  private static ApiClient apiClient = null;
-  private static CoreV1Api coreV1Api = null;
-  private static CustomObjectsApi customObjectsApi = null;
+  private static final ApiClient apiClient;
+  private static final CoreV1Api coreV1Api;
   private static final String RUNNING = "Running";
 
   static {
@@ -64,7 +60,6 @@ public class Kubernetes {
       Configuration.setDefaultApiClient(ClientBuilder.defaultClient());
       apiClient = Configuration.getDefaultApiClient();
       coreV1Api = new CoreV1Api();
-      customObjectsApi = new CustomObjectsApi();
     } catch (IOException ioex) {
       throw new ExceptionInInitializerError(ioex);
     }

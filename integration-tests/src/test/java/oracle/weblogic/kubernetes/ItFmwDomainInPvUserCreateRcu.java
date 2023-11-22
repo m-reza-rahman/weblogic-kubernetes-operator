@@ -8,7 +8,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +15,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import io.kubernetes.client.custom.V1Patch;
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.weblogic.domain.ClusterResource;
@@ -107,17 +105,14 @@ public class ItFmwDomainInPvUserCreateRcu {
 
   private static final String RCUSCHEMAPREFIX = "jrfdomainpv";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
-  private static String ORACLEDBSUFFIX = null;
   private static final String RCUSCHEMAPASSWORD = "Oradoc_db1";
 
   private static String dbUrl = null;
   private static LoggingFacade logger = null;
-  private static String DOMAINHOMEPREFIX = null;
   private static final String domainUid1 = "jrfdomainonpv-userrcu1";
   private static final String domainUid3 = "jrfdomainonpv-userrcu3";
   private static final String domainUid4 = "jrfdomainonpv-userrcu4";
 
-  private static final String miiAuxiliaryImage1Tag = "jrf1" + MII_BASIC_IMAGE_TAG;
   private final String adminSecretName1 = domainUid1 + "-weblogic-credentials";
   private final String adminSecretName3 = domainUid3 + "-weblogic-credentials";
   private final String adminSecretName4 = domainUid4 + "-weblogic-credentials";
@@ -127,17 +122,13 @@ public class ItFmwDomainInPvUserCreateRcu {
   private final String opsswalletpassSecretName1 = domainUid1 + "-opss-wallet-password-secret";
   private final String opsswalletpassSecretName3 = domainUid3 + "-opss-wallet-password-secret";
   private final String opsswalletpassSecretName4 = domainUid4 + "-opss-wallet-password-secret";
-  private final String opsswalletfileSecretName1 = domainUid1 + "-opss-wallet-file-secret";
-  private final String opsswalletfileSecretName3 = domainUid3 + "-opss-wallet-file-secret";
-  private final String opsswalletfileSecretName4 = domainUid4 + "-opss-wallet-file-secret";
   private static final int replicaCount = 1;
 
   private final String fmwModelFilePrefix = "model-fmwdomainonpv-rcu-wdt";
   private final String fmwModelFile = fmwModelFilePrefix + ".yaml";
   private static DomainCreationImage domainCreationImage1 = null;
-  private static List<DomainCreationImage> domainCreationImages3 = new ArrayList<>();
-  private static List<DomainCreationImage> domainCreationImages4 = new ArrayList<>();
-  private static String configMapName = null;
+  private static final List<DomainCreationImage> domainCreationImages3 = new ArrayList<>();
+  private static final List<DomainCreationImage> domainCreationImages4 = new ArrayList<>();
 
   /**
    * Assigns unique namespaces for DB, operator and domain.
@@ -153,8 +144,8 @@ public class ItFmwDomainInPvUserCreateRcu {
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
     final int dbListenerPort = getNextFreePort();
-    ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ORACLEDBSUFFIX;
+    String oracleDbSuffix = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
+    dbUrl = ORACLEDBURLPREFIX + dbNamespace + oracleDbSuffix;
 
     // get a new unique opNamespace
     logger.info("Assign a unique namespace for operator1");
@@ -280,6 +271,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     final String pvName = getUniqueName(domainUid1 + "-pv-");
     final String pvcName = getUniqueName(domainUid1 + "-pvc-");
 
+    String opsswalletfileSecretName1 = domainUid1 + "-opss-wallet-file-secret";
     saveAndRestoreOpssWalletfileSecret(domainNamespace, domainUid1, opsswalletfileSecretName1);
     logger.info("Deleting domain custom resource with namespace: {0}, domainUid {1}", domainNamespace, domainUid1);
     deleteDomainResource(domainNamespace, domainUid1);
@@ -467,10 +459,10 @@ public class ItFmwDomainInPvUserCreateRcu {
     domainCreationImages4.add(domainCreationImage);
 
     logger.info("create WDT configMap with jms model");
-    configMapName = "jmsconfigmap";
+    String configMapName = "jmsconfigmap";
     createConfigMapAndVerify(
         configMapName, domainUid4, domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.jms2.yaml"));
+        List.of(MODEL_DIR + "/model.jms2.yaml"));
 
     // create a domain custom resource configuration object
     logger.info("Creating domain custom resource with pvName: {0}", pvName);
@@ -604,6 +596,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     final String pvName = getUniqueName(domainUid3 + "-pv-");
     final String pvcName = getUniqueName(domainUid3 + "-pvc-");
 
+    String opsswalletfileSecretName3 = domainUid3 + "-opss-wallet-file-secret";
     saveAndRestoreOpssWalletfileSecret(domainNamespace, domainUid3, opsswalletfileSecretName3);
     logger.info("Deleting domain custom resource with namespace: {0}, domainUid {1}", domainNamespace, domainUid3);
     deleteDomainResource(domainNamespace, domainUid3);
@@ -809,10 +802,8 @@ public class ItFmwDomainInPvUserCreateRcu {
    * @param dbNamespace namespace where DB and RCU schema are going to start
    * @param dbPort NodePort of DB
    * @param dbListenerPort TCP listener port of DB
-   * @throws ApiException if any error occurs when setting up database
    */
-  private static synchronized void setupDB(String dbImage, String dbNamespace, int dbPort, int dbListenerPort)
-      throws ApiException {
+  private static synchronized void setupDB(String dbImage, String dbNamespace, int dbPort, int dbListenerPort) {
     LoggingFacade logger = getLogger();
     // create pull secrets when running in non Kind Kubernetes cluster
     // this secret is used only for non-kind cluster
@@ -854,25 +845,27 @@ public class ItFmwDomainInPvUserCreateRcu {
 
   // create a ConfigMap with a model that adds a cluster
   private static void createModelConfigMap(String domainid, String cfgMapName) {
-    String yamlString = "topology:\n"
-        + "  Cluster:\n"
-        + "    'cluster-2':\n"
-        + "  Server:\n"
-        + "    'c2-managed-server1':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server2':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server3':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server4':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server5':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n";
+    String yamlString = """
+        topology:
+          Cluster:
+            'cluster-2':
+          Server:
+            'c2-managed-server1':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server2':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server3':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server4':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server5':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+        """;
 
     Map<String, String> labels = new HashMap<>();
     labels.put("weblogic.domainUid", domainid);

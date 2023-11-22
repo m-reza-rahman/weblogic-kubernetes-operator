@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -95,9 +94,7 @@ public class K8sEvents {
   public static Callable<Boolean> checkDomainFailedEventWithReason(
       String opNamespace, String domainNamespace, String domainUid, String failureReason,
       String type, OffsetDateTime timestamp) {
-    return () -> {
-      return domainFailedEventExists(opNamespace, domainNamespace, domainUid, failureReason, type, timestamp);
-    };
+    return () -> domainFailedEventExists(opNamespace, domainNamespace, domainUid, failureReason, type, timestamp);
   }
 
   /**
@@ -113,9 +110,7 @@ public class K8sEvents {
   public static Callable<Boolean> checkDomainEvent(
       String opNamespace, String domainNamespace, String domainUid, String reason,
       String type, OffsetDateTime timestamp) {
-    return () -> {
-      return domainEventExists(opNamespace, domainNamespace, domainUid, reason, type, timestamp);
-    };
+    return () -> domainEventExists(opNamespace, domainNamespace, domainUid, reason, type, timestamp);
   }
 
   /**
@@ -250,33 +245,6 @@ public class K8sEvents {
   }
 
   /**
-   * Get matching operator generated event object.
-   * @param domainNamespace namespace in which the event is logged
-   * @param reason event to check for Created, Changed, deleted, processing etc
-   * @param type type of event, Normal or Warning
-   * @param timestamp the timestamp after which to see events
-   * @return CoreV1Event matching event object
-   */
-  public static CoreV1Event getOpGeneratedEvent(
-      String domainNamespace, String reason, String type, OffsetDateTime timestamp) {
-
-    try {
-      List<CoreV1Event> events = Kubernetes.listOpGeneratedNamespacedEvents(domainNamespace);
-      for (CoreV1Event event : events) {
-        if (event.getReason().equals(reason) && (isEqualOrAfter(timestamp, event))) {
-          logger.info(Yaml.dump(event));
-          if (event.getType().equals(type)) {
-            return event;
-          }
-        }
-      }
-    } catch (ApiException ex) {
-      Logger.getLogger(K8sEvents.class.getName()).log(Level.SEVERE, null, ex);
-    }
-    return null;
-  }
-
-  /**
    * Check if a given event is logged by the operator.
    *
    * @param opNamespace namespace in which the operator is running
@@ -295,8 +263,7 @@ public class K8sEvents {
       try {
         List<CoreV1Event> events = Kubernetes.listOpGeneratedNamespacedEvents(domainNamespace);
         for (CoreV1Event event : events) {
-          if (((domainUid != null && event.getMetadata().getLabels().containsValue(domainUid))
-                  || domainUid == null)
+          if ((domainUid == null || event.getMetadata().getLabels().containsValue(domainUid))
                   && event.getReason().equals(reason) && (isEqualOrAfter(timestamp, event))) {
             logger.info(Yaml.dump(event));
             verifyOperatorDetails(event, opNamespace, domainUid);
@@ -401,31 +368,6 @@ public class K8sEvents {
       return -1;
     }
     return count;
-  }
-
-  /**
-   * Check if a given event is logged only once for the given pod.
-   *
-   * @param domainNamespace namespace in which the domain exists
-   * @param serverName server pod name for which event is checked
-   * @param reason event to check for Started, Killing etc
-   * @param timestamp the timestamp after which to see events
-   */
-  public static Callable<Boolean> checkPodEventLoggedOnce(
-          String domainNamespace, String serverName, String reason, OffsetDateTime timestamp) {
-    return () -> {
-      logger.info("Verifying {0} event is logged for {1} pod in the domain namespace {2}",
-              reason, serverName, domainNamespace);
-      try {
-        return isEventLoggedOnce(serverName, Kubernetes.listNamespacedEvents(domainNamespace).stream()
-                .filter(e -> e.getInvolvedObject().getName().equals(serverName))
-                .filter(e -> e.getReason().contains(reason))
-                .filter(e -> isEqualOrAfter(timestamp, e)).collect(Collectors.toList()).size());
-      } catch (ApiException ex) {
-        Logger.getLogger(K8sEvents.class.getName()).log(Level.SEVERE, null, ex);
-      }
-      return false;
-    };
   }
 
   /**
@@ -538,16 +480,6 @@ public class K8sEvents {
             || event.getLastTimestamp().isAfter(timestamp);
   }
 
-  private static Boolean isEventLoggedOnce(String serverName, int count) {
-    return count == 1 ? true : logErrorAndFail(serverName, count);
-  }
-
-  private static Boolean logErrorAndFail(String serverName, int count) {
-    Logger.getLogger(K8sEvents.class.getName()).log(Level.SEVERE,
-            "Pod " + serverName + " restarted " + count + " times");
-    return false;
-  }
-
   // Verify the operator instance details are correct
   private static void verifyOperatorDetails(
       CoreV1Event event, String opNamespace, String domainUid) throws ApiException {
@@ -590,17 +522,11 @@ public class K8sEvents {
   public static final String NAMESPACE_WATCHING_STARTED = "NamespaceWatchingStarted";
   public static final String NAMESPACE_WATCHING_STOPPED = "NamespaceWatchingStopped";
   public static final String STOP_MANAGING_NAMESPACE = "StopManagingNamespace";
-  public static final String POD_TERMINATED = "Killing";
-  public static final String POD_STARTED = "Started";
   public static final String POD_CYCLE_STARTING = "PodCycleStarting";
 
   public static final String TOPOLOGY_MISMATCH_ERROR
       = "Domain resource and WebLogic domain configuration mismatch error";
-  public static final String INTROSPECTION_ERROR = "Introspection error";
-  public static final String KUBERNETES_ERROR = "Kubernetes Api call error";
-  public static final String SERVER_POD_ERROR = "Server pod error";
   public static final String REPLICAS_TOO_HIGH_ERROR = "Replicas too high";
-  public static final String INTERNAL_ERROR = "Internal error";
   public static final String ABORTED_ERROR = "Domain processing is aborted";
 
 }

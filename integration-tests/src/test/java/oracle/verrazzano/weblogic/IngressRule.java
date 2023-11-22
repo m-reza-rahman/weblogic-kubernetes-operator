@@ -49,11 +49,11 @@ public class IngressRule {
     return destination;
   }
 
-  public Destination getdestination() {
+  public Destination getDestination() {
     return destination;
   }
 
-  public void setdestination(Destination destination) {
+  public void setDestination(Destination destination) {
     this.destination = destination;
   }
 

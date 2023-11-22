@@ -166,7 +166,7 @@ class ItRetryImprovements {
         String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
             domainUid, domainNamespace));
 
-    String retryOccurRegex = new StringBuffer(".*WebLogicCredentials.*\\s*secret.*")
+    String retryOccurRegex = new StringBuilder(".*WebLogicCredentials.*\\s*secret.*")
         .append(wlSecretName)
         .append(".*not\\s*found\\s*in\\s*namespace\\s*.*")
         .append(domainNamespace)
@@ -178,7 +178,7 @@ class ItRetryImprovements {
         logger, "retry occurs as expected");
 
     // verify that the operator stops retrying when the maximum retry time is reached
-    String retryMaxValueRegex = new StringBuffer(".*operator\\s*failed\\s*after\\s*retrying\\s*for\\s*.*")
+    String retryMaxValueRegex = new StringBuilder(".*operator\\s*failed\\s*after\\s*retrying\\s*for\\s*.*")
         .append(failureRetryLimitMinutes)
         .append(".*\\s*minutes.*\\s*Please\\s*resolve.*error\\s*and.*update\\s*domain.spec.introspectVersion")
         .append(".*to\\s*force\\s*another\\s*retry\\s*.*").toString();
@@ -187,7 +187,7 @@ class ItRetryImprovements {
         logger, "retry ends as expected after {0} minutes retry", failureRetryLimitMinutes);
 
     // verify that SEVERE level error message is logged in the Operator log
-    String opLogSevereErrRegex = new StringBuffer(".*SEVERE")
+    String opLogSevereErrRegex = new StringBuilder(".*SEVERE")
         .append(".*WebLogicCredentials.*\\s*secret.*")
         .append(wlSecretName)
         .append(".*not\\s*found\\s*in\\s*namespace\\s*.*")
@@ -214,7 +214,7 @@ class ItRetryImprovements {
         String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
             domainUid, domainNamespace));
 
-    String retryOccurRegex = new StringBuffer(".*WebLogicCredentials.*\\s*secret.*")
+    String retryOccurRegex = new StringBuilder(".*WebLogicCredentials.*\\s*secret.*")
         .append(wlSecretName)
         .append(".*not\\s*found\\s*in\\s*namespace\\s*.*")
         .append(domainNamespace)
@@ -258,7 +258,7 @@ class ItRetryImprovements {
     }
 
     String domainInvalidErrorRegex =
-        new StringBuffer(".*status.*Failure.*denied.*More\\s*than\\s*one\\s*item\\s*under.*spec.managedServers.*")
+        new StringBuilder(".*status.*Failure.*denied.*More\\s*than\\s*one\\s*item\\s*under.*spec.managedServers.*")
           .append(duplicateServerName)
           .append(".*").toString();
 
@@ -295,7 +295,7 @@ class ItRetryImprovements {
         String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
             domainUid, domainNamespace));
 
-    String warningMsgRegex = new StringBuffer(".*")
+    String warningMsgRegex = new StringBuilder(".*")
         .append(replicaCount)
         .append("\\s*replicas.*")
         .append(clusterName)
@@ -315,8 +315,8 @@ class ItRetryImprovements {
     verifyDomainExistsAndServerStarted(replicaMaxCount);
 
     // reduce replicas back to the maximum cluster size
-    StringBuffer patchStr =
-        new StringBuffer("[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": ")
+    StringBuilder patchStr =
+        new StringBuilder("[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": ")
             .append(replicaMaxCount).append("}]");
     V1Patch patch = new V1Patch(patchStr.toString());
     logger.info("Patching the cluster resource using patching string {0}", patchStr);
@@ -328,7 +328,7 @@ class ItRetryImprovements {
 
     // update introspectVersion to have Operator start retry
     String introspectVersion = assertDoesNotThrow(() -> getNextIntrospectVersion(domainUid, domainNamespace));
-    patchStr = new StringBuffer("[{\"op\": \"add\", \"path\": \"/spec/introspectVersion\", \"value\": \"")
+    patchStr = new StringBuilder("[{\"op\": \"add\", \"path\": \"/spec/introspectVersion\", \"value\": \"")
         .append(introspectVersion)
         .append("\"}]");
     logger.info("Updating introspectVersion in domain resource using patch string: {0}", patchStr);
@@ -389,7 +389,7 @@ class ItRetryImprovements {
         replicaCount, badModelFile, badModelFileCm, domainUid);
     createDomainAndVerify(domain, domainNamespace);
 
-    String createDomainFailedMsgRegex = new StringBuffer(".*SEVERE.*createDomain\\s*was\\s*unable\\s*to\\s*load.*")
+    String createDomainFailedMsgRegex = new StringBuilder(".*SEVERE.*createDomain\\s*was\\s*unable\\s*to\\s*load.*")
         .append(badModelFileName).toString();
 
     String retryDoneMsgRegex = "The operator failed after retrying for "

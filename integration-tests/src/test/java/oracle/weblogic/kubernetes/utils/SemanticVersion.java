@@ -1,4 +1,4 @@
-// Copyright (c) 2021, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -7,32 +7,9 @@ import java.util.Objects;
 
 /** Major, minor and revision version specification for a product. */
 public class SemanticVersion implements Comparable<SemanticVersion> {
-  public static final SemanticVersion TEST_VERSION = new SemanticVersion(3,1);
-
   private final int major;
   private final int minor;
   private final int revision;
-
-  /**
-   * Construct semantic version.
-   * @param major major
-   * @param minor minor
-   */
-  public SemanticVersion(int major, int minor) {
-    this(major, minor, 0);
-  }
-
-  /**
-   * Construct semantic version.
-   * @param major major
-   * @param minor minor
-   * @param revision revision
-   */
-  public SemanticVersion(int major, int minor, int revision) {
-    this.major = major;
-    this.minor = minor;
-    this.revision = revision;
-  }
 
   /**
    * Construct semantic version.
@@ -49,7 +26,7 @@ public class SemanticVersion implements Comparable<SemanticVersion> {
     while (!numericString.chars().allMatch(Character::isDigit)) {
       numericString = numericString.substring(0, numericString.length() - 1);
     }
-    return numericString.length() == 0 ? 0 : Integer.parseInt(numericString);
+    return numericString.isEmpty() ? 0 : Integer.parseInt(numericString);
   }
 
   public int getMajor() {

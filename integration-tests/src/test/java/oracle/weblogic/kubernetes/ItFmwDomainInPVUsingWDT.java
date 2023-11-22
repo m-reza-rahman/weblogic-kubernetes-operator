@@ -63,15 +63,11 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("okd-fmw-cert")
 class ItFmwDomainInPVUsingWDT {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
   private static String dbNamespace = null;
-  private static String oracle_home = null;
-  private static String java_home = null;
 
   private static final String RCUSCHEMAPREFIX = "fmwdomainpv";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
-  private static String ORACLEDBSUFFIX = null;
   private static final String RCUSYSUSERNAME = "sys";
   private static final String RCUSYSPASSWORD = "Oradoc_db1";
   private static final String RCUSCHEMAUSERNAME = "myrcuuser";
@@ -84,16 +80,10 @@ class ItFmwDomainInPVUsingWDT {
   private static final String clusterName = "cluster-1";
   private static final String adminServerName = "admin-server";
   private static final String managedServerNameBase = "managed-server";
-  private static final String adminServerPodName = domainUid + "-" + adminServerName;
-  private static final String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
   private static final int managedServerPort = 8001;
-  private final String wlSecretName = domainUid + "-weblogic-credentials";
-  private final String rcuSecretName = domainUid + "-rcu-credentials";
   private static final int replicaCount = 1;
 
-  private final String wdtCreateDomainScript = "setup_wdt.sh";
   private final String fmwModelFilePrefix = "model-fmwdomain-onpv-wdt";
-  private final String fmwModelFile = fmwModelFilePrefix + ".yaml";
 
   /**
    * Assigns unique namespaces for DB, operator and domain.
@@ -109,13 +99,13 @@ class ItFmwDomainInPVUsingWDT {
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
     final int dbListenerPort = getNextFreePort();
-    ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ORACLEDBSUFFIX;
+    String oracleDbSuffix = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
+    dbUrl = ORACLEDBURLPREFIX + dbNamespace + oracleDbSuffix;
 
     // get a new unique opNamespace
     logger.info("Assign a unique namespace for operator1");
     assertNotNull(namespaces.get(1), "Namespace is null");
-    opNamespace = namespaces.get(1);
+    String opNamespace = namespaces.get(1);
 
     // get a new unique domainNamespace
     logger.info("Assign a unique namespace for FMW domain");
@@ -146,17 +136,19 @@ class ItFmwDomainInPVUsingWDT {
    * Verify EM console is accessible.
    */
   @Test
-  @DisplayName("Create a FMW domainon on PV using WDT")
+  @DisplayName("Create a FMW domain on PV using WDT")
   void testFmwDomainOnPVUsingWdt() {
     final String pvName = getUniqueName(domainUid + "-pv-");
     final String pvcName = getUniqueName(domainUid + "-pvc-");
     final int t3ChannelPort = getNextFreePort();
 
     // create FMW domain credential secret
+    String wlSecretName = domainUid + "-weblogic-credentials";
     createSecretWithUsernamePassword(wlSecretName, domainNamespace,
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create RCU credential secret
+    String rcuSecretName = domainUid + "-rcu-credentials";
     createRcuSecretWithUsernamePassword(rcuSecretName, domainNamespace,
         RCUSCHEMAUSERNAME, RCUSCHEMAPASSWORD, RCUSYSUSERNAME, RCUSYSPASSWORD);
 
@@ -168,8 +160,10 @@ class ItFmwDomainInPVUsingWDT {
     File fmwModelPropFile = createWdtPropertyFile(t3ChannelPort);
 
     // use shell script to download WDT and run the WDT createDomain script to create FMW domain
+    String wdtCreateDomainScript = "setup_wdt.sh";
     Path wdtScript = Paths.get(RESOURCE_DIR, "bash-scripts", wdtCreateDomainScript);
     // WDT model file containing WebLogic domain configuration
+    String fmwModelFile = fmwModelFilePrefix + ".yaml";
     Path wdtModelFile = Paths.get(MODEL_DIR, fmwModelFile);
 
     // create configmap and domain in persistent volume
@@ -179,7 +173,7 @@ class ItFmwDomainInPVUsingWDT {
     logger.info("Creating domain custom resource");
     DomainResource domain = createDomainResourceOnPv(domainUid,
                                              domainNamespace,
-                                             wlSecretName,
+        wlSecretName,
                                              clusterName,
                                              pvName,
                                              pvcName,
@@ -258,17 +252,17 @@ class ItFmwDomainInPVUsingWDT {
     //get ENV variable from the image
     assertNotNull(getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "ORACLE_HOME"),
         "envVar ORACLE_HOME from image is null");
-    oracle_home = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "ORACLE_HOME");
-    logger.info("ORACLE_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, oracle_home);
+    String oracleHome = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "ORACLE_HOME");
+    logger.info("ORACLE_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, oracleHome);
     assertNotNull(getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "JAVA_HOME"),
         "envVar JAVA_HOME from image is null");
-    java_home = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "JAVA_HOME");
-    logger.info("JAVA_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, java_home);
+    String javaHome = getImageEnvVar(FMWINFRA_IMAGE_TO_USE_IN_SPEC, "JAVA_HOME");
+    logger.info("JAVA_HOME in image {0} is: {1}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, javaHome);
 
     // create wlst property file object
     Properties p = new Properties();
-    p.setProperty("oracleHome", oracle_home); //default $ORACLE_HOME
-    p.setProperty("javaHome", java_home); //default $JAVA_HOME
+    p.setProperty("oracleHome", oracleHome); //default $ORACLE_HOME
+    p.setProperty("javaHome", javaHome); //default $JAVA_HOME
     p.setProperty("rcuDb", dbUrl);
     p.setProperty("rcuSchemaPrefix", RCUSCHEMAPREFIX);
     p.setProperty("rcuSchemaPassword", RCUSCHEMAPASSWORD);

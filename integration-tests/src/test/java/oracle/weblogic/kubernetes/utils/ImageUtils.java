@@ -210,7 +210,7 @@ public class ImageUtils {
   /**
    * Create an image with modelfile, application archive and property file. If the property file
    * is needed to be updated with a property that has been created by the framework, it is copied
-   * onto RESULT_ROOT and updated. Hence the altModelDir. Call this method to create a domain home in image.
+   * onto RESULT_ROOT and updated. Hence, the altModelDir. Call this method to create a domain home in image.
    * @param imageNameBase - base image name used in local or to construct image name in repository
    * @param wdtModelList - model file used to build the image
    * @param appSrcDirList - application to be added to the image
@@ -333,7 +333,7 @@ public class ImageUtils {
     }
 
     List<String> archiveList = new ArrayList<>();
-    if (appSrcDirList != null && appSrcDirList.size() != 0 && appSrcDirList.get(0) != null) {
+    if (appSrcDirList != null && !appSrcDirList.isEmpty() && appSrcDirList.get(0) != null) {
       List<String> archiveAppsList = new ArrayList<>();
       List<String> buildAppDirList = new ArrayList<>(appSrcDirList);
       boolean buildCoherence = false;
@@ -352,7 +352,7 @@ public class ImageUtils {
 
       AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + cacheSfx);
 
-      if (archiveAppsList.size() != 0 && archiveAppsList.get(0) != null) {
+      if (!archiveAppsList.isEmpty() && archiveAppsList.get(0) != null) {
         assertTrue(archiveApp(appParams.srcDirList(archiveAppsList)));
         String appPath = archiveAppsList.get(0);
 
@@ -365,9 +365,9 @@ public class ImageUtils {
         archiveList.add(zipAppFile);
       }
 
-      if (buildAppDirList.size() != 0 && buildAppDirList.get(0) != null) {
+      if (!buildAppDirList.isEmpty() && buildAppDirList.get(0) != null) {
         // build an application archive using what is in resources/apps/APP_NAME
-        String zipFile = "";
+        String zipFile;
         if (oneArchiveContainsMultiApps) {
           for (String buildAppDirs : buildAppDirList) {
             assertTrue(buildAppArchive(appParams
@@ -420,8 +420,8 @@ public class ImageUtils {
     String witTarget = ((OKD) ? "OpenShift" : "Default");
     // build an image using WebLogic Image Tool
     logger.info("Creating image {0} using model directory {1}", image, MODEL_DIR);
-    boolean result = false;
-    if (!modelType) {  //create a domain home in image image
+    boolean result;
+    if (!modelType) {  //create a domain home in image
       result = createImage(
           new WitParams()
               .baseImageName(baseImageName)
@@ -458,7 +458,7 @@ public class ImageUtils {
       if (additionalBuildCommands != null) {
         logger.info("additionalBuildCommands {0}", additionalBuildCommands);
         witParams.additionalBuildCommands(additionalBuildCommands);
-        StringBuffer additionalBuildFilesBuff = new StringBuffer();
+        StringBuilder additionalBuildFilesBuff = new StringBuilder();
         for (String buildFile:additionalBuildFilesVarargs) {
           additionalBuildFilesBuff.append(buildFile).append(" ");
         }
@@ -511,7 +511,7 @@ public class ImageUtils {
 
   /**
    * Create repo registry secret with given parameters.
-   * @param userName repository user name
+   * @param userName repository username
    * @param password repository password
    * @param email repository email
    * @param registry registry name

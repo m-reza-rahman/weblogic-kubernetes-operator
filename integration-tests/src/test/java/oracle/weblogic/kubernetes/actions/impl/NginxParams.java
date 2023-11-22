@@ -41,7 +41,7 @@ public class NginxParams {
   private int nodePortsHttps;
   private boolean webhooksEnabled = false;
   private HelmParams helmParams;
-  private String ingressClassName;
+  private final String ingressClassName;
   private String imageRegistry = TEST_IMAGES_REPO;
   private String nginxImage = TEST_NGINX_IMAGE_NAME;
   private String nginxImageTag = NGINX_INGRESS_IMAGE_TAG;

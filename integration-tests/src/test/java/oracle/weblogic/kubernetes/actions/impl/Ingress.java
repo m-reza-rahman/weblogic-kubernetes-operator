@@ -1,10 +1,9 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +33,7 @@ public class Ingress {
   /**
    * Create an ingress for the WebLogic domain with domainUid in the specified domain namespace.
    * The ingress hosts are set to
-   * [domainUid.domainNamespace.adminserver.test, domainUid.domainNamespace.clusterName.test'].
+   * [domainUid.domainNamespace.adminserver.test, domainUid.domainNamespace.clusterName.test].
    *
    * @param ingressName name of the ingress to be created
    * @param domainNamespace the WebLogic domain namespace in which the ingress will be created
@@ -125,12 +124,10 @@ public class Ingress {
 
     List<V1IngressTLS> tlsList = new ArrayList<>();
     if (tlsSecret != null) {
-      clusterNameMsPortMap.forEach((clusterName, port) -> {
-        tlsList.add(new V1IngressTLS()
-            .hosts(Arrays.asList(
-                domainUid + "." + domainNamespace + "." + clusterName + ".test"))
-            .secretName(tlsSecret));
-      });
+      clusterNameMsPortMap.forEach((clusterName, port) -> tlsList.add(new V1IngressTLS()
+          .hosts(List.of(
+              domainUid + "." + domainNamespace + "." + clusterName + ".test"))
+          .secretName(tlsSecret)));
     }
 
     // set the ingress
@@ -209,7 +206,7 @@ public class Ingress {
   }
 
   /**
-   * List all of the ingresses in the specified namespace.
+   * List all the ingresses in the specified namespace.
    *
    * @param namespace the namespace to which the ingresses belong
    * @return a list of ingress names in the namespace

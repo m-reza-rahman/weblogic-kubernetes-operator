@@ -1,9 +1,10 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -104,11 +105,11 @@ public class JobUtils {
 
     V1PodSpec podSpec = new V1PodSpec()
         .restartPolicy("Never")
-        .containers(Arrays.asList(jobContainer  // container containing WLST or WDT details
+        .containers(Collections.singletonList(jobContainer  // container containing WLST or WDT details
             .name("create-weblogic-domain-onpv-container")
             .image(image)
             .imagePullPolicy(IMAGE_PULL_POLICY)
-            .ports(Arrays.asList(new V1ContainerPort()
+            .ports(Collections.singletonList(new V1ContainerPort()
                 .containerPort(7001)))
             .volumeMounts(Arrays.asList(
                 new V1VolumeMount()
@@ -128,11 +129,11 @@ public class JobUtils {
                 .configMap(
                     new V1ConfigMapVolumeSource()
                         .name(domainScriptCM)))) //config map containing domain scripts
-        .imagePullSecrets(Arrays.asList(
+        .imagePullSecrets(Collections.singletonList(
             new V1LocalObjectReference()
                 .name(BASE_IMAGES_REPO_SECRET_NAME)));
     if (!OKD) {
-      podSpec.initContainers(Arrays.asList(createfixPVCOwnerContainer(pvName, "/shared")));
+      podSpec.initContainers(Collections.singletonList(createfixPVCOwnerContainer(pvName, "/shared")));
     }
 
     V1PodTemplateSpec podTemplateSpec = new V1PodTemplateSpec();

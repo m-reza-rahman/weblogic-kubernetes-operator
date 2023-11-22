@@ -1,4 +1,4 @@
-// Copyright (c) 2021, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.domain;
@@ -109,11 +109,10 @@ public class AuxiliaryImageVolume {
     if (other == this) {
       return true;
     }
-    if (!(other instanceof AuxiliaryImageVolume)) {
+    if (!(other instanceof AuxiliaryImageVolume rhs)) {
       return false;
     }
 
-    AuxiliaryImageVolume rhs = ((AuxiliaryImageVolume) other);
     EqualsBuilder builder =
             new EqualsBuilder()
                     .append(name, rhs.name)

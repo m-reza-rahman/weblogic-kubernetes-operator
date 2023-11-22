@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.extensions;
@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import oracle.weblogic.kubernetes.TestConstants;
+import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.utils.CleanupUtil;
 import oracle.weblogic.kubernetes.utils.LoggingUtil;
@@ -40,14 +41,13 @@ import static oracle.weblogic.kubernetes.TestConstants.VZ_ENV;
 import static oracle.weblogic.kubernetes.TestConstants.VZ_INGRESS_NS;
 import static oracle.weblogic.kubernetes.TestConstants.VZ_ISTIO_NS;
 import static oracle.weblogic.kubernetes.TestConstants.VZ_SYSTEM_NS;
-import static oracle.weblogic.kubernetes.actions.TestActions.createUniqueNamespace;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
  * JUnit5 extension class to intercept test execution at various
  * levels and collect logs in Kubernetes cluster for all artifacts
- * in the namespace used by the tests. The tests has to tag their classes
+ * in the namespace used by the tests. The tests have to tag their classes
  * with @ExtendWith(IntegrationTestWatcher.class) for the automatic log
  * collection to work.
  */
@@ -96,7 +96,7 @@ public class IntegrationTestWatcher implements
     Namespaces ns = parameterContext.findAnnotation(Namespaces.class).get();
     List<String> namespaces = new ArrayList<>();
     for (int i = 1; i <= ns.value(); i++) {
-      String namespace = assertDoesNotThrow(() -> createUniqueNamespace(),
+      String namespace = assertDoesNotThrow(TestActions::createUniqueNamespace,
           "Failed to create unique namespace due to ApiException");
       namespaces.add(namespace);
       getLogger().info("Created a new namespace called {0}", namespace);
@@ -120,21 +120,6 @@ public class IntegrationTestWatcher implements
 
     printHeader(String.format("Starting Test Suite %s", className), "+");
     printHeader(String.format("Starting beforeAll for %s", className), "-");
-  }
-
-  /**
-   * Gets called when any exception is thrown in beforeAll and collects logs.
-   * @param context current extension context
-   * @param throwable to handle
-   * @throws Throwable in case of failures
-   */
-  @Override
-  public void handleBeforeAllMethodExecutionException​(ExtensionContext context, Throwable throwable)
-      throws Throwable {
-    printHeader(String.format("BeforeAll failed %s", className), "!");
-    getLogger().severe(getStackTraceAsString(throwable));
-    collectLogs(context, "beforeAll");
-    throw throwable;
   }
 
   /**
@@ -165,11 +150,9 @@ public class IntegrationTestWatcher implements
   /**
    * Prints log messages to mark the beginning of test method execution.
    * @param context the current extension context
-   * @throws Exception when store interaction fails
    */
-
   @Override
-  public void beforeTestExecution(ExtensionContext context) throws Exception {
+  public void beforeTestExecution(ExtensionContext context) {
     printHeader(String.format("Ending beforeEach for %s()", methodName), "-");
     getLogger().info("About to execute [{0}] in {1}()", context.getDisplayName(), methodName);
     getStore(context).put(START_TIME, System.currentTimeMillis());
@@ -178,10 +161,9 @@ public class IntegrationTestWatcher implements
   /**
    * Prints log messages to mark the end of test method execution.
    * @param context the current extension context
-   * @throws Exception when store interaction fails
    */
   @Override
-  public void afterTestExecution(ExtensionContext context) throws Exception {
+  public void afterTestExecution(ExtensionContext context) {
     Method testMethod = context.getRequiredTestMethod();
     long startTime = getStore(context).remove(START_TIME, long.class);
     long duration = System.currentTimeMillis() - startTime;
@@ -285,10 +267,10 @@ public class IntegrationTestWatcher implements
   public void testFailed(ExtensionContext context, Throwable cause) {
     printHeader(String.format("Test FAILED %s()", methodName), "!");
     if (SLEEP_SECONDS_AFTER_FAILURE > 0) {
-      int sleepSecs = SLEEP_SECONDS_AFTER_FAILURE;
+      long sleepSecs = SLEEP_SECONDS_AFTER_FAILURE;
       getLogger().info("Sleeping for " + sleepSecs + " seconds to keep the env. for debugging");
       try {
-        Thread.sleep(sleepSecs * 1000);
+        Thread.sleep(sleepSecs * 1000L);
       } catch (InterruptedException ie) {
         getLogger().info("Exception in testFailed sleep {0}", ie);
       }
@@ -333,11 +315,9 @@ public class IntegrationTestWatcher implements
    * Gets called when any exception is thrown in afterAll and collects logs.
    * @param context current extension context
    * @param throwable to handle
-   * @throws Throwable in case of failures
    */
   @Override
-  public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable)
-      throws Throwable {
+  public void handleAfterAllMethodExecutionException(ExtensionContext context, Throwable throwable) {
     printHeader(String.format("AfterAll failed for %s", className), "!");
     collectLogs(context, "afterAll");
   }
@@ -385,19 +365,11 @@ public class IntegrationTestWatcher implements
    * @return String extension directory name
    */
   private String getExtDir(ExtensionContext extensionContext, String failedStage) {
-    String ext;
-    switch (failedStage) {
-      case "beforeEach":
-      case "afterEach":
-        ext = extensionContext.getRequiredTestMethod().getName() + "_" + failedStage;
-        break;
-      case "test":
-        ext = extensionContext.getRequiredTestMethod().getName();
-        break;
-      default:
-        ext = failedStage;
-    }
-    return ext;
+    return switch (failedStage) {
+      case "beforeEach", "afterEach" -> extensionContext.getRequiredTestMethod().getName() + "_" + failedStage;
+      case "test" -> extensionContext.getRequiredTestMethod().getName();
+      default -> failedStage;
+    };
   }
 
   /**

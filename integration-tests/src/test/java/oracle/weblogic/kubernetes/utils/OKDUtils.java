@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -6,27 +6,12 @@ package oracle.weblogic.kubernetes.utils;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
-import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
-import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
-import io.kubernetes.client.openapi.models.V1IngressBackend;
-import io.kubernetes.client.openapi.models.V1IngressRule;
-import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
-import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.WLS_DEFAULT_CHANNEL_NAME;
-import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
-import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
-import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OKDUtils {
@@ -37,7 +22,7 @@ public class OKDUtils {
    * @param namespace - Namespace where the route is exposed
    */
   public static String createRouteForOKD(String serviceName, String namespace, String... routeName) {
-    boolean routeExists = false;
+    boolean routeExists;
     String command = "oc -n " + namespace + " expose service " + serviceName;
     if (OKD) {
       getLogger().info("Going to create route for OKD");
@@ -231,113 +216,10 @@ public class OKDUtils {
       getLogger().info("stderr = {0}", result.stderr());
     }
 
-    boolean exists =
-        result != null 
+    return result != null
          && result.exitValue() == 0 
          && result.stdout() != null 
          && result.stdout().contains(routeName);
-
-    return exists;
-  }
-
-  /**
-   * In OKD environment, the nodePort cannot be accessed directly. We need to create an ingress
-   *
-   * @param podName name of the pod - to create the ingress for its external service
-   * @param namespace namespace of the domain
-   * @return hostname to access the ingress
-   */
-  public static String createASIngressForOKD(String podName, String namespace) {
-    String asExtSvcName = getExternalServicePodName(podName);
-    getLogger().info("admin server external svc = {0}", asExtSvcName);
-
-    //String host = asExtSvcName + "-" + namespace;
-    String host = asExtSvcName;
-
-    int adminServicePort
-        = getServicePort(namespace, getExternalServicePodName(podName), WLS_DEFAULT_CHANNEL_NAME);
-    getLogger().info("admin service external port = {0}", adminServicePort);
-
-    String ingressName = asExtSvcName + "-ingress-path-routing";
-
-    List<V1IngressRule> ingressRules = new ArrayList<>();
-    List<V1HTTPIngressPath> httpIngressPaths = new ArrayList<>();
-
-    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
-        .path("/")
-        .pathType("Prefix")
-        .backend(new V1IngressBackend()
-            .service(new V1IngressServiceBackend()
-                .name(asExtSvcName)
-                .port(new V1ServiceBackendPort()
-                    .number(7001)))
-        );
-    httpIngressPaths.add(httpIngressPath);
-
-    V1IngressRule ingressRule = new V1IngressRule()
-        .host(host)
-        .http(new V1HTTPIngressRuleValue()
-            .paths(httpIngressPaths));
-
-    ingressRules.add(ingressRule);
-
-    assertDoesNotThrow(() -> createIngress(ingressName, namespace, null, null, ingressRules, null));
-
-    // check the ingress was found in the domain namespace
-    assertThat(assertDoesNotThrow(() -> listIngresses(namespace)))
-        .as(String.format("Test ingress %s was found in namespace %s", ingressName, namespace))
-        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, namespace))
-        .contains(ingressName);
-
-    getLogger().info("ingress {0} was created in namespace {1}", ingressName, namespace);
-    return host;
-  }
-
-  /**
-   * In OKD environment, the nodePort cannot be accessed directly. We need to create an ingress
-   *
-   * @param svcName - cluster service name
-   * @param namespace namespace of the domain
-   * @return hostname to access the ingress
-   */
-  public static String createClusterIngressForOKD(String svcName, String namespace) {
-
-    //String host = svcName + "-" + namespace;
-    String host = svcName;
-
-    String ingressName = host + "-ingress-path-routing";
-
-    List<V1IngressRule> ingressRules = new ArrayList<>();
-    List<V1HTTPIngressPath> httpIngressPaths = new ArrayList<>();
-
-    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
-        .path("/")
-        .pathType("Prefix")
-        .backend(new V1IngressBackend()
-            .service(new V1IngressServiceBackend()
-                .name(svcName)
-                .port(new V1ServiceBackendPort()
-                    .number(8001)))
-        );
-    httpIngressPaths.add(httpIngressPath);
-
-    V1IngressRule ingressRule = new V1IngressRule()
-        .host(host)
-        .http(new V1HTTPIngressRuleValue()
-            .paths(httpIngressPaths));
-
-    ingressRules.add(ingressRule);
-
-    assertDoesNotThrow(() -> createIngress(ingressName, namespace, null, null, ingressRules, null));
-
-    // check the ingress was found in the domain namespace
-    assertThat(assertDoesNotThrow(() -> listIngresses(namespace)))
-        .as(String.format("Test ingress %s was found in namespace %s", ingressName, namespace))
-        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, namespace))
-        .contains(ingressName);
-
-    getLogger().info("ingress {0} was created in namespace {1}", ingressName, namespace);
-    return host;
   }
 
   /**

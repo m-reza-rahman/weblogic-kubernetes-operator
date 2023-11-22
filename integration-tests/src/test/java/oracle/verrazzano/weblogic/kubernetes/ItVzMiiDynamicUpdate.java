@@ -117,24 +117,25 @@ class ItVzMiiDynamicUpdate {
     logger.info("Getting unique namespace for Domain");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
-    setLabelToNamespace(Arrays.asList(domainNamespace));
+    setLabelToNamespace(Collections.singletonList(domainNamespace));
 
     // write sparse yaml to file
     pathToAddClusterYaml = Paths.get(WORK_DIR + "/addcluster.yaml");
-    String yamlToAddCluster = "topology:\n"
-        + "    Cluster:\n"
-        + "        \"cluster-2\":\n"
-        + "            DynamicServers:\n"
-        + "                ServerTemplate:  \"cluster-2-template\"\n"
-        + "                ServerNamePrefix: \"dynamic-server\"\n"
-        + "                DynamicClusterSize: 4\n"
-        + "                MinDynamicClusterSize: 2\n"
-        + "                MaxDynamicClusterSize: 4\n"
-        + "                CalculatedListenPorts: false\n"
-        + "    ServerTemplate:\n"
-        + "        \"cluster-2-template\":\n"
-        + "            Cluster: \"cluster-2\"\n"
-        + "            ListenPort : 8001";
+    String yamlToAddCluster = """
+        topology:
+            Cluster:
+                "cluster-2":
+                    DynamicServers:
+                        ServerTemplate:  "cluster-2-template"
+                        ServerNamePrefix: "dynamic-server"
+                        DynamicClusterSize: 4
+                        MinDynamicClusterSize: 2
+                        MaxDynamicClusterSize: 4
+                        CalculatedListenPorts: false
+            ServerTemplate:
+                "cluster-2-template":
+                    Cluster: "cluster-2"
+                    ListenPort : 8001""";
 
     assertDoesNotThrow(() -> Files.write(pathToAddClusterYaml, yamlToAddCluster.getBytes()));
     createVzMiiDomain();
@@ -175,7 +176,7 @@ class ItVzMiiDynamicUpdate {
     logger.info("Before configmap creation");
     logger.info(Yaml.dump(getDomainCustomResource(domainUid, domainNamespace)));
     
-    List<String> modelFiles = Arrays.asList(MODEL_DIR + "/model.config.wm.yaml");
+    List<String> modelFiles = List.of(MODEL_DIR + "/model.config.wm.yaml");
     assertDoesNotThrow(() -> recreateVzConfigmapComponent(configmapcomponentname, modelFiles, domainNamespace));
     
     logger.info("Waiting for 2 minutes");
@@ -289,7 +290,7 @@ class ItVzMiiDynamicUpdate {
     DomainResource domain = createDomainResource(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, new String[]{TEST_IMAGES_REPO_SECRET_NAME},
-        encryptionSecretName, replicaCount, Arrays.asList(clusterName));
+        encryptionSecretName, replicaCount, List.of(clusterName));
     domain.spec().configuration().model().setOnlineUpdate(new OnlineUpdate().enabled(Boolean.TRUE));
     domain.spec().configuration().model().setConfigMap(configMapName);
     logger.info(Yaml.dump(domain));
@@ -322,7 +323,7 @@ class ItVzMiiDynamicUpdate {
             .components(Arrays.asList(
                 new Components()
                     .componentName(domainUid)
-                    .traits(Arrays.asList(new IngressTraits()
+                    .traits(Collections.singletonList(new IngressTraits()
                         .trait(new IngressTrait()
                             .apiVersion("oam.verrazzano.io/v1alpha1")
                             .kind("IngressTrait")
@@ -332,21 +333,21 @@ class ItVzMiiDynamicUpdate {
                             .spec(new IngressTraitSpec()
                                 .ingressRules(Arrays.asList(
                                     new IngressRule()
-                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                        .paths(Collections.singletonList(new oracle.verrazzano.weblogic.Path()
                                             .path("/console")
                                             .pathType("Prefix")))
                                         .destination(new Destination()
                                             .host(adminServerPodName)
                                             .port(7001)),
                                     new IngressRule()
-                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                        .paths(Collections.singletonList(new oracle.verrazzano.weblogic.Path()
                                             .path("/management")
                                             .pathType("Prefix")))
                                         .destination(new Destination()
                                             .host(adminServerPodName)
                                             .port(7001)),
                                     new IngressRule()
-                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                        .paths(Collections.singletonList(new oracle.verrazzano.weblogic.Path()
                                             .path("/sample-war")
                                             .pathType("Prefix")))
                                         .destination(new Destination()
@@ -375,9 +376,9 @@ class ItVzMiiDynamicUpdate {
   }
 
   private static boolean checkSystemResourceConfiguration(String namespace, String uri, String expectedStatusCode) {
-    StringBuffer curlString = new StringBuffer("status=$(curl -k --user ");
+    StringBuilder curlString = new StringBuilder("status=$(curl -k --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + forwardHostName + ":" + forwardedPortNo)
+        .append(" http://" + forwardHostName + ":").append(forwardedPortNo)
         .append(uri)
         .append(" --silent --show-error ")
         .append(" -o /dev/null ")

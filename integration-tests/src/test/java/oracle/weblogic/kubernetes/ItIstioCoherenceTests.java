@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -83,16 +83,14 @@ class ItIstioCoherenceTests {
   private static final String COHERENCE_MODEL_PROP = "coherence-wdt-config.properties";
   private static final String COHERENCE_IMAGE_NAME = "coherence-image";
 
-  private static String domainUid = "coherence-istio-domain";
-  private static String clusterName = "cluster-1";
-  private static String adminServerPodName = domainUid + "-admin-server";
-  private static String managedServerPrefix = domainUid + "-managed-server";
-  private static String containerName = "weblogic-server";
-  private static int replicaCount = 2;
+  private static final String domainUid = "coherence-istio-domain";
+  private static final String adminServerPodName = domainUid + "-admin-server";
+  private static final String managedServerPrefix = domainUid + "-managed-server";
+  private static final String containerName = "weblogic-server";
+  private static final int replicaCount = 2;
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
-  private static Map<String, Object> secretNameMap;
   private static LoggingFacade logger = null;
 
   /**
@@ -186,7 +184,7 @@ class ItIstioCoherenceTests {
   }
 
   private void copyCohProxyClientAppToPods() {
-    List<String> dirsToMake = new ArrayList<String>();
+    List<String> dirsToMake = new ArrayList<>();
     dirsToMake.add(APP_LOC_IN_POD + "/src/main/java/cohapp");
     dirsToMake.add(APP_LOC_IN_POD + "/src/main/resources");
 
@@ -197,7 +195,7 @@ class ItIstioCoherenceTests {
           () -> FileUtils.makeDirectories(domainNamespace, serverName,
               null, true, dirsToMake),
           String.format("Failed to create dir %s in pod %s in namespace %s ",
-              dirsToMake.toString(), serverName, domainNamespace));
+              dirsToMake, serverName, domainNamespace));
       logger.info("Failed to create dir {0} in Pod {1} in namespace {2} ",
           dirsToMake.toString(), serverName, domainNamespace);
 
@@ -224,7 +222,7 @@ class ItIstioCoherenceTests {
     logger.info("Admin Pod IP {0} ", serverPodIP);
 
 
-    StringBuffer coherenceProxyClientCmd = new StringBuffer("chmod +x -R ");
+    StringBuilder coherenceProxyClientCmd = new StringBuilder("chmod +x -R ");
     coherenceProxyClientCmd
         .append(APP_LOC_IN_POD)
         .append(" && sh ")

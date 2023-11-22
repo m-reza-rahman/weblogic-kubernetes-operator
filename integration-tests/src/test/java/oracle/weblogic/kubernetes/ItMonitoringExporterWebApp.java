@@ -928,7 +928,7 @@ class ItMonitoringExporterWebApp {
       return false;
     }
     logger.info("Changing ListenPortEnabled");
-    String command = new StringBuffer("/u01/callpyscript.sh /u01/changeListenPort.py ")
+    String command = new StringBuilder("/u01/callpyscript.sh /u01/changeListenPort.py ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(" ")
         .append(ADMIN_PASSWORD_DEFAULT)

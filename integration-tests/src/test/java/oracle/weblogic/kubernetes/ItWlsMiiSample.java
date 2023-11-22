@@ -153,7 +153,7 @@ class ItWlsMiiSample {
    */
   @Test
   @Order(1)
-  public void testInstallOperator() {
+  void testInstallOperator() {
     execTestScriptAndAssertSuccess("-oper", "Failed to run -oper");
   }
 
@@ -162,7 +162,7 @@ class ItWlsMiiSample {
    */
   @Test
   @Order(2)
-  public void testInstallTraefik() {
+  void testInstallTraefik() {
     execTestScriptAndAssertSuccess("-traefik", "Failed to run -traefik");
   }
 
@@ -171,7 +171,7 @@ class ItWlsMiiSample {
    */
   @Test
   @Order(3)
-  public void testInitialImage() {
+  void testInitialImage() {
     imagePull(BUSYBOX_IMAGE + ":" + BUSYBOX_TAG);
     imageTag(BUSYBOX_IMAGE + ":" + BUSYBOX_TAG, "busybox");
     execTestScriptAndAssertSuccess("-initial-image", "Failed to run -initial-image");
@@ -189,7 +189,7 @@ class ItWlsMiiSample {
    */
   @Test
   @Order(4)
-  public void testInitialMain() {
+  void testInitialMain() {
     // load the base image to kind if using kind cluster
     if (KIND_REPO != null) {
       logger.info("loading image {0} to kind", WEBLOGIC_IMAGE_TO_USE_IN_SPEC);
@@ -204,7 +204,7 @@ class ItWlsMiiSample {
    */
   @Test
   @Order(5)
-  public void testUpate1() {
+  void testUpate1() {
     execTestScriptAndAssertSuccess("-update1", "Failed to run -update1");
   }
 
@@ -213,7 +213,7 @@ class ItWlsMiiSample {
    */
   @Test
   @Order(6)
-  public void testUpate2() {
+  void testUpate2() {
     execTestScriptAndAssertSuccess("-update2", "Failed to run -update2");
   }
 
@@ -222,7 +222,7 @@ class ItWlsMiiSample {
    */
   @Test
   @Order(7)
-  public void testUpate3() {
+  void testUpate3() {
     execTestScriptAndAssertSuccess("-update3-image", "Failed to run -update3-image");
 
     // load the image to kind if using kind cluster
@@ -240,7 +240,7 @@ class ItWlsMiiSample {
    */
   @Test
   @Order(7)
-  public void testUpate4() {
+  void testUpate4() {
     execTestScriptAndAssertSuccess("-update4", "Failed to run -update4");
   }
 

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,7 +62,7 @@ public class PodUtils {
    */
   public static void execInPod(V1Pod pod, String containerName, boolean redirectToStdout, String command) {
     LoggingFacade logger = getLogger();
-    ExecResult exec = null;
+    ExecResult exec;
     try {
       logger.info("Executing command {0}", command);
       exec = Exec.exec(pod, containerName, redirectToStdout, "/bin/sh", "-c", command);
@@ -293,7 +294,6 @@ public class PodUtils {
   public static synchronized void setPodAntiAffinity(DomainResource domain) {
     domain.getSpec()
         .getClusters()
-        .stream()
         .forEach(
             clusterRef -> {
               ClusterResource clusterResource =
@@ -468,7 +468,7 @@ public class PodUtils {
    *
    * @param opNamespace in which the pod is running
    * @param regex the regular expression to which this string is to be matched
-   * @return true if pod Evicted status is logged in Operator log, otherwise false
+   * @return callable that returns true if pod Evicted status is logged in Operator log, otherwise false
    */
   public static Callable<Boolean> checkPodEvictedStatusInOperatorLogs(String opNamespace, String regex) {
     return () -> {
@@ -551,11 +551,12 @@ public class PodUtils {
    */
   public static String getPodName(String namespace, String podPrefix) throws ApiException {
     String podName = null;
-    V1PodList pods = null;
+    V1PodList pods;
     pods = Kubernetes.listPods(namespace, null);
-    if (pods.getItems().size() != 0) {
+    if (!pods.getItems().isEmpty()) {
       for (V1Pod pod : pods.getItems()) {
-        if (pod != null && pod.getMetadata().getName().startsWith(podPrefix)) {
+        if (pod != null && Objects.requireNonNull(
+            Objects.requireNonNull(pod.getMetadata()).getName()).startsWith(podPrefix)) {
           podName = pod.getMetadata().getName();
           break;
         }

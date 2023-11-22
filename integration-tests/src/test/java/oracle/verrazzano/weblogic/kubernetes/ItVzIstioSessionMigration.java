@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Yaml;
 import oracle.verrazzano.weblogic.ApplicationConfiguration;
@@ -80,24 +79,19 @@ class ItVzIstioSessionMigration {
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
   private static final String SESSMIGR_APP_WAR_NAME = "sessmigr-war";
   private static final int SESSION_STATE = 4;
-  private static Map<String, String> httpAttrMap;
 
   // constants for operator and WebLogic domain
-  private static String domainUid = "istio-sessmigr-domain";
-  private static String clusterName = "cluster-1";
-  private static String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
-  private static String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
-  private static int managedServerPort = 7100;
-  private static String finalPrimaryServerName = null;
-  private static String configMapName = "istio-configmap";
-  private static int replicaCount = 2;
+  private static final String domainUid = "istio-sessmigr-domain";
+  private static final String clusterName = "cluster-1";
+  private static final String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
+  private static final String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
+  private static final int managedServerPort = 7100;
+  private static final String configMapName = "istio-configmap";
+  private static final int replicaCount = 2;
   private static DomainResource domain;
   
 
   private static LoggingFacade logger = null;
-
-  private static Map<String, Quantity> resourceRequest = new HashMap<>();
-  private static Map<String, Quantity> resourceLimit = new HashMap<>();
 
   /**
    * Build custom image using model in image with model files
@@ -113,7 +107,7 @@ class ItVzIstioSessionMigration {
     logger.info("Assign unique namespace for Domain");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
-    assertDoesNotThrow(() -> setLabelToNamespace(Arrays.asList(domainNamespace)));
+    assertDoesNotThrow(() -> setLabelToNamespace(Collections.singletonList(domainNamespace)));
 
     // Generate the model.sessmigr.yaml file at RESULTS_ROOT
     String destSessionMigrYamlFile =
@@ -131,12 +125,6 @@ class ItVzIstioSessionMigration {
 
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(miiImage);
-
-    // set resource request and limit
-    resourceRequest.put("cpu", new Quantity("250m"));
-    resourceRequest.put("memory", new Quantity("768Mi"));
-    resourceLimit.put("cpu", new Quantity("2"));
-    resourceLimit.put("memory", new Quantity("2Gi"));
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
@@ -160,18 +148,10 @@ class ItVzIstioSessionMigration {
     
     domain = createDomainCrAndVerify(adminSecretName, encryptionSecretName, miiImage);
     createVzApplication();    
-
-    // map to save HTTP response data
-    httpAttrMap = new HashMap<String, String>();
-    httpAttrMap.put("sessioncreatetime", "(.*)sessioncreatetime>(.*)</sessioncreatetime(.*)");
-    httpAttrMap.put("sessionid", "(.*)sessionid>(.*)</sessionid(.*)");
-    httpAttrMap.put("primary", "(.*)primary>(.*)</primary(.*)");
-    httpAttrMap.put("secondary", "(.*)secondary>(.*)</secondary(.*)");
-    httpAttrMap.put("count", "(.*)countattribute>(.*)</countattribute(.*)");
   }
 
   /**
-   * In an istio enabled Environment, test sends a HTTP request to set http session state(count number),
+   * In an istio enabled Environment, test sends an HTTP request to set http session state(count number),
    * get the primary and secondary server name, session create time and session state and from the util method
    * and save HTTP session info, then stop the primary server by changing ServerStartPolicy to Never and
    * patching domain. Send another HTTP request to get http session state (count number), primary server
@@ -189,7 +169,7 @@ class ItVzIstioSessionMigration {
     final String clusterAddress = domainUid + "-cluster-" + clusterName;
     String serverName = managedServerPrefix + "1";
 
-    // send a HTTP request to set http session state(count number) and save HTTP session info
+    // send an HTTP request to set http session state(count number) and save HTTP session info
     // before shutting down the primary server
     Map<String, String> httpDataInfo = getServerAndSessionInfoAndVerify(domainNamespace,
         adminServerPodName, serverName, clusterAddress, managedServerPort, webServiceSetUrl, " -c ");
@@ -206,7 +186,7 @@ class ItVzIstioSessionMigration {
     logger.info("Shut down the primary server {0}", origPrimaryServerName);
     shutdownServerAndVerify(domainUid, domainNamespace, origPrimaryServerName);
 
-    // send a HTTP request to get server and session info after shutting down the primary server
+    // send an HTTP request to get server and session info after shutting down the primary server
     serverName = domainUid + "-" + origSecondaryServerName;
     httpDataInfo = getServerAndSessionInfoAndVerify(domainNamespace, adminServerPodName,
         serverName, clusterAddress, managedServerPort, webServiceGetUrl, " -b ");
@@ -219,7 +199,7 @@ class ItVzIstioSessionMigration {
     if (countStr.equalsIgnoreCase("null")) {
       count = managedServerPort;
     } else {
-      count = Optional.ofNullable(countStr).map(Integer::valueOf).orElse(managedServerPort);
+      count = Optional.of(countStr).map(Integer::valueOf).orElse(managedServerPort);
     }
     logger.info("After patching the domain, the primary server changes to {0} "
         + ", session create time {1} and session state {2}",
@@ -235,10 +215,10 @@ class ItVzIstioSessionMigration {
             "After the primary server stopped, HTTP session state should be migrated to the new primary server")
     );
 
-    finalPrimaryServerName = primaryServerName;
-
-    logger.info("Done testSessionMigration \nThe new primary server is {0}, it was {1}. "
-        + "\nThe session state was set to {2}, it is migrated to the new primary server.",
+    logger.info("""
+            Done testSessionMigration\s
+            The new primary server is {0}, it was {1}.\s
+            The session state was set to {2}, it is migrated to the new primary server.""",
         primaryServerName, origPrimaryServerName, SESSION_STATE);
   }
   
@@ -269,9 +249,9 @@ class ItVzIstioSessionMigration {
             .namespace(domainNamespace)
             .annotations(keyValueMap))
         .spec(new ApplicationConfigurationSpec()
-            .components(Arrays.asList(new Components()
+            .components(Collections.singletonList(new Components()
                 .componentName(domainUid)
-                .traits(Arrays.asList(new IngressTraits()
+                .traits(Collections.singletonList(new IngressTraits()
                     .trait(new IngressTrait()
                         .apiVersion("oam.verrazzano.io/v1alpha1")
                         .kind("IngressTrait")
@@ -281,14 +261,14 @@ class ItVzIstioSessionMigration {
                         .spec(new IngressTraitSpec()
                             .ingressRules(Arrays.asList(
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/console")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(adminServerPodName)
                                         .port(7001)),
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/sessmigr-app")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
@@ -336,7 +316,7 @@ class ItVzIstioSessionMigration {
     createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Collections.emptyList());
 
     // create the domain object
-    DomainResource domain = createIstioDomainResource(domainUid,
+    return createIstioDomainResource(domainUid,
         domainNamespace,
         adminSecretName,
         TEST_IMAGES_REPO_SECRET_NAME,
@@ -345,7 +325,6 @@ class ItVzIstioSessionMigration {
         miiImage,
         configMapName,
         clusterName);
-    return domain;
   }
   
 }

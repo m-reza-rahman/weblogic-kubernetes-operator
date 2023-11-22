@@ -370,7 +370,7 @@ class ItManagedCoherence {
                                     String hostName,
                                     String hostAndPort) {
     logger.info("Add initial data to cache");
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=add&first=")
         .append(firstName)
@@ -397,7 +397,7 @@ class ItManagedCoherence {
   private ExecResult getCacheSize(String hostName, String hostAndPort) {
     logger.info("Get the number of records in cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=size' ")
         .append("-H 'host: ")
@@ -421,7 +421,7 @@ class ItManagedCoherence {
   private ExecResult getCacheContents(String hostName, String hostAndPort) {
     logger.info("Get the records from cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=get' ")
         .append("-H 'host: ")
@@ -445,7 +445,7 @@ class ItManagedCoherence {
   private ExecResult clearCache(String hostName, String hostAndPort) {
     logger.info("Clean the cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-H 'host: ")
@@ -468,7 +468,7 @@ class ItManagedCoherence {
 
   private boolean checkCoheranceApp(String hostName, String hostAndPort) {
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-X POST -H 'host: ")

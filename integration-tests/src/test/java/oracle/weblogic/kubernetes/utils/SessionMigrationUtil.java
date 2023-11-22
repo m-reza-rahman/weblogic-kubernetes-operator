@@ -38,12 +38,12 @@ public class SessionMigrationUtil {
   }
 
   /**
-   * Patch domain to shutdown a WebLogic server by changing the value of
+   * Patch domain to shut down a WebLogic server by changing the value of
    * server's serverStartPolicy property to Never.
    *
    * @param domainUid unique domain identifier
    * @param domainNamespace namespace in which the domain will be created
-   * @param serverName name of the WebLogic server to shutdown
+   * @param serverName name of the WebLogic server to shut down
    */
   public static void shutdownServerAndVerify(String domainUid,
                                              String domainNamespace,
@@ -51,7 +51,7 @@ public class SessionMigrationUtil {
     final String podName = domainUid + "-" + serverName;
     LoggingFacade logger = getLogger();
 
-    // shutdown a server by changing the it's serverStartPolicy property.
+    // shut down a server by changing the serverStartPolicy property.
     logger.info("Shutdown the server {0}", serverName);
     boolean serverStopped = assertDoesNotThrow(() ->
         shutdownManagedServerUsingServerStartPolicy(domainUid, domainNamespace, serverName));
@@ -63,7 +63,7 @@ public class SessionMigrationUtil {
   }
 
   /**
-   * An util method referred by the test method testSessionMigration. It sends a HTTP request
+   * A util method referred by the test method testSessionMigration. It sends an HTTP request
    * to set or get http session state (count number) and return the primary server,
    * the secondary server, session create time and session state(count number).
    *
@@ -90,8 +90,8 @@ public class SessionMigrationUtil {
     final String countAttr = "count";
     LoggingFacade logger = getLogger();
 
-    // send a HTTP request to set http session state(count number) and save HTTP session cookie info
-    // or get http session state(count number usind saved HTTP session cookie info
+    // send an HTTP request to set http session state(count number) and save HTTP session cookie info
+    // or get http session state(count number using saved HTTP session cookie info
     logger.info("Process HTTP request with web service URL {0}", webServiceUrl);
     Map<String, String> httpAttrInfo =
         processHttpRequest(domainNamespace, adminServerPodName, hostName, port, webServiceUrl, headerOption);
@@ -127,7 +127,7 @@ public class SessionMigrationUtil {
                                                         String curlUrlPath,
                                                         String headerOption) {
     String[] httpAttrArray = {"sessioncreatetime", "sessionid", "primary", "secondary", "count"};
-    Map<String, String> httpAttrInfo = new HashMap<String, String>();
+    Map<String, String> httpAttrInfo = new HashMap<>();
     LoggingFacade logger = getLogger();
 
     // build curl command
@@ -204,16 +204,8 @@ public class SessionMigrationUtil {
     // --connect-timeout - Maximum time in seconds that you allow curl's connection to take
     // --max-time - Maximum time in seconds that you allow the whole operation to take
     int waittime = 10;
-    String curlCommand =  new StringBuilder()
-        .append("curl -g --show-error ")
-        .append(" --noproxy '*'")
-        .append(" --connect-timeout ").append(waittime).append(" --max-time ").append(waittime)
-        .append(" http://")
-        .append(hostAndPort)
-        .append("/")
-        .append(curlUrlPath)
-        .append(headerOption)
-        .append(httpHeaderFile).toString();
+    String curlCommand = "curl -g --show-error " + " --noproxy '*'" + " --connect-timeout " + waittime
+        + " --max-time " + waittime + " http://" + hostAndPort + "/" + curlUrlPath + headerOption + httpHeaderFile;
 
     logger.info("Build a curl command: {0}", curlCommand);
 
@@ -222,7 +214,7 @@ public class SessionMigrationUtil {
 
   private static String getHttpResponseAttribute(String httpResponseString, String attribute) {
     // map to save HTTP response data
-    Map<String, String> httpAttrMap = new HashMap<String, String>();
+    Map<String, String> httpAttrMap = new HashMap<>();
     httpAttrMap.put("sessioncreatetime", "(.*)sessioncreatetime>(.*)</sessioncreatetime(.*)");
     httpAttrMap.put("sessionid", "(.*)sessionid>(.*)</sessionid(.*)");
     httpAttrMap.put("primary", "(.*)primary>(.*)</primary(.*)");

@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl;
@@ -250,7 +250,7 @@ public class AppBuilder {
       cleanupDirectory(archiveSrcDir);
       checkDirectory(archiveSrcDir);
       for (String appSrcFile : srcFiles) {
-        if (appSrcFile.length() > 0) {
+        if (!appSrcFile.isEmpty()) {
           getLogger().info("copy {0} to {1} ", appSrcFile, archiveSrcDir);
           String fileName = appSrcFile.substring(appSrcFile.lastIndexOf("/") + 1);
           Files.copy(Paths.get(appSrcFile), Paths.get(archiveSrcDir + "/" + fileName),

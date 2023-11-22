@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -116,7 +116,7 @@ public class AuxiliaryImageUtils {
    *
    */
   public static void createAndPushAuxiliaryImage(String imageName, String imageTag, WitParams witParams) {
-    // create auxiliary image using imagetool command if does not exists
+    // create auxiliary image using imagetool command if it does not exist
     LoggingFacade logger = getLogger();
     if (! imageExists(imageName, imageTag)) {
       logger.info("creating auxiliary image {0}:{1} using imagetool.sh ", imageName, imageTag);

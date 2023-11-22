@@ -187,7 +187,7 @@ class ItStickySession {
     final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";
     createTraefikIngressRoutingRules(domainNamespace, traefikNamespace, ingressResourceFileName, domainUid);
 
-    String hostName = new StringBuffer()
+    String hostName = new StringBuilder()
         .append(domainUid)
         .append(".")
         .append(domainNamespace)
@@ -244,7 +244,7 @@ class ItStickySession {
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testSameSessionStickinessUsingClusterService() {
     //build cluster hostname
-    String hostName = new StringBuffer()
+    String hostName = new StringBuilder()
         .append(domainUid)
         .append(".")
         .append(domainNamespace)
@@ -452,7 +452,7 @@ class ItStickySession {
                                          String headerOption,
                                          String... clusterAddress) {
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --show-error");
+    StringBuilder curlCmd = new StringBuilder("curl -g --show-error");
     logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
     if (clusterAddress.length == 0) {

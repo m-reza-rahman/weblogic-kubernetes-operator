@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes.utils;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,7 +70,7 @@ public class MiiDynamicUpdateHelper {
 
   /**
    * Install Operator.
-   * Create domain resource defintion.
+   * Create domain resource definition.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *                   JUnit engine parameter resolution mechanism
@@ -219,13 +218,13 @@ public class MiiDynamicUpdateHelper {
     // Replace contents of an existing configMap with cm config and application target as
     // there are issues with removing them, WDT-535
     replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.jdbc2.yaml"), withStandardRetryPolicy);
+        List.of(MODEL_DIR + "/model.jdbc2.yaml"), withStandardRetryPolicy);
 
     // Patch a running domain with introspectVersion.
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
 
     // Verifying introspector pod is created, runs and deleted
-    // if the config map content is not changed, its possible to miss the introspector pod creation/deletion as
+    // if the config map content is not changed, it's possible to miss the introspector pod creation/deletion as
     // it will be very quick, skip the check in those cases
     if (introspectorRuns) {
       verifyIntrospectorRuns(domainUid, domainNamespace);

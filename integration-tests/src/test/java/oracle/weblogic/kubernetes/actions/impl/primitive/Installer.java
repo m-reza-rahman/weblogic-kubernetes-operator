@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl.primitive;
@@ -34,9 +34,6 @@ import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
  */
 
 public class Installer {
-  private static final String TMP_FILE_NAME = "temp-download-file.out";
-
-
   private InstallParams params;
   
   /**
@@ -124,7 +121,7 @@ public class Installer {
    * Create an InstallParams with the default values for Remoteconsole.
    * @return an InstallParams instance
    */
-  public static InstallParams defaultInstallRemoteconsoleParams() {
+  public static InstallParams defaultInstallRemoteConsoleParams() {
     return new InstallParams()
         .defaults()
         .type(REMOTECONSOLE)
@@ -198,7 +195,7 @@ public class Installer {
 
   private boolean unzip(String downloadDir) {
 
-    String command = null;
+    String command;
     if (params.type().equalsIgnoreCase("REMOTECONSOLE")) {
       command = String.format(
           "unzip -q %s/%s \"backend/*\" -d %s",
@@ -223,12 +220,11 @@ public class Installer {
   }
 
   private String buildDownloadCommand(String downloadDir) {
-    String command = String.format(
+    return String.format(
         "curl -fL %s -o %s/%s",
         params.location(),
         downloadDir,
         getInstallerFileName(params.type()));
-    return command;
   }
 
 }

@@ -483,7 +483,7 @@ class ItMiiMultiModel {
       String namespace,
       String dsName) {
 
-    StringBuffer curlString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
+    StringBuilder curlString = new StringBuilder(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
         .append("curl -k --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
@@ -518,7 +518,7 @@ class ItMiiMultiModel {
       String namespace,
       String dsName) {
 
-    String command = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
+    String command = new StringBuilder(KUBERNETES_CLI + " exec -n " + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
         .append("curl -k --user ")
         .append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)

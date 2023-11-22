@@ -47,11 +47,11 @@ public class Destination {
     return port;
   }
 
-  public int getport() {
+  public int getPort() {
     return port;
   }
 
-  public void setport(int port) {
+  public void setPort(int port) {
     this.port = port;
   }
 

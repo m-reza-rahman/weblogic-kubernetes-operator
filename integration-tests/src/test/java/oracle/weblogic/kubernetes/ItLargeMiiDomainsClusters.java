@@ -363,8 +363,8 @@ class ItLargeMiiDomainsClusters {
         largeDomainProps.containsKey("UPGRADE_IMAGE_TAG") ? (String)largeDomainProps.get("UPGRADE_IMAGE_TAG") :
             WEBLOGIC_IMAGE_TAG, BASE_IMAGES_REPO_PREFIX_LENGTH);
 
-    StringBuffer patchStr;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/image\",")
         .append("\"value\": \"")
@@ -444,8 +444,8 @@ class ItLargeMiiDomainsClusters {
         domainUid1, configMapName, domainNamespaces.get(0),
         newMaxServersInCluster);
 
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
         .append(" \"value\":  \"" + configMapName + "\"")

@@ -19,7 +19,6 @@ import io.kubernetes.client.util.ClientBuilder;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
-import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
@@ -100,7 +99,7 @@ public class Domain {
       String namespace,
       String image
   ) {
-    DomainResource domain = null;
+    DomainResource domain;
     try {
       domain = getDomainCustomResource(domainUID, namespace);
     } catch (ApiException apex) {
@@ -126,7 +125,7 @@ public class Domain {
       String namespace,
       String secretName
   ) {
-    DomainResource domain = null;
+    DomainResource domain;
     try {
       domain = getDomainCustomResource(domainUID, namespace);
     } catch (ApiException apex) {
@@ -147,10 +146,10 @@ public class Domain {
 
   /**
    * Verify admin node port(default/t3channel) is accessible by login to WebLogic console
-   * using the node port and validate its the Home page.
+   * using the node port and validate it's the Home page.
    *
    * @param nodePort the node port that needs to be tested for access
-   * @param userName WebLogic administration server user name
+   * @param userName WebLogic administration server username
    * @param password WebLogic administration server password
    * @param routeHost For OKD - name of the route for external admin service. Can be empty for non OKD env
    * @return true if login to WebLogic administration console is successful
@@ -159,13 +158,8 @@ public class Domain {
   public static boolean adminNodePortAccessible(int nodePort, String userName, String password, String routeHost)
       throws IOException {
 
-    LoggingFacade logger = getLogger();
-
     String hostAndPort = getHostAndPort(routeHost, nodePort);
-    String consoleUrl = new StringBuffer()
-        .append("http://")
-        .append(hostAndPort)
-        .append("/console/login/LoginForm.jsp").toString();
+    String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
 
     getLogger().info("Accessing WebLogic console with url {0}", consoleUrl);
     final WebClient webClient = new WebClient();
@@ -287,22 +281,13 @@ public class Domain {
     // create a RESTful management services command that connects to admin server using given credentials to get
     // information about a managed server
     String managedServer1 = (args.length == 0) ? "managed-server1" : "c1-managed-server1";
-    StringBuffer cmdString = new StringBuffer(KUBERNETES_CLI + " exec -n " + namespace + " " + podName)
-        .append(" -- /bin/bash -c \"")
-        .append("curl -k --user ")
-        .append(username + ":" + password)
-        .append(" http://")
-        .append(podName + ":" + port)
-        .append("/management/tenant-monitoring/servers/" + managedServer1)
-        .append(" --silent --show-error ")
-        .append(" --noproxy '*'")
-        .append(" -o /dev/null ")
-        .append(" -w %{http_code}")
-        .append(" && echo ${status}")
-        .append(" \"");
+    String cmdString = KUBERNETES_CLI + " exec -n " + namespace + " " + podName + " -- /bin/bash -c \""
+        + "curl -k --user " + username + ":" + password + " http://" + podName + ":" + port
+        + "/management/tenant-monitoring/servers/" + managedServer1 + " --silent --show-error " + " --noproxy '*'"
+        + " -o /dev/null " + " -w %{http_code}" + " && echo ${status}" + " \"";
     return Command
             .defaultCommandParams()
-            .command(cmdString.toString())
+            .command(cmdString)
             .saveResults(true)
             .redirect(true)
             .verbose(true);

@@ -284,8 +284,8 @@ class ItPodsRestart {
     logger.info("Original IncludeServerOutInPodLog is: {0}", includeServerOutInPodLog);
 
     //change includeServerOutInPodLog: true --> includeServerOutInPodLog: false
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/includeServerOutInPodLog\",")
         .append("\"value\": ")
@@ -348,8 +348,8 @@ class ItPodsRestart {
       if (env.getName().equalsIgnoreCase("JAVA_OPTIONS")
           && env.getValue().equalsIgnoreCase("-Dweblogic.StdoutDebugEnabled=false")) {
         logger.info("Change JAVA_OPTIONS to -Dweblogic.StdoutDebugEnabled=true");
-        StringBuffer patchStr = null;
-        patchStr = new StringBuffer("[{");
+        StringBuilder patchStr = null;
+        patchStr = new StringBuilder("[{");
         patchStr.append("\"op\": \"replace\",")
             .append(" \"path\": \"/spec/serverPod/env/0/value\",")
             .append("\"value\": \"")
@@ -417,8 +417,8 @@ class ItPodsRestart {
           domain1.getSpec().getServerPod().getPodSecurityContext().getRunAsUser());
 
     Long runAsUser = 1000L;
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/serverPod/podSecurityContext/runAsUser\",")
         .append("\"value\": ")
@@ -478,8 +478,8 @@ class ItPodsRestart {
     logger.info("Original domain imagePullPolicy is: {0}", imagePullPolicy);
 
     //change imagePullPolicy: IfNotPresent --> imagePullPolicy: Always(If non kind, otherwise Never)
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/imagePullPolicy\",")
         .append("\"value\": \"")
@@ -740,7 +740,7 @@ class ItPodsRestart {
    */
   private boolean addServerPodResources(BigDecimal cpuLimit, BigDecimal cpuRequest) {
     // construct the patch string for adding server pod resources
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"add\", ")
         .append("\"path\": \"/spec/serverPod/resources/limits/cpu\", ")
         .append("\"value\": \"")

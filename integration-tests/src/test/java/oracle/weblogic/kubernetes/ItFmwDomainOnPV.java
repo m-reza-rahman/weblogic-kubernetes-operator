@@ -114,7 +114,6 @@ class ItFmwDomainOnPV {
   private static final int replicaCount = 2;
 
   private final String fmwModelFilePrefix = "model-fmwdomain-onpv-simplified";
-  private final String wlsModelFilePrefix = "model-wlsdomain-onpv-simplified";
 
   /**
    * Assigns unique namespaces for DB, operator and domain.
@@ -219,7 +218,7 @@ class ItFmwDomainOnPV {
 
       Map<String, Quantity> pvcRequest = new HashMap<>();
       pvcRequest.put("storage", new Quantity("2Gi"));
-      Configuration configuration = null;
+      Configuration configuration;
       if (OKE_CLUSTER) {
         configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
       } else {
@@ -599,7 +598,7 @@ class ItFmwDomainOnPV {
 
       Map<String, Quantity> pvcRequest = new HashMap<>();
       pvcRequest.put("storage", new Quantity("2Gi"));
-      Configuration configuration = null;
+      Configuration configuration;
       if (OKE_CLUSTER) {
         configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
       } else {
@@ -723,7 +722,7 @@ class ItFmwDomainOnPV {
       logger.info("Creating domain custom resource");
       Map<String, Quantity> pvcRequest = new HashMap<>();
       pvcRequest.put("storage", new Quantity("2Gi"));
-      Configuration configuration = null;
+      Configuration configuration;
       if (OKE_CLUSTER) {
         configuration = getConfiguration(pvcName,pvcRequest, "oci-fss");
       } else if (OKD) {
@@ -813,9 +812,9 @@ class ItFmwDomainOnPV {
 
   private Callable<Boolean> tagImageAndPushIfNeeded(String originalImage, String taggedImage) {
     return (() -> {
-      boolean result = true;
+      boolean result;
       imagePull(originalImage);
-      result = result && imageTag(originalImage, taggedImage);
+      result = imageTag(originalImage, taggedImage);
       imageRepoLoginAndPushImageToRegistry(taggedImage);
       return result;
     });

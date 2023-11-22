@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -13,6 +13,7 @@ import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Deployment;
 import io.kubernetes.client.openapi.models.V1Ingress;
 import io.kubernetes.client.openapi.models.V1Job;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolume;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1ReplicaSet;
@@ -76,7 +77,7 @@ public class CleanupUtil {
       }
 
       // Using Thread.sleep for a one time 30 sec sleep.
-      // If pollDelay is set to 30 seconds below, its going to sleep 30 seconds for every namespace.
+      // If pollDelay is set to 30 seconds below, it's going to sleep 30 seconds for every namespace.
       try {
         Thread.sleep(30 * 1000);
       } catch (InterruptedException e) {
@@ -154,10 +155,10 @@ public class CleanupUtil {
   }
 
   /**
-   * Returns true if no artifacts exists in the given namespace.
+   * Returns callable that returns true if no artifacts exists in the given namespace.
    *
    * @param namespace name of the namespace
-   * @return true if no artifacts exists, otherwise false
+   * @return callable that returns true if no artifacts exists, otherwise false
    */
   public static Callable<Boolean> nothingFoundInNamespace(String namespace) {
     LoggingFacade logger = getLogger();
@@ -272,8 +273,8 @@ public class CleanupUtil {
       try {
         for (var item : Kubernetes.listPersistentVolumeClaims(namespace).getItems()) {
           String label = Optional.ofNullable(item)
-              .map(pvc -> pvc.getMetadata())
-              .map(metadata -> metadata.getLabels())
+              .map(V1PersistentVolumeClaim::getMetadata)
+              .map(V1ObjectMeta::getLabels)
               .map(labels -> labels.get("weblogic.domainUid")).get();
 
           if (!Kubernetes.listPersistentVolumes(
@@ -393,7 +394,7 @@ public class CleanupUtil {
    * Return true if the namespace was not found.
    *
    * @param namespace name of the namespace
-   * @return true if namespace was not found, otherwise false
+   * @return callable that returns true if namespace was not found, otherwise false
    */
   public static Callable<Boolean> namespaceNotFound(String namespace) {
     LoggingFacade logger = getLogger();
@@ -485,7 +486,7 @@ public class CleanupUtil {
     }
 
     // Delete pvc
-    List<V1PersistentVolume> pvs = new ArrayList<V1PersistentVolume>();
+    List<V1PersistentVolume> pvs = new ArrayList<>();
 
     for (var pvc : Kubernetes.listPersistentVolumeClaims(namespace).getItems()) {
       String label = null;

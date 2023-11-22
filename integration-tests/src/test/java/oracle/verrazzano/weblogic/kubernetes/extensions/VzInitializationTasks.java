@@ -18,7 +18,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -99,11 +98,8 @@ import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 public class VzInitializationTasks implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
   private static final AtomicBoolean started = new AtomicBoolean(false);
   private static final CountDownLatch initializationLatch = new CountDownLatch(1);
-  private static String operatorImage;
-  private static String miiBasicImage;
-  private static String wdtBasicImage;
 
-  private static Collection<String> pushedImages = new ArrayList<>();
+  private static final Collection<String> pushedImages = new ArrayList<>();
   private static boolean isInitializationSuccessful = false;
 
   ConditionFactory withVeryLongRetryPolicy
@@ -145,7 +141,7 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
         // The following code is for pulling WLS images if running tests in Kind cluster
         if (KIND_REPO != null) {
           // The kind clusters can't pull images from BASE_IMAGES_REPO using the image pull secret.
-          // It may be a containerd bug. We are going to workaround this issue.
+          // It may be a containerd bug. We are going to work around this issue.
           // The workaround will be to:
           //   1. WLSIMG_BUILDER login
           //   2. WLSIMG_BUILDER pull
@@ -169,10 +165,10 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
           }
         }
 
-        miiBasicImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
-        wdtBasicImage = WDT_BASIC_IMAGE_NAME + ":" + WDT_BASIC_IMAGE_TAG;
+        String miiBasicImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
+        String wdtBasicImage = WDT_BASIC_IMAGE_NAME + ":" + WDT_BASIC_IMAGE_TAG;
 
-        // build MII basic image if does not exits
+        // build MII basic image if image does not exist
         logger.info("Build/Check mii-basic image with tag {0}", MII_BASIC_IMAGE_TAG);
         if (! imageExists(MII_BASIC_IMAGE_NAME, MII_BASIC_IMAGE_TAG)) {
           logger.info("Building mii-basic image {0}", miiBasicImage);
@@ -187,7 +183,7 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
         }
 
         logger.info("Build/Check wdt-basic image with tag {0}", WDT_BASIC_IMAGE_TAG);
-        // build WDT basic image if does not exits
+        // build WDT basic image if image does not exist
         if (! imageExists(WDT_BASIC_IMAGE_NAME, WDT_BASIC_IMAGE_TAG)) {
           logger.info("Building wdt-basic image {0}", wdtBasicImage);
           testUntil(
@@ -278,16 +274,6 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
 
   }
 
-  /**
-   * Called when images are pushed, allowing conditional cleanup of images that are pushed
-   * to a remote registry.
-   *
-   * @param imageName Image name
-   */
-  public static void registerPushedImage(String imageName) {
-    pushedImages.add(imageName);
-  }
-
   @Override
   public void close() {
     LoggingFacade logger = getLogger();
@@ -301,9 +287,10 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
         cleanupDirectory(DOWNLOAD_DIR);
         cleanupDirectory(WIT_BUILD_DIR);
         cleanupDirectory(STAGE_DIR);
-        cleanupDirectory((Paths.get(WORK_DIR, "imagetool")).toString());
+        Path imagetool = Paths.get(WORK_DIR, "imagetool");
+        cleanupDirectory(imagetool.toString());
         // remove empty directory
-        Files.deleteIfExists(Paths.get(WORK_DIR, "imagetool"));
+        Files.deleteIfExists(imagetool);
         Files.deleteIfExists(Paths.get(STAGE_DIR));
         Files.deleteIfExists(Paths.get(WIT_BUILD_DIR));
         Files.deleteIfExists(Paths.get(DOWNLOAD_DIR));
@@ -324,9 +311,7 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
       if (token != null) {
         logger.info("Deleting these images from REPO_REGISTRY");
         logger.info(String.join(", ", pushedImages));
-        for (String image : pushedImages.stream().distinct().collect(Collectors.toList())) {
-          deleteImageOcir(token, image);
-        }
+        pushedImages.stream().distinct().forEach(image -> deleteImageOcir(token, image));
       }
     }
 
@@ -340,9 +325,9 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
     Path scriptPath = Paths.get(RESOURCE_DIR, "bash-scripts", "ocirtoken.sh");
     StringBuilder cmd = new StringBuilder()
         .append(scriptPath.toFile().getAbsolutePath())
-        .append(" -u " + BASE_IMAGES_REPO_USERNAME)
-        .append(" -p \"" + BASE_IMAGES_REPO_PASSWORD + "\"")
-        .append(" -e " + BASE_IMAGES_REPO);
+        .append(" -u ").append(BASE_IMAGES_REPO_USERNAME)
+        .append(" -p \"").append(BASE_IMAGES_REPO_PASSWORD)
+        .append("\"").append(" -e ").append(BASE_IMAGES_REPO);
     ExecResult result = null;
     try {
       result = ExecCommand.exec(cmd.toString(), true);
@@ -449,7 +434,7 @@ public class VzInitializationTasks implements BeforeAllCallback, ExtensionContex
    * @param varFile    variable file to build the image
    * @param appName    name of the application to build the image
    * @param domainType domain type to be built
-   * @return true if image is created successfully
+   * @return callable that will return true if image is created successfully
    */
 
   public Callable<Boolean> createBasicImage(String imageName, String imageTag, String modelFile, String varFile,

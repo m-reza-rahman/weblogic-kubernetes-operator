@@ -26,11 +26,11 @@ public class Path {
     return pathType;
   }
 
-  public String getpathType() {
+  public String getPathType() {
     return pathType;
   }
 
-  public void setpathType(String pathType) {
+  public void setPathType(String pathType) {
     this.pathType = pathType;
   }
 
@@ -43,11 +43,11 @@ public class Path {
     return path;
   }
 
-  public String getpath() {
+  public String getPath() {
     return pathType;
   }
 
-  public void setpath(String path) {
+  public void setPath(String path) {
     this.path = path;
   }
 

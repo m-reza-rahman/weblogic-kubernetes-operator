@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes.utils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.ApiException;
@@ -41,9 +42,8 @@ public class VerrazzanoUtils {
    * set labels to domain namespace for the WKO to manage it through namespace label selection strategy.
    *
    * @param namespaces list of domain namespace to label
-   * @throws ApiException throws exception when label cannot be set
    */
-  public static void setLabelToNamespace(List<String> namespaces) throws ApiException {
+  public static void setLabelToNamespace(List<String> namespaces) {
     //add label to domain namespace
     assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(1));
     Map<String, String> labels = new java.util.HashMap<>();
@@ -66,7 +66,7 @@ public class VerrazzanoUtils {
   public static String getIstioHost(String namespace) {
     String curlCmd = KUBERNETES_CLI + " get gateways.networking.istio.io -n "
         + namespace + " -o jsonpath='{.items[0].spec.servers[0].hosts[0]}'";
-    ExecResult result = null;
+    ExecResult result;
     logger.info("curl command {0}", curlCmd);
     result = assertDoesNotThrow(() -> exec(curlCmd, true));
     logger.info(String.valueOf(result.exitValue()));
@@ -94,7 +94,7 @@ public class VerrazzanoUtils {
   }
 
   /**
-   * Access applications runnign in WebLogic pods and verify the returned page has expected message.
+   * Access applications running in WebLogic pods and verify the returned page has expected message.
    *
    * @param url url to access
    * @param message message to be present in returned page
@@ -176,8 +176,8 @@ public class VerrazzanoUtils {
     // check configuration for JMS
     testUntil(() -> {
       try {
-        return !Kubernetes.listComponents(namespace).getItems().stream()
-            .anyMatch(component -> component.getMetadata().getName().equals(componentName));
+        return Kubernetes.listComponents(namespace).getItems().stream()
+            .noneMatch(component -> Objects.equals(component.getMetadata().getName(), componentName));
       } catch (ApiException ex) {
         logger.warning(ex.getResponseBody());
       }

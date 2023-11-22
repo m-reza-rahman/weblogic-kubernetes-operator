@@ -33,7 +33,6 @@ import io.kubernetes.client.openapi.models.V1ServiceAccount;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1StorageClass;
 import oracle.weblogic.domain.ClusterResource;
-import oracle.weblogic.domain.DomainList;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.AppBuilder;
 import oracle.weblogic.kubernetes.actions.impl.AppParams;
@@ -88,7 +87,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPoli
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-// this class essentially delegates to the impl classes, and "hides" all of the
+// this class essentially delegates to the impl classes, and "hides" all the
 // detail impl classes - tests would only ever call methods in here, never
 // directly call the methods in the impl classes
 public class TestActions {
@@ -136,16 +135,6 @@ public class TestActions {
   }
 
   /**
-   * Builds an Image for the Oracle WebLogic Kubernetes Operator.
-   *
-   * @param image image name and tag in 'name:tag' format
-   * @return true on success
-   */
-  public static boolean buildOperatorImage(String image) {
-    return Operator.buildImage(image);
-  }
-
-  /**
    * Get the image name used in the Operator container.
    * @param namespace namespace of the operator
    * @return image name
@@ -186,16 +175,6 @@ public class TestActions {
   public static boolean createDomainCustomResource(DomainResource domain,
                                                    String... domainVersion) throws ApiException {
     return Domain.createDomainCustomResource(domain, domainVersion);
-  }
-
-  /**
-   * List Domain Custom Resources.
-   *
-   * @param namespace name of namespace
-   * @return List of Domain Custom Resources
-   */
-  public static DomainList listDomainCustomResources(String namespace) {
-    return Domain.listDomainCustomResources(namespace);
   }
 
   /**
@@ -329,7 +308,7 @@ public class TestActions {
     String introspectVersion = domain.getSpec().getIntrospectVersion();
     if (null != introspectVersion) {
       logger.info("current introspectVersion: {0}", introspectVersion);
-      introspectVersion = Integer.toString(Integer.valueOf(introspectVersion) + 1);
+      introspectVersion = Integer.toString(Integer.parseInt(introspectVersion) + 1);
       logger.info("modified introspectVersion: {0}", introspectVersion);
     } else {
       introspectVersion = Integer.toString(1);
@@ -412,25 +391,6 @@ public class TestActions {
    */
   public static boolean scaleCluster(String clusterResName, String namespace, int numOfServers) {
     return Cluster.scaleCluster(clusterResName, namespace, numOfServers);
-  }
-
-  /**
-   * Scale the cluster of the domain and change introspect version in the specified namespace by
-   * patching the domain resource.
-   *
-   * @param domainUid domainUid of the domain to be scaled
-   * @param namespace name of Kubernetes namespace that the domain belongs to
-   * @param clusterName cluster in the domain to be scaled
-   * @param numOfServers number of servers to be scaled to
-   * @param introspectVersion new introspectVersion value
-   * @return true on success, false otherwise
-   * @throws ApiException if Kubernetes client API call fails
-   */
-  public static boolean scaleClusterAndChangeIntrospectVersion(String domainUid, String namespace, String clusterName,
-                                                               int numOfServers, int introspectVersion)
-      throws ApiException {
-    return Domain.scaleClusterAndChangeIntrospectVersion(domainUid, namespace, clusterName, numOfServers,
-        introspectVersion);
   }
 
   /**
@@ -519,7 +479,6 @@ public class TestActions {
    * @param opServiceAccount service account of operator
    * @return true if scaling the cluster succeeds, false otherwise
    * @throws ApiException if Kubernetes client API call fails
-   * @throws InterruptedException if any thread has interrupted the current thread
    */
   public static boolean scaleClusterWithScalingActionScript(String clusterName,
                                              String domainUid,
@@ -529,7 +488,7 @@ public class TestActions {
                                              int scalingSize,
                                              String opNamespace,
                                              String opServiceAccount)
-      throws ApiException, InterruptedException {
+      throws ApiException {
     return Domain.scaleClusterWithScalingActionScript(clusterName,
         domainUid, domainNamespace, domainHomeLocation, scalingAction,
         scalingSize, opNamespace, opServiceAccount);
@@ -568,16 +527,6 @@ public class TestActions {
    */
   public static boolean upgradeTraefikImage(TraefikParams params) {
     return Traefik.upgradeTraefikImage(params);
-  }
-
-  /**
-   * Upgrade NGINX release.
-   *
-   * @param params the parameters to Helm upgrade command, such as release name and http/https nodeport
-   * @return true on success, false otherwise
-   */
-  public static boolean upgradeNginx(NginxParams params) {
-    return Nginx.upgrade(params);
   }
 
   /**
@@ -730,7 +679,7 @@ public class TestActions {
   /**
    * Create a namespace with unique name.
    *
-   * @return true on success, false otherwise
+   * @return name
    * @throws ApiException if Kubernetes client API call fails
    */
   public static String createUniqueNamespace() throws ApiException {
@@ -826,7 +775,7 @@ public class TestActions {
    * Create an auxiliary image using WebLogic Image Tool and return result output.
    *
    * @param params - the parameters for creating a model-in-image image
-   * @return true if the operation succeeds
+   * @return result, which is true if the operation succeeds
    */
   public static ExecResult createAuxImageAndReturnResult(WitParams params) {
     return WebLogicImageTool
@@ -1290,12 +1239,10 @@ public class TestActions {
    * Tag a originalImage to taggedImage and push it to repo.
    * @param originalImage original image
    * @param taggedImage tagged image
-   * @return true if tag and push succeeds, false otherwise
+   * @return callable that returns true if tag and push succeeds, false otherwise
    */
   public static Callable<Boolean> tagAndPushToKind(String originalImage, String taggedImage) {
-    return (() -> {
-      return imageTag(originalImage, taggedImage) && imagePush(taggedImage);
-    });
+    return (() -> imageTag(originalImage, taggedImage) && imagePush(taggedImage));
   }
 
   /**
@@ -1559,18 +1506,17 @@ public class TestActions {
   }
 
   /**
-   * Patch domain to shutdown a WebLogic server by changing the value of
+   * Patch domain to shut down a WebLogic server by changing the value of
    * server's serverStartPolicy property to Never.
    *
    * @param domainUid unique domain identifier
    * @param namespace name of the namespace
-   * @param serverName name of the WebLogic server to shutdown
+   * @param serverName name of the WebLogic server to shut down
    * @return true if patching domain operation succeeds or false if the operation fails
-   * @throws ApiException if Kubernetes client API call fails
    **/
   public static boolean shutdownManagedServerUsingServerStartPolicy(String domainUid,
                                                                     String namespace,
-                                                                    String serverName) throws ApiException {
+                                                                    String serverName) {
     return Pod.shutdownManagedServerUsingServerStartPolicy(domainUid,namespace, serverName);
   }
 
@@ -1582,11 +1528,10 @@ public class TestActions {
    * @param namespace name of the namespace
    * @param serverName name of the WebLogic server to start
    * @return true if patching domain operation succeeds or false if the operation fails
-   * @throws ApiException if Kubernetes client API call fails
    **/
   public static boolean startManagedServerUsingServerStartPolicy(String domainUid,
                                                                  String namespace,
-                                                                 String serverName) throws ApiException {
+                                                                 String serverName) {
     return Pod.startManagedServerUsingServerStartPolicy(domainUid,namespace, serverName);
   }
 
@@ -1757,7 +1702,7 @@ public class TestActions {
    * @param esNamespace namespace of Elastic search component
    * @param labelSelector string containing the labels the Operator or WebLogic server is decorated with
    * @param index index key word used to search the index status of the logging exporter
-   * @return a map containing key and value pair of logging exporter index
+   * @return a map containing key and value pairs of logging exporter index
    */
   public static Map<String, String> verifyLoggingExporterReady(String opNamespace,
       String esNamespace,
@@ -1795,9 +1740,9 @@ public class TestActions {
    * Patch a running domain with spec.configuration.model.onlineUpdate.onNonDynamicChanges.
    * spec.configuration.model.onlineUpdate.onNonDynamicChanges accepts three values:
    *   CommitUpdateOnly    - Default value or if not set. All changes are committed, but if there are non-dynamic mbean
-   *                         changes. The domain needs to be restart manually.
+   *                         changes. The domain needs to be restarted manually.
    *   CommitUpdateAndRoll - All changes are committed, but if there are non-dynamic mbean changes,
-   *                         the domain will rolling restart automatically; if not, no restart is necessary
+   *                         the domain will perform a rolling restart automatically; if not, no restart is necessary
    *   CancelUpdate        - If there are non-dynamic mbean changes, all changes are canceled before
    *                         they are committed. The domain will continue to run, but changes to the configmap
    *                         and resources in the domain resource YAML should be reverted manually,

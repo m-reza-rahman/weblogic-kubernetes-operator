@@ -6,7 +6,6 @@ package oracle.weblogic.kubernetes;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -85,6 +84,7 @@ import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.copyFile;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -98,13 +98,6 @@ class ItIstioMiiDomain {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
-
-  private String domainUid = "istio-mii";
-  private String configMapName = "dynamicupdate-istio-configmap";
-  private final String clusterName = "cluster-1"; // do not modify
-  private final String adminServerPodName = domainUid + "-admin-server";
-  private final String managedServerPrefix = domainUid + "-managed-server";
-  private final int replicaCount = 2;
 
   private static String testWebAppWarLoc = null;
 
@@ -150,14 +143,12 @@ class ItIstioMiiDomain {
    * Add istio configuration with default readinessPort.
    * Do not add any AdminService under AdminServer configuration.
    * Deploy istio gateways and virtual service.
-   *
    * Verify server pods are in ready state and services are created.
-   * Verify WebLogic console is accessible thru istio ingress port.
-   * Verify WebLogic console is accessible thru kubectl forwarded port.
-   * Deploy a web application thru istio http ingress port using REST api.
-   * Access web application thru istio http ingress port using curl.
-   *
-   * Create a configmap with a sparse model file to add a new workmanager
+   * Verify WebLogic console is accessible through istio ingress port.
+   * Verify WebLogic console is accessible through kubectl forwarded port.
+   * Deploy a web application through istio http ingress port using REST api.
+   * Access web application through istio http ingress port using curl.
+   * Create a configmap with a sparse model file to add a new work manager
    * with custom min threads constraint and a max threads constraint
    * Patch the domain resource with the configmap.
    * Update the introspect version of the domain resource.
@@ -197,22 +188,29 @@ class ItIstioMiiDomain {
                     String.format("createSecret failed for %s", encryptionSecretName));
 
     // create WDT config map without any files
+    String configMapName = "dynamicupdate-istio-configmap";
+    String domainUid = "istio-mii";
     createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Collections.emptyList());
 
     // create the domain object
     DomainResource domain = createDomainResource(domainUid, domainNamespace, adminSecretName,
         TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG, configMapName);
+    // do not modify
+    String clusterName = "cluster-1";
+    int replicaCount = 2;
     domain = createClusterResourceAndAddReferenceToDomain(
         domainUid + "-" + clusterName, clusterName, domainNamespace, domain, replicaCount);
 
     // create model in image domain
     createDomainAndVerify(domain, domainNamespace);
 
+    String adminServerPodName = domainUid + "-admin-server";
     logger.info("Check admin service {0} is created in namespace {1}",
         adminServerPodName, domainNamespace);
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
     // check managed server services created
+    String managedServerPrefix = domainUid + "-managed-server";
     for (int i = 1; i <= replicaCount; i++) {
       logger.info("Check managed service {0} is created in namespace {1}",
           managedServerPrefix + i, domainNamespace);
@@ -221,7 +219,7 @@ class ItIstioMiiDomain {
     
     // delete the mTLS mode
     ExecResult result = assertDoesNotThrow(() -> ExecCommand.exec(KUBERNETES_CLI + " delete -f "
-        + Paths.get(WORK_DIR, "istio-tls-mode.yaml").toString(), true));
+        + Paths.get(WORK_DIR, "istio-tls-mode.yaml"), true));
     assertEquals(0, result.exitValue(), "Got expected exit value");
     logger.info(result.stdout());
     logger.info(result.stderr());   
@@ -231,7 +229,7 @@ class ItIstioMiiDomain {
     Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("NAMESPACE", domainNamespace);
     templateMap.put("DUID", domainUid);
-    templateMap.put("ADMIN_SERVICE",adminServerPodName);
+    templateMap.put("ADMIN_SERVICE", adminServerPodName);
     templateMap.put("CLUSTER_SERVICE", clusterService);
 
     Path srcHttpFile = Paths.get(RESOURCE_DIR, "istio", "istio-http-template.yaml");
@@ -260,8 +258,8 @@ class ItIstioMiiDomain {
         : K8S_NODEPORT_HOST + ":" + istioIngressPort;
     logger.info("hostAndPort is {0}", hostAndPort);
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
     if (!WEBLOGIC_SLIM) {
       if (OKE_CLUSTER) {
         testPortForwarding(domainUid, domainNamespace, istioIngressPort, hostAndPort);
@@ -291,7 +289,7 @@ class ItIstioMiiDomain {
         logger.info("curl command returned {0}", result.toString());
         assertTrue(result.stdout().contains("SecurityValidationWarnings"),
                 "Could not access the Security Warning Tool page");
-        assertTrue(!result.stdout().contains("minimum of umask 027"), "umask warning check failed");
+        assertFalse(result.stdout().contains("minimum of umask 027"), "umask warning check failed");
         logger.info("No minimum umask warning reported");
       } else {
         fail("Curl command failed to get DomainSecurityRuntime");
@@ -313,7 +311,7 @@ class ItIstioMiiDomain {
             target, archivePath, domainNamespace + ".org", "testwebapp")
         : deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-            clusterName, archivePath, domainNamespace + ".org", "testwebapp");
+        clusterName, archivePath, domainNamespace + ".org", "testwebapp");
 
     assertNotNull(result, "Application deployment failed");
     logger.info("Application deployment returned {0}", result.toString());
@@ -352,7 +350,7 @@ class ItIstioMiiDomain {
     }
 
     replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
+        List.of(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
 
@@ -418,12 +416,12 @@ class ItIstioMiiDomain {
   private static void enableStrictMode(String namespace) {
     Path srcFile = Paths.get(RESOURCE_DIR, "istio", "istio-tls-mode.yaml");
     Path dstFile = Paths.get(WORK_DIR, "istio-tls-mode.yaml");
-    logger.info("Enabling STRICT mTLS mode in istio in namesapce {0}", namespace);
+    logger.info("Enabling STRICT mTLS mode in istio in namespace {0}", namespace);
     assertDoesNotThrow(() -> {
       copyFile(srcFile.toFile(), dstFile.toFile());
       replaceStringInFile(dstFile.toString(), "NAMESPACE", namespace);
       ExecResult result = ExecCommand.exec(KUBERNETES_CLI + " apply -f "
-          + Paths.get(WORK_DIR, "istio-tls-mode.yaml").toString(), true);
+          + Paths.get(WORK_DIR, "istio-tls-mode.yaml"), true);
       assertEquals(0, result.exitValue(), "Failed to enable mTLS strict mode");
       logger.info(result.stdout());
       logger.info(result.stderr());

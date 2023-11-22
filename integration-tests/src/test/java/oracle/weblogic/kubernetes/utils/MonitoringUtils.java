@@ -127,14 +127,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class MonitoringUtils {
 
-  private static LoggingFacade logger = getLogger();
-  private static String cluster1Name = "cluster-1";
-  private static String cluster2Name = "cluster-2";
+  private static final LoggingFacade logger = getLogger();
+  private static final String cluster1Name = "cluster-1";
+  private static final String cluster2Name = "cluster-2";
 
   /**
    * Download monitoring exporter webapp wls-exporter.war based on provided version
    * and insert provided configuration.
-   * @param configFile configuration to monitor Weblogic Domain
+   * @param configFile configuration to monitor WebLogic Domain
    * @param applicationDir location where application war file will be created
    */
   public static void downloadMonitoringExporterApp(String configFile, String applicationDir) {
@@ -180,7 +180,7 @@ public class MonitoringUtils {
 
   /**
  * Build monitoring exporter web applicaiont wls-exporter.war with provided configuration
-   * @param monitoringExporterSrcDir directory containing github monitoring exporter
+   * @param monitoringExporterSrcDir directory containing monitoring exporter
    * @param configFile configuration file for weblogic domain monitoring
    * @param appDir directory where war file will be created
    */
@@ -205,8 +205,8 @@ public class MonitoringUtils {
   }
 
   /**
-   * Clone monitoring exporter github src.
-   * @param monitoringExporterSrcDir directory containing github monitoring exporter
+   * Clone monitoring exporter src.
+   * @param monitoringExporterSrcDir directory containing monitoring exporter
    */
   public static void cloneMonitoringExporter(String monitoringExporterSrcDir) {
     LoggingFacade logger = getLogger();
@@ -215,10 +215,9 @@ public class MonitoringUtils {
     assertDoesNotThrow(() -> deleteDirectory(monitoringTemp.toFile()));
     assertDoesNotThrow(() -> Files.createDirectories(monitoringTemp));
 
-    String monitoringExporterBranch = MONITORING_EXPORTER_BRANCH;
     CommandParams params = Command.defaultCommandParams()
         .command("git clone -b "
-            + monitoringExporterBranch
+            + MONITORING_EXPORTER_BRANCH
             + " "
             + MONITORING_EXPORTER_DOWNLOAD_URL
             + " " + monitoringTemp)
@@ -234,10 +233,8 @@ public class MonitoringUtils {
    * @param searchKey   - metric query expression
    * @param expectedVal - expected metrics to search
    * @param hostPortPrometheus host:nodePort for prometheus
-   * @throws Exception if command to check metrics fails
    */
-  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal, String hostPortPrometheus)
-      throws Exception {
+  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal, String hostPortPrometheus) {
 
     LoggingFacade logger = getLogger();
     // url
@@ -278,7 +275,7 @@ public class MonitoringUtils {
    *
    * @param cmd   command to execute
    * @param searchKey expected output
-   * @return true if the output matches searchKey otherwise false
+   * @return callable that returns true if the output matches searchKey otherwise false
    */
   public static Callable<Boolean> searchForKey(String cmd, String searchKey) {
     return () -> execCommandCheckResponse(cmd, searchKey);
@@ -624,7 +621,6 @@ public class MonitoringUtils {
     GrafanaParams grafanaParams = new GrafanaParams()
         .helmParams(grafanaHelmParams)
         .nodePort(grafanaNodePort);
-    boolean isGrafanaInstalled = false;
     if (OKD) {
       addSccToDBSvcAccount(grafanaReleaseName,grafanaNamespace);
     }
@@ -657,7 +653,7 @@ public class MonitoringUtils {
   }
 
   /**
-   * Extra clean up for Prometheus and  Grafana artifacts.
+   * Extra clean-up for Prometheus and  Grafana artifacts.
    *
    * @param grafanaReleaseName the grafana release name
    * @param prometheusReleaseName prometheus release name
@@ -704,7 +700,7 @@ public class MonitoringUtils {
   }
 
   /**
-   * Extra clean up for Prometheus Adapter artifacts.
+   * Extra clean-up for Prometheus Adapter artifacts.
    *
    */
   public static void cleanupPrometheusAdapterClusterRoles() {
@@ -737,7 +733,7 @@ public class MonitoringUtils {
   }
 
   /**
-   * Download src from monitoring exporter github project and build webapp.
+   * Download src from monitoring exporter project and build webapp.
    *
    * @param monitoringExporterDir full path to monitoring exporter install location
    */
@@ -749,7 +745,7 @@ public class MonitoringUtils {
   }
 
   /**
-   * Download src from monitoring exporter github project and build or install webapp.
+   * Download src from monitoring exporter project and build or install webapp.
    *
    * @param monitoringExporterDir full path to monitoring exporter install location
    * @param toBuildMonitoringExporter if true build monitoring exporter webapp or download if false.
@@ -997,7 +993,7 @@ public class MonitoringUtils {
   }
   
   /**
-   * create domain from provided image and monitoring exporter sidecar and verify it's start.
+   * create domain from provided image and monitoring exporter sidecar and verify start.
    *
    * @param miiImage model in image name
    * @param domainUid domain uid
@@ -1027,7 +1023,7 @@ public class MonitoringUtils {
   }
 
   /**
-   * create domain from provided image and monitoring exporter sidecar and verify it's start.
+   * create domain from provided image and monitoring exporter sidecar and verify start.
    *
    * @param miiImage model in image name
    * @param domainUid domain uid
@@ -1195,7 +1191,7 @@ public class MonitoringUtils {
             + "@" + podName + ":%s/%s", protocol, port, uri);
     logger.info("accessing managed server exporter via " + command);
 
-    boolean isFound = false;
+    boolean isFound;
     try {
       ExecResult result = ExecCommand.exec(command, true);
       String response = result.stdout().trim();
@@ -1219,7 +1215,6 @@ public class MonitoringUtils {
    */
   public static boolean verifyMonExpAppAccessSideCar(String searchKey,
                                               String domainNS, String podName) {
-
     // access metrics
     final String command = String.format(
         KUBERNETES_CLI + " exec -n " + domainNS + "  " + podName + " -- curl -X GET -u %s:%s http://localhost:8080/metrics", ADMIN_USERNAME_DEFAULT,
@@ -1227,7 +1222,7 @@ public class MonitoringUtils {
 
     logger.info("accessing managed server exporter via " + command);
 
-    boolean isFound = false;
+    boolean isFound;
     try {
       ExecResult result = ExecCommand.exec(command, true);
       String response = result.stdout().trim();

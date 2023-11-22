@@ -83,6 +83,7 @@ import static oracle.weblogic.kubernetes.utils.SslUtils.generateJksStores;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -238,7 +239,7 @@ class ItWseeSSO {
     String url = "http://" + hostAndPort + appURI;
 
     HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-    assertTrue(response.statusCode() == 200);
+    assertEquals(200, response.statusCode());
     logger.info(response.body());
     return url;
   }
@@ -478,7 +479,7 @@ class ItWseeSSO {
             Paths.get("/u01", "certrec.pem")),
         "Copying file to pod failed");
 
-    StringBuffer extOpts = new StringBuffer("");
+    StringBuilder extOpts = new StringBuilder("");
     extOpts.append(senderURI + " ");
     extOpts.append(receiverURI);
     extOpts.append(" user_d1 password1");
@@ -529,7 +530,7 @@ class ItWseeSSO {
       return false;
     }
     logger.info("Running script " + scriptName);
-    String command = new StringBuffer("/u01/callpyscript.sh /u01/" + scriptName)
+    String command = new StringBuilder("/u01/callpyscript.sh /u01/" + scriptName)
         .append(" ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(" ")

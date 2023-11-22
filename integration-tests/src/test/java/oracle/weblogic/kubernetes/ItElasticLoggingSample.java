@@ -69,16 +69,14 @@ import static org.junit.jupiter.api.Assertions.fail;
 @IntegrationTest
 @Tag("kind-parallel")
 class ItElasticLoggingSample {
-  // constants for namespaces
-  private static String domainNamespace = null;
   private static String opNamespace = null;
 
   // constants for ELK stack
   static String elasticSearchHost;
   static String elasticSearchNs = "default";
-  private static String sourceELKConfigFile =
+  private static final String sourceELKConfigFile =
       ITTESTS_DIR + "/../kubernetes/samples/scripts/elasticsearch-and-kibana/elasticsearch_and_kibana.yaml";
-  private static String destELKConfigFile = WORK_DIR + "elasticsearch_and_kibana.yaml";
+  private static final String destELKConfigFile = WORK_DIR + "elasticsearch_and_kibana.yaml";
 
   // constants for test
   private static String k8sExecCmdPrefix;
@@ -104,7 +102,8 @@ class ItElasticLoggingSample {
     // get a new unique domainNamespace
     logger.info("Assigning a unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
-    domainNamespace = namespaces.get(1);
+    // constants for namespaces
+    String domainNamespace = namespaces.get(1);
 
     // copy original ELK config file to work dir
     Path sourceELKConfigFilePath = Paths.get(sourceELKConfigFile);
@@ -112,12 +111,12 @@ class ItElasticLoggingSample {
     assertDoesNotThrow(() -> Files.copy(sourceELKConfigFilePath, destELKConfigFilePath,
         StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
 
-    // reploce the location for busybox image
+    // replace the location for busybox image
     assertDoesNotThrow(() -> replaceStringInFile(destELKConfigFilePath.toString(),
         "busybox", BUSYBOX_IMAGE + ":" + BUSYBOX_TAG),
             "Failed to replace String: " + BUSYBOX_IMAGE + ":" + BUSYBOX_TAG);
 
-    // reploce the location for ELK stack image
+    // replace the location for ELK stack image
     assertDoesNotThrow(() -> replaceStringInFile(destELKConfigFilePath.toString(),
         "elasticsearch:7.8.1", ELASTICSEARCH_IMAGE),"Failed to replace String: " + ELASTICSEARCH_IMAGE);
     assertDoesNotThrow(() -> replaceStringInFile(destELKConfigFilePath.toString(),
@@ -162,16 +161,11 @@ class ItElasticLoggingSample {
         "operator to be running in namespace {0}",
         opNamespace);
 
-    StringBuffer elasticsearchUrlBuff =
-        new StringBuffer("curl http://")
-            .append(elasticSearchHost)
-            .append(":")
-            .append(ELASTICSEARCH_HTTP_PORT);
-    k8sExecCmdPrefix = elasticsearchUrlBuff.toString();
+    k8sExecCmdPrefix = "curl http://" + elasticSearchHost + ":" + ELASTICSEARCH_HTTP_PORT;
     logger.info("Elasticsearch URL {0}", k8sExecCmdPrefix);
 
     // Verify that ELK Stack is ready to use
-    testVarMap = new HashMap<String, String>();
+    testVarMap = new HashMap<>();
     testVarMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, LOGSTASH_INDEX_KEY);
     Map<String, String> kibanaMap = verifyLoggingExporterReady(opNamespace, elasticSearchNs, null, KIBANA_INDEX_KEY);
 
@@ -248,10 +242,10 @@ class ItElasticLoggingSample {
 
     int waittime = 5;
     String indexName = testVarMap.get(index);
-    StringBuffer curlOptions = new StringBuffer(" --connect-timeout " + waittime)
-        .append(" --max-time " + waittime)
+    StringBuilder curlOptions = new StringBuilder(" --connect-timeout " + waittime)
+        .append(" --max-time ").append(waittime)
         .append(" -X GET ");
-    StringBuffer k8sExecCmdPrefixBuff = new StringBuffer(k8sExecCmdPrefix);
+    StringBuilder k8sExecCmdPrefixBuff = new StringBuilder(k8sExecCmdPrefix);
     int offset = k8sExecCmdPrefixBuff.indexOf("http");
     k8sExecCmdPrefixBuff.insert(offset, curlOptions);
     String cmd = k8sExecCmdPrefixBuff

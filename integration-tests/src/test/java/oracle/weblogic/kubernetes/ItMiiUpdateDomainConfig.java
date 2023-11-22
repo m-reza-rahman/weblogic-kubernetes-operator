@@ -126,7 +126,7 @@ class ItMiiUpdateDomainConfig {
   private static final String domainUid = "mii-add-config";
   private static final String pvName = getUniqueName(domainUid + "-pv-");
   private static final String pvcName = getUniqueName(domainUid + "-pvc-");
-  private StringBuffer curlString = null;
+  private StringBuilder curlString = null;
   private V1Patch patch = null;
   private final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-managed-server";
@@ -269,7 +269,7 @@ class ItMiiUpdateDomainConfig {
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
 
-    String curlString = new StringBuffer()
+    String curlString = new StringBuilder()
           .append("curl -g --user ")
           .append(ADMIN_USERNAME_DEFAULT)
           .append(":")
@@ -429,8 +429,8 @@ class ItMiiUpdateDomainConfig {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
         .append(" \"value\":  \"" + configMapName + "\"")
@@ -509,8 +509,8 @@ class ItMiiUpdateDomainConfig {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
         .append(" \"value\":  \"" + configMapName + "\"")
@@ -597,8 +597,8 @@ class ItMiiUpdateDomainConfig {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
         .append(" \"value\":  \"" + configMapName + "\"")
@@ -611,7 +611,7 @@ class ItMiiUpdateDomainConfig {
         "patchDomainCustomResource(configMap)  failed ");
     assertTrue(cmPatched, "patchDomainCustomResource(configMap) failed");
 
-    patchStr = new StringBuffer("[{");
+    patchStr = new StringBuilder("[{");
     patchStr.append(" \"op\": \"replace\",")
         .append(" \"path\": \"/spec/replicas\",")
         .append(" \"value\": 1")
@@ -721,8 +721,8 @@ class ItMiiUpdateDomainConfig {
     String configMapName = "dynamic-cluster-size-cm";
     createClusterConfigMap(configMapName, "model.cluster.size.yaml");
 
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
         .append(" \"value\":  \"" + configMapName + "\"")
@@ -764,7 +764,7 @@ class ItMiiUpdateDomainConfig {
     // Make sure the JMS Connection LoadBalancing and message LoadBalancing
     // works inside pod before scaling the cluster
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
-    StringBuffer javapCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    StringBuilder javapCmd = new StringBuilder(KUBERNETES_CLI + " exec -n ");
     javapCmd.append(domainNamespace);
     javapCmd.append(" -it ");
     javapCmd.append(adminServerPodName);
@@ -799,7 +799,7 @@ class ItMiiUpdateDomainConfig {
 
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
 
-    StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    StringBuilder javacCmd = new StringBuilder(KUBERNETES_CLI + " exec -n ");
     javacCmd.append(domainNamespace);
     javacCmd.append(" -it ");
     javacCmd.append(adminServerPodName);
@@ -844,8 +844,8 @@ class ItMiiUpdateDomainConfig {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = null;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
         .append(" \"value\":  \"" + configMapName + "\"")
@@ -1004,7 +1004,7 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
-    StringBuffer checkClusterBaseCmd = new StringBuffer("curl -g --user ")
+    StringBuilder checkClusterBaseCmd = new StringBuilder("curl -g --user ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
@@ -1014,10 +1014,10 @@ class ItMiiUpdateDomainConfig {
         .append(managedServer)
         .append(" --silent --show-error -o /dev/null -w %{http_code}");
 
-    StringBuffer checkCluster = new StringBuffer();
+    StringBuilder checkCluster = new StringBuilder();
 
     if (OKE_CLUSTER) {
-      checkCluster = new StringBuffer(KUBERNETES_CLI)
+      checkCluster = new StringBuilder(KUBERNETES_CLI)
         .append(" exec -n ")
         .append(domainNamespace)
         .append(" ")
@@ -1025,7 +1025,7 @@ class ItMiiUpdateDomainConfig {
         .append(" -- ")
         .append(checkClusterBaseCmd);
     } else {
-      checkCluster = new StringBuffer("status=$(");
+      checkCluster = new StringBuilder("status=$(");
       checkCluster.append(checkClusterBaseCmd)
           .append(");")
           .append("echo ${status}");
@@ -1066,7 +1066,7 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
 
     ExecResult result = null;
-    curlString = new StringBuffer("curl -g --user ")
+    curlString = new StringBuilder("curl -g --user ")
          .append(ADMIN_USERNAME_DEFAULT)
          .append(":")
          .append(ADMIN_PASSWORD_DEFAULT)

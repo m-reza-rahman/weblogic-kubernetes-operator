@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.assertions.impl;
@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import org.awaitility.core.ConditionFactory;
 
@@ -63,14 +64,14 @@ public class Pod {
   }
 
   /**
-   * Return true if the given pod podName is restarted. This method will throw a exception if more than maxUnavailable
+   * Return true if the given pod podName is restarted. This method will throw an exception if more than maxUnavailable
    * pods are restarted at the same time.
    *
    * @param pods map of pod names with its creation time stamps
    * @param podName name of pod to check for restart status
    * @param maxUnavailable number of pods that can concurrently restart at the same time
    * @param namespace name of the namespace in which the pod restart status to be checked
-   * @return true if given pod is restarted
+   * @return callable that returns true if given pod is restarted
    */
   private static Callable<Boolean> podRestarted(String podName, Map<String, OffsetDateTime> pods, int maxUnavailable,
       String namespace) {
@@ -80,8 +81,8 @@ public class Pod {
       for (Map.Entry<String, OffsetDateTime> entry : pods.entrySet()) {
         V1Pod pod = Kubernetes.getPod(namespace, null, entry.getKey());
         OffsetDateTime deletionTimeStamp = Optional.ofNullable(pod)
-            .map(metadata -> metadata.getMetadata())
-            .map(timeStamp -> timeStamp.getDeletionTimestamp()).orElse(null);
+            .map(V1Pod::getMetadata)
+            .map(V1ObjectMeta::getDeletionTimestamp).orElse(null);
         if (deletionTimeStamp != null) {
           getLogger().info("Pod {0} is getting replaced", entry.getKey());
           if (++terminatingPods > maxUnavailable) {
@@ -111,12 +112,10 @@ public class Pod {
    * @param namespace name of the namespace in which to check the pod status
    * @param domainUid UID of the WebLogic domain
    * @param podName name of the pod
-   * @return true if pod is ready otherwise false
+   * @return callable that returns true if pod is ready otherwise false
    */
   public static Callable<Boolean> podReady(String namespace, String domainUid, String podName) {
-    return () -> {
-      return Kubernetes.isPodReady(namespace, domainUid, podName);
-    };
+    return () -> Kubernetes.isPodReady(namespace, domainUid, podName);
   }
 
   /**
@@ -125,12 +124,10 @@ public class Pod {
    * @param namespace name of the namespace in which to check the pod status
    * @param labels map of labels as key value pairs
    * @param podName name of the pod
-   * @return true if pod is ready otherwise false
+   * @return callable that returns true if pod is ready otherwise false
    */
   public static Callable<Boolean> podReady(String namespace, String podName, Map<String, String> labels) {
-    return () -> {
-      return Kubernetes.isPodReady(namespace, labels, podName);
-    };
+    return () -> Kubernetes.isPodReady(namespace, labels, podName);
   }
 
   /**
@@ -139,12 +136,10 @@ public class Pod {
    * @param namespace name of the namespace in which to check the pod status
    * @param domainUid UID of the WebLogic domain
    * @param podName name of the pod
-   * @return true if pod is initializing otherwise false
+   * @return callable that returns true if pod is initializing otherwise false
    */
   public static Callable<Boolean> podInitialized(String namespace, String domainUid, String podName) {
-    return () -> {
-      return Kubernetes.isPodInitialized(namespace, domainUid, podName);
-    };
+    return () -> Kubernetes.isPodInitialized(namespace, domainUid, podName);
   }
 
   /**
@@ -153,12 +148,10 @@ public class Pod {
    * @param podName name of the pod for which to check for Terminating status
    * @param domainUid WebLogic domain uid in which the pod exists
    * @param namespace in which the pod is running
-   * @return true if the pod is terminating otherwise false
+   * @return callable that returns true if the pod is terminating otherwise false
    */
   public static Callable<Boolean> podTerminating(String podName, String domainUid, String namespace) {
-    return () -> {
-      return Kubernetes.isPodTerminating(namespace, domainUid, podName);
-    };
+    return () -> Kubernetes.isPodTerminating(namespace, domainUid, podName);
   }
 
   /**
@@ -167,12 +160,10 @@ public class Pod {
    * @param podName name of the pod to check for
    * @param domainUid Uid of WebLogic domain
    * @param namespace namespace in which to check for the pod
-   * @return true if the pod does not exist in the namespace otherwise false
+   * @return callable that returns true if the pod does not exist in the namespace otherwise false
    */
   public static Callable<Boolean> podDoesNotExist(String podName, String domainUid, String namespace) {
-    return () -> {
-      return !Kubernetes.doesPodExist(namespace, domainUid, podName);
-    };
+    return () -> !Kubernetes.doesPodExist(namespace, domainUid, podName);
   }
 
   /**
@@ -181,12 +172,10 @@ public class Pod {
    * @param podName name of the pod to check for
    * @param domainUid UID of WebLogic domain in which the pod exists
    * @param namespace in which the pod exists
-   * @return true if the pod exists in the namespace otherwise false
+   * @return callable that returns true if the pod exists in the namespace otherwise false
    */
   public static Callable<Boolean> podExists(String podName, String domainUid, String namespace) {
-    return () -> {
-      return Kubernetes.doesPodExist(namespace, domainUid, podName);
-    };
+    return () -> Kubernetes.doesPodExist(namespace, domainUid, podName);
   }
 
 }

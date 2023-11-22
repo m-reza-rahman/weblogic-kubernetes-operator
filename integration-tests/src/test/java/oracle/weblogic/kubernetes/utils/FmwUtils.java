@@ -5,7 +5,7 @@ package oracle.weblogic.kubernetes.utils;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,8 +68,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public class FmwUtils {
 
-  private static LoggingFacade logger = null;
-
   /**
    * Construct a domain object with the given parameters that can be used to create a domain resource.
    * @param domainUid unique Uid of the domain
@@ -88,7 +86,8 @@ public class FmwUtils {
       String opssWalletPasswordSecretName, String miiImage) {
 
     // create the domain CR
-    DomainResource domain = new DomainResource()
+
+    return new DomainResource()
         .apiVersion(DOMAIN_API_VERSION)
         .kind("Domain")
         .metadata(new V1ObjectMeta()
@@ -131,8 +130,6 @@ public class FmwUtils {
                     .runtimeEncryptionSecret(encryptionSecretName))
                 .addSecretsItem(rcuAccessSecretName)
                 .introspectorJobActiveDeadlineSeconds(900L)));
-
-    return domain;
   }
 
   /**
@@ -181,7 +178,8 @@ public class FmwUtils {
       String opssWalletPasswordSecretName, int replicaCount, String miiImage, String configmapName) {
 
     // create the domain CR
-    DomainResource domain = new DomainResource()
+
+    return new DomainResource()
         .apiVersion(DOMAIN_API_VERSION)
         .kind("Domain")
         .metadata(new V1ObjectMeta()
@@ -217,8 +215,6 @@ public class FmwUtils {
                     .runtimeEncryptionSecret(encryptionSecretName))
                 .addSecretsItem(rcuAccessSecretName)
                 .introspectorJobActiveDeadlineSeconds(600L)));
-
-    return domain;
   }
 
   /**
@@ -245,7 +241,8 @@ public class FmwUtils {
                                                         int t3ChannelPort) {
 
     // create a domain custom resource configuration object
-    DomainResource domain = new DomainResource()
+
+    return new DomainResource()
         .apiVersion(DOMAIN_API_VERSION)
         .kind("Domain")
         .metadata(new V1ObjectMeta()
@@ -257,7 +254,7 @@ public class FmwUtils {
             .domainHomeSourceType("PersistentVolume")
             .image(FMWINFRA_IMAGE_TO_USE_IN_SPEC)
             .imagePullPolicy(IMAGE_PULL_POLICY)
-            .imagePullSecrets(Arrays.asList(
+            .imagePullSecrets(Collections.singletonList(
                 new V1LocalObjectReference()
                     .name(BASE_IMAGES_REPO_SECRET_NAME)))
             .webLogicCredentialsSecret(new V1LocalObjectReference()
@@ -291,8 +288,6 @@ public class FmwUtils {
                     .addChannelsItem(new Channel()
                         .channelName("T3Channel")
                         .nodePort(t3ChannelPort)))));
-
-    return domain;
   }
 
   /**
@@ -302,7 +297,7 @@ public class FmwUtils {
    * @param domainNamespace  namespace where the domain exists
    * @param replicaCount number of running managed servers
    * @param args arguments to determine append -c1 to managed server name or not.
-   *             append -c1 if it's not set. Otherwise not appending -c1
+   *             append -c1 if it's not set. Otherwise, not appending -c1
    */
   public static void verifyDomainReady(String domainNamespace, String domainUid, int replicaCount, String... args) {
     LoggingFacade logger = getLogger();
@@ -584,7 +579,7 @@ public class FmwUtils {
   public static void saveAndRestoreOpssWalletfileSecret(String namespace, String domainUid,
        String walletfileSecretName) {
 
-    logger = getLogger();
+    LoggingFacade logger = getLogger();
     Path saveAndRestoreOpssPath =
          Paths.get(RESOURCE_DIR, "bash-scripts", "opss-wallet.sh");
     String script = saveAndRestoreOpssPath.toString();
@@ -612,36 +607,6 @@ public class FmwUtils {
 
   }
 
-  /**
-   * Restore the OPSS key wallet from a running JRF domain's introspector configmap to a file.
-   * @param namespace namespace where JRF domain exists
-   * @param domainUid unique domain Uid
-   * @param walletfileSecretName name of wallet file secret
-   * @return ExecResult result of running corresponding script
-   */
-  public static ExecResult restoreOpssWalletfileSecret(String namespace, String domainUid,
-       String walletfileSecretName) {
-
-    logger = getLogger();
-    Path saveAndRestoreOpssPath =
-         Paths.get(RESOURCE_DIR, "bash-scripts", "opss-wallet.sh");
-    String script = saveAndRestoreOpssPath.toString();
-    logger.info("Script for saveAndRestoreOpss is {0)", script);
-
-    //restore opss wallet password secret
-    String command = script + " -d " + domainUid + " -n " + namespace + " -r" + " -ws " + walletfileSecretName;
-    logger.info("Restore wallet file command: {0}", command);
-    ExecResult result = Command.withParams(
-          defaultCommandParams()
-            .command(command)
-            .saveResults(true)
-            .redirect(true))
-        .executeAndReturnResult();
-
-    return result;
-
-  }
-
   /** Create configuration with provided pv and pvc values.
    *
    * @param pvName name of pv
@@ -656,13 +621,12 @@ public class FmwUtils {
                                          Map<String, Quantity> pvCapacity, Map<String, Quantity> pvcRequest,
                                          String storageClassName, String testClass) {
     Configuration configuration = new Configuration();
-    PersistentVolume pv = null;
+    PersistentVolume pv;
     if (OKE_CLUSTER) {
       storageClassName = "oci-fss";
     } else if (OKD) {
       storageClassName = "okd-nfsmnt";
     }
-
 
     pv = new PersistentVolume()
         .spec(new PersistentVolumeSpec()
@@ -701,7 +665,8 @@ public class FmwUtils {
   public static Configuration getConfiguration(String pvcName,
                                          Map<String, Quantity> pvcRequest,
                                          String storageClassName) {
-    Configuration configuration = new Configuration()
+
+    return new Configuration()
         .introspectorJobActiveDeadlineSeconds(3000L)
         .initializeDomainOnPV(new InitializeDomainOnPV()
             .persistentVolumeClaim(new PersistentVolumeClaim()
@@ -711,8 +676,6 @@ public class FmwUtils {
                     .storageClassName(storageClassName)
                     .resources(new V1ResourceRequirements()
                         .requests(pvcRequest)))));
-
-    return configuration;
   }
 
   // get the host path for multiple environment

@@ -76,8 +76,8 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResour
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfiguration;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyConfiguredSystemResouceByPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyConfiguredSystemResource;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyConfiguredSystemResourceByPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
@@ -129,7 +129,6 @@ class ItMiiAuxiliaryImage {
   private static String errorpathDomainNamespace = null;
   private static LoggingFacade logger = null;
   private static final String domainUid1 = "domain1";
-  private final String domainUid = "";
   private static final String miiAuxiliaryImage1Tag = "image1" + MII_BASIC_IMAGE_TAG;
   private static final String miiAuxiliaryImage1 = MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImage1Tag;
   private static final String miiAuxiliaryImage2Tag = "image2" + MII_BASIC_IMAGE_TAG;
@@ -178,14 +177,13 @@ class ItMiiAuxiliaryImage {
   private static final String adminServerPodNameDomain1 = domainUid1 + "-admin-server";
   private static final String managedServerPrefixDomain1 = domainUid1 + "-managed-server";
   private static final int replicaCount = 2;
-  private String adminSvcExtHost = null;
   private static String adminSvcExtHostDomain1 = null;
-  private static String adminSecretName = "weblogic-credentials";
-  private static String encryptionSecretName = "encryptionsecret";
+  private static final String adminSecretName = "weblogic-credentials";
+  private static final String encryptionSecretName = "encryptionsecret";
   private static String opNamespace = null;
   private static String operatorPodName = null;
   private static String oldMiiAuxImageNameInDomain1 = miiAuxiliaryImage1;
-  private static AppParams appParams = defaultAppParams()
+  private static final AppParams appParams = defaultAppParams()
       .appArchiveDir(ARCHIVE_DIR + ItMiiAuxiliaryImage.class.getSimpleName());
 
   /**
@@ -415,8 +413,8 @@ class ItMiiAuxiliaryImage {
     imageTag(imageName, imageUpdate);
     imageRepoLoginAndPushImageToRegistry(imageUpdate);
 
-    StringBuffer patchStr;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/image\",")
         .append("\"value\": \"")
@@ -1249,7 +1247,7 @@ class ItMiiAuxiliaryImage {
         adminServerPodName, managedServerPrefix, replicaCount);
 
     //create router for admin service on OKD in wdtDomainNamespace
-    adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), wdtDomainNamespace);
+    String adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), wdtDomainNamespace);
     logger.info("admin svc host = {0}", adminSvcExtHost);
 
     // check configuration for DataSource in the running domain
@@ -1453,7 +1451,7 @@ class ItMiiAuxiliaryImage {
   }
 
   private void checkConfiguredJDBCresouce(String domainNamespace, String adminServerPodName, String adminSvcExtHost) {
-    verifyConfiguredSystemResouceByPath(domainNamespace, adminServerPodName, adminSvcExtHost,
+    verifyConfiguredSystemResourceByPath(domainNamespace, adminServerPodName, adminSvcExtHost,
         "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",
         "jdbc:oracle:thin:@\\/\\/localhost:7001\\/dbsvc");
   }

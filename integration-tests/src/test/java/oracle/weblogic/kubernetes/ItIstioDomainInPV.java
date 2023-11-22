@@ -8,7 +8,7 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,8 +94,10 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests to create domain in persistent volume using WLST.
@@ -111,11 +113,7 @@ class ItIstioDomainInPV  {
   private static String opNamespace = null;
   private static String domainNamespace = null;
 
-  private final String wlSecretName = "weblogic-credentials";
   private final String domainUid = "istio-dpv";
-  private final String clusterName = "cluster-1";
-  private final String adminServerName = "admin-server";
-  private final String adminServerPodName = domainUid + "-" + adminServerName;
   private static LoggingFacade logger = null;
   private final String pvName = getUniqueName(domainUid + "-pv-");
   private final String pvcName = getUniqueName(domainUid + "-pvc-");
@@ -165,8 +163,8 @@ class ItIstioDomainInPV  {
    * Deploy istio gateways and virtual service.
    * Verify domain pods runs in ready state and services are created.
    * Check WebLogic Server log for few Japanese characters.
-   * Verify WebLogic console is accessible thru istio ingress http port
-   * Verify WebLogic console is accessible thru kubectl forwarded port
+   * Verify WebLogic console is accessible through istio ingress http port
+   * Verify WebLogic console is accessible through kubectl forwarded port
    * Additionally, the test verifies that WebLogic cluster can be scaled down
    * and scaled up in the absence of Administration server.
    */
@@ -189,6 +187,7 @@ class ItIstioDomainInPV  {
     createBaseRepoSecret(domainNamespace);
 
     // create WebLogic domain credential secret
+    String wlSecretName = "weblogic-credentials";
     createSecretWithUsernamePassword(wlSecretName, domainNamespace,
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
@@ -204,7 +203,9 @@ class ItIstioDomainInPV  {
     p.setProperty("domain_path", "/shared/" + domainNamespace + "/domains");
     p.setProperty("domain_name", domainUid);
     p.setProperty("domain_uid", domainUid);
+    String clusterName = "cluster-1";
     p.setProperty("cluster_name", clusterName);
+    String adminServerName = "admin-server";
     p.setProperty("admin_server_name", adminServerName);
     p.setProperty("managed_server_port", "8001");
     p.setProperty("admin_server_port", "7001");
@@ -228,7 +229,7 @@ class ItIstioDomainInPV  {
 
     // Use the WebLogic(12.2.1.4) Base Image with Japanese Locale
     // Add the LANG environment variable to ja_JP.utf8
-    String imageLocation = null;
+    String imageLocation;
     if (KIND_REPO != null) {
       imageLocation = KIND_REPO + "test-images/weblogic:" + LOCALE_IMAGE_TAG;
     } else {
@@ -251,7 +252,7 @@ class ItIstioDomainInPV  {
             .image(imageLocation)
             .imagePullPolicy(IMAGE_PULL_POLICY)
             .replicas(replicaCount)
-            .imagePullSecrets(Arrays.asList(
+            .imagePullSecrets(Collections.singletonList(
                 new V1LocalObjectReference()
                     .name(BASE_IMAGES_REPO_SECRET_NAME)))     // this secret is used only on non-kind cluster
             .webLogicCredentialsSecret(new V1LocalObjectReference()
@@ -290,6 +291,7 @@ class ItIstioDomainInPV  {
     createDomainAndVerify(domain, domainNamespace);
 
     // verify the admin server service created
+    String adminServerPodName = domainUid + "-" + adminServerName;
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
     // verify managed server services created
     // verify managed server pods are ready
@@ -306,7 +308,7 @@ class ItIstioDomainInPV  {
     Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("NAMESPACE", domainNamespace);
     templateMap.put("DUID", domainUid);
-    templateMap.put("ADMIN_SERVICE",adminServerPodName);
+    templateMap.put("ADMIN_SERVICE", adminServerPodName);
     templateMap.put("CLUSTER_SERVICE", clusterService);
 
     Path srcHttpFile = Paths.get(RESOURCE_DIR, "istio", "istio-http-template.yaml");
@@ -323,14 +325,13 @@ class ItIstioDomainInPV  {
 
     // In internal OKE env, use Istio EXTERNAL-IP;
     // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
-    String hostAndPort = hostName.equals(K8S_NODEPORT_HOST) ? K8S_NODEPORT_HOST + ":" + istioIngressPort : hostName;
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
       host = "[" + host + "]";
     }
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
     if (!WEBLOGIC_SLIM) {      
       String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
       boolean checkConsole =
@@ -366,10 +367,10 @@ class ItIstioDomainInPV  {
         logger.info("curl command returned {0}", result.toString());
         assertTrue(result.stdout().contains("SecurityValidationWarnings"),
                 "Could not access the Security Warning Tool page");
-        assertTrue(!result.stdout().contains("minimum of umask 027"), "umask warning check failed");
+        assertFalse(result.stdout().contains("minimum of umask 027"), "umask warning check failed");
         logger.info("No minimum umask warning reported");
       } else {
-        assertTrue(false, "Curl command failed to get DomainSecurityRuntime");
+        fail("Curl command failed to get DomainSecurityRuntime");
       }
     } else {
       logger.info("Skipping Security warning check, since Security Warning tool "
@@ -463,7 +464,7 @@ class ItIstioDomainInPV  {
   private boolean matchPodLog() {
     String toMatch = "起動しました";
     // toMatch = "起起起モードで起動しました"; test fails
-    String podLog = null;
+    String podLog;
     try {
       podLog = Kubernetes.getPodLog("istio-dpv-managed-1", domainNamespace, "weblogic-server");
       logger.info("{0}", podLog);
@@ -516,7 +517,7 @@ class ItIstioDomainInPV  {
         .addArgsItem("/u01/weblogic/" + domainPropertiesFile.getFileName()); //domain property file
 
     logger.info("Running a Kubernetes job to create the domain");
-    Map<String, String> annotMap = new HashMap<String, String>();
+    Map<String, String> annotMap = new HashMap<>();
     annotMap.put("sidecar.istio.io/inject", "false");
     createDomainJob(WEBLOGIC_IMAGE_TO_USE_IN_SPEC, pvName, pvcName, domainScriptConfigMapName,
         namespace, jobCreationContainer, annotMap);

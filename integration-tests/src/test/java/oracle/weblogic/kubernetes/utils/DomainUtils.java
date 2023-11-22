@@ -14,6 +14,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.Callable;
@@ -107,12 +108,10 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainStatusConditionTypeExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainStatusConditionTypeHasExpectedStatus;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainStatusMessageContainsExpectedMsg;
-import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainStatusReasonMatches;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainStatusServerStatusHasExpectedPodStatus;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
-import static oracle.weblogic.kubernetes.assertions.impl.Cluster.doesClusterExist;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
@@ -231,23 +230,6 @@ public class DomainUtils {
         checkPodReadyAndServiceExists(managedServerPodName, domainUid, domainNamespace);
       }
     }
-  }
-
-  /**
-   * Check the status reason of the domainUid matches the given reason.
-   *
-   * @param domainUid  domain uid
-   * @param namespace the namespace in which the domainUid exists
-   * @param statusReason the expected status reason of the domainUid
-   */
-  public static void checkDomainStatusReasonMatches(String domainUid, String namespace, String statusReason) {
-    LoggingFacade logger = getLogger();
-    testUntil(assertDoesNotThrow(() -> domainStatusReasonMatches(domainUid, namespace, statusReason)),
-        logger,
-        "the status reason of the domain {0} in namespace {1} matches {2}",
-        domainUid,
-        namespace,
-        statusReason);
   }
 
   /**
@@ -466,7 +448,7 @@ public class DomainUtils {
     logger.info("Removing the cluster {0} from domain resource {1}", clusterName, domainUid);
     DomainResource domainCustomResource = getDomainCustomResource(domainUid, namespace);
     Optional<V1LocalObjectReference> cluster = domainCustomResource.getSpec()
-        .getClusters().stream().filter(o -> o.getName().equals(clusterName)).findAny();
+        .getClusters().stream().filter(o -> Objects.equals(o.getName(), clusterName)).findAny();
     int clusterIndex = -1;
     if (cluster.isPresent()) {
       clusterIndex = domainCustomResource.getSpec().getClusters().indexOf(cluster.get());
@@ -481,8 +463,8 @@ public class DomainUtils {
       V1Patch patch = new V1Patch(patchStr);
       assertTrue(patchDomainCustomResource(domainUid, namespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
           "Failed to patch domain");
-      Callable<Boolean> clusterNotFound = () -> !getDomainCustomResource(domainUid, namespace).getSpec()
-          .getClusters().stream().anyMatch(c -> c.getName().equals(clusterName));
+      Callable<Boolean> clusterNotFound = () -> getDomainCustomResource(domainUid, namespace).getSpec()
+          .getClusters().stream().noneMatch(c -> Objects.equals(c.getName(), clusterName));
       testUntil(clusterNotFound, logger, "cluster {0} to be removed from domain resource in namespace {1}",
           clusterName, namespace);
     } else {
@@ -532,7 +514,7 @@ public class DomainUtils {
     assertFalse(auxiliaryImageList.isEmpty(), "AuxiliaryImage list is empty");
 
     String searchString;
-    int index = 0;
+    int index;
 
     AuxiliaryImage ai = auxiliaryImageList.stream()
         .filter(auxiliaryImage -> oldImageName.equals(auxiliaryImage.getImage()))
@@ -543,10 +525,10 @@ public class DomainUtils {
 
     index = auxiliaryImageList.indexOf(ai);
     searchString = "\"/spec/configuration/model/auxiliaryImages/" + index + "/image\"";
-    StringBuffer patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
-        .append(" \"path\": " + searchString + ",")
-        .append(" \"value\":  \"" + newImageName + "\"")
+        .append(" \"path\": ").append(searchString)
+        .append(",").append(" \"value\":  \"").append(newImageName).append("\"")
         .append(" }]");
     getLogger().info("Auxiliary Image patch string: " + patchStr);
 
@@ -600,14 +582,14 @@ public class DomainUtils {
    */
   public static String patchDomainResourceWithNewIntrospectVersion(String domainUid, String namespace) {
     LoggingFacade logger = getLogger();
-    StringBuffer patchStr;
+    StringBuilder patchStr;
     DomainResource res = assertDoesNotThrow(
         () -> getDomainCustomResource(domainUid, namespace),
             String.format("Failed to get the introspectVersion of %s in namespace %s", domainUid, namespace));
     int introspectVersion = 2;
     // construct the patch string
     if (res.getSpec().getIntrospectVersion() == null) {
-      patchStr = new StringBuffer("[{")
+      patchStr = new StringBuilder("[{")
           .append("\"op\": \"add\", ")
           .append("\"path\": \"/spec/introspectVersion\", ")
           .append("\"value\": \"")
@@ -615,7 +597,7 @@ public class DomainUtils {
           .append("\"}]");
     } else {
       introspectVersion = Integer.parseInt(res.getSpec().getIntrospectVersion()) + 1;
-      patchStr = new StringBuffer("[{")
+      patchStr = new StringBuilder("[{")
           .append("\"op\": \"replace\", ")
           .append("\"path\": \"/spec/introspectVersion\", ")
           .append("\"value\": \"")
@@ -686,7 +668,7 @@ public class DomainUtils {
             domainNamespace);
 
 
-    // create a temporary WebLogic domain property file as a input for WDT model file
+    // create a temporary WebLogic domain property file as an input for WDT model file
     File domainPropertiesFile = assertDoesNotThrow(() -> createTempFile("domainonpv" + domainUid, "properties"),
         "Failed to create domain properties file");
 
@@ -814,7 +796,7 @@ public class DomainUtils {
         domainNamespace);
 
 
-    // create a temporary WebLogic domain property file as a input for WDT model file
+    // create a temporary WebLogic domain property file as an input for WDT model file
     File domainPropertiesFile = assertDoesNotThrow(() -> createTempFile("domainonpv" + domainUid, "properties"),
         "Failed to create domain properties file");
 
@@ -866,7 +848,7 @@ public class DomainUtils {
    * @param pvName - PV name
    * @param pvcName - PVC name
    * @param clusterName - cluster name
-   * @param replicaCount - repica count of the clsuter
+   * @param replicaCount - replica count of the cluster
    * @return oracle.weblogic.domain.Domain object
    */
   public static DomainResource createDomainResourceForDomainOnPV(String domainUid,
@@ -965,7 +947,7 @@ public class DomainUtils {
   }
 
   /**
-   *  Utility to create domain resource on pv with confiiguration.
+   *  Utility to create domain resource on pv with configuration.
    * @param domainUid domain uid
    * @param domNamespace  domain namespace
    * @param adminSecretName wls admin secret name
@@ -974,9 +956,9 @@ public class DomainUtils {
    * @param pvcName PVC name
    * @param repoSecretName name of the secret for pulling the WebLogic image
    * @param domainInHomePrefix domain in home prefix
-   * @param replicaCount repica count of the clsuter
+   * @param replicaCount replica count of the cluster
    * @param t3ChannelPort t3 chanel
-   * @param configuration domain configuratioin object
+   * @param configuration domain configuration object
    * @return oracle.weblogic.domain.Domain object
    */
   public static DomainResource createDomainResourceOnPv(String domainUid,
@@ -1208,11 +1190,11 @@ public class DomainUtils {
                             .configMap(
                                 new V1ConfigMapVolumeSource()
                                     .name(domainScriptCM)))) //config map containing domain scripts
-                    .imagePullSecrets(Arrays.asList(
+                    .imagePullSecrets(Collections.singletonList(
                         new V1LocalObjectReference()
                             .name(BASE_IMAGES_REPO_SECRET_NAME)));  // this secret is used only for non-kind cluster
     if (!OKD) {
-      podSpec.initContainers(Arrays.asList(createfixPVCOwnerContainer(pvName, "/u01/shared")));
+      podSpec.initContainers(Collections.singletonList(createfixPVCOwnerContainer(pvName, "/u01/shared")));
     }
 
     V1PodTemplateSpec podTemplateSpec = new V1PodTemplateSpec();
@@ -1592,87 +1574,10 @@ public class DomainUtils {
   }
 
   /**
-   * Create a domain-in-image type domain resource with configMap.
-   *
-   * @param domainUid unique id of the WebLogic domain
-   * @param domainNamespace domain namespace
-   * @param imageName image name used to create domain-in-image domain
-   * @param wlSecretName wls admin secret name
-   * @param clusterName cluster name
-   * @param replicaCount replica count of the cluster
-   * @param configmapName name of the configMap
-   * @param failureRetryLimitMinutesArgs the time in minutes before the operator will stop retrying Severe failures
-   * @return oracle.weblogic.domain.Domain object
-   */
-  public static DomainResource createDomainResourceForDomainInImageWithConfigMap(String domainUid,
-                                                                                 String domainNamespace,
-                                                                                 String imageName,
-                                                                                 String wlSecretName,
-                                                                                 String clusterName,
-                                                                                 int replicaCount,
-                                                                                 String configmapName,
-                                                                                 Long... failureRetryLimitMinutesArgs) {
-    Long failureRetryLimitMinutes =
-        (failureRetryLimitMinutesArgs.length == 0) ? FAILURE_RETRY_LIMIT_MINUTES : failureRetryLimitMinutesArgs[0];
-
-    // create the domain custom resource
-    DomainResource domain = new DomainResource()
-        .apiVersion(DOMAIN_API_VERSION)
-        .kind("Domain")
-        .metadata(new V1ObjectMeta()
-            .name(domainUid)
-            .namespace(domainNamespace))
-        .spec(new DomainSpec()
-            .domainUid(domainUid)
-            .domainHome(WDT_IMAGE_DOMAINHOME_BASE_DIR + "/" + domainUid)
-            .dataHome("/u01/mydata")
-            .domainHomeSourceType("Image")
-            .replicas(replicaCount)
-            .image(imageName)
-            .imagePullPolicy(IMAGE_PULL_POLICY)
-            .addImagePullSecretsItem(new V1LocalObjectReference()
-                .name(TEST_IMAGES_REPO_SECRET_NAME))
-            .webLogicCredentialsSecret(new V1LocalObjectReference()
-                .name(wlSecretName))
-            .includeServerOutInPodLog(true)
-            .serverStartPolicy("IfNeeded")
-            .failureRetryIntervalSeconds(FAILURE_RETRY_INTERVAL_SECONDS)
-            .failureRetryLimitMinutes(failureRetryLimitMinutes)
-            .serverPod(new ServerPod()
-                .addEnvItem(new V1EnvVar()
-                    .name("JAVA_OPTIONS")
-                    .value("-Dweblogic.StdoutDebugEnabled=false "
-                        + "-Dweblogic.security.SSL.ignoreHostnameVerification=true"))
-                .addEnvItem(new V1EnvVar()
-                    .name("USER_MEM_ARGS")
-                    .value("-Djava.security.egd=file:/dev/./urandom ")))
-            .adminServer(new AdminServer()
-                .adminService(new AdminService()
-                    .addChannelsItem(new Channel()
-                        .channelName("default")
-                        .nodePort(getNextFreePort()))))
-            .configuration(new Configuration()
-                  .model(new Model()
-                      .domainType(WLS_DOMAIN_TYPE)
-                      .configMap(configmapName))
-            .introspectorJobActiveDeadlineSeconds(300L)));
-
-    // create cluster resource for the domain
-    if (!doesClusterExist(clusterName, CLUSTER_VERSION, domainNamespace)) {
-      ClusterResource cluster = createClusterResource(clusterName, clusterName, domainNamespace, replicaCount);
-      createClusterAndVerify(cluster);
-    }
-    domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterName));
-    setPodAntiAffinity(domain);
-
-    return domain;
-  }
-
-  /**
    * Shutdown domain and verify all the server pods were shutdown.
    *
    * @param domainNamespace the namespace where the domain exists
-   * @param domainUid the uid of the domain to shutdown
+   * @param domainUid the uid of the domain to shut down
    * @param replicaCount replica count of the domain cluster
    */
   public static void shutdownDomainAndVerify(String domainNamespace, String domainUid, int replicaCount) {
@@ -1716,19 +1621,18 @@ public class DomainUtils {
    * @param regex check string
    * @return true if regex found, false otherwise.
    */
-  @Nonnull
   public static boolean findStringInDomainStatusMessage(String domainNamespace,
                                                         String domainUid,
                                                         String regex,
-                                                        String... multupleMessage) {
+                                                        String... multipleMessage) {
     // get the domain status message
-    StringBuffer getDomainInfoCmd = new StringBuffer(KUBERNETES_CLI + " get domain/");
+    StringBuilder getDomainInfoCmd = new StringBuilder(KUBERNETES_CLI + " get domain/");
     getDomainInfoCmd
         .append(domainUid)
         .append(" -n ")
         .append(domainNamespace);
 
-    if (multupleMessage.length == 0) {
+    if (multipleMessage.length == 0) {
       // get single field of domain message
       getDomainInfoCmd.append(" -o jsonpath='{.status.message}' --ignore-not-found");
     } else {

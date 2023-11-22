@@ -84,12 +84,9 @@ class ItAuxV8DomainImplicitUpgrade {
   private static String domainNamespace = null;
   private static LoggingFacade logger = null;
   private final int replicaCount = 2;
-  private static String adminSecretName;
-  private static String encryptionSecretName;
-  private static Map<String, OffsetDateTime> podsWithTimeStamps = null;
-  private boolean foundCompatiblityContainer = false;
-  private String domainUid = "implicit-upg";
-  private static AppParams appParams = defaultAppParams()
+  private boolean foundCompatibilityContainer = false;
+  private final String domainUid = "implicit-upg";
+  private static final AppParams appParams = defaultAppParams()
       .appArchiveDir(ARCHIVE_DIR + ItAuxV8DomainImplicitUpgrade.class.getSimpleName());
 
   /**
@@ -121,12 +118,12 @@ class ItAuxV8DomainImplicitUpgrade {
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
-    adminSecretName = "weblogic-credentials";
+    String adminSecretName = "weblogic-credentials";
     createSecretWithUsernamePassword(adminSecretName, domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // create encryption secret
     logger.info("Create encryption secret");
-    encryptionSecretName = "encryptionsecret";
+    String encryptionSecretName = "encryptionsecret";
     createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
         ENCRYPION_USERNAME_DEFAULT, ENCRYPION_PASSWORD_DEFAULT);
 
@@ -147,13 +144,13 @@ class ItAuxV8DomainImplicitUpgrade {
    * The first image (model-only-image) only contains wls model file
    * The second image (wdt-only-image) only contains wdt installation
    * The third image (config-only-image) only contains JMS/JDBC configuration
-   * Use an domain.yaml file with API Version expliciltly set to v8.
-   * Use the v8 style auxililiary configuration supported in WKO v3.3.x
+   * Use a domain.yaml file with API Version explicitly set to v8.
+   * Use the v8 style auxiliary configuration supported in WKO v3.3.x
    * Start the Operator with latest version
    * Here the webhook infra started in Operator namespace should implicitly
    *  upgrade the domain resource to native k8s format with initContainer
    *  configuration in ServerPod section and start the domain
-   * Check the upgraded domain schema for a Compatiblity InitContainer in
+   * Check the upgraded domain schema for a Compatibility InitContainer in
    * Spec/ServerPod section of the domain resource
    */
   @Test
@@ -175,7 +172,7 @@ class ItAuxV8DomainImplicitUpgrade {
     List<String> modelList = new ArrayList<>();
     modelList.add(MODEL_DIR + "/" + MII_BASIC_WDT_MODEL_FILE);
 
-    // Create auxiliary image(s) using imagetool command if does not exists
+    // Create auxiliary image(s) using imagetool command if it does not exist
     WitParams witParams =
         new WitParams()
             .modelImageName(MII_AUXILIARY_IMAGE_NAME)
@@ -226,7 +223,7 @@ class ItAuxV8DomainImplicitUpgrade {
     logger.info("Run " + KUBERNETES_CLI + " to create the domain");
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f "
-            + Paths.get(WORK_DIR + "/domain.yaml").toString());
+            + Paths.get(WORK_DIR + "/domain.yaml"));
     boolean result = Command.withParams(params).execute();
     assertTrue(result, "Failed to create domain custom resource");
 
@@ -256,7 +253,7 @@ class ItAuxV8DomainImplicitUpgrade {
     logger.info("admin svc host = {0}", adminSvcExtHost);
 
     // check configuration for JMS
-    checkConfiguredJMSresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
+    checkConfiguredJMSResource(domainNamespace, adminServerPodName, adminSvcExtHost);
     // check the sample app is accessible from managed servers
     logger.info("Check and wait for the sample application to become ready");
     for (int i = 1; i <= replicaCount; i++) {
@@ -280,12 +277,12 @@ class ItAuxV8DomainImplicitUpgrade {
     containerList.forEach(container -> {
       logger.info("The Init Container name is: {0} ", container.getName());
       if (container.getName().equalsIgnoreCase("compat-operator-aux-container1")) {
-        logger.info("The Compatiblity Init Container found");
-        foundCompatiblityContainer = true;
+        logger.info("The Compatibility Init Container found");
+        foundCompatibilityContainer = true;
       }
     }
     );
-    assertTrue(foundCompatiblityContainer, "The Compatiblity Init Container NOT found");
+    assertTrue(foundCompatibilityContainer, "The Compatibility Init Container NOT found");
   }
 
   /**
@@ -299,9 +296,6 @@ class ItAuxV8DomainImplicitUpgrade {
     if (doesDomainExist(domainUid, DOMAIN_VERSION, domainNamespace)) {
       deleteDomainResource(domainNamespace, domainUid);
     }
-
-    final String adminServerPodName = domainUid + "-admin-server";
-    final String managedServerPrefix = domainUid + "-managed-server";
 
     String missingWdtTag = "missing-wdtbinary-image";
     String missingWdtImage = MII_AUXILIARY_IMAGE_NAME + ":" +  missingWdtTag;
@@ -336,7 +330,7 @@ class ItAuxV8DomainImplicitUpgrade {
     logger.info("Run " + KUBERNETES_CLI + " to create the domain");
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f "
-            + Paths.get(WORK_DIR + "/domain.yaml").toString());
+            + Paths.get(WORK_DIR + "/domain.yaml"));
     boolean result = Command.withParams(params).execute();
     assertTrue(result, "Failed to create domain custom resource");
 
@@ -366,9 +360,6 @@ class ItAuxV8DomainImplicitUpgrade {
     if (doesDomainExist(domainUid, DOMAIN_VERSION, domainNamespace)) {
       deleteDomainResource(domainNamespace, domainUid);
     }
-
-    final String adminServerPodName = domainUid + "-admin-server";
-    final String managedServerPrefix = domainUid + "-managed-server";
 
     String missingModelTag = "missing-model-image";
     String missingModelImage = MII_AUXILIARY_IMAGE_NAME + ":" + missingModelTag;
@@ -402,7 +393,7 @@ class ItAuxV8DomainImplicitUpgrade {
     logger.info("Run " + KUBERNETES_CLI + " to create the domain");
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f "
-            + Paths.get(WORK_DIR + "/domain.yaml").toString());
+            + Paths.get(WORK_DIR + "/domain.yaml"));
     boolean result = Command.withParams(params).execute();
     assertTrue(result, "Failed to create domain custom resource");
 
@@ -429,9 +420,6 @@ class ItAuxV8DomainImplicitUpgrade {
     if (doesDomainExist(domainUid, DOMAIN_VERSION, domainNamespace)) {
       deleteDomainResource(domainNamespace, domainUid);
     }
-
-    final String adminServerPodName = domainUid + "-admin-server";
-    final String managedServerPrefix = domainUid + "-managed-server";
 
     String permModelTag = "perm-model-image";
     String permModelImage = MII_AUXILIARY_IMAGE_NAME + ":" + permModelTag;
@@ -472,7 +460,7 @@ class ItAuxV8DomainImplicitUpgrade {
     logger.info("Run " + KUBERNETES_CLI + " to create the domain");
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f "
-            + Paths.get(WORK_DIR + "/domain.yaml").toString());
+            + Paths.get(WORK_DIR + "/domain.yaml"));
     boolean result = Command.withParams(params).execute();
     assertTrue(result, "Failed to create domain custom resource");
 
@@ -494,7 +482,7 @@ class ItAuxV8DomainImplicitUpgrade {
    *  Verify configured JMS and JDBC resources.
    */
   @Test
-  @DisplayName("Test to update Base Weblogic Image Name")
+  @DisplayName("Test to update Base WebLogic Image Name")
   void testUpdateBaseImageV8AuxDomain() {
 
     if (doesDomainExist(domainUid, DOMAIN_VERSION, domainNamespace)) {
@@ -545,12 +533,11 @@ class ItAuxV8DomainImplicitUpgrade {
     logger.info("Run " + KUBERNETES_CLI + " to create the domain");
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " apply -f "
-            + Paths.get(WORK_DIR + "/domain.yaml").toString());
+            + Paths.get(WORK_DIR + "/domain.yaml"));
     boolean result = Command.withParams(params).execute();
     assertTrue(result, "Failed to create domain custom resource");
 
-    String operatorPodName =
-        assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
+    assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
     logger.info("Wait for admin server pod {0} to be ready in namespace {1}",
         adminServerPodName, domainNamespace);
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
@@ -566,7 +553,8 @@ class ItAuxV8DomainImplicitUpgrade {
     assertNotNull(domain, "Got null domain resource");
 
     // get the map with server pods and their original creation timestamps
-    podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace, adminServerPodName, managedServerPrefix, replicaCount);
+    Map<String, OffsetDateTime> podsWithTimeStamps =
+        getPodsWithTimeStamps(domainNamespace, adminServerPodName, managedServerPrefix, replicaCount);
 
     //print out the original image name
     String imageName = domain.getSpec().getImage();
@@ -581,8 +569,8 @@ class ItAuxV8DomainImplicitUpgrade {
     imageTag(imageName, imageUpdate);
     imageRepoLoginAndPushImageToRegistry(imageUpdate);
 
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
+    StringBuilder patchStr;
+    patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/image\",")
         .append("\"value\": \"")
@@ -612,7 +600,7 @@ class ItAuxV8DomainImplicitUpgrade {
     logger.info("admin svc host = {0}", adminSvcExtHost);
 
     // check configuration for JMS
-    checkConfiguredJMSresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
+    checkConfiguredJMSResource(domainNamespace, adminServerPodName, adminSvcExtHost);
   }
 
   /**
@@ -622,8 +610,8 @@ class ItAuxV8DomainImplicitUpgrade {
    * @param adminServerPodName  admin server pod name
    * @param adminSvcExtHost admin server external host
    */
-  private static void checkConfiguredJMSresouce(String domainNamespace, String adminServerPodName,
-                                               String adminSvcExtHost) {
+  private static void checkConfiguredJMSResource(String domainNamespace, String adminServerPodName,
+                                                 String adminSvcExtHost) {
     verifyConfiguredSystemResource(domainNamespace, adminServerPodName, adminSvcExtHost,
         "JMSSystemResources", "TestClusterJmsModule2", "200");
   }

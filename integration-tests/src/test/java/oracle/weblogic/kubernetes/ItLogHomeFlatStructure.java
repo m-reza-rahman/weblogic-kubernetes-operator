@@ -95,8 +95,8 @@ class ItLogHomeFlatStructure {
   private static final String domainUid = "loghomeflat";
   private static final String pvName = getUniqueName(domainUid + "-pv-");
   private static final String pvcName = getUniqueName(domainUid + "-pvc-");
-  private StringBuffer curlString = null;
-  private StringBuffer checkCluster = null;
+  private StringBuilder curlString = null;
+  private StringBuilder checkCluster = null;
   private V1Patch patch = null;
   private final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-managed-server";

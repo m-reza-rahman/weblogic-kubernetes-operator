@@ -76,7 +76,6 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
@@ -141,10 +140,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItVzDBOperator {
 
   private static String dbNamespace = null;
-  private static String opNamespace = null;
   private static String fmwDomainNamespace = null;
   private static String wlsDomainNamespace = null;
-  private static String fmwMiiImage = null;
 
   private static final String RCUSCHEMAPREFIX = "FMWDOMAINMII";
   private static final String RCUSYSPASSWORD = "Oradoc_db1";
@@ -152,20 +149,17 @@ class ItVzDBOperator {
   private static final String modelFile = "model-singleclusterdomain-sampleapp-jrf.yaml";
 
   private static String dbUrl = null;
-  private static String dbName = "my-oracle-sidb";
+  private static final String dbName = "my-oracle-sidb";
   private static LoggingFacade logger = null;
 
-  private String fmwDomainUid = "fmwdomain-mii-db";
-  private String fmwAdminServerPodName = fmwDomainUid + "-admin-server";
-  private String fmwManagedServerPrefix = fmwDomainUid + "-managed-server";
-  private int replicaCount = 2;
-  private String clusterName = "cluster-1";
-  private String fmwAminSecretName = fmwDomainUid + "-weblogic-credentials";
-  private String fmwEncryptionSecretName = fmwDomainUid + "-encryptionsecret";
-  private String rcuaccessSecretName = fmwDomainUid + "-rcu-access";
-  private String opsswalletpassSecretName = fmwDomainUid + "-opss-wallet-password-secret";
-  private String opsswalletfileSecretName = fmwDomainUid + "opss-wallet-file-secret";
-  private String adminSvcExtHost = null;
+  private final String fmwDomainUid = "fmwdomain-mii-db";
+  private final String fmwAdminServerPodName = fmwDomainUid + "-admin-server";
+  private final int replicaCount = 2;
+  private final String clusterName = "cluster-1";
+  private final String fmwAminSecretName = fmwDomainUid + "-weblogic-credentials";
+  private final String fmwEncryptionSecretName = fmwDomainUid + "-encryptionsecret";
+  private final String rcuaccessSecretName = fmwDomainUid + "-rcu-access";
+  private final String opsswalletpassSecretName = fmwDomainUid + "-opss-wallet-password-secret";
 
   private static final String wlsDomainUid = "mii-jms-recovery-db";
   private static final String pvName = getUniqueName(wlsDomainUid + "-pv-");
@@ -173,11 +167,7 @@ class ItVzDBOperator {
   private static final String wlsAdminServerPodName = wlsDomainUid + "-admin-server";
   private static final String wlsManagedServerPrefix = wlsDomainUid + "-managed-server";
   private static String cpUrl;
-  private static String adminSvcExtRouteHost = null;
 
-  private final Path samplePath = Paths.get(ITTESTS_DIR, "../kubernetes/samples");
-  private final Path domainLifecycleSamplePath = Paths.get(samplePath + "/scripts/domain-lifecycle");
-  private final String fmwClusterResName = fmwDomainUid + "-" + clusterName;
   private final String wlsClusterResName = wlsDomainUid + "-" + clusterName;
   
   static final String forwardHostName = "localhost";
@@ -281,7 +271,7 @@ class ItVzDBOperator {
 
     logger.info("Create an image with jrf model file");
     final List<String> modelList = Collections.singletonList(MODEL_DIR + "/" + modelFile);
-    fmwMiiImage = createMiiImageAndVerify(
+    String fmwMiiImage = createMiiImageAndVerify(
         "jrf-mii-image",
         modelList,
         Collections.singletonList(MII_BASIC_APP_NAME),
@@ -304,6 +294,7 @@ class ItVzDBOperator {
         fmwMiiImage);
     
     // create cluster object
+    String fmwClusterResName = fmwDomainUid + "-" + clusterName;
     ClusterResource cluster = createClusterResource(fmwClusterResName,
         clusterName, fmwDomainNamespace, replicaCount);
     logger.info("Creating cluster resource {0} in namespace {1}", fmwClusterResName, fmwDomainNamespace);
@@ -336,10 +327,10 @@ class ItVzDBOperator {
             .namespace(fmwDomainNamespace)
             .annotations(keyValueMap))
         .spec(new ApplicationConfigurationSpec()
-            .components(Arrays.asList(
+            .components(Collections.singletonList(
                 new Components()
                     .componentName(fmwDomainUid)
-                    .traits(Arrays.asList(new IngressTraits()
+                    .traits(Collections.singletonList(new IngressTraits()
                         .trait(new IngressTrait()
                             .apiVersion("oam.verrazzano.io/v1alpha1")
                             .kind("IngressTrait")
@@ -349,14 +340,14 @@ class ItVzDBOperator {
                             .spec(new IngressTraitSpec()
                                 .ingressRules(Arrays.asList(
                                     new IngressRule()
-                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                        .paths(Collections.singletonList(new oracle.verrazzano.weblogic.Path()
                                             .path("/console")
                                             .pathType("Prefix")))
                                         .destination(new Destination()
                                             .host(fmwAdminServerPodName)
                                             .port(7001)),
                                     new IngressRule()
-                                        .paths(Arrays.asList(new oracle.verrazzano.weblogic.Path()
+                                        .paths(Collections.singletonList(new oracle.verrazzano.weblogic.Path()
                                             .path("/em")
                                             .pathType("Prefix")))
                                         .destination(new Destination()
@@ -415,7 +406,7 @@ class ItVzDBOperator {
     String configMapName = "jdbc-jms-recovery-configmap";
     String configmapcomponentname = "comp-" + configMapName;
     VerrazzanoUtils.createVzConfigmapComponent(configmapcomponentname, configMapName, wlsDomainNamespace,
-        wlsDomainUid, Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
+        wlsDomainUid, List.of(MODEL_DIR + "/jms.recovery.yaml"));
 
     // create the domain CR with a pre-defined configmap
     DomainResource domainCR = createDomainResource(wlsDomainUid, wlsDomainNamespace,
@@ -459,7 +450,7 @@ class ItVzDBOperator {
             .components(Arrays.asList(
                 new Components()
                     .componentName(wlsDomainUid)
-                    .traits(Arrays.asList(new IngressTraits()
+                    .traits(Collections.singletonList(new IngressTraits()
                         .trait(new IngressTrait()
                             .apiVersion("oam.verrazzano.io/v1alpha1")
                             .kind("IngressTrait")
@@ -467,7 +458,7 @@ class ItVzDBOperator {
                                 .name("mywlsdbdomain-ingress")
                                 .namespace(wlsDomainNamespace))
                             .spec(new IngressTraitSpec()
-                                .ingressRules(Arrays.asList(
+                                .ingressRules(Collections.singletonList(
                                     new IngressRule()
                                         .paths(Arrays.asList(
                                             new oracle.verrazzano.weblogic.Path()
@@ -530,6 +521,7 @@ class ItVzDBOperator {
    * servers. Verify EM console is accessible.
    */
   private void testReuseRCUschemaToRestartDomain() {
+    String opsswalletfileSecretName = fmwDomainUid + "opss-wallet-file-secret";
     saveAndRestoreOpssWalletfileSecret(fmwDomainNamespace, fmwDomainUid, opsswalletfileSecretName);
     shutdownDomain();
     patchDomainWithWalletFileSecret(opsswalletfileSecretName);
@@ -569,7 +561,7 @@ class ItVzDBOperator {
     runJmsClientOnAdminPod("send",
         "JdbcJmsServer@managed-server2@jms.jdbcUniformQueue");
 
-    // Scale down the cluster to repilca count of 1, this will shutdown
+    // Scale down the cluster to repilca count of 1, this will shut down
     // the managed server managed-server2 in the cluster to trigger
     // JMS/JTA Service Migration.
     boolean psuccess = scaleCluster(wlsClusterResName, wlsDomainNamespace, 1);
@@ -688,10 +680,9 @@ class ItVzDBOperator {
    **/
   private boolean checkJmsServerRuntime(String jmsServer, String managedServer) {
 
-    ExecResult result = null;
-    StringBuffer curlString = new StringBuffer("status=$(curl -sk --user "
+    StringBuilder curlString = new StringBuilder("status=$(curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + forwardHostName + ":" + forwardedPortNo)
+    curlString.append("http://" + forwardHostName + ":").append(forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JMSRuntime/JMSServers/")
@@ -717,10 +708,9 @@ class ItVzDBOperator {
    **/
   private boolean checkStoreRuntime(String storeName, String managedServer) {
    
-    ExecResult result = null;
-    StringBuffer curlString = new StringBuffer("status=$(curl -sk --user "
+    StringBuilder curlString = new StringBuilder("status=$(curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + forwardHostName + ":" + forwardedPortNo)
+    curlString.append("http://" + forwardHostName + ":").append(forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/persistentStoreRuntimes/")
@@ -748,10 +738,9 @@ class ItVzDBOperator {
    **/
   private boolean checkJtaRecoveryServiceRuntime(String managedServer, String recoveryService, String active) {
     
-    ExecResult result = null;
-    StringBuffer curlString = new StringBuffer("curl -sk --user "
+    StringBuilder curlString = new StringBuilder("curl -sk --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("\"http://" + forwardHostName + ":" + forwardedPortNo)
+    curlString.append("\"http://" + forwardHostName + ":").append(forwardedPortNo)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JTARuntime/recoveryRuntimeMBeans/")
@@ -777,15 +766,17 @@ class ItVzDBOperator {
    */
   public static void createLeasingTable(String wlPodName, String namespace, String dbUrl) {
     Path ddlFile = Paths.get(WORK_DIR + "/leasing.ddl");
-    String ddlString = "DROP TABLE ACTIVE;\n"
-        + "CREATE TABLE ACTIVE (\n"
-        + "  SERVER VARCHAR2(255) NOT NULL,\n"
-        + "  INSTANCE VARCHAR2(255) NOT NULL,\n"
-        + "  DOMAINNAME VARCHAR2(255) NOT NULL,\n"
-        + "  CLUSTERNAME VARCHAR2(255) NOT NULL,\n"
-        + "  TIMEOUT DATE,\n"
-        + "  PRIMARY KEY (SERVER, DOMAINNAME, CLUSTERNAME)\n"
-        + ");\n";
+    String ddlString = """
+        DROP TABLE ACTIVE;
+        CREATE TABLE ACTIVE (
+          SERVER VARCHAR2(255) NOT NULL,
+          INSTANCE VARCHAR2(255) NOT NULL,
+          DOMAINNAME VARCHAR2(255) NOT NULL,
+          CLUSTERNAME VARCHAR2(255) NOT NULL,
+          TIMEOUT DATE,
+          PRIMARY KEY (SERVER, DOMAINNAME, CLUSTERNAME)
+        );
+        """;
 
     assertDoesNotThrow(() -> Files.write(ddlFile, ddlString.getBytes()));
     String destLocation = "/u01/leasing.ddl";
@@ -796,17 +787,10 @@ class ItVzDBOperator {
     
     String cpUrl = "jdbc:oracle:thin:@//" + dbUrl;
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
-    StringBuffer ecmd = new StringBuffer("java -cp ");
-    ecmd.append(jarLocation);
-    ecmd.append(" utils.Schema ");
-    ecmd.append(cpUrl);
-    ecmd.append(" oracle.jdbc.OracleDriver");
-    ecmd.append(" -verbose ");
-    ecmd.append(" -u \"sys as sysdba\"");
-    ecmd.append(" -p Oradoc_db1");
-    ecmd.append(" /u01/leasing.ddl");
+    String ecmd = "java -cp " + jarLocation + " utils.Schema " + cpUrl + " oracle.jdbc.OracleDriver"
+        + " -verbose " + " -u \"sys as sysdba\"" + " -p Oradoc_db1" + " /u01/leasing.ddl";
     ExecResult execResult = assertDoesNotThrow(() -> execCommand(namespace, wlPodName,
-        "weblogic-server", true, "/bin/sh", "-c", ecmd.toString()));
+        "weblogic-server", true, "/bin/sh", "-c", ecmd));
     assertEquals(0, execResult.exitValue(), "Could not create the Leasing Table");
   }
 
@@ -856,6 +840,7 @@ class ItVzDBOperator {
     // make sure all the server pods are removed after patch
     checkPodDeleted(fmwAdminServerPodName, fmwDomainUid, fmwDomainNamespace);
     for (int i = 1; i <= replicaCount; i++) {
+      String fmwManagedServerPrefix = fmwDomainUid + "-managed-server";
       checkPodDeleted(fmwManagedServerPrefix + i, fmwDomainUid, fmwDomainNamespace);
     }
 
@@ -879,7 +864,7 @@ class ItVzDBOperator {
    */
   private boolean patchDomainWithWalletFileSecret(String opssWalletFileSecretName) {
     // construct the patch string for adding server pod resources
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"add\", ")
         .append("\"path\": \"/spec/configuration/opss/walletFileSecret\", ")
         .append("\"value\": \"")
@@ -896,9 +881,9 @@ class ItVzDBOperator {
 
   private static boolean verifyEMconsoleAccess(String uri, String expectedStatusCode) {
 
-    StringBuffer curlString = new StringBuffer("status=$(curl -sk --user ");
+    StringBuilder curlString = new StringBuilder("status=$(curl -sk --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + forwardHostName + ":" + forwardedPortNo)
+        .append(" http://" + forwardHostName + ":").append(forwardedPortNo)
         .append(uri)
         .append(" --silent --show-error ")
         .append(" -o /dev/null ")
@@ -923,7 +908,6 @@ class ItVzDBOperator {
           String dbSecretName,
           boolean onlineUpdateEnabled,
           boolean setDataHome) {
-    LoggingFacade logger = getLogger();
 
     List<String> securityList = new ArrayList<>();
     if (dbSecretName != null) {

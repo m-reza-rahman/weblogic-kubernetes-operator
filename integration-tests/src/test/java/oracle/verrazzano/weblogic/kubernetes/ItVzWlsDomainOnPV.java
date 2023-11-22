@@ -63,7 +63,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
-import static oracle.weblogic.kubernetes.actions.TestActions.now;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createApplication;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.createComponent;
@@ -101,7 +100,7 @@ class ItVzWlsDomainOnPV {
   private final String wlsModelFilePrefix = "vz-model-wlsdomain-onpv-simplified";
   private Map<String, OffsetDateTime> podsWithTimeStamps;
   private final String adminServerPodName = domainUid + "-admin-server";
-  private String managedServerPrefix = domainUid + "-managed-server";
+  private final String managedServerPrefix = domainUid + "-managed-server";
 
   private static LoggingFacade logger;
 
@@ -117,7 +116,7 @@ class ItVzWlsDomainOnPV {
     assertNotNull(namespaces.get(0), "Namespace list is null");
     domainNamespace = namespaces.get(0);
     DOMAINHOMEPREFIX = "/shared/" + domainNamespace + "/domains/";
-    setLabelToNamespace(Arrays.asList(domainNamespace));
+    setLabelToNamespace(Collections.singletonList(domainNamespace));
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
     createTestRepoSecret(domainNamespace);
@@ -149,7 +148,7 @@ class ItVzWlsDomainOnPV {
     Map<String, Quantity> pvcRequest = new HashMap<>();
     pvcRequest.put("storage", new Quantity("2Gi"));
 
-    Configuration configuration = null;
+    Configuration configuration;
     if (OKE_CLUSTER) {
       configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
     } else {
@@ -199,9 +198,9 @@ class ItVzWlsDomainOnPV {
             .namespace(domainNamespace)
             .annotations(keyValueMap))
         .spec(new ApplicationConfigurationSpec()
-            .components(Arrays.asList(new Components()
+            .components(Collections.singletonList(new Components()
                 .componentName(domainUid)
-                .traits(Arrays.asList(new IngressTraits()
+                .traits(Collections.singletonList(new IngressTraits()
                     .trait(new IngressTrait()
                         .apiVersion("oam.verrazzano.io/v1alpha1")
                         .kind("IngressTrait")
@@ -211,14 +210,14 @@ class ItVzWlsDomainOnPV {
                         .spec(new IngressTraitSpec()
                             .ingressRules(Arrays.asList(
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/console")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
                                         .host(adminServerPodName)
                                         .port(7001)),
                                 new IngressRule()
-                                    .paths(Arrays.asList(new Path()
+                                    .paths(Collections.singletonList(new Path()
                                         .path("/sample-war")
                                         .pathType("Prefix")))
                                     .destination(new Destination()
@@ -276,9 +275,7 @@ class ItVzWlsDomainOnPV {
 
     String oldVersion = assertDoesNotThrow(()
         -> getDomainCustomResource(domainUid, domainNamespace).getSpec().getRestartVersion());
-    int newVersion = oldVersion == null ? 1 : Integer.valueOf(oldVersion) + 1;
-
-    OffsetDateTime timestamp = now();
+    int newVersion = oldVersion == null ? 1 : Integer.parseInt(oldVersion) + 1;
 
     logger.info("patch the domain resource with new WebLogic secret, restartVersion and introspectVersion");
     String patchStr
@@ -325,9 +322,7 @@ class ItVzWlsDomainOnPV {
             .modelArchiveFiles(archiveList);
     createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
 
-    DomainCreationImage domainCreationImage
-        = new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
-    return domainCreationImage;
+    return new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
   }
 
   private File createWdtPropertyFile(String domainName) {

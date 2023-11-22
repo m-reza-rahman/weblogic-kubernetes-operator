@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -106,14 +106,15 @@ public class PortInuseEventWatcher extends Thread {
 
   private static void writeToFile(Object obj, String resultDir, String fileName, boolean asYaml)
       throws IOException {
-    logger.info("Generating {0}", Paths.get(resultDir, fileName));
+    Path path = Paths.get(resultDir, fileName);
+    logger.info("Generating {0}", path);
     if (obj != null) {
       Files.createDirectories(Paths.get(resultDir));
-      Files.write(Paths.get(resultDir, fileName),
+      Files.write(path,
           (asYaml ? dump(obj).getBytes(StandardCharsets.UTF_8) : ((String) obj).getBytes(StandardCharsets.UTF_8))
       );
     } else {
-      logger.info("Nothing to write in {0} list is empty", Paths.get(resultDir, fileName));
+      logger.info("Nothing to write in {0} list is empty", path);
     }
   }
 }

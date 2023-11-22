@@ -114,9 +114,8 @@ class ItAddNewDynamicClusterUsingWlst {
     
     logger.info("Validating WebLogic admin server access by login to console");
     testUntil(
-        assertDoesNotThrow(() -> {
-          return adminNodePortAccessible(serviceNodePort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, routeHost);
-        }, "Access to admin server node port failed"),
+        assertDoesNotThrow(() -> adminNodePortAccessible(serviceNodePort, ADMIN_USERNAME_DEFAULT,
+            ADMIN_PASSWORD_DEFAULT, routeHost), "Access to admin server node port failed"),
         logger,
         "Console login validation");
 

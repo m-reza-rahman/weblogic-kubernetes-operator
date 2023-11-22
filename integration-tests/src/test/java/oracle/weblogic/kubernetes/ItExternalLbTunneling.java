@@ -99,8 +99,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * load balancer. Set up a load balancer that redirects HTTP(s) traffic to
  * the custom channel. Configure a WebLogic dynamic cluster domain using
  * Model In Image. Add a cluster targeted JMS distributed destination.
- * In OKD cluster, we do not use thrid party loadbalancers, so the tests that
- * specifically test nginx or traefik are diasbled for OKD cluster. A test
+ * In OKD cluster, we do not use third party loadbalancers, so the tests that
+ * specifically test nginx or traefik are disabled for OKD cluster. A test
  * using routes are added to run only on OKD cluster.
  */
 
@@ -112,14 +112,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("olcne-mrg")
 class ItExternalLbTunneling {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
   private static String traefikNamespace = null;
   private static HelmParams traefikHelmParams = null;
-  private static int replicaCount = 2;
-  private static String clusterName = "cluster-1";
+  private static final int replicaCount = 2;
+  private static final String clusterName = "cluster-1";
   private final String adminServerPodName = domainUid + "-admin-server";
-  private final String managedServerPrefix = domainUid + "-managed-server";
   private final String clusterServiceName = domainUid + "-cluster-cluster-1";
   private static final String TUNNELING_MODEL_FILE = "tunneling.model.yaml";
   private static final String domainUid = "mii-tunneling";
@@ -128,7 +126,7 @@ class ItExternalLbTunneling {
   private static Path tlsCertFile;
   private static Path tlsKeyFile;
   private static Path jksTrustFile;
-  private static String tlsSecretName = domainUid + "-test-tls-secret";
+  private static final String tlsSecretName = domainUid + "-test-tls-secret";
   private String clusterSvcRouteHost = null;
 
   /**
@@ -145,7 +143,7 @@ class ItExternalLbTunneling {
     // get a new unique opNamespace
     logger.info("Assigning unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Assigning unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -212,7 +210,7 @@ class ItExternalLbTunneling {
 
     // Create SSL certificate and key using openSSL with SAN extension
     createCertKeyFiles(K8S_NODEPORT_HOST);
-    // Create kubernates secret using genereated certificate and key
+    // Create Kubernetes secret using generated certificate and key
     createSecretWithTLSCertKey(tlsSecretName);
     // Import the tls certificate into a JKS truststote to be used while
     // running the standalone client.
@@ -232,6 +230,7 @@ class ItExternalLbTunneling {
     for (int i = 1; i <= replicaCount; i++) {
       logger.info("Wait for managed server services and pods are created in namespace {0}",
           domainNamespace);
+      String managedServerPrefix = domainUid + "-managed-server";
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
     if (clusterSvcRouteHost == null) {
@@ -271,7 +270,7 @@ class ItExternalLbTunneling {
         "traefik.tunneling.yaml", templateMap));
     logger.info("Generated Traefik Http Tunneling file {0}", targetTraefikHttpFile);
 
-    StringBuffer deployIngress = new StringBuffer(KUBERNETES_CLI + " apply -f ");
+    StringBuilder deployIngress = new StringBuilder(KUBERNETES_CLI + " apply -f ");
     deployIngress.append(Paths.get(RESULTS_ROOT, "traefik.tunneling.yaml"));
     // Deploy the traefik ingress controller
     ExecResult result = assertDoesNotThrow(
@@ -331,7 +330,7 @@ class ItExternalLbTunneling {
 
     // Deploy traefik ingress controller with tls enabled service with SSL
     // terminating at Ingress.
-    StringBuffer deployTraefikIngress = new StringBuffer(KUBERNETES_CLI + " apply -f ");
+    StringBuilder deployTraefikIngress = new StringBuilder(KUBERNETES_CLI + " apply -f ");
     deployTraefikIngress.append(Paths.get(RESULTS_ROOT, "traefik.tls.tunneling.yaml"));
     ExecResult result = assertDoesNotThrow(
         () -> exec(new String(deployTraefikIngress), true));
@@ -417,11 +416,10 @@ class ItExternalLbTunneling {
   private void runExtHttpsClient(String routeHost, int httpsTunnelingPort, int serverCount, boolean checkConnection) {
     String hostAndPort = getHostAndPort(routeHost, httpsTunnelingPort);
     // Generate java command to execute client with classpath
-    StringBuffer httpsUrl = new StringBuffer("https://");
-    httpsUrl.append(hostAndPort);
+    String httpsUrl = "https://" + hostAndPort;
 
-    // StringBuffer javasCmd = new StringBuffer("java -cp ");
-    StringBuffer javasCmd = new StringBuffer("");
+    // StringBuilder javasCmd = new StringBuilder("java -cp ");
+    StringBuilder javasCmd = new StringBuilder();
     javasCmd.append(Paths.get(RESULTS_ROOT, "/jdk/bin/java "));
     javasCmd.append("-cp ");
     javasCmd.append(Paths.get(RESULTS_ROOT, "wlthint3client.jar"));
@@ -435,9 +433,9 @@ class ItExternalLbTunneling {
     javasCmd.append(" JmsTestClient ");
     javasCmd.append(httpsUrl);
     javasCmd.append(" ");
-    javasCmd.append(String.valueOf(serverCount));
+    javasCmd.append(serverCount);
     javasCmd.append(" ");
-    javasCmd.append(String.valueOf(checkConnection));
+    javasCmd.append(checkConnection);
     logger.info("java command to be run {0}", javasCmd.toString());
 
     // Note it takes a couples of iterations before the client success
@@ -445,35 +443,6 @@ class ItExternalLbTunneling {
         runJmsClient(new String(javasCmd)),
         logger,
         "Wait for Https JMS Client to access WLS");
-  }
-
-  // Run the RMI client inside K8s Cluster
-  private void runClientInsidePod(int serverCount, boolean checkConnection) {
-
-    // Make sure the JMS Connection LoadBalancing and message LoadBalancing
-    // works inside pod before scaling the cluster
-    String jarLocation = "/u01/oracle/wlserver/server/lib/wlthint3client.jar";
-    StringBuffer javapCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
-    javapCmd.append(domainNamespace);
-    javapCmd.append(" -it ");
-    javapCmd.append(adminServerPodName);
-    javapCmd.append(" -- /bin/bash -c \"");
-    javapCmd.append("java -cp ");
-    javapCmd.append(jarLocation);
-    javapCmd.append(":.");
-    javapCmd.append(" JmsTestClient ");
-    javapCmd.append(" t3://");
-    javapCmd.append(domainUid);
-    javapCmd.append("-cluster-");
-    javapCmd.append(clusterName);
-    javapCmd.append(":8001 ");
-    javapCmd.append(String.valueOf(serverCount));
-    javapCmd.append(" ");
-    javapCmd.append(String.valueOf(checkConnection));
-    javapCmd.append(" \"");
-    logger.info("java command to be run {0}", javapCmd.toString());
-
-    testUntil(runJmsClient(new String(javapCmd)), logger, "Wait for t3 JMS Client to access WLS");
   }
 
   private void runExtClient(int httpTunnelingPort, int serverCount, boolean checkConnection) {
@@ -485,11 +454,10 @@ class ItExternalLbTunneling {
   private void runExtClient(String routeHost, int httpTunnelingPort, int serverCount, boolean checkConnection) {
     String hostAndPort = getHostAndPort(routeHost, httpTunnelingPort);
     // Generate java command to execute client with classpath
-    StringBuffer httpUrl = new StringBuffer("http://");
-    httpUrl.append(hostAndPort);
+    String httpUrl = "http://" + hostAndPort;
 
-    // StringBuffer javaCmd = new StringBuffer("java -cp ");
-    StringBuffer javaCmd = new StringBuffer("");
+    // StringBuilder javaCmd = new StringBuilder("java -cp ");
+    StringBuilder javaCmd = new StringBuilder();
     javaCmd.append(Paths.get(RESULTS_ROOT, "/jdk/bin/java "));
     javaCmd.append("-cp ");
     javaCmd.append(Paths.get(RESULTS_ROOT, "wlthint3client.jar"));
@@ -498,9 +466,9 @@ class ItExternalLbTunneling {
     javaCmd.append(" JmsTestClient ");
     javaCmd.append(httpUrl);
     javaCmd.append(" ");
-    javaCmd.append(String.valueOf(serverCount));
+    javaCmd.append(serverCount);
     javaCmd.append(" ");
-    javaCmd.append(String.valueOf(checkConnection));
+    javaCmd.append(checkConnection);
     logger.info("java command to be run {0}", javaCmd.toString());
 
     // Note it takes a couples of iterations before the client success
@@ -524,7 +492,7 @@ class ItExternalLbTunneling {
     assertDoesNotThrow(() -> copyFileFromPod(domainNamespace,
              adminServerPodName, "weblogic-server",
              "/u01/jdk", Paths.get(RESULTS_ROOT, "jdk")));
-    StringBuffer chmodCmd = new StringBuffer("chmod +x ");
+    StringBuilder chmodCmd = new StringBuilder("chmod +x ");
     chmodCmd.append(Paths.get(RESULTS_ROOT, "jdk/bin/java "));
     chmodCmd.append(Paths.get(RESULTS_ROOT, "jdk/bin/javac "));
     ExecResult cresult = assertDoesNotThrow(
@@ -532,8 +500,8 @@ class ItExternalLbTunneling {
     logger.info("chmod command {0}", chmodCmd.toString());
     logger.info("chmod command returned {0}", cresult.toString());
 
-    // StringBuffer javacCmd = new StringBuffer("javac -cp ");
-    StringBuffer javacCmd = new StringBuffer("");
+    // StringBuilder javacCmd = new StringBuilder("javac -cp ");
+    StringBuilder javacCmd = new StringBuilder();
     javacCmd.append(Paths.get(RESULTS_ROOT, "/jdk/bin/javac "));
     javacCmd.append(Paths.get(" -cp "));
     javacCmd.append(Paths.get(RESULTS_ROOT, "wlthint3client.jar "));
@@ -557,7 +525,7 @@ class ItExternalLbTunneling {
              Paths.get(destLocation)));
 
     String jarLocation = "/u01/oracle/wlserver/server/lib/wlthint3client.jar";
-    StringBuffer javacCmd = new StringBuffer(KUBERNETES_CLI + " exec -n ");
+    StringBuilder javacCmd = new StringBuilder(KUBERNETES_CLI + " exec -n ");
     javacCmd.append(domainNamespace);
     javacCmd.append(" -it ");
     javacCmd.append(adminServerPodName);
@@ -575,11 +543,11 @@ class ItExternalLbTunneling {
   }
 
   // Run external standalone JMS Client using wlthint3client.jar in classpath.
-  // The client sends 300 messsage to a Uniform Distributed Queue.
-  // Make sure that each destination get excatly 150 messages each.
+  // The client sends 300 message to a Uniform Distributed Queue.
+  // Make sure that each destination get exactly 150 messages each.
   private static Callable<Boolean> runJmsClient(String javaCmd) {
     return (()  -> {
-      ExecResult result = assertDoesNotThrow(() -> exec(new String(javaCmd), true));
+      ExecResult result = assertDoesNotThrow(() -> exec(javaCmd, true));
       logger.info("java returned {0}", result.toString());
       logger.info("java returned EXIT value {0}", result.exitValue());
       return ((result.exitValue() == 0));

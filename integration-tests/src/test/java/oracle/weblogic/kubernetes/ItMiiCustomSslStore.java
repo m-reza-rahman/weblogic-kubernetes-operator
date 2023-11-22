@@ -214,7 +214,7 @@ class ItMiiCustomSslStore {
   // Run standalone client to get initial context using t3s cluster url
   private void runClientOnAdminPod() {
 
-    StringBuffer extOpts = new StringBuffer("");
+    StringBuilder extOpts = new StringBuilder("");
     extOpts.append("-Dweblogic.security.SSL.ignoreHostnameVerification=true ");
     extOpts.append("-Dweblogic.security.SSL.trustedCAKeyStore=/shared/"
             + domainNamespace + "/" + domainUid + "/TrustKeyStore.jks ");

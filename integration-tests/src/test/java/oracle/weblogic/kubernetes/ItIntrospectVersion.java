@@ -180,7 +180,7 @@ class ItIntrospectVersion {
   private static final String cluster2ManagedServerPodNamePrefix = domainUid + "-" + cluster2ManagedServerNameBase;
 
   private static int cluster1ReplicaCount = 2;
-  private static int cluster2ReplicaCount = 2;
+  private static final int cluster2ReplicaCount = 2;
   private static boolean cluster2Created = false;
 
   private static final int t3ChannelPort = getNextFreePort();
@@ -256,13 +256,13 @@ class ItIntrospectVersion {
    * Test domain status gets updated when introspectVersion attribute is added under domain.spec.
    * Test Creates a domain in persistent volume using WLST.
    * Updates the cluster configuration; cluster size using online WLST.
-   * Patches the domain custom resource with introSpectVersion.
+   * Patches the domain custom resource with introspectVersion.
    * Verifies the introspector runs and the cluster maximum replica is updated
    * under domain status.
    * Verifies that the new pod comes up and sample application deployment works.
    */
   @Test
-  @DisplayName("Test introSpectVersion starting a introspector and updating domain status")
+  @DisplayName("Test introspectVersion starting a introspector and updating domain status")
   @Tag("gate")
   @Tag("crio")
   void testDomainIntrospectVersionNotRolling() {
@@ -385,9 +385,9 @@ class ItIntrospectVersion {
 
   /**
    * Test server pods are rolling restarted and updated when domain is patched
-   * with introSpectVersion when non dynamic changes are made.
+   * with introspectVersion when non-dynamic changes are made.
    * Updates the admin server listen port using online WLST.
-   * Patches the domain custom resource with introSpectVersion.
+   * Patches the domain custom resource with introspectVersion.
    * Verifies the introspector runs and pods are restated in a rolling fashion.
    * Verifies that the domain roll starting/pod cycle starting events are logged.
    * Verifies the new admin port of the admin server in services.
@@ -503,10 +503,10 @@ class ItIntrospectVersion {
   }
 
   /**
-   * Test changes the WebLogic credentials and verifies the servers can startup and function with changed credentials.
+   * Test changes the WebLogic credentials and verifies the servers can start up and function with changed credentials.
    * a. Creates new WebLogic credentials using WLST.
    * b. Creates new Kubernetes secret for WebLogic credentials.
-   * c. Patch the Domain Resource with new credentials, restartVerion and introspectVersion.
+   * c. Patch the Domain Resource with new credentials, restartVersion and introspectVersion.
    * d. Verifies the servers in the domain are restarted .
    * e. Make a REST api call to access management console using new password.
    * f. Make a REST api call to access management console using old password.
@@ -569,7 +569,7 @@ class ItIntrospectVersion {
     String introspectVersion = assertDoesNotThrow(() -> getNextIntrospectVersion(domainUid, introDomainNamespace));
     String oldVersion = assertDoesNotThrow(()
         -> getDomainCustomResource(domainUid, introDomainNamespace).getSpec().getRestartVersion());
-    int newVersion = oldVersion == null ? 1 : Integer.valueOf(oldVersion) + 1;
+    int newVersion = oldVersion == null ? 1 : Integer.parseInt(oldVersion) + 1;
 
     logger.info("patch the domain resource with new WebLogic secret, restartVersion and introspectVersion");
     String patchStr
@@ -774,7 +774,7 @@ class ItIntrospectVersion {
     imageTag(imageName, imageUpdate);
     imageRepoLoginAndPushImageToRegistry(imageUpdate);
 
-    StringBuffer patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/image\",")
         .append("\"value\": \"")
@@ -1083,13 +1083,13 @@ class ItIntrospectVersion {
     // verify the condition Failed type has expected status
     checkDomainStatusConditionTypeHasExpectedStatus(domainUid, miiDomainNamespace,
         DOMAIN_STATUS_CONDITION_FAILED_TYPE, "True");
-    StringBuffer patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = new StringBuilder("[{");
 
     //fix the domain failure by patching the domain resource with good image
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/image\",")
         .append("\"value\": \"")
-        .append(MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG)
+        .append(MII_BASIC_IMAGE_NAME).append(":").append(MII_BASIC_IMAGE_TAG)
         .append("\"}]");
     logger.info("PatchStr for imageUpdate: {0}", patchStr.toString());
 
@@ -1324,16 +1324,9 @@ class ItIntrospectVersion {
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     logger.info("Checking the health of servers in cluster");
-    String url = "http://" + hostAndPort
-        + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
-
 
     final String command = KUBERNETES_CLI + " exec -n "
             + introDomainNamespace + "  " + adminServerPodName + " -- curl http://"
-            //+ wlsUserName
-            //+ ":"
-            //+ wlsPassword
-            //+ "@"
             + adminServerPodName + ":"
             + adminPort + "/clusterview/ClusterViewServlet"
             + "\"?user=" + user
@@ -1349,14 +1342,7 @@ class ItIntrospectVersion {
           }
           String response = result.stdout().trim();
           logger.info(response);
-          /*
-          HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-          if (response.statusCode() != 200) {
-            logger.info("Response code is not 200 retrying...");
-            return false;
-          }
 
-          */
           boolean health = true;
           for (String managedServer : managedServerNames) {
             health = health && response.contains(managedServer + ":HEALTH_OK");
@@ -1460,7 +1446,7 @@ class ItIntrospectVersion {
     CommandParams params = new CommandParams().defaults();
 
     params.command("sh "
-        + Paths.get(domainLifecycleSamplePath.toString(), "/" + script).toString()
+        + Paths.get(domainLifecycleSamplePath.toString(), "/" + script)
         + commonParameters);
 
     ExecResult execResult = Command.withParams(params).executeAndReturnResult();

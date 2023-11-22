@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.assertions.impl;
@@ -13,16 +13,14 @@ public class Prometheus {
    * Check if the prometheus pods are running in a given namespace.
    * @param namespace in which to check for the prometheus pods
    * @param releaseName prometheus release name
-   * @return true if found and running otherwise false
+   * @return callable that returns true if found and running otherwise false
    */
   public static Callable<Boolean> isReady(String namespace, String releaseName) {
     Map<String,String> labelMapPromSvc = new HashMap<>();
     labelMapPromSvc.put("component", "server");
     Map<String,String> labelMapAlertMgr = new HashMap<>();
     labelMapAlertMgr.put("component", "alertmanager");
-    return () -> {
-      return (Kubernetes.isPodReady(namespace, labelMapAlertMgr, releaseName + "-alertmanager")
-              && Kubernetes.isPodReady(namespace, labelMapPromSvc, releaseName + "-server"));
-    };
+    return () -> (Kubernetes.isPodReady(namespace, labelMapAlertMgr, releaseName + "-alertmanager")
+            && Kubernetes.isPodReady(namespace, labelMapPromSvc, releaseName + "-server"));
   }
 }

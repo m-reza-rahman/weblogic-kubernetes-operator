@@ -67,8 +67,10 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @DisplayName("Verify istio enabled WebLogic domain in domainhome-in-image model")
 @IntegrationTest
@@ -79,10 +81,6 @@ class ItIstioDomainInImage {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
-  private final String domainUid = "istio-dii-wdt";
-  private final String clusterName = "cluster-1"; // do not modify
-  private final String adminServerName = "admin-server"; // do not modify
-  private final String adminServerPodName = domainUid + "-" + adminServerName;
   private static String testWebAppWarLoc = null;
 
   private static final String istioNamespace = "istio-system";
@@ -128,16 +126,17 @@ class ItIstioDomainInImage {
    * Do not add any AdminService under AdminServer configuration
    * Deploy istio gateways and virtual service
    * Verify server pods are in ready state and services are created.
-   * Verify WebLogic console is accessible thru istio ingress http port
-   * Verify WebLogic console is accessible thru kubectl forwarded port(s)
-   * Deploy a web application thru istio http ingress port using REST api
-   * Access web application thru istio http ingress port using curl
+   * Verify WebLogic console is accessible through istio ingress http port
+   * Verify WebLogic console is accessible through kubectl forwarded port(s)
+   * Deploy a web application through istio http ingress port using REST api
+   * Access web application through istio http ingress port using curl
    * Verify Security Warning Tool does not detect any security warning message
    *
    */
   @Test
   @DisplayName("Create WebLogic domainhome-in-image with istio")
   void testIstioDomainHomeInImage() {
+    String domainUid = "istio-dii-wdt";
     final String managedServerPrefix = domainUid + "-managed-server";
     final int replicaCount = 1;
 
@@ -164,6 +163,9 @@ class ItIstioDomainInImage {
         domainNamespace);
 
     // check admin server service is created
+    // do not modify
+    String adminServerName = "admin-server";
+    String adminServerPodName = domainUid + "-" + adminServerName;
     logger.info("Check admin service {0} is created in namespace {1}",
         adminServerPodName, domainNamespace);
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
@@ -174,11 +176,13 @@ class ItIstioDomainInImage {
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
 
+    // do not modify
+    String clusterName = "cluster-1";
     String clusterService = domainUid + "-cluster-" + clusterName + "." + domainNamespace + ".svc.cluster.local";
     Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("NAMESPACE", domainNamespace);
     templateMap.put("DUID", domainUid);
-    templateMap.put("ADMIN_SERVICE",adminServerPodName);
+    templateMap.put("ADMIN_SERVICE", adminServerPodName);
     templateMap.put("CLUSTER_SERVICE", clusterService);
 
     Path srcHttpFile = Paths.get(RESOURCE_DIR, "istio", "istio-http-template.yaml");
@@ -208,8 +212,8 @@ class ItIstioDomainInImage {
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : K8S_NODEPORT_HOST + ":" + istioIngressPort;
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
     if (!WEBLOGIC_SLIM) {
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
@@ -250,7 +254,7 @@ class ItIstioDomainInImage {
             target, archivePath, domainNamespace + ".org", "testwebapp")
         : deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-            clusterName, archivePath, domainNamespace + ".org", "testwebapp");
+        clusterName, archivePath, domainNamespace + ".org", "testwebapp");
 
     assertNotNull(result, "Application deployment failed");
     logger.info("Application deployment returned {0}", result.toString());
@@ -297,10 +301,10 @@ class ItIstioDomainInImage {
         logger.info("curl command returned {0}", result.toString());
         assertTrue(result.stdout().contains("SecurityValidationWarnings"),
                 "Could not access the Security Warning Tool page");
-        assertTrue(!result.stdout().contains("minimum of umask 027"), "umask warning check failed");
+        assertFalse(result.stdout().contains("minimum of umask 027"), "umask warning check failed");
         logger.info("No minimum umask warning reported");
       } else {
-        assertTrue(false, "Curl command failed to get DomainSecurityRuntime");
+        fail("Curl command failed to get DomainSecurityRuntime");
       }
     } else {
       logger.info("Skipping Security warning check, since Security Warning tool "

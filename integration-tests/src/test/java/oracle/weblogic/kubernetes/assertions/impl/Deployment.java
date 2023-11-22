@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.assertions.impl;
@@ -13,7 +13,7 @@ public class Deployment {
   * @param deploymentName deployment name to check
   * @param label map of labels for deployment
   * @param namespace in which to check for the deployment
-  * @return true if found and running otherwise false
+  * @return callable that returns true if found and running otherwise false
   */
   public static Callable<Boolean> isReady(String deploymentName, Map<String, String> label, String namespace) {
     return () -> Kubernetes.isDeploymentReady(deploymentName, label,namespace);

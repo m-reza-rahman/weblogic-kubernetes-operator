@@ -432,7 +432,7 @@ public class CommonLBTestUtils {
       throws IOException {
     if (WEBLOGIC_SLIM) {
       getLogger().info("Check REST Console for WebLogic slim image");
-      StringBuffer curlCmd = new StringBuffer("status=$(curl -g --user ");
+      StringBuilder curlCmd = new StringBuilder("status=$(curl -g --user ");
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
         host = "[" + host + "]";
@@ -464,7 +464,7 @@ public class CommonLBTestUtils {
         host = "[" + host + "]";
       }
       getLogger().info("Check administration Console for generic/dev image");
-      String consoleUrl = new StringBuffer()
+      String consoleUrl = new StringBuilder()
           .append("http://")
           .append(host)
           .append(":")
@@ -511,7 +511,7 @@ public class CommonLBTestUtils {
     LoggingFacade logger = getLogger();
     if (WEBLOGIC_SLIM) {
       logger.info("Check REST Console for WebLogic slim image");
-      StringBuffer curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
+      StringBuilder curlCmd = new StringBuilder(KUBERNETES_CLI + " exec -n "
           + namespace + " " + adminServerPodName)
           .append(" -- /bin/bash -c \"")
           .append("curl -g --user ")
@@ -535,7 +535,7 @@ public class CommonLBTestUtils {
     } else {
       // generic/dev Image
       logger.info("Check administration Console for generic/dev image");
-      String curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
+      String curlCmd = new StringBuilder(KUBERNETES_CLI + " exec -n "
           + namespace + " " + adminServerPodName)
           .append(" -- /bin/bash -c \"")
           .append("curl --user ")
@@ -892,7 +892,7 @@ public class CommonLBTestUtils {
                                              String ingressHostName,
                                              String pathLocation,
                                              String... hostName) {
-    StringBuffer consoleUrl = new StringBuffer();
+    StringBuilder consoleUrl = new StringBuilder();
     String hostAndPort;
     if (hostName != null && hostName.length > 0) {
       hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;

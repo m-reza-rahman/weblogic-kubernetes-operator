@@ -5,7 +5,6 @@ package oracle.weblogic.kubernetes;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -102,7 +101,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests related to Domain status conditions logged by operator.
- * The tests checks for the Failed conditions for multiple usecases.
+ * The tests check for the Failed conditions for multiple use cases.
  */
 @DisplayName("Verify the domain status failed conditions for domain lifecycle")
 @IntegrationTest
@@ -115,7 +114,7 @@ class ItDiagnosticsFailedCondition {
 
   private static String domainNamespace = null;
   int replicaCount = 2;
-  private String wlClusterName = "cluster-1";
+  private final String wlClusterName = "cluster-1";
 
 
   private static String adminSecretName;
@@ -517,9 +516,9 @@ class ItDiagnosticsFailedCondition {
               .domainHomeSourceType("PersistentVolume") // set the domain home source type as pv
               .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
               .imagePullPolicy(IMAGE_PULL_POLICY)
-              .imagePullSecrets(Arrays.asList(
+              .imagePullSecrets(Collections.singletonList(
                   new V1LocalObjectReference()
-                      .name(TestConstants.BASE_IMAGES_REPO_SECRET_NAME))) // this secret for non-kind cluster
+                      .name(BASE_IMAGES_REPO_SECRET_NAME))) // this secret for non-kind cluster
               .webLogicCredentialsSecret(new V1LocalObjectReference()
                   .name(adminSecretName))
               .includeServerOutInPodLog(true)

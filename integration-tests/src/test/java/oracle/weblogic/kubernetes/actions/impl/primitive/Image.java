@@ -21,7 +21,7 @@ import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
  */
 public class Image {
   /**
-   * Log in to a image registry.
+   * Log in to an image registry.
    * @param registryName registry name
    * @param username user
    * @param password password
@@ -91,16 +91,6 @@ public class Image {
         .withParams(new CommandParams()
                   .command(cmdToExecute))
         .execute();
-  }
-
-  /**
-   * Create image.
-   * @param image image name:image tag
-   * @param imageBuildDir path to Dockerfile directory
-   * @return true if delete image is successful
-   */
-  public static boolean createImage(String imageBuildDir, String image) {
-    return createImage(imageBuildDir, image, "");
   }
 
   /**

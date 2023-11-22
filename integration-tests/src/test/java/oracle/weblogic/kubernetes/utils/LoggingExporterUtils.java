@@ -71,7 +71,6 @@ public class LoggingExporterUtils {
    */
   public static LoggingExporterParams installAndVerifyElasticsearch(String namespace) {
     LoggingFacade logger = getLogger();
-    final String elasticsearchPodNamePrefix = ELASTICSEARCH_NAME;
 
     // parameters to install Elasticsearch
     LoggingExporterParams elasticsearchParams = new LoggingExporterParams()
@@ -91,7 +90,7 @@ public class LoggingExporterUtils {
     // wait until the Elasticsearch pod is ready.
     testUntil(
         withLongRetryPolicy,
-        assertDoesNotThrow(() -> isElkStackPodReady(namespace, elasticsearchPodNamePrefix),
+        assertDoesNotThrow(() -> isElkStackPodReady(namespace, ELASTICSEARCH_NAME),
           "isElkStackPodReady failed with ApiException"),
         logger,
         "Elasticsearch to be ready in namespace {0}",
@@ -107,7 +106,6 @@ public class LoggingExporterUtils {
    */
   public static LoggingExporterParams installAndVerifyKibana(String namespace) {
     LoggingFacade logger = getLogger();
-    final String kibanaPodNamePrefix = ELASTICSEARCH_NAME;
 
     // parameters to install Kibana
     LoggingExporterParams kibanaParams = new LoggingExporterParams()
@@ -117,7 +115,7 @@ public class LoggingExporterUtils {
         .loggingExporterNamespace(namespace)
         .kibanaContainerPort(KIBANA_PORT);
 
-    logger.info("Choosen KIBANA_IMAGE {0}", KIBANA_IMAGE);
+    logger.info("Chosen KIBANA_IMAGE {0}", KIBANA_IMAGE);
     // install Kibana
     assertThat(installKibana(kibanaParams))
         .as("Kibana installation succeeds")
@@ -126,7 +124,7 @@ public class LoggingExporterUtils {
 
     // wait until the Kibana pod is ready.
     testUntil(
-        assertDoesNotThrow(() -> isElkStackPodReady(namespace, kibanaPodNamePrefix),
+        assertDoesNotThrow(() -> isElkStackPodReady(namespace, ELASTICSEARCH_NAME),
           "isElkStackPodReady failed with ApiException"),
         logger,
         "Kibana to be ready in namespace {0}",

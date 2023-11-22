@@ -42,15 +42,13 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("oke-arm")
 class ItConsensusLeasingValidation {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
 
-  private String domainUid = "domain1";
-  private int replicaCount = 2;
+  private final String domainUid = "domain1";
 
   private static LoggingFacade logger = null;
-  private static String adminSecretName = "weblogic-credentials";
-  private static String encryptionSecretName = "encryptionsecret";
+  private static final String adminSecretName = "weblogic-credentials";
+  private static final String encryptionSecretName = "encryptionsecret";
 
   /**
    * Install Operator.
@@ -64,7 +62,7 @@ class ItConsensusLeasingValidation {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");

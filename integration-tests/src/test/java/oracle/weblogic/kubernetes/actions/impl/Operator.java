@@ -65,7 +65,7 @@ public class Operator {
    */
   public static String getImageName() {
     String imageName = IMAGE_NAME_OPERATOR;
-    String imageTag = "";
+    String imageTag;
     // use branch name and build id for Jenkins runs in image tag
     if (!DOMAIN_IMAGES_REPO.isEmpty()) {
       imageName = DOMAIN_IMAGES_PREFIX + imageName;
@@ -131,7 +131,7 @@ public class Operator {
   }
 
   private static boolean patchReplicas(int replicaCount, String namespace) {
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"replace\", ")
         .append("\"path\": \"/spec/replicas\", ")
         .append("\"value\": ")

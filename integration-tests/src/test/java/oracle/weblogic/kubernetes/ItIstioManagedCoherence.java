@@ -92,7 +92,7 @@ class ItIstioManagedCoherence {
   private static final int NUMBER_OF_CLUSTERS = 2;
   private static final String CLUSTER_NAME_PREFIX = "cluster-";
   private static final int replicaCount = 2;
-  private static String adminServerPodName = domainUid + "-admin-server";
+  private static final String adminServerPodName = domainUid + "-admin-server";
   private static final String miiImageName = "mii-image";
   private static final String miiDomainUid = "miidomain";
   private static final String multiDomainsPrefix = "multidomain";
@@ -102,11 +102,10 @@ class ItIstioManagedCoherence {
   private static String miiDomainNamespace = null;
   private static String multiDomainsNamespace = null;
   private static String miiImage = null;
-  private static String encryptionSecretName = "encryptionsecret";
+  private static final String encryptionSecretName = "encryptionsecret";
 
   private static final String istioNamespace = "istio-system";
   private static final String istioIngressServiceName = "istio-ingressgateway";
-  private static String hostAndPort = null;
 
   private static LoggingFacade logger = null;
 
@@ -162,15 +161,15 @@ class ItIstioManagedCoherence {
     Path coherenceAppEarPath = Paths.get(distDir.toString(), COHERENCE_APP_NAME + ".ear");
     assertTrue(coherenceAppGarPath.toFile().exists(), "Application archive is not available");
     assertTrue(coherenceAppEarPath.toFile().exists(), "Application archive is not available");
-    logger.info("Path of CoherenceApp EAR " + coherenceAppEarPath.toString());
-    logger.info("Path of CoherenceApp GAR " + coherenceAppGarPath.toString());
+    logger.info("Path of CoherenceApp EAR " + coherenceAppEarPath);
+    logger.info("Path of CoherenceApp GAR " + coherenceAppGarPath);
 
     // used in internal OKE
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
-    hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
+    String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : K8S_NODEPORT_HOST + ":" + istioIngressPort;
   }
@@ -213,7 +212,7 @@ class ItIstioManagedCoherence {
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
-    // Make sure ready app is accessible thru Istio Ingress Port
+    // Make sure ready app is accessible through Istio Ingress Port
 
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
@@ -266,7 +265,7 @@ class ItIstioManagedCoherence {
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
-    // Make sure ready app is accessible thru Istio Ingress Port
+    // Make sure ready app is accessible through Istio Ingress Port
 
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
@@ -375,7 +374,7 @@ class ItIstioManagedCoherence {
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
-    // Make sure ready app is accessible thru Istio Ingress Port
+    // Make sure ready app is accessible through Istio Ingress Port
 
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
@@ -518,7 +517,7 @@ class ItIstioManagedCoherence {
     // add the data to cache
     String[] firstNameList = {"Frodo", "Samwise", "Bilbo", "peregrin", "Meriadoc", "Gandalf"};
     String[] secondNameList = {"Baggins", "Gamgee", "Baggins", "Took", "Brandybuck", "TheGrey"};
-    ExecResult result = null;
+    ExecResult result;
     for (int i = 0; i < firstNameList.length; i++) {
       result = addDataToCache(firstNameList[i], secondNameList[i], hostAndPort);
       logger.info("Data added to the cache " + result.stdout());
@@ -551,7 +550,7 @@ class ItIstioManagedCoherence {
                                     String secondName,
                                     String hostAndPort) {
     logger.info("Add initial data to cache");
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=add&first=")
         .append(firstName)
@@ -575,7 +574,7 @@ class ItIstioManagedCoherence {
   private ExecResult getCacheSize(String hostAndPort) {
     logger.info("Get the number of records in cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=size' ")
         .append(" http://")
@@ -584,7 +583,7 @@ class ItIstioManagedCoherence {
         .append(COHERENCE_APP_NAME)
         .append("/")
         .append(COHERENCE_APP_NAME);
-    logger.info("Command to get the number of records in cache " + curlCmd.toString());
+    logger.info("Command to get the number of records in cache " + curlCmd);
 
     ExecResult result = assertDoesNotThrow(() -> ExecCommand.exec(curlCmd.toString(), true),
         String.format("Failed to get the number of records in cache by running command %s", curlCmd));
@@ -597,7 +596,7 @@ class ItIstioManagedCoherence {
   private ExecResult getCacheContents(String hostAndPort) {
     logger.info("Get the records from cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=get' ")
         .append(" http://")
@@ -606,7 +605,7 @@ class ItIstioManagedCoherence {
         .append(COHERENCE_APP_NAME)
         .append("/")
         .append(COHERENCE_APP_NAME);
-    logger.info("Command to get the records from cache " + curlCmd.toString());
+    logger.info("Command to get the records from cache " + curlCmd);
 
     ExecResult result = assertDoesNotThrow(() -> ExecCommand.exec(curlCmd.toString(), true),
         String.format("Failed to get the records from cache by running command %s", curlCmd));
@@ -619,7 +618,7 @@ class ItIstioManagedCoherence {
   private ExecResult clearCache(String hostAndPort) {
     logger.info("Clean the cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuilder curlCmd = new StringBuilder("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append(" http://")
@@ -628,7 +627,7 @@ class ItIstioManagedCoherence {
         .append(COHERENCE_APP_NAME)
         .append("/")
         .append(COHERENCE_APP_NAME);
-    logger.info("Command to clean the cache " + curlCmd.toString());
+    logger.info("Command to clean the cache " + curlCmd);
 
     ExecResult result = assertDoesNotThrow(() -> ExecCommand.exec(curlCmd.toString(), true),
         String.format("Failed to clean the cache by running command %s", curlCmd));

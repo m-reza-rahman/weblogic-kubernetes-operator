@@ -105,15 +105,12 @@ class ItIstioCrossDomainTransaction {
   private static String opNamespace = null;
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
-  private static String domainUid1 = "domain1";
-  private static String domainUid2 = "domain2";
-  private static String domain1AdminServerPodName = domainUid1 + "-admin-server";
+  private static final String domainUid1 = "domain1";
+  private static final String domainUid2 = "domain2";
+  private static final String domain1AdminServerPodName = domainUid1 + "-admin-server";
   private final String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
-  private static String domain2AdminServerPodName = domainUid2 + "-admin-server";
   private final String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
-  private static String clusterName = "cluster-1";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
-  private static String ORACLEDBSUFFIX = null;
   private static LoggingFacade logger = null;
   static String dbUrl;
   static int dbNodePort;
@@ -144,8 +141,8 @@ class ItIstioCrossDomainTransaction {
     domain2Namespace = namespaces.get(2);
 
     final int dbListenerPort = getNextFreePort();
-    ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + domain2Namespace + ORACLEDBSUFFIX;
+    String oracleDbSuffix = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
+    dbUrl = ORACLEDBURLPREFIX + domain2Namespace + oracleDbSuffix;
     createBaseRepoSecret(domain2Namespace);
 
     //Start oracleDB
@@ -239,7 +236,7 @@ class ItIstioCrossDomainTransaction {
     assertTrue(Paths.get(distDir.toString(),
         "txforward.ear").toFile().exists(),
         "Application archive is not available");
-    String appSource = distDir.toString() + "/txforward.ear";
+    String appSource = distDir + "/txforward.ear";
     logger.info("Application is in {0}", appSource);
 
     //build application archive
@@ -251,7 +248,7 @@ class ItIstioCrossDomainTransaction {
     assertTrue(Paths.get(distDir.toString(),
         "cdttxservlet.war").toFile().exists(),
         "Application archive is not available");
-    String appSource1 = distDir.toString() + "/cdttxservlet.war";
+    String appSource1 = distDir + "/cdttxservlet.war";
     logger.info("Application is in {0}", appSource1);
 
     //build application archive for JMS Send/Receive
@@ -263,7 +260,7 @@ class ItIstioCrossDomainTransaction {
     assertTrue(Paths.get(distDir.toString(),
         "jmsservlet.war").toFile().exists(),
         "Application archive is not available");
-    String appSource2 = distDir.toString() + "/jmsservlet.war";
+    String appSource2 = distDir + "/jmsservlet.war";
     logger.info("Application is in {0}", appSource2);
 
     Path mdbSrcDir  = Paths.get(APP_DIR, "mdbtopic");
@@ -291,7 +288,7 @@ class ItIstioCrossDomainTransaction {
     assertTrue(Paths.get(distDir.toString(),
         "mdbtopic.jar").toFile().exists(),
         "Application archive is not available");
-    String appSource3 = distDir.toString() + "/mdbtopic.jar";
+    String appSource3 = distDir + "/mdbtopic.jar";
     logger.info("Application is in {0}", appSource3);
 
     // create admin credential secret for domain1
@@ -344,6 +341,7 @@ class ItIstioCrossDomainTransaction {
     //create domain2
     createDomain(domainUid2, domain2Namespace, domain2AdminSecretName, domain2Image);
 
+    String clusterName = "cluster-1";
     String clusterService = domainUid1 + "-cluster-" + clusterName + "." + domain1Namespace + ".svc.cluster.local";
 
     Map<String, String> templateMap  = new HashMap<>();
@@ -368,8 +366,8 @@ class ItIstioCrossDomainTransaction {
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : K8S_NODEPORT_HOST + ":" + istioIngressPort;
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
     if (!WEBLOGIC_SLIM) {
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
@@ -386,7 +384,7 @@ class ItIstioCrossDomainTransaction {
   }
 
   /*
-   * Test verifies a cross-domain transaction in a istio enabled environment.
+   * Test verifies a cross-domain transaction in an istio enabled environment.
    * domain-in-image using wdt is used to create 2 domains in different
    * namespaces. An app is deployed to both the domains and the servlet
    * is invoked which starts a transaction that spans both domains.
@@ -454,7 +452,7 @@ class ItIstioCrossDomainTransaction {
         + "http://%s:%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
             K8S_NODEPORT_HOST, istioIngressPort, domain1Namespace, domain2Namespace);
 
-    ExecResult result = null;
+    ExecResult result;
     logger.info("curl command {0}", curlRequest);
     result = assertDoesNotThrow(() -> exec(curlRequest, true));
     if (result.exitValue() == 0) {
@@ -517,7 +515,7 @@ class ItIstioCrossDomainTransaction {
             + "dest=jms/testCdtUniformTopic\"",
         host, istioIngressPort, domain2Namespace);
 
-    ExecResult result = null;
+    ExecResult result;
     logger.info("curl command {0}", curlRequest);
     result = assertDoesNotThrow(() -> exec(curlRequest, true));
     if (result.exitValue() == 0) {

@@ -34,20 +34,20 @@ public class ApplicationUtils {
    * @return true if curl command returns HTTP code 200 otherwise false
    */
   public static boolean checkAppUsingHostHeader(String url, String hostHeader, Boolean... args) {
-    boolean checkConsoleAccessible = (args.length == 0) ? true : false;
+    boolean checkConsoleAccessible = args.length == 0;
     LoggingFacade logger = getLogger();
-    StringBuffer curlString = new StringBuffer("status=$(curl --user weblogic:welcome1 ");
-    StringBuffer headerString = null;
+    StringBuilder curlString = new StringBuilder("status=$(curl --user weblogic:welcome1 ");
+    StringBuilder headerString;
     if (hostHeader != null) {
-      headerString = new StringBuffer("-H 'host: ");
+      headerString = new StringBuilder("-H 'host: ");
       headerString.append(hostHeader)
           .append(" ' ");
     } else {
-      headerString = new StringBuffer("");
+      headerString = new StringBuilder();
     }
     curlString.append(" -g -sk --noproxy '*' ")
         .append(" --silent --show-error ")
-        .append(headerString.toString())
+        .append(headerString)
         .append(url)
         .append(" -o /dev/null")
         .append(" -w %{http_code});")
@@ -72,7 +72,7 @@ public class ApplicationUtils {
   }
 
   /**
-   * Check if the the application is accessible inside the WebLogic server pod.
+   * Check if the application is accessible inside the WebLogic server pod.
    * @param conditionFactory condition factory
    * @param namespace namespace of the domain
    * @param podName name of the pod
@@ -89,7 +89,7 @@ public class ApplicationUtils {
       String expectedStr
   ) {
 
-    // check if the application is accessible inside of a server pod
+    // check if the application is accessible inside a server pod
     testUntil(
         conditionFactory,
         () -> appAccessibleInPod(
@@ -424,7 +424,7 @@ public class ApplicationUtils {
                                                   String port,
                                                   boolean secureMode,
                                                   Boolean... args) {
-    boolean checkConsoleAccessible = (args.length == 0) ? true : false;
+    boolean checkConsoleAccessible = args.length == 0;
     LoggingFacade logger = getLogger();
     String httpKey = "http://";
     if (secureMode) {

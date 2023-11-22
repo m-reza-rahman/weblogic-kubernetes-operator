@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -109,7 +108,7 @@ class ItDataHomeOverride {
     String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
     // create mii domain and override data home
     createMiiDomainAndVerify(miiDomainNamespace, domainUid, miiImage,
-        adminServerPodName, managedServerPrefix, replicaCount, Arrays.asList(clusterName),
+        adminServerPodName, managedServerPrefix, replicaCount, List.of(clusterName),
         true, DATA_HOME_OVERRIDE, true);
 
     // check in admin server pod, there is no data file for JMS server created
@@ -159,7 +158,7 @@ class ItDataHomeOverride {
     String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
     // create mii domain and don't override data home
     createMiiDomainAndVerify(miiDomainNamespace, domainUid, miiImage, adminServerPodName,
-        managedServerPrefix, replicaCount, Arrays.asList(clusterName), false, null, true);
+        managedServerPrefix, replicaCount, List.of(clusterName), false, null, true);
 
     // check in admin server pod, there is no data file for JMS server created in /u01/oracle/customFileStore
     String dataFileToCheck = "/u01/oracle/customFileStore/FILESTORE-0000000.DAT";
@@ -207,7 +206,7 @@ class ItDataHomeOverride {
     String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
     // create mii domain and set datahome to empty string
     createMiiDomainAndVerify(miiDomainNamespace, domainUid, miiImage,
-        adminServerPodName, managedServerPrefix, replicaCount, Arrays.asList(clusterName), true, "", true);
+        adminServerPodName, managedServerPrefix, replicaCount, List.of(clusterName), true, "", true);
 
     // check in admin server pod, there is no data file for JMS server created in /u01/oracle/customFileStore
     String dataFileToCheck = "/u01/oracle/customFileStore/FILESTORE-0000000.DAT";
@@ -250,7 +249,7 @@ class ItDataHomeOverride {
    * @param namespace the Kubernetes namespace that the pod is in
    * @param podName the name of the Kubernetes pod in which the command is expected to run
    * @param fileName the filename to check
-   * @return true if the file exists, otherwise return false
+   * @return callable that returns true if the file exists, otherwise return false
    */
   private Callable<Boolean> fileExistsInPod(String namespace, String podName, String fileName) {
     return () -> doesFileExistInPod(namespace, podName, fileName);

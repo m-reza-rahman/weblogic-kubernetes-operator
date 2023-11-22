@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -15,7 +15,7 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.logging.LoggingFactory;
 
 public class ThreadSafeLogger {
-  private static InheritableThreadLocal<LoggingFacade> localLogger = new InheritableThreadLocal<LoggingFacade>();
+  private static final InheritableThreadLocal<LoggingFacade> localLogger = new InheritableThreadLocal<>();
   public static final LoggingFacade globalLogger = LoggingFactory.getLogger("GLOBAL", "OperatorIntegrationTests");
 
   /**

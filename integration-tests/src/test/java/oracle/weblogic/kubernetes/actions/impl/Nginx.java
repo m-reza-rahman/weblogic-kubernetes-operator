@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl;
@@ -154,7 +154,7 @@ public class Nginx {
   }
 
   /**
-   * List all of the ingresses in the specified namespace.
+   * List all the ingresses in the specified namespace.
    *
    * @param namespace the namespace to which the ingresses belong
    * @return a list of ingress names in the namespace

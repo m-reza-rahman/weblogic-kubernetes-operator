@@ -241,7 +241,7 @@ class ItMaxConcurOptions {
         0, domainUid, domainNamespace, replicaCount);
 
     // Config maxUnavailable =1 and replicas = 2 in cluster-1 resource and patch the cluster
-    StringBuffer patchStr = new StringBuffer("[")
+    StringBuilder patchStr = new StringBuilder("[")
         .append("{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": 2},")
         .append("{\"op\": \"replace\", \"path\": \"/spec/maxUnavailable\", \"value\": 1}")
         .append("]");
@@ -287,7 +287,7 @@ class ItMaxConcurOptions {
         0, domainUid, domainNamespace, replicaCount);
 
     // Config and patch maxConcurrentShutdown = 3 in cluster-1 resource
-    StringBuffer patchStr = new StringBuffer("[")
+    StringBuilder patchStr = new StringBuilder("[")
         .append("{\"op\": \"replace\", \"path\": \"/spec/maxConcurrentShutdown\", \"value\": 3}")
         .append("]");
     patchClusterResourceAndVerify(domainNamespace, cluster1Res, patchStr.toString());
@@ -517,7 +517,7 @@ class ItMaxConcurOptions {
 
   private static boolean findStringInDomainStatusServerHealth(String regex) {
     // get the domain server health message
-    StringBuffer getDomainInfoCmd = new StringBuffer(KUBERNETES_CLI + " get domain/");
+    StringBuilder getDomainInfoCmd = new StringBuilder(KUBERNETES_CLI + " get domain/");
     getDomainInfoCmd
         .append(domainUid)
         .append(" -n ")
@@ -661,7 +661,7 @@ class ItMaxConcurOptions {
                                      int configValue,
                                      int newReplicas) {
     // Config maxConcurrentShutdown or maxConcurrentStartup in cluster resource
-    StringBuffer patchStr = new StringBuffer()
+    StringBuilder patchStr = new StringBuilder()
         .append("[{\"op\": \"replace\", \"path\": \"/spec/")
         .append(configKey)
         .append("\", \"value\": ")
@@ -695,8 +695,8 @@ class ItMaxConcurOptions {
     }
 
     // verify that two managed servers in each cluster are shutdown concurrently
-    StringBuffer serverStateRegex =
-        new StringBuffer("([0-9]{4}-[0-9]{2}-[0-9]{2}.*[0-9]{2}:[0-9]{2}:[0-9]{2}).*(");
+    StringBuilder serverStateRegex =
+        new StringBuilder("([0-9]{4}-[0-9]{2}-[0-9]{2}.*[0-9]{2}:[0-9]{2}:[0-9]{2}).*(");
 
     for (int i = newReplicas + 1; i <= origReplicas; i++) {
       serverStateRegex.append(managedServerNamePrefix + i).append("\\s*");
@@ -714,8 +714,8 @@ class ItMaxConcurOptions {
                                                         int replicas,
                                                         boolean scaleup) {
     // patch in domain resource with replicas
-    StringBuffer patchStr =
-        new StringBuffer("[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": ")
+    StringBuilder patchStr =
+        new StringBuilder("[{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": ")
             .append(replicas).append("}]");
     assertTrue(patchDomainResource(domainUid, domainNamespace, patchStr), "Failed to patch domain");
     patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
@@ -745,7 +745,7 @@ class ItMaxConcurOptions {
 
     // remove the cluster resource from domain resource
     logger.info("Patch the domain resource to remove cluster resource");
-    StringBuffer patchStr = new StringBuffer("[{\"op\": \"remove\",\"path\": \"/spec/clusters/0\"}]");
+    StringBuilder patchStr = new StringBuilder("[{\"op\": \"remove\",\"path\": \"/spec/clusters/0\"}]");
     logger.info("Updating domain configuration using patch string: {0}\n", patchStr);
     clusterResources.forEach((clusterResource) -> patchDomainResource(domainUid, domainNamespace, patchStr));
 

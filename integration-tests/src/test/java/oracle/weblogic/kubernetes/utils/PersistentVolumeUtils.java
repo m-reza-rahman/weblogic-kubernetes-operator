@@ -8,8 +8,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -23,12 +24,9 @@ import io.kubernetes.client.openapi.models.V1PersistentVolume;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeSpec;
-import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static java.nio.file.Files.createDirectories;
@@ -39,12 +37,9 @@ import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.PV_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createPersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.createPersistentVolumeClaim;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
-import static oracle.weblogic.kubernetes.actions.TestActions.deletePod;
-import static oracle.weblogic.kubernetes.actions.impl.primitive.Command.defaultCommandParams;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvNotExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
@@ -54,7 +49,6 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -188,7 +182,7 @@ public class PersistentVolumeUtils {
             .volumeMode("Filesystem")
             .putCapacityItem("storage", Quantity.fromString("5Gi"))
             .persistentVolumeReclaimPolicy("Recycle")
-            .accessModes(Arrays.asList("ReadWriteMany")))
+            .accessModes(List.of("ReadWriteMany")))
         .metadata(new V1ObjectMeta()
             .name(pvName)
             .putLabelsItem("weblogic.resourceVersion", "domain-v2")
@@ -339,21 +333,20 @@ public class PersistentVolumeUtils {
    */
   public static synchronized V1Container createfixPVCOwnerContainer(String pvName, String mountPath, String command) {
 
-    V1Container container = new V1Container()
+    return new V1Container()
         .name("fix-pvc-owner") // change the ownership of the pv to opc:opc
         .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
         .imagePullPolicy(IMAGE_PULL_POLICY)
         .addCommandItem("/bin/sh")
         .addArgsItem("-c")
         .addArgsItem(command)
-        .volumeMounts(Arrays.asList(
+        .volumeMounts(Collections.singletonList(
             new V1VolumeMount()
                 .name(pvName)
                 .mountPath(mountPath)))
         .securityContext(new V1SecurityContext()
             .runAsGroup(0L)
             .runAsUser(0L));
-    return container;
   }
 
   /**
@@ -362,13 +355,11 @@ public class PersistentVolumeUtils {
    * @param labels pv and pvc labels
    * @param namespace pv and pvc namespace
    * @param className - class name
-   * @throws IOException when creating pv path fails
    */
   public static void createPvAndPvc(String nameSuffix, String namespace,
-                                    HashMap<String,String> labels, String className)
-      throws IOException {
+                                    HashMap<String,String> labels, String className) {
     LoggingFacade logger = getLogger();
-    V1PersistentVolume v1pv = null;
+    V1PersistentVolume v1pv;
     logger.info("creating persistent volume and persistent volume claim");
     // create persistent volume and persistent volume claims
     // when tests are running in local box the PV directories need to exist
@@ -384,7 +375,7 @@ public class PersistentVolumeUtils {
             .volumeMode("Filesystem")
             .putCapacityItem("storage", Quantity.fromString("10Gi"))
             .persistentVolumeReclaimPolicy("Retain")
-            .accessModes(Arrays.asList("ReadWriteMany")))
+            .accessModes(List.of("ReadWriteMany")))
         .metadata(new V1ObjectMeta()
             .name("pv-test" + nameSuffix)
             .namespace(namespace));
@@ -446,49 +437,6 @@ public class PersistentVolumeUtils {
           mountPath, argCommand);
 
     }
-  }
-
-  /**
-   *  Run commands inside pv.
-   * @param domainNamespace  domain ns
-   * @param commandToExecuteInsidePod  command
-   * @param pvcName  name
-   * @param mountPath  path
-   */
-  public static synchronized void execCommandInPv(String domainNamespace, String pvcName,
-                                     String mountPath, String commandToExecuteInsidePod) {
-    LoggingFacade logger = getLogger();
-    Path pvhelperPath =
-        Paths.get(ITTESTS_DIR, "/../kubernetes/samples/scripts/domain-lifecycle/pv-pvc-helper.sh");
-    String pvhelperScript = pvhelperPath.toString();
-    String command =
-        String.format("%s -n %s -r -c %s -m %s", pvhelperScript,
-            domainNamespace, pvcName, mountPath);
-    logger.info("pvhelper pod command {0}", command);
-    assertTrue(() -> Command.withParams(
-            defaultCommandParams()
-                .command(command)
-                .redirect(false))
-        .execute());
-
-    V1Pod serverPod = assertDoesNotThrow(() ->
-            Kubernetes.getPod(domainNamespace, null, "pvhelper"),
-        String.format("Could not get the server Pod %s in namespace %s",
-            "pvhelper", domainNamespace));
-
-    ExecResult result = assertDoesNotThrow(() -> Kubernetes.exec(serverPod, null, true,
-            "/bin/bash", "-c", commandToExecuteInsidePod),
-        String.format("Could not execute the command %s in pod %s, namespace %s",
-            commandToExecuteInsidePod, "pvhelper", domainNamespace));
-    logger.info("Command {0} returned with exit value {1}, stderr {2}, stdout {3}",
-        commandToExecuteInsidePod, result.exitValue(), result.stderr(), result.stdout());
-
-    // checking for exitValue 0 for success fails sometimes as k8s exec api returns non-zero exit value even on success,
-    // so checking for exitValue non-zero and stderr not empty for failure, otherwise its success
-    assertFalse(result.exitValue() != 0 && result.stderr() != null && !result.stderr().isEmpty(),
-        String.format("Command %s failed with exit value %s, stderr %s, stdout %s",
-            commandToExecuteInsidePod, result.exitValue(), result.stderr(), result.stdout()));
-    assertDoesNotThrow(() -> deletePod(serverPod.getMetadata().getName(), domainNamespace));
   }
 
   /**

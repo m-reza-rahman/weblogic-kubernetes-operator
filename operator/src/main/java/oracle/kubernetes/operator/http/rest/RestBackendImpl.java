@@ -341,7 +341,7 @@ public class RestBackendImpl implements RestBackend {
   private List<String> getReferencedClusterResourceNames(DomainResource domain) {
     return domain.getSpec().getClusters().stream()
         .map(V1LocalObjectReference::getName)
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private void createClusterIfNecessary(DomainResource domain, String cluster, int managedServerCount) {

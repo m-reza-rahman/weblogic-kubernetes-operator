@@ -75,16 +75,12 @@ class ItDedicatedMode {
   // domain constants
   private final String domainUid = "dedicated-domain1";
   private final String clusterName = "cluster-1";
-  private final String clusterResName = domainUid + "-" + clusterName;
   private final int replicaCount = 2;
   private final String adminServerPodName =
        domainUid + "-" + ADMIN_SERVER_NAME_BASE;
   private final String managedServerPodPrefix =
        domainUid + "-" + MANAGED_SERVER_NAME_BASE;
 
-  // operator constants
-  private static HelmParams opHelmParams;
-  private static String opServiceAccount;
   private static final String domainNamespaceSelectionStrategy = "Dedicated";
 
   private static LoggingFacade logger = null;
@@ -114,11 +110,10 @@ class ItDedicatedMode {
     domain2Namespace = namespaces.get(1);
 
     // Variables for Operator
-    opServiceAccount = opNamespace + "-sa";
-    opHelmParams =
-        new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
-            .namespace(opNamespace)
-            .chartDir(OPERATOR_CHART_DIR);
+    // operator constants
+    HelmParams opHelmParams = new HelmParams().releaseName(OPERATOR_RELEASE_NAME)
+        .namespace(opNamespace)
+        .chartDir(OPERATOR_CHART_DIR);
 
     // delete existing CRD
     Command
@@ -170,8 +165,7 @@ class ItDedicatedMode {
     // This test uses the operator restAPI to scale the doamin.
     // To do this in OKD cluster, we need to expose the external service as
     // route and set tls termination to  passthrough
-    String opExternalSvc =
-        createRouteForOKD("external-weblogic-operator-svc", opNamespace);
+    createRouteForOKD("external-weblogic-operator-svc", opNamespace);
     // Patch the route just created to set tls termination to passthrough
     setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
 
@@ -250,6 +244,7 @@ class ItDedicatedMode {
                     .domainType(WLS_DOMAIN_TYPE)
                     .runtimeEncryptionSecret(encryptionSecretName))));
 
+    String clusterResName = domainUid + "-" + clusterName;
     domain = createClusterResourceAndAddReferenceToDomain(
         clusterResName, clusterName, domainNamespace, domain, replicaCount);
 
@@ -278,7 +273,7 @@ class ItDedicatedMode {
   }
 
   private void verifyDomainNotRunning(String domainNamespace) {
-    // check that admin server pod doesn't exists in the domain namespace
+    // check that admin server pod doesn't exist in the domain namespace
     logger.info("Checking that admin server pod {0} doesn't exists in namespace {1}",
         adminServerPodName, domainNamespace);
     checkPodDoesNotExist(adminServerPodName, domainUid, domainNamespace);
@@ -287,7 +282,7 @@ class ItDedicatedMode {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPodPrefix + i;
 
-      // check that managed server pod doesn't exists in the domain namespace
+      // check that managed server pod doesn't exist in the domain namespace
       logger.info("Checking that managed server pod {0} doesn't exists in namespace {1}",
           managedServerPodName, domainNamespace);
       checkPodDoesNotExist(managedServerPodName, domainUid, domainNamespace);

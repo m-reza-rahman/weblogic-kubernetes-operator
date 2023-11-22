@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.actions.impl;
@@ -91,7 +91,7 @@ public class Cluster {
     }
 
     // construct the patch string for scaling the cluster
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"replace\", ")
         .append("\"path\": \"/spec/replicas\", ")
         .append("\"value\": ")
@@ -117,11 +117,11 @@ public class Cluster {
     String oldVersion = assertDoesNotThrow(
         () -> getClusterCustomResource(clusterResourceName, namespace, CLUSTER_VERSION).getSpec().getRestartVersion(),
         String.format("Failed to get the restartVersion of %s in namespace %s", clusterResourceName, namespace));
-    int newVersion = oldVersion == null ? 1 : Integer.valueOf(oldVersion) + 1;
+    int newVersion = oldVersion == null ? 1 : Integer.parseInt(oldVersion) + 1;
     logger.info("Update cluster resource {0} in namespace {1} restartVersion from {2} to {3}",
         clusterResourceName, namespace, oldVersion, newVersion);
 
-    StringBuffer patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = new StringBuilder("[{");
     patchStr.append(" \"op\": \"replace\",")
         .append(" \"path\": \"/spec/restartVersion\",")
         .append(" \"value\": \"")
@@ -151,19 +151,6 @@ public class Cluster {
          String clusterResName, 
          String namespace, String clusterVersion) throws ApiException { 
     return Kubernetes.getClusterCustomResource(clusterResName, namespace, clusterVersion);
-  }
-
-  /**
-   * Get a Domain Custom Resource.
-   *
-   * @param clusterResName unique domain identifier
-   * @param namespace name of namespace
-   * @return cluster custom resource or null if Domain does not exist
-   * @throws ApiException if Kubernetes request fails
-   */
-  public static ClusterResource getClusterCustomResource(
-       String clusterResName, String namespace) throws ApiException {
-    return Kubernetes.getClusterCustomResource(clusterResName, namespace);
   }
 
   /**

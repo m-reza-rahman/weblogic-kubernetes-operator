@@ -1,10 +1,9 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.logging;
 
 import java.text.MessageFormat;
-import java.util.Arrays;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -36,51 +35,6 @@ public class LoggingFacade {
 
     ConsoleHandler handler = new ConsoleHandler();
     logger.addHandler(handler);
-  }
-
-  /**
-   * Converts an array to a loggable string.
-   *
-   * @param value the object to log
-   * @param password true if the value is a password that should not be logged
-   * @return a loggable string
-   */
-  public static Object convertArraysForLogging(Object value, boolean password) {
-    // Don't log passwords.
-    if (password) {
-      return "***";
-    }
-
-    Object result = value;
-    if (value != null) {
-      // Convert any object arrays such as String arrays.
-      if (Object[].class.isAssignableFrom(value.getClass())) {
-        Object[] array = Object[].class.cast(value);
-        result = Arrays.toString(array);
-      } else if (value.getClass().isArray()) {
-        // Any other arrays are primitive arrays which must be cast to
-        // the correct primitive type.
-        Class<?> type = value.getClass().getComponentType();
-        if (type == boolean.class) {
-          result = Arrays.toString((boolean[]) value);
-        } else if (type == byte.class) {
-          result = Arrays.toString((byte[]) value);
-        } else if (type == char.class) {
-          result = Arrays.toString((char[]) value);
-        } else if (type == double.class) {
-          result = Arrays.toString((double[]) value);
-        } else if (type == float.class) {
-          result = Arrays.toString((float[]) value);
-        } else if (type == int.class) {
-          result = Arrays.toString((int[]) value);
-        } else if (type == long.class) {
-          result = Arrays.toString((long[]) value);
-        } else if (type == short.class) {
-          result = Arrays.toString((short[]) value);
-        }
-      }
-    }
-    return result;
   }
 
   /**
@@ -290,7 +244,7 @@ public class LoggingFacade {
   /**
    * Sets the level at which the underlying Logger operates. This should not be called in the
    * general case; levels should be set via OOB configuration (a configuration file exposed by the
-   * logging implementation, management API, etc).
+   * logging implementation, management API, etc.).
    *
    * @param newLevel Level to set
    */
@@ -432,7 +386,7 @@ public class LoggingFacade {
    * Logs a message at the requested level. Normally, one of the level-specific methods should be
    * used instead.
    *
-   * @param level Level at which log log the message
+   * @param level Level at which to log the message
    * @param msg the message to log
    */
   public void log(Level level, String msg) {
@@ -463,7 +417,7 @@ public class LoggingFacade {
    * Logs a message which accompanies a Throwable. Calling equivalent per-Level method is preferred,
    * but this is present for completeness.
    *
-   * @param level Level at which log log the message
+   * @param level Level at which to log the message
    * @param msg the message to log
    * @param thrown an Exception to include in the logged message
    */

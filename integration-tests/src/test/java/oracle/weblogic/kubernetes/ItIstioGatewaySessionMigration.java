@@ -75,20 +75,15 @@ class ItIstioGatewaySessionMigration {
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
   private static final String SESSMIGR_APP_WAR_NAME = "sessmigr-war";
   private static final int SESSION_STATE = 4;
-  private static Map<String, String> httpAttrMap;
 
   // constants for operator and WebLogic domain
-  private static String domainUid = "istiogateway-sessmigr-domain";
-  private static String clusterName = "cluster-1";
-  private static String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
-  private static String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
-  private static String finalPrimaryServerName = null;
-  private static String configMapName = "istio-configmap";
-  private static String istioGatewayConfigFile = "istio-sessmigr-template.yaml";
-  private static int replicaCount = 2;
+  private static final String domainUid = "istiogateway-sessmigr-domain";
+  private static final String clusterName = "cluster-1";
+  private static final String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
+  private static final String configMapName = "istio-configmap";
+  private static final int replicaCount = 2;
   private static int istioIngressPort = 0;
   private static String testWebAppWarLoc = null;
-  private static int managedServerPort = 7100;
 
   private static final String istioNamespace = "istio-system";
   private static final String istioIngressServiceName = "istio-ingressgateway";
@@ -151,7 +146,7 @@ class ItIstioGatewaySessionMigration {
         "setup for istio based domain failed");
 
     // map to save HTTP response data
-    httpAttrMap = new HashMap<String, String>();
+    Map<String, String> httpAttrMap = new HashMap<>();
     httpAttrMap.put("sessioncreatetime", "(.*)sessioncreatetime>(.*)</sessioncreatetime(.*)");
     httpAttrMap.put("sessionid", "(.*)sessionid>(.*)</sessionid(.*)");
     httpAttrMap.put("primary", "(.*)primary>(.*)</primary(.*)");
@@ -160,7 +155,7 @@ class ItIstioGatewaySessionMigration {
   }
 
   /**
-   * When istio is enabled using Istio gateway, the test sends a HTTP request to set http session state(count number),
+   * When istio is enabled using Istio gateway, the test sends an HTTP request to set http session state(count number),
    * get the primary and secondary server name, session create time and session state and from the util method and
    * save HTTP session info, then stop the primary server by changing serverStartPolicy to Never and patching domain.
    * Send another HTTP request to get http session state (count number), primary server and session create time.
@@ -176,13 +171,14 @@ class ItIstioGatewaySessionMigration {
     final String countAttr = "count";
     final String webServiceSetUrl = SESSMIGR_APP_WAR_NAME + "/?setCounter=" + SESSION_STATE;
     final String webServiceGetUrl = SESSMIGR_APP_WAR_NAME + "/?getCounter";
+    String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
     String serverName = managedServerPrefix + "1";
 
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String istioIngressIP = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
 
-    // send a HTTP request to set http session state(count number) and save HTTP session info
+    // send an HTTP request to set http session state(count number) and save HTTP session info
     // before shutting down the primary server
     // the NodePort services created by the operator are not usable, because they would expose ports
     // on the worker node’s private IP addresses only, which are not reachable from outside the cluster
@@ -202,7 +198,7 @@ class ItIstioGatewaySessionMigration {
     logger.info("Shut down the primary server {0}", origPrimaryServerName);
     shutdownServerAndVerify(domainUid, domainNamespace, origPrimaryServerName);
 
-    // send a HTTP request to get server and session info after shutting down the primary server
+    // send an HTTP request to get server and session info after shutting down the primary server
     serverName = domainUid + "-" + origSecondaryServerName;
     httpDataInfo = OKE_CLUSTER ? getServerAndSessionInfoAndVerify(domainNamespace,
             adminServerPodName, serverName, istioIngressIP, 0, webServiceGetUrl, " -b ")
@@ -227,10 +223,10 @@ class ItIstioGatewaySessionMigration {
             "After the primary server stopped, HTTP session state should be migrated to the new primary server")
     );
 
-    finalPrimaryServerName = primaryServerName;
-
-    logger.info("Done testSessionMigration \nThe new primary server is {0}, it was {1}. "
-        + "\nThe session state was set to {2}, it is migrated to the new primary server.",
+    logger.info("""
+            Done testSessionMigration\s
+            The new primary server is {0}, it was {1}.\s
+            The session state was set to {2}, it is migrated to the new primary server.""",
             primaryServerName, origPrimaryServerName, SESSION_STATE);
   }
 
@@ -252,6 +248,7 @@ class ItIstioGatewaySessionMigration {
     templateMap.put("CLUSTER_SERVICE", clusterService);
 
     // create Istio gateway
+    String istioGatewayConfigFile = "istio-sessmigr-template.yaml";
     Path srcHttpFile = Paths.get(RESOURCE_DIR, "istio", istioGatewayConfigFile);
     Path targetHttpFile = assertDoesNotThrow(
         () -> generateFileFromTemplate(srcHttpFile.toString(), "istio-http.yaml", templateMap));
@@ -277,8 +274,8 @@ class ItIstioGatewaySessionMigration {
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : K8S_NODEPORT_HOST + ":" + istioIngressPort;
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
     if (!WEBLOGIC_SLIM) {
       String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
       boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
@@ -305,6 +302,7 @@ class ItIstioGatewaySessionMigration {
     logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid + "-" + clusterName);
 
     if (OKE_CLUSTER) {
+      int managedServerPort = 7100;
       testUntil(
           isAppInServerPodReady(domainNamespace,
               managedServerPrefix + 1, managedServerPort, "/testwebapp/index.jsp","testwebapp"),
@@ -317,7 +315,7 @@ class ItIstioGatewaySessionMigration {
       boolean checkApp = checkAppUsingHostHeader(url, domainNamespace + ".org");
       assertTrue(checkApp, "Failed to access WebLogic application");
     }
-    logger.info("Application /testwebapp/index.jsp is accessble to {0}", domainUid);
+    logger.info("Application /testwebapp/index.jsp is accessible to {0}", domainUid);
 
     return istioIngressPort;
   }

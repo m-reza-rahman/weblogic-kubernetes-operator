@@ -64,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  * The istio utility class for tests.
  */
 public class IstioUtils {
-  private static SemanticVersion installedIstioVersion = new SemanticVersion(ISTIO_VERSION);
+  private static final SemanticVersion installedIstioVersion = new SemanticVersion(ISTIO_VERSION);
 
   /**
    * Install istio.
@@ -72,7 +72,7 @@ public class IstioUtils {
   public static void installIstio() {
     LoggingFacade logger = getLogger();
 
-    // Copy the istio (un)intsall scripts to RESULTS_ROOT, so that istio
+    // Copy the istio (un)install scripts to RESULTS_ROOT, so that istio
     // can be (un)installed manually when SKIP_CLEANUP is set to true
     assertDoesNotThrow(() -> Files.copy(
         Paths.get(RESOURCE_DIR, "bash-scripts", "install-istio.sh"),
@@ -136,13 +136,13 @@ public class IstioUtils {
    */
   public static int getIstioHttpIngressPort() {
     LoggingFacade logger = getLogger();
-    ExecResult result = null;
-    StringBuffer getIngressPort = null;
-    getIngressPort = new StringBuffer(KUBERNETES_CLI + " -n istio-system get service istio-ingressgateway ");
+    ExecResult result;
+    StringBuilder getIngressPort;
+    getIngressPort = new StringBuilder(KUBERNETES_CLI + " -n istio-system get service istio-ingressgateway ");
     getIngressPort.append("-o jsonpath='{.spec.ports[?(@.name==\"http2\")].nodePort}'");
-    logger.info("getIngressPort: " + KUBERNETES_CLI + " command {0}", new String(getIngressPort));
+    logger.info("getIngressPort: " + KUBERNETES_CLI + " command {0}", getIngressPort.toString());
     try {
-      result = exec(new String(getIngressPort), true);
+      result = exec(getIngressPort.toString(), true);
     } catch (Exception ex) {
       logger.info("Exception in getIngressPort() {0}", ex);
       return 0;
@@ -151,59 +151,7 @@ public class IstioUtils {
     if (result.stdout() == null) {
       return 0;
     } else {
-      return Integer.valueOf(result.stdout());
-    }
-  }
-
-  /**
-   * Get the secure https ingress port of istio installation.
-   *
-   * @return secure ingress https port for istio-ingressgateway
-   */
-  public static int getIstioSecureIngressPort() {
-    LoggingFacade logger = getLogger();
-    ExecResult result = null;
-    StringBuffer getSecureIngressPort = null;
-    getSecureIngressPort = new StringBuffer(KUBERNETES_CLI + " -n istio-system get service istio-ingressgateway ");
-    getSecureIngressPort.append("-o jsonpath='{.spec.ports[?(@.name==\"https\")].nodePort}'");
-    logger.info("getSecureIngressPort: " + KUBERNETES_CLI + " command {0}", new String(getSecureIngressPort));
-    try {
-      result = exec(new String(getSecureIngressPort), true);
-    } catch (Exception ex) {
-      logger.info("Exception in getSecureIngressPort() {0}", ex);
-      return 0;
-    }
-    logger.info("getSecureIngressPort: " + KUBERNETES_CLI + " returned {0}", result.toString());
-    if (result.stdout() == null) {
-      return 0;
-    } else {
-      return Integer.valueOf(result.stdout());
-    }
-  }
-
-  /**
-   * Get the tcp ingress port of istio installation.
-   *
-   * @return tcp ingress port for istio-ingressgateway
-   */
-  public static int getIstioTcpIngressPort() {
-    LoggingFacade logger = getLogger();
-    ExecResult result = null;
-    StringBuffer getTcpIngressPort = null;
-    getTcpIngressPort = new StringBuffer(KUBERNETES_CLI + " -n istio-system get service istio-ingressgateway ");
-    getTcpIngressPort.append("-o jsonpath='{.spec.ports[?(@.name==\"tcp\")].nodePort}'");
-    logger.info("getTcpIngressPort: " + KUBERNETES_CLI + " command {0}", new String(getTcpIngressPort));
-    try {
-      result = exec(new String(getTcpIngressPort), true);
-    } catch (Exception ex) {
-      logger.info("Exception in getTcpIngressPort() {0}", ex);
-      return 0;
-    }
-    logger.info("getTcpIngressPort: " + KUBERNETES_CLI + " returned {0}", result.toString());
-    if (result.stdout() == null) {
-      return 0;
-    } else {
-      return Integer.valueOf(result.stdout());
+      return Integer.parseInt(result.stdout());
     }
   }
 
@@ -215,9 +163,9 @@ public class IstioUtils {
    */
   public static boolean deployHttpIstioGatewayAndVirtualservice(Path configPath) {
     LoggingFacade logger = getLogger();
-    ExecResult result = null;
-    StringBuffer deployIstioGateway = null;
-    deployIstioGateway = new StringBuffer(KUBERNETES_CLI + " apply -f ");
+    ExecResult result;
+    StringBuilder deployIstioGateway;
+    deployIstioGateway = new StringBuilder(KUBERNETES_CLI + " apply -f ");
     deployIstioGateway.append(configPath);
     logger.info("deployIstioGateway: " + KUBERNETES_CLI + " command {0}", new String(deployIstioGateway));
     try {
@@ -231,30 +179,6 @@ public class IstioUtils {
   }
 
   /**
-   * Deploy the tcp Istio Gateway and Istio virtual service.
-   *
-   * @param configPath path to k8s configuration file
-   * @return true if deployment is success otherwise false
-   */
-  public static boolean deployTcpIstioGatewayAndVirtualservice(
-      Path configPath) {
-    LoggingFacade logger = getLogger();
-    ExecResult result = null;
-    StringBuffer deployIstioGateway = null;
-    deployIstioGateway = new StringBuffer(KUBERNETES_CLI + " apply -f ");
-    deployIstioGateway.append(configPath);
-    logger.info("deployIstioGateway: " + KUBERNETES_CLI + " command {0}", new String(deployIstioGateway));
-    try {
-      result = exec(new String(deployIstioGateway), true);
-    } catch (Exception ex) {
-      logger.info("Exception in deployIstioGateway() {0}", ex);
-      return false;
-    }
-    logger.info("deployIstioTcpGateway: " + KUBERNETES_CLI + " returned {0}", result.toString());
-    return result.stdout().contains("istio-tcp-gateway created");
-  }
-
-  /**
    * Deploy the Istio DestinationRule.
    *
    * @param configPath path to k8s configuration file
@@ -263,13 +187,13 @@ public class IstioUtils {
   public static boolean deployIstioDestinationRule(
       Path configPath) {
     LoggingFacade logger = getLogger();
-    ExecResult result = null;
-    StringBuffer deployIstioGateway = null;
-    deployIstioGateway = new StringBuffer(KUBERNETES_CLI + " apply -f ");
+    ExecResult result;
+    StringBuilder deployIstioGateway;
+    deployIstioGateway = new StringBuilder(KUBERNETES_CLI + " apply -f ");
     deployIstioGateway.append(configPath);
-    logger.info("deployIstioDestinationRule: " + KUBERNETES_CLI + " command {0}", new String(deployIstioGateway));
+    logger.info("deployIstioDestinationRule: " + KUBERNETES_CLI + " command {0}", deployIstioGateway.toString());
     try {
-      result = exec(new String(deployIstioGateway), true);
+      result = exec(deployIstioGateway.toString(), true);
     } catch (Exception ex) {
       logger.info("Exception in deployIstioDestinationRule() {0}", ex);
       return false;
@@ -318,13 +242,13 @@ public class IstioUtils {
     assertDoesNotThrow(() -> replaceStringInFile(targetPromFile.toString(),
         "prometheus_tag",
         PROMETHEUS_IMAGE_TAG));
-    ExecResult result = null;
-    StringBuffer deployIstioPrometheus = null;
-    deployIstioPrometheus = new StringBuffer(KUBERNETES_CLI + " apply -f ");
-    deployIstioPrometheus.append(targetPromFile.toString());
-    logger.info("deployIstioPrometheus: " + KUBERNETES_CLI + " command {0}", new String(deployIstioPrometheus));
+    ExecResult result;
+    StringBuilder deployIstioPrometheus;
+    deployIstioPrometheus = new StringBuilder(KUBERNETES_CLI + " apply -f ");
+    deployIstioPrometheus.append(targetPromFile);
+    logger.info("deployIstioPrometheus: " + KUBERNETES_CLI + " command {0}", deployIstioPrometheus.toString());
     try {
-      result = exec(new String(deployIstioPrometheus), true);
+      result = exec(deployIstioPrometheus.toString(), true);
     } catch (Exception ex) {
       logger.info("Exception in deployIstioPrometheus() {0}", ex);
       return false;
@@ -445,10 +369,9 @@ public class IstioUtils {
         e.printStackTrace();
         fail("Failed to read configuration file");
       }
-      String imagePullPolicy = IMAGE_PULL_POLICY;
       domain.getSpec().monitoringExporter(new MonitoringExporterSpecification()
           .image(monexpImage)
-          .imagePullPolicy(imagePullPolicy)
+          .imagePullPolicy(IMAGE_PULL_POLICY)
           .configuration(contents));
 
       logger.info("Created domain CR with Monitoring exporter configuration : "
@@ -485,12 +408,12 @@ public class IstioUtils {
 
   
   /**
-   * Check WebLogic console thru Istio Ingress Port.
+   * Check WebLogic console through Istio Ingress Port.
    * @param istioIngressPort Istio Ingress Port
    * @param domainNamespace Domain namespace that the domain is hosted
    */
   public static void checkIstioService(int istioIngressPort, String domainNamespace) {
-    // We can not verify Rest Management console thru Administration NodePort
+    // We can not verify Rest Management console through Administration NodePort
     // in istio, as we can not enable Administration NodePort
     LoggingFacade logger = getLogger();
     logger.info("Verifying Istio Service @IngressPort [{0}]", istioIngressPort);

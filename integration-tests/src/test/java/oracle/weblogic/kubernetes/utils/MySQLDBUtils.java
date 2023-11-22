@@ -1,9 +1,9 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -77,9 +77,10 @@ public class MySQLDBUtils {
             .namespace(namespace)
             .labels(labels))
         .spec(new V1PodSpec()
-            .imagePullSecrets(Arrays.asList(new V1LocalObjectReference().name(TEST_IMAGES_REPO_SECRET_NAME)))
+            .imagePullSecrets(Collections.singletonList(
+                new V1LocalObjectReference().name(TEST_IMAGES_REPO_SECRET_NAME)))
             .terminationGracePeriodSeconds(5L)
-            .containers(Arrays.asList(new V1Container()
+            .containers(Collections.singletonList(new V1Container()
                 .image(MYSQL_IMAGE + ":" + mySQLVImageVersion)
                 .name("mysql")
                 .addEnvItem(new V1EnvVar()
@@ -88,7 +89,7 @@ public class MySQLDBUtils {
                         .secretKeyRef(new V1SecretKeySelector()
                             .name(secretName)
                             .key("root-password"))))
-                .ports(Arrays.asList(new V1ContainerPort()
+                .ports(Collections.singletonList(new V1ContainerPort()
                     .name("mysql")
                     .containerPort(3306))))));
     V1Pod pod = assertDoesNotThrow(() -> Kubernetes.createPod(namespace, mysqlPod));
@@ -107,7 +108,7 @@ public class MySQLDBUtils {
               .name(serviceName)
               .namespace(namespace))
           .spec(new V1ServiceSpec()
-              .ports(Arrays.asList(new V1ServicePort()
+              .ports(Collections.singletonList(new V1ServicePort()
                   .port(3306)
                   .protocol("TCP")
                   .targetPort(new IntOrString(3306))))

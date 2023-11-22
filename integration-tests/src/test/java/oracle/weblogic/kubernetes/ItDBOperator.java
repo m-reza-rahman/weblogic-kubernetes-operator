@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -6,7 +6,6 @@ package oracle.weblogic.kubernetes;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -111,10 +110,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItDBOperator {
 
   private static String dbNamespace = null;
-  private static String opNamespace = null;
   private static String fmwDomainNamespace = null;
   private static String wlsDomainNamespace = null;
-  private static String fmwMiiImage = null;
 
   private static final String RCUSCHEMAPREFIX = "FMWDOMAINMII";
   private static final String RCUSYSPASSWORD = "Oradoc_db1";
@@ -122,20 +119,17 @@ class ItDBOperator {
   private static final String modelFile = "model-singleclusterdomain-sampleapp-jrf.yaml";
 
   private static String dbUrl = null;
-  private static String dbName = "my-oracle-sidb";
+  private static final String dbName = "my-oracle-sidb";
   private static LoggingFacade logger = null;
 
-  private String fmwDomainUid = "fmwdomain-mii-db";
-  private String fmwAdminServerPodName = fmwDomainUid + "-admin-server";
-  private String fmwManagedServerPrefix = fmwDomainUid + "-managed-server";
-  private int replicaCount = 2;
-  private String clusterName = "cluster-1";
-  private String fmwAminSecretName = fmwDomainUid + "-weblogic-credentials";
-  private String fmwEncryptionSecretName = fmwDomainUid + "-encryptionsecret";
-  private String rcuaccessSecretName = fmwDomainUid + "-rcu-access";
-  private String opsswalletpassSecretName = fmwDomainUid + "-opss-wallet-password-secret";
-  private String opsswalletfileSecretName = fmwDomainUid + "opss-wallet-file-secret";
-  private String adminSvcExtHost = null;
+  private final String fmwDomainUid = "fmwdomain-mii-db";
+  private final String fmwAdminServerPodName = fmwDomainUid + "-admin-server";
+  private final int replicaCount = 2;
+  private final String clusterName = "cluster-1";
+  private final String fmwAminSecretName = fmwDomainUid + "-weblogic-credentials";
+  private final String fmwEncryptionSecretName = fmwDomainUid + "-encryptionsecret";
+  private final String rcuaccessSecretName = fmwDomainUid + "-rcu-access";
+  private final String opsswalletpassSecretName = fmwDomainUid + "-opss-wallet-password-secret";
 
   private static final String wlsDomainUid = "mii-jms-recovery-db";
   private static final String pvName = getUniqueName(wlsDomainUid + "-pv-");
@@ -147,7 +141,6 @@ class ItDBOperator {
 
   private final Path samplePath = Paths.get(ITTESTS_DIR, "../kubernetes/samples");
   private final Path domainLifecycleSamplePath = Paths.get(samplePath + "/scripts/domain-lifecycle");
-  private final String fmwClusterResName = fmwDomainUid + "-" + clusterName;
   private final String wlsClusterResName = wlsDomainUid + "-" + clusterName;
 
   /**
@@ -167,7 +160,7 @@ class ItDBOperator {
 
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(1), "Namespace is null");
-    opNamespace = namespaces.get(1);
+    String opNamespace = namespaces.get(1);
 
     logger.info("Assign a unique namespace for FMW domain");
     assertNotNull(namespaces.get(2), "Namespace is null");
@@ -245,7 +238,7 @@ class ItDBOperator {
 
     logger.info("Create an image with jrf model file");
     final List<String> modelList = Collections.singletonList(MODEL_DIR + "/" + modelFile);
-    fmwMiiImage = createMiiImageAndVerify(
+    String fmwMiiImage = createMiiImageAndVerify(
         "jrf-mii-image",
         modelList,
         Collections.singletonList(MII_BASIC_APP_NAME),
@@ -268,6 +261,7 @@ class ItDBOperator {
         fmwMiiImage);
     
     // create cluster object
+    String fmwClusterResName = fmwDomainUid + "-" + clusterName;
     ClusterResource cluster = createClusterResource(fmwClusterResName,
         clusterName, fmwDomainNamespace, replicaCount);
     logger.info("Creating cluster resource {0} in namespace {1}", fmwClusterResName, fmwDomainNamespace);
@@ -279,7 +273,7 @@ class ItDBOperator {
 
     verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
     // Expose the admin service external node port as  a route for OKD
-    adminSvcExtHost = createRouteForOKD(getExternalServicePodName(fmwAdminServerPodName), fmwDomainNamespace);
+    String adminSvcExtHost = createRouteForOKD(getExternalServicePodName(fmwAdminServerPodName), fmwDomainNamespace);
     verifyEMconsoleAccess(fmwDomainNamespace, fmwDomainUid, adminSvcExtHost);
 
     //Reuse the same RCU schema to restart JRF domain
@@ -322,7 +316,7 @@ class ItDBOperator {
     String configMapName = "jdbc-jms-recovery-configmap";
 
     createConfigMapAndVerify(configMapName, wlsDomainUid, wlsDomainNamespace,
-        Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
+        List.of(MODEL_DIR + "/jms.recovery.yaml"));
 
     // create PV, PVC for logs/data
     createPV(pvName, wlsDomainUid, ItDBOperator.class.getSimpleName());
@@ -385,6 +379,7 @@ class ItDBOperator {
    * servers. Verify EM console is accessible.
    */
   private void testReuseRCUschemaToRestartDomain() {
+    String opsswalletfileSecretName = fmwDomainUid + "opss-wallet-file-secret";
     saveAndRestoreOpssWalletfileSecret(fmwDomainNamespace, fmwDomainUid, opsswalletfileSecretName);
     shutdownDomain();
     patchDomainWithWalletFileSecret(opsswalletfileSecretName);
@@ -424,7 +419,7 @@ class ItDBOperator {
     runJmsClientOnAdminPod("send",
         "JdbcJmsServer@managed-server2@jms.jdbcUniformQueue");
 
-    // Scale down the cluster to repilca count of 1, this will shutdown
+    // Scale down the cluster to replica count of 1, this will shut down
     // the managed server managed-server2 in the cluster to trigger
     // JMS/JTA Service Migration.
     boolean psuccess = scaleCluster(wlsClusterResName, wlsDomainNamespace, 1);
@@ -515,7 +510,7 @@ class ItDBOperator {
     CommandParams params = new CommandParams().defaults();
     String script = "startServer.sh";
     params.command("sh "
-        + Paths.get(domainLifecycleSamplePath.toString(), "/" + script).toString()
+        + Paths.get(domainLifecycleSamplePath.toString(), "/" + script)
         + commonParameters + " -s " + serverName);
     result = Command.withParams(params).execute();
     assertTrue(result, "Failed to execute script " + script);
@@ -541,13 +536,12 @@ class ItDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkJmsServerRuntime(String jmsServer, String managedServer) {
-    ExecResult result = null;
     int adminServiceNodePort
         = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default");
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
+    StringBuilder curlString = new StringBuilder("status=$(curl --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + hostAndPort)
+    curlString.append("http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JMSRuntime/JMSServers/")
@@ -572,13 +566,12 @@ class ItDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkStoreRuntime(String storeName, String managedServer) {
-    ExecResult result = null;
     int adminServiceNodePort
         = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default");
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
+    StringBuilder curlString = new StringBuilder("status=$(curl --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + hostAndPort)
+    curlString.append("http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/persistentStoreRuntimes/")
@@ -605,13 +598,12 @@ class ItDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkJtaRecoveryServiceRuntime(String managedServer, String recoveryService, String active) {
-    ExecResult result = null;
     int adminServiceNodePort
         = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default");
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
-    StringBuffer curlString = new StringBuffer("curl --user "
+    StringBuilder curlString = new StringBuilder("curl --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("\"http://" + hostAndPort)
+    curlString.append("\"http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JTARuntime/recoveryRuntimeMBeans/")
@@ -629,7 +621,7 @@ class ItDBOperator {
 
   /**
    * Create leasing Table (ACTIVE) on an Oracle DB Instance. Uses the WebLogic utility utils.Schema to add the table So
-   * the command MUST be run inside a Weblogic Server pod.
+   * the command MUST be run inside a WebLogic Server pod.
    *
    * @param wlPodName the pod name
    * @param namespace the namespace in which WebLogic pod exists
@@ -637,15 +629,17 @@ class ItDBOperator {
    */
   public static void createLeasingTable(String wlPodName, String namespace, String dbUrl) {
     Path ddlFile = Paths.get(WORK_DIR + "/leasing.ddl");
-    String ddlString = "DROP TABLE ACTIVE;\n"
-        + "CREATE TABLE ACTIVE (\n"
-        + "  SERVER VARCHAR2(255) NOT NULL,\n"
-        + "  INSTANCE VARCHAR2(255) NOT NULL,\n"
-        + "  DOMAINNAME VARCHAR2(255) NOT NULL,\n"
-        + "  CLUSTERNAME VARCHAR2(255) NOT NULL,\n"
-        + "  TIMEOUT DATE,\n"
-        + "  PRIMARY KEY (SERVER, DOMAINNAME, CLUSTERNAME)\n"
-        + ");\n";
+    String ddlString = """
+        DROP TABLE ACTIVE;
+        CREATE TABLE ACTIVE (
+          SERVER VARCHAR2(255) NOT NULL,
+          INSTANCE VARCHAR2(255) NOT NULL,
+          DOMAINNAME VARCHAR2(255) NOT NULL,
+          CLUSTERNAME VARCHAR2(255) NOT NULL,
+          TIMEOUT DATE,
+          PRIMARY KEY (SERVER, DOMAINNAME, CLUSTERNAME)
+        );
+        """;
 
     assertDoesNotThrow(() -> Files.write(ddlFile, ddlString.getBytes()));
     String destLocation = "/u01/leasing.ddl";
@@ -657,17 +651,10 @@ class ItDBOperator {
     //String cpUrl = "jdbc:oracle:thin:@//" + K8S_NODEPORT_HOST + ":"
     String cpUrl = "jdbc:oracle:thin:@//" + dbUrl;
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
-    StringBuffer ecmd = new StringBuffer("java -cp ");
-    ecmd.append(jarLocation);
-    ecmd.append(" utils.Schema ");
-    ecmd.append(cpUrl);
-    ecmd.append(" oracle.jdbc.OracleDriver");
-    ecmd.append(" -verbose ");
-    ecmd.append(" -u \"sys as sysdba\"");
-    ecmd.append(" -p Oradoc_db1");
-    ecmd.append(" /u01/leasing.ddl");
+    String ecmd = "java -cp " + jarLocation + " utils.Schema " + cpUrl + " oracle.jdbc.OracleDriver" + " -verbose "
+        + " -u \"sys as sysdba\"" + " -p Oradoc_db1" + " /u01/leasing.ddl";
     ExecResult execResult = assertDoesNotThrow(() -> execCommand(namespace, wlPodName,
-        null, true, "/bin/sh", "-c", ecmd.toString()));
+        null, true, "/bin/sh", "-c", ecmd));
     assertEquals(0, execResult.exitValue(), "Could not create the Leasing Table");
   }
 
@@ -717,6 +704,7 @@ class ItDBOperator {
     // make sure all the server pods are removed after patch
     checkPodDeleted(fmwAdminServerPodName, fmwDomainUid, fmwDomainNamespace);
     for (int i = 1; i <= replicaCount; i++) {
+      String fmwManagedServerPrefix = fmwDomainUid + "-managed-server";
       checkPodDeleted(fmwManagedServerPrefix + i, fmwDomainUid, fmwDomainNamespace);
     }
 
@@ -740,7 +728,7 @@ class ItDBOperator {
    */
   private boolean patchDomainWithWalletFileSecret(String opssWalletFileSecretName) {
     // construct the patch string for adding server pod resources
-    StringBuffer patchStr = new StringBuffer("[{")
+    StringBuilder patchStr = new StringBuilder("[{")
         .append("\"op\": \"add\", ")
         .append("\"path\": \"/spec/configuration/opss/walletFileSecret\", ")
         .append("\"value\": \"")

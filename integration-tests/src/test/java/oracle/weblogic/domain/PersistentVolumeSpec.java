@@ -21,14 +21,14 @@ public class PersistentVolumeSpec {
 
   @ApiModelProperty("HostPath represents a directory on the host. Provisioned by a developer or tester."
       + " This is useful for single-node development and testing only! On-host storage is not supported in any way"
-      + " and WILL NOT WORK in a multi-node cluster. More info:\n"
-      + " https://kubernetes.io/docs/concepts/storage/volumes#hostpath\n"
+      + " and WILL NOT WORK in a multi-node cluster. More info:"
+      + " https://kubernetes.io/docs/concepts/storage/volumes#hostpath"
       + "Represents a host path mapped into a pod. Host path volumes do not support ownership management"
       + " or SELinux relabeling.")
   private V1HostPathVolumeSource hostPath;
 
-  @ApiModelProperty("nfs represents an NFS mount on the host. Provisioned by an admin. More info:\n"
-      + "https://kubernetes.io/docs/concepts/storage/volumes#nfs\n"
+  @ApiModelProperty("nfs represents an NFS mount on the host. Provisioned by an admin. More info:"
+      + "https://kubernetes.io/docs/concepts/storage/volumes#nfs"
       + "Represents an NFS mount that lasts the lifetime of a pod. NFS volumes do"
       + " not support ownership management or SELinux relabeling.")
   private V1NFSVolumeSource nfs;

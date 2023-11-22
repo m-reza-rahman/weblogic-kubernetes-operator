@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 
@@ -166,34 +166,7 @@ public class ConfigMapUtils {
         .findAny()
         .orElse(null);
 
-    return () -> {
-      if (configMapToModify != null) {
-        return true;
-      } else {
-        return false;
-      }
-    };
-  }
-
-  /**
-   * Check if Config Map doesn't exist.
-   * @param nameSpace namespace for the pod
-   * @param configMapName name of Config Map to modify
-   */
-  public static Callable<Boolean> configMapDoesNotExist(String nameSpace, String configMapName) throws ApiException {
-    List<V1ConfigMap> cmList = Kubernetes.listConfigMaps(nameSpace).getItems();
-    V1ConfigMap configMapToModify = cmList.stream()
-        .filter(cm -> configMapName.equals(cm.getMetadata().getName()))
-        .findAny()
-        .orElse(null);
-
-    return () -> {
-      if (configMapToModify == null) {
-        return true;
-      } else {
-        return false;
-      }
-    };
+    return () -> configMapToModify != null;
   }
 
   /**
@@ -205,13 +178,13 @@ public class ConfigMapUtils {
   public static boolean replaceConfigMap(String nameSpace, String configMapName, String fileName) {
     LoggingFacade logger = getLogger();
     boolean result = false;
-    StringBuffer editConfigMap = new StringBuffer(KUBERNETES_CLI + " create configmap ");
+    StringBuilder editConfigMap = new StringBuilder(KUBERNETES_CLI + " create configmap ");
     editConfigMap.append(configMapName);
     editConfigMap.append(" -n ");
     editConfigMap.append(nameSpace);
     editConfigMap.append(" --from-file ");
     editConfigMap.append(Paths.get(fileName));
-    editConfigMap.append(" -o yaml --dry-run=client | " + KUBERNETES_CLI + " replace -f -");
+    editConfigMap.append(" -o yaml --dry-run=client | ").append(KUBERNETES_CLI).append(" replace -f -");
 
     logger.info(KUBERNETES_CLI + " replace command is {0}", editConfigMap.toString());
     // replace configMap with new file
@@ -225,45 +198,6 @@ public class ConfigMapUtils {
     }
 
     return result;
-  }
-
-  /**
-   * Edit Config Map.
-   * @param oldRegex search for existed value to replace
-   * @param newRegex new value
-   * @param nameSpace namespace for the pod
-   * @param cmName name of Config Map to modify
-   * @param configFileName name of Config file to modify
-   * @throws ApiException when update fails
-   */
-  public static void editConfigMap(String oldRegex, String newRegex,
-                                   String nameSpace, String cmName,
-                                   String configFileName) throws ApiException {
-    List<V1ConfigMap> cmList = Kubernetes.listConfigMaps(nameSpace).getItems();
-    V1ConfigMap configMapToModify = cmList.stream()
-        .filter(cm -> cmName.equals(cm.getMetadata().getName()))
-        .findAny()
-        .orElse(null);
-
-    assertNotNull(configMapToModify,"Can't find cm for " + cmName);
-    Map<String, String> cmData = configMapToModify.getData();
-
-    String values = cmData.get("logstash.conf").replace(oldRegex,newRegex);
-    assertNotNull(values, "can't find values for key prometheus.yml");
-    cmData.replace(configFileName, values);
-
-    configMapToModify.setData(cmData);
-    Kubernetes.replaceConfigMap(configMapToModify);
-
-    cmList = Kubernetes.listConfigMaps(nameSpace).getItems();
-
-    configMapToModify = cmList.stream()
-        .filter(cm -> cmName.equals(cm.getMetadata().getName()))
-        .findAny()
-        .orElse(null);
-
-    assertNotNull(configMapToModify,"Can't find cm for " + cmName);
-    assertNotNull(configMapToModify.getData(), "Can't retreive the cm data for " + cmName + " after modification");
   }
 
   /**

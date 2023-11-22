@@ -30,12 +30,9 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.TestActions.createServiceAccount;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorImageName;
-import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.actions.TestActions.installOperator;
-import static oracle.weblogic.kubernetes.actions.TestActions.startOperator;
-import static oracle.weblogic.kubernetes.actions.TestActions.stopOperator;
 import static oracle.weblogic.kubernetes.actions.TestActions.upgradeOperator;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isHelmReleaseDeployed;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.operatorIsReady;
@@ -46,12 +43,10 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPoli
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTlsTerminationForRoute;
-import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createExternalRestIdentitySecret;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class OperatorUtils {
@@ -493,7 +488,7 @@ public class OperatorUtils {
       if (!createLogStashConfigMap) {
         opParams.createLogStashConfigMap(createLogStashConfigMap);
       }
-      logger.info("Choosen LOGSTASH_IMAGE {0}", LOGSTASH_IMAGE);
+      logger.info("Chosen LOGSTASH_IMAGE {0}", LOGSTASH_IMAGE);
       opParams.elkIntegrationEnabled(elkIntegrationEnabled);
       opParams.elasticSearchHost(elasticSearchHost);
       opParams.elasticSearchPort(ELASTICSEARCH_HTTP_PORT);
@@ -856,39 +851,4 @@ public class OperatorUtils {
 
     return true;
   }
-
-  /**
-   * Restart Operator by changing replica to 0 in operator deployment to stop Operator
-   * and changing replica back to 1 to start Operator.
-   * @param opNamespace namespace where Operator exists
-   */
-  public static void restartOperator(String opNamespace) {
-    LoggingFacade logger = getLogger();
-    // get operator pod name
-    String operatorPodName = assertDoesNotThrow(
-        () -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
-    assertNotNull(operatorPodName, "Operator pod name returned is null");
-    logger.info("Operator pod name {0}", operatorPodName);
-
-    // stop operator by changing replica to 0 in operator deployment
-    assertTrue(stopOperator(opNamespace), "Couldn't stop the Operator");
-
-    // check operator pod is not running
-    checkPodDoesNotExist(operatorPodName, null, opNamespace);
-
-    // start operator by changing replica to 1 in operator deployment
-    assertTrue(startOperator(opNamespace), "Couldn't start the Operator");
-
-    // check operator is running
-    logger.info("Check Operator pod is running in namespace {0}", opNamespace);
-    testUntil(
-        operatorIsReady(opNamespace),
-        logger,
-        "operator to be running in namespace {0}",
-        opNamespace);
-
-    logger.info("Operator pod is restarted in namespace {0}", opNamespace);
-
-  }
-
 }

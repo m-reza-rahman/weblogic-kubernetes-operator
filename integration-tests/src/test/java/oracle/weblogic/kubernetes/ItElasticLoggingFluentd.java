@@ -9,7 +9,7 @@ import java.io.RandomAccessFile;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,13 +122,11 @@ class ItElasticLoggingFluentd {
   private static final String FLUENTD_CONFIGMAP_YAML = "fluentd.configmap.elk.yaml";
 
   // constants for Domain
-  private static String domainUid = "elk-domain1";
-  private static String clusterName = "cluster-1";
-  private static String adminServerName = "admin-server";
-  private static String adminServerPodName = domainUid + "-" + adminServerName;
-  private static String managedServerPrefix = "managed-server";
-  private static String managedServerPodPrefix = domainUid + "-" + managedServerPrefix;
-  private static int replicaCount = 2;
+  private static final String domainUid = "elk-domain1";
+  private static final String adminServerName = "admin-server";
+  private static final String adminServerPodName = domainUid + "-" + adminServerName;
+  private static final String managedServerPrefix = "managed-server";
+  private static final int replicaCount = 2;
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
@@ -211,9 +209,7 @@ class ItElasticLoggingFluentd {
 
     testVarMap = new HashMap<>();
 
-    String elasticsearchUrlBuff =
-        "curl http://" + elasticSearchHost + ":" + ELASTICSEARCH_HTTP_PORT;
-    k8sExecCmdPrefix = elasticsearchUrlBuff;
+    k8sExecCmdPrefix = "curl http://" + elasticSearchHost + ":" + ELASTICSEARCH_HTTP_PORT;
     logger.info("Elasticsearch URL {0}", k8sExecCmdPrefix);
 
     // Verify that ELK Stack is ready to use
@@ -361,6 +357,7 @@ class ItElasticLoggingFluentd {
 
     // check for managed server pods existence in the domain namespace
     for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodPrefix = domainUid + "-" + managedServerPrefix;
       String managedServerPodName = managedServerPodPrefix + i;
 
       // check that the managed server service exists in the domain namespace
@@ -382,14 +379,14 @@ class ItElasticLoggingFluentd {
     final String volumeName = "weblogic-domain-storage-volume";
     final String logHomeRootPath = "/scratch";
     // create the domain CR
-    logger.info("Choosen FLUENTD_IMAGE {0}", FLUENTD_IMAGE);
+    logger.info("Chosen FLUENTD_IMAGE {0}", FLUENTD_IMAGE);
     String imagePullPolicy = "IfNotPresent";
     FluentdSpecification fluentdSpecification = new FluentdSpecification();
     fluentdSpecification.setImage(FLUENTD_IMAGE);
     fluentdSpecification.setWatchIntrospectorLogs(true);
     fluentdSpecification.setImagePullPolicy(imagePullPolicy);
     fluentdSpecification.setElasticSearchCredentials("weblogic-credentials");
-    fluentdSpecification.setVolumeMounts(Arrays.asList(new V1VolumeMount()
+    fluentdSpecification.setVolumeMounts(Collections.singletonList(new V1VolumeMount()
         .name(volumeName)
         .mountPath(logHomeRootPath)));
 
@@ -416,11 +413,11 @@ class ItElasticLoggingFluentd {
             .serverStartPolicy("IfNeeded")
             .withFluentdConfiguration(fluentdSpecification)
             .serverPod(new ServerPod()
-                .volumes(Arrays.asList(
+                .volumes(Collections.singletonList(
                     new V1Volume()
                         .name(volumeName)
                         .emptyDir(new V1EmptyDirVolumeSource())))
-                .volumeMounts(Arrays.asList(
+                .volumeMounts(Collections.singletonList(
                     new V1VolumeMount()
                         .name(volumeName)
                         .mountPath(logHomeRootPath)))
@@ -445,6 +442,7 @@ class ItElasticLoggingFluentd {
                 .introspectorJobActiveDeadlineSeconds(300L)));
 
     // create cluster resource
+    String clusterName = "cluster-1";
     if (!Cluster.doesClusterExist(clusterName, CLUSTER_VERSION, domainNamespace)) {
       ClusterResource cluster =
           createClusterResource(domainUid + "-" + clusterName,
@@ -499,8 +497,8 @@ class ItElasticLoggingFluentd {
     String[] deleteLineKeys
         = new String[]{"resources", "StartupClass", "LoggingExporterStartupClass", "ClassName", "Target"};
     try (RandomAccessFile file = new RandomAccessFile(WLS_ELK_LOGGING_MODEL_FILE, "rw")) {
-      String lineToKeep = "";
-      String allLines = "";
+      String lineToKeep;
+      StringBuilder allLines = new StringBuilder();
       boolean fountit = false;
       while ((lineToKeep = file.readLine()) != null) {
         for (String deleteLineKey : deleteLineKeys) {
@@ -512,11 +510,11 @@ class ItElasticLoggingFluentd {
         if (fountit) {
           continue;
         }
-        allLines += lineToKeep + "\n";
+        allLines.append(lineToKeep).append("\n");
       }
 
       try (BufferedWriter writer = new BufferedWriter(new FileWriter(WLS_ELK_LOGGING_MODEL_FILE))) {
-        writer.write(allLines);
+        writer.write(allLines.toString());
       } catch (Exception ex) {
         ex.printStackTrace();
       }

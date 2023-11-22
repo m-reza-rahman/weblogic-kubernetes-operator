@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -117,8 +116,10 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Test to a create Istio enabled FMW model in image domain and WebLogic domain using Oracle "
@@ -132,7 +133,6 @@ class ItIstioDBOperator {
   private static String opNamespace = null;
   private static String fmwDomainNamespace = null;
   private static String wlsDomainNamespace = null;
-  private static String fmwMiiImage = null;
 
   private static final String RCUSCHEMAPREFIX = "FMWDOMAINMII";
   private static final String RCUSYSPASSWORD = "Oradoc_db1";
@@ -140,20 +140,15 @@ class ItIstioDBOperator {
   private static final String modelFile = "model-singleclusterdomain-sampleapp-jrf.yaml";
 
   private static String dbUrl = null;
-  private static String dbName = "istio-oracle-sidb";
+  private static final String dbName = "istio-oracle-sidb";
   private static LoggingFacade logger = null;
 
-  private String fmwDomainUid = "jrf-istio-db";
-  private String fmwAdminServerPodName = fmwDomainUid + "-admin-server";
-  private String fmwManagedServerPrefix = fmwDomainUid + "-managed-server";
-  private String clusterName = "cluster-1";  
-  private int replicaCount = 2;
-  private String fmwAminSecretName = fmwDomainUid + "-weblogic-credentials";
-  private String fmwEncryptionSecretName = fmwDomainUid + "-encryptionsecret";
-  private String rcuaccessSecretName = fmwDomainUid + "-rcu-access";
-  private String opsswalletpassSecretName = fmwDomainUid + "-opss-wallet-password-secret";
-  private String opsswalletfileSecretName = fmwDomainUid + "opss-wallet-file-secret";
-  private String adminSvcExtHost = null;
+  private final String fmwDomainUid = "jrf-istio-db";
+  private final int replicaCount = 2;
+  private final String fmwAminSecretName = fmwDomainUid + "-weblogic-credentials";
+  private final String fmwEncryptionSecretName = fmwDomainUid + "-encryptionsecret";
+  private final String rcuaccessSecretName = fmwDomainUid + "-rcu-access";
+  private final String opsswalletpassSecretName = fmwDomainUid + "-opss-wallet-password-secret";
 
   private static final String wlsDomainUid = "mii-jms-istio-db";
   private static final String pvName = getUniqueName(wlsDomainUid + "-pv-");
@@ -161,7 +156,6 @@ class ItIstioDBOperator {
   private static final String wlsAdminServerPodName = wlsDomainUid + "-admin-server";
   private static final String wlsManagedServerPrefix = wlsDomainUid + "-managed-server";
   private static int wlDomainIstioIngressPort;
-  private String configMapName = "dynamicupdate-istio-configmap";
   private static String cpUrl;
   private static String adminSvcExtRouteHost = null;
 
@@ -284,7 +278,7 @@ class ItIstioDBOperator {
 
     logger.info("Create an image with jrf model file");
     final List<String> modelList = Collections.singletonList(MODEL_DIR + "/" + modelFile);
-    fmwMiiImage = createMiiImageAndVerify(
+    String fmwMiiImage = createMiiImageAndVerify(
         "jrf-mii-image",
         modelList,
         Collections.singletonList(MII_BASIC_APP_NAME),
@@ -297,6 +291,7 @@ class ItIstioDBOperator {
     imageRepoLoginAndPushImageToRegistry(fmwMiiImage);
 
     // create WDT config map without any files
+    String configMapName = "dynamicupdate-istio-configmap";
     createConfigMapAndVerify(configMapName, fmwDomainUid, fmwDomainNamespace, Collections.emptyList());
 
     // create the domain object
@@ -313,9 +308,10 @@ class ItIstioDBOperator {
         );
 
     // create cluster object
-    String clusterResName = fmwDomainUid + "-" + clusterName;
-    ClusterResource cluster = createClusterResource(clusterResName, clusterName, fmwDomainNamespace, replicaCount);
-    logger.info("Creating cluster resource {0} in namespace {1}", clusterName, fmwDomainNamespace);
+    String clusterName1 = "cluster-1";
+    String clusterResName = fmwDomainUid + "-" + clusterName1;
+    ClusterResource cluster = createClusterResource(clusterResName, clusterName1, fmwDomainNamespace, replicaCount);
+    logger.info("Creating cluster resource {0} in namespace {1}", clusterName1, fmwDomainNamespace);
     createClusterAndVerify(cluster);
     // set cluster references
     domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
@@ -325,11 +321,12 @@ class ItIstioDBOperator {
     verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
 
     String clusterName = "cluster-1";
+    String fmwAdminServerPodName = fmwDomainUid + "-admin-server";
     int istioIngressPort = enableIstio(clusterName, fmwDomainUid, fmwDomainNamespace, fmwAdminServerPodName);
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
     if (!WEBLOGIC_SLIM) {
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
@@ -368,7 +365,7 @@ class ItIstioDBOperator {
           + "/management/weblogic/latest/domainRuntime/domainSecurityRuntime?"
           + "link=none";
 
-      ExecResult result = null;
+      ExecResult result;
       logger.info("curl command {0}", curlCmd2);
       result = assertDoesNotThrow(
         () -> exec(curlCmd2, true));
@@ -377,10 +374,10 @@ class ItIstioDBOperator {
         logger.info("curl command returned {0}", result.toString());
         assertTrue(result.stdout().contains("SecurityValidationWarnings"),
                 "Could not access the Security Warning Tool page");
-        assertTrue(!result.stdout().contains("minimum of umask 027"), "umask warning check failed");
+        assertFalse(result.stdout().contains("minimum of umask 027"), "umask warning check failed");
         logger.info("No minimum umask warning reported");
       } else {
-        assertTrue(false, "Curl command failed to get DomainSecurityRuntime");
+        fail("Curl command failed to get DomainSecurityRuntime");
       }
     } else {
       logger.info("Skipping Security warning check, since Security Warning tool "
@@ -388,7 +385,7 @@ class ItIstioDBOperator {
     }
 
     Path archivePath = Paths.get(testWebAppWarLoc);
-    ExecResult result = null;
+    ExecResult result;
     result = deployToClusterUsingRest(K8S_NODEPORT_HOST,
         String.valueOf(istioIngressPort),
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
@@ -443,7 +440,7 @@ class ItIstioDBOperator {
     String configMapName = "jdbc-jms-recovery-configmap";
 
     createConfigMapAndVerify(configMapName, wlsDomainUid, wlsDomainNamespace,
-        Arrays.asList(MODEL_DIR + "/jms.recovery.yaml"));
+        List.of(MODEL_DIR + "/jms.recovery.yaml"));
 
     // create the domain CR with a pre-defined configmap
     createDomainResourceWithLogHome(wlsDomainUid, wlsDomainNamespace,
@@ -515,7 +512,7 @@ class ItIstioDBOperator {
     runJmsClientOnAdminPod("send",
         "JdbcJmsServer@managed-server2@jms.jdbcUniformQueue");
 
-    // Scale down the cluster to repilca count of 1, this will shutdown
+    // Scale down the cluster to replica count of 1, this will shut down
     // the managed server managed-server2 in the cluster to trigger
     // JMS/JTA Service Migration.
     boolean psuccess = scaleCluster(wlsDomainUid + "-cluster-1", wlsDomainNamespace, 1);
@@ -607,7 +604,7 @@ class ItIstioDBOperator {
     CommandParams params = new CommandParams().defaults();
     String script = "startServer.sh";
     params.command("sh "
-        + Paths.get(domainLifecycleSamplePath.toString(), "/" + script).toString()
+        + Paths.get(domainLifecycleSamplePath.toString(), "/" + script)
         + commonParameters + " -s " + serverName);
     result = Command.withParams(params).execute();
     assertTrue(result, "Failed to execute script " + script);
@@ -634,10 +631,10 @@ class ItIstioDBOperator {
    **/
   private boolean checkJmsServerRuntime(String jmsServer, String managedServer) {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, wlDomainIstioIngressPort);
-    StringBuffer curlString = new StringBuffer("status=$(curl -g --user "
+    StringBuilder curlString = new StringBuilder("status=$(curl -g --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " -H 'host: " + hostHeader + " ' ");
-    curlString.append("http://" + hostAndPort)
+    curlString.append("http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JMSRuntime/JMSServers/")
@@ -663,10 +660,10 @@ class ItIstioDBOperator {
    **/
   private boolean checkStoreRuntime(String storeName, String managedServer) {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, wlDomainIstioIngressPort);
-    StringBuffer curlString = new StringBuffer("status=$(curl -g --user "
+    StringBuilder curlString = new StringBuilder("status=$(curl -g --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " "
         + " -H 'host: " + hostHeader + " ' ");
-    curlString.append("http://" + hostAndPort)
+    curlString.append("http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/persistentStoreRuntimes/")
@@ -694,10 +691,10 @@ class ItIstioDBOperator {
    **/
   private boolean checkJtaRecoveryServiceRuntime(String managedServer, String recoveryService, String active) {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, wlDomainIstioIngressPort);
-    StringBuffer curlString = new StringBuffer("curl -g --user "
+    StringBuilder curlString = new StringBuilder("curl -g --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " -H 'host: " + hostHeader + " ' ");
-    curlString.append("\"http://" + hostAndPort)
+    curlString.append("\"http://").append(hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JTARuntime/recoveryRuntimeMBeans/")
@@ -723,15 +720,17 @@ class ItIstioDBOperator {
    */
   public static void createLeasingTable(String wlPodName, String namespace, String dbUrl) {
     Path ddlFile = Paths.get(WORK_DIR + "/leasing.ddl");
-    String ddlString = "DROP TABLE ACTIVE;\n"
-        + "CREATE TABLE ACTIVE (\n"
-        + "  SERVER VARCHAR2(255) NOT NULL,\n"
-        + "  INSTANCE VARCHAR2(255) NOT NULL,\n"
-        + "  DOMAINNAME VARCHAR2(255) NOT NULL,\n"
-        + "  CLUSTERNAME VARCHAR2(255) NOT NULL,\n"
-        + "  TIMEOUT DATE,\n"
-        + "  PRIMARY KEY (SERVER, DOMAINNAME, CLUSTERNAME)\n"
-        + ");\n";
+    String ddlString = """
+        DROP TABLE ACTIVE;
+        CREATE TABLE ACTIVE (
+          SERVER VARCHAR2(255) NOT NULL,
+          INSTANCE VARCHAR2(255) NOT NULL,
+          DOMAINNAME VARCHAR2(255) NOT NULL,
+          CLUSTERNAME VARCHAR2(255) NOT NULL,
+          TIMEOUT DATE,
+          PRIMARY KEY (SERVER, DOMAINNAME, CLUSTERNAME)
+        );
+        """;
 
     assertDoesNotThrow(() -> Files.write(ddlFile, ddlString.getBytes()));
     String destLocation = "/u01/leasing.ddl";
@@ -743,17 +742,10 @@ class ItIstioDBOperator {
     //String cpUrl = "jdbc:oracle:thin:@//" + K8S_NODEPORT_HOST + ":"
     String cpUrl = "jdbc:oracle:thin:@//" + dbUrl;
     String jarLocation = "/u01/oracle/wlserver/server/lib/weblogic.jar";
-    StringBuffer ecmd = new StringBuffer("java -cp ");
-    ecmd.append(jarLocation);
-    ecmd.append(" utils.Schema ");
-    ecmd.append(cpUrl);
-    ecmd.append(" oracle.jdbc.OracleDriver");
-    ecmd.append(" -verbose ");
-    ecmd.append(" -u \"sys as sysdba\"");
-    ecmd.append(" -p Oradoc_db1");
-    ecmd.append(" /u01/leasing.ddl");
+    String ecmd = "java -cp " + jarLocation + " utils.Schema " + cpUrl + " oracle.jdbc.OracleDriver" + " -verbose "
+        + " -u \"sys as sysdba\"" + " -p Oradoc_db1" + " /u01/leasing.ddl";
     ExecResult execResult = assertDoesNotThrow(() -> execCommand(namespace, wlPodName,
-        null, true, "/bin/sh", "-c", ecmd.toString()));
+        null, true, "/bin/sh", "-c", ecmd));
     assertEquals(0, execResult.exitValue(), "Could not create the Leasing Table");
   }
 

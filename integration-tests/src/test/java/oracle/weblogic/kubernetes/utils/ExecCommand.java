@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -50,7 +50,7 @@ public class ExecCommand {
       Map<String, String> additionalEnvMap
   ) throws IOException, InterruptedException {
 
-    Process p = null;
+    Process p;
     if (additionalEnvMap == null) {
       p = Runtime.getRuntime().exec(new String[] {"/bin/sh", "-c", command});
     } else {
@@ -69,7 +69,6 @@ public class ExecCommand {
     try {
       if (isRedirectToOut) {
         InputStream i = in.getInputStream();
-        @SuppressWarnings("resource")
         CopyingOutputStream copyOut = new CopyingOutputStream(System.out);
         // this makes sense because CopyingOutputStream is an InputStreamWrapper
         in = copyOut;
@@ -108,7 +107,7 @@ public class ExecCommand {
   /**
    * Generate a string array of name=value items, one for each env map entry.
    *
-   * @return list of envs
+   * @return array of envs
    */
   private static String[] generateNameValueArrayFromMap(Map<String, String> map) {
     int mapSize = map.size();
@@ -120,7 +119,7 @@ public class ExecCommand {
     return strArray;
   }
 
-  private static String read(InputStream is) throws IOException {
+  private static String read(InputStream is) {
     return new BufferedReader(new InputStreamReader(is)).lines().collect(Collectors.joining("\n"));
   }
 
@@ -128,12 +127,7 @@ public class ExecCommand {
     InputStream getInputStream();
   }
 
-  private static class SimpleInputStreamWrapper implements InputStreamWrapper {
-    final InputStream in;
-
-    SimpleInputStreamWrapper(InputStream in) {
-      this.in = in;
-    }
+  private record SimpleInputStreamWrapper(InputStream in) implements InputStreamWrapper {
 
     @Override
     public InputStream getInputStream() {

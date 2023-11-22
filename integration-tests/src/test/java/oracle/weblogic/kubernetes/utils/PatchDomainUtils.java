@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -55,7 +55,7 @@ public class PatchDomainUtils {
     String oldVersion = assertDoesNotThrow(
         () -> getDomainCustomResource(domainResourceName, namespace).getSpec().getRestartVersion(),
         String.format("Failed to get the restartVersion of %s in namespace %s", domainResourceName, namespace));
-    int newVersion = oldVersion == null ? 1 : Integer.valueOf(oldVersion) + 1;
+    int newVersion = oldVersion == null ? 1 : Integer.parseInt(oldVersion) + 1;
     logger.info("Update domain resource {0} in namespace {1} restartVersion from {2} to {3}",
         domainResourceName, namespace, oldVersion, newVersion);
     patch =
@@ -176,7 +176,7 @@ public class PatchDomainUtils {
    * @param patchStr the string for patching
    * @return true if successful, false otherwise
    */
-  public static boolean patchDomainResource(String domainUid, String domainNamespace, StringBuffer patchStr) {
+  public static boolean patchDomainResource(String domainUid, String domainNamespace, StringBuilder patchStr) {
 
     LoggingFacade logger = getLogger();
     logger.info("Modify domain resource for domain {0} in namespace {1} using patch string: {2}",
@@ -200,18 +200,10 @@ public class PatchDomainUtils {
       String patchPath, String policy) {
     LoggingFacade logger = getLogger();
     logger.info("Updating the for domain {0} in namespace {1} using patch string: {2}",
-        domainUid, domainNamespace, patchPath.toString());
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
-    patchStr.append("\"op\": \"replace\",")
-        .append(" \"path\": \"")
-        .append(patchPath)
-        .append("\",")
-        .append(" \"value\":  \"")
-        .append(policy)
-        .append("\"")
-        .append(" }]");
-    V1Patch patch = new V1Patch(new String(patchStr));
+        domainUid, domainNamespace, patchPath);
+    String patchStr = "[{" + "\"op\": \"replace\"," + " \"path\": \"" + patchPath
+        + "\"," + " \"value\":  \"" + policy + "\"" + " }]";
+    V1Patch patch = new V1Patch(patchStr);
     return patchDomainCustomResource(domainUid, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH);
   }
 
@@ -226,19 +218,10 @@ public class PatchDomainUtils {
   public static void patchDomainResourceServerStartPolicy(String patchPath, String policy, String domainNamespace,
                                             String domainUid) {
     final LoggingFacade logger = getLogger();
-    StringBuffer patchStr = null;
-    patchStr = new StringBuffer("[{");
-    patchStr.append("\"op\": \"replace\",")
-        .append(" \"path\": \"")
-        .append(patchPath)
-        .append("\",")
-        .append(" \"value\":  \"")
-        .append(policy)
-        .append("\"")
-        .append(" }]");
-
+    String patchStr = "[{" + "\"op\": \"replace\"," + " \"path\": \"" + patchPath
+        + "\"," + " \"value\":  \"" + policy + "\"" + " }]";
     logger.info("The domain resource patch string: {0}", patchStr);
-    V1Patch patch = new V1Patch(new String(patchStr));
+    V1Patch patch = new V1Patch(patchStr);
     boolean crdPatched = assertDoesNotThrow(() ->
             patchDomainCustomResource(domainUid, domainNamespace, patch, "application/json-patch+json"),
         "patchDomainCustomResource(managedShutdown) failed");
@@ -257,7 +240,7 @@ public class PatchDomainUtils {
   public static boolean patchDomainResourceWithNewReplicaCountAtSpecLevel(
       String domainUid, String domainNamespace, int replicaCount) {
     LoggingFacade logger = getLogger();
-    StringBuffer patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = new StringBuilder("[{");
     patchStr.append(" \"op\": \"replace\",")
         .append(" \"path\": \"/spec/replicas\",")
         .append(" \"value\": ")
@@ -283,7 +266,7 @@ public class PatchDomainUtils {
                                               Map<String, String> resourceRequest) {
     LoggingFacade logger = getLogger();
     // construct the patch string for adding server pod resources
-    StringBuffer patchStr = new StringBuffer("[");
+    StringBuilder patchStr = new StringBuilder("[");
     for (String key : resourceLimits.keySet()) {
       patchStr.append("{\"op\": \"add\", ")
           .append("\"path\": \"/spec/serverPod/resources/limits/")

@@ -13,7 +13,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 @ApiModel(description = "WorkloadSpec is a description of a Workload.")
 public class WorkloadSpec {
 
-  @ApiModelProperty("Specication for the Workload.")
+  @ApiModelProperty("Specification for the Workload.")
   public DomainResource template;
 
   public WorkloadSpec template(DomainResource template) {

@@ -516,7 +516,7 @@ class ItLivenessProbeCustomization {
     ExecResult execResult = assertDoesNotThrow(() -> execCommand(domainNamespace, server1Name, null,
         true, "/bin/sh", "-c", "chmod +x " + destLocation),
         String.format("Failed to change permissions for file %s in pod %s", destLocation, server1Name));
-    assertTrue(execResult.exitValue() == 0,
+    assertEquals(0, execResult.exitValue(),
         String.format("Failed to change file %s permissions, stderr %s stdout %s", destLocation,
             execResult.stderr(), execResult.stdout()));
     logger.info("File permissions changed inside pod");
@@ -548,7 +548,7 @@ class ItLivenessProbeCustomization {
             getContainerRestartCount(domainNamespace, null, server1Name, null),
         String.format("Failed to get the restart count of the container from pod %s in namespace %s",
             server1Name, domainNamespace));
-    assertTrue(afterRestartCount - beforeRestartCount == 1,
+    assertEquals(1, afterRestartCount - beforeRestartCount,
         String.format("Liveness probe did not start the container in pod %s in namespace %s",
             server1Name, domainNamespace));
 
@@ -879,7 +879,7 @@ class ItLivenessProbeCustomization {
     String additionalBuildCommands = RESOURCE_DIR + "/bash-scripts/" + COPY_CMD;
     logger.info("additionalBuildCommands is: " + additionalBuildCommands);
 
-    StringBuffer additionalBuildFilesVarargsBuff = new StringBuffer()
+    StringBuilder additionalBuildFilesVarargsBuff = new StringBuilder()
         .append(RESOURCE_DIR)
         .append("/")
         .append("bash-scripts")

@@ -643,12 +643,12 @@ class ItOperatorWlsUpgrade {
   private void removePortForwardingAttribute(
       String domainNamespace, String  domainUid) {
 
-    StringBuffer patchStr = new StringBuffer("[{");
+    StringBuilder patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"remove\",")
         .append(" \"path\": \"/spec/adminServer/adminChannelPortForwardingEnabled\"")
         .append("}]");
     logger.info("The patch String {0}", patchStr);
-    StringBuffer commandStr = new StringBuffer(KUBERNETES_CLI + " patch domain ");
+    StringBuilder commandStr = new StringBuilder(KUBERNETES_CLI + " patch domain ");
     commandStr.append(domainUid)
               .append(" -n " + domainNamespace)
               .append(" --type 'json' -p='")

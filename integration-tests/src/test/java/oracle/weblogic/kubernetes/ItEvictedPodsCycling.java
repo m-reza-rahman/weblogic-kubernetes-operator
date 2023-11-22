@@ -52,17 +52,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class ItEvictedPodsCycling {
 
   // constants for Domain
-  private static String domainUid = "domain1";
-  private static String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
-  private static String managedServerPodPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
-  private static String clusterName = "cluster-1";
-  private static int replicaCount = 2;
+  private static final String domainUid = "domain1";
+  private static final String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
+  private static final String managedServerPodPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
+  private static final int replicaCount = 2;
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
 
-  private static Map<String, String> resourceRequest = new HashMap<>();
-  private static Map<String, String> resourceLimit = new HashMap<>();
+  private static final Map<String, String> resourceRequest = new HashMap<>();
+  private static final Map<String, String> resourceLimit = new HashMap<>();
   private static final String ephemeralStorage = "50M";
 
   private static LoggingFacade logger = null;

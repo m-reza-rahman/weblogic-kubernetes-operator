@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.domain;
@@ -30,7 +30,7 @@ public class DomainList implements KubernetesListObject {
 
   @ApiModelProperty(
       "List of domains. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md. Required.")
-  private List<DomainResource> items = new ArrayList<DomainResource>();
+  private List<DomainResource> items = new ArrayList<>();
 
   public DomainList apiVersion(String apiVersion) {
     this.apiVersion = apiVersion;
