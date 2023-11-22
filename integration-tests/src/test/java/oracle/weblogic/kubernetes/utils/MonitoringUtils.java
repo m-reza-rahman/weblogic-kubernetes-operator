@@ -370,6 +370,7 @@ public class MonitoringUtils {
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for prometheus");
 
     assertDoesNotThrow(() -> Files.createDirectories(fileTemp), "Failed to create temp dir for prometheus");
+    //String promValuesFile = OKE_CLUSTER_PRIVATEIP ? "promvaluesoke.yaml" : "promvalues.yaml";
     String promValuesFile = OKE_CLUSTER_PRIVATEIP ? "promvaluesoke.yaml" : "promvalues.yaml";
     logger.info("copy the " + promValuesFile + "  to staging location");
     Path srcPromFile = Paths.get(RESOURCE_DIR, "exporter", promValuesFile);

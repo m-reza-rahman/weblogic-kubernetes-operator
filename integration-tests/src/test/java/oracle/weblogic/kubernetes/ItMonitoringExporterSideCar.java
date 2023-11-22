@@ -4,7 +4,9 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,23 +15,19 @@ import java.util.List;
 import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
-import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
-import io.kubernetes.client.openapi.models.V1IngressBackend;
-import io.kubernetes.client.openapi.models.V1IngressRule;
-import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
-import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.MonitoringExporterConfiguration;
 import oracle.weblogic.domain.MonitoringExporterSpecification;
+import oracle.weblogic.kubernetes.actions.ActionConstants;
 import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
-import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
+import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,13 +47,11 @@ import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
-import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
-import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
+import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
@@ -66,7 +62,7 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusCond
 import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeHasExpectedStatus;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.buildMonitoringExporterCreateImageAndPushToRepo;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
@@ -87,6 +83,7 @@ import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getOrigModel
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -111,16 +108,13 @@ class ItMonitoringExporterSideCar {
   private static String domain2Namespace = null;
   private static String domain3Namespace = null;
   private static String domain4Namespace = null;
-  private static String nginxNamespace = null;
+  private static String traefikNamespace = null;
 
   private static String domain1Uid = "monexp-domain-1";
   private static String domain2Uid = "monexp-domain-2";
   private static String domain3Uid = "monexp-domain-3";
   private static String domain4Uid = "monexp-domain-4";
-
-  private static NginxParams nginxHelmParams = null;
-  private static int nodeportshttp = 0;
-  private static int nodeportshttps = 0;
+  private static HelmParams traefikHelmParams = null;
 
   private static String monitoringNS = null;
   PrometheusParams promHelmParams = null;
@@ -175,25 +169,24 @@ class ItMonitoringExporterSideCar {
     assertNotNull(namespaces.get(1), "Namespace list is null");
     monitoringNS = namespaces.get(1);
 
-    logger.info("Get a unique namespace for NGINX");
-    assertNotNull(namespaces.get(2), "Namespace list is null");
-    nginxNamespace = namespaces.get(2);
-
     logger.info("Get a unique namespace for domain1");
-    assertNotNull(namespaces.get(3), "Namespace list is null");
-    domain1Namespace = namespaces.get(3);
+    assertNotNull(namespaces.get(2), "Namespace list is null");
+    domain1Namespace = namespaces.get(2);
 
     logger.info("Get a unique namespace for domain2");
-    assertNotNull(namespaces.get(4), "Namespace list is null");
-    domain2Namespace = namespaces.get(4);
+    assertNotNull(namespaces.get(3), "Namespace list is null");
+    domain2Namespace = namespaces.get(3);
 
     logger.info("Get a unique namespace for domain3");
-    assertNotNull(namespaces.get(5), "Namespace list is null");
-    domain3Namespace = namespaces.get(5);
+    assertNotNull(namespaces.get(4), "Namespace list is null");
+    domain3Namespace = namespaces.get(4);
 
     logger.info("Get a unique namespace for domain4");
+    assertNotNull(namespaces.get(5), "Namespace list is null");
+    domain4Namespace = namespaces.get(5);
+    logger.info("Get a unique namespace for traefik");
     assertNotNull(namespaces.get(6), "Namespace list is null");
-    domain4Namespace = namespaces.get(6);
+    traefikNamespace = namespaces.get(6);
 
     logger.info("install and verify operator");
     installAndVerifyOperator(opNamespace,
@@ -205,21 +198,7 @@ class ItMonitoringExporterSideCar {
             buildMonitoringExporterCreateImageAndPushToRepo(monitoringExporterSrcDir, "exporter",
         domain1Namespace, TEST_IMAGES_REPO_SECRET_NAME, getImageBuilderExtraArgs()),
         "Failed to create image for exporter");
-    if (!OKD) {
 
-      // install and verify NGINX
-      // install Nginx ingress controller for all test cases using Nginx
-
-      if (!OKE_CLUSTER_PRIVATEIP) {
-        installNginxIngressController();
-        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-        logger.info("NGINX service name: {0}", nginxServiceName);
-        nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-        nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
-        logger.info("NGINX http node port: {0}", nodeportshttp);
-        logger.info("NGINX https node port: {0}", nodeportshttps);
-      }
-    }
     clusterNameMsPortMap = new HashMap<>();
     clusterNameMsPortMap.put(cluster1Name, managedServerPort);
     clusterNameMsPortMap.put(cluster2Name, managedServerPort);
@@ -237,6 +216,22 @@ class ItMonitoringExporterSideCar {
       assertDoesNotThrow(() -> createPvAndPvc(grafanaReleaseName, monitoringNS, labels, className));
     }
     cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+
+    if (OKE_CLUSTER_PRIVATEIP) {
+      // install Traefik ingress controller for all test cases using Traefik
+      installTraefikIngressController();
+
+      String ingressServiceName = traefikHelmParams.getReleaseName();
+      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
+      hostPortPrometheus = ingressIP;
+    } else {
+      hostPortPrometheus = host + ":" + nodeportPrometheus;
+    }
   }
 
   /**
@@ -261,30 +256,7 @@ class ItMonitoringExporterSideCar {
         installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
             domain3Namespace,
             domain3Uid);
-        if (OKE_CLUSTER_PRIVATEIP) {
-          installNginxIngressController();
-          String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-          ingressIP = getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) != null
-              ? getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
 
-          // create ingress rules with path routing for NGINX
-
-          createNginxIngressPathRoutingForMonitoring();
-          String command3 = KUBERNETES_CLI + " get ingress -n " + monitoringNS;
-          assertDoesNotThrow(() -> ExecCommand.exec(command3, true));
-
-
-        }
-        String host = K8S_NODEPORT_HOST;
-        if (host.contains(":")) {
-          host = "[" + host + "]";
-        }
-
-        if (OKE_CLUSTER_PRIVATEIP) {
-          hostPortPrometheus = ingressIP + "/" + "prometheus";
-        } else {
-          hostPortPrometheus = host + ":" + nodeportPrometheus;
-        }
         String sessionAppPrometheusSearchKey =
             "wls_servlet_invocation_total_count%7Bapp%3D%22myear%22%7D%5B15s%5D";
         checkMetricsViaPrometheus(sessionAppPrometheusSearchKey, "sessmigr", hostPortPrometheus);
@@ -530,7 +502,7 @@ class ItMonitoringExporterSideCar {
 
     if (OKD) {
       hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
-          + "-service", monitoringNS) + ":" + nodeportPrometheus;
+          + "-server", monitoringNS) + ":" + nodeportPrometheus;
     }
     if (grafanaHelmParams == null) {
       String grafanaHelmValuesFileDir = Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
@@ -560,11 +532,11 @@ class ItMonitoringExporterSideCar {
   public void tearDownAll() {
 
     // uninstall NGINX release
-    logger.info("Uninstalling NGINX");
-    if (nginxHelmParams != null) {
-      assertThat(uninstallNginx(nginxHelmParams.getHelmParams()))
-          .as("Test uninstallNginx1 returns true")
-          .withFailMessage("uninstallNginx() did not return true")
+    logger.info("Uninstalling Traefik");
+    if (traefikHelmParams != null) {
+      assertThat(uninstallTraefik(traefikHelmParams))
+          .as("Test uninstallTraefik returns true")
+          .withFailMessage("uninstallTraefik did not return true")
           .isTrue();
     }
     if (!OKD) {
@@ -602,68 +574,45 @@ class ItMonitoringExporterSideCar {
     return myImage;
   }
 
-  private static void installNginxIngressController() {
-    // install and verify Nginx
-    logger.info("Installing Nginx controller using helm");
-    nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-    String command = KUBERNETES_CLI + " get services  -n " + nginxNamespace;
-    assertDoesNotThrow(() -> ExecCommand.exec(command, true));
+  private static void installTraefikIngressController() {
+    // install and verify Traefik
+    logger.info("Installing Traefik controller using helm");
+    traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
 
-
-
+    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+    createTraefikIngressRoutingRules(monitoringNS);
   }
 
-  private static void createNginxIngressPathRoutingForMonitoring() {
-    // create an ingress in monitoringNS namespace
-    String ingressName = monitoringNS + "-nginx-path-routing";
-
-    HashMap<String, String> annotations = new HashMap<>();
-    annotations.put("nginx.ingress.kubernetes.io/rewrite-target", "/$1");
-
-    String ingressClassName = nginxHelmParams.getIngressClassName();
-
-    // create ingress rules for two domains
-    List<V1IngressRule> ingressRules = new ArrayList<>();
-    List<V1HTTPIngressPath> httpIngressPaths = new ArrayList<>();
-
-    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
-        .path("/" + "prometheus" + "(.+)")
-        .pathType("ImplementationSpecific")
-        .backend(new V1IngressBackend()
-            .service(new V1IngressServiceBackend()
-                .name(prometheusReleaseName + "-server")
-                .port(new V1ServiceBackendPort()
-                    .number(9090)))
-        );
-    httpIngressPaths.add(httpIngressPath);
-    httpIngressPath = new V1HTTPIngressPath()
-        .path("/" + "grafana" + "(.+)")
-        .pathType("ImplementationSpecific")
-        .backend(new V1IngressBackend()
-            .service(new V1IngressServiceBackend()
-                .name(grafanaReleaseName)
-                .port(new V1ServiceBackendPort()
-                    .number(80)))
-        );
-    httpIngressPaths.add(httpIngressPath);
-
-
-    V1IngressRule ingressRule = new V1IngressRule()
-        .host("")
-        .http(new V1HTTPIngressRuleValue()
-            .paths(httpIngressPaths));
-
-    ingressRules.add(ingressRule);
-
-    assertDoesNotThrow(() -> createIngress(ingressName, monitoringNS, annotations,
-        ingressClassName, ingressRules, null));
-
-    // check the ingress was found in the domain namespace
-    assertThat(assertDoesNotThrow(() -> listIngresses(monitoringNS)))
-        .as(String.format("Test ingress %s was found in namespace %s", ingressName, monitoringNS))
-        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, monitoringNS))
-        .contains(ingressName);
-
-    logger.info("ingress {0} was created in namespace {1}", ingressName, monitoringNS);
+  private static void createTraefikIngressRoutingRules(String namespace) {
+    logger.info("Creating ingress rules for prometheus traffic routing");
+    Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-monitoring.yaml");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-monitoring.yaml");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(dstFile);
+      Files.createDirectories(dstFile.getParent());
+      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
+          .replaceAll("@releasesuffix@", releaseSuffix)
+          .getBytes(StandardCharsets.UTF_8));
+    });
+    String command = KUBERNETES_CLI + " create -f " + dstFile;
+    logger.info("Running {0}", command);
+    ExecResult result;
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
   }
+
+  private int getTraefikLbNodePort(boolean isHttps) {
+    logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
+    return assertDoesNotThrow(() ->
+            getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
+        "Getting web node port for Traefik loadbalancer failed");
+  }
+
 }

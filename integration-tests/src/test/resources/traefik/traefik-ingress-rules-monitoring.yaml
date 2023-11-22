@@ -1,0 +1,19 @@
+# Copyright (c) 2023, Oracle and/or its affiliates.
+# Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
+
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: traefik
+  name: @releasesuffix@-traefik-pathrouting
+  namespace: @NS@
+spec:
+  routes:
+    - kind: Rule
+      match: PathPrefix(`/`)
+      services:
+        - kind: Service
+          name: prometheus@releasesuffix@-server
+          namespace: @NS@
+          port: 80
