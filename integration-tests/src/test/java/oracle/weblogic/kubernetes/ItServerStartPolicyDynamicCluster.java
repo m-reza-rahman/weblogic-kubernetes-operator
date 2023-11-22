@@ -70,7 +70,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItServerStartPolicyDynamicCluster {
 
   private static String domainNamespace = null;
-  private static String opNamespace = null;
 
   private static final int replicaCount = 1;
   private static final String domainUid = "mii-start-policy";
@@ -78,7 +77,6 @@ class ItServerStartPolicyDynamicCluster {
   private static final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-" + managedServerNamePrefix;
   private static LoggingFacade logger = null;
-  private static String ingressHost = null; //only used for OKD
   private static final String samplePath = "sample-testing-dynamic-cluster";
   private static final String dynamicClusterResourceName = DYNAMIC_CLUSTER;
   private static final String configuredClusterResourceName = CONFIG_CLUSTER;
@@ -96,7 +94,7 @@ class ItServerStartPolicyDynamicCluster {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -105,7 +103,7 @@ class ItServerStartPolicyDynamicCluster {
     prepare(domainNamespace, domainUid, opNamespace, samplePath);
 
     // In OKD environment, the node port cannot be accessed directly. Have to create an ingress
-    ingressHost = createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
+    createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
   }
 
   /**
@@ -146,7 +144,7 @@ class ItServerStartPolicyDynamicCluster {
    * Verify that server(s) in the configured cluster are in the RUNNING state.
    * Restart the dynamic cluster using the sample script startCluster.sh
    * Make sure that servers in the dynamic cluster are in RUNNING state again.
-   * The usecase also verify the scripts startCluster.sh/stopCluster.sh make
+   * The use case also verify the scripts startCluster.sh/stopCluster.sh make
    * no changes in a running/stopped cluster respectively.
    */
   @Order(1)
@@ -218,7 +216,7 @@ class ItServerStartPolicyDynamicCluster {
 
     assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
         "/spec/managedServers/2/serverStartPolicy", "Always"),
-        "Failed to patch dynamic managedServers's serverStartPolicy to Always");
+        "Failed to patch dynamic managedServers' serverStartPolicy to Always");
     logger.info("Dynamic managed server is patched to set the serverStartPolicy to Always");
     checkPodReadyAndServiceExists(serverPodName,
         domainUid, domainNamespace);
@@ -227,7 +225,7 @@ class ItServerStartPolicyDynamicCluster {
     // Stop the server by changing the serverStartPolicy to IfNeeded
     assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
         "/spec/managedServers/2/serverStartPolicy", "IfNeeded"),
-        "Failed to patch dynamic managedServers's serverStartPolicy to IfNeeded");
+        "Failed to patch dynamic managedServers' serverStartPolicy to IfNeeded");
     logger.info("Domain resource patched to shutdown the second managed server in dynamic cluster");
     logger.info("Wait for managed server ${0} to be shutdown", serverPodName);
     checkPodDeleted(serverPodName, domainUid, domainNamespace);
@@ -264,7 +262,7 @@ class ItServerStartPolicyDynamicCluster {
     executeLifecycleScript(domainUid, domainNamespace, samplePath,
         STOP_SERVER_SCRIPT, SERVER_LIFECYCLE, "managed-server1", keepReplicaCountConstantParameter);
 
-    // Make sure maanged-server1 is deleted
+    // Make sure managed-server1 is deleted
     checkPodDeleted(serverPodName, domainUid, domainNamespace);
     checkPodReadyAndServiceExists(serverPodName2, domainUid, domainNamespace);
     logger.info("Dynamic cluster managed server(2) is RUNNING");
@@ -323,7 +321,7 @@ class ItServerStartPolicyDynamicCluster {
    * state/configuration  is not saved once the server is shutdown unless we
    * use domain-on-pv model. So in MII case, startServer.sh script update the
    * replica count but the server startup is deferred till we re-start the
-   * adminserver. Here the operator tries to start the managed server but it
+   * adminserver. Here the operator tries to start the managed server but, it
    * will keep on failing  until administration server is available.
    */
   @Order(5)
@@ -368,11 +366,11 @@ class ItServerStartPolicyDynamicCluster {
       logger.info("Replica count increased without admin server");
 
       // Check if pod in init state
-      // Here the server pod is created but does not goes into 1/1 state
+      // Here the server pod is created but does not go into 1/1 state
       checkPodInitialized(serverPodName, domainUid, domainNamespace);
       logger.info("Server[" + serverName + "] pod is initialized");
 
-      // (re)Start Start the admin
+      // (re)Start the admin
       assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
           "/spec/adminServer/serverStartPolicy", "IfNeeded"),
           "Failed to patch adminServer's serverStartPolicy to IfNeeded");
@@ -503,7 +501,7 @@ class ItServerStartPolicyDynamicCluster {
 
     boolean isPodRestarted =
         assertDoesNotThrow(() -> checkIsPodRestarted(domainNamespace,
-            configServerPodName, configServerPodCreationTime).call().booleanValue(),
+                configServerPodName, configServerPodCreationTime).call(),
             String.format("pod %s should not been restarted in namespace %s",
                 configServerPodName, domainNamespace));
 

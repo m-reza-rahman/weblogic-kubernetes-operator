@@ -66,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.fail;
  * Verify that when the primary server is down, another server takes on its
  * clients to become the new primary server and HTTP session state is migrated
  * to the new primary server.
- *
  * Also verify that an annotation containing a slash in the name propagates
  * to the server pod
  */
@@ -86,29 +85,23 @@ class ItSessionMigration {
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
   private static final String SESSMIGR_APP_WAR_NAME = "sessmigr-war";
   private static final int SESSION_STATE = 4;
-  private static Map<String, String> httpAttrMap;
 
   // constants for operator and WebLogic domain
-  private static String domainUid = "sessmigr-domain-1";
-  private static String clusterName = "cluster-1";
-  private static String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
-  private static String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
-  private static String finalPrimaryServerName = null;
-  // Since the ServerTemplate section of the model file model.sessmigr.yaml
-  // does not explicitly specify ListenPort, the introspector/wdt generated
-  // default ListenPort for each dynamic server is set to 7100
-  private static int managedServerPort = 7100;
-  private static int replicaCount = 2;
-  private static String opNamespace = null;
+  private static final String domainUid = "sessmigr-domain-1";
+  private static final String clusterName = "cluster-1";
+  private static final String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
+  private static final String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
+
+  private static final int replicaCount = 2;
   private static String domainNamespace = null;
   private static LoggingFacade logger = null;
 
-  private static String annotationKey = "custDomainHome";
-  private static String annotationValue = "/u01/oracle";
-  private static String annotationKey2 = "custHostName";
-  private static String annotationValue2 = "https://hub.docker.com/a-0/b.c-d.asp";
-  private static String annotationKey3 = "custImageName";
-  private static String annotationValue3 = "nginx:1.14.2-1_1";
+  private static final String annotationKey = "custDomainHome";
+  private static final String annotationValue = "/u01/oracle";
+  private static final String annotationKey2 = "custHostName";
+  private static final String annotationValue2 = "https://hub.docker.com/a-0/b.c-d.asp";
+  private static final String annotationKey3 = "custImageName";
+  private static final String annotationValue3 = "nginx:1.14.2-1_1";
 
   /**
    * Install operator, create a custom image using model in image with model files
@@ -124,7 +117,7 @@ class ItSessionMigration {
     // get a unique operator namespace
     logger.info("Get a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     // get a unique domain namespace
     logger.info("Get a unique namespace for WebLogic domain");
@@ -140,14 +133,6 @@ class ItSessionMigration {
     // create and verify one cluster domain
     logger.info("Create domain and verify that it's running");
     createAndVerifyDomain(imageName);
-
-    // map to save HTTP response data
-    httpAttrMap = new HashMap<String, String>();
-    httpAttrMap.put("sessioncreatetime", "(.*)sessioncreatetime>(.*)</sessioncreatetime(.*)");
-    httpAttrMap.put("sessionid", "(.*)sessionid>(.*)</sessionid(.*)");
-    httpAttrMap.put("primary", "(.*)primary>(.*)</primary(.*)");
-    httpAttrMap.put("secondary", "(.*)secondary>(.*)</secondary(.*)");
-    httpAttrMap.put("count", "(.*)countattribute>(.*)</countattribute(.*)");
   }
 
   @AfterAll
@@ -155,7 +140,7 @@ class ItSessionMigration {
   }
 
   /**
-   * The test sends a HTTP request to set http session state(count number), get the primary and secondary server name,
+   * The test sends an HTTP request to set http session state(count number), get the primary and secondary server name,
    * session create time and session state and from the util method and save HTTP session info,
    * then stop the primary server by changing serverStartPolicy to Never and patching domain.
    * Send another HTTP request to get http session state (count number), primary server and
@@ -173,8 +158,12 @@ class ItSessionMigration {
     final String clusterAddress = domainUid + "-cluster-" + clusterName;
     String serverName = managedServerPrefix + "1";
 
-    // send a HTTP request to set http session state(count number) and save HTTP session info
+    // send an HTTP request to set http session state(count number) and save HTTP session info
     // before shutting down the primary server
+    // Since the ServerTemplate section of the model file model.sessmigr.yaml
+    // does not explicitly specify ListenPort, the introspector/wdt generated
+    // default ListenPort for each dynamic server is set to 7100
+    int managedServerPort = 7100;
     Map<String, String> httpDataInfo = getServerAndSessionInfoAndVerify(domainNamespace, adminServerPodName,
         serverName, clusterAddress, managedServerPort, webServiceSetUrl, " -c ");
 
@@ -190,7 +179,7 @@ class ItSessionMigration {
     logger.info("Shut down the primary server {0}", origPrimaryServerName);
     shutdownServerAndVerify(domainUid, domainNamespace, origPrimaryServerName);
 
-    // send a HTTP request to get server and session info after shutting down the primary server
+    // send an HTTP request to get server and session info after shutting down the primary server
     serverName = domainUid + "-" + origSecondaryServerName;
     httpDataInfo = getServerAndSessionInfoAndVerify(domainNamespace, adminServerPodName,
         serverName, clusterAddress, managedServerPort, webServiceGetUrl, " -b ");
@@ -202,7 +191,7 @@ class ItSessionMigration {
     if (countStr.equalsIgnoreCase("null")) {
       count = 0;
     } else {
-      count = Optional.ofNullable(countStr).map(Integer::valueOf).orElse(0);
+      count = Optional.of(countStr).map(Integer::valueOf).orElse(0);
     }
     logger.info("After patching the domain, the primary server changes to {0} "
             + ", session create time {1} and session state {2}",
@@ -218,10 +207,10 @@ class ItSessionMigration {
             "After the primary server stopped, HTTP session state should be migrated to the new primary server")
     );
 
-    finalPrimaryServerName = primaryServerName;
-
-    logger.info("Done testSessionMigration \nThe new primary server is {0}, it was {1}. "
-            + "\nThe session state was set to {2}, it is migrated to the new primary server.",
+    logger.info("""
+            Done testSessionMigration\s
+            The new primary server is {0}, it was {1}.\s
+            The session state was set to {2}, it is migrated to the new primary server.""",
         primaryServerName, origPrimaryServerName, SESSION_STATE);
   }
 

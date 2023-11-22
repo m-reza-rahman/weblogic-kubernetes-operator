@@ -89,22 +89,22 @@ class ItPodsShutdownOption {
   private static String opNamespace = null;
 
   // domain constants
-  private static String domainUid = "domain1";
-  private static int replicaCount = 2;
-  private static String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
-  private static String managedServerPodNamePrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
+  private static final String domainUid = "domain1";
+  private static final int replicaCount = 2;
+  private static final String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
+  private static final String managedServerPodNamePrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
   String clusterName = "cluster-1";
-  private static String indManagedServerName1 = "ms-1";
-  private static String indManagedServerPodName1 = domainUid + "-" + indManagedServerName1;
-  private static String indManagedServerName2 = "ms-2";
-  private static String indManagedServerPodName2 = domainUid + "-" + indManagedServerName2;
+  private static final String indManagedServerName1 = "ms-1";
+  private static final String indManagedServerPodName1 = domainUid + "-" + indManagedServerName1;
+  private static final String indManagedServerName2 = "ms-2";
+  private static final String indManagedServerPodName2 = domainUid + "-" + indManagedServerName2;
 
   private static LoggingFacade logger = null;
 
   private static String miiImage;
   private static String adminSecretName;
   private static String encryptionSecretName;
-  private static String cmName = "configuredcluster";
+  private static final String cmName = "configuredcluster";
   private static ClusterResource cluster = null;
 
   /**
@@ -154,12 +154,14 @@ class ItPodsShutdownOption {
     encryptionSecretName = "encryptionsecret";
     createSecretWithUsernamePassword(encryptionSecretName, domainNamespace, "weblogicenc", "weblogicenc");
 
-    String yamlString = "topology:\n"
-        + "  Server:\n"
-        + "    'ms-1':\n"
-        + "      ListenPort: '10001'\n"
-        + "    'ms-2':\n"
-        + "      ListenPort: '9001'\n";
+    String yamlString = """
+        topology:
+          Server:
+            'ms-1':
+              ListenPort: '10001'
+            'ms-2':
+              ListenPort: '9001'
+        """;
 
     createModelConfigMap(cmName, yamlString);
   }
@@ -189,7 +191,7 @@ class ItPodsShutdownOption {
    *      shutdownType - Forced , timeoutSeconds - 40 secs, ignoreSessions - true
    * Cluster level shutdown option applicable only to the clustered instances
    *      shutdownType - Graceful , timeoutSeconds - 60 secs, ignoreSessions - false
-   * Managed server server level shutdown option applicable only to the independent managed servers
+   * Managed server level shutdown option applicable only to the independent managed servers
    *      shutdownType - Forced , timeoutSeconds - 45 secs, ignoreSessions - true
    *
    *<p>Since the shutdown options are provided at all levels the domain level shutdown options has no effect on the
@@ -246,7 +248,7 @@ class ItPodsShutdownOption {
    *      shutdownType - Forced , timeoutSeconds - 40 secs, ignoreSessions - true
    * Cluster level shutdown option applicable only to the clustered instances
    *      shutdownType - Graceful , timeoutSeconds - 60 secs, ignoreSessions - false
-   * Managed server server level shutdown option applicable only to the independent managed servers
+   * Managed server level shutdown option applicable only to the independent managed servers
    *      shutdownType - Forced , timeoutSeconds - 45 secs, ignoreSessions - true
    *
    *<p>After creating the above options override the shutdownType for all servers using a ENV level value - Forced
@@ -284,7 +286,7 @@ class ItPodsShutdownOption {
     createVerifyDomain(domain);
 
     // get pod logs each server which contains server.out file logs and verify values set above are present in the log
-    // except shutdowntype rest of the values should match with abobe shutdown object values
+    // except shutdowntype rest of the values should match with above shutdown object values
     verifyServerLog(domainNamespace, adminServerPodName,
         new String[]{"SHUTDOWN_IGNORE_SESSIONS=true", "SHUTDOWN_TYPE=Graceful", "SHUTDOWN_TIMEOUT=40"});
     verifyServerLog(domainNamespace, managedServerPodNamePrefix + 1,
@@ -299,14 +301,12 @@ class ItPodsShutdownOption {
 
   /**
    * Set the shutdown options in different server level.
-   *
    * Cluster: ignoreSessions -> false, waitForAllSessions -> true, shutdownType -> Graceful.
    * MS1: ignoreSessions -> false, waitForAllSessions -> true, shutdownType -> Graceful.
    * MS2: ignoreSessions -> true, waitForAllSessions -> true,
-   *      When ignoreSessions is set to true, waitForAllSessions does not apply
-   *
+   *      When ignoreSessions is set to true, waitForAllSessions does not apply.
    * Verify the shutdown options are set in the server log.
-   * Scale down the cluster and verify the operator will call REST API to shutdown the server before deleting the pod.
+   * Scale down the cluster and verify the operator will call REST API to shut down the server before deleting the pod.
    */
   @Test
   @DisplayName("Verify operator will call REST API to shutdown the server before deleting the pod")
@@ -356,7 +356,7 @@ class ItPodsShutdownOption {
 
     checkPodDeleted(managedServerPodNamePrefix + replicaCount, domainUid, domainNamespace);
 
-    // verify operator will call REST API to shutdown the server before deleting the pod
+    // verify operator will call REST API to shut down the server before deleting the pod
     String operatorPodName =
         assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace),
             "Can't get operator's pod name");
@@ -368,15 +368,13 @@ class ItPodsShutdownOption {
    * Set the shutdown options in different server level.
    * Set the ignoreSession for cluster and ms2 to true.
    * Verify the operator will issue REST API call before scaling down the cluster.
-   *
    * Domain: ignoreSessions -> True, shutdownType -> Forced.
    * Cluster: ignoreSessions -> True, waitForAllSessions -> true, shutdownType -> Graceful.
    * MS1: ignoreSessions -> false, waitForAllSessions -> true, shutdownType -> Graceful.
    * MS2: ignoreSessions -> true, waitForAllSessions -> true, shutdownType -> Graceful.
-   *
    * Verify the shutdown options are set in the server log.
-   * Scale down the cluster and verify the operator will call REST API to shutdown the server before deleting the pod.
-   * Delete ms2, verify the operator will NOT call REST API to shutdown the server first before deleting the pod.
+   * Scale down the cluster and verify the operator will call REST API to shut down the server before deleting the pod.
+   * Delete ms2, verify the operator will NOT call REST API to shut down the server first before deleting the pod.
    */
   @Test
   @DisplayName("Verify shutdown servers using REST prior to deleting pods")

@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -72,8 +71,8 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/** In OKD cluster, we do not use thrid party loadbalancers, so the tests that
- * specifically test nginx or traefik are diasbled for OKD cluster. A test
+/** In OKD cluster, we do not use third party loadbalancers, so the tests that
+ * specifically test nginx or traefik are disabled for OKD cluster. A test
  * using routes are added to run only on OKD cluster.
 */
 
@@ -221,7 +220,7 @@ class ItRemoteConsole {
     int sslPort = getServicePort(
          domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
     setTargetPortForRoute("domain1-admin-server-sslport-ext", domainNamespace, sslPort);
-    String hostAndPort = null;
+    String hostAndPort;
     if (!OKD) {
       String ingressServiceName = traefikHelmParams.getReleaseName();
       hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
@@ -277,9 +276,8 @@ class ItRemoteConsole {
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
-      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", domainNamespace)
-          .replaceAll("@domain1uid@", domainUid)
-          .getBytes(StandardCharsets.UTF_8));
+      Files.writeString(dstFile, Files.readString(srcFile).replaceAll("@NS@", domainNamespace)
+          .replaceAll("@domain1uid@", domainUid));
     });
     String command = KUBERNETES_CLI + " create -f " + dstFile;
     logger.info("Running {0}", command);

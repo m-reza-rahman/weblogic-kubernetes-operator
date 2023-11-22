@@ -77,8 +77,7 @@ class ItServerStartPolicy {
   private static final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-" + managedServerNamePrefix;
   private static LoggingFacade logger = null;
-  private static String samplePath = "sample-testing";
-  private static String ingressHost = null; //only used for OKD
+  private static final String samplePath = "sample-testing";
 
   /**
    * Install Operator.
@@ -101,7 +100,7 @@ class ItServerStartPolicy {
 
     prepare(domainNamespace, domainUid, opNamespace, samplePath);
     // In OKD environment, the node port cannot be accessed directly. Have to create an ingress
-    ingressHost = createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
+    createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
   }
 
   /**
@@ -164,7 +163,7 @@ class ItServerStartPolicy {
     OffsetDateTime dynTs = getPodCreationTime(domainNamespace, dynamicServerPodName);
     OffsetDateTime cfgTs = getPodCreationTime(domainNamespace, configServerPodName);
 
-    // verify that the sample script can shutdown admin server
+    // verify that the sample script can shut down admin server
     executeLifecycleScript(domainUid, domainNamespace, samplePath,STOP_SERVER_SCRIPT,
         SERVER_LIFECYCLE, "admin-server", "", true);
     checkPodDeleted(adminServerPodName, domainUid, domainNamespace);
@@ -316,7 +315,7 @@ class ItServerStartPolicy {
 
     assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
         "/spec/managedServers/0/serverStartPolicy", "Never"),
-        "Failed to patch Standalone managedServers's serverStartPolicy to Never");
+        "Failed to patch Standalone managedServers' serverStartPolicy to Never");
     logger.info("Domain is patched to shutdown standalone managed server");
 
     checkPodDeleted(serverPodName, domainUid, domainNamespace);
@@ -324,7 +323,7 @@ class ItServerStartPolicy {
 
     assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
         "/spec/managedServers/0/serverStartPolicy", "Always"),
-        "Failed to patch Standalone managedServers's serverStartPolicy to Always");
+        "Failed to patch Standalone managedServers' serverStartPolicy to Always");
     logger.info("Domain is patched to start standalone managed server");
 
     checkPodReadyAndServiceExists(serverPodName,
@@ -356,7 +355,7 @@ class ItServerStartPolicy {
 
     assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
         "/spec/managedServers/0/serverStartPolicy", "Never"),
-        "Failed to patch Standalone managedServers's serverStartPolicy to Never");
+        "Failed to patch Standalone managedServers' serverStartPolicy to Never");
     logger.info("Domain is patched to shutdown standalone managed server");
 
     checkPodDeleted(serverPodName, domainUid, domainNamespace);
@@ -364,7 +363,7 @@ class ItServerStartPolicy {
 
     assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
         "/spec/managedServers/0/serverStartPolicy", "IfNeeded"),
-        "Failed to patch Standalone managedServers's serverStartPolicy to IfNeeded");
+        "Failed to patch Standalone managedServers' serverStartPolicy to IfNeeded");
     logger.info("Domain is patched to start standalone managed server");
     checkPodReadyAndServiceExists(serverPodName,
         domainUid, domainNamespace);
@@ -374,7 +373,7 @@ class ItServerStartPolicy {
   /**
    * Stop the independent managed server using the sample script stopServer.sh
    * Start the independent managed server using the sample script startServer.sh
-   * The usecase also verify the scripts startServer.sh/stopServer.sh make
+   * The use case also verify the scripts startServer.sh/stopServer.sh make
    * no changes in a running/stopped server respectively.
    */
   @Order(4)
@@ -493,7 +492,7 @@ class ItServerStartPolicy {
    * domain-on-pv model. So in MII case, startServer.sh script update the
    * replica count but the server startup is deferred till we re-start the
    * administration server. Here the operator tries to start the managed
-   * server but it will keep on failing  until administration server is
+   * server but, it will keep on failing  until administration server is
    * available.
    */
   @Order(6)
@@ -538,7 +537,7 @@ class ItServerStartPolicy {
       logger.info("Replica count increased without admin server");
 
       // Check if pod in init state
-      // Here the server pod is created but does not goes into 1/1 state
+      // Here the server pod is created but does not go into 1/1 state
       checkPodInitialized(serverPodName, domainUid, domainNamespace);
       logger.info("Server[" + serverName + "] pod is initialized");
 

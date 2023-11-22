@@ -8,7 +8,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import io.kubernetes.client.openapi.ApiException;
@@ -21,7 +21,6 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.DomainResource;
-import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -97,29 +96,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("kind-parallel")
 class ItWseeSSO {
 
-  private static String opNamespace = null;
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
-  private static String nginxNamespace = null;
-  private static NginxParams nginxHelmParams = null;
-  private static int nodeportshttp = 0;
-  private static String WDT_MODEL_FILE_SENDER = "model.wsee1.yaml";
-  private static String WDT_MODEL_FILE_RECEIVER = "model.wsee2.yaml";
   private String receiverURI = null;
   private String senderURI = null;
   final String domain1Uid = "mywseedomain1";
   final String domain2Uid = "mywseedomain2";
   final String clusterName = "cluster-1";
   final String adminServerName = "admin-server";
-  private static List<String> ingressHost1List = null;
   final String adminServerPodName1 = domain1Uid + "-" + adminServerName;
   final String adminServerPodName2 = domain2Uid + "-" + adminServerName;
   final String managedServerNameBase = "managed-server";
   Path keyStoresPath;
-  final int managedServerPort = 8001;
-  int t3ChannelPort;
-
-  final String wlSecretName = "weblogic-credentials";
 
   int replicaCount = 2;
   String adminSvcExtHost1 = null;
@@ -145,7 +133,7 @@ class ItWseeSSO {
 
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
     logger.info("Assign a unique namespace for domain1 namespace");
     assertNotNull(namespaces.get(1), "Namespace is null");
     domain1Namespace = namespaces.get(1);
@@ -156,17 +144,17 @@ class ItWseeSSO {
 
     logger.info("Assign a unique namespace for nginx namespace");
     assertNotNull(namespaces.get(3), "Namespace is null");
-    nginxNamespace = namespaces.get(3);
+    String nginxNamespace = namespaces.get(3);
 
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
     if (!OKD) {
       // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      NginxParams nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
 
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+      int nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("NGINX http node port: {0}", nodeportshttp);
 
     }
@@ -195,7 +183,7 @@ class ItWseeSSO {
   }
 
   /**
-   * Deploy webservices apps on domain1(sender), domain2(reciever).
+   * Deploy webservices apps on domain1(sender), domain2(receiver).
    * A standalone client makes a call to webservice , deployed on domain1 (sender)
    * and provide username/password to invoke via sso webservice on domain2 (receiver)
    * with attached SAML sender-vouches policy
@@ -252,12 +240,9 @@ class ItWseeSSO {
 
     // create secret for admin credential with special characters
     // the resultant password is ##W%*}!"'"`']\\\\//1$$~x
-    // let the user name be something other than weblogic say wlsadmin
+    // let the username be something other than weblogic say wlsadmin
     logger.info("Create secret for admin credentials");
     String adminSecretName = "weblogic-credentials";
-    //assertDoesNotThrow(() -> createDomainSecret(adminSecretName,
-    //        "wlsadmin", "##W%*}!\"'\"`']\\\\//1$$~x", domainNamespace),
-    //    String.format("createSecret failed for %s", adminSecretName));
     assertDoesNotThrow(() -> createSecretWithUsernamePassword(adminSecretName, domainNamespace,
             "weblogic", "welcome1"),
         String.format("create secret for admin credentials failed for %s", adminSecretName));
@@ -283,7 +268,7 @@ class ItWseeSSO {
 
     createConfigMapAndVerify(
         configMapName, domainUid, domainNamespace,
-        Arrays.asList(RESULTS_ROOT + "/" + modelFileName));
+        List.of(RESULTS_ROOT + "/" + modelFileName));
 
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(domainNamespace);
@@ -344,7 +329,7 @@ class ItWseeSSO {
             + "      -Dweblogic.wsee.verbose=*,weblogic.wsee.security.wssp.handlers.*=FINER"
             + "      -Dweblogic.debug.DebugSecuritySAML2Lib=true",
         false, false);
-    DomainSpec spec = domain.getSpec().replicas(replicaCount);
+    domain.getSpec().replicas(replicaCount);
 
     // wait for the domain to exist
     createDomainAndVerify(domain, domainNamespace);
@@ -377,27 +362,27 @@ class ItWseeSSO {
     //copy the jks files to PV using the temp pod - we don't have access to PVROOT in Jenkins env
     assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
             pvPod.getMetadata().getName(), "",
-            Paths.get(keyStoresPath.toString(), "Identity1KeyStore.jks"),
+            Paths.get(keyStoresPath, "Identity1KeyStore.jks"),
             Paths.get(jksMountPath, "/Identity1KeyStore.jks")),
         "Copying file to pod failed");
     assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
             pvPod.getMetadata().getName(), "",
-            Paths.get(keyStoresPath.toString(), "Identity2KeyStore.jks"),
+            Paths.get(keyStoresPath, "Identity2KeyStore.jks"),
             Paths.get(jksMountPath, "/Identity2KeyStore.jks")),
         "Copying file to pod failed");
     assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
             pvPod.getMetadata().getName(), "",
-            Paths.get(keyStoresPath.toString(), "TrustKeyStore.jks"),
+            Paths.get(keyStoresPath, "TrustKeyStore.jks"),
             Paths.get(jksMountPath, "/TrustKeyStore.jks")),
         "Copying file to pod failed");
     assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
             pvPod.getMetadata().getName(), "",
-            Paths.get(keyStoresPath.toString(), "PkiKeyStore.jks"),
+            Paths.get(keyStoresPath, "PkiKeyStore.jks"),
             Paths.get(jksMountPath, "/PkiKeyStore.jks")),
         "Copying file to pod failed");
     assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
             pvPod.getMetadata().getName(), "",
-            Paths.get(keyStoresPath.toString(), "certrec.pem"),
+            Paths.get(keyStoresPath, "certrec.pem"),
             Paths.get(jksMountPath, "/certrec.pem")),
         "Copying file to pod failed");
 
@@ -418,8 +403,10 @@ class ItWseeSSO {
 
   //create a standard WebLogic domain.
   private void createDomains() {
-    createDomain(domain1Namespace, domain1Uid, WDT_MODEL_FILE_SENDER);
-    createDomain(domain2Namespace, domain2Uid, WDT_MODEL_FILE_RECEIVER);
+    String wdtModelFileSender = "model.wsee1.yaml";
+    createDomain(domain1Namespace, domain1Uid, wdtModelFileSender);
+    String wdtModelFileReceiver = "model.wsee2.yaml";
+    createDomain(domain2Namespace, domain2Uid, wdtModelFileReceiver);
     if (adminSvcExtHost1 == null) {
       adminSvcExtHost1 = createRouteForOKD(getExternalServicePodName(adminServerPodName1), domain1Namespace);
     }
@@ -479,17 +466,13 @@ class ItWseeSSO {
             Paths.get("/u01", "certrec.pem")),
         "Copying file to pod failed");
 
-    StringBuilder extOpts = new StringBuilder("");
-    extOpts.append(senderURI + " ");
-    extOpts.append(receiverURI);
-    extOpts.append(" user_d1 password1");
-    extOpts.append(" /u01/certrec.pem");
+    String extOpts = senderURI + " " + receiverURI + " user_d1 password1" + " /u01/certrec.pem";
 
     testUntil(
         runClientInsidePodVerifyResult("weblogic-pod-" + domain1Namespace, domain1Namespace,
             "/u01:/u01/EchoServiceRefStubs.jar", " WseeClient",
             "echoSignedSamlV20Token11 'Hi, world!'...",
-            extOpts.toString()),
+            extOpts),
         logger,
         "Wait for client to invoke wsee");
   }
@@ -530,22 +513,11 @@ class ItWseeSSO {
       return false;
     }
     logger.info("Running script " + scriptName);
-    String command = new StringBuilder("/u01/callpyscript.sh /u01/" + scriptName)
-        .append(" ")
-        .append(ADMIN_USERNAME_DEFAULT)
-        .append(" ")
-        .append(ADMIN_PASSWORD_DEFAULT)
-        .append(" t3://")
-        .append(adminServerPodName)
-        .append(":7001 ")
-        .append(param)
-        .toString();
+    String command = "/u01/callpyscript.sh /u01/" + scriptName + " " + ADMIN_USERNAME_DEFAULT + " "
+        + ADMIN_PASSWORD_DEFAULT + " t3://" + adminServerPodName + ":7001 " + param;
 
     result = exec(adminPod, null, true, "/bin/sh", "-c", command);
-    if (result.exitValue() != 0) {
-      return false;
-    }
-    return true;
+    return result.exitValue() == 0;
   }
 
   private static V1Pod setupWebLogicPod(String namespace, String pvName,
@@ -555,21 +527,21 @@ class ItWseeSSO {
 
     final String podName = "weblogic-pod-" + namespace;
     V1PodSpec podSpec = new V1PodSpec()
-        .containers(Arrays.asList(
+        .containers(Collections.singletonList(
             new V1Container()
                 .name("weblogic-server")
                 .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
                 .imagePullPolicy(IMAGE_PULL_POLICY)
                 .addCommandItem("sleep")
                 .addArgsItem("600")
-                .volumeMounts(Arrays.asList(
+                .volumeMounts(Collections.singletonList(
                     new V1VolumeMount()
                         .name(pvName) // mount the persistent volume to /shared inside the pod
                         .mountPath(mountPath)))))
-        .imagePullSecrets(Arrays.asList(new V1LocalObjectReference()
+        .imagePullSecrets(Collections.singletonList(new V1LocalObjectReference()
             .name(BASE_IMAGES_REPO_SECRET_NAME)))
         // the persistent volume claim used by the test
-        .volumes(Arrays.asList(
+        .volumes(Collections.singletonList(
             new V1Volume()
                 .name(pvName) // the persistent volume that needs to be archived
                 .persistentVolumeClaim(

@@ -123,9 +123,9 @@ class ItTwoDomainsManagedByTwoOperators {
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
   private static String twoDomainsNamespace = null;
-  private static List<String> opNamespaces = new ArrayList<>();
-  private static List<String> domainNamespaces = new ArrayList<>();
-  private static List<String> domainUids = new ArrayList<>();
+  private static final List<String> opNamespaces = new ArrayList<>();
+  private static final List<String> domainNamespaces = new ArrayList<>();
+  private static final List<String> domainUids = new ArrayList<>();
   private static LoggingFacade logger = null;
   private static List<String> pvPvcNamePair = null;
 
@@ -137,10 +137,10 @@ class ItTwoDomainsManagedByTwoOperators {
 
   private int t3ChannelPort = 0;
   private int replicasAfterScale;
-  private List<String> domainAdminServerPodNames = new ArrayList<>();
-  private List<OffsetDateTime> domainAdminPodOriginalTimestamps = new ArrayList<>();
-  private List<OffsetDateTime> domain1ManagedServerPodOriginalTimestampList = new ArrayList<>();
-  private List<OffsetDateTime> domain2ManagedServerPodOriginalTimestampList = new ArrayList<>();
+  private final List<String> domainAdminServerPodNames = new ArrayList<>();
+  private final List<OffsetDateTime> domainAdminPodOriginalTimestamps = new ArrayList<>();
+  private final List<OffsetDateTime> domain1ManagedServerPodOriginalTimestampList = new ArrayList<>();
+  private final List<OffsetDateTime> domain2ManagedServerPodOriginalTimestampList = new ArrayList<>();
 
   /**
    * Get namespaces, install operator and initiate domain UID list.

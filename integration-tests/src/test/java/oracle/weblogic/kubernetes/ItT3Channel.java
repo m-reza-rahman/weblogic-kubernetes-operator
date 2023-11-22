@@ -9,7 +9,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
@@ -80,17 +80,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-sequential")
 @Tag("kind-sequential")
 class ItT3Channel {
-  // namespace constants
-  private static String opNamespace = null;
   private static String domainNamespace = null;
 
   // domain constants
   private final String domainUid = "t3channel-domain";
   private final String clusterName = "cluster-1";
-  private final int replicaCount = 2;
   private final String adminServerName = ADMIN_SERVER_NAME_BASE;
   private final String adminServerPodName = domainUid + "-" + adminServerName;
-  private final String managedServerPodPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
 
   private static LoggingFacade logger = null;
 
@@ -106,7 +102,8 @@ class ItT3Channel {
     // get a unique operator namespace
     logger.info("Getting a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    // namespace constants
+    String opNamespace = namespaces.get(0);
 
     // get a new unique domainNamespace
     logger.info("Assigning a unique namespace for Domain");
@@ -118,7 +115,7 @@ class ItT3Channel {
   }
 
   /**
-   * Test t3 channel access by deploying a app using WLST.
+   * Test t3 channel access by deploying an app using WLST.
    * Test Creates a domain in persistent volume using WLST.
    * Verifies that the pods comes up and sample application deployment works.
    * Verify the default service port is set to 7100 since ListenPort is not
@@ -135,10 +132,10 @@ class ItT3Channel {
     // build the clusterview application
     Path distDir = BuildApplication.buildApplication(Paths.get(APP_DIR, "clusterview"), null, null,
         "dist", domainNamespace);
-    assertTrue(Paths.get(distDir.toString(),
-        "clusterview.war").toFile().exists(),
+    Path path = Paths.get(distDir.toString(),
+        "clusterview.war");
+    assertTrue(path.toFile().exists(),
         "Application archive is not available");
-    Path clusterViewAppPath = Paths.get(distDir.toString(), "clusterview.war");
 
     final int t3ChannelPort = getNextFreePort();
 
@@ -208,6 +205,7 @@ class ItT3Channel {
 
     // create a domain custom resource configuration object
     logger.info("Creating domain custom resource");
+    int replicaCount = 2;
     DomainResource domain = new DomainResource()
         .apiVersion(DOMAIN_API_VERSION)
         .kind("Domain")
@@ -221,7 +219,7 @@ class ItT3Channel {
             .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
             .replicas(replicaCount)
             .imagePullPolicy(IMAGE_PULL_POLICY)
-            .imagePullSecrets(Arrays.asList(
+            .imagePullSecrets(Collections.singletonList(
                 new V1LocalObjectReference()
                     .name(BASE_IMAGES_REPO_SECRET_NAME)))  // this secret is used only in non-kind cluster
             .webLogicCredentialsSecret(new V1LocalObjectReference()
@@ -259,6 +257,7 @@ class ItT3Channel {
 
     // verify managed server services and pods created
     for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
       logger.info("Checking managed server service and pod {0} is created in namespace {1}",
           managedServerPodPrefix + i, domainNamespace);
       checkPodReadyAndServiceExists(managedServerPodPrefix + i, domainUid, domainNamespace);
@@ -274,12 +273,12 @@ class ItT3Channel {
 
     //deploy clusterview application
     logger.info("Deploying clusterview app {0} to cluster {1}",
-        clusterViewAppPath, clusterName);
+        path, clusterName);
     deployUsingWlst(adminServerPodName, Integer.toString(t3ChannelNodePort),
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminServerName + "," + clusterName, clusterViewAppPath,
+        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminServerName + "," + clusterName, path,
         domainNamespace);
 
-    List<String> managedServerNames = new ArrayList<String>();
+    List<String> managedServerNames = new ArrayList<>();
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }

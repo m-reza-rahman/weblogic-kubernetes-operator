@@ -8,7 +8,7 @@ import java.io.FileOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,11 +82,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-arm")
 class ItRecoveryDomainInPV  {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
-  private final String wlSecretName = "weblogic-credentials";
   private final String domainUid = "recovery-dpv";
-  private final String clusterName = "cluster-1";
   private final String adminServerName = "admin-server";
   private final String adminServerPodName = domainUid + "-" + adminServerName;
   private static LoggingFacade logger = null;
@@ -104,7 +101,7 @@ class ItRecoveryDomainInPV  {
     logger = getLogger();
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Assign a unique namespace for WebLogic domain");
     assertNotNull(namespaces.get(1), "Namespace is null");
@@ -116,20 +113,15 @@ class ItRecoveryDomainInPV  {
 
   /**
    * Create a WebLogic domain using WLST in a persistent volume.
-   *
-   * Start a WebLogic domain with 
+   * Start a WebLogic domain with
    * (a) JMS File store with custom directory assigned to WLS cluster 
    *   e.g. /shared/domain-ns/domains/domain-uid/JmsFileStores
    * (b) WLDF system resource assigned to WLS cluster
    * (c) JDBC system resource assigned to WLS cluster 
-   *
    * Print out UID, GID and SELinux label of pods in the domain namespace
-   *
    * Send 100 persistent messages to JMS Destination on managed server(2)
    * Stop/Start the managed server(2) by scaling the cluster
-   *
    * Print out UID, GID and SELinux label of pods in the domain namespace
-   * 
    * Make sure all 100 persistent messages are recovered form managed server(2)
    */
   @Test
@@ -148,6 +140,7 @@ class ItRecoveryDomainInPV  {
     createBaseRepoSecret(domainNamespace);
 
     // create WebLogic domain credential secret
+    String wlSecretName = "weblogic-credentials";
     createSecretWithUsernamePassword(wlSecretName, domainNamespace,
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
@@ -164,6 +157,7 @@ class ItRecoveryDomainInPV  {
     p.setProperty("domain_path", "/shared/" + domainNamespace + "/domains");
     p.setProperty("domain_name", domainUid);
     p.setProperty("domain_uid", domainUid);
+    String clusterName = "cluster-1";
     p.setProperty("cluster_name", clusterName);
     p.setProperty("admin_server_name", adminServerName);
     p.setProperty("managed_server_port", "8001");
@@ -202,7 +196,7 @@ class ItRecoveryDomainInPV  {
             .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
             .imagePullPolicy(IMAGE_PULL_POLICY)
             .replicas(replicaCount)
-            .imagePullSecrets(Arrays.asList(
+            .imagePullSecrets(Collections.singletonList(
                 new V1LocalObjectReference()
                     .name(BASE_IMAGES_REPO_SECRET_NAME))) 
             .webLogicCredentialsSecret(new V1LocalObjectReference()
@@ -330,7 +324,7 @@ class ItRecoveryDomainInPV  {
         .addArgsItem("-loadProperties")
         .addArgsItem("/u01/weblogic/" + domainPropertiesFile.getFileName()); //domain property file
     logger.info("Running a Kubernetes job to create the domain");
-    Map<String, String> annotMap = new HashMap<String, String>();
+    Map<String, String> annotMap = new HashMap<>();
     annotMap.put("sidecar.istio.io/inject", "false");
     createDomainJob(WEBLOGIC_IMAGE_TO_USE_IN_SPEC, pvName, pvcName, domainScriptConfigMapName,
         namespace, jobCreationContainer, annotMap);
@@ -359,7 +353,7 @@ class ItRecoveryDomainInPV  {
             .redirect(true);
     if (Command.withParams(params).execute()
         && params.stdout() != null
-        && params.stdout().length() != 0) {
+        && !params.stdout().isEmpty()) {
       String uid = params.stdout();
       logger.info("{0}, got uid {1} for pod {2} in the namespace {3}", verbose, uid, podName, nameSpace);
       return true;

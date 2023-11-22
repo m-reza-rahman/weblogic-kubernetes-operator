@@ -59,15 +59,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItRetryImprovementMisc {
 
   private static String domainNamespace = null;
-  private static String domainUid = "rimiscdomain1";
+  private static final String domainUid = "rimiscdomain1";
 
-  private static String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
-  private static String managedServerPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
-  private static int replicaCount = 1;
+  private static final String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
+  private static final String managedServerPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
+  private static final int replicaCount = 1;
   private static LoggingFacade logger = null;
-  private static String clusterName = "cluster-1";
+  private static final String clusterName = "cluster-1";
 
-  private ConditionFactory shortRetryPolicy = with().pollDelay(0, SECONDS)
+  private final ConditionFactory shortRetryPolicy = with().pollDelay(0, SECONDS)
       .and().with().pollInterval(100, MILLISECONDS)
       .atMost(30, SECONDS).await();
 
@@ -446,7 +446,7 @@ class ItRetryImprovementMisc {
    * Verify Domain and cluster status condition Complete become false.
    * Verify Domain and Cluster status condition Available stay true.
    * Verify Domain and cluster status condition Complete becomes true when the pod auto-restarts and becomes ready.
-   * This test is different than Test 4 since the cluster replicas is 2 and when one of the cluster server pods
+   * This test is different from Test 4 since the cluster replicas is 2 and when one of the cluster server pods
    * is deleted, another server pod is still running. The cluster status condition Available should be True even
    * one of the pods get deleted.
    */

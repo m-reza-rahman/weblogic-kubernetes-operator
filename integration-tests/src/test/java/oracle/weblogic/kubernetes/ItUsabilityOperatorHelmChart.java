@@ -137,7 +137,6 @@ class ItUsabilityOperatorHelmChart {
   private final String domain5Uid = "usabdomain5";
 
   private final String clusterName = "cluster-1";
-  private final int replicaCount = 2;
   private final String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
   private final String managedServerPrefix = "-" + MANAGED_SERVER_NAME_BASE;
   private boolean isDomain1Running = false;
@@ -387,7 +386,7 @@ class ItUsabilityOperatorHelmChart {
    * Install the Operator successfully.
    * Create domain2 and verify the domain is started
    * Upgrade the operator helm chart domainNamespaces to include namespace for domain3
-   * Verify both domains are managed by the operator by making a REST API call
+   * Verify both domains are managed by the operator by making a REST API call.
    * Call helm upgrade to remove the domain3 from operator domainNamespaces
    * Verify it can't be managed by operator anymore.
    * Test fails when an operator fails to manage the domains as expected
@@ -500,7 +499,7 @@ class ItUsabilityOperatorHelmChart {
 
   /**
    * Install operator1 with namespace op2Namespace.
-   * Install operator2 with same namesapce op2Namespace.
+   * Install operator2 with same namespace op2Namespace.
    * Second operator should fail to install with following exception
    * rendered manifests contain a resource that already exists.
    * Unable to continue with install: existing resource conflict: existing resource conflict: namespace
@@ -637,7 +636,7 @@ class ItUsabilityOperatorHelmChart {
   }
 
   /**
-   * Install the operator with non existing operator namespace.
+   * Install the operator with non-existing operator namespace.
    * The helm install command should fail.
    * Test reports failure when helm install does not fail
    */
@@ -668,7 +667,7 @@ class ItUsabilityOperatorHelmChart {
    * Install the operator with empty string as domains namespaces.
    * This is equivalent of QuickStart guide does when it installs the operator
    * with ' --set "domainNamespaces={}" '.
-   * Add new domain namespace and make sure that the the WebLogic domain is activated by Operator.
+   * Add new domain namespace and make sure that the WebLogic domain is activated by Operator.
    */
   @Test
   @DisplayName("Test to create the operator with empty string for domains namespace")
@@ -737,7 +736,7 @@ class ItUsabilityOperatorHelmChart {
   }
 
   /**
-   * Install the operator with non existing operator service account.
+   * Install the operator with non-existing operator service account.
    * Operator installation should fail.
    * Create the service account.
    * Make sure operator pod is in ready state.
@@ -764,7 +763,7 @@ class ItUsabilityOperatorHelmChart {
             LIST_STRATEGY, domain2Namespace);
         assertNull(opHelmParam2, "FAILURE: Helm installs operator with not preexisted service account ");
       } catch (AssertionError ex) {
-        logger.info(" Receieved assertion error " + ex.getMessage());
+        logger.info(" Received assertion error " + ex.getMessage());
         errorMsg = ex.getMessage() + " when operator service account not created";
       }
       // Create a service account for the unique op2Namespace
@@ -776,7 +775,7 @@ class ItUsabilityOperatorHelmChart {
       logger.info("Created service account: {0}", opServiceAccount);
 
       logger.info("Installing operator %s in namespace %s again", opReleaseName, op2Namespace);
-      HelmParams opHelmParam2 = installOperatorHelmChart(op2Namespace, opServiceAccount, false, false,
+      installOperatorHelmChart(op2Namespace, opServiceAccount, false, false,
           false,null,"deployed", 0, opHelmParams,
           LIST_STRATEGY, domain2Namespace);
 
@@ -829,7 +828,7 @@ class ItUsabilityOperatorHelmChart {
           0, op1HelmParams, domain4Namespace).getHelmParams();
       assertNotNull(opHelmParams, "Can't install operator");
 
-      String opExtRestRouteHost = createRouteForOKD("external-weblogic-operator-svc", op3Namespace);
+      createRouteForOKD("external-weblogic-operator-svc", op3Namespace);
       setTlsTerminationForRoute("external-weblogic-operator-svc", op3Namespace);
       int externalRestHttpsPort = getServiceNodePort(op3Namespace, "external-weblogic-operator-svc");
       assertNotEquals(-1, externalRestHttpsPort,
@@ -982,6 +981,7 @@ class ItUsabilityOperatorHelmChart {
 
     // add cluster to the domain
     String clusterResName = domainUid + "-" + clusterName;
+    int replicaCount = 2;
     ClusterResource cluster = createClusterResource(clusterResName, domainNamespace,
         new ClusterSpec().withClusterName(clusterName).replicas(replicaCount));
     getLogger().info("Creating cluster {0} in namespace {1}", clusterResName, domainNamespace);

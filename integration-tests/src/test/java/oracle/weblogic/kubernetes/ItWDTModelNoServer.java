@@ -3,7 +3,6 @@
 
 package oracle.weblogic.kubernetes;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -121,7 +120,7 @@ class ItWDTModelNoServer {
       // Verify the domain is created. The admin server pod "domainUid-adminserver" is up and running.
       // Also verify the cluster is up and running.
       createMiiDomainAndVerify(domainNamespace, domainUid, imageName, adminServerPodName, managedServerPrefix,
-          replicaCount, Arrays.asList(clusterName), false, null, true);
+          replicaCount, List.of(clusterName), false, null, true);
 
       // check the admin server name is 'AdminServer'
       checkAdminServerName(adminServerPodName, "AdminServer");
@@ -168,7 +167,7 @@ class ItWDTModelNoServer {
       // Verify the domain is created and the admin server pod "domainUid-adminserver" is up and running.
       // Also verify the defined cluster is up and running.
       createMiiDomainAndVerify(domainNamespace, domainUid, imageName, adminServerPodName, managedServerPrefix,
-          replicaCount, Arrays.asList(clusterName), false, null, true);
+          replicaCount, List.of(clusterName), false, null, true);
 
       // check the admin server name is 'AdminServer'
       checkAdminServerName(adminServerPodName, "AdminServer");
@@ -216,7 +215,7 @@ class ItWDTModelNoServer {
       // Verify the domain is created and the admin server pod "domainUid-adminserver" is up and running.
       // Also verify the defined cluster is up and running.
       createMiiDomainAndVerify(domainNamespace, domainUid, imageName, adminServerPodName, managedServerPrefix,
-          replicaCount, Arrays.asList(clusterName), false, null, true);
+          replicaCount, List.of(clusterName), false, null, true);
 
       // check the admin server name is 'AdminServer'
       checkAdminServerName(adminServerPodName, "AdminServer");
@@ -264,7 +263,7 @@ class ItWDTModelNoServer {
       // Verify the domain is created and the admin server pod "domainUid-adminserver" is up and running.
       // Also verify the defined cluster is up and running.
       createMiiDomainAndVerify(domainNamespace, domainUid, imageName, adminServerPodName, managedServerPrefix,
-          replicaCount, Arrays.asList(clusterName), false, null, true);
+          replicaCount, List.of(clusterName), false, null, true);
 
       // check the admin server name is 'AdminServer'
       checkAdminServerName(adminServerPodName, "AdminServer");
@@ -312,7 +311,7 @@ class ItWDTModelNoServer {
       // Verify the domain is created and the admin server pod "domainUid-new-admin-server" is up and running.
       // Also verify the defined cluster is up and running.
       createMiiDomainAndVerify(domainNamespace, domainUid, imageName, namedAdminServerPodName, managedServerPrefix,
-          replicaCount, Arrays.asList(clusterName), false, null, true);
+          replicaCount, List.of(clusterName), false, null, true);
 
       // check the admin server name is 'new-admin-server'
       checkAdminServerName(namedAdminServerPodName, "new-admin-server");
@@ -496,7 +495,7 @@ class ItWDTModelNoServer {
       String expectedStr
   ) {
 
-    // check that the application is NOT running inside of a server pod
+    // check that the application is NOT running inside a server pod
     testUntil(
         () -> appAccessibleInPod(
           namespace,

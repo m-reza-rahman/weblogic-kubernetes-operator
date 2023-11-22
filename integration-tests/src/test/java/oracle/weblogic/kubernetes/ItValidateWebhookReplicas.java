@@ -101,19 +101,19 @@ class ItValidateWebhookReplicas {
   private static String opNamespace = null;
   private static String domainNamespace = null;
   private static String domainNamespace2 = null;
-  private static String domainUid = "valwebrepdomain1";
-  private static String domainUid2 = "valwebrepdomain2";
+  private static final String domainUid = "valwebrepdomain1";
+  private static final String domainUid2 = "valwebrepdomain2";
 
-  private static String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
-  private static String managedServerPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
-  private static int replicaCount = 2;
+  private static final String adminServerPodName = String.format("%s-%s", domainUid, ADMIN_SERVER_NAME_BASE);
+  private static final String managedServerPrefix = String.format("%s-%s", domainUid, MANAGED_SERVER_NAME_BASE);
+  private static final int replicaCount = 2;
   private static LoggingFacade logger = null;
-  private static int domain2NumCluster = 2;
-  private static int replicaCountToPatch = 10;
+  private static final int domain2NumCluster = 2;
+  private static final int replicaCountToPatch = 10;
   private static String opServiceAccount = null;
   private static int externalRestHttpsPort = 0;
 
-  private String clusterName = "cluster-1";
+  private final String clusterName = "cluster-1";
 
   /**
    * Perform initialization for all the tests in this class.
@@ -309,8 +309,8 @@ class ItValidateWebhookReplicas {
 
     // verify the domain status cluster replicas is not changed
     int domainStatusClusterReplicas = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace))
-        .getStatus().clusters().get(0).getReplicas().intValue();
-    assertEquals(domainStatusClusterReplicas, replicaCount,
+        .getStatus().clusters().get(0).getReplicas();
+    assertEquals(replicaCount, domainStatusClusterReplicas,
         String.format("domain status cluster replica is changed, expect: %s, got: %s",
             domainStatusClusterReplicas, replicaCount));
 
@@ -703,8 +703,8 @@ class ItValidateWebhookReplicas {
 
   private Callable<Boolean> tagImageAndPushIfNeeded(String originalImage, String taggedImage) {
     return (() -> {
-      boolean result = true;
-      result = result && imageTag(originalImage, taggedImage);
+      boolean result;
+      result = imageTag(originalImage, taggedImage);
       // push the image to a registry to make the test work in multi node cluster
       logger.info("image repo login to registry {0}", TEST_IMAGES_REPO);
       result = result && imageRepoLogin(TEST_IMAGES_REPO, TEST_IMAGES_REPO_USERNAME,

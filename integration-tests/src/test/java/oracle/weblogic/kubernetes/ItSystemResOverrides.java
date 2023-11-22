@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,7 +104,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-gate")
 class ItSystemResOverrides {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
   final String domainUid = "mysitconfigdomain";
   final String clusterName = "mycluster";
@@ -142,7 +141,7 @@ class ItSystemResOverrides {
 
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
     logger.info("Assign a unique namespace for domain namspace");
     assertNotNull(namespaces.get(1), "Namespace is null");
     domainNamespace = namespaces.get(1);
@@ -403,7 +402,7 @@ class ItSystemResOverrides {
             .domainHomeSourceType("PersistentVolume") // set the domain home source type as pv
             .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
             .imagePullPolicy(IMAGE_PULL_POLICY)
-            .imagePullSecrets(Arrays.asList(
+            .imagePullSecrets(Collections.singletonList(
                 new V1LocalObjectReference()
                     .name(BASE_IMAGES_REPO_SECRET_NAME)))  // this secret is used only for non-kind cluster
             .webLogicCredentialsSecret(new V1LocalObjectReference()

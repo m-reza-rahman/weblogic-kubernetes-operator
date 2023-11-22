@@ -67,7 +67,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItServerStartPolicyConfigCluster {
 
   private static String domainNamespace = null;
-  private static String opNamespace = null;
 
   private static final int replicaCount = 1;
   private static final String domainUid = "mii-start-policy";
@@ -77,7 +76,6 @@ class ItServerStartPolicyConfigCluster {
   private static final String clusterResourceName = DYNAMIC_CLUSTER;
   private static LoggingFacade logger = null;
   private static final String samplePath = "sample-testing-config-cluster";
-  private static String ingressHost = null; //only used for OKD
 
   /**
    * Install Operator.
@@ -92,7 +90,7 @@ class ItServerStartPolicyConfigCluster {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -101,7 +99,7 @@ class ItServerStartPolicyConfigCluster {
     prepare(domainNamespace, domainUid, opNamespace, samplePath);
 
     // In OKD environment, the node port cannot be accessed directly. Have to create an ingress
-    ingressHost = createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
+    createRouteForOKD(adminServerPodName + "-ext", domainNamespace);
   }
 
   /**
@@ -142,7 +140,7 @@ class ItServerStartPolicyConfigCluster {
    * Verify that server(s) in the dynamic cluster are in RUNNING state. 
    * Restart the cluster using the sample script startCluster.sh
    * Make sure that servers in the configured cluster are in RUNNING state. 
-   * The usecase also verify the scripts startCluster.sh/stopCluster.sh make 
+   * The use case also verify the scripts startCluster.sh/stopCluster.sh make
    * no changes in a running/stopped cluster respectively.
    */
   @Order(1)
@@ -217,7 +215,7 @@ class ItServerStartPolicyConfigCluster {
     checkPodDeleted(serverPodName, domainUid, domainNamespace);
     assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
          "/spec/managedServers/1/serverStartPolicy", "Always"),
-         "Failed to patch config managedServers's serverStartPolicy to Always");
+         "Failed to patch config managedServers' serverStartPolicy to Always");
     logger.info("Configured managed server is patched to set the serverStartPolicy to Always");
     checkPodReadyAndServiceExists(serverPodName, 
           domainUid, domainNamespace);
@@ -226,7 +224,7 @@ class ItServerStartPolicyConfigCluster {
     // Stop the server by changing the serverStartPolicy to IfNeeded
     assertTrue(patchServerStartPolicy(domainUid, domainNamespace,
          "/spec/managedServers/1/serverStartPolicy", "IfNeeded"),
-         "Failed to patch config managedServers's serverStartPolicy to IfNeeded");
+         "Failed to patch config managedServers' serverStartPolicy to IfNeeded");
     logger.info("Domain resource patched to shutdown the second managed server in configured cluster");
     logger.info("Wait for managed server ${0} to be shutdown", serverPodName);
     checkPodDeleted(serverPodName, domainUid, domainNamespace);
@@ -308,7 +306,7 @@ class ItServerStartPolicyConfigCluster {
 
     // use rollCluster.sh to rolling-restart a configured cluster
     logger.info("Rolling restart the configured cluster with rollCluster.sh script");
-    String result =  assertDoesNotThrow(() ->
+    assertDoesNotThrow(() ->
         executeLifecycleScript(domainUid, domainNamespace, samplePath,
             ROLLING_CLUSTER_SCRIPT, CLUSTER_LIFECYCLE, CONFIG_CLUSTER),
         String.format("Failed to run %s", ROLLING_CLUSTER_SCRIPT));
@@ -325,7 +323,7 @@ class ItServerStartPolicyConfigCluster {
 
     boolean isPodRestarted =
         assertDoesNotThrow(() -> checkIsPodRestarted(domainNamespace,
-        dynamicServerPodName, dynServerPodCreationTime).call().booleanValue(),
+                dynamicServerPodName, dynServerPodCreationTime).call(),
         String.format("pod %s should not been restarted in namespace %s",
             dynamicServerPodName, domainNamespace));
 
@@ -359,7 +357,7 @@ class ItServerStartPolicyConfigCluster {
 
     // use rollDomain.sh to rolling-restart a configured cluster
     logger.info("Rolling restart the domain with rollDomain.sh script");
-    String result =  assertDoesNotThrow(() ->
+    assertDoesNotThrow(() ->
         executeLifecycleScript(domainUid, domainNamespace, samplePath,ROLLING_DOMAIN_SCRIPT, DOMAIN, ""),
         String.format("Failed to run %s", ROLLING_DOMAIN_SCRIPT));
 

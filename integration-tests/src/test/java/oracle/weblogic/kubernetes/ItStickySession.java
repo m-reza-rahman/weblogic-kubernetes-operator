@@ -74,7 +74,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * This test is used for testing the affinity between a web client and a WebLogic server
- * for the duration of a HTTP session using Traefik ingress controllers
+ * for the duration of an HTTP session using Traefik ingress controllers
  * as well as cluster service.
  */
 @DisplayName("Test sticky sessions management with Traefik and ClusterService")
@@ -96,12 +96,9 @@ class ItStickySession {
   private static Map<String, String> httpAttrMap;
 
   // constants for operator and WebLogic domain
-  private static String domainUid = "stickysess-domain-1";
-  private static String clusterName = "cluster-1";
-  private static String adminServerPodName = domainUid + "-admin-server";
-  private static String managedServerPrefix = domainUid + "-managed-server";
-  private static int replicaCount = 1;
-  private static String opNamespace = null;
+  private static final String domainUid = "stickysess-domain-1";
+  private static final String clusterName = "cluster-1";
+  private static final String adminServerPodName = domainUid + "-admin-server";
   private static String domainNamespace = null;
   private static String traefikNamespace = null;
 
@@ -128,7 +125,7 @@ class ItStickySession {
     // get a unique operator namespace
     logger.info("Get a unique namespace for operator");
     assertNotNull(namespaces.get(1), "Namespace list is null");
-    opNamespace = namespaces.get(1);
+    String opNamespace = namespaces.get(1);
 
     // get a unique domain namespace
     logger.info("Get a unique namespace for WebLogic domain");
@@ -152,7 +149,7 @@ class ItStickySession {
     createAndVerifyDomain(imageName);
 
     // map to save HTTP response data
-    httpAttrMap = new HashMap<String, String>();
+    httpAttrMap = new HashMap<>();
     httpAttrMap.put("sessioncreatetime", "(.*)sessioncreatetime>(.*)</sessioncreatetime(.*)");
     httpAttrMap.put("sessionid", "(.*)sessionid>(.*)</sessionid(.*)");
     httpAttrMap.put("servername", "(.*)connectedservername>(.*)</connectedservername(.*)");
@@ -187,13 +184,7 @@ class ItStickySession {
     final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";
     createTraefikIngressRoutingRules(domainNamespace, traefikNamespace, ingressResourceFileName, domainUid);
 
-    String hostName = new StringBuilder()
-        .append(domainUid)
-        .append(".")
-        .append(domainNamespace)
-        .append(".")
-        .append(clusterName)
-        .append(".test").toString();
+    String hostName = domainUid + "." + domainNamespace + "." + clusterName + ".test";
 
     // get Traefik ingress service Nodeport
     int ingressServiceNodePort =
@@ -244,13 +235,7 @@ class ItStickySession {
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testSameSessionStickinessUsingClusterService() {
     //build cluster hostname
-    String hostName = new StringBuilder()
-        .append(domainUid)
-        .append(".")
-        .append(domainNamespace)
-        .append(".")
-        .append(clusterName)
-        .append(".test").toString();
+    String hostName = domainUid + "." + domainNamespace + "." + clusterName + ".test";
 
     //build cluster address
     final String clusterAddress = domainUid + "-cluster-" + clusterName;
@@ -308,7 +293,9 @@ class ItStickySession {
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
 
     // check for managed server pods existence in the domain namespace
+    int replicaCount = 1;
     for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = domainUid + "-managed-server";
       String managedServerPodName = managedServerPrefix + i;
 
       // check that the managed server pod is ready and the service exists in the domain namespace
@@ -398,7 +385,7 @@ class ItStickySession {
     );
 
     // map to save server and session info
-    Map<String, String> httpDataInfo = new HashMap<String, String>();
+    Map<String, String> httpDataInfo = new HashMap<>();
     httpDataInfo.put(serverNameAttr, serverName);
     httpDataInfo.put(sessionIdAttr, sessionId);
     httpDataInfo.put(countAttr, countStr);
@@ -413,13 +400,13 @@ class ItStickySession {
                                                         String... clusterAddress) {
     String[] httpAttrArray =
         {"sessioncreatetime", "sessionid", "servername", "count"};
-    Map<String, String> httpAttrInfo = new HashMap<String, String>();
+    Map<String, String> httpAttrInfo = new HashMap<>();
 
     // build curl command
     String curlCmd =
         buildCurlCommand(hostName, servicePort, curlUrlPath, headerOption, clusterAddress);
     logger.info("Command to set HTTP request or get HTTP response {0} ", curlCmd);
-    ExecResult execResult = null;
+    ExecResult execResult;
 
     if (clusterAddress.length == 0) {
       // set HTTP request and get HTTP response in a local machine
@@ -457,7 +444,7 @@ class ItStickySession {
 
     if (clusterAddress.length == 0) {
       //use a LBer ingress controller to build the curl command to run on local
-      String hostAndPort = null;
+      String hostAndPort;
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
@@ -539,7 +526,7 @@ class ItStickySession {
     final String sessionIdAttr = "sessionid";
     final String countAttr = "count";
 
-    // send a HTTP request to set http session state(count number) and save HTTP session info
+    // send an HTTP request to set http session state(count number) and save HTTP session info
     Map<String, String> httpDataInfo = getServerAndSessionInfoAndVerify(hostname,
             servicePort, webServiceSetUrl, " -c ", clusterAddress);
     // get server and session info from web service deployed on the cluster
@@ -548,7 +535,7 @@ class ItStickySession {
     logger.info("Got the server {0} and session ID {1} from the first HTTP connection",
         serverName1, sessionId1);
 
-    // send a HTTP request again to get server and session info
+    // send an HTTP request again to get server and session info
     httpDataInfo = getServerAndSessionInfoAndVerify(hostname,
         servicePort, webServiceGetUrl, " -b ", clusterAddress);
     // get server and session info from web service deployed on the cluster
@@ -566,7 +553,7 @@ class ItStickySession {
         () -> assertEquals(sessionId1, sessionId2,
             "HTTP session ID should be same for all HTTP connections " + sessionId1),
         () -> assertEquals(SESSION_STATE, count,
-            "HTTP session state should equels " + SESSION_STATE)
+            "HTTP session state should equals " + SESSION_STATE)
     );
 
     logger.info("SUCCESS --- test same session stickiness \n"

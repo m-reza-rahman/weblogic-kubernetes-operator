@@ -137,7 +137,7 @@ class ItRetryImprovements {
       deleteClusterCustomResource(clusterName, domainNamespace);
 
       Callable<Boolean> domain = domainExists(domainUid, DOMAIN_VERSION, domainNamespace);
-      if (domain.call().booleanValue()) {
+      if (domain.call()) {
         deleteDomainResource(domainNamespace, domainUid);
       }
     } catch (Exception ex) {
@@ -166,32 +166,25 @@ class ItRetryImprovements {
         String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
             domainUid, domainNamespace));
 
-    String retryOccurRegex = new StringBuilder(".*WebLogicCredentials.*\\s*secret.*")
-        .append(wlSecretName)
-        .append(".*not\\s*found\\s*in\\s*namespace\\s*.*")
-        .append(domainNamespace)
-        .append(".*Will\\s*retry\\s*next\\s*at.*and\\s*approximately\\s*every\\s*")
-        .append(FAILURE_RETRY_INTERVAL_SECONDS)
-        .append("\\s*seconds\\s*afterward\\s*until.*\\s*if\\s*the\\s*failure\\s*is\\s*not\\s*resolved").toString();
+    String retryOccurRegex = ".*WebLogicCredentials.*\\s*secret.*" + wlSecretName
+        + ".*not\\s*found\\s*in\\s*namespace\\s*.*" + domainNamespace
+        + ".*Will\\s*retry\\s*next\\s*at.*and\\s*approximately\\s*every\\s*" + FAILURE_RETRY_INTERVAL_SECONDS
+        + "\\s*seconds\\s*afterward\\s*until.*\\s*if\\s*the\\s*failure\\s*is\\s*not\\s*resolved";
 
     testUntil(() -> findStringInDomainStatusMessage(domainNamespace, domainUid, retryOccurRegex),
         logger, "retry occurs as expected");
 
     // verify that the operator stops retrying when the maximum retry time is reached
-    String retryMaxValueRegex = new StringBuilder(".*operator\\s*failed\\s*after\\s*retrying\\s*for\\s*.*")
-        .append(failureRetryLimitMinutes)
-        .append(".*\\s*minutes.*\\s*Please\\s*resolve.*error\\s*and.*update\\s*domain.spec.introspectVersion")
-        .append(".*to\\s*force\\s*another\\s*retry\\s*.*").toString();
+    String retryMaxValueRegex = ".*operator\\s*failed\\s*after\\s*retrying\\s*for\\s*.*" + failureRetryLimitMinutes
+        + ".*\\s*minutes.*\\s*Please\\s*resolve.*error\\s*and.*update\\s*domain.spec.introspectVersion"
+        + ".*to\\s*force\\s*another\\s*retry\\s*.*";
 
     testUntil(() -> findStringInDomainStatusMessage(domainNamespace, domainUid, retryMaxValueRegex),
         logger, "retry ends as expected after {0} minutes retry", failureRetryLimitMinutes);
 
     // verify that SEVERE level error message is logged in the Operator log
-    String opLogSevereErrRegex = new StringBuilder(".*SEVERE")
-        .append(".*WebLogicCredentials.*\\s*secret.*")
-        .append(wlSecretName)
-        .append(".*not\\s*found\\s*in\\s*namespace\\s*.*")
-        .append(domainNamespace).toString();
+    String opLogSevereErrRegex = ".*SEVERE" + ".*WebLogicCredentials.*\\s*secret.*" + wlSecretName
+        + ".*not\\s*found\\s*in\\s*namespace\\s*.*" + domainNamespace;
 
     testUntil(() -> checkPodLogContainsRegex(opLogSevereErrRegex, operatorPodName, opNamespace),
         logger, "SEVERE error found in Operator log");
@@ -214,13 +207,10 @@ class ItRetryImprovements {
         String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
             domainUid, domainNamespace));
 
-    String retryOccurRegex = new StringBuilder(".*WebLogicCredentials.*\\s*secret.*")
-        .append(wlSecretName)
-        .append(".*not\\s*found\\s*in\\s*namespace\\s*.*")
-        .append(domainNamespace)
-        .append(".*Will\\s*retry\\s*next\\s*at.*and\\s*approximately\\s*every\\s*")
-        .append(FAILURE_RETRY_INTERVAL_SECONDS)
-        .append("\\s*seconds\\s*afterward\\s*until.*\\s*if\\s*the\\s*failure\\s*is\\s*not\\s*resolved").toString();
+    String retryOccurRegex = ".*WebLogicCredentials.*\\s*secret.*" + wlSecretName
+        + ".*not\\s*found\\s*in\\s*namespace\\s*.*" + domainNamespace
+        + ".*Will\\s*retry\\s*next\\s*at.*and\\s*approximately\\s*every\\s*" + FAILURE_RETRY_INTERVAL_SECONDS
+        + "\\s*seconds\\s*afterward\\s*until.*\\s*if\\s*the\\s*failure\\s*is\\s*not\\s*resolved";
 
     testUntil(() -> findStringInDomainStatusMessage(domainNamespace, domainUid, retryOccurRegex),
         logger, "retry occurs as expected");
@@ -258,9 +248,8 @@ class ItRetryImprovements {
     }
 
     String domainInvalidErrorRegex =
-        new StringBuilder(".*status.*Failure.*denied.*More\\s*than\\s*one\\s*item\\s*under.*spec.managedServers.*")
-          .append(duplicateServerName)
-          .append(".*").toString();
+        ".*status.*Failure.*denied.*More\\s*than\\s*one\\s*item\\s*under.*spec.managedServers.*"
+            + duplicateServerName + ".*";
 
     logger.info("match regex {0} in STDERR {1}:", domainInvalidErrorRegex, exception.getResponseBody());
 
@@ -290,18 +279,13 @@ class ItRetryImprovements {
 
     // create a domain with replicas = 6 that exceeds the maximum cluster size of 5
     logger.info("Creating domain custom resource for domainUid {0} in namespace {1}", domainUid, domainNamespace);
-    DomainResource domain = createDomainResourceForRetryTest(FAILURE_RETRY_LIMIT_MINUTES, replicaCount, true);;
+    DomainResource domain = createDomainResourceForRetryTest(FAILURE_RETRY_LIMIT_MINUTES, replicaCount, true);
     assertTrue(assertDoesNotThrow(() -> createDomainCustomResource(domain, DOMAIN_VERSION)),
         String.format("Create domain custom resource failed with ApiException for %s in namespace %s",
             domainUid, domainNamespace));
 
-    String warningMsgRegex = new StringBuilder(".*")
-        .append(replicaCount)
-        .append("\\s*replicas.*")
-        .append(clusterName)
-        .append(".*maximum.*size.*")
-        .append(replicaMaxCount)
-        .append(".*").toString();
+    String warningMsgRegex = ".*" + replicaCount + "\\s*replicas.*" + clusterName
+        + ".*maximum.*size.*" + replicaMaxCount + ".*";
 
     // verify that warningMsgRegex message found in domain status message
     testUntil(() -> findStringInDomainStatusMessage(domainNamespace, domainUid, warningMsgRegex),
@@ -389,8 +373,7 @@ class ItRetryImprovements {
         replicaCount, badModelFile, badModelFileCm, domainUid);
     createDomainAndVerify(domain, domainNamespace);
 
-    String createDomainFailedMsgRegex = new StringBuilder(".*SEVERE.*createDomain\\s*was\\s*unable\\s*to\\s*load.*")
-        .append(badModelFileName).toString();
+    String createDomainFailedMsgRegex = ".*SEVERE.*createDomain\\s*was\\s*unable\\s*to\\s*load.*" + badModelFileName;
 
     String retryDoneMsgRegex = "The operator failed after retrying for "
         + failureRetryLimitMinutes
@@ -414,11 +397,11 @@ class ItRetryImprovements {
 
     Callable<Boolean> configMapExist = assertDoesNotThrow(() -> configMapExist(domainNamespace, badModelFileCm));
 
-    if (configMapExist.call().booleanValue()) {
+    if (configMapExist.call()) {
       deleteConfigMap(badModelFileCm, domainNamespace);
     }
     deleteClusterCustomResource(domainUid + "-" + clusterName, domainNamespace);
-    if (domainExists(domainUid, DOMAIN_VERSION, domainNamespace).call().booleanValue()) {
+    if (domainExists(domainUid, DOMAIN_VERSION, domainNamespace).call()) {
       deleteDomainResource(domainNamespace, domainUid);
     }
   }

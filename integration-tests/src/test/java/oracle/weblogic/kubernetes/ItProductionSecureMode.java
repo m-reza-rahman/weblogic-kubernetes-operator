@@ -88,13 +88,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * The test verifies the enablement of ProductionSecureMode in WebLogic Operator
  * environment. Make sure all the servers in the domain comes up and WebLogic
- * console is accessible thru default-admin NodePort service
+ * console is accessible through default-admin NodePort service
  * In order to enable ProductionSecureMode in WebLogic Operator environment
  * (a) add channel called `default-admin` to domain resource
  * (b) JAVA_OPTIONS to -Dweblogic.security.SSL.ignoreHostnameVerification=true
  * (c) add ServerStartMode: secure to domainInfo section of model file
- *     Alternativley add SecurityConfiguration/SecureMode to topology section
- * (d) add a SSL Configuration to the server template
+ *     Alternatively add SecurityConfiguration/SecureMode to topology section
+ * (d) add an SSL Configuration to the server template
  */
 
 @DisplayName("Test Secure NodePort service through admin port and default-admin channel in a mii domain")
@@ -105,9 +105,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-gate")
 class ItProductionSecureMode {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
-  private static int replicaCount = 1;
+  private static final int replicaCount = 1;
   private static final String domainUid = "mii-default-admin";
   private static final String configMapName = "default-admin-configmap";
   private final String adminServerPodName = domainUid + "-admin-server";
@@ -130,7 +129,7 @@ class ItProductionSecureMode {
     // get a new unique opNamespace
     logger.info("Assigning unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Assigning unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -159,18 +158,20 @@ class ItProductionSecureMode {
     // instead of SecurityConfiguration in topology section
     // This will trigger a new path while WebLogic configuration
     pathToEnableSSLYaml = Paths.get(WORK_DIR + "/enablessl.yaml");
-    String yamlString = "domainInfo:\n"
-        + "         ServerStartMode: 'secure' \n"
-        + "topology: \n"
-        + "  ServerTemplate: \n"
-        + "    \"cluster-1-template\": \n"
-        + "       ListenPort: '7001' \n"
-        + "       SSL: \n"
-        + "         Enabled: true \n"
-        + "         ListenPort: '7002' \n";
+    String yamlString = """
+        domainInfo:
+                 ServerStartMode: 'secure'\s
+        topology:\s
+          ServerTemplate:\s
+            "cluster-1-template":\s
+               ListenPort: '7001'\s
+               SSL:\s
+                 Enabled: true\s
+                 ListenPort: '7002'\s
+        """;
 
     assertDoesNotThrow(() -> Files.write(pathToEnableSSLYaml, yamlString.getBytes()));
-    createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Arrays.asList(pathToEnableSSLYaml.toString()));
+    createConfigMapAndVerify(configMapName, domainUid, domainNamespace, List.of(pathToEnableSSLYaml.toString()));
 
     // create the domain CR with a pre-defined configmap
     createDomainResource(domainUid, domainNamespace, adminSecretName,
@@ -207,13 +208,13 @@ class ItProductionSecureMode {
   /**
    * Create a WebLogic domain with ProductionModeEnabled.
    * Create a domain resource with a channel with the name `default-admin`.
-   * Verify a NodePort service is available thru default-admin channel.
+   * Verify a NodePort service is available through default-admin channel.
    * Verify WebLogic console is accessible through the `default-admin` service.
-   * Verify no NodePort service is available thru default channel since
+   * Verify no NodePort service is available through default channel since
    * clear text default port (7001) is disabled.
    * Check the `default-secure` and `default-admin` port on cluster service.
-   * Make sure kubectl port-forward works thru Administration port(9002)
-   * Make sure kubectl port-forward does not work thru default SSL Port(7002)
+   * Make sure kubectl port-forward works through Administration port(9002)
+   * Make sure kubectl port-forward does not work through default SSL Port(7002)
    * when Administration port(9002) is enabled.
    */
   @Test
@@ -225,7 +226,7 @@ class ItProductionSecureMode {
           "Could not get the default-admin external service node port");
     logger.info("Found the administration service nodePort {0}", defaultAdminPort);
 
-    // Here the SSL port is explicitly set to 7002 (on-prem default) in
+    // Here the SSL port is explicitly set to 7002 (on-prem default)
     // in ServerTemplate section on topology file. Here the generated
     // config.xml has no SSL port assigned, but the default-secure service
     // must be active with port 7002

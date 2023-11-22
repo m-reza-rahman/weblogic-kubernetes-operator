@@ -152,7 +152,7 @@ class ItWlsDomainOnPV {
 
       Map<String, Quantity> pvcRequest = new HashMap<>();
       pvcRequest.put("storage", new Quantity("2Gi"));
-      Configuration configuration = null;
+      Configuration configuration;
       if (OKE_CLUSTER) {
         configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
       } else {

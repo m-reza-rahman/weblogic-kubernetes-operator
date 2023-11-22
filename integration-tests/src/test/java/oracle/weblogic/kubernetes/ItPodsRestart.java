@@ -80,7 +80,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Test pods are restarted after the following properties in server pods are changed.
  * Change: The env property tested: "-Dweblogic.StdoutDebugEnabled=false" --> "-Dweblogic.StdoutDebugEnabled=true
- * Change: imagePullPolicy: IfNotPresent --> imagePullPolicy: Always(If non kind, otherwise Never).
+ * Change: imagePullPolicy: IfNotPresent --> imagePullPolicy: Always(If not kind, otherwise Never).
  * Change: podSecurityContext: runAsUser:0 --> runAsUser: 1000
  * Add resources: limits: cpu: "1", resources: requests: cpu: "0.5".
  *
@@ -101,7 +101,6 @@ class ItPodsRestart {
 
   // domain constants
   private static final String domainUid = "domain1";
-  private static final String clusterName = "cluster-1";
   private static final int replicaCount = 1;
   private static final String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
   private static final String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
@@ -169,17 +168,17 @@ class ItPodsRestart {
 
     podsWithTimeStamps = getPodsWithTimeStamps();
     // add the new server pod compute resources limits: cpu: 1, requests: cpu: 0.5
-    BigDecimal cpuLimit = new BigDecimal(1);
-    BigDecimal cpuRequest = new BigDecimal(0.5);
+    BigDecimal cpuLimit = new BigDecimal("1");
+    BigDecimal cpuRequest = new BigDecimal("0.5");
 
-    // verify if cpu limit was set then the new value should be different than the original value
+    // verify if cpu limit was set then the new value should be different from the original value
     if (limits.get("cpu") != null) {
       assertNotEquals(0, limits.get("cpu").getNumber().compareTo(cpuLimit),
           String.format("server pod compute resources cpu limit is already set to %s, set cpu limit to "
               + "a different value", cpuLimit));
     }
 
-    // verify if cpu request was set then the new value should be different than the original value
+    // verify if cpu request was set then the new value should be different from the original value
     if (requests.get("cpu") != null) {
       assertNotEquals(0, requests.get("cpu").getNumber().compareTo(cpuRequest),
           String.format("server pod compute resources cpu request is already set to %s, set cpu request to "
@@ -284,7 +283,7 @@ class ItPodsRestart {
     logger.info("Original IncludeServerOutInPodLog is: {0}", includeServerOutInPodLog);
 
     //change includeServerOutInPodLog: true --> includeServerOutInPodLog: false
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/includeServerOutInPodLog\",")
@@ -348,7 +347,7 @@ class ItPodsRestart {
       if (env.getName().equalsIgnoreCase("JAVA_OPTIONS")
           && env.getValue().equalsIgnoreCase("-Dweblogic.StdoutDebugEnabled=false")) {
         logger.info("Change JAVA_OPTIONS to -Dweblogic.StdoutDebugEnabled=true");
-        StringBuilder patchStr = null;
+        StringBuilder patchStr;
         patchStr = new StringBuilder("[{");
         patchStr.append("\"op\": \"replace\",")
             .append(" \"path\": \"/spec/serverPod/env/0/value\",")
@@ -417,7 +416,7 @@ class ItPodsRestart {
           domain1.getSpec().getServerPod().getPodSecurityContext().getRunAsUser());
 
     Long runAsUser = 1000L;
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/serverPod/podSecurityContext/runAsUser\",")
@@ -478,7 +477,7 @@ class ItPodsRestart {
     logger.info("Original domain imagePullPolicy is: {0}", imagePullPolicy);
 
     //change imagePullPolicy: IfNotPresent --> imagePullPolicy: Always(If non kind, otherwise Never)
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/imagePullPolicy\",")
@@ -534,7 +533,7 @@ class ItPodsRestart {
 
     String oldVersion = assertDoesNotThrow(()
         -> getDomainCustomResource(domainUid, domainNamespace).getSpec().getRestartVersion());
-    int newVersion = oldVersion == null ? 1 : Integer.valueOf(oldVersion) + 1;
+    int newVersion = oldVersion == null ? 1 : Integer.parseInt(oldVersion) + 1;
 
     OffsetDateTime timestamp = now();
 

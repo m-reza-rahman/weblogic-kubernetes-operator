@@ -69,8 +69,8 @@ class ItPodTemplates {
   // domain constants
   private static final int replicaCount = 1;
   private static String domainNamespace = null;
-  private static String domainUid = "itpodtemplates-domain";
-  private static String clusterName = "cluster-1";
+  private static final String domainUid = "itpodtemplates-domain";
+  private static final String clusterName = "cluster-1";
   private static LoggingFacade logger = null;
 
   /**
@@ -104,7 +104,7 @@ class ItPodTemplates {
    */
   @Test
   @DisplayName("Test pod templates using all supported variables in serverPod")
-  void testPodTemplateUsingVariablesDomainInImage() throws Exception {
+  void testPodTemplateUsingVariablesDomainInImage() {
     String wdtImage = WDT_BASIC_IMAGE_NAME + ":" + WDT_BASIC_IMAGE_TAG;
     logger.info("Add annotations to serverPod in Domain Spec as $(DOMAIN_HOME) and $(LOG_HOME)");
     logger.info("Add labels to serverPod in Domain Spec as $(DOMAIN_NAME), $(DOMAIN_UID), $(SERVER_NAME)");
