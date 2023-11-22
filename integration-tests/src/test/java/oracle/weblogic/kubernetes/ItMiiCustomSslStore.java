@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 
 import oracle.weblogic.domain.DomainResource;
@@ -73,16 +72,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-arm")
 class ItMiiCustomSslStore {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
-  private static int replicaCount = 2;
   private static final String domainUid = "mii-custom-ssl";
   private static final String pvName = getUniqueName(domainUid + "-pv-");
   private static final String pvcName = getUniqueName(domainUid + "-pvc-");
   private static final String adminServerPodName = domainUid + "-admin-server";
   private static final String managedServerPrefix = domainUid + "-managed-server";
   private static LoggingFacade logger = null;
-  private static String cpUrl;
 
   /**
    * Install Operator.
@@ -97,7 +93,7 @@ class ItMiiCustomSslStore {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -112,7 +108,7 @@ class ItMiiCustomSslStore {
 
     // create secret for admin credential with special characters
     // the resultant password is ##W%*}!"'"`']\\\\//1$$~x
-    // let the user name be something other than weblogic say wlsadmin
+    // let the username be something other than weblogic say wlsadmin
     logger.info("Create secret for admin credentials");
     String adminSecretName = "weblogic-credentials";
     assertDoesNotThrow(() -> createDomainSecret(adminSecretName,
@@ -139,7 +135,7 @@ class ItMiiCustomSslStore {
 
     createConfigMapAndVerify(
         configMapName, domainUid, domainNamespace,
-        Arrays.asList(RESULTS_ROOT + "/mii.ssl.yaml"));
+        List.of(RESULTS_ROOT + "/mii.ssl.yaml"));
 
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(domainNamespace);
@@ -152,6 +148,7 @@ class ItMiiCustomSslStore {
     createJobToChangePermissionsOnPvHostPath(pvName, pvcName, domainNamespace);
 
     // create the domain CR with a pre-defined configmap
+    int replicaCount = 2;
     DomainResource domain = createDomainResourceWithLogHome(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, replicaCount,
@@ -214,14 +211,13 @@ class ItMiiCustomSslStore {
   // Run standalone client to get initial context using t3s cluster url
   private void runClientOnAdminPod() {
 
-    StringBuilder extOpts = new StringBuilder("");
-    extOpts.append("-Dweblogic.security.SSL.ignoreHostnameVerification=true ");
-    extOpts.append("-Dweblogic.security.SSL.trustedCAKeyStore=/shared/"
-            + domainNamespace + "/" + domainUid + "/TrustKeyStore.jks ");
-    extOpts.append("-Dweblogic.security.SSL.trustedCAKeyStorePassPhrase=changeit ");
+    String extOpts =
+        "-Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.SSL.trustedCAKeyStore=/shared/"
+            + domainNamespace + "/" + domainUid
+            + "/TrustKeyStore.jks -Dweblogic.security.SSL.trustedCAKeyStorePassPhrase=changeit ";
     testUntil(
         runClientInsidePod(adminServerPodName, domainNamespace,
-          "/u01", extOpts.toString() + " SslTestClient", "t3s://"
+          "/u01", extOpts + " SslTestClient", "t3s://"
                 + domainUid + "-cluster-cluster-1:8100"),
         logger,
         "Wait for client to get Initial context");

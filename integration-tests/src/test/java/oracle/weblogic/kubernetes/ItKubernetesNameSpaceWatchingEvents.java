@@ -66,8 +66,6 @@ class ItKubernetesNameSpaceWatchingEvents {
   private static String domainNamespace3 = null;
   private static String domainNamespace4 = null;
   private static String domainNamespace5 = null;
-  private static String opServiceAccount = null;
-  private static OperatorParams opParams = null;
   private static LoggingFacade logger = null;
   private static OperatorParams opParamsOriginal = null;
 
@@ -97,15 +95,14 @@ class ItKubernetesNameSpaceWatchingEvents {
     domainNamespace5 = namespaces.get(5);
 
     // set the service account name for the operator
-    opServiceAccount = opNamespace + "-sa";
+    String opServiceAccount = opNamespace + "-sa";
 
     // install and verify operator with REST API
-    opParams = installAndVerifyOperator(opNamespace, opServiceAccount, true, 0, domainNamespace1);
-    opParamsOriginal = opParams;
+    opParamsOriginal = installAndVerifyOperator(opNamespace, opServiceAccount, true, 0, domainNamespace1);
     // This test uses the operator restAPI to scale the domain. To do this in OKD cluster,
     // we need to expose the external service as route and set tls termination to  passthrough
     logger.info("Create a route for the operator external service - only for OKD");
-    String opExternalSvc = createRouteForOKD("external-weblogic-operator-svc", opNamespace);
+    createRouteForOKD("external-weblogic-operator-svc", opNamespace);
     // Patch the route just created to set tls termination to passthrough
     setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
 
@@ -321,7 +318,6 @@ class ItKubernetesNameSpaceWatchingEvents {
    * itself is deployed, which is the namespace of the Helm release.
    * Operator logs a NamespaceWatchingStopped in the operator domain namespace and
    * NamespaceWatchingStopped event in the other domain namespaces when it stops watching a domain namespace.
-   *
    * Test verifies NamespaceWatchingStopped event is logged when operator stops watching a domain namespace.
    */
   @Test

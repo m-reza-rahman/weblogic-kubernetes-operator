@@ -76,7 +76,7 @@ class ItMiiDynamicUpdatePart2 {
 
   /**
    * Install Operator.
-   * Create domain resource defintion.
+   * Create domain resource definition.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *                   JUnit engine parameter resolution mechanism
@@ -88,10 +88,11 @@ class ItMiiDynamicUpdatePart2 {
 
     // write sparse yaml to change ScatteredReadsEnabled for adminserver
     pathToChangReadsYaml = Paths.get(WORK_DIR + "/changereads.yaml");
-    String yamlToChangeReads = "topology:\n"
-        + "    Server:\n"
-        + "        \"admin-server\":\n"
-        + "            ScatteredReadsEnabled: true";
+    String yamlToChangeReads = """
+        topology:
+            Server:
+                "admin-server":
+                    ScatteredReadsEnabled: true""";
     assertDoesNotThrow(() -> Files.write(pathToChangReadsYaml, yamlToChangeReads.getBytes()));
   }
 
@@ -107,14 +108,14 @@ class ItMiiDynamicUpdatePart2 {
   /**
    * Mixed update by changing the DataSource URL (non-dynamic) and undeploying an application (dynamic).
    * Patched the domain resource and set onNonDynamicChanges to CommitUpdateAndRoll.
-   * Verify domain will rolling restart.
+   * Verify domain will perform a rolling restart.
    * Verify introspectVersion is updated.
    * Verify the datasource URL is updated by checking the MBean using REST api.
    * Verify the application is undeployed.
    * Verify domain status should have a condition type as "Completed".
    */
   @Test
-  @DisplayName("Changing Weblogic datasource URL and deleting application with CommitUpdateAndRoll "
+  @DisplayName("Changing WebLogic datasource URL and deleting application with CommitUpdateAndRoll "
       + "using mii dynamic update")
   @Tag("gate")
   @Tag("crio")
@@ -136,9 +137,10 @@ class ItMiiDynamicUpdatePart2 {
 
     // write sparse yaml to undeploy application to file
     Path pathToUndeployAppYaml = Paths.get(WORK_DIR + "/undeployapp.yaml");
-    String yamlToUndeployApp = "appDeployments:\n"
-        + "  Application:\n"
-        + "    '!myear':";
+    String yamlToUndeployApp = """
+        appDeployments:
+          Application:
+            '!myear':""";
 
     assertDoesNotThrow(() -> Files.write(pathToUndeployAppYaml, yamlToUndeployApp.getBytes()));
 
@@ -204,8 +206,10 @@ class ItMiiDynamicUpdatePart2 {
 
     // write sparse yaml to delete datasource to file
     Path pathToDeleteDSYaml = Paths.get(WORK_DIR + "/deleteds.yaml");
-    String yamlToDeleteDS = "resources:\n"
-        + "  JDBCSystemResource:\n";
+    String yamlToDeleteDS = """
+        resources:
+          JDBCSystemResource:
+        """;
 
     assertDoesNotThrow(() -> Files.write(pathToDeleteDSYaml, yamlToDeleteDS.getBytes()));
 
@@ -241,11 +245,11 @@ class ItMiiDynamicUpdatePart2 {
   /**
    * Two non-dynamic changes with default CommitUpdateOnly for onNonDynamicChanges.
    * Create a configmap containing two non-dynamic changes, modified DataSource attribute
-   * and Adminstration Sever ScatteredReadsEnabled attribute.
+   * and Administration Sever ScatteredReadsEnabled attribute.
    * Patch the domain resource with the configmap, using default value CommitUpdateOnly for onNonDynamicChanges.
    * Update the introspect version of the domain resource.
    * Wait for introspector to complete.
-   * Verify the domain status is updated, domain is not restarted and the change is commited.
+   * Verify the domain status is updated, domain is not restarted and the change is committed.
    * Restart the domain and verify both the changes are effective using REST Api.
    */
   @Test
@@ -355,7 +359,7 @@ class ItMiiDynamicUpdatePart2 {
    * Verify domain status conditions contains the given condition type and message.
    *
    * @param conditionType condition type
-   * @param conditionMsg  messsage in condition
+   * @param conditionMsg  message in condition
    * @return true if the condition matches
    */
   private boolean verifyDomainStatusCondition(String conditionType, String conditionMsg) {

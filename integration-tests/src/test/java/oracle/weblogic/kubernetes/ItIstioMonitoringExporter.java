@@ -72,18 +72,14 @@ class ItIstioMonitoringExporter {
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
 
-  private String domain1Uid = "istio1-mii";
-  private String domain2Uid = "istio2-mii";
-  private String configMapName = "dynamicupdate-istio-configmap";
-  private final String clusterName = "cluster-1"; // do not modify
-  private final String workManagerName = "newWM";
-  private final int replicaCount = 2;
+  private final String domain1Uid = "istio1-mii";
+  private final String domain2Uid = "istio2-mii";
   private static int prometheusPort;
 
   private boolean isPrometheusDeployed = false;
   private static LoggingFacade logger = null;
   private static String oldRegex;
-  private static String sessionAppPrometheusSearchKey =
+  private static final String sessionAppPrometheusSearchKey =
       "wls_servlet_invocation_total_count%7Bapp%3D%22myear%22%7D%5B15s%5D";
 
   private static String testWebAppWarLoc = null;
@@ -130,14 +126,14 @@ class ItIstioMonitoringExporter {
    * Do not add any AdminService under AdminServer configuration.
    * Deploy istio gateways and virtual service.
    * Verify server pods are in ready state and services are created.
-   * Verify login to WebLogic console is successful thru istio ingress port.
-   * Deploy a web application thru istio http ingress port using REST api.
-   * Deploy Istio provided Promethues
-   * Verify Weblogic metrics can be processed via istio based prometheus
+   * Verify login to WebLogic console is successful through istio ingress port.
+   * Deploy a web application through istio http ingress port using REST api.
+   * Deploy Istio provided Prometheus
+   * Verify WebLogic metrics can be processed via istio based prometheus
    */
   @Test
   @DisplayName("Create istio provided prometheus and verify "
-      + "it can monitor Weblogic domain via weblogic exporter webapp")
+      + "it can monitor WebLogic domain via WebLogic Monitoring Exporter webapp")
   void testIstioPrometheusViaExporterWebApp() {
     assertDoesNotThrow(() -> downloadMonitoringExporterApp(RESOURCE_DIR
         + "/exporter/exporter-config.yaml", RESULTS_ROOT), "Failed to download monitoring exporter application");
@@ -156,13 +152,13 @@ class ItIstioMonitoringExporter {
    * Do not add any AdminService under AdminServer configuration.
    * Deploy istio gateways and virtual service.
    * Verify server pods are in ready state and services are created.
-   * Verify login to WebLogic console is successful thru istio ingress port.
+   * Verify login to WebLogic console is successful through istio ingress port.
    * Deploy Istio provided Prometheus
-   * Verify Weblogic metrics can be processed via istio based prometheus
+   * Verify WebLogic metrics can be processed via istio based prometheus
    */
   @Test
   @DisplayName("Create istio provided prometheus and verify "
-      + "it can monitor Weblogic domain via weblogic exporter sidecar")
+      + "it can monitor WebLogic domain via WebLogic Monitoring Exporter sidecar")
   void testIstioPrometheusWithSideCar() {
     // create image with model files
     logger.info("Create image with model file and verify");
@@ -192,7 +188,7 @@ class ItIstioMonitoringExporter {
         "failed to fetch expected metrics from Prometheus using monitoring exporter sidecar");
   }
 
-  private void deployPrometheusAndVerify(String domainNamespace, String domainUid, String searchKey) throws Exception {
+  private void deployPrometheusAndVerify(String domainNamespace, String domainUid, String searchKey) {
     if (!isPrometheusDeployed) {
       assertTrue(deployIstioPrometheus(domain2Namespace, domain2Uid,
           String.valueOf(prometheusPort)), "failed to install istio prometheus");
@@ -269,9 +265,13 @@ class ItIstioMonitoringExporter {
         String.format("createSecret failed for %s", encryptionSecretName));
 
     // create WDT config map without any files
+    String configMapName = "dynamicupdate-istio-configmap";
     createConfigMapAndVerify(configMapName, domainUid, domainNamespace, Collections.emptyList());
 
     // create the domain object
+    // do not modify
+    String clusterName = "cluster-1";
+    int replicaCount = 2;
     DomainResource domain = createIstioDomainResource(domainUid,
         domainNamespace,
         adminSecretName,
@@ -339,8 +339,8 @@ class ItIstioMonitoringExporter {
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
     if (!WEBLOGIC_SLIM) {
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {

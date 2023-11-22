@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -109,17 +108,10 @@ public class ItMiiDomainModelInPV {
   private static String domainNamespace = null;
 
   // domain constants
-  private static Map<String, String> params = new HashMap<>();
-  private static String domainUid1 = "domain1";
-  private static String domainUid2 = "domain2";
-  private static String adminServerName = "admin-server";
-  private static String clusterName = "cluster-1";
-  private static int replicaCount = 2;
+  private static final Map<String, String> params = new HashMap<>();
+  private static final String domainUid1 = "domain1";
+  private static final int replicaCount = 2;
 
-  private static String miiImagePV;
-  private static String miiImageTagPV;
-  private static String miiImageCustom;
-  private static String miiImageTagCustom;
   private static String adminSecretName;
   private static String encryptionSecretName;
 
@@ -127,13 +119,10 @@ public class ItMiiDomainModelInPV {
   private static final String pvcName = getUniqueName(domainUid1 + "-wdtmodel-pvc-");
 
   private static Path clusterViewAppPath;
-  private static String modelFile = "modelinpv-with-war.yaml";
-  private static String modelMountPath = "/u01/modelHome";
+  private static final String modelFile = "modelinpv-with-war.yaml";
+  private static final String modelMountPath = "/u01/modelHome";
 
   private static LoggingFacade logger = null;
-
-  private static String wlsImage;
-  private static boolean isUseSecret;
 
   private static String adminSvcExtHost = null;
 
@@ -164,15 +153,15 @@ public class ItMiiDomainModelInPV {
     installAndVerifyOperator(opNamespace, domainNamespace);
 
     logger.info("Building image with empty model file");
-    miiImageTagPV = getDateAndTimeStamp();
-    miiImagePV = MII_BASIC_IMAGE_NAME + ":" + miiImageTagPV;
+    String miiImageTagPV = getDateAndTimeStamp();
+    String miiImagePV = MII_BASIC_IMAGE_NAME + ":" + miiImageTagPV;
 
     // build a new MII image with no domain
     buildMIIandPushToRepo(MII_BASIC_IMAGE_NAME, miiImageTagPV, null);
 
     logger.info("Building image with custom wdt model home location");
-    miiImageTagCustom = getDateAndTimeStamp();
-    miiImageCustom = MII_BASIC_IMAGE_NAME + ":" + miiImageTagCustom;
+    String miiImageTagCustom = getDateAndTimeStamp();
+    String miiImageCustom = MII_BASIC_IMAGE_NAME + ":" + miiImageTagCustom;
 
     // build a new MII image with custom wdtHome
     buildMIIandPushToRepo(MII_BASIC_IMAGE_NAME, miiImageTagCustom, modelMountPath + "/model");
@@ -258,6 +247,7 @@ public class ItMiiDomainModelInPV {
     // create domain custom resource and verify all the pods came up
     logger.info("Creating domain custom resource with domainUid {0} and image {1}",
         domainUid, image);
+    String clusterName = "cluster-1";
     DomainResource domainCR = CommonMiiTestUtils.createDomainResource(domainUid, domainNamespace,
         image, adminSecretName, createSecretsForImageRepos(domainNamespace), encryptionSecretName,
         2, List.of(clusterName), true);
@@ -278,7 +268,7 @@ public class ItMiiDomainModelInPV {
         domainUid, image, domainNamespace);
     createVerifyDomain(domainUid, domainCR, adminServerPodName, managedServerPodNamePrefix);
 
-    List<String> managedServerNames = new ArrayList<String>();
+    List<String> managedServerNames = new ArrayList<>();
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
@@ -387,28 +377,28 @@ public class ItMiiDomainModelInPV {
 
     final String podName = "weblogic-pv-pod-" + namespace;
     V1PodSpec podSpec = new V1PodSpec()
-            .containers(Arrays.asList(
+            .containers(Collections.singletonList(
                 new V1Container()
                     .name("weblogic-container")
                     .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
                     .imagePullPolicy(IMAGE_PULL_POLICY)
                     .addCommandItem("sleep")
                     .addArgsItem("600")
-                    .volumeMounts(Arrays.asList(
+                    .volumeMounts(Collections.singletonList(
                         new V1VolumeMount()
                             .name(pvName) // mount the persistent volume to /shared inside the pod
                             .mountPath(modelMountPath)))))
-            .imagePullSecrets(Arrays.asList(new V1LocalObjectReference()
+            .imagePullSecrets(Collections.singletonList(new V1LocalObjectReference()
                 .name(BASE_IMAGES_REPO_SECRET_NAME)))
             // the persistent volume claim used by the test
-            .volumes(Arrays.asList(
+            .volumes(Collections.singletonList(
                 new V1Volume()
                     .name(pvName) // the persistent volume that needs to be archived
                     .persistentVolumeClaim(
                         new V1PersistentVolumeClaimVolumeSource()
                             .claimName(pvcName))));
     if (!OKD) {
-      podSpec.initContainers(Arrays.asList(createfixPVCOwnerContainer(pvName, modelMountPath)));
+      podSpec.initContainers(Collections.singletonList(createfixPVCOwnerContainer(pvName, modelMountPath)));
     }
 
     V1Pod podBody = new V1Pod()

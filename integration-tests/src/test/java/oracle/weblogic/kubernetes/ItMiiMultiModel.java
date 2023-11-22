@@ -13,7 +13,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
-import oracle.weblogic.domain.ClusterResource;
 import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
@@ -91,10 +90,6 @@ class ItMiiMultiModel {
   private static final String domainUid1 = "mii-mm-cm-domain";
   private static final String domainUid2 = "mii-mm-image-domain";
   private static final String domainUid3 = "mii-mm-image-cm-domain";
-
-  private static int replicaCount = 1;
-  private String clusterName = "cluster-1";
-  private ClusterResource cluster = null;
 
   // There are four model files in this test case.
   // "multi-model-two-ds.yaml" and "multi-model-delete-one-ds.20.yaml" are in the MII image.
@@ -389,10 +384,12 @@ class ItMiiMultiModel {
 
     logger.info("Create the domain resource {0} in namespace {1} with ConfigMap {2}",
         domainUid, domainNamespace, configMapName);
+    int replicaCount = 1;
     DomainResource domain = createDomainResource(domainUid, domainNamespace, adminSecretName,
         TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName, replicaCount, miiImage, configMapName);
 
     // create cluster object if not created earlie
+    String clusterName = "cluster-1";
     domain = createClusterResourceAndAddReferenceToDomain(domainUid + "-" + clusterName,
         clusterName, domainNamespace, domain, replicaCount);
 

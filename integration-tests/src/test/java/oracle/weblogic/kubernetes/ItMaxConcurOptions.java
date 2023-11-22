@@ -86,13 +86,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * 6. cluster.spec.maxConcurrentStartup.
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@DisplayName("Test to a create model in image domain with Cluster Resourcees")
+@DisplayName("Test to a create model in image domain with Cluster Resources")
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("olcne-mrg")
 class ItMaxConcurOptions {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
   private static final String domainUid = "maxconcuroptionsdomain";
   private static final String adminServerPodName = domainUid + "-admin-server";
@@ -111,8 +110,6 @@ class ItMaxConcurOptions {
   private static final int maxClusterConcurrentStartup = 2;
   private static final int maxClusterConcurrentShutdown = 2;
 
-  private static DomainResource domain = null;
-
   /**
    * Install Operator.
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
@@ -125,7 +122,7 @@ class ItMaxConcurOptions {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -142,7 +139,7 @@ class ItMaxConcurOptions {
         "Failed to upgrade operator to FINE  logging leve");
 
     // create and verify one MII domain
-    domain = createDomainAndVerifyWithConfigMap();
+    createDomainAndVerifyWithConfigMap();
   }
 
   /**
@@ -150,7 +147,6 @@ class ItMaxConcurOptions {
    *    instances that the operator will start in parallel for a given cluster,
    *    if `maxConcurrentStartup` is not specified for a specific cluster under the `clusters` field.
    *    A value of 0 means there is no configured limit. Defaults to 0.
-   *
    * Set domain.spec.maxClusterConcurrentStartup = 2
    * verify that the Operator startup 2 managed servers concurrently in each cluster.
    */
@@ -160,15 +156,13 @@ class ItMaxConcurOptions {
   void testMaxClusterConcurrentStartup() {
     // reduce replicas in domain resource from 4 to 2
     ArrayList<String> managedServerPodNamePrefixList =
-        new ArrayList<String>(List.of(managedServerC1PodNamePrefix, managedServerC2PodNamePrefix));
+        new ArrayList<>(List.of(managedServerC1PodNamePrefix, managedServerC2PodNamePrefix));
     int newReplicas = 2;
-    boolean scaleup = false;
-    patchDomainResourceWithReplicasAndVerify(managedServerPodNamePrefixList, 3, 4, newReplicas, scaleup);
+    patchDomainResourceWithReplicasAndVerify(managedServerPodNamePrefixList, 3, 4, newReplicas, false);
 
     // increase replicas in domain resource from 2 to 4
     newReplicas = 4;
-    scaleup = true;
-    patchDomainResourceWithReplicasAndVerify(managedServerPodNamePrefixList, 3, 4, newReplicas, scaleup);
+    patchDomainResourceWithReplicasAndVerify(managedServerPodNamePrefixList, 3, 4, newReplicas, true);
 
     // verify that the Operator starts 2 managed servers in each cluster concurrently
     verifyServersStartedConcurrently(managedServerC1PodNamePrefix, 3, replicaCount);
@@ -180,7 +174,6 @@ class ItMaxConcurOptions {
    *    that a cluster will shut down in parallel when it is being partially shut down by lowering its replica count.
    *    You can override this default on a per-cluster basis by setting the cluster's `maxConcurrentShutdown` field.
    *    A value of 0 means there is no limit. Defaults to 1.
-   *
    * Set domain.spec.maxClusterConcurrentShutdown = 2
    * verify that the Operator shutdown 2 managed servers concurrently in each cluster.
    */
@@ -200,14 +193,13 @@ class ItMaxConcurOptions {
         managedServerC1NamePrefix, replicaCount, maxClusterConcurrentShutdown);
 
     // restore test env
-    restoreTestEnv(new ArrayList<String>());
+    restoreTestEnv(new ArrayList<>());
   }
 
   /**
    * Test domain.spec.maxClusterUnavailable -
    *    The maximum number of cluster members that can be temporarily unavailable.
-   *    You can override this default on a per cluster basis by setting the cluster's `maxUnavailable` field.
-   *
+   *    You can override this default on a per-cluster basis by setting the cluster's `maxUnavailable` field.
    * Set domain.spec.maxClusterUnavailable = 2
    * verify that the Operator rolling restarts 2 managed servers concurrently in each cluster.
    */
@@ -224,7 +216,6 @@ class ItMaxConcurOptions {
    * Test cluster.spec.maxUnavailable and cluster.spec.replicas -
    *    the maximum number of cluster members that can be temporarily unavailable.
    *    Defaults to `domain.spec.maxClusterUnavailable`, which defaults to 1.
-   *
    * 1. Config domain.spec.maxClusterUnavailable =2 and domain.spec.replicas = 4 in domain resource
    * 2. Config maxUnavailable =1 and replicas = 2 in cluster-1 resource
    * 3. During rolling restart
@@ -241,11 +232,9 @@ class ItMaxConcurOptions {
         0, domainUid, domainNamespace, replicaCount);
 
     // Config maxUnavailable =1 and replicas = 2 in cluster-1 resource and patch the cluster
-    StringBuilder patchStr = new StringBuilder("[")
-        .append("{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": 2},")
-        .append("{\"op\": \"replace\", \"path\": \"/spec/maxUnavailable\", \"value\": 1}")
-        .append("]");
-    patchClusterResourceAndVerify(domainNamespace, cluster1Res, patchStr.toString());
+    String patchStr = "[" + "{\"op\": \"replace\", \"path\": \"/spec/replicas\", \"value\": 2},"
+        + "{\"op\": \"replace\", \"path\": \"/spec/maxUnavailable\", \"value\": 1}" + "]";
+    patchClusterResourceAndVerify(domainNamespace, cluster1Res, patchStr);
 
     // verify that the Operator rolling-restarts 2 managed server in cluster-1 one by one, not concurrently
     rollingRestartDomainAndVerify(managedServerC1PodNamePrefix, maxClusterUnavailable, false);
@@ -262,7 +251,6 @@ class ItMaxConcurOptions {
    *    that will shut down in parallel for this cluster when it is being partially shut down
    *    by lowering its replica count. A value of 0 means there is no limit.
    *    Defaults to `spec.maxClusterConcurrentShutdown`, which defaults to 1.
-   *
    * 1) Config domain.spec.replicas = 5 to startup 5 managed servers in clusters
    * 2) Config domain.spec.maxClusterConcurrentShutdown = 2
    * 3) Create cluster-1 resource and config cluster.spec.maxConcurrentShutdown = 3
@@ -287,10 +275,8 @@ class ItMaxConcurOptions {
         0, domainUid, domainNamespace, replicaCount);
 
     // Config and patch maxConcurrentShutdown = 3 in cluster-1 resource
-    StringBuilder patchStr = new StringBuilder("[")
-        .append("{\"op\": \"replace\", \"path\": \"/spec/maxConcurrentShutdown\", \"value\": 3}")
-        .append("]");
-    patchClusterResourceAndVerify(domainNamespace, cluster1Res, patchStr.toString());
+    String patchStr = "[" + "{\"op\": \"replace\", \"path\": \"/spec/maxConcurrentShutdown\", \"value\": 3}" + "]";
+    patchClusterResourceAndVerify(domainNamespace, cluster1Res, patchStr);
 
     // scale down the cluster by 2
     int newReplicaCount = 2;
@@ -316,7 +302,6 @@ class ItMaxConcurOptions {
    *    the operator will wait until a Managed Server Pod is in the `Ready` state
    *    before starting the next Managed Server instance. A value of 0 means all Managed Server instances
    *    will start in parallel. Defaults to `domain.spec.maxClusterConcurrentStartup`, which defaults to 0.
-   *
    *  1) Config domain.spec.replicas = 1 to startup 1 managed servers in two clusters
    *  2) Config domain.spec.maxClusterConcurrentStartup = 2
    *  3) Config cluster.spec.maxConcurrentStartup= 2 in cluster-1
@@ -365,7 +350,7 @@ class ItMaxConcurOptions {
     verifyServersStartedSequentially(managedServerC2PodNamePrefix, 2, newReplicaCount);
 
     // restore test env
-    ArrayList<String> clusterList = new ArrayList<String>(List.of(cluster1Res, cluster2Res));
+    ArrayList<String> clusterList = new ArrayList<>(List.of(cluster1Res, cluster2Res));
     restoreTestEnv(clusterList);
   }
 
@@ -468,36 +453,38 @@ class ItMaxConcurOptions {
   }
 
   private static void createModelConfigMap(String domainid, String cfgMapName) {
-    String yamlString = "topology:\n"
-        + "  Cluster:\n"
-        + "    'cluster-1':\n"
-        + "       DynamicServers: \n"
-        + "         ServerTemplate: 'cluster-1-template' \n"
-        + "         ServerNamePrefix: 'c1-managed-server' \n"
-        + "         DynamicClusterSize: 5 \n"
-        + "         MaxDynamicClusterSize: 5 \n"
-        + "         CalculatedListenPorts: false \n"
-        + "    'cluster-2':\n"
-        + "  ServerTemplate:\n"
-        + "    'cluster-1-template':\n"
-        + "       Cluster: 'cluster-1' \n"
-        + "       ListenPort : 8001 \n"
-        + "  Server:\n"
-        + "    'c2-managed-server1':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server2':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server3':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server4':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server5':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n";
+    String yamlString = """
+        topology:
+          Cluster:
+            'cluster-1':
+               DynamicServers:\s
+                 ServerTemplate: 'cluster-1-template'\s
+                 ServerNamePrefix: 'c1-managed-server'\s
+                 DynamicClusterSize: 5\s
+                 MaxDynamicClusterSize: 5\s
+                 CalculatedListenPorts: false\s
+            'cluster-2':
+          ServerTemplate:
+            'cluster-1-template':
+               Cluster: 'cluster-1'\s
+               ListenPort : 8001\s
+          Server:
+            'c2-managed-server1':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server2':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server3':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server4':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server5':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+        """;
 
     Map<String, String> labels = new HashMap<>();
     labels.put("weblogic.domainUid", domainid);
@@ -551,7 +538,7 @@ class ItMaxConcurOptions {
     OffsetDateTime msPodCreationTime = null;
 
     // get managed server pod creation time
-    ArrayList<Long> podCreationTimestampList = new ArrayList<Long>();
+    ArrayList<Long> podCreationTimestampList = new ArrayList<>();
     for (int i = startPodNum; i <= endPodNum; i++) {
       try {
         msPodCreationTime =
@@ -561,7 +548,7 @@ class ItMaxConcurOptions {
 
         podCreationTimestampList.add(Math.abs(msPodCreationTime.getLong(ChronoField.SECOND_OF_DAY)));
       } catch (Exception ex) {
-        logger.info("Faild to get pod creation time: {0}", ex.getMessage());
+        logger.info("Failed to get pod creation time: {0}", ex.getMessage());
       }
     }
 
@@ -585,14 +572,14 @@ class ItMaxConcurOptions {
                                                 int endPodNum) {
     final int deltaValue = 30; // seconds
     // get managed server pod creation time
-    ArrayList<Long> podCreationTimestampList = new ArrayList<Long>();
+    ArrayList<Long> podCreationTimestampList = new ArrayList<>();
     for (int i = startPodNum; i <= endPodNum; i++) {
       try {
         OffsetDateTime msPodCreationTime =
             getPodCreationTimestamp(domainNamespace, "", managedServerPodNamePrefix + i);
         podCreationTimestampList.add(Math.abs(msPodCreationTime.getLong(ChronoField.SECOND_OF_DAY)));
       } catch (Exception ex) {
-        logger.info("Faild to get pod creation time: {0}", ex.getMessage());
+        logger.info("Failed to get pod creation time: {0}", ex.getMessage());
       }
     }
 
@@ -661,13 +648,8 @@ class ItMaxConcurOptions {
                                      int configValue,
                                      int newReplicas) {
     // Config maxConcurrentShutdown or maxConcurrentStartup in cluster resource
-    StringBuilder patchStr = new StringBuilder()
-        .append("[{\"op\": \"replace\", \"path\": \"/spec/")
-        .append(configKey)
-        .append("\", \"value\": ")
-        .append(configValue)
-        .append("}]");
-    patchClusterResourceAndVerify(domainNamespace, clusterRes, patchStr.toString());
+    String patchStr = "[{\"op\": \"replace\", \"path\": \"/spec/" + configKey + "\", \"value\": " + configValue + "}]";
+    patchClusterResourceAndVerify(domainNamespace, clusterRes, patchStr);
 
     // scale up the cluster by newReplicas
     logger.info("Scaling down the cluster {0} in namespace {1} to set the replicas to {2}",
@@ -699,7 +681,7 @@ class ItMaxConcurOptions {
         new StringBuilder("([0-9]{4}-[0-9]{2}-[0-9]{2}.*[0-9]{2}:[0-9]{2}:[0-9]{2}).*(");
 
     for (int i = newReplicas + 1; i <= origReplicas; i++) {
-      serverStateRegex.append(managedServerNamePrefix + i).append("\\s*");
+      serverStateRegex.append(managedServerNamePrefix).append(i).append("\\s*");
     }
 
     serverStateRegex.append(").*(SHUTDOWN\\s*SHUTDOWN).*");
@@ -751,7 +733,7 @@ class ItMaxConcurOptions {
 
     // restore replicas at domain level bask to 4
     ArrayList<String> managedServerPodNamePrefixList =
-        new ArrayList<String>(List.of(managedServerC1PodNamePrefix, managedServerC2PodNamePrefix));
+        new ArrayList<>(List.of(managedServerC1PodNamePrefix, managedServerC2PodNamePrefix));
     boolean scaleup = true;
     patchDomainResourceWithReplicasAndVerify(managedServerPodNamePrefixList, 1, replicaCount, replicaCount, scaleup);
   }

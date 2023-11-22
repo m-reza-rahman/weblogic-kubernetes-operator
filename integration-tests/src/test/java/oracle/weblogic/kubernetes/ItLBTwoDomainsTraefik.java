@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,7 +61,7 @@ class ItLBTwoDomainsTraefik {
   private static final int numberOfDomains = 2;
   private static final String wlSecretName = "weblogic-credentials";
 
-  private static List<String> domainUids = new ArrayList<>();
+  private static final List<String> domainUids = new ArrayList<>();
   private static String domainNamespace = null;
   private static String traefikNamespace = null;
   private static HelmParams traefikHelmParams = null;
@@ -241,10 +240,9 @@ class ItLBTwoDomainsTraefik {
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
-      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", domainNamespace)
+      Files.writeString(dstFile, Files.readString(srcFile).replaceAll("@NS@", domainNamespace)
           .replaceAll("@domain1uid@", domainUids.get(0))
-          .replaceAll("@domain2uid@", domainUids.get(1))
-          .getBytes(StandardCharsets.UTF_8));
+          .replaceAll("@domain2uid@", domainUids.get(1)));
     });
     String command = KUBERNETES_CLI + " create -f " + dstFile;
     logger.info("Running {0}", command);

@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -30,7 +30,6 @@ import oracle.weblogic.domain.ClusterList;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.OperatorParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -131,7 +130,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * The tests checks for the following events in the domain name space.
  * Created, Changed, Deleted, Completed,
  * Failed.
- * The tests creates the domain resource, modifies it, introduces some validation errors in the domain resource
+ * The tests create the domain resource, modifies it, introduces some validation errors in the domain resource
  * and finally deletes it to generate all the domain related events.
  */
 @DisplayName("Verify the Kubernetes events for domain lifecycle")
@@ -149,9 +148,6 @@ class ItKubernetesDomainEvents {
   private static String domainNamespace3 = null;
   private static String domainNamespace4 = null;
   private static String domainNamespace5 = null;
-  private static String opServiceAccount = null;
-  private static int externalRestHttpsPort = 0;
-  private static OperatorParams opParams = null;
 
   static final String cluster1Name = "mycluster";
   static final String cluster2Name = "cl2";
@@ -178,7 +174,7 @@ class ItKubernetesDomainEvents {
   private static final String wlSecretName = "weblogic-credentials";
 
   private static LoggingFacade logger = null;
-  private  static String className = new Object(){}.getClass().getEnclosingClass().getSimpleName();
+  private  static final String className = new Object(){}.getClass().getEnclosingClass().getSimpleName();
 
   public enum ScaleAction {
     scaleUp,
@@ -212,13 +208,13 @@ class ItKubernetesDomainEvents {
     domainNamespace5 = namespaces.get(5);
 
     // set the service account name for the operator
-    opServiceAccount = opNamespace + "-sa";
+    String opServiceAccount = opNamespace + "-sa";
 
     // install and verify operator with REST API
-    opParams = installAndVerifyOperator(opNamespace, opServiceAccount,
-            true, 0, domainNamespace1, domainNamespace2, domainNamespace3,
-            domainNamespace4, domainNamespace5);
-    externalRestHttpsPort = getServiceNodePort(opNamespace, "external-weblogic-operator-svc");
+    installAndVerifyOperator(opNamespace, opServiceAccount,
+        true, 0, domainNamespace1, domainNamespace2, domainNamespace3,
+        domainNamespace4, domainNamespace5);
+    getServiceNodePort(opNamespace, "external-weblogic-operator-svc");
 
     createDomain(domainNamespace3, domainUid, pvName3, pvcName3);
   }
@@ -323,7 +319,7 @@ class ItKubernetesDomainEvents {
 
   /**
    * Test the following domain events are logged when domain resource goes through introspector failure.
-   * Patch the domain resource to shutdown servers.
+   * Patch the domain resource to shut down servers.
    * Patch the domain resource to point to a bad DOMAIN_HOME and update serverStartPolicy to IfNeeded.
    * Verifies Failed event with Aborted failure reason is logged.
    * Cleanup by patching the domain resource to a valid location and introspectVersion to bring up all servers again.
@@ -416,7 +412,6 @@ class ItKubernetesDomainEvents {
    */
   @Test
   void testDomainK8sEventsScalePastMaxWithoutChangingIntrospectVersion() {
-    OffsetDateTime timestamp = now();
     logger.info("Scaling cluster using patching");
     assertFalse(scaleCluster(cluster1Name, domainNamespace3, 3),
             "Patching cluster with a replica count that exceeds the cluster size did not fail as expected");
@@ -625,7 +620,7 @@ class ItKubernetesDomainEvents {
     //change includeServerOutInPodLog
     String patchStr = "["
         + "{\"op\": \"replace\", \"path\": \"/spec/includeServerOutInPodLog\", "
-        + "\"value\": " + Boolean.toString(!includeLogInPod) + "}"
+        + "\"value\": " + !includeLogInPod + "}"
         + "]";
     logger.info("PatchStr for includeServerOutInPodLog: {0}", patchStr);
 
@@ -816,9 +811,9 @@ class ItKubernetesDomainEvents {
                     .replicas(replicaCount)
                     .image(WEBLOGIC_IMAGE_TO_USE_IN_SPEC)
                     .imagePullPolicy(IMAGE_PULL_POLICY)
-                    .imagePullSecrets(Arrays.asList(
-                            new V1LocalObjectReference()
-                                    .name(BASE_IMAGES_REPO_SECRET_NAME))) // secret for non-kind cluster
+                    .imagePullSecrets(Collections.singletonList(
+                        new V1LocalObjectReference()
+                            .name(BASE_IMAGES_REPO_SECRET_NAME))) // secret for non-kind cluster
                     .webLogicCredentialsSecret(new V1LocalObjectReference()
                             .name(wlSecretName))
                     .includeServerOutInPodLog(true)

@@ -10,8 +10,6 @@ import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -32,9 +30,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
-import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
-import static oracle.weblogic.kubernetes.actions.TestActions.getPodStatusPhase;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.now;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
@@ -83,7 +79,7 @@ class ItMiiDynamicUpdatePart3 {
 
   /**
    * Install Operator.
-   * Create domain resource defintion.
+   * Create domain resource definition.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *                   JUnit engine parameter resolution mechanism
@@ -95,10 +91,11 @@ class ItMiiDynamicUpdatePart3 {
 
     // write sparse yaml to change ScatteredReadsEnabled for adminserver
     pathToChangReadsYaml = Paths.get(WORK_DIR + "/changereads.yaml");
-    String yamlToChangeReads = "topology:\n"
-        + "    Server:\n"
-        + "        \"admin-server\":\n"
-        + "            ScatteredReadsEnabled: true";
+    String yamlToChangeReads = """
+        topology:
+            Server:
+                "admin-server":
+                    ScatteredReadsEnabled: true""";
     assertDoesNotThrow(() -> Files.write(pathToChangReadsYaml, yamlToChangeReads.getBytes()));
 
     operatorPodName =
@@ -127,9 +124,10 @@ class ItMiiDynamicUpdatePart3 {
   void testMiiChangeDomainName() {
     // write sparse yaml to file
     Path pathToChangeDomainNameYaml = Paths.get(WORK_DIR + "/changedomainname.yaml");
-    String yamlToChangeDomainName = "topology:\n"
-        + "  Name: newdomainname\n"
-        + "  AdminServerName: 'admin-server'";
+    String yamlToChangeDomainName = """
+        topology:
+          Name: newdomainname
+          AdminServerName: 'admin-server'""";
 
     assertDoesNotThrow(() -> Files.write(pathToChangeDomainNameYaml, yamlToChangeDomainName.getBytes()));
 
@@ -172,10 +170,11 @@ class ItMiiDynamicUpdatePart3 {
 
     // write sparse yaml to file
     Path pathToChangeListenPortYaml = Paths.get(WORK_DIR + "/changelistenport.yaml");
-    String yamlToChangeListenPort = "topology:\n"
-        + "  Server:\n"
-        + "    'admin-server':\n"
-        + "      ListenPort: 7003";
+    String yamlToChangeListenPort = """
+        topology:
+          Server:
+            'admin-server':
+              ListenPort: 7003""";
     assertDoesNotThrow(() -> Files.write(pathToChangeListenPortYaml, yamlToChangeListenPort.getBytes()));
 
     OffsetDateTime timestamp = now();
@@ -222,11 +221,12 @@ class ItMiiDynamicUpdatePart3 {
 
     // write sparse yaml to file
     Path pathToChangeSSLYaml = Paths.get(WORK_DIR + "/changessl.yaml");
-    String yamlToChangeSSL = "topology:\n"
-        + "  ServerTemplate:\n"
-        + "    'cluster-1-template':\n"
-        + "      SSL:\n"
-        + "         ListenPort: 8103";
+    String yamlToChangeSSL = """
+        topology:
+          ServerTemplate:
+            'cluster-1-template':
+              SSL:
+                 ListenPort: 8103""";
     assertDoesNotThrow(() -> Files.write(pathToChangeSSLYaml, yamlToChangeSSL.getBytes()));
 
     // Replace contents of an existing configMap
@@ -279,7 +279,7 @@ class ItMiiDynamicUpdatePart3 {
   /**
    * Non-dynamic change using dynamic update by changing datasource parameters.
    * Set onNonDynamicChanges to CommitUpdateAndRoll.
-   * Verify domain will rolling restart.
+   * Verify domain will perform a rolling restart.
    * Verify introspectVersion is updated.
    * Verify the datasource parameter is updated by checking the MBean using REST api.
    * Verify domain status should have a condition type as "Complete".
@@ -333,8 +333,10 @@ class ItMiiDynamicUpdatePart3 {
 
     // write sparse yaml to delete datasource to file, delete ds to keep the config clean
     Path pathToDeleteDSYaml = Paths.get(WORK_DIR + "/deleteds.yaml");
-    String yamlToDeleteDS = "resources:\n"
-        + "  JDBCSystemResource:\n";
+    String yamlToDeleteDS = """
+        resources:
+          JDBCSystemResource:
+        """;
 
     assertDoesNotThrow(() -> Files.write(pathToDeleteDSYaml, yamlToDeleteDS.getBytes()));
 
@@ -419,63 +421,5 @@ class ItMiiDynamicUpdatePart3 {
         logger,
         "domain status condition message contains the expected error msg \"{0}\"",
         expectedErrorMsg);
-  }
-
-  boolean podStatusPhaseContainsString(String namespace, String jobName, String expectedPhase) {
-    String introspectPodName;
-    V1Pod introspectorPod;
-
-    String labelSelector = String.format("weblogic.domainUID in (%s)", domainUid);
-    try {
-      introspectorPod = getPod(namespace, labelSelector, jobName);
-    } catch (ApiException apiEx) {
-      logger.severe("Got ApiException while getting pod: {0}", apiEx);
-      return false;
-    }
-
-    if (introspectorPod != null && introspectorPod.getMetadata() != null) {
-      introspectPodName = introspectorPod.getMetadata().getName();
-    } else {
-      return false;
-    }
-
-    try {
-      return getPodStatusPhase(namespace, labelSelector, introspectPodName).equals(expectedPhase);
-    } catch (ApiException apiEx) {
-      logger.severe("Got ApiException while getting pod status phase: {0}", apiEx);
-      return false;
-    }
-
-  }
-
-  boolean podLogContainsExpectedErrorMsg(String introspectJobName, String namespace, String errormsg) {
-    String introspectPodName;
-    V1Pod introspectorPod;
-
-    String labelSelector = String.format("weblogic.domainUID in (%s)", domainUid);
-
-    try {
-      introspectorPod = getPod(namespace, labelSelector, introspectJobName);
-    } catch (ApiException apiEx) {
-      logger.severe("got ApiException while getting pod: {0}", apiEx);
-      return false;
-    }
-
-    if (introspectorPod != null && introspectorPod.getMetadata() != null) {
-      introspectPodName = introspectorPod.getMetadata().getName();
-    } else {
-      return false;
-    }
-
-    String introspectorLog;
-    try {
-      introspectorLog = getPodLog(introspectPodName, namespace);
-      logger.info("introspector log: {0}", introspectorLog);
-    } catch (ApiException apiEx) {
-      logger.severe("got ApiException while getting pod log: {0}", apiEx);
-      return false;
-    }
-
-    return introspectorLog.contains(errormsg);
   }
 }

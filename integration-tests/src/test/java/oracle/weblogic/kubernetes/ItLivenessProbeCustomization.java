@@ -69,15 +69,16 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test liveness probe customization in a multicluster mii domain.
  * Build model in image with liveness probe custom script named
- * customLivenessProbe.sh that retuns success(0) when a file /u01/tempFile.txt
- * avilable on the pod else it returns failure(1).
- * Note: Livenessprobe is triggered only when the script returns success
+ * customLivenessProbe.sh that returns success(0) when a file /u01/tempFile.txt
+ * available on the pod else it returns failure(1).
+ * Note: Liveness probe is triggered only when the script returns success
  */
 @DisplayName("Verify liveness probe customization")
 @IntegrationTest
@@ -104,7 +105,6 @@ class ItLivenessProbeCustomization {
   public static final String ENCRYPTION_SECRET = "encryptionsecret";
 
   private static String domainNamespace = null;
-  private static String opNamespace = null;
   private static LoggingFacade logger = null;
   private static File tempFile = null;
   private static String imageName = null;
@@ -121,7 +121,7 @@ class ItLivenessProbeCustomization {
     // get a unique operator namespace
     logger.info("Getting a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     // get a unique domain namespace
     logger.info("Getting a unique namespace for WebLogic domain");
@@ -438,13 +438,13 @@ class ItLivenessProbeCustomization {
     String patchStr
         = "[{\"op\": \"replace\", \"path\": \"/spec/serverPod/livenessProbe/successThreshold\", \"value\": 2}]";
     logger.info("Updating domain configuration using patch string: {0}", patchStr);
-    assertTrue(!patchDomainCustomResource(domainUid, domainNamespace, new V1Patch(patchStr), PATCH_FORMAT_JSON_PATCH),
+    assertFalse(patchDomainCustomResource(domainUid, domainNamespace, new V1Patch(patchStr), PATCH_FORMAT_JSON_PATCH),
         String.format("Patch domain %s in namespace %s should fail", domainUid, domainNamespace));
   }
 
   /**
    * Create a new domain with custom livenessProbe successThreshold value in serverPod to an invalid value.
-   * Verify the create of domain resource failed.
+   * Verify the creation of domain resource failed.
    */
   @Test
   @DisplayName("Test custom livenessProbe successThreshold in serverPod with an invalid value")
@@ -490,7 +490,7 @@ class ItLivenessProbeCustomization {
     String serverNamePrefix = domainUid + "-cluster-1-" + MANAGED_SERVER_NAME_BASE;
 
     // create file to kill server process
-    File killServerScript = assertDoesNotThrow(() -> createScriptToKillServer(),
+    File killServerScript = assertDoesNotThrow(this::createScriptToKillServer,
         "Failed to create script to kill server");
     logger.info("File/script created to kill server {0}", killServerScript);
 
@@ -838,7 +838,7 @@ class ItLivenessProbeCustomization {
       String expectedStr
   ) {
 
-    // check that the application is NOT running inside of a server pod
+    // check that the application is NOT running inside a server pod
     testUntil(
         () -> appAccessibleInPod(
           namespace,
@@ -859,7 +859,7 @@ class ItLivenessProbeCustomization {
       String expectedStr
   ) {
 
-    // check that the application is NOT running inside of a server pod
+    // check that the application is NOT running inside a server pod
     testUntil(
         () -> appNotAccessibleInPod(
           namespace,
@@ -916,7 +916,7 @@ class ItLivenessProbeCustomization {
   /**
    * Create a script to kill server.
    * @return a File object
-   * @throws IOException if can not create a file
+   * @throws IOException if it can not create a file
    */
   private File createScriptToKillServer() throws IOException {
     File killServerScript = File.createTempFile("killserver", ".sh");

@@ -71,7 +71,7 @@ class ItLBTwoDomainsNginx {
   private static final int numberOfDomains = 2;
   private static final String wlSecretName = "weblogic-credentials";
 
-  private static List<String> domainUids = new ArrayList<>();
+  private static final List<String> domainUids = new ArrayList<>();
   private static String domainNamespace = null;
   private static String nginxNamespace = null;
   private static NginxParams nginxHelmParams = null;
@@ -392,12 +392,9 @@ class ItLBTwoDomainsNginx {
 
     HashMap<String, String> annotations = new HashMap<>();
     annotations.put("nginx.ingress.kubernetes.io/rewrite-target", "/$1");
-    String configurationSnippet =
-        new StringBuilder()
-        .append("more_clear_input_headers \"WL-Proxy-Client-IP\" \"WL-Proxy-SSL\"; ")
-        .append("more_set_input_headers \"X-Forwarded-Proto: https\"; ")
-        .append("more_set_input_headers \"WL-Proxy-SSL: true\";")
-        .toString();
+    String configurationSnippet = "more_clear_input_headers \"WL-Proxy-Client-IP\" \"WL-Proxy-SSL\"; "
+        + "more_set_input_headers \"X-Forwarded-Proto: https\"; "
+        + "more_set_input_headers \"WL-Proxy-SSL: true\";";
     annotations.put("nginx.ingress.kubernetes.io/configuration-snippet", configurationSnippet);
     annotations.put("nginx.ingress.kubernetes.io/ingress.allow-http", "false");
 

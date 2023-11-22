@@ -103,7 +103,6 @@ import static oracle.weblogic.kubernetes.utils.K8sEvents.POD_CYCLE_STARTING;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.checkDomainEvent;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTlsTerminationForRoute;
-import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResource;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodsWithTimeStamps;
@@ -136,17 +135,16 @@ class ItLargeMiiDomainsClusters {
   private static List<String> domainNamespaces;
   private static final String baseDomainUid = "domain";
   private static final String baseClusterName = "cluster-";
-  private static String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
-  private static final String adminServerName = "admin-server";
+  private static final String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
   private static int numOfDomains;
   private static int numOfClusters;
   private static int numOfServersToStart;
   private static int maxServersInCluster;
   private static int maxClusterUnavailable;
   private static String baseImageName;
-  private static String adminSecretName = "weblogic-credentials";
-  private static String encryptionSecretName = "encryptionsecret";
-  private static Properties largeDomainProps = new Properties();
+  private static final String adminSecretName = "weblogic-credentials";
+  private static final String encryptionSecretName = "encryptionsecret";
+  private static final Properties largeDomainProps = new Properties();
   private static final String miiAuxiliaryImageTag = "image" + MII_BASIC_IMAGE_TAG;
   private static final String miiAuxiliaryImage = MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImageTag;
 
@@ -169,14 +167,14 @@ class ItLargeMiiDomainsClusters {
 
     // load props file and assign values
     assertDoesNotThrow(
-        () -> loadLargeDomainProps(), "Failed to load large domain props file");
-    numOfDomains = Integer.valueOf(largeDomainProps.getProperty("NUMBER_OF_DOMAINS", "2"));
-    numOfClusters = Integer.valueOf(largeDomainProps.getProperty("NUMBER_OF_CLUSTERS", "2"));
+        ItLargeMiiDomainsClusters::loadLargeDomainProps, "Failed to load large domain props file");
+    numOfDomains = Integer.parseInt(largeDomainProps.getProperty("NUMBER_OF_DOMAINS", "2"));
+    numOfClusters = Integer.parseInt(largeDomainProps.getProperty("NUMBER_OF_CLUSTERS", "2"));
     // if NUMBER_OF_SERVERSTOSTART is not in props, uses MAXIMUM_SERVERS_IN_CLUSTER
-    numOfServersToStart = Integer.valueOf(largeDomainProps.getProperty("NUMBER_OF_SERVERSTOSTART",
+    numOfServersToStart = Integer.parseInt(largeDomainProps.getProperty("NUMBER_OF_SERVERSTOSTART",
         largeDomainProps.getProperty("MAXIMUM_SERVERS_IN_CLUSTER", "2")));
-    maxServersInCluster = Integer.valueOf(largeDomainProps.getProperty("MAXIMUM_SERVERS_IN_CLUSTER", "2"));
-    maxClusterUnavailable = Integer.valueOf(largeDomainProps.getProperty("MAX_CLUSTER_UNAVAILABLE", "1"));
+    maxServersInCluster = Integer.parseInt(largeDomainProps.getProperty("MAXIMUM_SERVERS_IN_CLUSTER", "2"));
+    maxClusterUnavailable = Integer.parseInt(largeDomainProps.getProperty("MAX_CLUSTER_UNAVAILABLE", "1"));
     baseImageName = BASE_IMAGES_PREFIX + largeDomainProps.getProperty("BASE_IMAGE_NAME", WEBLOGIC_IMAGE_NAME_DEFAULT);
 
     logger.info("Assign unique namespaces for Domains");
@@ -189,7 +187,7 @@ class ItLargeMiiDomainsClusters {
             .chartDir(OPERATOR_CHART_DIR);
     installAndVerifyOperator(opNamespace, opNamespace + "-sa", false,
         0, opHelmParams, ELASTICSEARCH_HOST, false, true, null,
-        null, false, "INFO", null, false, domainNamespaces.stream().toArray(String[]::new));
+        null, false, "INFO", null, false, domainNamespaces.toArray(String[]::new));
 
   }
 
@@ -207,10 +205,6 @@ class ItLargeMiiDomainsClusters {
     for (int i = 0; i < numOfDomains; i++) {
       String domainUid = baseDomainUid + (i + 1);
       String configMapName = domainUid + "-configmap";
-      List<String> clusterNameList = new ArrayList<>();
-      for (int j = 1; j <= numOfClusters; j++) {
-        clusterNameList.add(baseClusterName + j);
-      }
 
       // create config map with model for all clusters
       createClusterModelConfigMap(
@@ -399,7 +393,7 @@ class ItLargeMiiDomainsClusters {
 
   /**
    * Test server pods are rolling restarted and updated when domain is patched
-   * with new restartVersion when non dynamic changes are made.
+   * with new restartVersion when non-dynamic changes are made.
    * Modify the dynamic cluster max size by patching the domain CRD.
    * Update domainRestartVersion to trigger a rolling restart of server pods.
    * Make sure the domain is rolled successfully by checking the events.
@@ -444,11 +438,11 @@ class ItLargeMiiDomainsClusters {
         domainUid1, configMapName, domainNamespaces.get(0),
         newMaxServersInCluster);
 
-    StringBuilder patchStr = null;
+    StringBuilder patchStr;
     patchStr = new StringBuilder("[{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/configuration/model/configMap\",")
-        .append(" \"value\":  \"" + configMapName + "\"")
+        .append(" \"value\":  \"").append(configMapName).append("\"")
         .append(" }]");
     logger.log(Level.INFO, "Configmap patch string: {0}", patchStr);
 
@@ -464,7 +458,7 @@ class ItLargeMiiDomainsClusters {
 
 
     // verify the rolling started and completed events on domain
-    // checking every pod has rolled is time consuming on large domain,
+    // checking every pod has rolled is time-consuming on large domain,
     // hence checking events
     logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
         domainUid1, domainNamespaces.get(0));
@@ -620,7 +614,7 @@ class ItLargeMiiDomainsClusters {
     }
 
     if (webhookOnly) {
-      opParams.webHookOnly(webhookOnly);
+      opParams.webHookOnly(true);
     }
 
     if (domainNamespaceSelectionStrategy != null) {
@@ -637,10 +631,10 @@ class ItLargeMiiDomainsClusters {
     // enable ELK Stack
     if (elkIntegrationEnabled) {
       if (!createLogStashConfigMap) {
-        opParams.createLogStashConfigMap(createLogStashConfigMap);
+        opParams.createLogStashConfigMap(false);
       }
       logger.info("Choosen LOGSTASH_IMAGE {0}", LOGSTASH_IMAGE);
-      opParams.elkIntegrationEnabled(elkIntegrationEnabled);
+      opParams.elkIntegrationEnabled(true);
       opParams.elasticSearchHost(elasticSearchHost);
       opParams.elasticSearchPort(ELASTICSEARCH_HTTP_PORT);
       opParams.javaLoggingLevel(JAVA_LOGGING_LEVEL_VALUE);

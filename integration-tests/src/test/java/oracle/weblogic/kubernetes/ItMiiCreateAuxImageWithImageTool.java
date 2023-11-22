@@ -80,14 +80,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-arm")
 class ItMiiCreateAuxImageWithImageTool {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
 
   private static LoggingFacade logger = null;
-  private String domain1Uid = "domain1";
-  private String domain2Uid = "domain2";
-  private static String miiImageTag = "new" + MII_BASIC_IMAGE_TAG;
-  private static String miiImage = MII_AUXILIARY_IMAGE_NAME + ":" + miiImageTag;
+  private static final String miiImageTag = "new" + MII_BASIC_IMAGE_TAG;
+  private static final String miiImage = MII_AUXILIARY_IMAGE_NAME + ":" + miiImageTag;
   private final int replicaCount = 1;
   private static String adminSecretName;
   private static String encryptionSecretName;
@@ -105,7 +102,7 @@ class ItMiiCreateAuxImageWithImageTool {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -150,7 +147,7 @@ class ItMiiCreateAuxImageWithImageTool {
     modelList.add(MODEL_DIR + "/" + MII_BASIC_WDT_MODEL_FILE);
     modelList.add(MODEL_DIR + "/model.jms2.yaml");
 
-    // create auxiliary image using imagetool command if does not exists
+    // create auxiliary image using imagetool command if it does not exist
     if (imageExists(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImageTag)) {
       deleteImage(miiAuxiliaryImage);
     }
@@ -168,6 +165,7 @@ class ItMiiCreateAuxImageWithImageTool {
     imageRepoLoginAndPushImageToRegistry(miiAuxiliaryImage);
 
     // create domain custom resource using auxiliary image
+    String domain1Uid = "domain1";
     logger.info("Creating domain custom resource with domainUid {0} and auxiliary image {1}",
         domain1Uid, miiAuxiliaryImage);
     DomainResource domainCR = CommonMiiTestUtils.createDomainResourceWithAuxiliaryImage(domain1Uid, domainNamespace,
@@ -188,7 +186,7 @@ class ItMiiCreateAuxImageWithImageTool {
     logger.info("admin svc host = {0}", adminSvcExtHost);
 
     // check configuration for JMS
-    checkConfiguredJMSresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
+    checkConfiguredJMSResource(domainNamespace, adminServerPodName, adminSvcExtHost);
 
     // check the sample app is accessible from managed servers
     logger.info("Check and wait for the sample application to become ready");
@@ -257,6 +255,7 @@ class ItMiiCreateAuxImageWithImageTool {
     String clusterName = "cluster-1";
 
     // create domain custom resource using auxiliary image
+    String domain2Uid = "domain2";
     logger.info("Creating domain custom resource with domainUid {0} and auxiliary image {1}",
         domain2Uid, miiAuxiliaryImage);
     DomainResource domainCR = CommonMiiTestUtils.createDomainResourceWithAuxiliaryImage(domain2Uid, domainNamespace,
@@ -279,7 +278,7 @@ class ItMiiCreateAuxImageWithImageTool {
     String adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
     logger.info("admin svc host = {0}", adminSvcExtHost);
 
-    checkConfiguredJDBCresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
+    checkConfiguredJDBCResource(domainNamespace, adminServerPodName, adminSvcExtHost);
 
     // verify the WDT version
     String wdtVersion =
@@ -290,7 +289,7 @@ class ItMiiCreateAuxImageWithImageTool {
   }
 
   /**
-   * Create a domain with auxiliary image. Create the auxilary image using customized wdtModelHome.
+   * Create a domain with auxiliary image. Create the auxiliary image using customized wdtModelHome.
    * Verify the domain is up and running.
    */
   @Test
@@ -358,7 +357,7 @@ class ItMiiCreateAuxImageWithImageTool {
     String adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
     logger.info("admin svc host = {0}", adminSvcExtHost);
 
-    checkConfiguredJDBCresouce(domainNamespace, adminServerPodName, adminSvcExtHost);
+    checkConfiguredJDBCResource(domainNamespace, adminServerPodName, adminSvcExtHost);
   }
 
   /**
@@ -404,8 +403,8 @@ class ItMiiCreateAuxImageWithImageTool {
         .modelFiles(Collections.singletonList(MODEL_DIR + "/model.update.wm.yaml"));
 
     ExecResult result = createAuxImageUsingWITAndReturnResult(witParams);
-    String exepectedErrorMsg = "Invalid value for option '--packageManager':";
-    assertTrue(result.exitValue() != 0 && result.stderr().contains(exepectedErrorMsg));
+    String expectedErrorMsg = "Invalid value for option '--packageManager':";
+    assertTrue(result.exitValue() != 0 && result.stderr().contains(expectedErrorMsg));
   }
 
   /**
@@ -504,9 +503,7 @@ class ItMiiCreateAuxImageWithImageTool {
     if (!SKIP_CLEANUP) {
       // delete images
       for (int i = 1; i < 4; i++) {
-        if (miiImage + i != null) {
-          deleteImage(miiImage + i);
-        }
+        deleteImage(miiImage + i);
       }
     }
   }
@@ -518,8 +515,8 @@ class ItMiiCreateAuxImageWithImageTool {
    * @param adminServerPodName  admin server pod name
    * @param adminSvcExtHost admin server external host
    */
-  private static void checkConfiguredJMSresouce(String domainNamespace, String adminServerPodName,
-                                               String adminSvcExtHost) {
+  private static void checkConfiguredJMSResource(String domainNamespace, String adminServerPodName,
+                                                 String adminSvcExtHost) {
     verifyConfiguredSystemResource(domainNamespace, adminServerPodName, adminSvcExtHost,
         "JMSSystemResources", "TestClusterJmsModule2", "200");
   }
@@ -531,8 +528,8 @@ class ItMiiCreateAuxImageWithImageTool {
    * @param adminServerPodName  admin server pod name
    * @param adminSvcExtHost admin server external host
    */
-  public static void checkConfiguredJDBCresouce(String domainNamespace, String adminServerPodName,
-                                                String adminSvcExtHost) {
+  public static void checkConfiguredJDBCResource(String domainNamespace, String adminServerPodName,
+                                                 String adminSvcExtHost) {
 
     verifyConfiguredSystemResourceByPath(domainNamespace, adminServerPodName, adminSvcExtHost,
         "JDBCSystemResources/TestDataSource/JDBCResource/JDBCDriverParams",

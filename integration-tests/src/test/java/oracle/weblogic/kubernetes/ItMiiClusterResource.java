@@ -89,7 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 
- * Test various Cluster resource management usecases in a MiiDomain. 
+ * Test various Cluster resource management use cases in a MiiDomain.
  * Add a cluster reference (C1) after domain is started
  * Replace a cluster reference (C1) with a new cluster reference (C2)
  * Delete a cluster reference (C2)
@@ -98,7 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Start a domain with both domain and cluster defined in single yaml file
  */
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-@DisplayName("Test to a create model in image domain with Cluster Resourcees")
+@DisplayName("Test to a create model in image domain with Cluster Resources")
 @IntegrationTest
 @Tag("olcne-mrg")
 @Tag("kind-parallel")
@@ -109,10 +109,9 @@ class ItMiiClusterResource {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
-  private String miiImage = null;
   private static LoggingFacade logger = null;
-  private static String adminSecretName = "weblogic-credentials";
-  private static String encryptionSecretName = "encryptionsecret";
+  private static final String adminSecretName = "weblogic-credentials";
+  private static final String encryptionSecretName = "encryptionsecret";
   final int replicaCount = 2;
 
   /**
@@ -154,9 +153,9 @@ class ItMiiClusterResource {
   /**
    * Create WebLogic domain DR with domain level replica set to zero.
    * Do not associate any Cluster Resource with DR even if two 
-   * WebLogic clusters (cluster-1 and cluster-2) are configuted in config.xml
+   * WebLogic clusters (cluster-1 and cluster-2) are configured in config.xml
    * where cluster-1 is a dynamic cluster and cluster-2 is a configured cluster
-   * Create two kubernates cluster resources CR1 and CR2 
+   * Create two Kubernetes cluster resources CR1 and CR2
    * corresponding to WebLogic clusters cluster-1 and cluster-2 respectively.
    * Start the domain and make sure no managed servers are started from either 
    * WebLogic Cluster. 
@@ -300,7 +299,6 @@ class ItMiiClusterResource {
   void testDomainStatusMatchesClusterResourceStatus() {
 
     String domainUid = "domain10";
-    String adminServerPodName = domainUid + "-admin-server";
     String managedServer1Prefix = domainUid +  "-c1-managed-server";
     String managedServer2Prefix = domainUid + "-c2-managed-server";
 
@@ -417,18 +415,16 @@ class ItMiiClusterResource {
 
   /**
    * Create a WebLogic Domain Resource with domain level replica set to zero.
-   * Create  kubernates cluster resources CR which corresponds to a 
+   * Create Kubernetes cluster resources CR which corresponds to a
    * WebLogic cluster cluster-1 in model file.
    * Associate Cluster Resource CR with Domain Resource DR  
    * Make sure only managed servers from cluster-1 comes up
    * Delete the cluster Resource CR
    * Make sure Domain Validation Error event is generated. 
-   *
-   * message: 'Domain domain2 failed due to 'Domain validation error': 
+   * message: 'Domain domain2 failed due to 'Domain validation error':
    * Cluster resource 'domain2-cluster-1' not found in namespace 
    * 'ns-ptkhxk'. Update the domain resource to correct the validation error.'
-   *
-   * However the managed servers should not stop.
+   * However, the managed servers should not stop.
    */
   @Test
   @DisplayName("Verify removal of a cluster resource generate Error Event")
@@ -471,10 +467,10 @@ class ItMiiClusterResource {
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
 
-    // Delete the cluster resource with out de-associating it from domain 
+    // Delete the cluster resource without de-associating it from domain
     // In this case a Domain Validation event will be generated 
-    // The managed server does not go down, and cluster becomes un-managable
-    // as the clusster Resource does not exist.
+    // The managed server does not go down, and cluster becomes un-manageable
+    // as the cluster Resource does not exist.
 
     OffsetDateTime timestamp = now();
     deleteClusterCustomResourceAndVerify(clusterRes,domainNamespace);
@@ -498,8 +494,7 @@ class ItMiiClusterResource {
    * Create a domain resource DR2 with cluster reference set to SC.
    * Start the domain resource DR1 with all manged servers in the cluster.
    * A Domain Validation Failed Event MUST be generated for domain DR2.
-   *
-   * message: 'Domain domain8 failed due to 'Domain validation error': 
+   * message: 'Domain domain8 failed due to 'Domain validation error':
    * Cannot reference cluster resource 'shared-cluster' because it is used 
    * by 'domain7'. Update the domain resource to correct the validation error.'
    *
@@ -589,7 +584,7 @@ class ItMiiClusterResource {
 
   /**
    * Create a cluster resource CR3 with reference to WLS cluster cluster-3.
-   * Here WebLogic Cluster cluster-3 doesn't exists in model/config file.
+   * Here WebLogic Cluster cluster-3 doesn't exist in model/config file.
    * Create a domain resource DR with cluster reference set to CR3.
    * Deploy the domain DR. 
    * Make sure a Domain Configuration Mismatch Failed Event MUST be 
@@ -644,7 +639,7 @@ class ItMiiClusterResource {
   /*
    * Create a domain resource DR with two cluster resources CR1 and CR2.
    * Deploy only CR1 before deploying resource DR. 
-   * Here we execpet a Domain Validation Error
+   * Here we expect a Domain Validation Error
    *
    *   message: 'Domain domain4 failed due to 'Domain validation error': 
    *   Cluster resource 'domain4-cluster-2' not found in namespace 'ns-mroefg'
@@ -659,8 +654,7 @@ class ItMiiClusterResource {
     String domainUid = "domain4"; 
     String cluster1Name = "cluster-1"; 
     String cluster1Res = domainUid + "-cluster-1"; 
-    String cluster2Name = "cluster-2"; 
-    String cluster2Res = domainUid + "-cluster-2"; 
+    String cluster2Res = domainUid + "-cluster-2";
 
     String configMapName = domainUid + "-configmap"; 
    
@@ -774,9 +768,9 @@ class ItMiiClusterResource {
    * Verify status and conditions are matching for domain.status and cluster resource status
    * Scale only the cluster CR2 and make sure no new server from CR1 is up
    * Verify status and conditions are matching for domain.status and cluster resource status
-   * Scale all the clusters in the namesapce using 
+   * Scale all the clusters in the namespace using
    *   KUBERNETES_CLI scale cluster --replicas=4  --all -n namespace
-   * Scale all the clusters in the namesapce with replica count 1
+   * Scale all the clusters in the namespace with replica count 1
    *   KUBERNETES_CLI scale cluster --initial-replicas=1 --replicas=5  --all -n ns
    * This command must fail as there is no cluster with currentreplica set to 1
    */
@@ -791,7 +785,6 @@ class ItMiiClusterResource {
     String cluster1Res     = domainUid + "-cluster-1";
     String cluster2Res     = domainUid + "-cluster-2";
     String config1MapName  = domainUid + "-configmap";
-    String config2MapName  = domainUid + "-configmap2";
 
     String adminPodName      = domainUid + "-admin-server";
     String managedPod1Prefix = domainUid + "-c1-managed-server";
@@ -887,7 +880,7 @@ class ItMiiClusterResource {
     checkPodReadyAndServiceExists(managedPod1Prefix + "4", domainUid, domainNamespace);
     checkPodReadyAndServiceExists(managedPod1Prefix + "4", domainUid, domainNamespace);
 
-    // KUBERNETES_CLI command must fail since non of the cluster has the 
+    // KUBERNETES_CLI command must fail since none of the cluster has the
     // current replicacount set to 1. All have the count of 4 
     cmd = " --replicas=5 --current-replicas=1 --all ";
     kubernetesCLIScaleCluster(cmd, domainNamespace,false);
@@ -917,7 +910,6 @@ class ItMiiClusterResource {
     String cluster1Res     = domainUid + "-cluster-1";
     String cluster2Res     = domainUid + "-cluster-2";
     String config1MapName  = domainUid + "-configmap";
-    String config2MapName  = domainUid + "-configmap2";
 
     String adminPodName      = domainUid + "-admin-server";
     String managedPod1Prefix = domainUid + "-c1-managed-server";
@@ -1090,36 +1082,38 @@ class ItMiiClusterResource {
 
   // create a ConfigMap with a model that add a cluster 
   private static void createModelConfigMap(String domainid, String cfgMapName) {
-    String yamlString = "topology:\n"
-        + "  Cluster:\n"
-        + "    'cluster-1':\n"
-        + "       DynamicServers: \n"
-        + "         ServerTemplate: 'cluster-1-template' \n"
-        + "         ServerNamePrefix: 'c1-managed-server' \n"
-        + "         DynamicClusterSize: 5 \n"
-        + "         MaxDynamicClusterSize: 5 \n"
-        + "         CalculatedListenPorts: false \n"
-        + "    'cluster-2':\n"
-        + "  ServerTemplate:\n"
-        + "    'cluster-1-template':\n"
-        + "       Cluster: 'cluster-1' \n"
-        + "       ListenPort : 8001 \n"
-        + "  Server:\n"
-        + "    'c2-managed-server1':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server2':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server3':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server4':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n"
-        + "    'c2-managed-server5':\n"
-        + "       Cluster: 'cluster-2' \n"
-        + "       ListenPort : 8001 \n";
+    String yamlString = """
+        topology:
+          Cluster:
+            'cluster-1':
+               DynamicServers:\s
+                 ServerTemplate: 'cluster-1-template'\s
+                 ServerNamePrefix: 'c1-managed-server'\s
+                 DynamicClusterSize: 5\s
+                 MaxDynamicClusterSize: 5\s
+                 CalculatedListenPorts: false\s
+            'cluster-2':
+          ServerTemplate:
+            'cluster-1-template':
+               Cluster: 'cluster-1'\s
+               ListenPort : 8001\s
+          Server:
+            'c2-managed-server1':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server2':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server3':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server4':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+            'c2-managed-server5':
+               Cluster: 'cluster-2'\s
+               ListenPort : 8001\s
+        """;
 
     Map<String, String> labels = new HashMap<>();
     labels.put("weblogic.domainUid", domainid);
@@ -1142,7 +1136,7 @@ class ItMiiClusterResource {
     testUntil(
         domainDoesNotExist(duid, DOMAIN_API_VERSION, namespace),
         getLogger(),
-        "Doamin {0} to be deleted in namespace {1}",
+        "Domain {0} to be deleted in namespace {1}",
         duid,
         namespace);
   }

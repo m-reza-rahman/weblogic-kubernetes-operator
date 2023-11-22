@@ -4,13 +4,10 @@
 package oracle.weblogic.kubernetes;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.kubernetes.client.custom.V1Patch;
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -89,19 +86,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-arm")
 class ItLogHomeFlatStructure {
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
-  private static int replicaCount = 2;
+  private static final int replicaCount = 2;
   private static final String domainUid = "loghomeflat";
   private static final String pvName = getUniqueName(domainUid + "-pv-");
   private static final String pvcName = getUniqueName(domainUid + "-pvc-");
-  private StringBuilder curlString = null;
-  private StringBuilder checkCluster = null;
-  private V1Patch patch = null;
   private final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-managed-server";
-  private final String adminServerName = "admin-server";
-  private final String clusterName = "cluster-1";
   private String adminSvcExtHost = null;
   private static String logsDir = null;
 
@@ -120,7 +111,7 @@ class ItLogHomeFlatStructure {
     // get a new unique opNamespace
     logger.info("Creating unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
-    opNamespace = namespaces.get(0);
+    String opNamespace = namespaces.get(0);
 
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
@@ -156,7 +147,7 @@ class ItLogHomeFlatStructure {
     logsDir = "/shared/" + domainNamespace + "/logs/" + domainUid;
     createConfigMapAndVerify(
         configMapName, domainUid, domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.sysresources.yaml"));
+        List.of(MODEL_DIR + "/model.sysresources.yaml"));
 
     // create PV, PVC for logs
     createPV(pvName, domainUid, ItLogHomeFlatStructure.class.getSimpleName());
@@ -215,6 +206,7 @@ class ItLogHomeFlatStructure {
   @DisplayName("Check the server logs are written to PersistentVolume")
   void testMiiServerLogsAreOnPV() {
     // check server logs are written on PV and look for string RUNNING in log
+    String adminServerName = "admin-server";
     checkLogsOnPV("ls " + logsDir + " && grep RUNNING " + logsDir + "/"
         + adminServerName + ".log", adminServerPodName);
   }
@@ -253,7 +245,7 @@ class ItLogHomeFlatStructure {
 
   private static void createDatabaseSecret(
         String secretName, String username, String password,
-        String dburl, String domNamespace) throws ApiException {
+        String dburl, String domNamespace) {
     Map<String, String> secretMap = new HashMap<>();
     secretMap.put("username", username);
     secretMap.put("password", password);
@@ -267,8 +259,7 @@ class ItLogHomeFlatStructure {
 
   }
 
-  private static void createDomainSecret(String secretName, String username, String password, String domNamespace)
-          throws ApiException {
+  private static void createDomainSecret(String secretName, String username, String password, String domNamespace) {
     Map<String, String> secretMap = new HashMap<>();
     secretMap.put("username", username);
     secretMap.put("password", password);

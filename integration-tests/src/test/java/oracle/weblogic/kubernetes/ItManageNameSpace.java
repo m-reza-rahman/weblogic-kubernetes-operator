@@ -24,7 +24,6 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.TimeoutException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -59,7 +58,6 @@ import static oracle.weblogic.kubernetes.utils.CleanupUtil.deleteNamespacedArtif
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.deleteDomainResource;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
@@ -91,24 +89,22 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-arm")
 class ItManageNameSpace {
 
-  private static String[] opNamespaces = new String[4];
+  private static final String[] opNamespaces = new String[4];
 
   // domain constants
   private static final String[] domainsUid = {"managensdomain1","managensdomain2","managensdomain3","managensdomain4"};
-  private static String[] domainNamespaces = new String[4];
+  private static final String[] domainNamespaces = new String[4];
   private final String clusterName = "cluster-1";
   private final int replicaCount = 2;
   private final String adminServerPrefix = "-" + ADMIN_SERVER_NAME_BASE;
-  private final String managedServerPrefix = "-" + MANAGED_SERVER_NAME_BASE;
 
-  private HelmParams[] opHelmParams = new HelmParams[3];
-  private static String adminSecretName = "weblogic-credentials-itmanagens";
-  private static String encryptionSecretName = "encryptionsecret-itmanagens";
+  private final HelmParams[] opHelmParams = new HelmParams[3];
+  private static final String adminSecretName = "weblogic-credentials-itmanagens";
+  private static final String encryptionSecretName = "encryptionsecret-itmanagens";
   private static Map<String, String> labels1;
-  private static Map<String, String> labels2;
 
   private static LoggingFacade logger = null;
-  private static String miiImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
+  private static final String miiImage = MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG;
 
   List<String> namespacesToClean = new ArrayList<>();
 
@@ -138,7 +134,7 @@ class ItManageNameSpace {
     createSecrets("default");
     labels1 = new java.util.HashMap<>();
     labels1.put(OPERATOR_RELEASE_NAME, OPERATOR_RELEASE_NAME);
-    labels2 = new java.util.HashMap<>();
+    Map<String, String> labels2 = new HashMap<>();
     labels2.put(OPERATOR_RELEASE_NAME + "2", OPERATOR_RELEASE_NAME);
     setLabelToNamespace(domainNamespaces[0], labels1);
     setLabelToNamespace(domainNamespaces[1], labels2);
@@ -397,7 +393,7 @@ class ItManageNameSpace {
     HelmParams opHelmParam = installAndVerifyOperator(OPERATOR_RELEASE_NAME,
         opNamespace, selector,
         selectorValue, true, domainNamespacesValue).getHelmParams();
-    String operExtSVCRouteName = createRouteForOKD("external-weblogic-operator-svc", opNamespace);
+    createRouteForOKD("external-weblogic-operator-svc", opNamespace);
     setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
     managedDomains.forEach((domainNS, domainUid) -> {
           logger.info("Installing and verifying domain {0} in namespace {1}", domainUid, domainNS);
@@ -420,21 +416,6 @@ class ItManageNameSpace {
     }
     );
     return opHelmParam;
-  }
-
-  private boolean isOperatorFailedToScaleDomain(String domainUid, String domainNamespace) {
-    try {
-      //check operator can't manage domainNamespace by trying to scale domain
-      String managedServerPodNamePrefix = domainUid + "-managed-server";
-      scaleAndVerifyCluster("cluster-1", domainUid, domainNamespace,
-          managedServerPodNamePrefix, 2, 1,
-          false, 0, null, null,
-          false, "", "scaleDown", 1, "", "", null, null);
-      return false;
-    } catch (TimeoutException ex) {
-      logger.info("Received expected error " + ex.getMessage());
-      return true;
-    }
   }
 
   private static void setLabelToNamespace(String domainNS, Map<String, String> labels) {
@@ -577,6 +558,7 @@ class ItManageNameSpace {
 
     // check for managed server pods existence in the domain namespace
     for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = "-" + MANAGED_SERVER_NAME_BASE;
       String managedServerPodName = domainUid + managedServerPrefix + i;
 
       // check that the managed server pod exists

@@ -74,19 +74,12 @@ class ItIstioTwoDomainsInImage {
   private static String opNamespace = null;
   private static String domainNamespace1 = null;
   private static String domainNamespace2 = null;
-  private final String clusterName = "cluster-1"; // do not modify
-  private final String adminServerName = "admin-server"; // do not modify
-  private final String domainUid1 = "istio-dii-wdt-1";
-  private final String domainUid2 = "istio-dii-wdt-2";
-  private final String adminServerPodName1 = domainUid1 + "-" + adminServerName;
-  private final String adminServerPodName2 = domainUid2 + "-" + adminServerName;
 
   private static String testWebAppWarLoc = null;
 
   private static final String istioNamespace = "istio-system";
   private static final String istioIngressServiceName = "istio-ingressgateway";
 
-  private static Map<String, Object> secretNameMap;
   private static LoggingFacade logger = null;
 
   /**
@@ -147,7 +140,9 @@ class ItIstioTwoDomainsInImage {
   @Test
   @DisplayName("Two WebLogic domainhome-in-image with single istio ingress")
   void testIstioTwoDomainsWithSingleIngress() {
+    String domainUid1 = "istio-dii-wdt-1";
     final String managedServerPrefix1 = domainUid1 + "-managed-server";
+    String domainUid2 = "istio-dii-wdt-2";
     final String managedServerPrefix2 = domainUid2 + "-managed-server";
     final int replicaCount = 1;
 
@@ -189,9 +184,13 @@ class ItIstioTwoDomainsInImage {
         domainNamespace2);
 
     // check admin services are created
+    // do not modify
+    String adminServerName = "admin-server";
+    String adminServerPodName1 = domainUid1 + "-" + adminServerName;
     logger.info("Check admin service {0} is created in namespace {1}",
         adminServerPodName1, domainNamespace1);
     checkServiceExists(adminServerPodName1, domainNamespace1);
+    String adminServerPodName2 = domainUid2 + "-" + adminServerName;
     logger.info("Check admin service {0} is created in namespace {1}",
         adminServerPodName2, domainNamespace2);
     checkServiceExists(adminServerPodName2, domainNamespace2);
@@ -224,11 +223,13 @@ class ItIstioTwoDomainsInImage {
       checkPodReady(managedServerPrefix2 + i, domainUid2, domainNamespace2);
     }
 
+    // do not modify
+    String clusterName = "cluster-1";
     String clusterService1 = domainUid1 + "-cluster-" + clusterName + "." + domainNamespace1 + ".svc.cluster.local";
     Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("NAMESPACE", domainNamespace1);
     templateMap.put("DUID", domainUid1);
-    templateMap.put("ADMIN_SERVICE",adminServerPodName1);
+    templateMap.put("ADMIN_SERVICE", adminServerPodName1);
     templateMap.put("CLUSTER_SERVICE", clusterService1);
 
     Path srcHttpFile = Paths.get(RESOURCE_DIR, "istio", "istio-http-template.yaml");
@@ -250,7 +251,7 @@ class ItIstioTwoDomainsInImage {
     String clusterService2 = domainUid2 + "-cluster-" + clusterName + "." + domainNamespace2 + ".svc.cluster.local";
     templateMap.put("NAMESPACE", domainNamespace2);
     templateMap.put("DUID", domainUid2);
-    templateMap.put("ADMIN_SERVICE",adminServerPodName2);
+    templateMap.put("ADMIN_SERVICE", adminServerPodName2);
     templateMap.put("CLUSTER_SERVICE", clusterService2);
 
     Path targetHttpFile2 = assertDoesNotThrow(
@@ -280,8 +281,8 @@ class ItIstioTwoDomainsInImage {
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : host + ":" + istioIngressPort;
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
 
     if (!WEBLOGIC_SLIM) {
       String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
@@ -304,7 +305,7 @@ class ItIstioTwoDomainsInImage {
             target, archivePath, domainNamespace1 + ".org", "testwebapp")
         : deployToClusterUsingRest(host, String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-            clusterName, archivePath, domainNamespace1 + ".org", "testwebapp");
+        clusterName, archivePath, domainNamespace1 + ".org", "testwebapp");
 
     assertNotNull(result, "Application deployment failed on domain1");
     logger.info("Application deployment on domain1 returned {0}", result.toString());
@@ -326,8 +327,8 @@ class ItIstioTwoDomainsInImage {
     }
     logger.info("Application {0} is accessble to {1}", resourcePath, domainUid1);
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
+    // We can not verify Rest Management console through Administration NodePort
+    // in istio, as we can not enable Administration NodePort
     if (!WEBLOGIC_SLIM) {
       String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
       boolean checkConsole
@@ -346,7 +347,7 @@ class ItIstioTwoDomainsInImage {
             target, archivePath, domainNamespace2 + ".org", "testwebapp")
         : deployToClusterUsingRest(host, String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-            clusterName, archivePath, domainNamespace2 + ".org", "testwebapp");
+        clusterName, archivePath, domainNamespace2 + ".org", "testwebapp");
 
     assertNotNull(result, "Application deployment on domain2 failed");
     logger.info("Application deployment on domain2 returned {0}", result.toString());

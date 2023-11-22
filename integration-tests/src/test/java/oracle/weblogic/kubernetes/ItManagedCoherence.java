@@ -86,9 +86,7 @@ class ItManagedCoherence {
   private static final String CLUSTER_NAME_PREFIX = "cluster-";
   private static final int MANAGED_SERVER_PORT = 8001;
   private static final int replicaCount = 2;
-  private static String adminServerPodName = domainUid + "-admin-server";
 
-  private static String opNamespace = null;
   private static String domainNamespace = null;
 
   private static HelmParams traefikHelmParams = null;
@@ -96,7 +94,7 @@ class ItManagedCoherence {
 
   /**
    * Install Traefik and operator, build two Coherence applications
-   * 1. Coherence applications are packaged as Grid ARchives (GAR) and
+   * 1. Coherence applications are packaged as Grid Archives (GAR) and
    *    deployed on storage-enabled managed Coherence servers in cluster-2
    * 2. Coherence application GAR is packaged within an EAR and
    *    deployed on storage-disabled managed Coherence servers in cluster-1.
@@ -116,7 +114,7 @@ class ItManagedCoherence {
     // get a new unique opNamespace
     logger.info("Assigning a unique namespace for Operator");
     assertNotNull(namespaces.get(1), "Namespace list is null");
-    opNamespace = namespaces.get(1);
+    String opNamespace = namespaces.get(1);
 
     // get a new unique domainNamespace
     logger.info("Assigning a unique namespace for Domain");
@@ -138,8 +136,8 @@ class ItManagedCoherence {
     Path coherenceAppEarPath = Paths.get(distDir.toString(), COHERENCE_APP_NAME + ".ear");
     assertTrue(coherenceAppGarPath.toFile().exists(), "Application archive is not available");
     assertTrue(coherenceAppEarPath.toFile().exists(), "Application archive is not available");
-    logger.info("Path of CoherenceApp EAR " + coherenceAppEarPath.toString());
-    logger.info("Path of CoherenceApp GAR " + coherenceAppGarPath.toString());
+    logger.info("Path of CoherenceApp EAR " + coherenceAppEarPath);
+    logger.info("Path of CoherenceApp GAR " + coherenceAppGarPath);
   }
 
   /**
@@ -238,6 +236,7 @@ class ItManagedCoherence {
     createDomainCrAndVerify(adminSecretName, domImage);
 
     // check that admin service exists in the domain namespace
+    String adminServerPodName = domainUid + "-admin-server";
     logger.info("Checking that admin service {0} exists in namespace {1}",
         adminServerPodName, domainNamespace);
     checkServiceExists(adminServerPodName, domainNamespace);
@@ -319,7 +318,7 @@ class ItManagedCoherence {
   private boolean coherenceCacheTest(String hostName, int ingressServiceNodePort) {
     logger.info("Starting to test the cache");
 
-    String hostAndPort = null;
+    String hostAndPort;
     if (!OKD) {
       // get ingress service Name and Nodeport
       String ingressServiceName = traefikHelmParams.getReleaseName();
@@ -335,7 +334,7 @@ class ItManagedCoherence {
     // add the data to cache
     String[] firstNameList = {"Frodo", "Samwise", "Bilbo", "peregrin", "Meriadoc", "Gandalf"};
     String[] secondNameList = {"Baggins", "Gamgee", "Baggins", "Took", "Brandybuck", "TheGrey"};
-    ExecResult result = null;
+    ExecResult result;
     for (int i = 0; i < firstNameList.length; i++) {
       result = addDataToCache(firstNameList[i], secondNameList[i], hostName, hostAndPort);
       assertTrue(result.stdout().contains(firstNameList[i]), "Did not add the expected record");
@@ -408,7 +407,7 @@ class ItManagedCoherence {
         .append(COHERENCE_APP_NAME)
         .append("/")
         .append(COHERENCE_APP_NAME);
-    logger.info("Command to get the number of records in cache " + curlCmd.toString());
+    logger.info("Command to get the number of records in cache " + curlCmd);
 
     ExecResult result = assertDoesNotThrow(() -> exec(curlCmd.toString(), true),
         String.format("Failed to get the number of records in cache by running command %s", curlCmd));
@@ -432,7 +431,7 @@ class ItManagedCoherence {
         .append(COHERENCE_APP_NAME)
         .append("/")
         .append(COHERENCE_APP_NAME);
-    logger.info("Command to get the records from cache " + curlCmd.toString());
+    logger.info("Command to get the records from cache " + curlCmd);
 
     ExecResult result = assertDoesNotThrow(() -> exec(curlCmd.toString(), true),
         String.format("Failed to get the records from cache by running command %s", curlCmd));
@@ -456,7 +455,7 @@ class ItManagedCoherence {
         .append(COHERENCE_APP_NAME)
         .append("/")
         .append(COHERENCE_APP_NAME);
-    logger.info("Command to clean the cache " + curlCmd.toString());
+    logger.info("Command to clean the cache " + curlCmd);
 
     ExecResult result = assertDoesNotThrow(() -> exec(curlCmd.toString(), true),
         String.format("Failed to clean the cache by running command %s", curlCmd));

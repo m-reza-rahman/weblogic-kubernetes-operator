@@ -65,12 +65,6 @@ class ItIstioProductionSecureMode {
   private static String opNamespace = null;
   private static String domainNamespace = null;
 
-  private String domainUid = "istio-mii-securemode";
-  private String configMapName = "dynamicupdate-istio-configmap";
-  private final String clusterName = "cluster-1"; // do not modify
-  private final String adminServerPodName = domainUid + "-admin-server";
-  private final String managedServerPrefix = domainUid + "-managed-server";
-  private final int replicaCount = 1;
   private static LoggingFacade logger = null;
 
   /**
@@ -105,12 +99,11 @@ class ItIstioProductionSecureMode {
    * Add istio configuration with default readinessPort.
    * Do not add any AdminService under AdminServer configuration.
    * Deploy istio gateways and virtual service.
-   *
    * Verify server pods are in ready state and services are created.
    * To verify istio ingress we need to update /etc/hosts files of the host
    * to include k8s cluster IP address. This cannot be verified in automated
-   * jenkin. So this usecase only verifies that all WebLogic servers comes up
-   * in a productionmode secured environment when istio is enabled.
+   * Jenkins. So this use case only verifies that all WebLogic servers comes up
+   * in a production mode secured environment when istio is enabled.
    * https://istio.io/latest/docs/tasks/traffic-management/ingress/ingress-sni-passthrough/
    */
   @Test
@@ -141,49 +134,58 @@ class ItIstioProductionSecureMode {
                             "weblogicenc"),
                     String.format("createSecret failed for %s", encryptionSecretName));
 
-    String yamlString = "topology:\n"
-        + "  SecurityConfiguration: \n"
-        + "    SecureMode: \n"
-        + "         SecureModeEnabled: true \n"
-        + "  ServerTemplate: \n"
-        + "    \"cluster-1-template\": \n"
-        + "       ListenPort: '7001' \n"
-        + "       SSL: \n"
-        + "         Enabled: true \n"
-        + "         ListenPort: '7002' \n";
+    String yamlString = """
+        topology:
+          SecurityConfiguration:\s
+            SecureMode:\s
+                 SecureModeEnabled: true\s
+          ServerTemplate:\s
+            "cluster-1-template":\s
+               ListenPort: '7001'\s
+               SSL:\s
+                 Enabled: true\s
+                 ListenPort: '7002'\s
+        """;
 
     // create WDT config map with SSL/SecureMode Configuration
+    String configMapName = "dynamicupdate-istio-configmap";
+    String domainUid = "istio-mii-securemode";
     createModelConfigMap(configMapName, yamlString, domainUid);
 
     // create the domain object
+    int replicaCount = 1;
     DomainResource domain = createDomainResource(domainUid,
                                       domainNamespace,
                                       adminSecretName,
                                       TEST_IMAGES_REPO_SECRET_NAME,
                                       encryptionSecretName,
-                                      replicaCount,
+        replicaCount,
                               MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
-                              configMapName);
+        configMapName);
 
     // create model in image domain
     createDomainAndVerify(domain, domainNamespace);
 
+    String adminServerPodName = domainUid + "-admin-server";
     logger.info("Check admin service {0} is created in namespace {1}",
         adminServerPodName, domainNamespace);
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
     // check managed server services created
     for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = domainUid + "-managed-server";
       logger.info("Check managed service {0} is created in namespace {1}",
           managedServerPrefix + i, domainNamespace);
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
 
+    // do not modify
+    String clusterName = "cluster-1";
     String clusterService = domainUid + "-cluster-" + clusterName + "." + domainNamespace + ".svc.cluster.local";
 
     Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("NAMESPACE", domainNamespace);
     templateMap.put("DUID", domainUid);
-    templateMap.put("ADMIN_SERVICE",adminServerPodName);
+    templateMap.put("ADMIN_SERVICE", adminServerPodName);
     templateMap.put("CLUSTER_SERVICE", clusterService);
 
     Path srcHttpFile = Paths.get(RESOURCE_DIR, "istio", "istio-http-template.yaml");

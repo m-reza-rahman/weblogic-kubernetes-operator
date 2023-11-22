@@ -81,7 +81,7 @@ class ItMiiDynamicUpdatePart1 {
 
   /**
    * Install Operator.
-   * Create domain resource defintion.
+   * Create domain resource definition.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *                   JUnit engine parameter resolution mechanism
@@ -93,29 +93,31 @@ class ItMiiDynamicUpdatePart1 {
 
     // write sparse yaml to change target to file
     pathToChangeTargetYaml = Paths.get(WORK_DIR + "/changetarget.yaml");
-    String yamlToChangeTarget = "appDeployments:\n"
-        + "  Application:\n"
-        + "    myear:\n"
-        + "      Target: 'cluster-1,admin-server'";
+    String yamlToChangeTarget = """
+        appDeployments:
+          Application:
+            myear:
+              Target: 'cluster-1,admin-server'""";
 
     assertDoesNotThrow(() -> Files.write(pathToChangeTargetYaml, yamlToChangeTarget.getBytes()));
 
     // write sparse yaml to file
     pathToAddClusterYaml = Paths.get(WORK_DIR + "/addcluster.yaml");
-    String yamlToAddCluster = "topology:\n"
-        + "    Cluster:\n"
-        + "        \"cluster-2\":\n"
-        + "            DynamicServers:\n"
-        + "                ServerTemplate:  \"cluster-2-template\"\n"
-        + "                ServerNamePrefix: \"dynamic-server\"\n"
-        + "                DynamicClusterSize: 4\n"
-        + "                MinDynamicClusterSize: 2\n"
-        + "                MaxDynamicClusterSize: 4\n"
-        + "                CalculatedListenPorts: false\n"
-        + "    ServerTemplate:\n"
-        + "        \"cluster-2-template\":\n"
-        + "            Cluster: \"cluster-2\"\n"
-        + "            ListenPort : 8001";
+    String yamlToAddCluster = """
+        topology:
+            Cluster:
+                "cluster-2":
+                    DynamicServers:
+                        ServerTemplate:  "cluster-2-template"
+                        ServerNamePrefix: "dynamic-server"
+                        DynamicClusterSize: 4
+                        MinDynamicClusterSize: 2
+                        MaxDynamicClusterSize: 4
+                        CalculatedListenPorts: false
+            ServerTemplate:
+                "cluster-2-template":
+                    Cluster: "cluster-2"
+                    ListenPort : 8001""";
 
     assertDoesNotThrow(() -> Files.write(pathToAddClusterYaml, yamlToAddCluster.getBytes()));
   }
@@ -159,7 +161,7 @@ class ItMiiDynamicUpdatePart1 {
           getPodCreationTime(helper.domainNamespace, helper.managedServerPrefix + i));
     }
     replaceConfigMapWithModelFiles(MiiDynamicUpdateHelper.configMapName, domainUid, helper.domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
+        List.of(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, helper.domainNamespace);
 
@@ -207,7 +209,7 @@ class ItMiiDynamicUpdatePart1 {
     }
 
     replaceConfigMapWithModelFiles(MiiDynamicUpdateHelper.configMapName, domainUid, helper.domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.update.wm.yaml"),
+        List.of(MODEL_DIR + "/model.update.wm.yaml"),
         withStandardRetryPolicy);
 
     String introspectVersion = 
@@ -217,7 +219,7 @@ class ItMiiDynamicUpdatePart1 {
 
     verifyMinThreadsConstraintRuntime(2);
 
-    verifyMaxThredsConstraintRuntime(20);
+    verifyMaxThreadsConstraintRuntime(20);
 
     logger.info("Found updated work manager configuration");
 
@@ -430,7 +432,7 @@ class ItMiiDynamicUpdatePart1 {
             domainUid, helper.domainNamespace));
 
     // Run standalone JMS Client inside the pod using weblogic.jar in classpath.
-    // The client sends 300 messsage to a Uniform Distributed Queue.
+    // The client sends 300 message to a Uniform Distributed Queue.
     // Make sure the messages are distributed across the members evenly
     // and JMS connection is load balanced across all servers
     testUntil(withLongRetryPolicy,
@@ -471,10 +473,11 @@ class ItMiiDynamicUpdatePart1 {
 
     // write sparse yaml to file
     Path pathToRemoveTargetYaml = Paths.get(WORK_DIR + "/removetarget.yaml");
-    String yamlToRemoveTarget = "appDeployments:\n"
-        + "  Application:\n"
-        + "    myear:\n"
-        + "      Target: ''";
+    String yamlToRemoveTarget = """
+        appDeployments:
+          Application:
+            myear:
+              Target: ''""";
 
     assertDoesNotThrow(() -> Files.write(pathToRemoveTargetYaml, yamlToRemoveTarget.getBytes()));
 
@@ -512,7 +515,7 @@ class ItMiiDynamicUpdatePart1 {
         "min threads constraint configuration to be updated");
   }
 
-  void verifyMaxThredsConstraintRuntime(int count) {
+  void verifyMaxThreadsConstraintRuntime(int count) {
     testUntil(
         () -> checkMaxThreadsConstraintRuntime(count),
         logger,
@@ -530,7 +533,7 @@ class ItMiiDynamicUpdatePart1 {
         helper.domainNamespace, helper.adminServerPodName,
         MANAGED_SERVER_NAME_BASE + "1", workManagerName);
     if (result != null) {
-      logger.info("readMinThreadsConstraintRuntime read " + result.toString());
+      logger.info("readMinThreadsConstraintRuntime read " + result);
       return (result.stdout() != null && result.stdout().contains("\"count\": " + count));
     }
     logger.info("readMinThreadsConstraintRuntime failed to read from WebLogic server ");
@@ -582,7 +585,7 @@ class ItMiiDynamicUpdatePart1 {
         helper.domainNamespace, helper.adminServerPodName,
         MANAGED_SERVER_NAME_BASE + "1", workManagerName);
     if (result != null) {
-      logger.info("readMaxThreadsConstraintRuntime read " + result.toString());
+      logger.info("readMaxThreadsConstraintRuntime read " + result);
       return (result.stdout() != null && result.stdout().contains("\"count\": " + count));
     }
     logger.info("readMaxThreadsConstraintRuntime failed to read from WebLogic server ");

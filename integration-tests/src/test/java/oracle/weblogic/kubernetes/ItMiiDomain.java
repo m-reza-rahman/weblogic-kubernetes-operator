@@ -141,15 +141,14 @@ class ItMiiDomain {
   private static String domainNamespace = null;
   private static String domainNamespace1 = null;
 
-  private String domainUid = "domain1";
-  private String domainUid1 = "domain2";
+  private final String domainUid = "domain1";
   private String miiImagePatchAppV2 = null;
   private String miiImageAddSecondApp = null;
   private static LoggingFacade logger = null;
   private static volatile boolean mainThreadDone = false;
   private static String miiDomainNegativeNamespace = null;
-  private String encryptionSecretName = "encryptionsecret";
-  private AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + this.getClass().getSimpleName());
+  private final String encryptionSecretName = "encryptionsecret";
+  private final AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + this.getClass().getSimpleName());
 
   /**
    * Install Operator.
@@ -186,7 +185,6 @@ class ItMiiDomain {
    * Make sure two external NodePort services are created in domain namespace.
    * Make sure WebLogic console is accessible through both
    *   `default-secure` service and `default` service.
-   *
    * Negative test case for when domain resource attribute domain.spec.adminServer.adminChannelPortForwardingEnabled
    * is set to false, the WLS admin console can not be accessed using the forwarded port, like
    * http://localhost:localPort/console/login/LoginForm.jsp.
@@ -334,6 +332,7 @@ class ItMiiDomain {
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testCreateMiiSecondDomainDiffNSSameImage() {
     // admin/managed server name here should match with model yaml in MII_BASIC_WDT_MODEL_FILE
+    String domainUid1 = "domain2";
     final String adminServerPodName = domainUid1 + "-admin-server";
     final String managedServerPrefix = domainUid1 + "-managed-server";
     final int replicaCount = 2;
@@ -408,22 +407,20 @@ class ItMiiDomain {
     final String managedServerPrefix = domainUid + "-managed-server";
     final int replicaCount = 2;
 
-    List<Integer> appAvailability = new ArrayList<Integer>();
+    List<Integer> appAvailability = new ArrayList<>();
 
     logger.info("Start a thread to keep track of the application's availability");
     // start a new thread to collect the availability data of the application while the
     // main thread performs patching operation, and checking of the results.
     Thread accountingThread =
         new Thread(
-            () -> {
-              collectAppAvailability(
-                  domainNamespace,
-                  appAvailability,
-                  managedServerPrefix,
-                  replicaCount,
-                  "8001",
-                  "sample-war/index.jsp");
-            });
+            () -> collectAppAvailability(
+                domainNamespace,
+                appAvailability,
+                managedServerPrefix,
+                replicaCount,
+                "8001",
+                "sample-war/index.jsp"));
     accountingThread.start();
 
     try {
@@ -477,21 +474,19 @@ class ItMiiDomain {
       }
     } finally {
       mainThreadDone = true;
-      if (accountingThread != null) {
-        try {
-          accountingThread.join();
-        } catch (InterruptedException ie) {
-          // do nothing
-        }
-
-        // check the application availability data that we have collected, and see if
-        // the application has been available all the time since the beginning of this test method
-        logger.info("Verify that V2 application was available when domain {0} was being patched with image {1}",
-            domainUid, miiImagePatchAppV2);
-        assertTrue(appAlwaysAvailable(appAvailability),
-            String.format("Application V2 was not always available when domain %s was being patched with image %s",
-                domainUid, miiImagePatchAppV2));
+      try {
+        accountingThread.join();
+      } catch (InterruptedException ie) {
+        // do nothing
       }
+
+      // check the application availability data that we have collected, and see if
+      // the application has been available all the time since the beginning of this test method
+      logger.info("Verify that V2 application was available when domain {0} was being patched with image {1}",
+          domainUid, miiImagePatchAppV2);
+      assertTrue(appAlwaysAvailable(appAvailability),
+          String.format("Application V2 was not always available when domain %s was being patched with image %s",
+              domainUid, miiImagePatchAppV2));
     }
 
     logger.info("The version 2 application has been deployed correctly on all server pods");
@@ -1011,7 +1006,7 @@ class ItMiiDomain {
       String expectedStr
   ) {
 
-    // check if the application is accessible inside of a server pod using standard retry policy
+    // check if the application is accessible inside a server pod using standard retry policy
     checkAppIsRunning(withStandardRetryPolicy, namespace, podName, internalPort, appPath, expectedStr);
   }
 
@@ -1022,7 +1017,7 @@ class ItMiiDomain {
       String appPath,
       String expectedStr
   ) {
-    // check if the application is accessible inside of a server pod using quick retry policy
+    // check if the application is accessible inside a server pod using quick retry policy
     checkAppIsRunning(withQuickRetryPolicy, namespace, podName, internalPort, appPath, expectedStr);
   }
 
@@ -1035,7 +1030,7 @@ class ItMiiDomain {
       String expectedStr
   ) {
 
-    // check if the application is accessible inside of a server pod
+    // check if the application is accessible inside a server pod
     testUntil(conditionFactory,
         () -> appAccessibleInPod(namespace, podName, internalPort, appPath, expectedStr),
         logger,
@@ -1053,7 +1048,7 @@ class ItMiiDomain {
       String expectedStr
   ) {
 
-    // check that the application is NOT running inside of a server pod
+    // check that the application is NOT running inside a server pod
     testUntil(
         withQuickRetryPolicy, () -> appNotAccessibleInPod(
           namespace, podName, internalPort, appPath, expectedStr),
