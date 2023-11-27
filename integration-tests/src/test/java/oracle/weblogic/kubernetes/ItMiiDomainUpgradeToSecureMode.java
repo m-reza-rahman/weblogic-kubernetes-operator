@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -16,8 +17,15 @@ import java.util.Map;
 
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
+import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
+import io.kubernetes.client.openapi.models.V1IngressBackend;
+import io.kubernetes.client.openapi.models.V1IngressRule;
+import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
+import io.kubernetes.client.openapi.models.V1IngressTLS;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -28,11 +36,13 @@ import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.OnlineUpdate;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.AppParams;
+import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.ImageUtils;
 import org.junit.jupiter.api.BeforeAll;
@@ -47,6 +57,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
@@ -62,16 +73,19 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.now;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
+import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.checkIngressReady;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWeblogicMBean;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResourceWithAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
@@ -83,11 +97,13 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTargetPortForRoute;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTlsTerminationForRoute;
@@ -95,9 +111,11 @@ import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOpe
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
+import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithTLSCertKey;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -142,7 +160,10 @@ class ItMiiDomainUpgradeToSecureMode {
   
   private static final String clusterName = "mycluster";
   private static final String wlSecretName = "weblogic-credentials";
-  private static final String encryptionSecretName = "encryptionsecret";  
+  private static final String encryptionSecretName = "encryptionsecret";
+  
+  private static NginxParams nginxParams;
+  private static String ingressIP = null;
 
   /**
    * Install Operator.
@@ -169,6 +190,12 @@ class ItMiiDomainUpgradeToSecureMode {
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
     namespaces.subList(2, 8).stream().forEach(ImageUtils::createTestRepoSecret);
+
+    // install Nginx ingress controller for all test cases using Nginx
+    installNginx();
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;   
   }
 
   /**
@@ -216,15 +243,10 @@ class ItMiiDomainUpgradeToSecureMode {
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
     String channelName = "default";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);    
+    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
+    
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
-    try {
-      if (!Files.exists(Paths.get("/tmp/proceed"))) {
-        Thread.sleep(10000);
-      }
-    } catch (Exception ex) {
-      ex.printStackTrace();
-    }
+    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";    
     upgradeImage(domainNamespace, domainUid, image1412);
   }
   
@@ -792,4 +814,126 @@ class ItMiiDomainUpgradeToSecureMode {
 
   }
   
+  private static void installNginx() {
+    // install and verify Nginx
+    logger.info("Installing Nginx controller using helm");
+    nginxParams = installAndVerifyNginx(ingressNamespace, 0, 0);
+  }
+
+  private static void createNginxIngressHostRouting(String domainUid, int msPort,
+      String ingressClassName, boolean isTLS) {
+    // create an ingress in domain namespace
+    String ingressName;
+    int adminPort = 7001;
+
+    if (isTLS) {
+      ingressName = domainUid + "-nginx-tls";
+    } else {
+      ingressName = domainUid + "-nginx-nontls";
+    }
+
+    // create ingress rules for two domains
+    List<V1IngressRule> ingressRules = new ArrayList<>();
+    List<V1IngressTLS> tlsList = new ArrayList<>();
+
+    V1HTTPIngressPath clusterIngressPath = new V1HTTPIngressPath()
+        .path(null)
+        .pathType("ImplementationSpecific")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name(domainUid + "-cluster-mycluster")
+                .port(new V1ServiceBackendPort()
+                    .number(msPort)))
+        );
+    V1HTTPIngressPath adminIngressPath = new V1HTTPIngressPath()
+        .path(null)
+        .pathType("ImplementationSpecific")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name(domainUid + "-adminserver")
+                .port(new V1ServiceBackendPort()
+                    .number(adminPort)))
+        );
+
+    // set the ingress rule host
+    String adminIngressHost;
+    String clusterIngressHost;
+    if (isTLS) {
+      adminIngressHost = domainUid + "." + domainNamespace + ".admin.ssl.test";
+      clusterIngressHost = domainUid + "." + domainNamespace + ".cluster.ssl.test";
+    } else {
+      adminIngressHost = domainUid + "." + domainNamespace + ".admin.nonssl.test";
+      clusterIngressHost = domainUid + "." + domainNamespace + ".cluster.nonssl.test";
+    }
+    V1IngressRule adminIngressRule = new V1IngressRule()
+        .host(adminIngressHost)
+        .http(new V1HTTPIngressRuleValue()
+            .paths(Collections.singletonList(adminIngressPath)));
+    V1IngressRule clusterIngressRule = new V1IngressRule()
+        .host(clusterIngressHost)
+        .http(new V1HTTPIngressRuleValue()
+            .paths(Collections.singletonList(clusterIngressPath)));
+
+    ingressRules.add(adminIngressRule);
+    ingressRules.add(clusterIngressRule);
+
+    if (isTLS) {
+      String tlsSecretName = domainUid + "-nginx-tls-secret";
+      createCertKeyFiles(adminIngressHost);
+      createCertKeyFiles(clusterIngressHost);
+      assertDoesNotThrow(() -> createSecretWithTLSCertKey(tlsSecretName, domainNamespace, tlsKeyFile, tlsCertFile));
+      V1IngressTLS admintls = new V1IngressTLS()
+          .addHostsItem(adminIngressHost)
+          .secretName(tlsSecretName);
+      V1IngressTLS clustertls = new V1IngressTLS()
+          .addHostsItem(clusterIngressHost)
+          .secretName(tlsSecretName);
+      tlsList.add(admintls);
+      tlsList.add(clustertls);
+    }
+    
+    assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
+        ingressClassName, ingressRules, (isTLS ? tlsList : null)));
+
+    assertDoesNotThrow(() -> {
+      List<String> ingresses = listIngresses(domainNamespace);
+      logger.info(ingresses.toString());
+    });
+    // check the ingress was found in the domain namespace
+    assertThat(assertDoesNotThrow(() -> listIngresses(domainNamespace)))
+        .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
+        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
+        .contains(ingressName);
+
+    logger.info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
+
+    // check the ingress is ready to route the app to the server pod
+    int httpNodeport = getNginxLbNodePort("http");
+    int httpsNodeport = getNginxLbNodePort("https");
+    if (!OKE_CLUSTER) {
+      checkIngressReady(true, adminIngressHost, isTLS, httpNodeport, httpsNodeport, "");
+      checkIngressReady(true, clusterIngressHost, isTLS, httpNodeport, httpsNodeport, "");
+    }
+    
+  }
+  
+
+  private static Path tlsCertFile;
+  private static Path tlsKeyFile;
+
+  private static void createCertKeyFiles(String cn) {
+    assertDoesNotThrow(() -> {
+      tlsKeyFile = Files.createTempFile("tls", ".key");
+      tlsCertFile = Files.createTempFile("tls", ".crt");
+      String command = "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout " + tlsKeyFile
+          + " -out " + tlsCertFile + " -subj \"/CN=" + cn + "\"";
+      logger.info("Executing command: {0}", command);
+      ExecCommand.exec(command, true);
+    });
+  }
+  
+  private static int getNginxLbNodePort(String channelName) {
+    String nginxServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    return getServiceNodePort(ingressNamespace, nginxServiceName, channelName);
+  }  
 }
