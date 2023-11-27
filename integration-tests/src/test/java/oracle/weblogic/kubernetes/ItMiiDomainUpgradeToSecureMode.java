@@ -34,6 +34,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import oracle.weblogic.kubernetes.utils.ImageUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -87,7 +88,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardPr
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
-import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTargetPortForRoute;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTlsTerminationForRoute;
@@ -125,12 +125,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-gate")
 class ItMiiDomainUpgradeToSecureMode {
 
-  private static String opNamespace = null;
-  private static String domainNamespace = null;
+  private static List<String> namespaces;
+  private static String opNamespace;
+  private static String ingressNamespace;  
+  private static String domainNamespace;
   private static int replicaCount = 1;
-  private static final String domainUid = "domain1";
+  private static String domainUid;
+  private static final String adminServerName = "adminserver";
   private static final String configMapName = "default-admin-configmap";
-  private final String adminServerPodName = domainUid + "-adminserver";
+  private final String adminServerPodName = domainUid + "-" + adminServerName;
   private final String managedServerPrefix = domainUid + "mycluster-ms-";
 
   private static Path pathToEnableSSLYaml;
@@ -148,24 +151,24 @@ class ItMiiDomainUpgradeToSecureMode {
    JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(2) List<String> namespaces) {
+  public static void initAll(@Namespaces(8) List<String> ns) {
     logger = getLogger();
+    namespaces = ns;
 
     // get a new unique opNamespace
     logger.info("Assigning unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     opNamespace = namespaces.get(0);
-
-    logger.info("Assigning unique namespace for Domain");
-    assertNotNull(namespaces.get(1), "Namespace list is null");
-    domainNamespace = namespaces.get(1);
+    // get a new unique opNamespace for ingress
+    logger.info("Assigning unique namespace for Ingress");
+    ingressNamespace = namespaces.get(1);
 
     // install and verify operator
-    installAndVerifyOperator(opNamespace, domainNamespace);
+    installAndVerifyOperator(opNamespace, namespaces.subList(2, 8).toArray(String[]::new));
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
-    createTestRepoSecret(domainNamespace);
+    namespaces.subList(2, 8).stream().forEach(ImageUtils::createTestRepoSecret);
   }
 
   /**
@@ -190,11 +193,14 @@ class ItMiiDomainUpgradeToSecureMode {
   @DisplayName("Verify the secure service through administration port")
   void testUpgrade1411to1412ProdOff() {
     //no changes
+    domainNamespace = namespaces.get(2);
+    domainUid = "testdomain1";
     Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(wdtVariableFile);
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n", 
           StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
@@ -208,10 +214,12 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
+    String channelName = "default";
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);    
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    //upgradeImage(domainNamespace, domainUid, auxImage);
-
+    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    
+    upgradeImage(domainNamespace, domainUid, image1412);
   }
   
   /**
@@ -309,7 +317,7 @@ class ItMiiDomainUpgradeToSecureMode {
    */
   @Test
   @DisplayName("Verify the secure service through administration port")
-  void testUpgrade1214to1412ProdOff() {
+  void testUpgrade12214to1412ProdOff() {
     Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(wdtVariableFile);
@@ -374,7 +382,10 @@ class ItMiiDomainUpgradeToSecureMode {
    */
   @Test
   @DisplayName("Verify the secure service through administration port")
-  void testVerifyProductionSecureMode() {
+  void testVerifyProductionSecureMode(String channelName, int port) {
+    //verify admin console access
+    //verify application access in the cluster
+    
     int defaultAdminPort = getServiceNodePort(
          domainNamespace, getExternalServicePodName(adminServerPodName), "default-admin");
     assertNotEquals(-1, defaultAdminPort,
@@ -414,8 +425,8 @@ class ItMiiDomainUpgradeToSecureMode {
         assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
       } else {
         String curlCmd = "curl -g -sk --show-error --noproxy '*' "
-            + " https://" + hostAndPort
-            + "/console/login/LoginForm.jsp --write-out %{http_code} "
+            + " https://" + hostAndPort + resourcePath 
+            + " --write-out %{http_code} "
             + " -o /dev/null";
         logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
         assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
@@ -427,8 +438,8 @@ class ItMiiDomainUpgradeToSecureMode {
       assertNotNull(forwardPort, "port-forward fails to assign local port");
       logger.info("Forwarded admin-port is {0}", forwardPort);
       String curlCmd = "curl -sk --show-error --noproxy '*' "
-          + " https://" + localhost + ":" + forwardPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} "
+          + " https://" + localhost + ":" + forwardPort + resourcePath
+          + " --write-out %{http_code} "
           + " -o /dev/null";
       logger.info("Executing default-admin port-fwd curl command {0}", curlCmd);
       assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
@@ -619,9 +630,6 @@ class ItMiiDomainUpgradeToSecureMode {
             .name("WLSDEPLOY_PROPERTIES")
             .value(SSL_PROPERTIES));
 
-    //domainCR = createClusterResourceAndAddReferenceToDomain(
-    //    clusterName, clusterName, domainNamespace, domainCR, replicaCount);
-
     // create domain and verify its running
     logger.info("Creating domain {0} with auxiliary images {1} in namespace {2}",
         domainUid, auxImage, domainNamespace);
@@ -632,15 +640,16 @@ class ItMiiDomainUpgradeToSecureMode {
   }
   
   private String createAuxImage(String imageName, String imageTag, String wdtModelFile, String wdtVariableFile) {
-    // build app
+    // build sample-app application
     AppParams appParams = defaultAppParams()
         .srcDirList(Collections.singletonList(MII_BASIC_APP_NAME))
         .appArchiveDir(ARCHIVE_DIR + this.getClass().getSimpleName())
         .appName(MII_BASIC_APP_NAME);
     assertTrue(buildAppArchive(appParams),
-        String.format("Failed to create app archive for %s", MII_BASIC_APP_NAME));
+        String.format("Failed to create app archive for %s", MII_BASIC_APP_NAME));    
     List<String> archiveList = Collections.singletonList(appParams.appArchiveDir() + "/" + MII_BASIC_APP_NAME + ".zip");
     
+    //create an auxilary image with model and sample-app application
     WitParams witParams
         = new WitParams()
             .modelImageName(imageName)
@@ -701,6 +710,80 @@ class ItMiiDomainUpgradeToSecureMode {
                   managedServerPodName, domainNamespace)));
     }
     return (Map<K, V>) podsWithTimeStamps;
+  }
+  
+  
+  private void verifyAdminConsoleAccess(String domainNamespace, String domainUid, String channelName, int adminPort) {
+    String adminServerPodName = domainUid + "-adminserver";
+    String resourcePath = "/console/login/LoginForm.jsp";
+    int defaultAdminNodePort = getServiceNodePort(
+        domainNamespace, getExternalServicePodName(adminServerPodName), channelName);
+
+    assertNotEquals(-1, defaultAdminNodePort,
+        "Could not get the default-admin external service node port");
+    logger.info("Found the administration service nodePort {0}", defaultAdminNodePort);
+
+    //expose the admin server external service to access the console in OKD cluster
+    //set the sslPort as the target port
+    adminSvcSslPortExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName),
+        domainNamespace, adminServerName + "-sslport-ext");
+    setTlsTerminationForRoute(adminServerName + "-sslport-ext", domainNamespace);
+    setTargetPortForRoute(adminServerName + "-sslport-ext", domainNamespace, defaultAdminNodePort);
+    String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, defaultAdminNodePort);
+
+    if (!WEBLOGIC_SLIM) {
+      if (OKE_CLUSTER) {
+        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, adminPort, resourcePath);
+        logger.info("result in OKE_CLUSTER is {0}", result.toString());
+        assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+      } else {
+        // OKD and Kind 
+        String curlCmd = "curl -g -sk --show-error --noproxy '*' "
+            + " https://" + hostAndPort + resourcePath
+            + " --write-out %{http_code} "
+            + " -o /dev/null";
+        logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
+        assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
+      }
+      logger.info("WebLogic console is accessible thru default-admin service");
+
+      String localhost = "localhost";
+      String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 9002);
+      assertNotNull(forwardPort, "port-forward fails to assign local port");
+      logger.info("Forwarded admin-port is {0}", forwardPort);
+      String curlCmd = "curl -sk --show-error --noproxy '*' "
+          + " https://" + localhost + ":" + forwardPort + resourcePath
+          + " --write-out %{http_code} "
+          + " -o /dev/null";
+      logger.info("Executing default-admin port-fwd curl command {0}", curlCmd);
+      assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
+      logger.info("WebLogic console is accessible thru admin port forwarding");
+
+      // When port-forwarding is happening on admin-port, port-forwarding will
+      // not work for SSL port i.e. 7002
+      forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7002);
+      assertNotNull(forwardPort, "port-forward fails to assign local port");
+      logger.info("Forwarded ssl port is {0}", forwardPort);
+      curlCmd = "curl -g -sk --show-error --noproxy '*' "
+          + " https://" + localhost + ":" + forwardPort
+          + "/console/login/LoginForm.jsp --write-out %{http_code} "
+          + " -o /dev/null";
+      logger.info("Executing default-admin port-fwd curl command {0}", curlCmd);
+      assertFalse(callWebAppAndWaitTillReady(curlCmd, 10));
+      logger.info("WebLogic console should not be accessible thru ssl port forwarding");
+      stopPortForwardProcess(domainNamespace);
+    } else {
+      logger.info("Skipping WebLogic console in WebLogic slim image");
+    }
+
+  }
+
+  private void verifyAdminServerAccess() {
+
+  }
+
+  private void verifyClusterAccess() {
+
   }
   
 }
