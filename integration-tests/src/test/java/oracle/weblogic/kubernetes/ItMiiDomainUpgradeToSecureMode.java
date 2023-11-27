@@ -218,7 +218,13 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);    
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
-    
+    try {
+      if (!Files.exists(Paths.get("/tmp/proceed"))) {
+        Thread.sleep(10000);
+      }
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
     upgradeImage(domainNamespace, domainUid, image1412);
   }
   
