@@ -254,7 +254,7 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
 
-    verifyChannel(domainNamespace, domainUid, List.of("default"));
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
     String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
@@ -270,7 +270,7 @@ class ItMiiDomainUpgradeToSecureMode {
     upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
-    verifyChannel(domainNamespace, domainUid, List.of("default"));
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
@@ -279,7 +279,7 @@ class ItMiiDomainUpgradeToSecureMode {
   }
 
   /**
-   * Test upgrade from 1411 to 1412 with production and secure mode off.
+   * Test upgrade from 1411 to 1412 with production on and secure mode on.
    */
   @Test
   @DisplayName("Verify the secure service through administration port")
@@ -307,13 +307,38 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, "internal-admin");
+    String channelName = "internal-admin";
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), true);
+
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
+        "/sample-war/index.jsp", "ms-1", ingressIP);
+
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    //upgradeImage(domainNamespace, domainUid, auxImage);
+    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    upgradeImage(domainNamespace, domainUid, image1412);
+    dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
+        "/sample-war/index.jsp", "ms-1", ingressIP);
+    shutdownDomain(domainUid, domainNamespace);
   }
 
   /**
-   * Test upgrade from 1411 to 1412 with production and secure mode off.
+   * Test upgrade from 1411 to 1412 with production on and secure mode off.
    */
   @Test
   @DisplayName("Verify the secure service through administration port")
@@ -341,13 +366,38 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, "internal-admin");
+    String channelName = "internal-admin";
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
+
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        "/sample-war/index.jsp", "ms-1", ingressIP);
+
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    //upgradeImage(domainNamespace, domainUid, auxImage);
+    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    upgradeImage(domainNamespace, domainUid, image1412);
+    dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        "/sample-war/index.jsp", "ms-1", ingressIP);
+    shutdownDomain(domainUid, domainNamespace);    
   }
 
   /**
-   * Test upgrade from 1411 to 1412 with production and secure mode off.
+   * Test upgrade from 1411 to 1412 with production off and secure mode off.
    */
   @Test
   @DisplayName("Verify the secure service through administration port")
@@ -367,15 +417,37 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
     });
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prodoff";
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prod1411off";
     String auxImageTag = getDateAndTimeStamp();
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "12.2.1.4";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String channelName = "default";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
+    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
+    
+    verifyChannel(domainNamespace, domainUid, List.of("default"));
+
+    
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        "/sample-war/index.jsp", "ms-1", ingressIP);
+
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    //upgradeImage(domainNamespace, domainUid, auxImage);
+    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    upgradeImage(domainNamespace, domainUid, image1412);
+    verifyChannel(domainNamespace, domainUid, List.of("default"));
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        "/sample-war/index.jsp", "ms-1", ingressIP);
+    shutdownDomain(domainUid, domainNamespace);    
   }
 
   /**
@@ -399,15 +471,40 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
     });
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prodon";
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prod1214on";
     String auxImageTag = getDateAndTimeStamp();
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "12.2.1.4";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, "internal-admin");
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String channelName = "internal-admin";
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), true);
+
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
+        "/sample-war/index.jsp", "ms-1", ingressIP);
+
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    //upgradeImage(domainNamespace, domainUid, auxImage);
+    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    upgradeImage(domainNamespace, domainUid, image1412);
+    dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
+        "/sample-war/index.jsp", "ms-1", ingressIP);
+    shutdownDomain(domainUid, domainNamespace);
   }
 
   private DomainResource createDomainUsingAuxiliaryImage(String domainNamespace, String domainUid,
