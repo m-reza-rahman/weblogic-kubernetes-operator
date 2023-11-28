@@ -19,6 +19,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
 import oracle.weblogic.kubernetes.TestConstants;
+import oracle.weblogic.kubernetes.actions.impl.AppParams;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Image;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
@@ -61,6 +62,7 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.listS
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -323,6 +325,14 @@ public class ImageUtils {
     final String imageName = DOMAIN_IMAGES_PREFIX + imageNameBase;
     final String image = imageName + ":" + imageTag;
 
+    // Generates a "unique" name by choosing a random name from
+    // 26^4 possible combinations.
+    Random random = new Random(System.currentTimeMillis());
+    char[] cacheSfx = new char[4];
+    for (int i = 0; i < cacheSfx.length; i++) {
+      cacheSfx[i] = (char) (random.nextInt(25) + (int) 'a');
+    }
+
     List<String> archiveList = new ArrayList<>();
     if (appSrcDirList != null && appSrcDirList.size() != 0 && appSrcDirList.get(0) != null) {
       List<String> archiveAppsList = new ArrayList<>();
@@ -341,9 +351,10 @@ public class ImageUtils {
         }
       }
 
+      AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + cacheSfx);
+
       if (archiveAppsList.size() != 0 && archiveAppsList.get(0) != null) {
-        assertTrue(archiveApp(defaultAppParams()
-            .srcDirList(archiveAppsList)));
+        assertTrue(archiveApp(appParams.srcDirList(archiveAppsList)));
         String appPath = archiveAppsList.get(0);
 
         //archive provided ear or war file
@@ -351,9 +362,8 @@ public class ImageUtils {
             appPath.lastIndexOf("."));
 
         // build the archive list
-        String zipAppFile = String.format("%s/%s.zip", ARCHIVE_DIR, appName);
+        String zipAppFile = String.format("%s/%s.zip", appParams.appArchiveDir(), appName);
         archiveList.add(zipAppFile);
-
       }
 
       if (buildAppDirList.size() != 0 && buildAppDirList.get(0) != null) {
@@ -361,29 +371,28 @@ public class ImageUtils {
         String zipFile = "";
         if (oneArchiveContainsMultiApps) {
           for (String buildAppDirs : buildAppDirList) {
-            assertTrue(buildAppArchive(defaultAppParams()
+            assertTrue(buildAppArchive(appParams
                     .srcDirList(Collections.singletonList(buildAppDirs))
                     .appName(buildAppDirs)),
                 String.format("Failed to create app archive for %s", buildAppDirs));
-            zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, buildAppDirs);
+            zipFile = String.format("%s/%s.zip", appParams.appArchiveDir(), buildAppDirs);
             // build the archive list
             archiveList.add(zipFile);
           }
         } else if (buildCoherence) {
           // build the Coherence GAR file
-          assertTrue(buildCoherenceArchive(defaultAppParams()
-                  .srcDirList(buildAppDirList)),
+          assertTrue(buildCoherenceArchive(appParams.srcDirList(buildAppDirList)),
               String.format("Failed to create app archive for %s", buildAppDirList.get(0)));
-          zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, buildAppDirList.get(0));
+          zipFile = String.format("%s/%s.zip", appParams.appArchiveDir(), buildAppDirList.get(0));
           // build the archive list
           archiveList.add(zipFile);
         } else {
           for (String appName : buildAppDirList) {
-            assertTrue(buildAppArchive(defaultAppParams()
+            assertTrue(buildAppArchive(appParams
                     .srcDirList(Collections.singletonList(appName))
                     .appName(appName)),
                 String.format("Failed to create app archive for %s", appName));
-            zipFile = String.format("%s/%s.zip", ARCHIVE_DIR, appName);
+            zipFile = String.format("%s/%s.zip", appParams.appArchiveDir(), appName);
             // build the archive list
             archiveList.add(zipFile);
           }
@@ -392,14 +401,6 @@ public class ImageUtils {
     }
 
     // Set additional environment variables for WIT
-
-    // Generates a "unique" name by choosing a random name from
-    // 26^4 possible combinations.
-    Random random = new Random(System.currentTimeMillis());
-    char[] cacheSfx = new char[4];
-    for (int i = 0; i < cacheSfx.length; i++) {
-      cacheSfx[i] = (char) (random.nextInt(25) + (int) 'a');
-    }
     String cacheDir = WIT_BUILD_DIR + "/cache-" + new String(cacheSfx);
     logger.info("WLSIMG_CACHEDIR is set to {0}", cacheDir);
     logger.info("WLSIMG_BLDDIR is set to {0}", WIT_BUILD_DIR);
@@ -421,24 +422,34 @@ public class ImageUtils {
     // build an image using WebLogic Image Tool
     logger.info("Creating image {0} using model directory {1}", image, MODEL_DIR);
     boolean result = false;
+
     if (!modelType) {  //create a domain home in image image
-      result = createImage(
-          new WitParams()
-              .baseImageName(baseImageName)
-              .baseImageTag(baseImageTag)
-              .domainType(domainType)
-              .modelImageName(imageName)
-              .modelImageTag(imageTag)
-              .modelFiles(wdtModelList)
-              .modelVariableFiles(modelPropList)
-              .modelArchiveFiles(archiveList)
-              .domainHome(WDT_IMAGE_DOMAINHOME_BASE_DIR + "/" + domainHome)
-              .wdtModelOnly(modelType)
-              .wdtOperation("CREATE")
-              .wdtVersion(WDT_VERSION)
-              .target(witTarget)
-              .env(env)
-              .redirect(true));
+      WitParams witParams = new WitParams()
+          .baseImageName(baseImageName)
+          .baseImageTag(baseImageTag)
+          .domainType(domainType)
+          .modelImageName(imageName)
+          .modelImageTag(imageTag)
+          .modelFiles(wdtModelList)
+          .modelVariableFiles(modelPropList)
+          .modelArchiveFiles(archiveList)
+          .domainHome(WDT_IMAGE_DOMAINHOME_BASE_DIR + "/" + domainHome)
+          .wdtModelOnly(modelType)
+          .wdtOperation("CREATE")
+          .wdtVersion(WDT_VERSION)
+          .target(witTarget)
+          .env(env)
+          .redirect(true);
+
+      testUntil(
+          withStandardRetryPolicy,
+          () -> createImage(witParams),
+          getLogger(),
+          "creating image {0}:{1} succeeds",
+          imageName,
+          imageTag);
+
+      result = true;
     } else {
       WitParams witParams = new WitParams()
           .baseImageName(baseImageName)
@@ -470,7 +481,15 @@ public class ImageUtils {
         witParams.target("OpenShift");
       }
 
-      result = createImage(witParams);
+      testUntil(
+          withStandardRetryPolicy,
+          () -> createImage(witParams),
+          getLogger(),
+          "creating image {0}:{1} succeeds",
+          imageName,
+          imageTag);
+
+      result = true;
     }
 
     assertTrue(result, String.format("Failed to create the image %s using WebLogic Image Tool", image));

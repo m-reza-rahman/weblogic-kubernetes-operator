@@ -239,6 +239,12 @@ public class DomainCommonConfigurator extends DomainConfigurator {
     return this;
   }
 
+  @Override
+  public DomainConfigurator withServerPodShutdownSpec(Shutdown shutdown) {
+    getDomainSpec().setShutdown(shutdown);
+    return this;
+  }
+
   private AdminServer getOrCreateAdminServer() {
     return getDomainSpec().getOrCreateAdminServer();
   }
@@ -559,7 +565,7 @@ public class DomainCommonConfigurator extends DomainConfigurator {
     configureAdminServer().withServerStartPolicy(shuttingDown ? ServerStartPolicy.NEVER : ServerStartPolicy.ALWAYS);
   }
 
-  class IntrospectorConfiguratorImpl implements IntrospectorConfigurator {
+  static class IntrospectorConfiguratorImpl implements IntrospectorConfigurator {
     private final Introspector introspector;
 
     IntrospectorConfiguratorImpl(Introspector introspector) {
@@ -821,6 +827,7 @@ public class DomainCommonConfigurator extends DomainConfigurator {
       getDomainSpec().setPriorityClassName(priorityClassName);
       return this;
     }
+
   }
 
   class ClusterConfiguratorImpl implements ClusterConfigurator {

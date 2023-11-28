@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.common.utils;
@@ -6,19 +6,31 @@ package oracle.kubernetes.common.utils;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Collection;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import oracle.kubernetes.common.CommonConstants;
 
 public class CommonUtils {
 
-  private static CheckedFunction<String, String> getMD5Hash = CommonUtils::getMD5Hash;
+  private static final CheckedFunction<String, String> getMD5Hash = CommonUtils::getMD5Hash;
 
   public static final int MAX_ALLOWED_VOLUME_NAME_LENGTH = 63;
   public static final String VOLUME_NAME_SUFFIX = "-volume";
 
   private CommonUtils() {
     //not called
+  }
+
+  /**
+   * Stream a collection with protection for null collections.
+   * @param <T> Type
+   * @param collection Collection
+   * @return Stream
+   */
+  public static <T> Stream<T> stream(Collection<T> collection) {
+    return Optional.ofNullable(collection).stream().flatMap(Collection::stream);
   }
 
   /**
@@ -66,7 +78,7 @@ public class CommonUtils {
    * Gets the MD5 hash of a string.
    *
    * @param data input string
-   * @return MD5 hash value of the data, null in case of an exception.
+   * @return MD5 hash value of the data
    */
   public static String getMD5Hash(String data) throws NoSuchAlgorithmException {
     return bytesToHex(MessageDigest.getInstance("MD5").digest(data.getBytes(StandardCharsets.UTF_8)));

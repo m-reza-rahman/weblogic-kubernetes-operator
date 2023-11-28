@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -90,6 +89,7 @@ import static oracle.kubernetes.common.CommonConstants.COMPATIBILITY_MODE;
 import static oracle.kubernetes.common.helpers.AuxiliaryImageEnvVars.AUXILIARY_IMAGE_MOUNT_PATH;
 import static oracle.kubernetes.common.logging.MessageKeys.CYCLING_POD_EVICTED;
 import static oracle.kubernetes.common.logging.MessageKeys.CYCLING_POD_SPEC_CHANGED;
+import static oracle.kubernetes.common.utils.CommonUtils.stream;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createKubernetesFailureSteps;
 import static oracle.kubernetes.operator.IntrospectorConfigMapConstants.NUM_CONFIG_MAPS;
 import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_EXPORTER_SIDECAR_PORT;
@@ -350,7 +350,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       String portNamePrefix = getPortNamePrefix(name);
       // Find ports with the name having the same first 12 characters
       List<V1ContainerPort> containerPortsWithSamePrefix = ports.stream().filter(port ->
-              portNamePrefix.equals(getPortNamePrefix(port.getName()))).collect(Collectors.toList());
+              portNamePrefix.equals(getPortNamePrefix(port.getName()))).toList();
       int index = containerPortsWithSamePrefix.size() + 1;
       String indexStr = String.valueOf(index);
       // zero fill to the left for single digit index (e.g. 01)
@@ -613,6 +613,11 @@ public abstract class PodStepContext extends BasePodStepContext {
       addDefaultEnvVarIfMissing(env, "SHUTDOWN_WAIT_FOR_ALL_SESSIONS",
               String.valueOf(shutdown.getWaitForAllSessions()));
     }
+    if (!shutdown.getSkipWaitingCohEndangeredState()
+            .equals(Shutdown.DEFAULT_SKIP_WAIT_COH_ENDANGERED_STATE)) {
+      addDefaultEnvVarIfMissing(env, "SHUTDOWN_SKIP_WAIT_COH_ENDANGERED_STATE",
+              String.valueOf(shutdown.getSkipWaitingCohEndangeredState()));
+    }
   }
 
   private Shutdown getShutdownSpec() {
@@ -711,14 +716,15 @@ public abstract class PodStepContext extends BasePodStepContext {
             getAuxiliaryImageInitContainers(auxiliaryImages, initContainers));
     initContainers.addAll(getServerSpec().getInitContainers().stream()
             .map(c -> c.env(createEnv(c)).envFrom(c.getEnvFrom()).resources(createResources()))
-        .collect(Collectors.toList()));
+        .toList());
     return initContainers;
   }
 
   protected void getAuxiliaryImageInitContainers(List<AuxiliaryImage> auxiliaryImageList,
                                                  List<V1Container> initContainers) {
     Optional.ofNullable(auxiliaryImageList).ifPresent(cl -> IntStream.range(0, cl.size()).forEach(idx ->
-            initContainers.add(createInitContainerForAuxiliaryImage(cl.get(idx), idx))));
+            initContainers.add(createInitContainerForAuxiliaryImage(cl.get(idx), idx,
+                    getDomain().isInitializeDomainOnPV()))));
   }
 
   // ---------------------- model methods ------------------------------
@@ -1017,10 +1023,9 @@ public abstract class PodStepContext extends BasePodStepContext {
       if (other == this) {
         return true;
       }
-      if (!(other instanceof ConflictStep)) {
+      if (!(other instanceof ConflictStep rhs)) {
         return false;
       }
-      ConflictStep rhs = ((ConflictStep) other);
       return new EqualsBuilder().append(conflictStep, rhs.getConflictStep()).isEquals();
     }
 
@@ -1248,8 +1253,8 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     private void restoreMetricsExporterSidecarPortTcpMetrics(V1Pod recipe, V1Pod currentPod) {
       V1PodSpec podSpec = recipe.getSpec();
-      podSpec.getContainers().stream().filter(c -> "monitoring-exporter".equals(c.getName()))
-          .findFirst().flatMap(c -> c.getPorts().stream().filter(p -> "metrics".equals(p.getName()))
+      stream(podSpec.getContainers()).filter(c -> "monitoring-exporter".equals(c.getName()))
+          .findFirst().flatMap(c -> stream(c.getPorts()).filter(p -> "metrics".equals(p.getName()))
               .findFirst()).ifPresent(p -> p.setName("tcp-metrics"));
     }
 
@@ -1338,9 +1343,9 @@ public abstract class PodStepContext extends BasePodStepContext {
     private void restoreFluentdVolume(V1Pod recipe, V1Pod currentPod) {
       Optional.ofNullable(recipe.getSpec().getVolumes())
           .ifPresent(volumes -> volumes.stream().filter(volume -> FLUENTD_CONFIGMAP_VOLUME.equals(volume.getName()))
-              .forEach(volume -> {
-                Optional.ofNullable(volume.getConfigMap()).ifPresent(cms -> cms.setName(OLD_FLUENTD_CONFIGMAP_NAME));
-              }));
+              .forEach(volume ->
+                  Optional.ofNullable(volume.getConfigMap())
+                      .ifPresent(cms -> cms.setName(OLD_FLUENTD_CONFIGMAP_NAME))));
     }
 
     private void restoreSecurityContext(V1Pod recipe, V1Pod currentPod) {

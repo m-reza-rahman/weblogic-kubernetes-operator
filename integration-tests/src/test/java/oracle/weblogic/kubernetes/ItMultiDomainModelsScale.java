@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -21,6 +21,7 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.AppParams;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.annotations.DisabledOnSlimImage;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -495,9 +496,12 @@ class ItMultiDomainModelsScale {
     appSrcDirList.add(WLDF_OPENSESSION_APP);
 
     for (String appName : appSrcDirList) {
-      assertTrue(buildAppArchive(defaultAppParams()
-              .srcDirList(Collections.singletonList(appName))
-              .appName(appName)),
+      AppParams appParams = defaultAppParams()
+          .srcDirList(Collections.singletonList(appName))
+          .appArchiveDir(ARCHIVE_DIR + ItMultiDomainModelsScale.class.getSimpleName())
+          .appName(appName);
+
+      assertTrue(buildAppArchive(appParams),
           String.format("Failed to create app archive for %s", appName));
 
       logger.info("Getting port for default channel");
@@ -508,7 +512,7 @@ class ItMultiDomainModelsScale {
       assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
 
       //deploy application
-      Path archivePath = get(ARCHIVE_DIR, "wlsdeploy", "applications", appName + ".ear");
+      Path archivePath = get(appParams.appArchiveDir(), "wlsdeploy", "applications", appName + ".ear");
       logger.info("Deploying webapp {0} to domain {1}", archivePath, domainUid);
       deployUsingWlst(adminServerPodName, Integer.toString(defaultChannelPort),
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, clusterName + "," + ADMIN_SERVER_NAME_BASE, archivePath,
@@ -548,13 +552,17 @@ class ItMultiDomainModelsScale {
     if (OKD) {
       String routeHost = getRouteHost(domainNamespace, domainUid + "-cluster-" + clusterName);
       logger.info("routeHost = {0}", routeHost);
-      return String.format("curl -v --show-error --noproxy '*' http://%s/%s/index.jsp",
+      return String.format("curl -g -v --show-error --noproxy '*' http://%s/%s/index.jsp",
           routeHost, appContextRoot);
 
     } else {
-      return String.format("curl -v --show-error --noproxy '*' -H 'host: %s' http://%s:%s/%s/index.jsp",
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s:%s/%s/index.jsp",
           domainUid + "." + domainNamespace + "." + clusterName + ".test",
-          K8S_NODEPORT_HOST, nodeportshttp, appContextRoot);
+          host, nodeportshttp, appContextRoot);
     }
   }
 
@@ -780,9 +788,13 @@ class ItMultiDomainModelsScale {
     if (!OKD) {
       assumeFalse(WEBLOGIC_SLIM, "Skipping the Console Test for slim image");
 
-      String curlCmd = "curl --silent --show-error --noproxy '*' -H 'host: "
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
           + domainUid + "." + domainNamespace + ".adminserver.test"
-          + "' http://" + K8S_NODEPORT_HOST + ":" + nodeportshttp
+          + "' http://" + host + ":" + nodeportshttp
           + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
 
       logger.info("Executing curl command {0}", curlCmd);

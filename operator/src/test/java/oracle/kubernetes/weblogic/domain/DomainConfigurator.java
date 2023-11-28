@@ -32,6 +32,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.InitializeDomainOnPV;
 import oracle.kubernetes.weblogic.domain.model.Model;
+import oracle.kubernetes.weblogic.domain.model.Shutdown;
 
 /**
  * Configures a domain, adding settings independently of the version of the domain representation.
@@ -424,6 +425,8 @@ public abstract class DomainConfigurator {
                                                               String credentialName, String fluentdConfig,
                                                               List<String> args, List<String> command);
 
+  public abstract DomainConfigurator withServerPodShutdownSpec(Shutdown shutdown);
+
   /**
    * Adds a default server configuration to the domain, if not already present.
    *
@@ -500,7 +503,7 @@ public abstract class DomainConfigurator {
 
   /**
    * Tells the operator whether the customer wants to restart the server pods. The value can be any
-   * String and it can be defined on domain, cluster or server to restart the different pods. After
+   * String, and it can be defined on domain, cluster or server to restart the different pods. After
    * the value is added, the corresponding pods will be terminated and created again. If customer
    * modifies the value again after the pods were recreated, then the pods will again be terminated
    * and recreated.
