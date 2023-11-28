@@ -311,7 +311,7 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
-    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), true);
+    createNginxIngressHostRouting(domainUid, 8002, nginxParams.getIngressClassName(), true);
 
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
@@ -689,16 +689,20 @@ class ItMiiDomainUpgradeToSecureMode {
     ingressRules.add(clusterIngressRule);
 
     if (isTLS) {
-      String tlsSecretName = domainUid + "-nginx-tls-secret";
+      String admintlsSecretName = domainUid + "-admin-nginx-tls-secret";
+      String clustertlsSecretName = domainUid + "-cluster-nginx-tls-secret";
       createCertKeyFiles(adminIngressHost);
+      assertDoesNotThrow(() -> createSecretWithTLSCertKey(admintlsSecretName,
+          domainNamespace, tlsKeyFile, tlsCertFile));
       createCertKeyFiles(clusterIngressHost);
-      assertDoesNotThrow(() -> createSecretWithTLSCertKey(tlsSecretName, domainNamespace, tlsKeyFile, tlsCertFile));
+      assertDoesNotThrow(() -> createSecretWithTLSCertKey(clustertlsSecretName,
+          domainNamespace, tlsKeyFile, tlsCertFile));
       V1IngressTLS admintls = new V1IngressTLS()
           .addHostsItem(adminIngressHost)
-          .secretName(tlsSecretName);
+          .secretName(admintlsSecretName);
       V1IngressTLS clustertls = new V1IngressTLS()
           .addHostsItem(clusterIngressHost)
-          .secretName(tlsSecretName);
+          .secretName(clustertlsSecretName);
       tlsList.add(admintls);
       tlsList.add(clustertls);
     }
