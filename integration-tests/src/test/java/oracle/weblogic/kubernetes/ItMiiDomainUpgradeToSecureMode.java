@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -14,6 +15,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.models.V1EnvVar;
@@ -64,6 +66,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
@@ -75,6 +78,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
+import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
@@ -92,7 +96,6 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigM
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
@@ -151,7 +154,7 @@ class ItMiiDomainUpgradeToSecureMode {
   private static String domainUid;
   private static final String adminServerName = "adminserver";
   private static final String configMapName = "default-admin-configmap";
-  private final String adminServerPodName = domainUid + "-" + adminServerName;
+  private String adminServerPodName;
   private final String managedServerPrefix = domainUid + "mycluster-ms-";
 
   private static Path pathToEnableSSLYaml;
@@ -164,6 +167,8 @@ class ItMiiDomainUpgradeToSecureMode {
   
   private static NginxParams nginxParams;
   private static String ingressIP = null;
+  String adminIngressHost;
+  String clusterIngressHost;
 
   /**
    * Install Operator.
@@ -199,21 +204,6 @@ class ItMiiDomainUpgradeToSecureMode {
   }
 
   /**
-   * Verify all server pods are running. Verify all k8s services for all servers are created.
-   */
-  public void beforeEach() {
-    logger.info("Check admin service and pod {0} is created in namespace {1}",
-        adminServerPodName, domainNamespace);
-    checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
-    // check managed server services and pods are ready
-    for (int i = 1; i <= replicaCount; i++) {
-      logger.info("Wait for managed server services and pods are created in namespace {0}",
-          domainNamespace);
-      checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
-    }
-  }
-
-  /**
    * Test upgrade from 1411 to 1412 with production and secure mode off.
    */
   @Test
@@ -222,13 +212,14 @@ class ItMiiDomainUpgradeToSecureMode {
     //no changes
     domainNamespace = namespaces.get(2);
     domainUid = "testdomain1";
+    adminServerPodName = domainUid + "-" + adminServerName;
     Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(wdtVariableFile);
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n", 
+      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
           StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
@@ -242,12 +233,29 @@ class ItMiiDomainUpgradeToSecureMode {
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
     String channelName = "default";
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);    
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
     
+    verifyChannel(domainNamespace, domainUid, List.of("default"));
+
+    
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/sample-war/index.jsp", ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        "/sample-war/index.jsp", ingressIP);
+
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";    
+    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
+    verifyChannel(domainNamespace, domainUid, List.of("default"));
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/sample-war/index.jsp", ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        "/sample-war/index.jsp", ingressIP);
   }
   
   /**
@@ -648,7 +656,7 @@ class ItMiiDomainUpgradeToSecureMode {
     if (channelName != null) {
       Channel channel = domainCR.getSpec().getAdminServer().getAdminService().channels().get(0);
       channel.channelName(channelName);
-      domainCR.getSpec().adminServer().adminService().channels(Arrays.asList(channel));
+      domainCR.getSpec().adminServer().adminService().channels(List.of(channel));
     }
     domainCR.getSpec().getServerPod()
         .addEnvItem(new V1EnvVar()
@@ -741,86 +749,13 @@ class ItMiiDomainUpgradeToSecureMode {
   }
   
   
-  private void verifyAdminConsoleAccess(String domainNamespace, String domainUid, String channelName, int adminPort) {
-    String adminServerPodName = domainUid + "-adminserver";
-    String resourcePath = "/console/login/LoginForm.jsp";
-    int defaultAdminNodePort = getServiceNodePort(
-        domainNamespace, getExternalServicePodName(adminServerPodName), channelName);
-
-    assertNotEquals(-1, defaultAdminNodePort,
-        "Could not get the default-admin external service node port");
-    logger.info("Found the administration service nodePort {0}", defaultAdminNodePort);
-
-    //expose the admin server external service to access the console in OKD cluster
-    //set the sslPort as the target port
-    adminSvcSslPortExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName),
-        domainNamespace, adminServerName + "-sslport-ext");
-    setTlsTerminationForRoute(adminServerName + "-sslport-ext", domainNamespace);
-    setTargetPortForRoute(adminServerName + "-sslport-ext", domainNamespace, defaultAdminNodePort);
-    String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, defaultAdminNodePort);
-
-    if (!WEBLOGIC_SLIM) {
-      if (OKE_CLUSTER) {
-        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, adminPort, resourcePath);
-        logger.info("result in OKE_CLUSTER is {0}", result.toString());
-        assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
-      } else {
-        // OKD and Kind 
-        String curlCmd = "curl -g -sk --show-error --noproxy '*' "
-            + " https://" + hostAndPort + resourcePath
-            + " --write-out %{http_code} "
-            + " -o /dev/null";
-        logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
-        assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-      }
-      logger.info("WebLogic console is accessible thru default-admin service");
-
-      String localhost = "localhost";
-      String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 9002);
-      assertNotNull(forwardPort, "port-forward fails to assign local port");
-      logger.info("Forwarded admin-port is {0}", forwardPort);
-      String curlCmd = "curl -sk --show-error --noproxy '*' "
-          + " https://" + localhost + ":" + forwardPort + resourcePath
-          + " --write-out %{http_code} "
-          + " -o /dev/null";
-      logger.info("Executing default-admin port-fwd curl command {0}", curlCmd);
-      assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-      logger.info("WebLogic console is accessible thru admin port forwarding");
-
-      // When port-forwarding is happening on admin-port, port-forwarding will
-      // not work for SSL port i.e. 7002
-      forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7002);
-      assertNotNull(forwardPort, "port-forward fails to assign local port");
-      logger.info("Forwarded ssl port is {0}", forwardPort);
-      curlCmd = "curl -g -sk --show-error --noproxy '*' "
-          + " https://" + localhost + ":" + forwardPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} "
-          + " -o /dev/null";
-      logger.info("Executing default-admin port-fwd curl command {0}", curlCmd);
-      assertFalse(callWebAppAndWaitTillReady(curlCmd, 10));
-      logger.info("WebLogic console should not be accessible thru ssl port forwarding");
-      stopPortForwardProcess(domainNamespace);
-    } else {
-      logger.info("Skipping WebLogic console in WebLogic slim image");
-    }
-
-  }
-
-  private void verifyAdminServerAccess() {
-
-  }
-
-  private void verifyClusterAccess() {
-
-  }
-  
   private static void installNginx() {
     // install and verify Nginx
     logger.info("Installing Nginx controller using helm");
     nginxParams = installAndVerifyNginx(ingressNamespace, 0, 0);
   }
 
-  private static void createNginxIngressHostRouting(String domainUid, int msPort,
+  private void createNginxIngressHostRouting(String domainUid, int msPort,
       String ingressClassName, boolean isTLS) {
     // create an ingress in domain namespace
     String ingressName;
@@ -856,8 +791,7 @@ class ItMiiDomainUpgradeToSecureMode {
         );
 
     // set the ingress rule host
-    String adminIngressHost;
-    String clusterIngressHost;
+
     if (isTLS) {
       adminIngressHost = domainUid + "." + domainNamespace + ".admin.ssl.test";
       clusterIngressHost = domainUid + "." + domainNamespace + ".cluster.ssl.test";
@@ -935,5 +869,83 @@ class ItMiiDomainUpgradeToSecureMode {
   private static int getNginxLbNodePort(String channelName) {
     String nginxServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     return getServiceNodePort(ingressNamespace, nginxServiceName, channelName);
-  }  
+  }
+  
+  private void verifyAppServerAccess(boolean isTLS,
+      int lbNodePort,
+      boolean isHostRouting,
+      String ingressHostName,
+      String pathLocation,
+      String... hostName) {
+    
+    StringBuffer url = new StringBuffer();
+    String hostAndPort;
+    if (hostName != null && hostName.length > 0) {
+      hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;
+    } else {
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      hostAndPort = host + ":" + lbNodePort;
+    }
+
+    if (isTLS) {
+      url.append("https://");
+    } else {
+      url.append("http://");
+    }
+    url.append(hostAndPort);
+    url.append(pathLocation);
+
+    String curlCmd;
+    if (isHostRouting) {
+      curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
+          ingressHostName, url.toString());
+    } else {
+      if (isTLS) {
+        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
+            + "-H 'WL-Proxy-SSL: false' %s", url.toString());
+      } else {
+        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' %s", url.toString());
+      }
+    }
+
+    boolean urlAccessible = false;
+    for (int i = 0; i < 10; i++) {
+      assertDoesNotThrow(() -> TimeUnit.SECONDS.sleep(1));
+      ExecResult result;
+      try {
+        getLogger().info("Accessing url with curl request, iteration {0}: {1}", i, curlCmd);
+        result = ExecCommand.exec(curlCmd, true);
+        String response = result.stdout().trim();
+        getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+            result.exitValue(), response, result.stderr());
+        if (response.contains("login")) {
+          urlAccessible = true;
+          break;
+        }
+      } catch (IOException | InterruptedException ex) {
+        getLogger().severe(ex.getMessage());
+      }
+    }
+    assertTrue(urlAccessible, "Couldn't access server url");
+  }
+
+  private void verifyChannel(String domainNamespace, String domainUid, List<String> channelNames) {
+    assertThat(assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace)
+        .getSpec().getAdminServer().getAdminService().getChannels().stream().count())
+        .equals(Long.valueOf(channelNames.size())))
+        .withFailMessage("Number of channels are not equal to expected length");
+    
+    for (String channelName : channelNames) {
+      assertThat(assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace)
+          .getSpec().getAdminServer().getAdminService().getChannels().stream()
+          .anyMatch(ch -> ch.channelName().equals(channelName))))
+          .as(String.format("Channel %s was found in domain resource %s", channelName, domainUid))
+          .withFailMessage(String.format("Channel %s was found not in domain resource %s", channelName, domainUid))
+          .isEqualTo(true);
+    }
+  }
+  
 }
