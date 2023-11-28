@@ -244,18 +244,18 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", ingressIP);
+        "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", ingressIP);
+        "/sample-war/index.jsp", "ms-1", ingressIP);
 
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     verifyChannel(domainNamespace, domainUid, List.of("default"));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", ingressIP);
+        "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", ingressIP);
+        "/sample-war/index.jsp", "ms-1", ingressIP);
   }
   
   /**
@@ -876,6 +876,7 @@ class ItMiiDomainUpgradeToSecureMode {
       boolean isHostRouting,
       String ingressHostName,
       String pathLocation,
+      String content,
       String... hostName) {
     
     StringBuffer url = new StringBuffer();
@@ -921,7 +922,7 @@ class ItMiiDomainUpgradeToSecureMode {
         String response = result.stdout().trim();
         getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
             result.exitValue(), response, result.stderr());
-        if (response.contains("login")) {
+        if (response.contains(content)) {
           urlAccessible = true;
           break;
         }
