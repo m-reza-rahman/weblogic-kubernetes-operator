@@ -411,7 +411,7 @@ class ItAuxV8DomainImplicitUpgrade {
 
     // check the introspector pod log contains the expected error message
     String expectedErrorMsg =
-        "createDomain did not find the required domainInfo section in the model file /auxiliary/models/model.jms2.yaml";
+        "Model in Image: WDT Create Primordial Domain Failed";
 
     // check the operator pod log contains the expected error message
     checkPodLogContainsString(opNamespace, operatorPodName, expectedErrorMsg);

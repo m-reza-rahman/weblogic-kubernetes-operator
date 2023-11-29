@@ -1071,7 +1071,7 @@ class ItMiiAuxiliaryImage {
 
     // check the introspector pod log contains the expected error message
     String expectedErrorMsg =
-        "createDomain did not find the required domainInfo section in the model file /aux/models/model.jms2.yaml";
+        "Model in Image: WDT Create Primordial Domain Failed";
     // check the domain event contains the expected error message
     checkDomainEventContainsExpectedMsg(opNamespace, errorpathDomainNamespace, domainUid2, DOMAIN_FAILED,
         "Warning", timestamp, expectedErrorMsg);
