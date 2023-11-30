@@ -219,16 +219,23 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
-    String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
-    verifyChannel(domainNamespace, domainUid, List.of("default"));
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
   }
