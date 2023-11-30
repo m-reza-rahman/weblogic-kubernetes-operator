@@ -196,8 +196,7 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
     
-    verifyChannel(domainNamespace, domainUid, List.of("default"));
-
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
     
     String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
@@ -377,8 +376,7 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
 
-    String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
@@ -483,8 +481,7 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
 
-    String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
@@ -672,6 +669,7 @@ class ItMiiDomainUpgradeToSecureMode {
       clusterIngressHost = domainUid + "." + domainNamespace + ".cluster.ssl.test";
     } else {
       adminIngressHost = domainUid + "." + domainNamespace + ".admin.nonssl.test";
+      adminAppIngressHost = domainUid + "." + domainNamespace + ".adminapp.nonssl.test";
       clusterIngressHost = domainUid + "." + domainNamespace + ".cluster.nonssl.test";
     }
     V1IngressRule adminIngressRule = new V1IngressRule()
