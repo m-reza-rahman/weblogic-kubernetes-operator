@@ -182,10 +182,16 @@ class ItMiiDomainUpgradeToSecureMode {
   }
   
   /**
-   * Test upgrade from 1411 to 1412 with production and secure mode off.
+   * Test upgrade from 1411 to 1412 with production off and secure mode off.
+   * 
+   * Verify the sample application and console are available in default port 7001 before upgrade.
+   * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
+   * Verify the sample application continue to available in default port 7001 after upgrade.
+   * Verify the console is moved to a new location in 1412.
+   * 
    */
   @Test
-  @DisplayName("Verify the secure service through administration port")
+  @DisplayName("Test upgrade from 1411 to 1412 with production off and secure mode off")
   void testUpgrade1411to1412ProdOff() {
     //no changes
     domainNamespace = namespaces.get(2);
@@ -423,7 +429,7 @@ class ItMiiDomainUpgradeToSecureMode {
    * 
    */
   @Test
-  @DisplayName("Verify the secure service through administration port")
+  @DisplayName("Test upgrade from 1214 to 1412 with production off and secure mode off")
   void testUpgrade12214to1412ProdOff() {
     domainNamespace = namespaces.get(6);
     domainUid = "testdomain5";
