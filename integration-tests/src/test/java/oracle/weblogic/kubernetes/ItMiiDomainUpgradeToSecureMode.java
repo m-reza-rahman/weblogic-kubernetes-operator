@@ -40,6 +40,7 @@ import oracle.weblogic.kubernetes.utils.DomainUtils;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.ImageUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -65,6 +66,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.listDomainCustomResources;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.now;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
@@ -168,6 +170,17 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;   
   }
 
+  /**
+   * Shutdown domains created by each test method.
+   */
+  @AfterEach
+  void afterEach() {
+    if (listDomainCustomResources(domainNamespace).getItems().stream().anyMatch(dr
+        -> dr.getMetadata().getName().equals(domainUid))) {
+      shutdownDomain(domainUid, domainNamespace);
+    }
+  }
+  
   /**
    * Test upgrade from 1411 to 1412 with production and secure mode off.
    */
