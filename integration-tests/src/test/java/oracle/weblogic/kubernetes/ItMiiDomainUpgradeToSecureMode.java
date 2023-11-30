@@ -231,7 +231,6 @@ class ItMiiDomainUpgradeToSecureMode {
         "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
-    shutdownDomain(domainUid, domainNamespace);
   }
   
   /**
@@ -288,7 +287,6 @@ class ItMiiDomainUpgradeToSecureMode {
         "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
-    shutdownDomain(domainUid, domainNamespace);
   }
 
   /**
@@ -349,7 +347,6 @@ class ItMiiDomainUpgradeToSecureMode {
         "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
-    shutdownDomain(domainUid, domainNamespace);
   }
 
   /**
@@ -407,7 +404,6 @@ class ItMiiDomainUpgradeToSecureMode {
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
-    shutdownDomain(domainUid, domainNamespace);    
   }
 
   /**
@@ -472,7 +468,6 @@ class ItMiiDomainUpgradeToSecureMode {
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
-    shutdownDomain(domainUid, domainNamespace);    
   }
 
   /**
@@ -530,7 +525,6 @@ class ItMiiDomainUpgradeToSecureMode {
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
-    shutdownDomain(domainUid, domainNamespace);
   }
 
   private DomainResource createDomainUsingAuxiliaryImage(String domainNamespace, String domainUid,
