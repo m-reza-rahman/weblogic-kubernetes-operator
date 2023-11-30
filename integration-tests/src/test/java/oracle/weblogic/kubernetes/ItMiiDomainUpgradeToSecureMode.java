@@ -248,9 +248,15 @@ class ItMiiDomainUpgradeToSecureMode {
   
   /**
    * Test upgrade from 1411 to 1412 with production on and secure mode off.
+   * 
+   * Verify the sample application and console are available in default port 7001 before upgrade.
+   * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
+   * Verify the sample application continue to available in default port 7001 after upgrade.
+   * Verify the console is moved to a new location in 1412.
+   * 
    */
   @Test
-  @DisplayName("Verify the secure service through administration port")
+  @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode off")
   void testUpgrade1411to1412ProdOnSecOff() {
     //no changes
     domainNamespace = namespaces.get(3);
@@ -286,18 +292,23 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
-    String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
-    dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
   }
