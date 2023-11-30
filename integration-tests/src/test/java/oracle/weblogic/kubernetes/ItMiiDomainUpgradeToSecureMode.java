@@ -211,7 +211,7 @@ class ItMiiDomainUpgradeToSecureMode {
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     verifyChannel(domainNamespace, domainUid, List.of("default"));
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
@@ -268,7 +268,7 @@ class ItMiiDomainUpgradeToSecureMode {
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
@@ -315,6 +315,8 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        "/console/login/LoginForm.jsp", adminServerName, ingressIP);    
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
@@ -327,6 +329,8 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         "/console/login/LoginForm.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
     shutdownDomain(domainUid, domainNamespace);
@@ -371,8 +375,10 @@ class ItMiiDomainUpgradeToSecureMode {
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/console/login/LoginForm.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
 
@@ -424,7 +430,9 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/sample-war/index.jsp", adminServerName, ingressIP);    
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/console/login/LoginForm.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
 
@@ -432,8 +440,10 @@ class ItMiiDomainUpgradeToSecureMode {
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/console/login/LoginForm.jsp", adminServerName, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
     shutdownDomain(domainUid, domainNamespace);    
@@ -476,8 +486,10 @@ class ItMiiDomainUpgradeToSecureMode {
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        "/console/login/LoginForm.jsp", adminServerName, ingressIP);     
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
 
@@ -486,6 +498,8 @@ class ItMiiDomainUpgradeToSecureMode {
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
+        "/sample-war/index.jsp", adminServerName, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         "/console/login/LoginForm.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
