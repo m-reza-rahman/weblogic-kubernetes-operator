@@ -9,7 +9,6 @@ topology:
     AdminServerName: adminserver
     ServerTemplate:
         myserver-template:
-            ListenAddress: '@@PROP:ServerTemp.myserver-template.ListenAddress@@'
             Cluster: mycluster
             AutoMigrationEnabled: false
             SSL:

@@ -12,7 +12,6 @@ topology:
             ListenPort: 7001
     ServerTemplate:
         myserver-template:
-            ListenAddress: '@@PROP:ServerTemp.myserver-template.ListenAddress@@'
             Cluster: mycluster
             AutoMigrationEnabled: false
             SSL:
