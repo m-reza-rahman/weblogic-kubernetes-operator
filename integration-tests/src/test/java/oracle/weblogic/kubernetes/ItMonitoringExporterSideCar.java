@@ -469,10 +469,11 @@ class ItMonitoringExporterSideCar {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
+
       if (OKE_CLUSTER_PRIVATEIP) {
+        String ingressServiceName = traefikHelmParams.getReleaseName();
+        ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
         hostPortPrometheus = ingressIP;
       } else {
         hostPortPrometheus = host + ":" + nodeportPrometheus;
