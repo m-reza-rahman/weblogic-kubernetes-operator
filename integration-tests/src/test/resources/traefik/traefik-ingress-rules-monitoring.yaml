@@ -6,7 +6,7 @@ kind: IngressRoute
 metadata:
   annotations:
     kubernetes.io/ingress.class: traefik
-  name: @releasesuffix@-traefik-pathrouting
+  name: @servicename@-traefik-pathrouting
   namespace: @NS@
 spec:
   routes:
@@ -14,6 +14,6 @@ spec:
       match: PathPrefix(`/`)
       services:
         - kind: Service
-          name: prometheus@releasesuffix@-server
+          name: @servicename@
           namespace: @NS@
           port: 80

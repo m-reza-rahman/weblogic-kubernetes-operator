@@ -6,7 +6,7 @@ kind: IngressRoute
 metadata:
   annotations:
     kubernetes.io/ingress.class: traefik
-  name: @domainuid@-cluster1-traefik-pathrouting
+  name: @domain1uid@-cluster1-traefik-pathrouting
   namespace: @NS@
 spec:
   routes:
@@ -14,7 +14,7 @@ spec:
       match: PathPrefix(`/wls-exporter`)
       services:
         - kind: Service
-          name: @domainuid@-cluster-cluster-1
+          name: @domain1uid@-cluster-cluster-1
           namespace: @NS@
           port: 8001
 ---
@@ -23,7 +23,7 @@ kind: IngressRoute
 metadata:
   annotations:
     kubernetes.io/ingress.class: traefik
-  name: @domainuid@-cluster2-traefik-pathrouting
+  name: @domain1uid@-cluster2-traefik-pathrouting
   namespace: @NS@
 spec:
   routes:
@@ -31,6 +31,6 @@ spec:
       match: PathPrefix(`/wls-exporter`)
       services:
         - kind: Service
-          name: @domainuid@-cluster-cluster-2
+          name: @domain1uid@-cluster-cluster-2
           namespace: @NS@
           port: 8001

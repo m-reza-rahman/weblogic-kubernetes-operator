@@ -4,6 +4,7 @@
 package oracle.weblogic.kubernetes.utils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,6 +35,7 @@ import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.MonitoringExporterSpecification;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.TestConstants;
+import oracle.weblogic.kubernetes.actions.ActionConstants;
 import oracle.weblogic.kubernetes.actions.impl.Cluster;
 import oracle.weblogic.kubernetes.actions.impl.Grafana;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
@@ -120,6 +122,7 @@ import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1150,6 +1153,32 @@ public class MonitoringUtils {
   }
 
   /**
+   * Check monitoring exporter access through lb.
+   * @param lbHost - lb host
+   * @param replicaCount - number of managed servers
+   * @param hostPort - host:port
+   */
+  public static void verifyMonExpAppAccessThroughLB(String lbHost, int replicaCount, String hostPort) {
+
+    List<String> managedServerNames = new ArrayList<>();
+    for (int i = 1; i <= replicaCount; i++) {
+      managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
+    }
+
+    String curlCmd =
+        String.format("curl -g --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s/wls-exporter/metrics",
+            lbHost,
+            ADMIN_USERNAME_DEFAULT,
+            ADMIN_PASSWORD_DEFAULT,
+            hostPort);
+    testUntil(withLongRetryPolicy,
+        callTestWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 50),
+        logger,
+        "Verify NGINX can access the monitoring exporter metrics \n"
+            + "from all managed servers in the domain via http");
+  }
+
+  /**
    * Verify the monitoring exporter app can be accessed from all managed servers in the domain through NGINX.
    *
    * @param replicaCount number of managed servers
@@ -1274,5 +1303,68 @@ public class MonitoringUtils {
             .command(command))
         .execute(), "Failed to build monitoring exporter");
     return createImageAndPushToRepo(srcDir, baseImageName, namespace, secretName, extraImageBuilderArgs);
+  }
+
+  /**
+   * Create Traefik Ingress routing rules for prometheus.
+   *
+   * @param namespace            namespace of prometheus
+   * @param serviceName          name of exposed service
+   * @param ingressRulesFileName ingress rules file name
+   */
+  public static void createTraefikIngressRoutingRulesForMonitoring(String namespace, String serviceName,
+                                                                   String ingressRulesFileName) {
+    logger.info("Creating ingress rules for prometheus traffic routing");
+    Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, ingressRulesFileName);
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, ingressRulesFileName);
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(dstFile);
+      Files.createDirectories(dstFile.getParent());
+      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
+          .replaceAll("@servicename@", serviceName)
+          .getBytes(StandardCharsets.UTF_8));
+    });
+    String command = KUBERNETES_CLI + " create -f " + dstFile;
+    logger.info("Running {0}", command);
+    ExecResult result;
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+  }
+
+  /**
+   * Create Traefik ingress routing rules for domain.
+   * @param namespace domain namespace
+   * @param domainUID domain uid
+   */
+  public static void createTraefikIngressRoutingRulesForDomain(String namespace, String domainUID) {
+    logger.info("Creating ingress rules for prometheus traffic routing");
+    Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-exporter.yaml");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-exporter.yaml");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(dstFile);
+      Files.createDirectories(dstFile.getParent());
+      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
+          .replaceAll("@domain1uid@", domainUID)
+          .getBytes(StandardCharsets.UTF_8));
+    });
+    String command = KUBERNETES_CLI + " create -f " + dstFile;
+    logger.info("Running {0}", command);
+    ExecResult result;
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
   }
 }
