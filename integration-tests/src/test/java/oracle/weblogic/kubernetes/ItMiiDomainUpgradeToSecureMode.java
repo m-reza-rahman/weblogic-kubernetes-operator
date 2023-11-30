@@ -206,18 +206,18 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     verifyChannel(domainNamespace, domainUid, List.of("default"));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
     shutdownDomain(domainUid, domainNamespace);
   }
   
@@ -261,9 +261,9 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
@@ -272,9 +272,9 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
     shutdownDomain(domainUid, domainNamespace);
   }
 
@@ -318,11 +318,11 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);    
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
@@ -331,11 +331,11 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);    
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
     shutdownDomain(domainUid, domainNamespace);
   }
 
@@ -379,11 +379,11 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);    
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
     String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -391,14 +391,20 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
     shutdownDomain(domainUid, domainNamespace);    
   }
 
   /**
-   * Test upgrade from 1411 to 1412 with production off and secure mode off.
+   * Test upgrade from 1214 to 1412 with production off and secure mode off.
+   * 
+   * Verify the sample application and console are available in default port 7001 before upgrade.
+   * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
+   * Verify the sample application continue to available in default port 7001 after upgrade.
+   * Verify the console is moved to a new location in 1412.
+   * 
    */
   @Test
   @DisplayName("Verify the secure service through administration port")
@@ -433,26 +439,26 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);    
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, ingressIP);
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", "This document you requested has moved", ingressIP);
+        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, ingressIP);    
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
     shutdownDomain(domainUid, domainNamespace);    
   }
 
@@ -494,11 +500,11 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);     
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);     
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
     String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -506,11 +512,11 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);    
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", ingressIP);
+        "/sample-war/index.jsp", "ms-1", false, ingressIP);
     shutdownDomain(domainUid, domainNamespace);
   }
 
@@ -789,6 +795,7 @@ class ItMiiDomainUpgradeToSecureMode {
       String ingressHostName,
       String pathLocation,
       String content,
+      boolean useCredentials,
       String... hostName) {
 
     StringBuffer url = new StringBuffer();
@@ -811,16 +818,20 @@ class ItMiiDomainUpgradeToSecureMode {
     url.append(hostAndPort);
     url.append(pathLocation);
 
+    String credentials = "";
+    if (useCredentials) {
+      credentials = "--user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT;
+    }
     String curlCmd;
     if (isHostRouting) {
-      curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
-          ingressHostName, url.toString());
+      curlCmd = String.format("curl -g -ks --show-error --noproxy '*' "
+          + credentials + " -H 'host: %s' %s", ingressHostName, url.toString());
     } else {
       if (isTLS) {
-        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
-            + "-H 'WL-Proxy-SSL: false' %s", url.toString());
+        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' "
+            + credentials + " -H 'WL-Proxy-Client-IP: 1.2.3.4' -H 'WL-Proxy-SSL: false' %s", url.toString());
       } else {
-        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' %s", url.toString());
+        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' " + credentials + " %s", url.toString());
       }
     }
 
