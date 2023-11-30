@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,6 +129,7 @@ class ItMiiDomainUpgradeToSecureMode {
   private static NginxParams nginxParams;
   private static String ingressIP = null;
   String adminIngressHost;
+  String adminAppIngressHost;
   String clusterIngressHost;
 
   /**
@@ -179,8 +181,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
-          StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
@@ -194,7 +194,7 @@ class ItMiiDomainUpgradeToSecureMode {
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
     String channelName = "default";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
-    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
+    createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
     
     verifyChannel(domainNamespace, domainUid, List.of("default"));
 
@@ -212,7 +212,7 @@ class ItMiiDomainUpgradeToSecureMode {
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     verifyChannel(domainNamespace, domainUid, List.of("default"));
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
@@ -235,8 +235,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
-          StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
@@ -252,7 +250,7 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
-    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
+    createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
 
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
@@ -271,7 +269,7 @@ class ItMiiDomainUpgradeToSecureMode {
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
@@ -294,8 +292,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=true\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
-          StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "SecureModeEnabled=true\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
@@ -311,7 +307,7 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
-    createNginxIngressHostRouting(domainUid, 8002, nginxParams.getIngressClassName(), true);
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
 
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
@@ -331,7 +327,7 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/console/login/LoginForm.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
     shutdownDomain(domainUid, domainNamespace);
@@ -354,8 +350,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
-          StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
     });
@@ -370,7 +364,7 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
-    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 8001, nginxParams.getIngressClassName(), false);
 
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
@@ -390,7 +384,7 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/console/login/LoginForm.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
     shutdownDomain(domainUid, domainNamespace);    
@@ -411,8 +405,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
-          StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
     });
@@ -425,10 +417,9 @@ class ItMiiDomainUpgradeToSecureMode {
     String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
     String channelName = "default";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
-    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), false);
+    createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
     
-    verifyChannel(domainNamespace, domainUid, List.of("default"));
-
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
     
     String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
@@ -442,8 +433,8 @@ class ItMiiDomainUpgradeToSecureMode {
     String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
     image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
-    verifyChannel(domainNamespace, domainUid, List.of("default"));
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
@@ -465,8 +456,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.createDirectories(wdtVariableFile.getParent());
       Files.writeString(wdtVariableFile, "SSLEnabled=true\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ServerTemp.myserver-template.ListenAddress=8002\n",
-          StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
     });
@@ -481,7 +470,7 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
-    createNginxIngressHostRouting(domainUid, 8001, nginxParams.getIngressClassName(), true);
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
 
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
@@ -501,7 +490,7 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, ingressIP);
+        "/console/login/LoginForm.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
     shutdownDomain(domainUid, domainNamespace);
@@ -633,11 +622,10 @@ class ItMiiDomainUpgradeToSecureMode {
     nginxParams = installAndVerifyNginx(ingressNamespace, 0, 0);
   }
 
-  private void createNginxIngressHostRouting(String domainUid, int msPort,
+  private void createNginxIngressHostRouting(String domainUid, int adminPort, int adminSecureAppPort, int msPort,
       String ingressClassName, boolean isTLS) {
     // create an ingress in domain namespace
     String ingressName;
-    int adminPort = 7001;
 
     if (isTLS) {
       ingressName = domainUid + "-nginx-tls";
@@ -667,10 +655,20 @@ class ItMiiDomainUpgradeToSecureMode {
                 .port(new V1ServiceBackendPort()
                     .number(adminPort)))
         );
+    V1HTTPIngressPath adminAppIngressPath = new V1HTTPIngressPath()
+        .path(null)
+        .pathType("ImplementationSpecific")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name(domainUid + "-adminserver")
+                .port(new V1ServiceBackendPort()
+                    .number(adminSecureAppPort)))
+        );
 
     // set the ingress rule host
     if (isTLS) {
       adminIngressHost = domainUid + "." + domainNamespace + ".admin.ssl.test";
+      adminAppIngressHost = domainUid + "." + domainNamespace + ".adminapp.ssl.test";
       clusterIngressHost = domainUid + "." + domainNamespace + ".cluster.ssl.test";
     } else {
       adminIngressHost = domainUid + "." + domainNamespace + ".admin.nonssl.test";
@@ -680,12 +678,17 @@ class ItMiiDomainUpgradeToSecureMode {
         .host(adminIngressHost)
         .http(new V1HTTPIngressRuleValue()
             .paths(Collections.singletonList(adminIngressPath)));
+    V1IngressRule adminAppIngressRule = new V1IngressRule()
+        .host(adminAppIngressHost)
+        .http(new V1HTTPIngressRuleValue()
+            .paths(Collections.singletonList(adminIngressPath)));    
     V1IngressRule clusterIngressRule = new V1IngressRule()
         .host(clusterIngressHost)
         .http(new V1HTTPIngressRuleValue()
             .paths(Collections.singletonList(clusterIngressPath)));
 
     ingressRules.add(adminIngressRule);
+    ingressRules.add(adminAppIngressRule);
     ingressRules.add(clusterIngressRule);
 
     if (isTLS) {
@@ -700,15 +703,25 @@ class ItMiiDomainUpgradeToSecureMode {
       V1IngressTLS admintls = new V1IngressTLS()
           .addHostsItem(adminIngressHost)
           .secretName(admintlsSecretName);
+      V1IngressTLS adminApptls = new V1IngressTLS()
+          .addHostsItem(adminAppIngressHost)
+          .secretName(admintlsSecretName);      
       V1IngressTLS clustertls = new V1IngressTLS()
           .addHostsItem(clusterIngressHost)
           .secretName(clustertlsSecretName);
       tlsList.add(admintls);
+      tlsList.add(adminApptls);
       tlsList.add(clustertls);
     }
-
-    assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
-        ingressClassName, ingressRules, (isTLS ? tlsList : null)));
+    assertDoesNotThrow(() -> {
+      Map<String, String> annotations = null;
+      if (isTLS) {
+        annotations = new HashMap<>();
+        annotations.put("nginx.ingress.kubernetes.io/backend-protocol", "HTTPS");
+      }
+      createIngress(ingressName, domainNamespace, annotations, ingressClassName,
+          ingressRules, (isTLS ? tlsList : null));
+    });
 
     assertDoesNotThrow(() -> {
       List<String> ingresses = listIngresses(domainNamespace);

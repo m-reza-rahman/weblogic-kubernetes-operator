@@ -18,7 +18,7 @@ topology:
             SSL:
                 Enabled: '@@PROP:SSLEnabled@@'
                 ListenPort: 8500
-            ListenPort: 8001    
+            ListenPort: 8001
     Cluster:
         mycluster:
             DynamicServers:
