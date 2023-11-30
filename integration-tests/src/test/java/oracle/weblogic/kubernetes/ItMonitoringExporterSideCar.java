@@ -23,7 +23,6 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -35,7 +34,6 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_FAILED_TYPE;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
@@ -45,7 +43,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
@@ -488,14 +485,10 @@ class ItMonitoringExporterSideCar {
       prometheusDomainRegexValue = prometheusRegexValue;
     }
     logger.info("Prometheus is running");
-    String command1 = KUBERNETES_CLI + " get svc -n " + monitoringNS;
-    assertDoesNotThrow(() -> ExecCommand.exec(command1,true));
-    String command2 = KUBERNETES_CLI + " describe svc -n " + monitoringNS;
-    assertDoesNotThrow(() -> ExecCommand.exec(command2,true));
 
     if (OKD) {
       hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
-          + "-server", monitoringNS) + ":" + nodeportPrometheus;
+          + "-service", monitoringNS) + ":" + nodeportPrometheus;
     }
     if (grafanaHelmParams == null) {
       String grafanaHelmValuesFileDir = Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
@@ -562,17 +555,7 @@ class ItMonitoringExporterSideCar {
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
 
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    //createTraefikIngressRoutingRules(monitoringNS);
-    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
         "traefik/traefik-ingress-rules-monitoring.yaml");
   }
-
-  private int getTraefikLbNodePort(boolean isHttps) {
-    logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
-    return assertDoesNotThrow(() ->
-            getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
-        "Getting web node port for Traefik loadbalancer failed");
-  }
-
 }
