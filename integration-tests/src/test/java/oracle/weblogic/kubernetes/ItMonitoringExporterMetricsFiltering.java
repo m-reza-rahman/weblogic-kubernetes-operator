@@ -199,7 +199,7 @@ class ItMonitoringExporterMetricsFiltering {
 
     exporterUrl = String.format("http://%s:%s/wls-exporter/", host, nodeportshttp);
     if (OKE_CLUSTER_PRIVATEIP) {
-      exporterUrl = String.format("http://%s/wls-exporter/", ingressIP);
+      exporterUrl = String.format("http://%s/wls-exporter", ingressIP);
     }
     HashMap<String, String> labels = new HashMap<>();
     labels.put("app", "monitoring");
@@ -606,11 +606,17 @@ class ItMonitoringExporterMetricsFiltering {
   private HtmlPage submitConfigureForm(
       String exporterUrl, String effect, String configFile, WebClient webClient) throws Exception {
     // Get the first page
+    logger.info("exporterULR " + exporterUrl);
+
     HtmlPage page1 = webClient.getPage(exporterUrl);
+
+    //Thread.sleep(80000000);
     if (page1 == null) {
       //try again
       page1 = webClient.getPage(exporterUrl);
     }
+    logger.info("exporter page " + page1.asNormalizedText());
+
     assertNotNull(page1, "can't retrieve exporter dashboard page");
     assertTrue((page1.asNormalizedText()).contains("Oracle WebLogic Monitoring Exporter"));
 
