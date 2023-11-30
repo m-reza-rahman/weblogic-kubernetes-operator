@@ -131,7 +131,9 @@ class ItMiiDomainUpgradeToSecureMode {
   String adminIngressHost;
   String adminAppIngressHost;
   String clusterIngressHost;
-  private final String wlsConsoleText = "WebLogic Administration Console";
+  private final String wlsConsoleText = "WebLogic Administration Console";  
+  private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"
+      + "/serverRuntimes/adminserver/applicationRuntimes";
 
   /**
    * Install Operator.
@@ -434,6 +436,8 @@ class ItMiiDomainUpgradeToSecureMode {
         "/sample-war/index.jsp", adminServerName, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
 
@@ -444,7 +448,9 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/sample-war/index.jsp", adminServerName, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, ingressIP);    
+        "/console/login/LoginForm.jsp", "This document you requested has moved", ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", ingressIP);
     shutdownDomain(domainUid, domainNamespace);    
