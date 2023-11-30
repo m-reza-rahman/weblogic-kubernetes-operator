@@ -681,7 +681,7 @@ class ItMiiDomainUpgradeToSecureMode {
     V1IngressRule adminAppIngressRule = new V1IngressRule()
         .host(adminAppIngressHost)
         .http(new V1HTTPIngressRuleValue()
-            .paths(Collections.singletonList(adminIngressPath)));    
+            .paths(Collections.singletonList(adminAppIngressPath)));    
     V1IngressRule clusterIngressRule = new V1IngressRule()
         .host(clusterIngressHost)
         .http(new V1HTTPIngressRuleValue()
