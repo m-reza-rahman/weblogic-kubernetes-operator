@@ -1174,7 +1174,7 @@ public class MonitoringUtils {
     testUntil(withLongRetryPolicy,
         callTestWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 50),
         logger,
-        "Verify NGINX can access the monitoring exporter metrics \n"
+        "Verify LB can access the monitoring exporter metrics \n"
             + "from all managed servers in the domain via http");
   }
 
