@@ -20,19 +20,18 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.builders.WatchBuilder;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.helpers.PodHelper;
-import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.watcher.WatchListener;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -198,20 +197,20 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     
     @Override
     Step createReadAsyncStep(String name, String namespace, String domainUid, ResponseStep<V1Pod> responseStep) {
-      return new CallBuilder().readPodAsync(name, namespace, domainUid, responseStep);
+      return RequestBuilder.POD.get(namespace, name, responseStep);
     }
 
     protected ResponseStep<V1Pod> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(getNext()) {
         @Override
-        public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+        public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
 
-          DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+          DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
           String serverName = (String)packet.get(SERVER_NAME);
           String resource = initialResource == null ? resourceName : getMetadata(initialResource).getName();
           if (callResponse != null) {
             if (info != null) {
-              Optional.ofNullable(callResponse.getResult()).ifPresent(result ->
+              Optional.ofNullable(callResponse.getObject()).ifPresent(result ->
                   info.setServerPodFromEvent(getPodLabel(result), result));
               if (onReadNotFoundForCachedResource(getServerPod(info, serverName), isNotFoundOnRead(callResponse))) {
                 LOGGER.fine(EXECUTE_MAKE_RIGHT_DOMAIN, serverName, callback.getRecheckCount());
@@ -220,8 +219,8 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
               }
             }
 
-            if (isReady(callResponse.getResult()) || callback.didResumeFiber()) {
-              callback.proceedFromWait(callResponse.getResult());
+            if (isReady(callResponse.getObject()) || callback.didResumeFiber()) {
+              callback.proceedFromWait(callResponse.getObject());
               return doEnd(packet);
             }
           }
@@ -253,8 +252,8 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
           return Optional.ofNullable(serverName).map(info::getServerPod).orElse(null);
         }
 
-        private boolean isNotFoundOnRead(CallResponse<?> callResponse) {
-          return callResponse.getResult() == null;
+        private boolean isNotFoundOnRead(KubernetesApiResponse<?> callResponse) {
+          return callResponse.getObject() == null;
         }
 
         private boolean shouldWait() {
@@ -369,11 +368,11 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
-        DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
-        if (callResponse.getResult() == null || callback.didResumeFiber()) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        if (callResponse.getObject() == null || callback.didResumeFiber()) {
           Optional.ofNullable(info).ifPresent(i -> i.deleteServerPodFromEvent(packet.getValue(SERVER_NAME), null));
-          callback.proceedFromWait(callResponse.getResult());
+          callback.proceedFromWait(callResponse.getObject());
           return doEnd(packet);
         } else {
           return doDelay(createReadAndIfReadyCheckStep(callback), packet,
@@ -419,7 +418,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     @Override
     Step createReadAsyncStep(String name, String namespace, String domainUid,
                              ResponseStep<DomainResource> responseStep) {
-      return new CallBuilder().readDomainAsync(name, namespace, responseStep);
+      return RequestBuilder.DOMAIN.get(namespace, name, responseStep);
     }
 
     @Override
@@ -440,11 +439,11 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-        DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
-        if (isServerShutdown(info) || isReady(callResponse.getResult()) || callback.didResumeFiber()) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        if (isServerShutdown(info) || isReady(callResponse.getObject()) || callback.didResumeFiber()) {
           Optional.ofNullable(info).ifPresent(i -> i.updateLastKnownServerStatus(serverName, SHUTDOWN_STATE));
-          callback.proceedFromWait(callResponse.getResult());
+          callback.proceedFromWait(callResponse.getObject());
           return doEnd(packet);
         } else {
           return doDelay(createReadAndIfReadyCheckStep(callback), packet,

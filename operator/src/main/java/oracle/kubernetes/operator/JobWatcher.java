@@ -31,17 +31,17 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.builders.WatchBuilder;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
-import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.watcher.WatchListener;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -293,13 +293,13 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
     @Override
     Step createReadAsyncStep(String name, String namespace, String domainUid, ResponseStep<V1Job> responseStep) {
       return setIntrospectorTerminationState(namespace, name,
-              new CallBuilder().readJobAsync(name, namespace, domainUid, responseStep));
+          RequestBuilder.JOB.get(namespace, name, responseStep));
     }
 
     private Step setIntrospectorTerminationState(String namespace, String jobName, Step next) {
-      return new CallBuilder()
-              .withLabelSelectors(LabelConstants.JOBNAME_LABEL)
-              .listPodAsync(namespace, new TerminationStateResponseStep(jobName, next));
+      return RequestBuilder.POD.list(namespace,
+          new ListOptions().labelSelector(LabelConstants.JOBNAME_LABEL),
+          new TerminationStateResponseStep(jobName, next));
     }
 
     private static class TerminationStateResponseStep extends ResponseStep<V1PodList> {
@@ -311,9 +311,9 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1PodList> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
         final IntrospectorTerminationState terminationState = new IntrospectorTerminationState(jobName, packet);
-        final V1Pod jobPod = getJobPod(callResponse.getResult());
+        final V1Pod jobPod = getJobPod(callResponse.getObject());
 
         if (jobPod == null) {
           terminationState.remove(packet);
@@ -397,15 +397,15 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
     protected DefaultResponseStep<V1Job> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(null) {
         @Override
-        public NextAction onSuccess(Packet packet, CallResponse<V1Job> callResponse) {
+        public Void onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
 
           // The introspect container has exited, setting this so that the job will be considered finished
           // in the WaitDomainIntrospectorJobReadyStep and proceed reading the job pod log and process the result.
 
-          if (isReady(callResponse.getResult()) || callback.didResumeFiber()
+          if (isReady(callResponse.getObject()) || callback.didResumeFiber()
                 || JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER
                   .equals(packet.get(JOB_POD_INTROSPECT_CONTAINER_TERMINATED))) {
-            callback.proceedFromWait(callResponse.getResult());
+            callback.proceedFromWait(callResponse.getObject());
             return doNext(packet);
           }
           return doDelay(createReadAndIfReadyCheckStep(callback), packet,

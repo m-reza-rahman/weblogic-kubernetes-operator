@@ -6,7 +6,6 @@ package oracle.kubernetes.operator.makeright;
 import javax.annotation.Nonnull;
 
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -26,7 +25,7 @@ public class DomainPresenceStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     final Step step = getNextSteps(packet);
     return doNext(step, packet);
   }

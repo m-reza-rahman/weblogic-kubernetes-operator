@@ -1,4 +1,4 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
@@ -14,19 +14,18 @@ import javax.annotation.Nullable;
 
 import io.kubernetes.client.openapi.models.AdmissionregistrationV1ServiceReference;
 import io.kubernetes.client.openapi.models.AdmissionregistrationV1WebhookClientConfig;
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1RuleWithOperations;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhook;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.utils.Certificates;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.apache.commons.codec.binary.Base64;
@@ -79,7 +78,7 @@ public class WebhookHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(createContext().verifyValidatingWebhookConfiguration(getNext()), packet);
     }
 
@@ -165,8 +164,7 @@ public class WebhookHelper {
     }
 
     private Step verifyValidatingWebhookConfiguration(Step next) {
-      return new CallBuilder().readValidatingWebhookConfigurationAsync(
-          getName(model), createReadResponseStep(next));
+      return RequestBuilder.VWC.get(getName(model), createReadResponseStep(next));
     }
 
     @Nullable
@@ -192,8 +190,8 @@ public class WebhookHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        V1ValidatingWebhookConfiguration existingWebhookConfig = callResponse.getResult();
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
+        V1ValidatingWebhookConfiguration existingWebhookConfig = callResponse.getObject();
         if (existingWebhookConfig == null) {
           return doNext(createValidatingWebhookConfiguration(getNext()), packet);
         } else if (shouldUpdate(existingWebhookConfig)) {
@@ -232,8 +230,7 @@ public class WebhookHelper {
       }
 
       private Step createValidatingWebhookConfiguration(Step next) {
-        return new CallBuilder().createValidatingWebhookConfigurationAsync(
-            model, createCreateResponseStep(next));
+        return RequestBuilder.VWC.create(model, createCreateResponseStep(next));
       }
 
       private ResponseStep<V1ValidatingWebhookConfiguration> createCreateResponseStep(Step next) {
@@ -241,8 +238,7 @@ public class WebhookHelper {
       }
 
       private Step replaceValidatingWebhookConfiguration(Step next, V1ValidatingWebhookConfiguration existing) {
-        return new CallBuilder().replaceValidatingWebhookConfigurationAsync(
-            VALIDATING_WEBHOOK_NAME, updateModel(existing), createReplaceResponseStep(next));
+        return RequestBuilder.VWC.update(updateModel(existing), createReplaceResponseStep(next));
       }
 
       private V1ValidatingWebhookConfiguration updateModel(V1ValidatingWebhookConfiguration existing) {
@@ -251,17 +247,17 @@ public class WebhookHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        return callResponse.getStatusCode() == HTTP_NOT_FOUND
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
+        return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : super.onFailure(packet, callResponse);
       }
 
       @Override
-      protected NextAction onFailureNoRetry(Packet packet,
-                                            CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
+      protected Void onFailureNoRetry(Packet packet,
+                                            KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
         LOGGER.info(MessageKeys.READ_VALIDATING_WEBHOOK_CONFIGURATION_FAILED,
-            VALIDATING_WEBHOOK_NAME, callResponse.getE().getResponseBody());
+            VALIDATING_WEBHOOK_NAME, callResponse.getStatus());
         return super.onFailureNoRetry(packet, callResponse);
       }
     }
@@ -272,16 +268,16 @@ public class WebhookHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        LOGGER.info(VALIDATING_WEBHOOK_CONFIGURATION_CREATED, getName(callResponse.getResult()));
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
+        LOGGER.info(VALIDATING_WEBHOOK_CONFIGURATION_CREATED, getName(callResponse.getObject()));
         return doNext(packet);
       }
 
       @Override
-      protected NextAction onFailureNoRetry(Packet packet,
-                                            CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
+      protected Void onFailureNoRetry(Packet packet,
+                                            KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
         LOGGER.info(MessageKeys.CREATE_VALIDATING_WEBHOOK_CONFIGURATION_FAILED,
-            VALIDATING_WEBHOOK_NAME, callResponse.getE().getResponseBody());
+            VALIDATING_WEBHOOK_NAME, callResponse.getStatus());
         return super.onFailureNoRetry(packet, callResponse);
       }
     }
@@ -296,8 +292,8 @@ public class WebhookHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        if (UnrecoverableErrorBuilder.isAsyncCallNotFoundFailure(callResponse)) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
+        if (isUnrecoverable(callResponse)) {
           return super.onFailure(getConflictStep(), packet, callResponse);
         } else {
           return super.onFailure(packet, callResponse);
@@ -305,16 +301,16 @@ public class WebhookHelper {
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        LOGGER.info(MessageKeys.VALIDATING_WEBHOOK_CONFIGURATION_REPLACED, getName(callResponse.getResult()));
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
+        LOGGER.info(MessageKeys.VALIDATING_WEBHOOK_CONFIGURATION_REPLACED, getName(callResponse.getObject()));
         return doNext(packet);
       }
 
       @Override
-      protected NextAction onFailureNoRetry(Packet packet,
-                                            CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
+      protected Void onFailureNoRetry(Packet packet,
+                                            KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
         LOGGER.info(MessageKeys.REPLACE_VALIDATING_WEBHOOK_CONFIGURATION_FAILED,
-            VALIDATING_WEBHOOK_NAME, callResponse.getE().getResponseBody());
+            VALIDATING_WEBHOOK_NAME, callResponse.getStatus());
         return super.onFailureNoRetry(packet, callResponse);
       }
     }
@@ -325,8 +321,8 @@ public class WebhookHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
+        if (isUnrecoverable(callResponse)) {
           return onFailureNoRetry(packet, callResponse);
         } else {
           return super.onFailure(getConflictStep(), packet, callResponse);
@@ -334,8 +330,8 @@ public class WebhookHelper {
       }
 
       @Override
-      protected NextAction onFailureNoRetry(Packet packet,
-                                            CallResponse<V1ValidatingWebhookConfiguration> callResponse) {
+      protected Void onFailureNoRetry(Packet packet,
+                                            KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
         return isNotAuthorizedOrForbidden(callResponse)
             ? doNext(packet) : super.onFailureNoRetry(packet, callResponse);
       }
@@ -348,15 +344,12 @@ public class WebhookHelper {
 
   private static class DeleteValidatingWebhookConfigurationStep extends Step {
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(createActionStep(), packet);
     }
 
     private Step createActionStep() {
-      V1DeleteOptions deleteOptions = new V1DeleteOptions();
-      return new CallBuilder()
-          .deleteValidatingWebhookConfigurationAsync(VALIDATING_WEBHOOK_NAME, deleteOptions,
-              new DefaultResponseStep<>(getNext()));
+      return RequestBuilder.VWC.delete(VALIDATING_WEBHOOK_NAME, new DefaultResponseStep<>(getNext()));
     }
   }
 }

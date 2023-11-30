@@ -9,6 +9,7 @@ public interface ProcessingConstants {
   String MAIN_COMPONENT_NAME = "main";
   String DELEGATE_COMPONENT_NAME = "delegate";
   String DOMAIN_COMPONENT_NAME = "domain";
+  String DOMAIN_PROCESSOR = "domainProcessor";
   String PODWATCHER_COMPONENT_NAME = "podWatcher";
   String JOBWATCHER_COMPONENT_NAME = "jobWatcher";
   String PVCWATCHER_COMPONENT_NAME = "pvcWatcher";
@@ -26,6 +27,7 @@ public interface ProcessingConstants {
   String SERVER_STATE_MAP = "serverStateMap";
   String SERVER_HEALTH_MAP = "serverHealthMap";
 
+  String DOMAIN_PRESENCE_INFO = "dpi";
   String DOMAIN_TOPOLOGY = "domainTopology";
   String JOB_POD = "jobPod";
   String JOB_POD_INTROSPECT_CONTAINER_TERMINATED = "JOB_POD_CONTAINER_TERMINATED";

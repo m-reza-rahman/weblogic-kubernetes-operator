@@ -1,4 +1,4 @@
-// Copyright (c) 2017, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.steps;
@@ -15,7 +15,6 @@ import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.RollingHelper;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -27,7 +26,7 @@ public class ManagedServerUpAfterStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     if (getServersToRoll(packet).isEmpty()) {
       return doNext(packet);
     } else if (MakeRightDomainOperation.isInspectionRequired(packet)) {
@@ -53,7 +52,8 @@ public class ManagedServerUpAfterStep extends Step {
   }
 
   private String getDomainUid(Packet packet) {
-    return packet.getSpi(DomainPresenceInfo.class).getDomainUid();
+    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+    return info.getDomainUid();
   }
 
   private Set<String> getRollingServerNames(Packet packet) {

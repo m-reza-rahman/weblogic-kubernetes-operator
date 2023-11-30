@@ -15,7 +15,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
 import okhttp3.Call;
-import oracle.kubernetes.operator.helpers.ClientPool;
+import oracle.kubernetes.operator.calls.Client;
 
 /**
  * A wrapper of the Kubernetes Watch class that includes management of clients.
@@ -24,12 +24,11 @@ public class WatchImpl<T> implements Watchable<T> {
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"}) // non-final to allow unit testing
   private static WatchFactory<?> factory = WatchImpl::createWatch;
 
-  private ApiClient client;
   private final Watchable<T> impl;
 
   @SuppressWarnings("unchecked")
   WatchImpl(CallParams callParams, Class<?> responseBodyType, BiFunction<ApiClient, CallParams, Call> function) {
-    client = ClientPool.getInstance().take();
+    ApiClient client = Client.getInstance();
     impl = (Watchable<T>) factory.createWatch(client, function.apply(client, callParams), getType(responseBodyType));
   }
 
@@ -63,9 +62,6 @@ public class WatchImpl<T> implements Watchable<T> {
   @Override
   public void close() throws IOException {
     impl.close();
-    if (client != null) {
-      ClientPool.getInstance().recycle(client);
-    }
   }
 
   @Override
@@ -81,11 +77,6 @@ public class WatchImpl<T> implements Watchable<T> {
 
   @Override
   public Watch.Response<T> next() {
-    try {
-      return impl.next();
-    } catch (Exception e) {
-      client = null;
-      throw e;
-    }
+    return impl.next();
   }
 }

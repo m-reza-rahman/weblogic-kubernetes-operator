@@ -97,7 +97,8 @@ class DomainResourcesValidation {
 
       @Override
       public void completeProcessing(Packet packet) {
-        DomainProcessor dp = Optional.ofNullable(packet.getSpi(DomainProcessor.class)).orElse(processor);
+        DomainProcessor dp = Optional.ofNullable((DomainProcessor)
+            packet.get(ProcessingConstants.DOMAIN_PROCESSOR)).orElse(processor);
         getStrandedDomainPresenceInfos(dp).forEach(info -> removeStrandedDomainPresenceInfo(dp, info));
         Optional.ofNullable(activeClusterResources).ifPresent(c -> getActiveDomainPresenceInfos()
             .forEach(info -> adjustClusterResources(c, info)));

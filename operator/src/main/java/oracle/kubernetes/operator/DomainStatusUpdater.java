@@ -20,26 +20,23 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.calls.FailureStatusSource;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.helpers.LastKnownStatus;
 import oracle.kubernetes.operator.helpers.PodHelper;
-import oracle.kubernetes.operator.helpers.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
@@ -48,7 +45,6 @@ import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.OperatorUtils;
@@ -238,16 +234,10 @@ public class DomainStatusUpdater {
    *
    * @param callResponse the response from an unrecoverable call
    */
-  public static Step createKubernetesFailureSteps(CallResponse<?> callResponse) {
-    FailureStatusSource failure = UnrecoverableErrorBuilder.fromFailedCall(callResponse);
+  public static Step createKubernetesFailureSteps(KubernetesApiResponse<?> callResponse) {
+    LOGGER.severe(MessageKeys.CALL_FAILED, callResponse.getStatus());
 
-    LOGGER.severe(MessageKeys.CALL_FAILED, failure.getMessage(), failure.getReason());
-    ApiException apiException = callResponse.getE();
-    if (apiException != null) {
-      LOGGER.fine(MessageKeys.EXCEPTION, apiException);
-    }
-
-    return new FailureStep(KUBERNETES, failure.getMessage());
+    return new FailureStep(KUBERNETES, callResponse.getStatus().toString());
   }
 
   /**
@@ -356,7 +346,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(createContext(packet).createUpdateSteps(getNext()), packet);
     }
 
@@ -378,16 +368,17 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (callResponse.getResult() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      if (callResponse.getObject() != null) {
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.setDomain(callResponse.getObject());
       }
       return doNext(createClusterResourceStatusUpdaterStep(getNext()), packet);
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      if (isUnrecoverable(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
         return onFailure(createRetry(context), packet, callResponse);
@@ -399,22 +390,23 @@ public class DomainStatusUpdater {
     }
 
     private Step createDomainRefreshStep(DomainStatusUpdaterContext context) {
-      return new CallBuilder().readDomainAsync(context.getDomainName(), context.getNamespace(), new DomainUpdateStep());
+      return RequestBuilder.DOMAIN.get(context.getNamespace(), context.getDomainName(), new DomainUpdateStep());
     }
   }
 
   static class DomainUpdateStep extends ResponseStep<DomainResource> {
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (callResponse.getResult() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      if (callResponse.getObject() != null) {
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.setDomain(callResponse.getObject());
       }
       return doNext(packet);
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<DomainResource> callResponse) {
-      return callResponse.getStatusCode() == HTTP_NOT_FOUND
+    public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
           ? doNext(null, packet)
           : super.onFailure(packet, callResponse);
     }
@@ -527,10 +519,7 @@ public class DomainStatusUpdater {
           .withSpec(null)
           .withStatus(status);
 
-      return new CallBuilder().replaceDomainStatusAsync(
-          getDomainName(),
-          getNamespace(),
-          newDomain,
+      return RequestBuilder.DOMAIN.updateStatus(newDomain, DomainResource::getStatus,
           domainStatusUpdaterStep.createResponseStep(this));
     }
 
@@ -645,7 +634,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (isDomainNotPresent(packet)) {
         return doNext(packet);
       }
@@ -657,14 +646,14 @@ public class DomainStatusUpdater {
     }
 
     private boolean shouldSkipDomainStatusUpdate(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return info.getServerStartupInfo() == null
           && info.clusterStatusInitialized()
           && !endOfProcessing;
     }
 
     private boolean isDomainNotPresent(Packet packet) {
-      DomainPresenceInfo info = packet.getSpi(DomainPresenceInfo.class);
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return info == null || info.getDomain() == null;
     }
 
@@ -702,7 +691,8 @@ public class DomainStatusUpdater {
           setStatusDetails(status);
         }
         if (getDomain() != null) {
-          updateStatusDetails(status, packet.getSpi(DomainPresenceInfo.class));
+          DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+          updateStatusDetails(status, info);
           setStatusConditions(status);
         }
       }

@@ -17,11 +17,23 @@ import oracle.kubernetes.operator.LabelConstants;
 
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
+import static oracle.kubernetes.utils.OperatorUtils.isNullOrEmpty;
 
 public class KubernetesUtils {
 
   private KubernetesUtils() {
     // no-op
+  }
+
+  /**
+   * Returns true if the two maps of values match. A null map is considered to match an empty map.
+   *
+   * @param first  the first map to compare
+   * @param second the second map to compare
+   * @return true if the maps match.
+   */
+  static <K, V> boolean mapEquals(Map<K, V> first, Map<K, V> second) {
+    return Objects.equals(first, second) || (isNullOrEmpty(first) && isNullOrEmpty(second));
   }
 
   /**

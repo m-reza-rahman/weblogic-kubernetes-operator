@@ -10,12 +10,15 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.apis.VersionApi;
 import io.kubernetes.client.openapi.models.V1ResourceRule;
 import io.kubernetes.client.openapi.models.V1SelfSubjectRulesReview;
 import io.kubernetes.client.openapi.models.V1SubjectRulesReviewStatus;
 import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.OperatorMain;
+import oracle.kubernetes.operator.calls.Client;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Operation;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Resource;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -205,14 +208,18 @@ public final class HealthCheckHelper {
     LOGGER.fine(MessageKeys.VERIFY_K8S_MIN_VERSION);
 
     try {
-      CallBuilder cb = new CallBuilder();
-      return createAndValidateKubernetesVersion(
-          cb.executeSynchronousCallWithRetry(cb::readVersionCode,
-          TuningParameters.getInstance().getInitializationRetryDelaySeconds()));
+      try {
+        while (true) {
+          VersionApi client = new VersionApi(Client.getInstance());
+          return createAndValidateKubernetesVersion(client.getCode());
+        }
+      } catch (ApiException e) {
+        Thread.sleep(TuningParameters.getInstance().getInitializationRetryDelaySeconds() * 1000L);
+      }
     } catch (Throwable t) {
       LOGGER.warning(MessageKeys.K8S_VERSION_CHECK_FAILURE, t);
-      return KubernetesVersion.UNREADABLE;
     }
+    return KubernetesVersion.UNREADABLE;
   }
 
   private static KubernetesVersion createAndValidateKubernetesVersion(VersionInfo info) {

@@ -18,17 +18,17 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ShutdownType;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.helpers.CallBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.SecretHelper;
-import oracle.kubernetes.operator.http.client.HttpAsyncRequestStep;
+import oracle.kubernetes.operator.http.client.HttpRequestStep;
 import oracle.kubernetes.operator.http.client.HttpResponseStep;
 import oracle.kubernetes.operator.http.rest.Scan;
 import oracle.kubernetes.operator.http.rest.ScanCache;
@@ -39,7 +39,6 @@ import oracle.kubernetes.operator.wlsconfig.PortDetails;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -76,7 +75,7 @@ public class ShutdownManagedServerStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     LOGGER.fine(MessageKeys.BEGIN_SERVER_SHUTDOWN_REST, serverName);
     V1Service service = getDomainPresenceInfo(packet).getServerService(serverName);
 
@@ -294,9 +293,9 @@ public class ShutdownManagedServerStep extends Step {
       return domainConfig;
     }
 
-    HttpAsyncRequestStep createRequestStep(
+    HttpRequestStep createRequestStep(
         ShutdownManagedServerResponseStep shutdownManagedServerResponseStep) {
-      HttpAsyncRequestStep requestStep = HttpAsyncRequestStep.create(createRequest(),
+      HttpRequestStep requestStep = HttpRequestStep.create(createRequest(),
           shutdownManagedServerResponseStep).withTimeoutSeconds(getRequestTimeoutSeconds());
       shutdownManagedServerResponseStep.requestStep = requestStep;
       return requestStep;
@@ -315,25 +314,25 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       getDomainPresenceInfo(packet).setServerPodBeingDeleted(PodHelper.getPodServerName(pod), true);
       ShutdownManagedServerProcessing processing = new ShutdownManagedServerProcessing(packet, service, pod);
       ShutdownManagedServerResponseStep shutdownManagedServerResponseStep =
           new ShutdownManagedServerResponseStep(PodHelper.getPodServerName(pod), getNext());
-      HttpAsyncRequestStep requestStep = processing.createRequestStep(shutdownManagedServerResponseStep);
+      HttpRequestStep requestStep = processing.createRequestStep(shutdownManagedServerResponseStep);
       return doNext(requestStep, packet);
     }
 
   }
 
   private static DomainPresenceInfo getDomainPresenceInfo(Packet packet) {
-    return packet.getSpi(DomainPresenceInfo.class);
+    return (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
   }
 
   static final class ShutdownManagedServerResponseStep extends HttpResponseStep {
     private static final String SHUTDOWN_REQUEST_RETRY_COUNT = "shutdownRequestRetryCount";
     private final String serverName;
-    private HttpAsyncRequestStep requestStep;
+    private HttpRequestStep requestStep;
 
     ShutdownManagedServerResponseStep(String serverName, Step next) {
       super(next);
@@ -341,15 +340,15 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, HttpResponse<String> response) {
+    public Void onSuccess(Packet packet, HttpResponse<String> response) {
       LOGGER.fine(MessageKeys.SERVER_SHUTDOWN_REST_SUCCESS, serverName);
       removeShutdownRequestRetryCount(packet);
-      PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
+      PodAwaiterStepFactory pw = (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
       return doNext(pw.waitForServerShutdown(serverName, getDomainPresenceInfo(packet).getDomain(), getNext()), packet);
     }
 
     @Override
-    public NextAction onFailure(Packet packet, HttpResponse<String> response) {
+    public Void onFailure(Packet packet, HttpResponse<String> response) {
       if (getThrowableResponse(packet) != null) {
         Throwable throwable = getThrowableResponse(packet);
         if (shouldRetry(packet)) {
@@ -371,7 +370,7 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     private Step createDomainRefreshStep(String domainName, String namespace) {
-      return new CallBuilder().readDomainAsync(domainName, namespace, new DomainUpdateStep());
+      return RequestBuilder.DOMAIN.get(namespace, domainName, new DomainUpdateStep());
     }
 
     private boolean shouldRetry(Packet packet) {
@@ -400,16 +399,17 @@ public class ShutdownManagedServerStep extends Step {
       packet.remove(SHUTDOWN_REQUEST_RETRY_COUNT);
     }
 
-    void setHttpAsyncRequestStep(HttpAsyncRequestStep requestStep) {
+    void setHttpAsyncRequestStep(HttpRequestStep requestStep) {
       this.requestStep = requestStep;
     }
   }
 
   static class DomainUpdateStep extends DefaultResponseStep<DomainResource> {
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<DomainResource> callResponse) {
-      if (callResponse.getResult() != null) {
-        packet.getSpi(DomainPresenceInfo.class).setDomain(callResponse.getResult());
+    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      if (callResponse.getObject() != null) {
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        info.setDomain(callResponse.getObject());
       }
       return doNext(packet);
     }

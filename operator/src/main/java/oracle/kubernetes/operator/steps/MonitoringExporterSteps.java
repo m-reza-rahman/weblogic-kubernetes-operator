@@ -20,13 +20,13 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
 import oracle.kubernetes.operator.KubernetesConstants;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.SecretHelper;
 import oracle.kubernetes.operator.http.client.HttpResponseStep;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.wlsconfig.PortDetails;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -55,7 +55,7 @@ public class MonitoringExporterSteps {
   public static Step updateExporterSidecars() {
     return new Step() {
       @Override
-      public NextAction apply(Packet packet) {
+      public Void apply(Packet packet) {
         return doNext(updateExportersWithConfiguration(packet), packet);
       }
 
@@ -142,7 +142,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (PodHelper.isDeleting(getServerPod(packet))) {
         return doNext(packet);
       } else if (PodHelper.isReady(getServerPod(packet))) {
@@ -168,7 +168,7 @@ public class MonitoringExporterSteps {
     // if not match, response should run update step
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       ExporterRequestProcessing processing = new ExporterRequestProcessing(packet);
 
       return doNext(createRequestStep(processing.createConfigurationQueryRequest(),
@@ -183,7 +183,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, HttpResponse<String> response) {
+    public Void onSuccess(Packet packet, HttpResponse<String> response) {
       if (hasUpToDateConfiguration(packet, response)) {
         return doNext(packet);
       } else {
@@ -210,7 +210,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, HttpResponse<String> response) {
+    public Void onFailure(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
   }
@@ -228,7 +228,7 @@ public class MonitoringExporterSteps {
   private static class ConfigurationUpdateStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       ExporterRequestProcessing processing = new ExporterRequestProcessing(packet);
 
       return doNext(createRequestStep(processing.createConfigurationUpdateRequest(packet),
@@ -241,7 +241,7 @@ public class MonitoringExporterSteps {
 
     ExporterRequestProcessing(Packet packet) {
       super(packet, getServerService(packet), getServerPod(packet));
-      info = packet.getSpi(DomainPresenceInfo.class);
+      info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     }
 
     private static V1Service getServerService(Packet packet) {
@@ -310,12 +310,12 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, HttpResponse<String> response) {
+    public Void onSuccess(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
 
     @Override
-    public NextAction onFailure(Packet packet, HttpResponse<String> response) {
+    public Void onFailure(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
   }
@@ -348,7 +348,7 @@ public class MonitoringExporterSteps {
 
     @Override
     @SuppressWarnings("try")
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (serverNames == null) {
         return doNext(packet);
       } else {

@@ -18,10 +18,10 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo.ServerShutdownInfo;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -40,7 +40,7 @@ public class ServerDownIteratorStep extends Step {
   }
 
   @Override
-  public NextAction apply(Packet packet) {
+  public Void apply(Packet packet) {
     return doNext(new IteratorContext(packet, serverShutdownInfos).createNextSteps(), packet);
   }
 
@@ -52,7 +52,7 @@ public class ServerDownIteratorStep extends Step {
     public IteratorContext(Packet packet, List<ServerShutdownInfo> serverShutdownInfos) {
       this.packet = packet;
       this.serverShutdownInfos = Collections.unmodifiableList(serverShutdownInfos);
-      this.info = packet.getSpi(DomainPresenceInfo.class);
+      this.info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     }
 
     private Step createNextSteps() {
@@ -131,7 +131,7 @@ public class ServerDownIteratorStep extends Step {
 
     @Nullable
     private Step createWaitSteps(ServerShutdownInfo ssi) {
-      return Optional.ofNullable(packet.getSpi(PodAwaiterStepFactory.class))
+      return Optional.ofNullable((PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME))
           .map(p -> waitForDelete(ssi, p)).orElse(null);
     }
 
@@ -188,7 +188,7 @@ public class ServerDownIteratorStep extends Step {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (shutdownDetails.isEmpty()) {
         return doNext(getNext(), packet);
       } else {
@@ -211,7 +211,7 @@ public class ServerDownIteratorStep extends Step {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
 
       if (serversToShutdown.isEmpty()) {
         return doNext(packet);

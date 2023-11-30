@@ -14,16 +14,16 @@ import io.kubernetes.client.openapi.models.V1LabelSelector;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetSpec;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -67,7 +67,7 @@ public class PodDisruptionBudgetHelper {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(createContext(packet).verifyPodDisruptionBudget(getNext()), packet);
     }
 
@@ -81,7 +81,7 @@ public class PodDisruptionBudgetHelper {
     private final String clusterName;
 
     PodDisruptionBudgetContext(Step conflictStep, Packet packet) {
-      super(packet.getSpi(DomainPresenceInfo.class));
+      super((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
       this.conflictStep = conflictStep;
       this.clusterName = (String) packet.get(ProcessingConstants.CLUSTER_NAME);
     }
@@ -99,22 +99,22 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
-        if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+        if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
           return onFailure(getConflictStep(), packet, callResponse);
         }
       }
 
-      private NextAction updateDomainStatus(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         logPodDisruptionBudgetCreated(messageKey);
-        addPodDisruptionBudgetToRecord(callResponse.getResult());
+        addPodDisruptionBudgetToRecord(callResponse.getObject());
         return doNext(packet);
       }
     }
@@ -125,19 +125,19 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
-        return callResponse.getStatusCode() == HTTP_NOT_FOUND
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+        return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
-        V1PodDisruptionBudget podDisruptionBudget = callResponse.getResult();
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+        V1PodDisruptionBudget podDisruptionBudget = callResponse.getObject();
         if (podDisruptionBudget == null) {
           removePodDisruptionBudgetFromRecord();
         } else {
-          addPodDisruptionBudgetToRecord(callResponse.getResult());
+          addPodDisruptionBudgetToRecord(callResponse.getObject());
         }
         return doNext(packet);
       }
@@ -149,14 +149,14 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public NextAction onFailure(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
-        return callResponse.getStatusCode() == HTTP_NOT_FOUND
+      public Void onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+        return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public NextAction onSuccess(Packet packet, CallResponse<V1PodDisruptionBudget> callResponse) {
+      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         logPodDisruptionBudgetPatched();
         return doNext(packet);
       }
@@ -164,10 +164,11 @@ public class PodDisruptionBudgetHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public NextAction apply(Packet packet) {
+      public Void apply(Packet packet) {
         return doNext(
-                new CallBuilder().readPodDisruptionBudgetAsync(getPDBName(), info.getNamespace(),
-                        new PodDisruptionBudgetContext.ReadResponseStep(conflictStep)), packet);
+            RequestBuilder.PDB.get(info.getNamespace(), getPDBName(),
+                new PodDisruptionBudgetContext.ReadResponseStep(conflictStep)),
+            packet);
       }
 
       @Override
@@ -209,12 +210,10 @@ public class PodDisruptionBudgetHelper {
     }
 
     private Step patchPodDisruptionBudgetStep(Step next) {
-      return new CallBuilder()
-                      .patchPodDisruptionBudgetAsync(
-                              getPDBName(),
-                              info.getNamespace(),
-                              createPodDisruptionBudgetPatch(clusterName, info),
-                              new PatchResponseStep(next));
+      return RequestBuilder.PDB.patch(
+          info.getNamespace(), getPDBName(),
+          V1Patch.PATCH_FORMAT_JSON_PATCH,
+          createPodDisruptionBudgetPatch(clusterName, info), new PatchResponseStep(next));
     }
 
     private String getPDBName() {
@@ -248,12 +247,8 @@ public class PodDisruptionBudgetHelper {
     }
 
     private Step createPodDisruptionBudget(String messageKey, Step next) {
-      return new CallBuilder()
-              .createPodDisruptionBudgetAsync(
-                      info.getNamespace(),
-                      createModel(),
-                      new PodDisruptionBudgetHelper.PodDisruptionBudgetContext
-                              .CreateResponseStep(messageKey, next));
+      return RequestBuilder.PDB.create(
+          createModel(), new PodDisruptionBudgetHelper.PodDisruptionBudgetContext.CreateResponseStep(messageKey, next));
     }
 
     public V1PodDisruptionBudget createModel() {
