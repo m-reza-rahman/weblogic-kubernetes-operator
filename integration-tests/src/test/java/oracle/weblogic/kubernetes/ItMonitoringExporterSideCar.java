@@ -4,9 +4,7 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,7 +16,6 @@ import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.MonitoringExporterConfiguration;
 import oracle.weblogic.domain.MonitoringExporterSpecification;
-import oracle.weblogic.kubernetes.actions.ActionConstants;
 import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
 import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
@@ -27,7 +24,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
-import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -67,6 +63,7 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.buildMonitoringEx
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
+import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyGrafana;
@@ -83,7 +80,6 @@ import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getOrigModel
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -216,22 +212,9 @@ class ItMonitoringExporterSideCar {
       assertDoesNotThrow(() -> createPvAndPvc(grafanaReleaseName, monitoringNS, labels, className));
     }
     cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
 
-    if (OKE_CLUSTER_PRIVATEIP) {
-      // install Traefik ingress controller for all test cases using Traefik
-      installTraefikIngressController();
-
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
-      hostPortPrometheus = ingressIP;
-    } else {
-      hostPortPrometheus = host + ":" + nodeportPrometheus;
-    }
+    // install Traefik ingress controller for all test cases using Traefik
+    installTraefikIngressController();
   }
 
   /**
@@ -478,12 +461,21 @@ class ItMonitoringExporterSideCar {
           prometheusRegexValue,
           promHelmValuesFileDir);
       assertNotNull(promHelmParams, " Failed to install prometheus");
-      String command1 = KUBERNETES_CLI + " get svc -n " + monitoringNS;
-      assertDoesNotThrow(() -> ExecCommand.exec(command1,true));
-      String command2 = KUBERNETES_CLI + " describe svc -n " + monitoringNS;
-      assertDoesNotThrow(() -> ExecCommand.exec(command2, true));
       if (!OKE_CLUSTER_PRIVATEIP) {
         nodeportPrometheus = promHelmParams.getNodePortServer();
+      }
+
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      String ingressServiceName = traefikHelmParams.getReleaseName();
+      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
+      if (OKE_CLUSTER_PRIVATEIP) {
+        hostPortPrometheus = ingressIP;
+      } else {
+        hostPortPrometheus = host + ":" + nodeportPrometheus;
       }
       prometheusDomainRegexValue = prometheusRegexValue;
     }
@@ -512,17 +504,6 @@ class ItMonitoringExporterSideCar {
               grafanaHelmValuesFileDir,
               grafanaChartVersion);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-      String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
-      if (OKE_CLUSTER_PRIVATEIP) {
-        hostPortGrafana = "http://" + ingressIP + "/" + "grafana";
-      }
-      if (OKD) {
-        hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
-      }
     }
     logger.info("Grafana is running");
   }
@@ -580,58 +561,10 @@ class ItMonitoringExporterSideCar {
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
 
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    createTraefikIngressRoutingRules(monitoringNS);
-  }
-
-  private static void createTraefikIngressRoutingRules(String namespace) {
-    logger.info("Creating ingress rules for prometheus traffic routing");
-    Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-monitoring.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-monitoring.yaml");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(dstFile);
-      Files.createDirectories(dstFile.getParent());
-      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
-          .replaceAll("@releasesuffix@", releaseSuffix)
-          .getBytes(StandardCharsets.UTF_8));
-    });
-    String command = KUBERNETES_CLI + " create -f " + dstFile;
-    logger.info("Running {0}", command);
-    ExecResult result;
-    try {
-      result = ExecCommand.exec(command, true);
-      String response = result.stdout().trim();
-      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-          result.exitValue(), response, result.stderr());
-      assertEquals(0, result.exitValue(), "Command didn't succeed");
-    } catch (IOException | InterruptedException ex) {
-      logger.severe(ex.getMessage());
-    }
-  }
-
-
-  private static void createTraefikIngressRoutingRulesDomain(String namespace) {
-    logger.info("Creating ingress rules for domain traffic routing");
-    Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-monitoring.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-monitoring.yaml");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(dstFile);
-      Files.createDirectories(dstFile.getParent());
-      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
-          .replaceAll("@releasesuffix@", releaseSuffix)
-          .getBytes(StandardCharsets.UTF_8));
-    });
-    String command = KUBERNETES_CLI + " create -f " + dstFile;
-    logger.info("Running {0}", command);
-    ExecResult result;
-    try {
-      result = ExecCommand.exec(command, true);
-      String response = result.stdout().trim();
-      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-          result.exitValue(), response, result.stderr());
-      assertEquals(0, result.exitValue(), "Command didn't succeed");
-    } catch (IOException | InterruptedException ex) {
-      logger.severe(ex.getMessage());
-    }
+    //createTraefikIngressRoutingRules(monitoringNS);
+    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
+        "traefik/traefik-ingress-rules-monitoring.yaml");
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {

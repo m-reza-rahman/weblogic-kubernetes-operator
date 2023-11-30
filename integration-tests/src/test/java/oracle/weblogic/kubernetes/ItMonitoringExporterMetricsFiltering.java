@@ -591,11 +591,10 @@ class ItMonitoringExporterMetricsFiltering {
   private HtmlPage submitConfigureForm(
       String exporterUrl, String effect, String configFile, WebClient webClient) throws Exception {
     // Get the first page
-    logger.info("exporterULR " + exporterUrl);
+    logger.info("exporterUrl " + exporterUrl);
 
     HtmlPage page1 = webClient.getPage(exporterUrl);
 
-    //Thread.sleep(80000000);
     if (page1 == null) {
       //try again
       page1 = webClient.getPage(exporterUrl);
@@ -743,8 +742,6 @@ class ItMonitoringExporterMetricsFiltering {
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
         "traefik/traefik-ingress-rules-monitoring.yaml");
-    //createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
-    //    "traefik/traefik-ingress-rules-exporter.yaml", domain1Uid);
     createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid);
   }
 
