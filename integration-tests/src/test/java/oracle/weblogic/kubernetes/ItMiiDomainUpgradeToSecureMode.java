@@ -368,7 +368,7 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 8001, nginxParams.getIngressClassName(), false);
+    createNginxIngressHostRouting(domainUid, 9002, 7001, 8001, nginxParams.getIngressClassName(), false);
 
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
