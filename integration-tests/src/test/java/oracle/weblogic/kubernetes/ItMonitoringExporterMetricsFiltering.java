@@ -489,7 +489,11 @@ class ItMonitoringExporterMetricsFiltering {
       installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
           domainNamespace,
           domainUid);
-      String hostPort = ingressIP + ":" + nodeportshttp;
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      String hostPort =  host + ":" + nodeportshttp;
       if (OKE_CLUSTER_PRIVATEIP) {
         hostPort = ingressIP;
       }
