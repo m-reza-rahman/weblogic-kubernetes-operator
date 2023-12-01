@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -89,23 +89,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The test verifies the enablement of ProductionSecureMode in WebLogic Operator
- * environment. Make sure all the servers in the domain comes up and WebLogic
- * console is accessible thru default-admin NodePort service
- * In order to enable ProductionSecureMode in WebLogic Operator environment
- * (a) add channel called `default-admin` to domain resource
- * (b) JAVA_OPTIONS to -Dweblogic.security.SSL.ignoreHostnameVerification=true
- * (c) add ServerStartMode: secure to domainInfo section of model file
- *     Alternativley add SecurityConfiguration/SecureMode to topology section
- * (d) add a SSL Configuration to the server template
+ * The test verifies the before and after upgrade to 14412 images.
+ * Verify all the servers in the domain comes up and WebLogic
+ * console and REST management interfaces are accessible thru appropriate channels.
+ * Verify deployed customer applications are accessible in appropriate channels and ports.
  */
 
-@DisplayName("Test Secure NodePort service through admin port and default-admin channel in a mii domain")
+@DisplayName("Test upgrade to 14412 image for a mii domain")
 @IntegrationTest
-@Tag("olcne-mrg")
 @Tag("kind-parallel")
-@Tag("okd-wls-mrg")
-@Tag("oke-gate")
 class ItMiiDomainUpgradeToSecureMode {
 
   private static List<String> namespaces;
@@ -115,15 +107,9 @@ class ItMiiDomainUpgradeToSecureMode {
   private static int replicaCount = 1;
   private static String domainUid;
   private static final String adminServerName = "adminserver";
-  private static final String configMapName = "default-admin-configmap";
-  private String adminServerPodName;
-  private final String managedServerPrefix = domainUid + "mycluster-ms-";
-
-  private static Path pathToEnableSSLYaml;
-  private static LoggingFacade logger = null;
-  private static String adminSvcSslPortExtHost = null;
-  
   private static final String clusterName = "mycluster";
+  private static final String msName = "ms-1";
+  private String adminServerPodName;
   private static final String wlSecretName = "weblogic-credentials";
   private static final String encryptionSecretName = "encryptionsecret";
   
@@ -132,15 +118,21 @@ class ItMiiDomainUpgradeToSecureMode {
   String adminIngressHost;
   String adminAppIngressHost;
   String clusterIngressHost;
-  private final String wlsConsoleText = "WebLogic Administration Console";  
+  private final String imageTag1411 = "14.1.1.0-11";
+  private final String imageTag12214 = "12.2.1.4";
+  private final String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+  private final String sampleAppUri = "/sample-war/index.jsp";
+  private final String legacyConsoleUri = "/console/login/LoginForm.jsp";
+  private final String wlsConsoleText = "WebLogic Administration Console";
+  private final String wlsConsoleMoved = "This document you requested has moved";
   private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"
       + "/serverRuntimes/adminserver/applicationRuntimes";
+  
+  private static LoggingFacade logger = null;
 
   /**
    * Install Operator.
-   * Create domain resource.
-   * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
-   JUnit engine parameter resolution mechanism
+   * @param namespaces list of namespaces.
    */
   @BeforeAll
   public static void initAll(@Namespaces(8) List<String> ns) {
@@ -155,7 +147,7 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info("Assigning unique namespace for Ingress");
     ingressNamespace = namespaces.get(1);
 
-    // install and verify operator
+    // install operator watching 6 domain namespaces
     installAndVerifyOperator(opNamespace, namespaces.subList(2, 8).toArray(String[]::new));
 
     // Create the repo secret to pull the image
@@ -212,7 +204,7 @@ class ItMiiDomainUpgradeToSecureMode {
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag1411;
     String channelName = "default";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
@@ -224,25 +216,26 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+        sampleAppUri, adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+        legacyConsoleUri, wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
-
-    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+        sampleAppUri, msName, false, ingressIP);
+    
+    //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
+    
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
+        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
+        sampleAppUri, msName, false, ingressIP);
   }
   
   /**
@@ -277,7 +270,7 @@ class ItMiiDomainUpgradeToSecureMode {
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag1411;
     String channelName = "default";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
@@ -291,25 +284,25 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+        sampleAppUri, adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+        legacyConsoleUri, wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
+        sampleAppUri, msName, false, ingressIP);
 
-    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    
     upgradeImage(domainNamespace, domainUid, image1412);
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
+        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
+        sampleAppUri, msName, false, ingressIP);
   }
 
   /**
@@ -345,7 +338,7 @@ class ItMiiDomainUpgradeToSecureMode {
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag1411;
     String channelName = "internal-admin";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
@@ -359,27 +352,26 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+        legacyConsoleUri, wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
-
-    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+        sampleAppUri, msName, false, ingressIP);
+    
     upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
+        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+        sampleAppUri, adminServerName, false, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
+        sampleAppUri, msName, false, ingressIP);
   }
 
   /**
@@ -415,7 +407,7 @@ class ItMiiDomainUpgradeToSecureMode {
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag1411;
     String channelName = "internal-admin";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
@@ -431,15 +423,14 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
     
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+        legacyConsoleUri, wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+        sampleAppUri, adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
-
-    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+        sampleAppUri, msName, false, ingressIP);
+    
     upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
@@ -448,11 +439,11 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+        sampleAppUri, adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
+        sampleAppUri, msName, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);    
+        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);    
   }
 
   /**
@@ -485,7 +476,7 @@ class ItMiiDomainUpgradeToSecureMode {
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag12214;
     String channelName = "default";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
@@ -497,25 +488,24 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+        sampleAppUri, adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+        legacyConsoleUri, wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
+        sampleAppUri, msName, false, ingressIP);
 
-    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
+        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
+        sampleAppUri, msName, false, ingressIP);
   }
 
   /**
@@ -538,7 +528,7 @@ class ItMiiDomainUpgradeToSecureMode {
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(wdtVariableFile);
       Files.createDirectories(wdtVariableFile.getParent());
-      Files.writeString(wdtVariableFile, "SSLEnabled=true\n", StandardOpenOption.CREATE);
+      Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
@@ -549,12 +539,14 @@ class ItMiiDomainUpgradeToSecureMode {
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
 
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + "14.1.1.0-11";
+    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag12214;
     String channelName = "internal-admin";
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
+    String administrationIngressHost = createAdministrationIngressHostRouting(domainUid, 9002,
+        nginxParams.getIngressClassName(), true);    
+    createNginxIngressHostRouting(domainUid, 9002, 7001, 8001, nginxParams.getIngressClassName(), false);
 
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
@@ -562,35 +554,33 @@ class ItMiiDomainUpgradeToSecureMode {
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
+        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
+        sampleAppUri, adminServerName, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        sampleAppUri, msName, false, ingressIP);
 
-    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        "/sample-war/index.jsp", "ms-1", false, ingressIP);
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);    
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
+        sampleAppUri, adminServerName, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        sampleAppUri, msName, false, ingressIP);
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
+        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);    
   }
 
   private DomainResource createDomainUsingAuxiliaryImage(String domainNamespace, String domainUid,
       String baseImage, String auxImage, String channelName) {
-    String clusterName = "mycluster";
-    String adminServerPodName = domainUid + "-adminserver";
-    String managedServerPrefix = domainUid + "-mycluster-ms-";
+    String adminServerPodName = domainUid + "-" + adminServerName;
+    String managedServerPrefix = domainUid + "-" + clusterName + "-" + msName + "-";
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
