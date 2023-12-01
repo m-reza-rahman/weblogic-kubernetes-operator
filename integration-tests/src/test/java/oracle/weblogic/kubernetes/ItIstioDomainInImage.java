@@ -204,6 +204,7 @@ class ItIstioDomainInImage {
 
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
+      // use IPV6
       host = "[" + host + "]";
     }
 
