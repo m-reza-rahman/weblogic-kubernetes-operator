@@ -26,7 +26,6 @@ import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -266,7 +265,7 @@ class FailureRetryTest {
     private int numTimesRun = 0;
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       numTimesRun++;
       return doNext(DomainStatusUpdater.createDomainInvalidFailureSteps("in unit test"), packet);
     }
@@ -275,7 +274,7 @@ class FailureRetryTest {
   static class AddFatalIntrospectionFailureStep extends Step {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doNext(DomainStatusUpdater.createIntrospectionFailureSteps(FATAL_INTROSPECTOR_ERROR), packet);
     }
   }
@@ -300,7 +299,7 @@ class FailureRetryTest {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       if (exception instanceof RuntimeException) {
         throw (RuntimeException) exception;
       } else {

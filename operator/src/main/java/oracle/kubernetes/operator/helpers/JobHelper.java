@@ -239,20 +239,12 @@ public class JobHelper {
         if (isKnownFailedJob(job) || JobWatcher.isJobTimedOut(job) || isInProgressJobOutdated(job)) {
           return doNext(cleanUpAndReintrospect(getNext()), packet);
         } else if (job != null) {
-          return doNext(processExistingIntrospectorJob(getNext()), packet).withDebugComment(job, this::jobDescription);
+          return doNext(processExistingIntrospectorJob(getNext()), packet);
         } else if (isIntrospectionNeeded(packet)) {
-          return doNext(createIntrospectionSteps(getNext()), packet).withDebugComment(packet, this::introspectReason);
+          return doNext(createIntrospectionSteps(getNext()), packet);
         } else {
-          return doNext(packet).withDebugComment(packet, this::introspectionNotNeededReason);
+          return doNext(packet);
         }
-      }
-
-      @Nonnull
-      private String jobDescription(@Nonnull V1Job job) {
-        return "found introspection job "
-            + Optional.ofNullable(job.getMetadata()).map(V1ObjectMeta::getName).orElse(null)
-            + ", started at "
-            + Optional.ofNullable(job.getMetadata()).map(V1ObjectMeta::getCreationTimestamp).orElse(null);
       }
 
       private boolean isInProgressJobOutdated(V1Job job) {
@@ -357,35 +349,6 @@ public class JobHelper {
               || isIntrospectionRequested(packet)
               || isModelInImageUpdate(packet)
               || isIntrospectVersionChanged(packet);
-      }
-
-      private String introspectReason(Packet packet) {
-        StringBuilder sb = new StringBuilder("introspection needed because ");
-        if (getDomainTopology() == null) {
-          sb.append("domain topology is null");
-        } else if (isBringingUpNewDomain(packet)) {
-          sb.append("bringing up new domain");
-        } else if (isIntrospectionRequested(packet)) {
-          sb.append("introspection was requested");
-        } else if (isIntrospectVersionChanged(packet)) {
-          sb.append("introspection version was changed");
-        } else {
-          sb.append("something else");
-        }
-        return sb.toString();
-      }
-
-      private String introspectionNotNeededReason(Packet packet) {
-        StringBuilder sb = new StringBuilder("introspection not needed because ");
-        if (getNumRunningServers() != 0) {
-          sb.append("have running servers: ").append(String.join(", ", getRunningServerNames()));
-        } else if (!creatingServers(info)) {
-          sb.append("should not be creating servers");
-        } else {
-          sb.append("domain generation = ").append(getDomainGeneration())
-                .append(" and packet last generation is ").append(packet.get(INTROSPECTION_DOMAIN_SPEC_GENERATION));
-        }
-        return sb.toString();
       }
 
       @Nonnull

@@ -53,7 +53,6 @@ import oracle.kubernetes.operator.JobAwaiterStepFactory;
 import oracle.kubernetes.operator.JobWatcher;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.http.rest.ScanCacheStub;
 import oracle.kubernetes.operator.introspection.IntrospectionTestUtils;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -196,7 +195,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   private final List<Memento> mementos = new ArrayList<>();
   private final List<LogRecord> logRecords = new ArrayList<>();
   private final DomainConfigurator configurator = DomainConfiguratorFactory.forDomain(domain);
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final String jobPodName = LegalNames.toJobIntrospectorName(UID);
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
   private final SchemaConversionUtils schemaConversionUtils = new SchemaConversionUtils();
@@ -367,7 +365,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenNoJob_onInternalError() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_INTERNAL_ERROR);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
@@ -378,7 +375,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenNoJob_generateFailedEvent() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_INTERNAL_ERROR);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());

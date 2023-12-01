@@ -20,8 +20,6 @@ import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.PvcAwaiterStepFactory;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Packet;
@@ -82,7 +80,6 @@ class PersistentVolumeClaimHelperTest {
 
   private static final TerminalStep terminalStep = new TerminalStep();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
 
@@ -189,7 +186,6 @@ class PersistentVolumeClaimHelperTest {
 
   @Test
   void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PVC, NS, HTTP_INTERNAL_ERROR);
 
     runPersistentVolumeClaimHelper();
@@ -201,8 +197,6 @@ class PersistentVolumeClaimHelperTest {
   void onFailedRunWithConflictAndNoExistingPVC_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPvcCreateLogMessage());
     consoleHandlerMemento.ignoreMessage(getPvcExistsLogMessage());
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PVC, NS, HTTP_CONFLICT);
 
     runPersistentVolumeClaimHelper();
@@ -217,8 +211,6 @@ class PersistentVolumeClaimHelperTest {
     consoleHandlerMemento.ignoreMessage(getPvcExistsLogMessage());
     V1PersistentVolumeClaim existingPdb = createPvcModel(testSupport.getPacket());
     existingPdb.getMetadata().setNamespace(NS);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
     testSupport.defineResources(existingPdb);
 
@@ -234,8 +226,6 @@ class PersistentVolumeClaimHelperTest {
     consoleHandlerMemento.ignoreMessage(getPvcExistsLogMessage());
     V1PersistentVolumeClaim existingPvc = createPvcModel(testSupport.getPacket());
     existingPvc.getMetadata().setNamespace(NS);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PVC, NS, HTTP_CONFLICT);
     testSupport.defineResources(existingPvc);
 

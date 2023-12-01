@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static oracle.kubernetes.common.logging.MessageKeys.ASYNC_NO_RETRY;
@@ -58,15 +57,12 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class CrdHelperTest extends CrdHelperTestBase {
   private static final SemanticVersion PRODUCT_VERSION_OLD = new SemanticVersion(2, 4, 0);
   private static final SemanticVersion PRODUCT_VERSION_FUTURE = new SemanticVersion(3, 1, 0);
   public static final String WEBHOOK_CERTIFICATE = "/deployment/webhook-identity/webhookCert";
-
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
 
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
   private final List<Memento> mementos = new ArrayList<>();
@@ -227,7 +223,6 @@ class CrdHelperTest extends CrdHelperTestBase {
   @EnumSource(value = TestSubject.class)
   void whenNotAuthorizedToReadCrd_retryOnFailureAndLogWarningMessageInOnFailureNoRetry(TestSubject testSubject) {
     consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnResource(CUSTOM_RESOURCE_DEFINITION, null, null, HTTP_UNAUTHORIZED);
 
     Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
@@ -240,7 +235,6 @@ class CrdHelperTest extends CrdHelperTestBase {
   void whenNotAuthorizedToReadCrdDedicatedMode_dontLogWarningMessageInOnFailureNoRetry(TestSubject testSubject) {
     consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY);
     defineSelectionStrategy(Namespaces.SelectionStrategy.DEDICATED);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnResource(CUSTOM_RESOURCE_DEFINITION, null, null, HTTP_UNAUTHORIZED);
 
     Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
@@ -257,7 +251,6 @@ class CrdHelperTest extends CrdHelperTestBase {
   void whenForbiddenToReadCrdDedicatedMode_dontLogWarningMessageInOnFailureNoRetry(TestSubject testSubject) {
     consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY);
     defineSelectionStrategy(Namespaces.SelectionStrategy.DEDICATED);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnResource(CUSTOM_RESOURCE_DEFINITION, null, null, HTTP_FORBIDDEN);
 
     Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
@@ -271,7 +264,6 @@ class CrdHelperTest extends CrdHelperTestBase {
   void whenNotAuthorizedToReadCrdAndWarningNotEnabled_DontLogWarningInOnFailureNoRetry(TestSubject testSubject) {
     LoggingFactory.getLogger("Operator", "Operator").getUnderlyingLogger().setLevel(Level.SEVERE);
     consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnResource(CUSTOM_RESOURCE_DEFINITION, null, null, HTTP_UNAUTHORIZED);
 
     Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
@@ -282,19 +274,16 @@ class CrdHelperTest extends CrdHelperTestBase {
   @ParameterizedTest
   @EnumSource(value = TestSubject.class)
   void whenNoCrd_retryOnFailureAndLogFailedMessageInOnFailureNoRetry(TestSubject testSubject) {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(CUSTOM_RESOURCE_DEFINITION, null, HTTP_UNAUTHORIZED);
 
     Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
     testSupport.runSteps(scriptCrdStep);
     assertThat(logRecords, containsInfo(CREATE_CRD_FAILED));
-    assertThat(retryStrategy.getConflictStep(), sameInstance(scriptCrdStep));
   }
 
   @ParameterizedTest
   @EnumSource(value = TestSubject.class)
   void whenNoCrd_proceedToNextStep(TestSubject testSubject) {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(CUSTOM_RESOURCE_DEFINITION, null, HTTP_UNAUTHORIZED);
 
     Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
@@ -525,7 +514,6 @@ class CrdHelperTest extends CrdHelperTestBase {
   @ParameterizedTest
   @EnumSource(value = TestSubject.class)
   void whenReplaceFails_scheduleRetryAndLogFailedMessageInOnFailureNoRetry(TestSubject testSubject) {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.defineResources(defineCrd(PRODUCT_VERSION_OLD, testSubject.getExpectedCrdName()));
     testSupport.failOnReplace(CUSTOM_RESOURCE_DEFINITION, testSubject.getExpectedCrdName(), null, HTTP_UNAUTHORIZED);
 
@@ -533,12 +521,10 @@ class CrdHelperTest extends CrdHelperTestBase {
     testSupport.runSteps(scriptCrdStep);
 
     assertThat(logRecords, containsInfo(REPLACE_CRD_FAILED));
-    assertThat(retryStrategy.getConflictStep(), sameInstance(scriptCrdStep));
   }
 
   @Test
   void whenReplaceFailsThrowsStreamException_scheduleRetryAndLogFailedMessageInOnFailureNoRetry() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.defineResources(defineCrd(PRODUCT_VERSION_OLD, DOMAIN.getExpectedCrdName()));
     testSupport.failOnReplaceWithStreamResetException(CUSTOM_RESOURCE_DEFINITION, DOMAIN.getExpectedCrdName(), null);
 
@@ -546,7 +532,6 @@ class CrdHelperTest extends CrdHelperTestBase {
     testSupport.runSteps(scriptCrdStep);
 
     assertThat(logRecords, containsInfo(REPLACE_CRD_FAILED));
-    assertThat(retryStrategy.getConflictStep(), sameInstance(scriptCrdStep));
   }
 
   @Test

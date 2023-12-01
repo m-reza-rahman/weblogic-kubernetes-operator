@@ -18,8 +18,6 @@ import io.kubernetes.client.openapi.models.V1OwnerReference;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Packet;
@@ -78,7 +76,6 @@ class PodDisruptionBudgetHelperTest {
   };
   private static final TerminalStep terminalStep = new TerminalStep();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
 
@@ -202,7 +199,6 @@ class PodDisruptionBudgetHelperTest {
 
   @Test
   void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_INTERNAL_ERROR);
 
     runPodDisruptionBudgetHelper();
@@ -213,8 +209,6 @@ class PodDisruptionBudgetHelperTest {
   @Test
   void onFailedRunWithConflictAndNoExistingPDB_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPdbCreateLogMessage());
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
 
     runPodDisruptionBudgetHelper();
@@ -229,8 +223,6 @@ class PodDisruptionBudgetHelperTest {
     consoleHandlerMemento.ignoreMessage(getPdbExistsLogMessage());
     V1PodDisruptionBudget existingPdb = createPDBModel(testSupport.getPacket());
     existingPdb.getMetadata().setNamespace(NS);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
     testSupport.defineResources(existingPdb);
 

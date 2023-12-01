@@ -40,12 +40,10 @@ import io.kubernetes.client.openapi.models.V1ValidatingWebhook;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.helpers.CrdHelperTestBase;
 import oracle.kubernetes.operator.helpers.HelmAccessStub;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
-import oracle.kubernetes.operator.helpers.OnConflictRetryStrategyStub;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
 import oracle.kubernetes.operator.http.BaseServer;
@@ -53,7 +51,6 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
-import oracle.kubernetes.operator.work.Container;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -145,7 +142,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
   private final WebhookMain main = new WebhookMain(delegate);
   private static final InMemoryFileSystem inMemoryFileSystem = InMemoryFileSystem.createInstance();
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
-  private final OnConflictRetryStrategyStub retryStrategy = createStrictStub(OnConflictRetryStrategyStub.class);
 
   private final String testNamespace = "ns1";
   private final byte[] testCaBundle = new byte[] { (byte)0xe0, 0x4f, (byte)0xd0,
@@ -212,8 +208,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
     testValidatingWebhookConfig = new V1ValidatingWebhookConfiguration()
         .metadata(createNameOnlyMetadata())
         .addWebhooksItem(createValidatingWebhook());
-
-    testSupport.addRetryStrategy(retryStrategy);
   }
 
   @AfterEach
@@ -633,9 +627,8 @@ public class WebhookMainTest extends CrdHelperTestBase {
   @Test
   void whenShutdownMarkerIsCreated_stopWebhook() throws NoSuchFieldException {
     mementos.add(StaticStubSupport.install(
-            BaseMain.class, "wrappedExecutorService", testSupport.getScheduledExecutorService()));
+            BaseMain.class, "wrappedExecutorService", testSupport.getExecutorService()));
     inMemoryFileSystem.defineFile(delegate.getShutdownMarker(), "shutdown");
-    testSupport.presetFixedDelay();
 
     main.waitForDeath();
 
@@ -656,7 +649,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
     private boolean isStopCalled = false;
 
     @Override
-    public void start(Container container) throws UnrecoverableKeyException, CertificateException, IOException,
+    public void start() throws UnrecoverableKeyException, CertificateException, IOException,
         NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
       // no-op
     }

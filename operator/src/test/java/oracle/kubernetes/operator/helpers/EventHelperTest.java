@@ -39,7 +39,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
@@ -156,7 +155,6 @@ class EventHelperTest {
       = processor.createMakeRightOperation(info);
   private final String jobPodName = LegalNames.toJobIntrospectorName(UID);
   private final Collection<LogRecord> logRecords = new ArrayList<>();
-  private final OnConflictRetryStrategyStub retryStrategy = createStrictStub(OnConflictRetryStrategyStub.class);
   private TestUtils.ConsoleHandlerMemento loggerControl;
   private static final String WILL_NOT_RETRY =
       "The reported problem should be corrected, and the domain will not be retried "
@@ -865,7 +863,6 @@ class EventHelperTest {
 
   @Test
   void whenNSWatchStoppedEventCreatedTwice_fail409OnReplace_eventCreatedOnceWithExpectedCount() {
-    testSupport.addRetryStrategy(retryStrategy);
     Step eventStep = createEventStep(new EventData(NAMESPACE_WATCHING_STOPPED).namespace(NS).resourceName(NS));
 
     testSupport.runSteps(eventStep);
@@ -883,7 +880,6 @@ class EventHelperTest {
 
   @Test
   void whenNSWatchStoppedEventCreatedTwice_fail503OnReplace_eventCreatedOnceWithExpectedCount() {
-    testSupport.addRetryStrategy(retryStrategy);
     Step eventStep = createEventStep(new EventData(NAMESPACE_WATCHING_STOPPED).namespace(NS).resourceName(NS));
 
     testSupport.runSteps(eventStep);
@@ -1004,7 +1000,6 @@ class EventHelperTest {
 
   @Test
   void whenClusterAvailableEventCreatedTwice_fail409OnReplace_eventCreatedOnceWithExpectedCount() {
-    testSupport.addRetryStrategy(retryStrategy);
     Step eventStep = EventHelper.createClusterResourceEventStep(new EventData(CLUSTER_AVAILABLE)
         .namespace(NS).resourceName(NS));
     testSupport.runSteps(eventStep);

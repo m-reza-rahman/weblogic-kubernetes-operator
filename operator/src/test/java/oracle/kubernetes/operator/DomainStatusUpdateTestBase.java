@@ -33,7 +33,6 @@ import io.kubernetes.client.openapi.models.V1PodStatus;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
-import oracle.kubernetes.operator.helpers.RetryStrategyStub;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParameters;
@@ -66,7 +65,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static oracle.kubernetes.common.logging.MessageKeys.CLUSTER_NOT_READY;
@@ -130,14 +128,12 @@ abstract class DomainStatusUpdateTestBase {
   private final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
   private final DomainPresenceInfo info = new DomainPresenceInfo(domain);
   private List<String> liveServers;
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
 
   @BeforeEach
   void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger().ignoringLoggedExceptions(ApiException.class));
     mementos.add(testSupport.install());
     mementos.add(TuningParametersStub.install());
-    mementos.add(ClientFactoryStub.install());
     mementos.add(SystemClockTestSupport.installClock());
 
     domain.getSpec().setImage(IMAGE);
@@ -1856,8 +1852,6 @@ abstract class DomainStatusUpdateTestBase {
     info.getDomain().getMetadata().setGeneration(2L);
     testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_UNAVAILABLE);
     testSupport.returnEmptyResultOnRead(DOMAIN, info.getDomainUid(), info.getNamespace());
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     updateDomainStatusInEndOfProcessing();
 
     assertThat(getRecordedDomain().getStatus().getObservedGeneration(), equalTo(2L));
@@ -1869,8 +1863,6 @@ abstract class DomainStatusUpdateTestBase {
 
     info.getDomain().getMetadata().setGeneration(2L);
     testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_UNAVAILABLE);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     updateDomainStatusInEndOfProcessing();
 
     assertThat(getRecordedDomain().getStatus().getObservedGeneration(), equalTo(2L));
@@ -1882,8 +1874,6 @@ abstract class DomainStatusUpdateTestBase {
 
     info.getDomain().getMetadata().setGeneration(2L);
     testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_NOT_FOUND);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     updateDomainStatusInEndOfProcessing();
 
     assertThat(getRecordedDomain().getStatus().getObservedGeneration(), not(equalTo(2L)));

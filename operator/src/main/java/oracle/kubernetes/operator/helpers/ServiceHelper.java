@@ -5,7 +5,6 @@ package oracle.kubernetes.operator.helpers;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -955,17 +954,14 @@ public class ServiceHelper {
     }
 
     private Step getStep() {
-      // FIXME
-      return new CallBuilder()
-          .withLabelSelectors(forDomainUidSelector(info.getDomainUid()), getCreatedByOperatorSelector(),
-              getServiceTypeSelector("EXTERNAL"))
-          .listServiceAsync(
-              info.getNamespace(),
-              new ActionResponseStep<>() {
-                public Step createSuccessStep(V1ServiceList result, Step next) {
-                  return new DeleteServiceListStep(result.getItems(), next);
-                }
-              });
+      return RequestBuilder.SERVICE.list(info.getNamespace(),
+          new ListOptions().labelSelector(forDomainUidSelector(info.getDomainUid()) + ","
+              + getCreatedByOperatorSelector() + "," + getServiceTypeSelector("EXTERNAL")),
+          new ActionResponseStep<>() {
+        public Step createSuccessStep(V1ServiceList result, Step next) {
+          return new DeleteServiceListStep(result.getItems(), next);
+        }
+      });
     }
 
 

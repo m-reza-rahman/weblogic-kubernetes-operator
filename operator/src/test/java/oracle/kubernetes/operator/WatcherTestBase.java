@@ -78,7 +78,6 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
   public void setUp() throws Exception {
     mementos.add(configureOperatorLogger());
     mementos.add(StubWatchFactory.install());
-    mementos.add(ClientFactoryStub.install());
     mementos.add(TuningParametersStub.install());
     mementos.add(TestStepFactory.install());
 

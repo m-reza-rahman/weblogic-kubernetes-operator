@@ -13,7 +13,6 @@ import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ResourceRule;
 import io.kubernetes.client.openapi.models.V1SelfSubjectRulesReview;
 import io.kubernetes.client.openapi.models.V1SubjectRulesReviewStatus;
-import oracle.kubernetes.operator.ClientFactoryStub;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Operation;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.utils.TestUtils;
@@ -104,7 +103,6 @@ class HealthCheckHelperTest {
   public void setUp() throws Exception {
     mementos.add(TuningParametersStub.install());
     mementos.add(TestUtils.silenceOperatorLogger().collectLogMessages(logRecords, LOG_KEYS));
-    mementos.add(ClientFactoryStub.install());
     mementos.add(testSupport.installSynchronousCallDispatcher());
   }
 

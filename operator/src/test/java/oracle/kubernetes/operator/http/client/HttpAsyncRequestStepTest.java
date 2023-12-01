@@ -25,7 +25,6 @@ import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.AsyncFiber;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
@@ -97,14 +96,6 @@ class HttpAsyncRequestStepTest {
   private HttpAsyncRequestStep createStep() {
     return HttpAsyncRequestStep.createGetRequest("http://localhost/nothing", responseStep);
   }
-
-  @Test
-  void whenRequestMade_suspendProcessing() {
-    NextAction action = requestStep.apply(packet);
-
-    assertThat(FiberTestSupport.isSuspendRequested(action), is(true));
-  }
-
 
   // Note: in the following tests, the call to doOnExit simulates the behavior of the fiber
   // when it receives a doSuspend()

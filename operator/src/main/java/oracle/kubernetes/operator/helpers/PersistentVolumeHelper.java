@@ -14,6 +14,7 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeSpec;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -85,8 +86,7 @@ public class PersistentVolumeHelper {
     }
 
     Step readAndCreatePersistentVolumeStep(Step next) {
-      return new CallBuilder().readPersistentVolumeAsync(getPersistentVolumeName(),
-              new ReadResponseStep(next));
+      return RequestBuilder.PV.get(getPersistentVolumeName(), new ReadResponseStep(next));
     }
 
     private String getPersistentVolumeName() {
@@ -172,20 +172,16 @@ public class PersistentVolumeHelper {
       }
 
       private Step createPersistentVolume(String messageKey, Step next) {
-        return new CallBuilder()
-            .createPersistentVolumeAsync(
-                createModel(),
-                new PersistentVolumeHelper.PersistentVolumeContext
-                    .CreateResponseStep(messageKey, next));
+        return RequestBuilder.PV.create(createModel(), new PersistentVolumeHelper.PersistentVolumeContext
+            .CreateResponseStep(messageKey, next));
       }
     }
 
     private class ConflictStep extends Step {
       @Override
       public Void apply(Packet packet) {
-        return doNext(
-                new CallBuilder().readPersistentVolumeAsync(getPersistentVolumeName(info),
-                        new ReadResponseStep(conflictStep)), packet);
+        return doNext(RequestBuilder.PV.get(getPersistentVolumeName(info),
+            new ReadResponseStep(conflictStep)), packet);
       }
 
       private String getPersistentVolumeName(DomainPresenceInfo info) {

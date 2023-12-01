@@ -69,17 +69,9 @@ import jakarta.json.JsonStructure;
 import okhttp3.internal.http2.ErrorCode;
 import okhttp3.internal.http2.StreamResetException;
 import oracle.kubernetes.operator.builders.CallParams;
-import oracle.kubernetes.operator.calls.CallFactory;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.calls.RequestParams;
-import oracle.kubernetes.operator.calls.RetryStrategy;
 import oracle.kubernetes.operator.calls.SimulatedStep;
-import oracle.kubernetes.operator.calls.SynchronousCallDispatcher;
-import oracle.kubernetes.operator.calls.SynchronousCallFactory;
 import oracle.kubernetes.operator.webhooks.model.Scale;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -95,8 +87,6 @@ import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
-import static oracle.kubernetes.operator.calls.AsyncRequestStep.CONTINUE;
-import static oracle.kubernetes.operator.calls.AsyncRequestStep.RESPONSE_COMPONENT_NAME;
 
 @SuppressWarnings("WeakerAccess")
 public class KubernetesTestSupport extends FiberTestSupport {
@@ -775,20 +765,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
   }
 
-  private class CallDispatcherImpl implements SynchronousCallDispatcher {
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T execute(
-        SynchronousCallFactory<T> factory, RequestParams requestParams, Pool<ApiClient> helper)
-        throws ApiException {
-      try {
-        return (T) new CallContext(requestParams).execute();
-      } catch (HttpErrorException e) {
-        throw e.getApiException();
-      }
-    }
-  }
-
   private class DataRepository<T> {
     private final Map<String, T> data = new HashMap<>();
     private final Class<?> resourceType;
@@ -1382,7 +1358,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       numCalls++;
       try {
         Component oldResponse = packet.getComponents().remove(RESPONSE_COMPONENT_NAME);

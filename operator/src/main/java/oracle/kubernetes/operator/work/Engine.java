@@ -3,21 +3,21 @@
 
 package oracle.kubernetes.operator.work;
 
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Collection of {@link Fiber}s. Owns an {@link Executor} to run them.
+ * Collection of {@link Fiber}s. Owns an {@link ExecutorService} to run them.
  */
 public class Engine {
-  private final Executor threadPool;
+  private final ExecutorService threadPool;
 
   /**
    * Creates engine with the specified executor.
    *
    * @param threadPool Executor
    */
-  public Engine(Executor threadPool) {
+  public Engine(ExecutorService threadPool) {
     this.threadPool = threadPool;
   }
 
@@ -26,7 +26,7 @@ public class Engine {
    *
    * @return executor
    */
-  public Executor getExecutor() {
+  public ExecutorService getExecutor() {
     return threadPool;
   }
 
@@ -47,7 +47,7 @@ public class Engine {
     threadPool.execute(() -> {
       try {
         Thread.sleep(initialDelay * 1000);
-        while (!stopSignal.get()) {
+        while (!(stopSignal.get() || threadPool.isShutdown())) {
           command.run();
           Thread.sleep(delay * 1000);
         }

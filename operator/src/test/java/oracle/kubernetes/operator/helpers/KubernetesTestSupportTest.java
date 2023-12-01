@@ -16,6 +16,7 @@ import javax.annotation.Nonnull;
 import com.google.common.collect.ImmutableMap;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.common.KubernetesObject;
+import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -32,12 +33,13 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
 import io.kubernetes.client.openapi.models.V1TokenReview;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.GetOptions;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
+import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClockTestSupport;
@@ -53,6 +55,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.PartialObjectMetadata;
+import org.bouncycastle.cert.ocsp.Req;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,6 +79,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KubernetesTestSupportTest {
@@ -106,7 +110,7 @@ class KubernetesTestSupportTest {
     V1CustomResourceDefinition crd = createCrd("mycrd");
 
     TestResponseStep<V1CustomResourceDefinition> responseStep = new TestResponseStep<>();
-    testSupport.runSteps(new CallBuilder().createCustomResourceDefinitionAsync(crd, responseStep));
+    testSupport.runSteps(RequestBuilder.CRD.create(crd, responseStep));
 
     assertThat(testSupport.getResources(CUSTOM_RESOURCE_DEFINITION), contains(crd));
   }
@@ -116,7 +120,7 @@ class KubernetesTestSupportTest {
     V1CustomResourceDefinition crd = createCrd("mycrd");
 
     TestResponseStep<V1CustomResourceDefinition> responseStep = new TestResponseStep<>();
-    testSupport.runSteps(new CallBuilder().createCustomResourceDefinitionAsync(crd, responseStep));
+    testSupport.runSteps(RequestBuilder.CRD.create(crd, responseStep));
 
     assertThat(testSupport.getNumCalls(), equalTo(1));
   }
@@ -131,9 +135,9 @@ class KubernetesTestSupportTest {
     V1CustomResourceDefinition crd = createCrd("mycrd");
 
     TestResponseStep<V1CustomResourceDefinition> responseStep = new TestResponseStep<>();
-    testSupport.runSteps(new CallBuilder().createCustomResourceDefinitionAsync(crd, responseStep));
+    testSupport.runSteps(RequestBuilder.CRD.create(crd, responseStep));
 
-    assertThat(responseStep.callResponse.getResult(), equalTo(crd));
+    assertThat(responseStep.callResponse.getObject(), equalTo(crd));
   }
 
   @Test
@@ -141,11 +145,9 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(createCrd("mycrd"));
 
     TestResponseStep<V1CustomResourceDefinition> responseStep = new TestResponseStep<>();
-    Step steps =
-          new CallBuilder().createCustomResourceDefinitionAsync(createCrd("mycrd"), responseStep);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.CRD.create(createCrd("mycrd"), responseStep));
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test
@@ -157,8 +159,7 @@ class KubernetesTestSupportTest {
     Objects.requireNonNull(crd.getMetadata()).putLabelsItem("be", "different");
 
     TestResponseStep<V1CustomResourceDefinition> responseStep = new TestResponseStep<>();
-    Step steps = new CallBuilder().replaceCustomResourceDefinitionAsync("mycrd", crd, responseStep);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.CRD.update(crd, responseStep));
 
     assertThat(testSupport.getResources(CUSTOM_RESOURCE_DEFINITION), contains(crd));
   }
@@ -169,7 +170,8 @@ class KubernetesTestSupportTest {
     Objects.requireNonNull(crd.getMetadata()).setGeneration(1234L);
     testSupport.defineResources(crd);
 
-    final PartialObjectMetadata result = new CallBuilder().readCRDMetadata("mycrd");
+    V1CustomResourceDefinition result =
+        RequestBuilder.CRD.get("mycrd", new GetOptions().isPartialObjectMetadataRequest(true));
 
     assertThat(result.getMetadata().getGeneration(), equalTo(1234L));
   }
@@ -181,8 +183,7 @@ class KubernetesTestSupportTest {
     testSupport.setAddCreationTimestamp(true);
 
     SystemClockTestSupport.increment();
-    Step steps = new CallBuilder().replaceDomainAsync("domain1", NS, createDomain(NS, "domain1"), null);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.DOMAIN.update(createDomain(NS, "domain1"), (ResponseStep<DomainResource>) null));
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(getCreationTimestamp(updatedDomain), not(equalTo(getCreationTimestamp(originalDomain))));
@@ -194,8 +195,7 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(originalDomain);
 
     SystemClockTestSupport.increment();
-    Step steps = new CallBuilder().replaceDomainAsync("domain1", NS, createDomain(NS, "domain1"), null);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.DOMAIN.update(createDomain(NS, "domain1"), (ResponseStep<DomainResource>) null));
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(getCreationTimestamp(updatedDomain), equalTo(getCreationTimestamp(originalDomain)));
@@ -207,12 +207,9 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(originalCluster);
     originalCluster.getMetadata().setResourceVersion("123");
 
-    Step steps = new CallBuilder()
-        .replaceClusterStatusAsync("cluster1", NS,
-            createCluster(NS, "cluster1")
-                .withStatus(new ClusterStatus().withMaximumReplicas(8)),
-            null);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.CLUSTER.updateStatus(createCluster(NS, "cluster1")
+        .withStatus(new ClusterStatus().withMaximumReplicas(8)),
+        ClusterResource::getStatus, (ResponseStep<ClusterResource>) null));
 
     ClusterResource updatedCluster = testSupport.getResourceWithName(CLUSTER, "cluster1");
     assertThat(updatedCluster.getMetadata().getResourceVersion(), equalTo("124"));
@@ -224,12 +221,9 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(originalDomain);
     originalDomain.getMetadata().setResourceVersion("123");
 
-    Step steps = new CallBuilder()
-        .replaceDomainStatusAsync("domain1", NS,
-            createDomain(NS, "domain1")
-                .withStatus(new DomainStatus().addCondition(new DomainCondition(DomainConditionType.COMPLETED))),
-            null);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.DOMAIN.updateStatus(createDomain(NS, "domain1")
+        .withStatus(new DomainStatus().addCondition(new DomainCondition(DomainConditionType.COMPLETED))),
+        DomainResource::getStatus, (ResponseStep<DomainResource>) null));
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(updatedDomain.getMetadata().getResourceVersion(), equalTo("124"));
@@ -244,8 +238,8 @@ class KubernetesTestSupportTest {
 
     JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
     patchBuilder.add("/spec/replicas", 5);
-    Step steps = new CallBuilder().patchDomainAsync("domain1", NS, new V1Patch(patchBuilder.build().toString()), null);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.DOMAIN.patch(NS, "domain1", V1Patch.PATCH_FORMAT_JSON_PATCH,
+        new V1Patch(patchBuilder.build().toString()), (ResponseStep<DomainResource>) null));
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(getCreationTimestamp(updatedDomain), equalTo(getCreationTimestamp(originalDomain)));
@@ -259,8 +253,8 @@ class KubernetesTestSupportTest {
     JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
     patchBuilder.replace("/status/message", "changed it");
     patchBuilder.add("/status/reason", "added a reason");
-    Step steps = new CallBuilder().patchDomainAsync("domain", NS, getPatchBody(patchBuilder), null);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.DOMAIN.patch(NS, "domain", V1Patch.PATCH_FORMAT_JSON_PATCH,
+        getPatchBody(patchBuilder), (ResponseStep<DomainResource>) null));
 
     assertThat(getDomainStatus("domain").getMessage(), equalTo("leave this"));
     assertThat(getDomainStatus("domain").getReason(), nullValue());
@@ -274,7 +268,7 @@ class KubernetesTestSupportTest {
     JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
     patchBuilder.replace("/status/message", "changed it");
     patchBuilder.add("/status/reason", "added a reason");
-    new CallBuilder().patchDomain("domain", NS, getPatchBody(patchBuilder));
+    RequestBuilder.DOMAIN.patch(NS, "domain", V1Patch.PATCH_FORMAT_JSON_PATCH, getPatchBody(patchBuilder));
 
     assertThat(getDomainStatus("domain").getMessage(), equalTo("leave this"));
     assertThat(getDomainStatus("domain").getReason(), nullValue());
@@ -291,8 +285,7 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(originalDomain);
 
     DomainResource newDomain = createDomain(NS, "domain1");
-    Step steps = new CallBuilder().replaceDomainAsync("domain1", NS, newDomain, null);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.DOMAIN.update(newDomain, (ResponseStep<DomainResource>) null));
 
     assertThat(getDomainStatus("domain1").getMessage(), equalTo("leave this"));
   }
@@ -310,8 +303,8 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(originalDomain);
 
     DomainResource newDomain = createDomain(NS, "domain1");
-    Step steps = new CallBuilder().replaceDomainStatusAsync("domain1", NS, newDomain, null);
-    testSupport.runSteps(steps);
+    testSupport.runSteps(RequestBuilder.DOMAIN.updateStatus(newDomain,
+        DomainResource::getStatus, (ResponseStep<DomainResource>) null));
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(updatedDomain.getSpec().getReplicas(), equalTo(5));
@@ -323,7 +316,7 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(originalDomain);
 
     DomainResource newDomain = createDomain(NS, "domain1");
-    new CallBuilder().replaceDomainStatus("domain1", NS, newDomain);
+    RequestBuilder.DOMAIN.updateStatus(newDomain, DomainResource::getStatus);
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(updatedDomain.getSpec().getReplicas(), equalTo(5));
@@ -337,7 +330,7 @@ class KubernetesTestSupportTest {
   void afterCreateTokenReview_tokenReviewExists() throws ApiException {
     V1TokenReview tokenReview = new V1TokenReview().metadata(new V1ObjectMeta().name("tr"));
 
-    new CallBuilder().createTokenReview(tokenReview);
+    RequestBuilder.TR.create(tokenReview);
 
     assertThat(testSupport.getResources(TOKEN_REVIEW), contains(tokenReview));
   }
@@ -346,7 +339,7 @@ class KubernetesTestSupportTest {
   void afterCreateSubjectAccessReview_subjectAccessReviewExists() throws ApiException {
     V1SubjectAccessReview sar = new V1SubjectAccessReview().metadata(new V1ObjectMeta().name("rr"));
 
-    new CallBuilder().createSubjectAccessReview(sar);
+    RequestBuilder.SAR.create(sar);
 
     assertThat(testSupport.getResources(SUBJECT_ACCESS_REVIEW), contains(sar));
   }
@@ -358,7 +351,7 @@ class KubernetesTestSupportTest {
     V1Pod pod = createPod(NS, "mycrd");
 
     TestResponseStep<V1Pod> responseStep = new TestResponseStep<>();
-    testSupport.runSteps(new CallBuilder().createPodAsync(NS, pod, responseStep));
+    testSupport.runSteps(RequestBuilder.POD.create(pod, responseStep));
 
     assertThat(testSupport.getResources(POD), contains(pod));
   }
@@ -373,8 +366,8 @@ class KubernetesTestSupportTest {
     V1Pod pod2 = createPod("ns2", "mycrd");
 
     TestResponseStep<V1Pod> responseStep = new TestResponseStep<>();
-    testSupport.runSteps(new CallBuilder().createPodAsync("ns1", pod1, responseStep));
-    testSupport.runSteps(new CallBuilder().createPodAsync("ns2", pod2, responseStep));
+    testSupport.runSteps(RequestBuilder.POD.create(pod1, responseStep));
+    testSupport.runSteps(RequestBuilder.POD.create(pod2, responseStep));
 
     assertThat(testSupport.getResources(POD), containsInAnyOrder(pod1, pod2));
   }
@@ -386,8 +379,8 @@ class KubernetesTestSupportTest {
     V1Pod pod3 = createPod("ns3", "another");
     testSupport.defineResources(pod1, pod2, pod3);
 
-    TestResponseStep<Object> responseStep = new TestResponseStep<>();
-    testSupport.runSteps(new CallBuilder().deletePodAsync("mycrd", "ns2", "", null, responseStep));
+    TestResponseStep<V1Pod> responseStep = new TestResponseStep<>();
+    testSupport.runSteps(RequestBuilder.POD.delete("ns2", "mycrd", responseStep));
 
     assertThat(testSupport.getResources(POD), containsInAnyOrder(pod1, pod3));
   }
@@ -396,18 +389,18 @@ class KubernetesTestSupportTest {
   void whenHttpErrorAssociatedWithResource_callResponseIsError() {
     testSupport.failOnResource(POD, "pod1", "ns2", HTTP_BAD_REQUEST);
 
-    TestResponseStep<Object> responseStep = new TestResponseStep<>();
+    TestResponseStep<V1Pod> responseStep = new TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().deletePodAsync("pod1", "ns2", "", null, responseStep));
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
-    assertThat(responseStep.callResponse.getStatusCode(), equalTo(HTTP_BAD_REQUEST));
+    testSupport.verifyCompletionThrowable(ApiException.class);
+    assertThat(responseStep.callResponse.getHttpStatusCode(), equalTo(HTTP_BAD_REQUEST));
   }
 
   @Test
   void whenHttpErrorNotAssociatedWithResource_ignoreIt() {
     testSupport.failOnResource(POD, "pod1", "ns2", HTTP_BAD_REQUEST);
 
-    TestResponseStep<Object> responseStep = new TestResponseStep<>();
+    TestResponseStep<V1Pod> responseStep = new TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().deletePodAsync("pod2", "ns2", "", null, responseStep));
   }
 
@@ -423,7 +416,7 @@ class KubernetesTestSupportTest {
     testSupport.runSteps(
           new CallBuilder().withLabelSelectors("k1=v1").listPodAsync("ns1", responseStep));
 
-    assertThat(responseStep.callResponse.getResult().getItems(), containsInAnyOrder(pod1, pod3));
+    assertThat(responseStep.callResponse.getObject().getItems(), containsInAnyOrder(pod1, pod3));
   }
 
   private V1Pod createLabeledPod(String name, String namespace, Map<String, String> labels) {
@@ -472,7 +465,7 @@ class KubernetesTestSupportTest {
     TestResponseStep<ClusterList> responseStep = new TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().listClusterAsync("ns1", responseStep));
 
-    assertThat(responseStep.callResponse.getResult().getItems(),
+    assertThat(responseStep.callResponse.getObject().getItems(),
                containsInAnyOrder(cluster1, cluster2));
   }
 
@@ -505,7 +498,7 @@ class KubernetesTestSupportTest {
     TestResponseStep<DomainList> responseStep = new TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().listDomainAsync("ns1", responseStep));
 
-    assertThat(responseStep.callResponse.getResult().getItems(), containsInAnyOrder(dom1, dom2));
+    assertThat(responseStep.callResponse.getObject().getItems(), containsInAnyOrder(dom1, dom2));
   }
 
   private DomainResource createDomain(String namespace, String name) {
@@ -524,7 +517,7 @@ class KubernetesTestSupportTest {
     TestResponseStep<V1ServiceList> responseStep = new TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().listServiceAsync("ns1", responseStep));
 
-    assertThat(responseStep.callResponse.getResult().getItems(), containsInAnyOrder(s1, s2));
+    assertThat(responseStep.callResponse.getObject().getItems(), containsInAnyOrder(s1, s2));
   }
 
   private V1Service createService(String namespace, String name) {
@@ -547,7 +540,7 @@ class KubernetesTestSupportTest {
                 .withFieldSelector("action=walk,involvedObject.kind=bird")
                 .listEventAsync("ns1", responseStep));
 
-    assertThat(responseStep.callResponse.getResult().getItems(), containsInAnyOrder(s1, s3));
+    assertThat(responseStep.callResponse.getObject().getItems(), containsInAnyOrder(s1, s3));
   }
 
   private V1ObjectReference kind(String kind) {
@@ -570,7 +563,7 @@ class KubernetesTestSupportTest {
           new CallBuilder()
                 .listSecretsAsync("ns1", responseStep));
 
-    assertThat(responseStep.callResponse.getResult().getItems(), containsInAnyOrder(s1, s2));
+    assertThat(responseStep.callResponse.getObject().getItems(), containsInAnyOrder(s1, s2));
 
   }
 
@@ -583,18 +576,18 @@ class KubernetesTestSupportTest {
     TestResponseStep<V1ConfigMap> endStep = new TestResponseStep<>();
     testSupport.runSteps(new CallBuilder().readConfigMapAsync("", "", "", endStep));
 
-    assertThat(endStep.callResponse.getStatusCode(), equalTo(HTTP_NOT_FOUND));
-    assertThat(endStep.callResponse.getE(), notNullValue());
+    assertThat(endStep.callResponse.getHttpStatusCode(), equalTo(HTTP_NOT_FOUND));
+    assertThrows(ApiException.class, () -> endStep.callResponse.throwsApiException());
   }
 
   @Test
   void whenDefined_readPodLog() {
-    TestResponseStep<String> endStep = new TestResponseStep<>();
+    TestResponseStep<RequestBuilder.StringObject> endStep = new TestResponseStep<>();
     testSupport.definePodLog("name", "namespace", POD_LOG_CONTENTS);
 
-    testSupport.runSteps(new CallBuilder().readPodLogAsync("name", "namespace", "", endStep));
+    testSupport.runSteps(RequestBuilder.POD.logs("namespace", "name", "", endStep));
 
-    assertThat(endStep.callResponse.getResult(), equalTo(POD_LOG_CONTENTS));
+    assertThat(endStep.callResponse.getObject().getValue(), equalTo(POD_LOG_CONTENTS));
   }
 
   @Test
@@ -656,9 +649,9 @@ class KubernetesTestSupportTest {
     return object.getMetadata().getNamespace();
   }
 
-  static class TestResponseStep<T> extends DefaultResponseStep<T> {
+  static class TestResponseStep<T extends KubernetesType> extends DefaultResponseStep<T> {
 
-    private CallResponse<T> callResponse;
+    private KubernetesApiResponse<T> callResponse;
     private final Semaphore responseAvailableSignal = new Semaphore(0);
 
     TestResponseStep() {
@@ -666,29 +659,17 @@ class KubernetesTestSupportTest {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<T> callResponse) {
+    public Void onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onFailure(packet, callResponse);
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<T> callResponse) {
+    public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onSuccess(packet, callResponse);
-    }
-
-    /**
-     * Wait for and then return call response. This method is needed for tests async CallBuilder
-     * methods because the suspending of the requesting thread otherwise allows test code to move
-     * on before the response is processed.
-     * @return Call response
-     * @throws InterruptedException Interrupted waiting for response available signal
-     */
-    public CallResponse<T> waitForAndGetCallResponse() throws InterruptedException {
-      responseAvailableSignal.acquire();
-      return callResponse;
     }
   }
 }

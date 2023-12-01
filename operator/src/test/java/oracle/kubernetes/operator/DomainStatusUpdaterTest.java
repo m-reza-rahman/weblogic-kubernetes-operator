@@ -86,7 +86,6 @@ class DomainStatusUpdaterTest {
     mementos.add(consoleHandlerMemento = TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords).ignoringLoggedExceptions(ApiException.class));
     mementos.add(testSupport.install());
-    mementos.add(ClientFactoryStub.install());
     mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
 

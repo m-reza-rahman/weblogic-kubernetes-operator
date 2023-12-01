@@ -1051,12 +1051,15 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
           .orElse(false);
     }
 
+    @SuppressWarnings("all")
     private void scheduleRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
       final MakeRightDomainOperation retry = operation.createRetry(domainPresenceInfo);
       gate.getExecutor().execute(() -> {
         try {
           Thread.sleep(delayUntilNextRetry(domainPresenceInfo) * 1000);
-          retry.execute();
+          if (!gate.getExecutor().isShutdown()) {
+            retry.execute();
+          }
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }

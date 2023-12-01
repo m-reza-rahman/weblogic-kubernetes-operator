@@ -22,8 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -55,8 +53,6 @@ import oracle.kubernetes.operator.http.BaseServer;
 import oracle.kubernetes.operator.http.metrics.MetricsServer;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
-import oracle.kubernetes.operator.work.Component;
-import oracle.kubernetes.operator.work.Container;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -85,7 +81,6 @@ import static oracle.kubernetes.common.logging.MessageKeys.WAIT_FOR_CRD_INSTALLA
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.common.utils.LogMatcher.containsSevere;
 import static oracle.kubernetes.common.utils.LogMatcher.containsWarning;
-import static oracle.kubernetes.operator.BaseMain.container;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_CHANGED_EVENT;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_CREATED_EVENT;
 import static oracle.kubernetes.operator.EventConstants.NAMESPACE_WATCHING_STARTED_EVENT;
@@ -107,7 +102,6 @@ import static oracle.kubernetes.operator.OperatorMain.GIT_BRANCH_KEY;
 import static oracle.kubernetes.operator.OperatorMain.GIT_BUILD_TIME_KEY;
 import static oracle.kubernetes.operator.OperatorMain.GIT_BUILD_VERSION_KEY;
 import static oracle.kubernetes.operator.OperatorMain.GIT_COMMIT_KEY;
-import static oracle.kubernetes.operator.ProcessingConstants.DELEGATE_COMPONENT_NAME;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.NAMESPACE_WATCHING_STARTED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.NAMESPACE_WATCHING_STOPPED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.START_MANAGING_NAMESPACE;
@@ -1284,7 +1278,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   @Test
   void whenOperatorStarted_startMetricsServer() throws UnrecoverableKeyException, CertificateException, IOException,
       NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
-    operatorMain.startMetricsServer(container, 9001);
+    operatorMain.startMetricsServer(9001);
     assertNotNull(operatorMain.getMetricsServer());
     assertInstanceOf(MetricsServer.class, operatorMain.getMetricsServer());
     HttpServer httpServer = ((MetricsServer) operatorMain.getMetricsServer()).getMetricsHttpServer();
@@ -1298,7 +1292,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   @Test
   void whenOperatorStopping_stopMetricsServer() throws UnrecoverableKeyException, CertificateException, IOException,
       NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
-    operatorMain.startMetricsServer(container, 9000);
+    operatorMain.startMetricsServer(9000);
     HttpServer httpServer = ((MetricsServer) operatorMain.getMetricsServer()).getMetricsHttpServer();
     assertNotNull(httpServer);
     assertTrue(httpServer.isStarted());
@@ -1350,9 +1344,8 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   @ResourceLock(value = "operatorMain")
   void whenShutdownMarkerIsCreated_stopOperator() throws NoSuchFieldException {
     mementos.add(StaticStubSupport.install(
-            BaseMain.class, "wrappedExecutorService", testSupport.getScheduledExecutorService()));
+            BaseMain.class, "executor", testSupport.getExecutorService()));
     inMemoryFileSystem.defineFile(delegate.getShutdownMarker(), "shutdown");
-    testSupport.presetFixedDelay();
 
     operatorMain.doMain();
 
@@ -1382,7 +1375,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     private boolean isStopCalled = false;
 
     @Override
-    public void start(Container container) throws UnrecoverableKeyException, CertificateException, IOException,
+    public void start() throws UnrecoverableKeyException, CertificateException, IOException,
         NoSuchAlgorithmException, KeyStoreException, InvalidKeySpecException, KeyManagementException {
       // no-op
     }
@@ -1414,11 +1407,6 @@ class OperatorMainTest extends ThreadFactoryTestBase {
       testSupport.withPacket(packet)
                  .withCompletionAction(completionAction)
                  .runSteps(firstStep);
-    }
-
-    @Override
-    public void addToPacket(Packet packet) {
-      packet.getComponents().put(DELEGATE_COMPONENT_NAME, Component.createFor(CoreDelegate.class, this));
     }
 
     @Override
@@ -1476,11 +1464,6 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     @Override
     public int getMetricsPort() {
       return 8090;
-    }
-
-    @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-      return testSupport.scheduleWithFixedDelay(command, initialDelay, delay, unit);
     }
   }
 

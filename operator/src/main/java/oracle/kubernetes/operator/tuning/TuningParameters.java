@@ -14,8 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
@@ -106,7 +105,7 @@ public class TuningParameters {
    * @param mountPointDir the root of a directory containing the parameter values. Each named file defines
    *                      a single parameter value as a string
    */
-  public static void initializeInstance(ScheduledExecutorService executor, File mountPointDir) {
+  public static void initializeInstance(ExecutorService executor, File mountPointDir) {
     if (instance == null) {
       instance = new TuningParameters(new HashMap<>());
       instance.scheduleUpdates(executor, mountPointDir.getPath());
@@ -260,12 +259,23 @@ public class TuningParameters {
     this.configuredValues = configuredValues;
   }
 
-  private void scheduleUpdates(ScheduledExecutorService executor, String mountPointDir) {
+  @SuppressWarnings("all")
+  private void scheduleUpdates(ExecutorService executor, String mountPointDir) {
     if (Files.exists(getPath.apply(mountPointDir))) {
       this.mountPointDir = mountPointDir;
       readParameters();
       long delay = getParameter("configMapUpdateDelay", 10L);
-      executor.scheduleWithFixedDelay(this::readParameters, delay, delay, TimeUnit.SECONDS);
+      executor.execute(() -> {
+        try {
+          Thread.sleep(delay * 1000);
+          while (!executor.isShutdown()) {
+            readParameters();
+            Thread.sleep(delay * 1000);
+          }
+        } catch (InterruptedException e) {
+          throw new RuntimeException(e);
+        }
+      });
     }
   }
 

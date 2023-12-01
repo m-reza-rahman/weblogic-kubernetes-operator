@@ -27,8 +27,6 @@ import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -131,7 +129,6 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
   private final TerminalStep terminalStep = new TerminalStep();
   public TestFacade testFacade;
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private WlsServerConfig serverConfig;
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
@@ -445,7 +442,6 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
 
   @Test
   void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(SERVICE, NS, HTTP_INTERNAL_ERROR);
 
     runServiceHelper();

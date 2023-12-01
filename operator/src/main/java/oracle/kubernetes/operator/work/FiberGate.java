@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 
@@ -42,7 +43,7 @@ public class FiberGate {
     return new HashMap<>(gateMap);
   }
 
-  public Executor getExecutor() {
+  public ExecutorService getExecutor() {
     return engine.getExecutor();
   }
 

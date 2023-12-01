@@ -15,10 +15,8 @@ import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.PodHelper;
-import oracle.kubernetes.operator.work.Component;
 import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -171,7 +169,7 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doDelay(next, packet, delay, TimeUnit.SECONDS);
     }
   }
@@ -182,7 +180,7 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
       if (isFailed(job) && "DeadlineExceeded".equals(getFailedReason(job))) {
         return new Step() {
           @Override
-          public oracle.kubernetes.operator.work.NextAction apply(Packet packet) {
+          public Void apply(Packet packet) {
             return doTerminate(new JobWatcher.DeadlineExceededException(job), packet);
           }
         };

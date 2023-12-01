@@ -74,7 +74,6 @@ import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.OverrideDistributionStrategy;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
@@ -82,7 +81,6 @@ import oracle.kubernetes.operator.wlsconfig.NetworkAccessPoint;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
@@ -248,7 +246,6 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
   protected final KubernetesTestSupport testSupport = new KubernetesTestSupport();
   protected final List<Memento> mementos = new ArrayList<>();
   protected final List<LogRecord> logRecords = new ArrayList<>();
-  final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private Method getDomainSpec;
   private final DomainConfigurator configurator = DomainConfiguratorFactory.forDomain(domain);
   private final String serverName;
@@ -2407,7 +2404,6 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenNoPod_onInternalError() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
@@ -2419,7 +2415,6 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenNoPod_generateFailedEvent() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 
     FiberTestSupport.StepFactory stepFactory = getStepFactory();
@@ -2976,7 +2971,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public Void apply(Packet packet) {
       return doDelay(next, packet, delay, TimeUnit.SECONDS);
     }
   }

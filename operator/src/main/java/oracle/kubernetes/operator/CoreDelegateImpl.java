@@ -6,7 +6,7 @@ package oracle.kubernetes.operator;
 import java.io.File;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import javax.annotation.Nonnull;
 
 import oracle.kubernetes.operator.helpers.HealthCheckHelper;
@@ -37,7 +37,7 @@ public class CoreDelegateImpl implements CoreDelegate {
   protected String domainCrdResourceVersion;
   protected String clusterCrdResourceVersion;
 
-  CoreDelegateImpl(Properties buildProps, Executor executor) {
+  CoreDelegateImpl(Properties buildProps, ExecutorService executor) {
     buildVersion = getBuildVersion(buildProps);
     deploymentImpl = getBranch(buildProps) + "." + getCommit(buildProps);
     deploymentBuildTime = getBuildTime(buildProps);

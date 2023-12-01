@@ -21,7 +21,6 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServicePort;
 import io.kubernetes.client.openapi.models.V1ServiceSpec;
-import oracle.kubernetes.operator.ClientFactoryStub;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.DomainProcessorTestSetup;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
@@ -92,7 +91,6 @@ class DomainUpPlanTest {
   @BeforeEach
   public void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger().ignoringLoggedExceptions(ApiException.class));
-    mementos.add(ClientFactoryStub.install());
     mementos.add(testSupport.install());
     mementos.add(InMemoryCertificates.install());
     mementos.add(TuningParametersStub.install());

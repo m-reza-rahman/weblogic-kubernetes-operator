@@ -19,8 +19,6 @@ import io.kubernetes.client.openapi.models.V1PersistentVolume;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
-import oracle.kubernetes.operator.calls.unprocessable.UnrecoverableErrorBuilderImpl;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Packet;
@@ -78,7 +76,6 @@ class PersistentVolumeHelperTest {
 
   private static final TerminalStep terminalStep = new TerminalStep();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
-  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
 
@@ -183,7 +180,6 @@ class PersistentVolumeHelperTest {
 
   @Test
   void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PV, null, HTTP_INTERNAL_ERROR);
 
     runPersistentVolumeHelper();
@@ -195,8 +191,6 @@ class PersistentVolumeHelperTest {
   void onFailedRunWithConflictAndNoExistingPv_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPvCreateLogMessage());
     consoleHandlerMemento.ignoreMessage(getPvExistsLogMessage());
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PV, null, HTTP_CONFLICT);
 
     runPersistentVolumeHelper();
@@ -210,8 +204,6 @@ class PersistentVolumeHelperTest {
   void onFailedRunWithConflictAndExistingPv_retryAndLogMessage() {
     consoleHandlerMemento.ignoreMessage(getPvExistsLogMessage());
     V1PersistentVolume existingPv = createPvModel(testSupport.getPacket());
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PV, null, HTTP_CONFLICT);
     testSupport.defineResources(existingPv);
 

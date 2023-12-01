@@ -5,7 +5,7 @@ package oracle.kubernetes.operator;
 
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.kubernetes.client.common.KubernetesListObject;
@@ -54,7 +54,7 @@ public class WebhookMain extends BaseMain {
   private static NextStepFactory nextStepFactory = WebhookMain::createInitializeWebhookIdentityStep;
 
   static class WebhookMainDelegateImpl extends CoreDelegateImpl implements WebhookMainDelegate {
-    public WebhookMainDelegateImpl(Properties buildProps, Executor executor) {
+    public WebhookMainDelegateImpl(Properties buildProps, ExecutorService executor) {
       super(buildProps, executor);
     }
 
