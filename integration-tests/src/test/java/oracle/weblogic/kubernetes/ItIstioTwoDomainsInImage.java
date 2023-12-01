@@ -302,7 +302,7 @@ class ItIstioTwoDomainsInImage {
     ExecResult result = OKE_CLUSTER
         ? deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
             target, archivePath, domainNamespace1 + ".org", "testwebapp")
-        : deployToClusterUsingRest(host, String.valueOf(istioIngressPort),
+        : deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
           clusterName, archivePath, domainNamespace1 + ".org", "testwebapp");
 
@@ -343,7 +343,7 @@ class ItIstioTwoDomainsInImage {
     result = OKE_CLUSTER
         ? deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
             target, archivePath, domainNamespace2 + ".org", "testwebapp")
-        : deployToClusterUsingRest(host, String.valueOf(istioIngressPort),
+        : deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
             clusterName, archivePath, domainNamespace2 + ".org", "testwebapp");
 
