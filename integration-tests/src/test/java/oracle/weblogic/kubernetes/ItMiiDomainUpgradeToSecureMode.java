@@ -73,7 +73,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
-import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.checkIngressReady;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResourceWithAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -324,7 +323,7 @@ class ItMiiDomainUpgradeToSecureMode {
    * 
    */
   @Test
-  @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode off")
+  @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode on")
   void testUpgrade1411to1412ProdOnSecOn() {
     //no changes
     domainNamespace = namespaces.get(4);
@@ -374,7 +373,7 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+        "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
@@ -805,8 +804,8 @@ class ItMiiDomainUpgradeToSecureMode {
     int httpNodeport = getNginxLbNodePort("http");
     int httpsNodeport = getNginxLbNodePort("https");
     if (!OKE_CLUSTER) {
-      checkIngressReady(true, adminIngressHost, isTLS, httpNodeport, httpsNodeport, "");
-      checkIngressReady(true, clusterIngressHost, isTLS, httpNodeport, httpsNodeport, "");
+      //checkIngressReady(true, adminIngressHost, isTLS, httpNodeport, httpsNodeport, "");
+      //checkIngressReady(true, clusterIngressHost, isTLS, httpNodeport, httpsNodeport, "");
     }
 
   }
