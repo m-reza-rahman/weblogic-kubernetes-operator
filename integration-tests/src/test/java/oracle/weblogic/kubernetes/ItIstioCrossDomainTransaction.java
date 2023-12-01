@@ -449,10 +449,16 @@ class ItIstioCrossDomainTransaction {
   @DisplayName("Check cross domain transaction with istio and with TMAfterTLogBeforeCommitExit property commits")
   @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER", matches = "true")
   void testIstioCrossDomainTransactionWithFailInjection() {
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      // use IPV6
+      host = "[" + host + "]";
+    }
+
     String curlRequest = String.format("curl -g -v --show-error --noproxy '*' "
         + "-H 'host:domain1-" + domain1Namespace + ".org' "
         + "http://%s:%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
-            K8S_NODEPORT_HOST, istioIngressPort, domain1Namespace, domain2Namespace);
+            host, istioIngressPort, domain1Namespace, domain2Namespace);
 
     ExecResult result = null;
     logger.info("curl command {0}", curlRequest);
