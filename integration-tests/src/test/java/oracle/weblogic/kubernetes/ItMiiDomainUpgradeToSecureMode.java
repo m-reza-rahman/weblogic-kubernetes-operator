@@ -433,7 +433,7 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, false, ingressIP);
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
@@ -448,7 +448,7 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, false, ingressIP);
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
