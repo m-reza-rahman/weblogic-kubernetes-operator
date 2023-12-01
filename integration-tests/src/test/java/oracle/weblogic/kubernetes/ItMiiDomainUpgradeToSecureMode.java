@@ -580,7 +580,7 @@ class ItMiiDomainUpgradeToSecureMode {
   private DomainResource createDomainUsingAuxiliaryImage(String domainNamespace, String domainUid,
       String baseImage, String auxImage, String channelName) {
     String adminServerPodName = domainUid + "-" + adminServerName;
-    String managedServerPrefix = domainUid + "-" + clusterName + "-" + msName + "-";
+    String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
