@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import com.meterware.simplestub.Memento;
+import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
@@ -61,6 +62,13 @@ import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
 import io.kubernetes.client.openapi.models.VersionInfo;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.CreateOptions;
+import io.kubernetes.client.util.generic.options.DeleteOptions;
+import io.kubernetes.client.util.generic.options.GetOptions;
+import io.kubernetes.client.util.generic.options.ListOptions;
+import io.kubernetes.client.util.generic.options.PatchOptions;
+import io.kubernetes.client.util.generic.options.UpdateOptions;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonException;
@@ -69,6 +77,8 @@ import jakarta.json.JsonStructure;
 import okhttp3.internal.http2.ErrorCode;
 import okhttp3.internal.http2.StreamResetException;
 import oracle.kubernetes.operator.builders.CallParams;
+import oracle.kubernetes.operator.calls.KubernetesApi;
+import oracle.kubernetes.operator.calls.KubernetesApiFactory;
 import oracle.kubernetes.operator.calls.SimulatedStep;
 import oracle.kubernetes.operator.webhooks.model.Scale;
 import oracle.kubernetes.operator.work.FiberTestSupport;
@@ -742,6 +752,74 @@ public class KubernetesTestSupport extends FiberTestSupport {
     @Override
     public <T> T getOriginalValue() {
       throw new UnsupportedOperationException();
+    }
+  }
+
+  private class KubernetesApiFactoryImpl implements KubernetesApiFactory {
+    public <ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
+    KubernetesApi<ApiType, ApiListType> create(Class<ApiType> apiTypeClass, Class<ApiListType> apiListTypeClass,
+                                               String apiGroup, String apiVersion, String resourcePlural) {
+      return new KubernetesApi<>() {
+        @Override
+        public KubernetesApiResponse<ApiType> get(String name, GetOptions getOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> get(String namespace, String name, GetOptions getOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiListType> list(ListOptions listOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiListType> list(String namespace, ListOptions listOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> create(ApiType object, CreateOptions createOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> create(String namespace, ApiType object, CreateOptions createOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> update(ApiType object, UpdateOptions updateOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> updateStatus(ApiType object, Function<ApiType, Object> status, UpdateOptions updateOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> patch(String name, String patchType, V1Patch patch, PatchOptions patchOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> patch(String namespace, String name, String patchType, V1Patch patch, PatchOptions patchOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> delete(String name, DeleteOptions deleteOptions) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<ApiType> delete(String namespace, String name, DeleteOptions deleteOptions) {
+          return null;
+        }
+      };
     }
   }
 

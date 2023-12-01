@@ -20,7 +20,6 @@ import io.kubernetes.client.openapi.models.V1ListMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1Status;
-import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -40,6 +39,9 @@ public abstract class RequestStep<
   public static final String RESPONSE_COMPONENT_NAME = "response";
   public static final String CONTINUE = "continue";
   public static final int FIBER_TIMEOUT = 0;
+
+  private static KubernetesApiFactory factory = new KubernetesApiFactory() {
+  };
 
   private final Class<A> apiTypeClass;
   private final Class<L> apiListTypeClass;
@@ -75,7 +77,7 @@ public abstract class RequestStep<
   }
 
   abstract KubernetesApiResponse<R> execute(
-      GenericKubernetesApi<A, L> client, Packet packet);
+      KubernetesApi<A, L> client, Packet packet);
 
   /**
    * Access continue field, if any, from list metadata.
@@ -94,8 +96,8 @@ public abstract class RequestStep<
 
   @Override
   public Void apply(Packet packet) {
-    GenericKubernetesApi<A, L> client = new GenericKubernetesApi<>(
-        apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, Client.getInstance());
+    KubernetesApi<A, L> client = factory.create(
+        apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
     KubernetesApiResponse<R> result = execute(client, packet);
 
     // update packet
@@ -136,7 +138,7 @@ public abstract class RequestStep<
     }
 
     KubernetesApiResponse<A> execute(
-        GenericKubernetesApi<A, L> client, Packet packet) {
+        KubernetesApi<A, L> client, Packet packet) {
       return client.get(name, getOptions);
     }
   }
@@ -176,7 +178,7 @@ public abstract class RequestStep<
       this.getOptions = getOptions;
     }
 
-    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
+    KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
       return client.get(namespace, name, getOptions);
     }
   }
@@ -212,7 +214,7 @@ public abstract class RequestStep<
       this.updateOptions = updateOptions;
     }
 
-    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
+    KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
       return client.update(object, updateOptions);
     }
   }
@@ -257,7 +259,7 @@ public abstract class RequestStep<
       this.patchOptions = patchOptions;
     }
 
-    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
+    KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
       return client.patch(name, patchType, patch, patchOptions);
     }
   }
@@ -305,7 +307,7 @@ public abstract class RequestStep<
       this.patchOptions = patchOptions;
     }
 
-    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
+    KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
       return client.patch(namespace, name, patchType, patch, patchOptions);
     }
   }
@@ -341,7 +343,7 @@ public abstract class RequestStep<
       this.deleteOptions = deleteOptions;
     }
 
-    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
+    KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
       return client.delete(name, deleteOptions);
     }
   }
@@ -381,7 +383,7 @@ public abstract class RequestStep<
       this.deleteOptions = deleteOptions;
     }
 
-    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
+    KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
       return client.delete(namespace, name, deleteOptions);
     }
   }
@@ -414,7 +416,7 @@ public abstract class RequestStep<
     }
 
     KubernetesApiResponse<L> execute(
-        GenericKubernetesApi<A, L> client, Packet packet) {
+        KubernetesApi<A, L> client, Packet packet) {
       return client.list(listOptions);
     }
   }
@@ -451,7 +453,7 @@ public abstract class RequestStep<
     }
 
     KubernetesApiResponse<L> execute(
-        GenericKubernetesApi<A, L> client, Packet packet) {
+        KubernetesApi<A, L> client, Packet packet) {
       String cont = (String) packet.remove(CONTINUE);
       if (cont != null) {
         listOptions.setContinue(cont);
@@ -491,7 +493,7 @@ public abstract class RequestStep<
       this.createOptions = createOptions;
     }
 
-    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
+    KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
       return client.create(object, createOptions);
     }
   }
@@ -531,7 +533,7 @@ public abstract class RequestStep<
       this.updateOptions = updateOptions;
     }
 
-    KubernetesApiResponse<A> execute(GenericKubernetesApi<A, L> client, Packet packet) {
+    KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
       return client.updateStatus(object, status, updateOptions);
     }
   }
@@ -593,7 +595,7 @@ public abstract class RequestStep<
     }
 
     KubernetesApiResponse<RequestBuilder.StringObject> execute(
-        GenericKubernetesApi<V1Pod, V1PodList> client, Packet packet) {
+        KubernetesApi<V1Pod, V1PodList> client, Packet packet) {
       CoreV1Api c = new CoreV1Api(Client.getInstance());
       try {
         return new KubernetesApiResponse<>(new RequestBuilder.StringObject(
@@ -640,7 +642,7 @@ public abstract class RequestStep<
     }
 
     KubernetesApiResponse<RequestBuilder.V1StatusObject> execute(
-        GenericKubernetesApi<V1Pod, V1PodList> client, Packet packet) {
+        KubernetesApi<V1Pod, V1PodList> client, Packet packet) {
       CoreV1Api c = new CoreV1Api(Client.getInstance());
       try {
         return new KubernetesApiResponse<>(new RequestBuilder.V1StatusObject(

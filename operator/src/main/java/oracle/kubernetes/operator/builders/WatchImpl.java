@@ -14,6 +14,7 @@ import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import okhttp3.Call;
 import oracle.kubernetes.operator.calls.Client;
 
@@ -27,7 +28,7 @@ public class WatchImpl<T> implements Watchable<T> {
   private final Watchable<T> impl;
 
   @SuppressWarnings("unchecked")
-  WatchImpl(CallParams callParams, Class<?> responseBodyType, BiFunction<ApiClient, CallParams, Call> function) {
+  WatchImpl(ListOptions callParams, Class<?> responseBodyType, BiFunction<ApiClient, ListOptions, Call> function) {
     ApiClient client = Client.getInstance();
     impl = (Watchable<T>) factory.createWatch(client, function.apply(client, callParams), getType(responseBodyType));
   }

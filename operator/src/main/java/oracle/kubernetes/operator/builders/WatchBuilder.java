@@ -20,6 +20,7 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Watchable;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import okhttp3.Call;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -34,11 +35,12 @@ public class WatchBuilder {
   private static final String START_LIST = null;
 
   private static final Boolean ALLOW_BOOKMARKS = true;
+  private static final String PRETTY = null;
 
   private static final String RESOURCE_VERSION_MATCH_UNSET = null;
   private static final Boolean SEND_INITIAL_EVENTS_UNSET = null;
 
-  private final CallParamsImpl callParams = new CallParamsImpl();
+  private final ListOptions callParams = new ListOptions();
 
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"}) // Leave non-final for unit test
   private static WatchFactory factory = new WatchFactoryImpl();
@@ -186,18 +188,18 @@ public class WatchBuilder {
 
   public interface WatchFactory {
     <T> Watchable<T> createWatch(
-        CallParams callParams,
+        ListOptions callParams,
         Class<?> responseBodyType,
-        BiFunction<ApiClient, CallParams, Call> function)
+        BiFunction<ApiClient, ListOptions, Call> function)
         throws ApiException;
   }
 
   static class WatchFactoryImpl implements WatchFactory {
     @Override
     public <T> Watchable<T> createWatch(
-        CallParams callParams,
+        ListOptions callParams,
         Class<?> responseBodyType,
-        BiFunction<ApiClient, CallParams, Call> function)
+        BiFunction<ApiClient, ListOptions, Call> function)
         throws ApiException {
       try {
         return new WatchImpl<>(callParams, responseBodyType, function);
@@ -207,17 +209,17 @@ public class WatchBuilder {
     }
   }
 
-  private record ListNamespacedServiceCall(String namespace) implements BiFunction<ApiClient, CallParams, Call> {
+  private record ListNamespacedServiceCall(String namespace) implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
         return new CoreV1Api(client)
             .listNamespacedServiceCall(
                 namespace,
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
@@ -240,17 +242,17 @@ public class WatchBuilder {
     client.setHttpClient(client.getHttpClient().newBuilder().readTimeout(0, TimeUnit.SECONDS).build());
   }
 
-  private record ListPodCall(String namespace) implements BiFunction<ApiClient, CallParams, Call> {
+  private record ListPodCall(String namespace) implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
         return new CoreV1Api(client)
             .listNamespacedPodCall(
                 namespace,
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
@@ -268,17 +270,17 @@ public class WatchBuilder {
     }
   }
 
-  private record ListJobCall(String namespace) implements BiFunction<ApiClient, CallParams, Call> {
+  private record ListJobCall(String namespace) implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
         return new BatchV1Api(client)
             .listNamespacedJobCall(
                 namespace,
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
@@ -296,17 +298,17 @@ public class WatchBuilder {
     }
   }
 
-  private record ListEventCall(String namespace) implements BiFunction<ApiClient, CallParams, Call> {
+  private record ListEventCall(String namespace) implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
         return new CoreV1Api(client)
             .listNamespacedEventCall(
                 namespace,
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
@@ -324,17 +326,17 @@ public class WatchBuilder {
     }
   }
 
-  private record ListPodDisruptionBudgetCall(String namespace) implements BiFunction<ApiClient, CallParams, Call> {
+  private record ListPodDisruptionBudgetCall(String namespace) implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
         return new PolicyV1Api(client)
             .listNamespacedPodDisruptionBudgetCall(
                 namespace,
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
@@ -352,10 +354,10 @@ public class WatchBuilder {
     }
   }
 
-  private record ListClustersCall(String namespace) implements BiFunction<ApiClient, CallParams, Call> {
+  private record ListClustersCall(String namespace) implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
@@ -365,7 +367,7 @@ public class WatchBuilder {
                 "v1",
                 namespace,
                 "clusters",
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
@@ -382,10 +384,10 @@ public class WatchBuilder {
     }
   }
 
-  private record ListDomainsCall(String namespace) implements BiFunction<ApiClient, CallParams, Call> {
+  private record ListDomainsCall(String namespace) implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
@@ -395,7 +397,7 @@ public class WatchBuilder {
                 "v9",
                 namespace,
                 "domains",
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
@@ -412,17 +414,17 @@ public class WatchBuilder {
     }
   }
 
-  private record ListNamespacedConfigMapCall(String namespace) implements BiFunction<ApiClient, CallParams, Call> {
+  private record ListNamespacedConfigMapCall(String namespace) implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
         return new CoreV1Api(client)
             .listNamespacedConfigMapCall(
                 namespace,
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
@@ -440,16 +442,16 @@ public class WatchBuilder {
     }
   }
 
-  private static class ListNamespaceCall implements BiFunction<ApiClient, CallParams, Call> {
+  private static class ListNamespaceCall implements BiFunction<ApiClient, ListOptions, Call> {
 
     @Override
-    public Call apply(ApiClient client, CallParams callParams) {
+    public Call apply(ApiClient client, ListOptions callParams) {
       configureClient(client);
 
       try {
         return new CoreV1Api(client)
             .listNamespaceCall(
-                callParams.getPretty(),
+                PRETTY,
                 ALLOW_BOOKMARKS,
                 START_LIST,
                 callParams.getFieldSelector(),
