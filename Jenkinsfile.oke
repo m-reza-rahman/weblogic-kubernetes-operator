@@ -54,7 +54,7 @@ pipeline {
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
         MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-gate' : 'oke-gate'}"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
-        PARALLEL_RUN = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? true : false}"
+
     }
 
     parameters {
@@ -170,6 +170,10 @@ pipeline {
         booleanParam(name: 'COLLECT_LOGS_ON_SUCCESS',
                      description: 'Collect logs for successful runs. Default is false.',
                      defaultValue: false
+        )
+        booleanParam(name: 'PARALLEL_RUN',
+                             description: 'Run tests in parallel. Default is false.',
+                             defaultValue: false
         )
         string(name: 'REMOTECONSOLE_VERSION',
                description: 'RemoteConsole version.',
