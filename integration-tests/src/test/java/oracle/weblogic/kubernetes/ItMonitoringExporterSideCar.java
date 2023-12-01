@@ -506,7 +506,7 @@ class ItMonitoringExporterSideCar {
   @AfterAll
   public void tearDownAll() {
 
-    // uninstall NGINX release
+    // uninstall Traefik
     logger.info("Uninstalling Traefik");
     if (traefikHelmParams != null) {
       assertThat(uninstallTraefik(traefikHelmParams))
@@ -556,6 +556,6 @@ class ItMonitoringExporterSideCar {
 
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-        "traefik/traefik-ingress-rules-monitoring.yaml");
+        "traefik/traefik-ingress-rules-monitoring.yaml", "ItMonitoringExporterSideCar");
   }
 }

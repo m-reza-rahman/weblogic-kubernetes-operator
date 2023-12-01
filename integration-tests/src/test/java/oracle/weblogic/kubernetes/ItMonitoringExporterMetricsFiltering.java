@@ -561,7 +561,6 @@ class ItMonitoringExporterMetricsFiltering {
     }
     if (!OKD) {
       uninstallPrometheusGrafana(promHelmParams.getHelmParams(), grafanaHelmParams);
-
       deletePersistentVolumeClaim("pvc-alertmanager" + releaseSuffix, monitoringNS);
       deletePersistentVolume("pv-testalertmanager" + releaseSuffix);
       deletePersistentVolumeClaim("pvc-" + prometheusReleaseName, monitoringNS);
@@ -735,8 +734,8 @@ class ItMonitoringExporterMetricsFiltering {
 
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-        "traefik/traefik-ingress-rules-monitoring.yaml");
-    createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid);
+        "traefik/traefik-ingress-rules-monitoring.yaml", "ItMonitoringExporterMetrics");
+    createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid, "ItMonitoringExporterMetrics");
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {

@@ -1313,10 +1313,10 @@ public class MonitoringUtils {
    * @param ingressRulesFileName ingress rules file name
    */
   public static void createTraefikIngressRoutingRulesForMonitoring(String namespace, String serviceName,
-                                                                   String ingressRulesFileName) {
+                                                                   String ingressRulesFileName, String testclass) {
     logger.info("Creating ingress rules for prometheus traffic routing");
     Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, ingressRulesFileName);
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, ingressRulesFileName);
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, testclass,ingressRulesFileName);
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
@@ -1343,10 +1343,10 @@ public class MonitoringUtils {
    * @param namespace domain namespace
    * @param domainUID domain uid
    */
-  public static void createTraefikIngressRoutingRulesForDomain(String namespace, String domainUID) {
-    logger.info("Creating ingress rules for prometheus traffic routing");
+  public static void createTraefikIngressRoutingRulesForDomain(String namespace, String domainUID, String testclass) {
+    logger.info("Creating ingress rules for domain traffic routing");
     Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-exporter.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-exporter.yaml");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, testclass,"traefik/traefik-ingress-rules-exporter.yaml");
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
@@ -1355,6 +1355,27 @@ public class MonitoringUtils {
           .getBytes(StandardCharsets.UTF_8));
     });
     String command = KUBERNETES_CLI + " create -f " + dstFile;
+    logger.info("Running {0}", command);
+    ExecResult result;
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+  }
+
+  /**
+   * Delete Traefik ingress routing rules for domain.
+   */
+  private static void deleteTraefikIngressRoutingRulesForDomain(String testclass) {
+    logger.info("Deleting ingress rules for domain traffic routing");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, testclass,"traefik/traefik-ingress-rules-exporter.yaml");
+
+    String command = KUBERNETES_CLI + " delete -f " + dstFile;
     logger.info("Running {0}", command);
     ExecResult result;
     try {
