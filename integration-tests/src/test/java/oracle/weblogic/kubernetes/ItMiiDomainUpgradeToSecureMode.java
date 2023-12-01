@@ -385,9 +385,10 @@ class ItMiiDomainUpgradeToSecureMode {
   /**
    * Test upgrade from 1411 to 1412 with production on and secure mode not configured.
    *
-   * Verify the sample application available at default port 7001 before and after upgrade. Verify the console and REST
-   * management interfaces available at default administration port 9002 before upgrade and only REST management
-   * interfaces available at default administration port 9002 after upgrade. 
+   * Verify the sample application available at default port 7001 before and after upgrade. 
+   * Verify the console and REST management interfaces available at default 
+   * administration port 9002 before upgrade and only REST management interfaces available at 
+   * default administration port 9002 after upgrade through HTTPS protocol. 
    * Verify the console is moved to a new location in 1412.
    *
    */
@@ -419,6 +420,8 @@ class ItMiiDomainUpgradeToSecureMode {
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
+    String administrationIngressHost = createAdministrationIngressHostRouting(domainUid, 9002, 
+        nginxParams.getIngressClassName(), true);
     createNginxIngressHostRouting(domainUid, 9002, 7001, 8001, nginxParams.getIngressClassName(), false);
 
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
@@ -427,9 +430,9 @@ class ItMiiDomainUpgradeToSecureMode {
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
     
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);    
@@ -442,9 +445,9 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, false, ingressIP);
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);    
@@ -823,6 +826,79 @@ class ItMiiDomainUpgradeToSecureMode {
 
   }
 
+  private String createAdministrationIngressHostRouting(String domainUid, int adminPort, 
+      String ingressClassName, boolean isTLS) {
+    // create an ingress in domain namespace
+    String ingressName;
+    String adminIngressHost;
+
+    if (isTLS) {
+      ingressName = domainUid + "-administration-tls";
+    } else {
+      ingressName = domainUid + "-administration-nontls";
+    }
+
+    // create ingress rules for two domains
+    List<V1IngressRule> ingressRules = new ArrayList<>();
+    List<V1IngressTLS> tlsList = new ArrayList<>();
+    V1HTTPIngressPath adminIngressPath = new V1HTTPIngressPath()
+        .path(null)
+        .pathType("ImplementationSpecific")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name(domainUid + "-adminserver")
+                .port(new V1ServiceBackendPort()
+                    .number(adminPort)))
+        );
+
+    // set the ingress rule host
+    if (isTLS) {
+      adminIngressHost = domainUid + "." + domainNamespace + ".administration.ssl.test";
+    } else {
+      adminIngressHost = domainUid + "." + domainNamespace + ".administration.nonssl.test";
+    }
+    V1IngressRule adminIngressRule = new V1IngressRule()
+        .host(adminIngressHost)
+        .http(new V1HTTPIngressRuleValue()
+            .paths(Collections.singletonList(adminIngressPath)));
+
+    ingressRules.add(adminIngressRule);
+
+    if (isTLS) {
+      String admintlsSecretName = domainUid + "-administration-nginx-tls-secret";
+      createCertKeyFiles(adminIngressHost);
+      assertDoesNotThrow(() -> createSecretWithTLSCertKey(admintlsSecretName,
+          domainNamespace, tlsKeyFile, tlsCertFile));
+      createCertKeyFiles(clusterIngressHost);
+      V1IngressTLS admintls = new V1IngressTLS()
+          .addHostsItem(adminIngressHost)
+          .secretName(admintlsSecretName);
+      tlsList.add(admintls);
+    }
+    assertDoesNotThrow(() -> {
+      Map<String, String> annotations = null;
+      if (isTLS) {
+        annotations = new HashMap<>();
+        annotations.put("nginx.ingress.kubernetes.io/backend-protocol", "HTTPS");
+      }
+      createIngress(ingressName, domainNamespace, annotations, ingressClassName,
+          ingressRules, (isTLS ? tlsList : null));
+    });
+
+    assertDoesNotThrow(() -> {
+      List<String> ingresses = listIngresses(domainNamespace);
+      logger.info(ingresses.toString());
+    });
+    // check the ingress was found in the domain namespace
+    assertThat(assertDoesNotThrow(() -> listIngresses(domainNamespace)))
+        .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
+        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
+        .contains(ingressName);
+
+    logger.info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
+    return adminIngressHost;
+  }
+  
   private static Path tlsCertFile;
   private static Path tlsKeyFile;
 
