@@ -1291,7 +1291,7 @@ public class CommonTestUtils {
     }
 
     String serviceExtIPAddress = serviceExtIPAddr;
-    if (serviceExtIPAddr.contains(":")) {
+    if (serviceExtIPAddr != null && serviceExtIPAddr.contains(":")) {
       serviceExtIPAddress = "[" + serviceExtIPAddr + "]";
     }
 
