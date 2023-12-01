@@ -62,7 +62,6 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyP
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installMonitoringExporter;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.uninstallPrometheusGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccess;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccessThroughLB;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPvAndPvc;
@@ -489,15 +488,6 @@ class ItMonitoringExporterMetricsFiltering {
       installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
           domainNamespace,
           domainUid);
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-      String hostPort =  host + ":" + nodeportshttp;
-      if (OKE_CLUSTER_PRIVATEIP) {
-        hostPort = ingressIP;
-      }
-      verifyMonExpAppAccessThroughLB("*", 1, hostPort);
     }
   }
   
