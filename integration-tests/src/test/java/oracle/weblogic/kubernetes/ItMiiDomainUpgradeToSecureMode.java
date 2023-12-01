@@ -314,10 +314,17 @@ class ItMiiDomainUpgradeToSecureMode {
   }
 
   /**
-   * Test upgrade from 1411 to 1412 with production on and secure mode on.
+   * Test upgrade from 1411 to 1412 with production and secure mode on.
+   * 
+   * Verify all services are available only in HTTPS in adminserver as well as managed servers.
+   * Verify the admin server sample application is available in default port 7002 before upgrade and after upgrade.
+   * Verify the management REST interface continue to be available in default admin port 9002 before and after upgrade.
+   * Verify the cluster sample application continue to available in default port 8500 before and after upgrade.
+   * Verify the console is moved to a new location in 1412.
+   * 
    */
   @Test
-  @DisplayName("Verify the secure service through administration port")
+  @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode off")
   void testUpgrade1411to1412ProdOnSecOn() {
     //no changes
     domainNamespace = namespaces.get(4);
@@ -353,20 +360,23 @@ class ItMiiDomainUpgradeToSecureMode {
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);    
+        "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
-    String image1412 = WEBLOGIC_IMAGE_NAME + ":" + "14.1.2.0";
-    image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
+    String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
     upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
