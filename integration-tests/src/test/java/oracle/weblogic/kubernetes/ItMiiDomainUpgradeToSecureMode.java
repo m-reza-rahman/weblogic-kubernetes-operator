@@ -360,7 +360,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);
@@ -374,7 +374,7 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         "/console/login/LoginForm.jsp", "This document you requested has moved", false, ingressIP);
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         "/sample-war/index.jsp", adminServerName, false, ingressIP);    
@@ -383,10 +383,16 @@ class ItMiiDomainUpgradeToSecureMode {
   }
 
   /**
-   * Test upgrade from 1411 to 1412 with production on and secure mode off.
+   * Test upgrade from 1411 to 1412 with production on and secure mode not configured.
+   *
+   * Verify the sample application available at default port 7001 before and after upgrade. Verify the console and REST
+   * management interfaces available at default administration port 9002 before upgrade and only REST management
+   * interfaces available at default administration port 9002 after upgrade. 
+   * Verify the console is moved to a new location in 1412.
+   *
    */
   @Test
-  @DisplayName("Verify the secure service through administration port")
+  @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode not configured")
   void testUpgrade1411to1412ProdOnSecNotConfigured() {
     //convert the domain to explicitly disable Secure Mode for the upgrade so that we retain the current 
     //functionality for the user
@@ -420,11 +426,13 @@ class ItMiiDomainUpgradeToSecureMode {
     String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
-
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
+    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
 
@@ -433,8 +441,13 @@ class ItMiiDomainUpgradeToSecureMode {
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         "/console/login/LoginForm.jsp", wlsConsoleText, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, false, ingressIP);
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
+        "/sample-war/index.jsp", adminServerName, false, ingressIP);    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         "/sample-war/index.jsp", "ms-1", false, ingressIP);
   }
