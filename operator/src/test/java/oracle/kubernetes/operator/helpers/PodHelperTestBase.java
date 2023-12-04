@@ -371,9 +371,8 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
         .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainTopology)
         .addToPacket(SERVER_SCAN, domainTopology.getServerConfig(serverName))
         .addDomainPresenceInfo(domainPresenceInfo);
-    testSupport.addComponent(
+    testSupport.addToPacket(
         ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-        PodAwaiterStepFactory.class,
         new PassthroughPodAwaiterStepFactory());
 
     definePodTuning();

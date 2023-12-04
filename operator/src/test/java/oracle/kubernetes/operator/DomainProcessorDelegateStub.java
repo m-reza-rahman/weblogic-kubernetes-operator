@@ -116,11 +116,6 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
   }
 
   @Override
-  public void addToPacket(Packet packet) {
-    packet.getComponents().put(DELEGATE_COMPONENT_NAME, Component.createFor(CoreDelegate.class, this));
-  }
-
-  @Override
   public File getDeploymentHome() {
     return new File("/deployment");
   }

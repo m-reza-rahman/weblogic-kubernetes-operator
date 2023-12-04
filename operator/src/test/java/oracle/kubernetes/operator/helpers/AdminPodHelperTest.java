@@ -258,7 +258,6 @@ class AdminPodHelperTest extends PodHelperTestBase {
 
   @Test
   void whenAdminPodReplacementFails() {
-    testSupport.addRetryStrategy(retryStrategy);
     initializeExistingPod(getIncompatiblePod());
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 
@@ -272,7 +271,6 @@ class AdminPodHelperTest extends PodHelperTestBase {
 
   @Test
   void whenAdminPodReplacementFails_generateFailedEvent() {
-    testSupport.addRetryStrategy(retryStrategy);
     initializeExistingPod(getIncompatiblePod());
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 

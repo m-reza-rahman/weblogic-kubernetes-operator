@@ -225,7 +225,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
     testSupport.defineResources(domain);
     testSupport.defineResources(cluster);
-    testSupport.addComponent(JOBWATCHER_COMPONENT_NAME, JobAwaiterStepFactory.class, new JobAwaiterStepFactoryStub());
+    testSupport.addToPacket(JOBWATCHER_COMPONENT_NAME, new JobAwaiterStepFactoryStub());
 
     TuningParametersStub.setParameter(DOMAIN_PRESENCE_RECHECK_INTERVAL_SECONDS, "2");
   }

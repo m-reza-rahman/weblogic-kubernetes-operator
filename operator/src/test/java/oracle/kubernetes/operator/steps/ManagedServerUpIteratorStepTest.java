@@ -192,9 +192,8 @@ class ManagedServerUpIteratorStepTest extends ThreadFactoryTestBase implements W
             .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig)
             .addDomainPresenceInfo(info);
     testSupport.doOnCreate(POD, p -> schedulePodUpdates((V1Pod) p));
-    testSupport.addComponent(
+    testSupport.addToPacket(
             ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-            PodAwaiterStepFactory.class,
             watcher);
   }
 

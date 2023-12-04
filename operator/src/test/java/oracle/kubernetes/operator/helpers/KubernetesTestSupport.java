@@ -28,7 +28,6 @@ import com.meterware.simplestub.Memento;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
-import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -71,19 +70,14 @@ import io.kubernetes.client.util.generic.options.PatchOptions;
 import io.kubernetes.client.util.generic.options.UpdateOptions;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
-import jakarta.json.JsonException;
 import jakarta.json.JsonPatch;
 import jakarta.json.JsonStructure;
 import okhttp3.internal.http2.ErrorCode;
 import okhttp3.internal.http2.StreamResetException;
-import oracle.kubernetes.operator.builders.CallParams;
 import oracle.kubernetes.operator.calls.KubernetesApi;
 import oracle.kubernetes.operator.calls.KubernetesApiFactory;
-import oracle.kubernetes.operator.calls.SimulatedStep;
 import oracle.kubernetes.operator.webhooks.model.Scale;
 import oracle.kubernetes.operator.work.FiberTestSupport;
-import oracle.kubernetes.operator.work.Packet;
-import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -92,11 +86,6 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.PartialObjectMetadata;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
-
-import static java.net.HttpURLConnection.HTTP_INTERNAL_ERROR;
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 
 @SuppressWarnings("WeakerAccess")
 public class KubernetesTestSupport extends FiberTestSupport {
@@ -124,14 +113,14 @@ public class KubernetesTestSupport extends FiberTestSupport {
   public static final String TOKEN_REVIEW = "TokenReview";
   public static final String VALIDATING_WEBHOOK_CONFIGURATION = "ValidatingWebhookConfiguration";
 
+  public static final String[] SUB_RESOURCE_SUFFIXES = {"Status", "Metadata"};
+
   private static final String PATH_PATTERN = "\\w+(?:.\\w+)*";
   private static final String OP_PATTERN = "=|==|!=";
   private static final String VALUE_PATTERN = ".*";
   private static final Pattern FIELD_PATTERN
         = Pattern.compile("(" + PATH_PATTERN + ")(" + OP_PATTERN + ")(" + VALUE_PATTERN + ")");
 
-  private static final RequestParams REQUEST_PARAMS
-      = new RequestParams("testcall", "junit", "testName", "body", (CallParams) null);
   public static final String DELETE_POD = "deletePod";
 
   private final Map<String, DataRepository<?>> repositories = new HashMap<>();
@@ -281,7 +270,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
   private DataRepository<?> selectRepository(String resourceType) {
     String key = resourceType;
-    for (String suffix : RequestParams.SUB_RESOURCE_SUFFIXES) {
+    for (String suffix : SUB_RESOURCE_SUFFIXES) {
       if (key.endsWith(suffix)) {
         key = key.substring(0, key.length() - suffix.length());
         break;
@@ -551,11 +540,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
       <T> Object execute(CallContext callContext, DataRepository<T> dataRepository) {
         return callContext.createResource(dataRepository);
       }
-
-      @Override
-      public String getName(RequestParams requestParams) {
-        return KubernetesUtils.getResourceName(requestParams.body);
-      }
     },
     delete {
       @Override
@@ -615,10 +599,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
     };
 
     abstract <T> Object execute(CallContext callContext, DataRepository<T> dataRepository);
-
-    public String getName(RequestParams requestParams) {
-      return requestParams.name;
-    }
   }
 
   static class Failure {
@@ -649,11 +629,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
       this.operation = operation;
     }
 
-    boolean matches(String resourceType, RequestParams requestParams, Operation operation) {
+    boolean matches(String resourceType, String resourceName, String resourceNamespace, Operation operation) {
       return this.resourceType.equals(resourceType)
           && (this.operation == null || this.operation == operation)
-          && (name == null || Objects.equals(name, requestParams.name))
-          && (namespace == null || Objects.equals(namespace, requestParams.namespace));
+          && (name == null || Objects.equals(name, resourceName))
+          && (namespace == null || Objects.equals(namespace, resourceNamespace));
     }
 
     HttpErrorException getException() {
@@ -711,9 +691,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
       this.action = action;
     }
 
-    boolean matches(String resourceType, RequestParams requestParams) {
+    boolean matches(String resourceType, String call) {
       return this.resourceType.equals(resourceType)
-          && (this.call.equals(requestParams.call));
+          && (this.call.equals(call));
     }
 
     void doAction() {
@@ -762,7 +742,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
       return new KubernetesApi<>() {
         @Override
         public KubernetesApiResponse<ApiType> get(String name, GetOptions getOptions) {
-          return null;
+          // HERE
+          CallContext callContext = new CallContext(requestParams, fieldSelector, labelSelector, gracePeriodSeconds);
+          return callContext.execute();
         }
 
         @Override
@@ -820,26 +802,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
           return null;
         }
       };
-    }
-  }
-
-  private class AsyncRequestStepFactoryImpl implements AsyncRequestStepFactory {
-
-    @Override
-    public <T> Step createRequestAsync(
-        ResponseStep<T> next,
-        RequestParams requestParams,
-        CallFactory<T> factory,
-        RetryStrategy retryStrategy,
-        Pool<ApiClient> helper,
-        int timeoutSeconds,
-        int maxRetryCount,
-        Integer gracePeriodSeconds,
-        String fieldSelector,
-        String labelSelector,
-        String resourceVersion) {
-      return new KubernetesTestSupport.SimulatedResponseStep(
-          next, requestParams, fieldSelector, labelSelector, gracePeriodSeconds);
     }
   }
 
@@ -1294,25 +1256,28 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   private class CallContext {
-    private final RequestParams requestParams;
     private final String fieldSelector;
     private final String[] labelSelector;
     private final Integer gracePeriodSeconds;
     private String resourceType;
+    private String requestNamespace;
+    private String requestName;
+    private String requstCall;
+    private Object requestBody;
     private Operation operation;
     private String cont = null;
 
-    CallContext(RequestParams requestParams) {
-      this(requestParams, null, null, null);
+    CallContext(Operation operation, String resourceType) {
+      this(operation, resourceType, null, null, null);
     }
 
-    CallContext(RequestParams requestParams, String fieldSelector, String labelSelector, Integer gracePeriodSeconds) {
-      this.requestParams = requestParams;
+    CallContext(Operation operation, String resourceType,
+                String fieldSelector, String labelSelector, Integer gracePeriodSeconds) {
+      this.operation = operation;
+      this.resourceType = resourceType;
       this.fieldSelector = fieldSelector;
       this.labelSelector = labelSelector == null ? null : labelSelector.split(",");
       this.gracePeriodSeconds = gracePeriodSeconds;
-
-      parseCallName(requestParams);
     }
 
     public void setContinue(String cont) {
@@ -1324,25 +1289,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     public Integer getLimit() {
-      return Optional.ofNullable(requestParams)
-          .map(RequestParams::getCallParams).map(CallParams::getLimit).orElse(null);
-    }
-
-    private void parseCallName(RequestParams requestParams) {
-      resourceType = requestParams.getResourceType();
-      operation = getOperation(requestParams);
-
-      if (isDeleteCollection()) {
-        selectDeleteCollectionOperation();
-      }
-    }
-
-    @Nonnull
-    private Operation getOperation(RequestParams requestParams) {
-      return requestParams.call.equals("getVersion")
-            ? Operation.getVersion
-            : Operation.valueOf(requestParams.getOperationName());
-
+      return null; // FIXME
     }
 
     private boolean isDeleteCollection() {
@@ -1356,7 +1303,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     private Object execute() {
       try {
-        if (failure != null && failure.matches(resourceType, requestParams, operation)) {
+        if (failure != null && failure.matches(resourceType, requestName, requestNamespace, operation)) {
           try {
             throw failure.getException();
           } finally {
@@ -1366,7 +1313,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
         return operation.execute(this, selectRepository(resourceType));
       } finally {
-        if (afterCallAction != null && afterCallAction.matches(resourceType, requestParams)) {
+        if (afterCallAction != null && afterCallAction.matches(resourceType, requstCall)) {
           afterCallAction.doAction();
           afterCallAction = null;
         }
@@ -1375,144 +1322,45 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     @SuppressWarnings("unchecked")
     <T> T createResource(DataRepository<T> dataRepository) {
-      return dataRepository.createResource(requestParams.namespace, (T) requestParams.body);
+      return dataRepository.createResource(requestNamespace, (T) requestBody);
     }
 
     @SuppressWarnings("unchecked")
     private <T> T replaceResource(DataRepository<T> dataRepository) {
-      return dataRepository.replaceResource(requestParams.name, (T) requestParams.body);
+      return dataRepository.replaceResource(requestName, (T) requestBody);
     }
 
     @SuppressWarnings("unchecked")
     private <T> T replaceResourceStatus(DataRepository<T> dataRepository) {
-      return dataRepository.replaceResourceStatus(requestParams.name, (T) requestParams.body);
+      return dataRepository.replaceResourceStatus(requestName, (T) requestBody);
     }
 
     private <T> T deleteResource(DataRepository<T> dataRepository) {
       dataRepository.sendDeleteCallback(gracePeriodSeconds);
-      return dataRepository.deleteResource(requestParams.name, requestParams.namespace, requestParams.call);
+      return dataRepository.deleteResource(requestName, requestNamespace, requstCall);
     }
 
     private <T> T patchResource(DataRepository<T> dataRepository) {
       return dataRepository.patchResource(
-          requestParams.name, requestParams.namespace, (V1Patch) requestParams.body);
+          requestName, requestNamespace, (V1Patch) requestBody);
     }
 
     private <T> Object listResources(Integer limit, String cont, DataRepository<T> dataRepository) {
-      return dataRepository.listResources(requestParams.namespace, limit, cont, fieldSelector, labelSelector);
+      return dataRepository.listResources(requestNamespace, limit, cont, fieldSelector, labelSelector);
     }
 
     private <T> T readResource(DataRepository<T> dataRepository) {
-      return dataRepository.readResource(requestParams.name, requestParams.namespace);
+      return dataRepository.readResource(requestName, requestNamespace);
     }
 
     private <T> PartialObjectMetadata readMetadata(DataRepository<T> dataRepository) {
-      final T resource = dataRepository.readResource(requestParams.name, requestParams.namespace);
+      final T resource = dataRepository.readResource(requestName, requestNamespace);
       final V1ObjectMeta metadata = ((KubernetesObject) resource).getMetadata();
       return new PartialObjectMetadata(metadata);
     }
 
     public <T> V1Status deleteCollection(DataRepository<T> dataRepository) {
-      return dataRepository.deleteResourceCollection(requestParams.namespace);
-    }
-  }
-
-  private class SimulatedResponseStep extends Step implements SimulatedStep {
-    private final CallContext callContext;
-
-    SimulatedResponseStep(
-          ResponseStep<?> next, RequestParams requestParams,
-          String fieldSelector, String labelSelector, Integer gracePeriodSeconds) {
-      super(next);
-      callContext = new CallContext(requestParams, fieldSelector, labelSelector, gracePeriodSeconds);
-      if (next != null) {
-        next.setPrevious(this);
-      }
-    }
-
-    @Override
-    protected String getDetail() {
-      return getRequestParams().call;
-    }
-
-    @Override
-    public Void apply(Packet packet) {
-      numCalls++;
-      try {
-        Component oldResponse = packet.getComponents().remove(RESPONSE_COMPONENT_NAME);
-        if (oldResponse != null) {
-          CallResponse<?> old = oldResponse.getSpi(CallResponse.class);
-          if (old != null && old.getResult() != null) {
-            // called again, access continue value, if available
-            callContext.setContinue(accessContinue(old.getResult()));
-          }
-        }
-
-        Object callResult = callContext.execute();
-        CallResponse<Object> callResponse = createResponse(callResult);
-        packet.getComponents().put(RESPONSE_COMPONENT_NAME, Component.createFor(callResponse));
-        // clear out earlier results.  Replicating the behavior as in AsyncRequestStep.apply()
-        packet.remove(CONTINUE);
-      } catch (NotFoundException e) {
-        packet.getComponents().put(RESPONSE_COMPONENT_NAME, Component.createFor(createResponse(e, getRequestParams())));
-      } catch (HttpErrorException e) {
-        packet.getComponents().put(RESPONSE_COMPONENT_NAME, Component.createFor(createResponse(e, getRequestParams())));
-      } catch (JsonException e) {
-        packet.getComponents().put(RESPONSE_COMPONENT_NAME, Component.createFor(createResponse(e, getRequestParams())));
-      } catch (Exception e) {
-        packet.getComponents().put(RESPONSE_COMPONENT_NAME, Component.createFor(createResponse(e, getRequestParams())));
-      }
-
-      return doNext(packet);
-    }
-
-    private RequestParams getRequestParams() {
-      return this.callContext.requestParams;
-    }
-
-    /**
-     * Access continue field, if any, from list metadata.
-     * @param result Kubernetes list result
-     * @return Continue value
-     */
-    private String accessContinue(Object result) {
-      String cont = "";
-      if (result != null) {
-        try {
-          Method m = result.getClass().getMethod("getMetadata");
-          Object meta = m.invoke(result);
-          if (meta instanceof V1ListMeta) {
-            return ((V1ListMeta) meta).getContinue();
-          }
-        } catch (NoSuchMethodException
-                | SecurityException
-                | IllegalAccessException
-                | IllegalArgumentException
-                | InvocationTargetException e) {
-          // no-op, no-log
-        }
-      }
-      return cont;
-    }
-
-    private <T> CallResponse<T> createResponse(T callResult) {
-      return CallResponse.createSuccess(REQUEST_PARAMS, callResult, HTTP_OK);
-    }
-
-    private CallResponse<?> createResponse(NotFoundException e, RequestParams requestParams) {
-      return CallResponse.createFailure(requestParams, new ApiException(e), HTTP_NOT_FOUND);
-    }
-
-    private CallResponse<?> createResponse(HttpErrorException e, RequestParams requestParams) {
-      return CallResponse.createFailure(requestParams, e.getApiException(), e.getApiException().getCode());
-    }
-
-    private CallResponse<?> createResponse(JsonException e, RequestParams requestParams) {
-      return CallResponse.createFailure(requestParams, new ApiException(e), HTTP_INTERNAL_ERROR);
-    }
-
-    private CallResponse<?> createResponse(Throwable t, RequestParams requestParams) {
-      return CallResponse.createFailure(requestParams, new ApiException(t), HTTP_UNAVAILABLE);
+      return dataRepository.deleteResourceCollection(requestNamespace);
     }
   }
 

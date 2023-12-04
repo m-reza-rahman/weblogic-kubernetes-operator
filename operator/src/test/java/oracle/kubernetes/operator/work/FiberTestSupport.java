@@ -13,6 +13,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import oracle.kubernetes.operator.MainDelegate;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.logging.LoggingContext;
 
@@ -34,9 +35,13 @@ public class FiberTestSupport {
   private final CompletionCallbackStub completionCallback = new CompletionCallbackStub();
   private final ExecutorServiceStub executor = ExecutorServiceStub.create();
   private final Engine engine = new Engine(executor);
-  private final MainDelegateStub mainDelegate = createStrictStub(MainDelegateStub.class);
 
-  private Packet packet = new Packet().with(mainDelegate);
+  private Packet packet = new Packet();
+
+  public FiberTestSupport() {
+    MainDelegateStub mainDelegate = createStrictStub(MainDelegateStub.class);
+    packet.put(ProcessingConstants.DELEGATE_COMPONENT_NAME, mainDelegate);
+  }
 
   public ExecutorService getExecutorService() {
     return executor;
@@ -78,12 +83,12 @@ public class FiberTestSupport {
   }
 
   public FiberTestSupport addDomainPresenceInfo(DomainPresenceInfo info) {
-    packet.with(info);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, info);
     return this;
   }
 
   public FiberTestSupport addLoggingContext(LoggingContext loggingContext) {
-    packet.getComponents().put(LOGGING_CONTEXT_KEY, Component.createFor(loggingContext));
+    packet.put(LOGGING_CONTEXT_KEY, loggingContext);
     return this;
   }
 

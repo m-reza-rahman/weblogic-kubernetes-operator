@@ -457,7 +457,7 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
 
   @Test
   void whenJobWithReady_performNextStep() {
-    testSupport.addComponent(JOBWATCHER_COMPONENT_NAME, JobAwaiterStepFactory.class, new JobAwaiterStepFactoryStub());
+    testSupport.addToPacket(JOBWATCHER_COMPONENT_NAME, new JobAwaiterStepFactoryStub());
     startWatchDomainIntrospectorJobReadyStep(this::dontChangeJob);
 
     assertThat(getDomainStatus().hasConditionWithType(FAILED), is(false));
