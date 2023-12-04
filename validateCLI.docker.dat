@@ -49,4 +49,5 @@ wlsDockerContainer
 wls-docker-container-imag
 dii-docker-container
 DockerCluster
+wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0
 :-docker.io
