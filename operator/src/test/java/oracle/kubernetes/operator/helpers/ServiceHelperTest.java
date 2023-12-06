@@ -446,7 +446,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
 
     runServiceHelper();
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test

@@ -10,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import com.meterware.simplestub.Memento;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.LabelConstants;
@@ -20,7 +21,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_EXISTS;
 import static oracle.kubernetes.common.logging.MessageKeys.CM_REPLACED;
@@ -32,7 +32,6 @@ import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CONFIG_MA
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -90,7 +89,7 @@ class ConfigMapHelperTest {
     Step scriptConfigMapStep = ConfigMapHelper.createScriptConfigMapStep(DOMAIN_NS, null);
     testSupport.runSteps(scriptConfigMapStep);
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test
@@ -99,18 +98,6 @@ class ConfigMapHelperTest {
 
     assertThat(testSupport.getResources(CONFIG_MAP), notNullValue());
     assertThat(logRecords, containsInfo(CM_CREATED));
-  }
-
-  @Test
-  void whenNoConfigMap_retryOnFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnCreate(CONFIG_MAP, DOMAIN_NS, 401);
-
-    Step scriptConfigMapStep = ConfigMapHelper.createScriptConfigMapStep(DOMAIN_NS, null);
-    testSupport.runSteps(scriptConfigMapStep);
-
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
-    assertThat(retryStrategy.getConflictStep(), sameInstance(scriptConfigMapStep));
   }
 
   @Test

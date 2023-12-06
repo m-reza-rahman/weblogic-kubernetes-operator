@@ -50,7 +50,6 @@ import static oracle.kubernetes.operator.EventMatcher.hasEvent;
 import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAUTHORIZED;
 import static oracle.kubernetes.operator.helpers.DomainIntrospectorJobTest.TEST_VOLUME_NAME;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_FAILED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.POD_CYCLE_STARTING;
@@ -241,19 +240,6 @@ class AdminPodHelperTest extends PodHelperTestBase {
     V1Pod existingPod = createTestPodModel();
     Objects.requireNonNull(existingPod.getSpec()).setContainers(null);
     return existingPod;
-  }
-
-  @Test
-  void whenAdminPodDeletionFails_unrecoverableFailureOnUnauthorized() {
-    testSupport.addRetryStrategy(retryStrategy);
-    initializeExistingPod(getIncompatiblePod());
-    testSupport.failOnDelete(KubernetesTestSupport.POD, getPodName(), NS, HTTP_UNAUTHORIZED);
-
-    FiberTestSupport.StepFactory stepFactory = getStepFactory();
-    Step initialStep = stepFactory.createStepList(terminalStep);
-    testSupport.runSteps(initialStep);
-
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
   }
 
   @Test

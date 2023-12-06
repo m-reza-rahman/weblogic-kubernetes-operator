@@ -110,9 +110,8 @@ class RollingHelperTest {
 
     testSupport.defineResources(domain);
     domainTopology = configSupport.createDomainConfig();
-    testSupport.addComponent(
+    testSupport.addToPacket(
         ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-        PodAwaiterStepFactory.class,
         new PassthroughPodAwaiterStepFactory());
 
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domainEventK8SObjects", domainEventObjects));

@@ -98,9 +98,8 @@ class DomainUpPlanTest {
     testSupport.defineResources(domain);
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
 
-    testSupport.addComponent(
+    testSupport.addToPacket(
         ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-        PodAwaiterStepFactory.class,
         new PodHelperTestBase.PassthroughPodAwaiterStepFactory());
   }
 
@@ -147,7 +146,7 @@ class DomainUpPlanTest {
     configSupport.addWlsServer(WEBLOGIC_SERVER_NAME, NAP_PORT_1);
     configSupport.setAdminServerName(WEBLOGIC_SERVER_NAME);
     Step plan =
-        DomainProcessorImpl.bringAdminServerUp(new NullPodWaiter());
+        DomainProcessorImpl.bringAdminServerUp(domainPresenceInfo, new NullPodWaiter());
     testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
     testSupport.runSteps(plan);
 
@@ -166,7 +165,7 @@ class DomainUpPlanTest {
         .addNetworkAccessPoint(new NetworkAccessPoint(NAP_NAME_1, "t3", NAP_PORT_1, 8085));
     domain.getSpec().getOrCreateAdminServer().withChannel(NAP_NAME_1, NAP_PORT_1);
     Step plan =
-        DomainProcessorImpl.bringAdminServerUp(new NullPodWaiter());
+        DomainProcessorImpl.bringAdminServerUp(domainPresenceInfo, new NullPodWaiter());
     testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
     testSupport.runSteps(plan);
 
@@ -185,7 +184,7 @@ class DomainUpPlanTest {
     domain.getSpec().getOrCreateAdminServer();
 
     Step plan =
-        DomainProcessorImpl.bringAdminServerUp(new NullPodWaiter());
+        DomainProcessorImpl.bringAdminServerUp(domainPresenceInfo, new NullPodWaiter());
     testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
     testSupport.runSteps(plan);
 
@@ -206,7 +205,7 @@ class DomainUpPlanTest {
     domain.getSpec().getOrCreateAdminServer().withChannel(NAP_NAME_1, NAP_PORT_1);
 
     Step plan =
-        DomainProcessorImpl.bringAdminServerUp(new NullPodWaiter());
+        DomainProcessorImpl.bringAdminServerUp(domainPresenceInfo, new NullPodWaiter());
     testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
     testSupport.runSteps(plan);
 

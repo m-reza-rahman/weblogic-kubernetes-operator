@@ -184,7 +184,7 @@ class PersistentVolumeHelperTest {
 
     runPersistentVolumeHelper();
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test

@@ -221,8 +221,7 @@ class JobHelperTest extends DomainValidationTestBase {
     domain.getSpec().setNodeName(null);
     testSupport.defineResources(domain);
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
-    testSupport.addComponent(JOBWATCHER_COMPONENT_NAME,
-          JobAwaiterStepFactory.class,
+    testSupport.addToPacket(JOBWATCHER_COMPONENT_NAME,
           createNiceStub(JobAwaiterStepFactory.class));
   }
 

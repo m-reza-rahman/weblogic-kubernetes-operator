@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Service;
 import oracle.kubernetes.operator.work.TerminalStep;
@@ -69,7 +70,7 @@ class ServiceHelperDeletionTest extends ServiceHelperTestBase {
 
     testSupport.runSteps(ServiceHelper.deleteServicesStep(SERVER_NAME, null));
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test

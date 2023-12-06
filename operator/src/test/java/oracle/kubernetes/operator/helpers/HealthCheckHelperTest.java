@@ -96,14 +96,14 @@ class HealthCheckHelperTest {
 
   private final List<Memento> mementos = new ArrayList<>();
   private final List<LogRecord> logRecords = new ArrayList<>();
-  private final CallTestSupport testSupport = new CallTestSupport();
+  private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
   private final AccessChecks accessChecks = new AccessChecks();
 
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(TuningParametersStub.install());
+    mementos.add(testSupport.install());
     mementos.add(TestUtils.silenceOperatorLogger().collectLogMessages(logRecords, LOG_KEYS));
-    mementos.add(testSupport.installSynchronousCallDispatcher());
   }
 
   @AfterEach
@@ -146,10 +146,7 @@ class HealthCheckHelperTest {
   }
 
   private void expectSelfSubjectRulesReview() {
-    testSupport
-        .createCannedResponse("createSelfSubjectRulesReview")
-        .ignoringBody()
-        .returning(new V1SelfSubjectRulesReview().status(accessChecks.createRulesStatus()));
+    testSupport.defineResources(new V1SelfSubjectRulesReview().status(accessChecks.createRulesStatus()));
   }
 
   @SuppressWarnings("SameParameterValue")

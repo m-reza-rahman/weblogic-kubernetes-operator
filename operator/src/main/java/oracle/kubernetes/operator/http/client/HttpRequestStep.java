@@ -87,9 +87,7 @@ public class HttpRequestStep extends Step {
              setThreadContext().namespace(getNamespaceFromInfo(info)).domainUid(getDomainUIDFromInfo(info))) {
       HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       recordResponse(response, packet);
-    } catch (IOException e) {
-      recordThrowableResponse(e, packet);
-    } catch (InterruptedException e) {
+    } catch (IOException | InterruptedException e) {
       recordThrowableResponse(e, packet);
     }
     return doNext(packet);

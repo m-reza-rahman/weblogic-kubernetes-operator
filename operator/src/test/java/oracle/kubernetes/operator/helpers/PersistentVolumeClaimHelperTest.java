@@ -98,8 +98,7 @@ class PersistentVolumeClaimHelperTest {
     WlsDomainConfig domainConfig = configSupport.createDomainConfig();
     testSupport
         .addToPacket(DOMAIN_TOPOLOGY, domainConfig)
-        .addComponent(PVCWATCHER_COMPONENT_NAME, PvcAwaiterStepFactory.class,
-            new DomainProcessorDelegateStub.TestPvcAwaiterStepFactory())
+        .addToPacket(PVCWATCHER_COMPONENT_NAME, new DomainProcessorDelegateStub.TestPvcAwaiterStepFactory())
         .addDomainPresenceInfo(domainPresenceInfo);
     configureDomain();
   }
@@ -190,7 +189,7 @@ class PersistentVolumeClaimHelperTest {
 
     runPersistentVolumeClaimHelper();
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test

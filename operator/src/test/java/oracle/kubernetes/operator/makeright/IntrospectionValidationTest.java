@@ -68,7 +68,7 @@ class IntrospectionValidationTest {
     mementos.add(TuningParametersStub.install());
 
     testSupport.addDomainPresenceInfo(info);
-    testSupport.addComponent(JOBWATCHER_COMPONENT_NAME, JobAwaiterStepFactory.class, new JobAwaiterStepFactoryStub());
+    testSupport.addToPacket(JOBWATCHER_COMPONENT_NAME, new JobAwaiterStepFactoryStub());
     testSupport.addToPacket(JOB_POD, new V1Pod().metadata(new V1ObjectMeta().name(jobPodName)));
     testSupport.defineResources(domain);
     DomainProcessorTestSetup.setupCluster(domain, clusters);

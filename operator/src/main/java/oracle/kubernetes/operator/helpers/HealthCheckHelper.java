@@ -208,13 +208,13 @@ public final class HealthCheckHelper {
     LOGGER.fine(MessageKeys.VERIFY_K8S_MIN_VERSION);
 
     try {
-      try {
-        while (true) {
+      while (true) {
+        try {
           VersionApi client = new VersionApi(Client.getInstance());
           return createAndValidateKubernetesVersion(client.getCode());
+        } catch (ApiException e) {
+          Thread.sleep(TuningParameters.getInstance().getInitializationRetryDelaySeconds() * 1000L);
         }
-      } catch (ApiException e) {
-        Thread.sleep(TuningParameters.getInstance().getInitializationRetryDelaySeconds() * 1000L);
       }
     } catch (Throwable t) {
       LOGGER.warning(MessageKeys.K8S_VERSION_CHECK_FAILURE, t);

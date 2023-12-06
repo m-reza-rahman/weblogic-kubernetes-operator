@@ -25,7 +25,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.EventConstants.CLUSTER_AVAILABLE_EVENT;
@@ -166,7 +165,7 @@ class ClusterResourceStatusUpdaterTest {
 
     updateClusterResourceStatus();
 
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
+    testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test
@@ -176,8 +175,6 @@ class ClusterResourceStatusUpdaterTest {
     domain.getStatus().addCluster(newStatus);
     cluster.withStatus(null);
     info.addClusterResource(cluster);
-    retryStrategy.setNumRetriesLeft(1);
-    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnReplaceStatus(CLUSTER_STATUS, NAME + '-' + CLUSTER, NS, HTTP_UNAVAILABLE);
 
     updateClusterResourceStatus();
