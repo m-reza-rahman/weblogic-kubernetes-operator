@@ -15,6 +15,7 @@ import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.PodHelper;
+import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
@@ -100,9 +101,8 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
   }
 
   @Override
-  public ScheduledFuture<?> scheduleWithFixedDelay(
-        Runnable command, long initialDelay, long delay, TimeUnit unit) {
-    return testSupport.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+  public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay) {
+    return testSupport.scheduleWithFixedDelay(command, initialDelay, delay);
   }
 
   @Override

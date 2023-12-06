@@ -64,7 +64,6 @@ import io.kubernetes.client.openapi.models.V1SubjectRulesReviewStatus;
 import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
-import io.kubernetes.client.openapi.models.VersionInfo;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -88,7 +87,6 @@ import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
-import oracle.kubernetes.weblogic.domain.model.PartialObjectMetadata;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -127,7 +125,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
   public static final String DELETE_POD = "deletePod";
 
-  private final Map<String, DataRepository<? extends KubernetesObject>> repositories = new HashMap<>();
+  private final Map<String, DataRepository<? extends KubernetesType>> repositories = new HashMap<>();
   private final Map<Class<?>, String> dataTypes = new HashMap<>();
   private Failure failure;
   private AfterCallAction afterCallAction;
@@ -231,22 +229,22 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   @SuppressWarnings("SameParameterValue")
-  private <T extends KubernetesObject> void support(
-      String resourceName, Class<T> resourceClass, Function<List<T>, Object> toList) {
+  private <T extends KubernetesType> void support(
+      String resourceName, Class<T> resourceClass, Function<List<T>, KubernetesListObject> toList) {
     dataTypes.put(resourceClass, resourceName);
     repositories.put(resourceName, new DataRepository<>(resourceClass, toList));
   }
 
   @SuppressWarnings({"SameParameterValue", "UnusedReturnValue"})
-  private <T extends KubernetesObject> NamespacedDataRepository<T> supportNamespaced(String resourceName, Class<T> resourceClass) {
+  private <T extends KubernetesType> NamespacedDataRepository<T> supportNamespaced(String resourceName, Class<T> resourceClass) {
     final NamespacedDataRepository<T> dataRepository = new NamespacedDataRepository<>(resourceClass, null);
     dataTypes.put(resourceClass, resourceName);
     repositories.put(resourceName, dataRepository);
     return dataRepository;
   }
 
-  private <T extends KubernetesObject> NamespacedDataRepository<T> supportNamespaced(
-      String resourceName, Class<T> resourceClass, Function<List<T>, Object> toList) {
+  private <T extends KubernetesType> NamespacedDataRepository<T> supportNamespaced(
+      String resourceName, Class<T> resourceClass, Function<List<T>, KubernetesListObject> toList) {
     final NamespacedDataRepository<T> dataRepository = new NamespacedDataRepository<>(resourceClass, toList);
     dataTypes.put(resourceClass, resourceName);
     repositories.put(resourceName, dataRepository);
@@ -273,7 +271,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   @SuppressWarnings("unchecked")
-  private <T extends KubernetesObject> DataRepository<T> selectRepository(String resourceType) {
+  private <T extends KubernetesType> DataRepository<T> selectRepository(String resourceType) {
     String key = resourceType;
     for (String suffix : SUB_RESOURCE_SUFFIXES) {
       if (key.endsWith(suffix)) {
@@ -285,7 +283,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   @SuppressWarnings("unchecked")
-  public <T extends KubernetesObject> List<T> getResources(String resourceType) {
+  public <T extends KubernetesType> List<T> getResources(String resourceType) {
     return ((DataRepository<T>) selectRepository(resourceType)).getResources();
   }
 
@@ -311,7 +309,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
    * @param <T> type
    */
   @SafeVarargs
-  public final <T extends KubernetesObject> void defineResources(T... resources) {
+  public final <T extends KubernetesType> void defineResources(T... resources) {
     for (T resource : resources) {
       getDataRepository(resource).createResourceInNamespace(resource);
     }
@@ -323,7 +321,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
    * @param <T> type
    */
   @SafeVarargs
-  public final <T extends KubernetesObject> void deleteResources(T... resources) {
+  public final <T extends KubernetesType> void deleteResources(T... resources) {
     for (T resource : resources) {
       getDataRepository(resource).deleteResourceInNamespace(resource);
     }
@@ -345,7 +343,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   @SuppressWarnings("unchecked")
-  private <T extends KubernetesObject> DataRepository<T> getDataRepository(T resource) {
+  private <T extends KubernetesType> DataRepository<T> getDataRepository(T resource) {
     return (DataRepository<T>) repositories.get(dataTypes.get(resource.getClass()));
   }
 
@@ -542,62 +540,60 @@ public class KubernetesTestSupport extends FiberTestSupport {
   private enum Operation {
     create {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
         return callContext.createResource(dataRepository);
       }
     },
     delete {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
         return callContext.deleteResource(dataRepository);
       }
     },
     read {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
         return callContext.readResource(dataRepository);
       }
     },
     readMetadata {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
         return callContext.readMetadata(dataRepository);
       }
     },
     replace {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
         return callContext.replaceResource(dataRepository);
       }
     },
     replaceStatus {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
         return callContext.replaceResourceStatus(dataRepository);
       }
     },
     list {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
-        return callContext.listResources(
-                callContext.getLimit(),
-                callContext.getContinue(), dataRepository);
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+        return callContext.listResources(callContext.getLimit(), callContext.getContinue(), dataRepository);
       }
     },
     patch {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
         return callContext.patchResource(dataRepository);
       }
     },
     deleteCollection {
       @Override
-      <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
         return callContext.deleteCollection(dataRepository);
       }
     };
 
-    abstract <T extends KubernetesObject> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository);
+    abstract <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository);
   }
 
   static class Failure {
@@ -753,7 +749,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
         @Override
         public KubernetesApiResponse<ApiType> get(String name, GetOptions getOptions) {
           // HERE
-          CallContext callContext = new CallContext(Operation.read, getResourceName(apiTypeClass), null, null, null);
+          CallContext<ApiType> callContext = new CallContext<>(
+              Operation.read, getResourceName(apiTypeClass), null, null, null);
           return callContext.execute();
         }
 
@@ -819,10 +816,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
     return dataTypes.get(resourceType);
   }
 
-  private class DataRepository<T extends KubernetesObject> {
+  private class DataRepository<T extends KubernetesType> {
     private final Map<String, T> data = new HashMap<>();
     private final Class<?> resourceType;
-    private Function<List<T>, Object> listFactory;
+    private Function<List<T>, KubernetesListObject> listFactory;
     private final Map<String, List<T>> continuations = new HashMap<>();
     private List<Consumer<T>> onCreateActions = new ArrayList<>();
     private List<Consumer<T>> onUpdateActions = new ArrayList<>();
@@ -834,7 +831,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       this.resourceType = resourceType;
     }
 
-    public DataRepository(Class<?> resourceType, Function<List<T>, Object> listFactory) {
+    public DataRepository(Class<?> resourceType, Function<List<T>, KubernetesListObject> listFactory) {
       this.resourceType = resourceType;
       this.listFactory = listFactory;
     }
@@ -915,7 +912,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
       return getDeleteResult(name, namespace, call);
     }
 
-    Object listResources(String namespace, Integer limit, String cont, String fieldSelector, String... labelSelectors) {
+    @SuppressWarnings("unchecked")
+    T listResources(String namespace, Integer limit, String cont, String fieldSelector, String... labelSelectors) {
       if (listFactory == null) {
         throw new UnsupportedOperationException("list operation not supported");
       }
@@ -928,27 +926,22 @@ public class KubernetesTestSupport extends FiberTestSupport {
       }
 
       if (limit == null || limit > resources.size()) {
-        return listFactory.apply(resources);
+        return (T) listFactory.apply(resources);
       }
 
-      Object list = listFactory.apply(resources.subList(0, limit));
+      KubernetesListObject list = listFactory.apply(resources.subList(0, limit));
       cont = UUID.randomUUID().toString();
       continuations.put(cont, resources.subList(limit, resources.size()));
       try {
-        Method m = list.getClass().getMethod("getMetadata");
-        Object meta = m.invoke(list);
-        if (meta instanceof V1ListMeta) {
-          ((V1ListMeta) meta).setContinue(cont);
+        V1ListMeta meta = list.getMetadata();
+        if (meta != null) {
+          meta.setContinue(cont);
         }
-      } catch (NoSuchMethodException
-              | SecurityException
-              | IllegalAccessException
-              | IllegalArgumentException
-              | InvocationTargetException e) {
+      } catch (SecurityException | IllegalArgumentException e) {
         // no-op, no-log
       }
 
-      return list;
+      return (T) list;
     }
 
     List<T> getResources(String namespace, String fieldSelector, String... labelSelectors) {
@@ -1192,11 +1185,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
   }
 
-  private class NamespacedDataRepository<T extends KubernetesObject> extends DataRepository<T> {
+  private class NamespacedDataRepository<T extends KubernetesType> extends DataRepository<T> {
     private final Map<String, DataRepository<T>> repositories = new HashMap<>();
     private final Class<?> resourceType;
 
-    NamespacedDataRepository(Class<?> resourceType, Function<List<T>, Object> listFactory) {
+    NamespacedDataRepository(Class<?> resourceType, Function<List<T>, KubernetesListObject> listFactory) {
       super(resourceType, listFactory);
       this.resourceType = resourceType;
     }
@@ -1269,7 +1262,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
   }
 
-  private class CallContext<ApiType extends KubernetesObject> {
+  private class CallContext<DataType extends KubernetesType> {
     private final String fieldSelector;
     private final String[] labelSelector;
     private final Integer gracePeriodSeconds;
@@ -1315,7 +1308,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       operation = Operation.deleteCollection;
     }
 
-    private KubernetesApiResponse<ApiType> execute() {
+    private KubernetesApiResponse<DataType> execute() {
       try {
         if (failure != null && failure.matches(resourceType, requestName, requestNamespace, operation)) {
           try {
@@ -1335,44 +1328,51 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     @SuppressWarnings("unchecked")
-    <T extends KubernetesObject> KubernetesApiResponse<T> createResource(DataRepository<T> dataRepository) {
+    <T extends KubernetesType> KubernetesApiResponse<T> createResource(DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(dataRepository.createResource(requestNamespace, (T) requestBody));
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends KubernetesObject> KubernetesApiResponse<T>replaceResource(DataRepository<T> dataRepository) {
+    private <T extends KubernetesType> KubernetesApiResponse<T>replaceResource(DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(dataRepository.replaceResource(requestName, (T) requestBody));
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends KubernetesObject> KubernetesApiResponse<T> replaceResourceStatus(DataRepository<T> dataRepository) {
+    private <T extends KubernetesType> KubernetesApiResponse<T> replaceResourceStatus(DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(dataRepository.replaceResourceStatus(requestName, (T) requestBody));
     }
 
-    private <T extends KubernetesObject> KubernetesApiResponse<T> deleteResource(DataRepository<T> dataRepository) {
+    private <T extends KubernetesType> KubernetesApiResponse<T> deleteResource(DataRepository<T> dataRepository) {
       dataRepository.sendDeleteCallback(gracePeriodSeconds);
       return new KubernetesApiResponse<>(dataRepository.deleteResource(requestName, requestNamespace, requstCall));
     }
 
-    private <T extends KubernetesObject> KubernetesApiResponse<T> patchResource(DataRepository<T> dataRepository) {
+    private <T extends KubernetesType> KubernetesApiResponse<T> patchResource(DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(dataRepository.patchResource(requestName, requestNamespace, (V1Patch) requestBody));
     }
 
-    private <T extends KubernetesObject> Object listResources(Integer limit, String cont, DataRepository<T> dataRepository) {
-      return dataRepository.listResources(requestNamespace, limit, cont, fieldSelector, labelSelector);
+    private <T extends KubernetesType> KubernetesApiResponse<T> listResources(Integer limit, String cont, DataRepository<T> dataRepository) {
+      return new KubernetesApiResponse<>(dataRepository.listResources(requestNamespace, limit, cont, fieldSelector, labelSelector));
     }
 
-    private <T extends KubernetesObject> KubernetesApiResponse<T> readResource(DataRepository<T> dataRepository) {
+    private <T extends KubernetesType> KubernetesApiResponse<T> readResource(DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(dataRepository.readResource(requestName, requestNamespace));
     }
 
-    private <T extends KubernetesObject> PartialObjectMetadata readMetadata(DataRepository<T> dataRepository) {
+    @SuppressWarnings("unchecked")
+    private <T extends KubernetesType> KubernetesApiResponse<T> readMetadata(DataRepository<T> dataRepository) {
       final T resource = dataRepository.readResource(requestName, requestNamespace);
-      final V1ObjectMeta metadata = resource.getMetadata();
-      return new PartialObjectMetadata(metadata);
+      try {
+        final T metadataOnly = (T) resource.getClass().getConstructor().newInstance();
+        resource.getClass().getMethod("setMetadata", V1ObjectMeta.class)
+            .invoke(metadataOnly, ((KubernetesObject) resource).getMetadata());
+        return new KubernetesApiResponse<>(metadataOnly);
+      } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        throw new RuntimeException(e);
+      }
     }
 
-    public <T extends KubernetesObject> KubernetesApiResponse<T> deleteCollection(DataRepository<T> dataRepository) {
+    public <T extends KubernetesType> KubernetesApiResponse<T> deleteCollection(DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(dataRepository.deleteResourceCollection(requestNamespace), HttpURLConnection.HTTP_OK);
     }
   }

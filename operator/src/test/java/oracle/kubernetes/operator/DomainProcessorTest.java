@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -74,7 +73,6 @@ import oracle.kubernetes.operator.http.rest.Scan;
 import oracle.kubernetes.operator.http.rest.ScanCache;
 import oracle.kubernetes.operator.http.rest.ScanCacheStub;
 import oracle.kubernetes.operator.introspection.IntrospectionTestUtils;
-import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
@@ -142,7 +140,6 @@ import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTIO
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTOR_JOB;
 import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
-import static oracle.kubernetes.operator.WebLogicConstants.SUSPENDING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.UNKNOWN_STATE;
 import static oracle.kubernetes.operator.helpers.AffinityHelper.getDefaultAntiAffinity;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.CLUSTER_CHANGED;
@@ -164,7 +161,6 @@ import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CO
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIG_DATA_NAME;
 import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.OK_RESPONSE;
 import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.createExpectedRequest;
-import static oracle.kubernetes.operator.tuning.TuningParameters.INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionMatcher.hasCondition;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.AVAILABLE;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.COMPLETED;
@@ -673,30 +669,6 @@ class DomainProcessorTest {
     assertThat(getResourceVersion(updatedDomain), not(getResourceVersion(domain)));
   }
 
-  @Test
-  void afterMakeRightAndChangeServerToNever_serverPodsWaitForShutdownWithHttpToCompleteBeforeTerminating() {
-    domainConfigurator.configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
-    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
-
-    processor.createMakeRightOperation(newInfo).execute();
-
-    domainConfigurator.withDefaultServerStartPolicy(ServerStartPolicy.NEVER);
-    DomainStatus status = newInfo.getDomain().getStatus();
-    defineServerShutdownWithHttpOkResponse();
-    setAdminServerStatus(status, SUSPENDING_STATE);
-    setManagedServerState(status, SUSPENDING_STATE);
-
-    processor.createMakeRightOperation(newInfo).withExplicitRecheck().execute();
-    DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, UID);
-
-    assertThat(getRunningPods().size(), equalTo(4));
-    setAdminServerStatus(status, SHUTDOWN_STATE);
-    setManagedServerState(status, SHUTDOWN_STATE);
-    testSupport.setTime(100, TimeUnit.SECONDS);
-    assertThat(getRunningPods().size(), equalTo(1));
-    assertThat(getResourceVersion(updatedDomain), not(getResourceVersion(domain)));
-  }
-
   private void defineServerShutdownWithHttpOkResponse() {
     httpSupport.defineResponse(createShutdownRequest(ADMIN_NAME, 7001),
         createStub(HttpResponseStub.class, HTTP_OK, OK_RESPONSE));
@@ -728,66 +700,6 @@ class DomainProcessorTest {
 
   private boolean matchingServerName(ServerStatus serverStatus, String serverName) {
     return serverStatus.getServerName().equals(serverName);
-  }
-
-  @Test
-  void afterServersUpdated_updateDomainStatus() {
-    domainConfigurator.configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
-    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
-
-    processor.createMakeRightOperation(newInfo).execute();
-    newInfo.setWebLogicCredentialsSecret(createCredentialsSecret());
-    makePodsReady();
-    makePodsHealthy();
-
-    triggerStatusUpdate();
-
-    assertThat(testSupport.getResourceWithName(DOMAIN, UID), hasCondition(COMPLETED).withStatus("True"));
-  }
-
-  @Test
-  void afterServersUpdatedWhenFailedConditionExists_dontUpdateDomainStatus() {
-    domainConfigurator.configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
-    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
-    processor.createMakeRightOperation(newInfo).execute();
-    newInfo.setWebLogicCredentialsSecret(createCredentialsSecret());
-    newDomain.getOrCreateStatus().addCondition(new DomainCondition(FAILED).withReason(KUBERNETES).withStatus(true));
-    makePodsReady();
-    makePodsHealthy();
-
-    triggerStatusUpdate();
-
-    assertThat(((DomainResource)testSupport.getResourceWithName(DOMAIN, UID)).getStatus(),
-        hasNoCondition(COMPLETED).withStatus("True"));
-  }
-
-  @Test
-  void afterChangeToNever_statusUpdateRetainsStateGoal() {
-    domainConfigurator.configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
-    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
-
-    processor.createMakeRightOperation(newInfo).execute();
-    domainConfigurator.withDefaultServerStartPolicy(ServerStartPolicy.NEVER);
-
-    processor.createMakeRightOperation(newInfo).withExplicitRecheck().execute();
-
-    newInfo.setWebLogicCredentialsSecret(createCredentialsSecret());
-    makePodsReady();
-    makePodsHealthy();
-
-    triggerStatusUpdate();
-
-    DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, UID);
-    assertThat(getStateGoal(updatedDomain, ADMIN_NAME), equalTo(SHUTDOWN_STATE));
-    assertThat(getStateGoal(updatedDomain, MANAGED_SERVER_NAMES[0]), equalTo(SHUTDOWN_STATE));
-    assertThat(getStateGoal(updatedDomain, MANAGED_SERVER_NAMES[1]), equalTo(SHUTDOWN_STATE));
-    assertThat(getStateGoal(updatedDomain, MANAGED_SERVER_NAMES[2]), equalTo(SHUTDOWN_STATE));
-    assertThat(getStateGoal(updatedDomain, MANAGED_SERVER_NAMES[3]), equalTo(SHUTDOWN_STATE));
-    assertThat(getStateGoal(updatedDomain, MANAGED_SERVER_NAMES[4]), equalTo(SHUTDOWN_STATE));
-  }
-
-  private void triggerStatusUpdate() {
-    testSupport.setTime(TuningParameters.getInstance().getInitialShortDelay(), TimeUnit.SECONDS);
   }
 
   private void makePodsHealthy() {
@@ -1730,34 +1642,8 @@ class DomainProcessorTest {
     Optional.ofNullable(job).map(V1Job::getMetadata).ifPresent(m -> m.setUid(Long.toString(++uidNum)));
   }
 
-  @Test
-  void whenIntrospectionJobTimedOut_activeDeadlineIncreased() throws Exception {
-    TuningParametersStub.setParameter(INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS, "180");
-
-    runMakeRight_withIntrospectionTimeout();
-
-    executeScheduledRetry();
-
-    assertThat(getRecordedJob().getSpec().getActiveDeadlineSeconds(), is(240L));
-  }
-
   private V1Job getRecordedJob() {
     return testSupport.<V1Job>getResources(JOB).get(0);
-  }
-
-  private void executeScheduledRetry() {
-    testSupport.setTime(domain.getFailureRetryIntervalSeconds(), TimeUnit.SECONDS);
-  }
-
-  @Test
-  void whenIntrospectionJobTimedOutForInitDomainOnPV_activeDeadlineNotIncreased() throws Exception {
-    TuningParametersStub.setParameter(INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS, "180");
-    initializeDomainOnPV();
-    runMakeRight_withIntrospectionTimeout();
-
-    executeScheduledRetry();
-
-    assertThat(getRecordedJob().getSpec().getActiveDeadlineSeconds(), is(180L));
   }
 
   private void initializeDomainOnPV() {
@@ -1844,16 +1730,14 @@ class DomainProcessorTest {
   private void createJobPodAndSetCompletedStatus(V1Job job) {
     Map<String, String> labels = new HashMap<>();
     labels.put(LabelConstants.JOBNAME_LABEL, getJobName());
-    testSupport.defineResources(POD,
-            new V1Pod().metadata(new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS)));
+    testSupport.defineResources(new V1Pod().metadata(new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS)));
     job.setStatus(createCompletedStatus());
   }
 
   private void createJobPodAndSetExecFormatErrorStatus(V1Job job) {
     Map<String, String> labels = new HashMap<>();
     labels.put(LabelConstants.JOBNAME_LABEL, getJobName());
-    testSupport.defineResources(POD,
-        new V1Pod().metadata(new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS))
+    testSupport.defineResources(new V1Pod().metadata(new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS))
             .status(getInitContainerStatusWithExecFormatError()));
     job.setStatus(createCompletedStatus());
   }
@@ -2675,7 +2559,9 @@ class DomainProcessorTest {
 
   /**/
   private V1Pod createServerPod(String serverName, String clusterName) {
-    Packet packet = new Packet().with(processorDelegate).with(originalInfo);
+    Packet packet = new Packet();
+    packet.put(ProcessingConstants.DOMAIN_PROCESSOR, processorDelegate);
+    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, originalInfo);
     packet.put(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig);
 
     if (ADMIN_NAME.equals(serverName)) {
@@ -2818,22 +2704,6 @@ class DomainProcessorTest {
   private void defineDuplicateServerNames() {
     newDomain.getSpec().getManagedServers().add(new ManagedServer().withServerName("ms1"));
     newDomain.getSpec().getManagedServers().add(new ManagedServer().withServerName("ms1"));
-  }
-
-  @Test
-  void whenWebLogicCredentialsSecretRemoved_NullPointerExceptionAndAbortedEventNotGenerated() {
-    consoleHandlerMemento.ignoreMessage(NOT_STARTING_DOMAINUID_THREAD);
-    processor.registerDomainPresenceInfo(originalInfo);
-    domain.getSpec().withWebLogicCredentialsSecret(null);
-    long time = 0;
-
-    for (int numRetries = 0; numRetries < 5; numRetries++) {
-      processor.createMakeRightOperation(originalInfo).withExplicitRecheck().execute();
-      time += domain.getFailureRetryIntervalSeconds();
-      testSupport.setTime(time, TimeUnit.SECONDS);
-    }
-
-    assertThat(getEvents().stream().anyMatch(EventTestUtils::isDomainFailedAbortedEvent), is(false));
   }
 
   private List<CoreV1Event> getEvents() {

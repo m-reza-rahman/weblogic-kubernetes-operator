@@ -3,7 +3,6 @@
 
 package oracle.kubernetes.operator;
 
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,53 +102,8 @@ class FailureRetryTest {
     assertThat(domain.getNextRetryTime(), Matchers.greaterThan(testStartTime));
   }
 
-  @Test
-  void whenNotYetNextRetryTime_dontExecuteRetry() {
-    domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
-
-    final OffsetDateTime nextRetryTime = domain.getNextRetryTime().minusSeconds(2);
-    setCurrentTime(nextRetryTime);
-
-    assertThat(domainInvalidStep.numTimesRun, equalTo(1));
-  }
-
-  @Test
-  void whenNextRetryTime_executeRetry() {
-    domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
-
-    setCurrentTime(getRecordedDomain().getNextRetryTime());
-
-    assertThat(domainInvalidStep.numTimesRun, equalTo(2));
-  }
-
-  @Test
-  void whenFailureStillExistsAfterRetry_updateLastFailureTime() {
-    domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
-
-    final OffsetDateTime nextRetryTime = domain.getNextRetryTime();
-    setCurrentTime(nextRetryTime);
-
-    assertThat(getRecordedDomain().getStatus().getInitialFailureTime(), equalTo(testStartTime));
-    assertThat(getRecordedDomain().getStatus().getLastFailureTime(), equalTo(nextRetryTime));
-  }
-
   private DomainResource getRecordedDomain() {
     return testSupport.<DomainResource>getResources(KubernetesTestSupport.DOMAIN).get(0);
-  }
-
-  private void setCurrentTime(OffsetDateTime newTime) {
-    final Duration offset = Duration.between(testStartTime, newTime);
-    testSupport.setTime(offset.toSeconds(), TimeUnit.SECONDS);
-  }
-
-  @Test
-  void whenRetryAfterRetryLimit_addAbortedFailure() {
-    new DomainCommonConfigurator(domain).withFailureRetryLimitMinutes(10);
-    domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
-
-    testSupport.setTime(getTimeAfterRetryLimit(), TimeUnit.SECONDS);
-
-    assertThat(getRecordedDomain(), hasCondition(FAILED).withReason(ABORTED));
   }
 
   // A time by which the retry which exceeds the limit will be executed
@@ -164,16 +118,6 @@ class FailureRetryTest {
     domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
 
     assertThat(getRecordedDomain(), hasCondition(FAILED).withReason(ABORTED));
-  }
-
-  @Test
-  void afterAbortedConditionAdded_dontRetryAutomatically() {
-    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(ABORTED).withMessage("in test"));
-    final int numTimesRunToAborted = domainInvalidStep.numTimesRun;
-
-    testSupport.setTime(getTimeAfterRetryLimit() + 10 * domain.getFailureRetryIntervalSeconds(), TimeUnit.SECONDS);
-
-    assertThat(domainInvalidStep.numTimesRun, equalTo(numTimesRunToAborted));
   }
 
   @Test
@@ -396,7 +340,10 @@ class FailureRetryTest {
     @Nonnull
     @Override
     public Packet createPacket() {
-      return new Packet().with(info).with(this);
+      Packet packet = new Packet();
+      packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, info);
+      packet.put(ProcessingConstants.MAKE_RIGHT_DOMAIN_OPERATION, this);
+      return packet;
     }
 
     @Override

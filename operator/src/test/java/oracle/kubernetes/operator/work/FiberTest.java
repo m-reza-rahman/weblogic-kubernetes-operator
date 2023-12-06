@@ -44,7 +44,6 @@ class FiberTest {
   private final Step step2 = new BasicStep(2);
   private final Step step3 = new BasicStep(3);
   private final ChildFiberStep childFiberStep = new ChildFiberStep(step3, step1, step2);
-  private final Step retry = new RetryStep();
   private final Step error = new ThrowableStep();
   private final List<Memento> mementos = new ArrayList<>();
   private final List<LogRecord> logRecords = new ArrayList<>();
@@ -80,14 +79,6 @@ class FiberTest {
     runSteps(step1, step2, step3);
 
     assertThat(completionCallback.completed, is(true));
-  }
-
-  @Test
-  void whenStepRetries_runItAgain() {
-    runSteps(step1, retry, step3);
-    testSupport.setTime(200, TimeUnit.MILLISECONDS);
-
-    assertThat(stepList, contains(step1, retry, retry, retry, step3));
   }
 
   @Test

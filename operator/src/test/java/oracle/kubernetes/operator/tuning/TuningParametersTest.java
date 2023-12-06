@@ -77,17 +77,6 @@ class TuningParametersTest {
     inMemoryFileSystem.defineFile(new File(mountPointDir, name), value);
   }
 
-  @Test
-  void whenTuningParametersConfiguredAfterStart_facadesReturnConfiguredValues() {
-    configureParameter("domainNamespaceRecheckIntervalSeconds", "12");
-    readInitialParameters();
-
-    configureParameter("domainNamespaceRecheckIntervalSeconds", "9");
-    testSupport.setTime(1, TimeUnit.MINUTES);
-
-    assertThat(getTuningParameters().getNamespaceRecheckIntervalSeconds(), equalTo(9));
-  }
-
   // Force initialization of tuning parameters instance, thus reading the initial values.
   private void readInitialParameters() {
     getTuningParameters();

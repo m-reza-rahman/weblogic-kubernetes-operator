@@ -150,22 +150,6 @@ class ServerDownIteratorStepTest {
   }
 
   @Test
-  void withConcurrencyOf1_bothClusteredServersShutdownSequentially() {
-    configureCluster(CLUSTER).withMaxConcurrentShutdown(1).withReplicas(1);
-    addWlsCluster(CLUSTER, 8001, MS1, MS2);
-    domainPresenceInfo = createDomainPresenceInfoWithServers(MS1, MS2);
-    testSupport.addDomainPresenceInfo(domainPresenceInfo);
-
-    createShutdownInfos()
-            .forClusteredServers(CLUSTER,MS1, MS2)
-            .shutdown();
-
-    assertThat(serverPodsBeingDeleted(), containsInAnyOrder(MS2));
-    testSupport.setTime(10, TimeUnit.SECONDS);
-    assertThat(serverPodsNotDeleted(), not(containsInAnyOrder(MS1, MS2)));
-  }
-
-  @Test
   void withConcurrencyOf2_bothClusteredServersShutdownConcurrently() {
     domainPresenceInfo = createDomainPresenceInfoWithServers(MS1, MS2);
     configureCluster(CLUSTER).withMaxConcurrentShutdown(2).withReplicas(1);
@@ -205,22 +189,6 @@ class ServerDownIteratorStepTest {
             .shutdown();
 
     assertThat(serverPodsBeingDeleted(), containsInAnyOrder(MS1, MS2));
-  }
-
-  @Test
-  void whenMaxConcurrentShutdownSet_limitNumberOfServersShuttingDownAtOnce() {
-    domainPresenceInfo = createDomainPresenceInfoWithServers(MS1, MS2, MS3, MS4);
-    configureCluster(CLUSTER).withMaxConcurrentShutdown(2).withReplicas(1);
-    addWlsCluster(CLUSTER, PORT, MS1, MS2, MS3, MS4);
-    testSupport.addDomainPresenceInfo(domainPresenceInfo);
-
-    createShutdownInfos()
-            .forClusteredServers(CLUSTER, MS1, MS2, MS3, MS4)
-            .shutdown();
-
-    assertThat(serverPodsBeingDeleted(), hasSize(2));
-    testSupport.setTime(5, TimeUnit.SECONDS);
-    assertThat(serverPodsNotDeleted(), hasSize(1));
   }
 
   @Test

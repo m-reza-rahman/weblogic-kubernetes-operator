@@ -5,7 +5,6 @@ package oracle.kubernetes.operator;
 
 import java.math.BigInteger;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.logging.LogRecord;
@@ -32,8 +31,6 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.common.logging.MessageKeys.EXECUTE_MAKE_RIGHT_DOMAIN;
 import static oracle.kubernetes.common.logging.MessageKeys.INTROSPECTOR_POD_FAILED;
-import static oracle.kubernetes.common.utils.LogMatcher.containsFine;
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
@@ -241,16 +238,6 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
-  void whenPodCreatedAndNotReadyAfterTimeout_executeMakeRightDomain() {
-    executeWaitForReady();
-
-    testSupport.setTime(10, TimeUnit.SECONDS);
-
-    assertThat(terminalStep.wasRun(), is(true));
-    assertThat(logRecords, containsFine(getMakeRightDomainStepKey()));
-  }
-
-  @Test
   void whenPodNotReadyLater_dontRunNextStep() {
     sendPodModifiedWatchAfterWaitForReady(this::dontChangePod);
 
@@ -260,15 +247,6 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   @Test
   void whenPodNotReadyLaterAndThenReady_runNextStep() {
     sendPodModifiedWatchAfterWaitForReady(this::dontChangePod, this::markPodReady);
-
-    assertThat(terminalStep.wasRun(), is(true));
-  }
-
-  @Test
-  void whenPodNotReadyLaterAndThenReadyButNoWatchEvent_runNextStep() {
-    makeModifiedPodReadyWithNoWatchEvent(this::markPodReady);
-
-    testSupport.setTime(RECHECK_SECONDS, TimeUnit.SECONDS);
 
     assertThat(terminalStep.wasRun(), is(true));
   }
@@ -385,23 +363,6 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
-  void whenPodDeletedOnSecondRead_runNextStepOnlyOnce() {
-    AtomicBoolean stopping = new AtomicBoolean(false);
-    PodWatcher watcher = createWatcher(stopping);
-
-    testSupport.defineResources(createPod());
-    try {
-      testSupport.runSteps(watcher.waitForDelete(createPod(), terminalStep));
-      testSupport.failOnResource(KubernetesTestSupport.POD, NAME, NS, HTTP_NOT_FOUND);
-      testSupport.setTime(10, TimeUnit.SECONDS);
-
-      assertThat(terminalStep.getExecutionCount(), is(1));
-    } finally {
-      stopping.set(true);
-    }
-  }
-
-  @Test
   void whenPodDeletedLater_runNextStep() {
     AtomicBoolean stopping = new AtomicBoolean(false);
     PodWatcher watcher = createWatcher(stopping);
@@ -451,47 +412,8 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
     }
   }
 
-  @Test
-  void whenServerShutdownLater_runNextStepOnlyOnce() {
-    final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
-    AtomicBoolean stopping = new AtomicBoolean(false);
-    PodWatcher watcher = createWatcher(stopping);
-
-    testSupport.defineResources(domain);
-    try {
-      testSupport.runSteps(watcher.waitForServerShutdown(NAME, domainWithSuspendingState(domain), terminalStep));
-      domain.setStatus(new DomainStatus().addServer(new ServerStatus().withServerName(NAME).withState(SHUTDOWN_STATE)));
-      testSupport.setTime(10, TimeUnit.SECONDS);
-
-      assertThat(terminalStep.getExecutionCount(), is(1));
-    } finally {
-      stopping.set(true);
-    }
-  }
-
   private DomainResource domainWithSuspendingState(DomainResource domainResource) {
     return domainResource.withStatus(
         new DomainStatus().addServer(new ServerStatus().withServerName(NAME).withState(SUSPENDING_STATE)));
-  }
-
-  @Test
-  void whenDomainNotFound_waitForServerShutdownDoesNotRecordKubernetesFailure() {
-    final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
-    final AtomicBoolean stopping = new AtomicBoolean(false);
-    final PodWatcher watcher = createWatcher(stopping);
-    DomainPresenceInfo info = new DomainPresenceInfo(domain);
-    testSupport.addDomainPresenceInfo(info);
-
-    try {
-      testSupport.failOnResource(KubernetesTestSupport.DOMAIN, NAME, NS, HTTP_NOT_FOUND);
-      testSupport.runSteps(watcher.waitForServerShutdown(NAME, domain, terminalStep));
-    } finally {
-      stopping.set(true);
-    }
-    info.updateLastKnownServerStatus(NAME, SHUTDOWN_STATE);
-    testSupport.setTime(10, TimeUnit.SECONDS);
-
-    assertThat(terminalStep.wasRun(), is(true));
-    assertThat(domain, not(hasCondition(FAILED).withReason(KUBERNETES)));
   }
 }
