@@ -524,17 +524,6 @@ class CrdHelperTest extends CrdHelperTestBase {
   }
 
   @Test
-  void whenReplaceFailsThrowsStreamException_scheduleRetryAndLogFailedMessageInOnFailureNoRetry() {
-    testSupport.defineResources(defineCrd(PRODUCT_VERSION_OLD, DOMAIN.getExpectedCrdName()));
-    testSupport.failOnReplaceWithStreamResetException(CUSTOM_RESOURCE_DEFINITION, DOMAIN.getExpectedCrdName(), null);
-
-    Step scriptCrdStep = DOMAIN.createCrdStep(PRODUCT_VERSION);
-    testSupport.runSteps(scriptCrdStep);
-
-    assertThat(logRecords, containsInfo(REPLACE_CRD_FAILED));
-  }
-
-  @Test
   void whenCrdMainCalledWithNoArguments_illegalArgumentExceptionThrown() {
     Assertions.assertThrows(IllegalArgumentException.class, CrdHelper::main);
   }

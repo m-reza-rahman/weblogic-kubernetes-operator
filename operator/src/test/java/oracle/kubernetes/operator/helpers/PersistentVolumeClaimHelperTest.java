@@ -15,6 +15,7 @@ import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
+import io.kubernetes.client.openapi.models.V1Status;
 import oracle.kubernetes.operator.DomainProcessorDelegateStub;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.KubernetesConstants;
@@ -49,6 +50,7 @@ import static oracle.kubernetes.operator.EventTestUtils.getExpectedEventMessage;
 import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_CONFLICT;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 import static oracle.kubernetes.operator.ProcessingConstants.PVCWATCHER_COMPONENT_NAME;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_FAILED;
@@ -238,10 +240,9 @@ class PersistentVolumeClaimHelperTest {
   @Test
   void whenPersistentVolumeClaimCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PVC, NS, new UnrecoverableErrorBuilderImpl()
-            .withReason("FieldValueNotFound")
-            .withMessage("Test this failure")
-            .build());
+    testSupport.failOnCreate(PVC, NS, new V1Status()
+            .reason("FieldValueNotFound")
+            .message("Test this failure"), HTTP_OK);
 
     runPersistentVolumeClaimHelper();
 
@@ -252,10 +253,9 @@ class PersistentVolumeClaimHelperTest {
   @Test
   void whenPersistentVolumeClaimCreationFailsDueToUnprocessableEntityFailure_generateFailedEvent() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PVC, NS, new UnrecoverableErrorBuilderImpl()
-        .withReason("FieldValueNotFound")
-        .withMessage("Test this failure")
-        .build());
+    testSupport.failOnCreate(PVC, NS, new V1Status()
+        .reason("FieldValueNotFound")
+        .message("Test this failure"), HTTP_OK);
 
     runPersistentVolumeClaimHelper();
 
@@ -269,10 +269,9 @@ class PersistentVolumeClaimHelperTest {
   @Test
   void whenPersistentVolumeClaimCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PVC, NS, new UnrecoverableErrorBuilderImpl()
-            .withReason("FieldValueNotFound")
-            .withMessage("Test this failure")
-            .build());
+    testSupport.failOnCreate(PVC, NS, new V1Status()
+            .reason("FieldValueNotFound")
+            .message("Test this failure"), HTTP_OK);
 
     runPersistentVolumeClaimHelper();
 

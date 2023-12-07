@@ -57,6 +57,7 @@ import io.kubernetes.client.openapi.models.V1Probe;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretKeySelector;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
+import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.openapi.models.V1Toleration;
 import io.kubernetes.client.openapi.models.V1TopologySpreadConstraint;
 import io.kubernetes.client.openapi.models.V1Volume;
@@ -98,7 +99,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
 import static com.meterware.simplestub.Stub.createStub;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_DEFAULT_INIT_CONTAINER_COMMAND;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX;
@@ -129,7 +129,9 @@ import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_IMAGE;
 import static oracle.kubernetes.operator.KubernetesConstants.DOMAIN;
 import static oracle.kubernetes.operator.KubernetesConstants.DOMAIN_DEBUG_CONFIG_MAP_SUFFIX;
 import static oracle.kubernetes.operator.KubernetesConstants.EXPORTER_CONTAINER_NAME;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_FORBIDDEN;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
 import static oracle.kubernetes.operator.KubernetesConstants.POD;
 import static oracle.kubernetes.operator.KubernetesConstants.SCRIPT_CONFIG_MAP_NAME;
 import static oracle.kubernetes.operator.KubernetesConstants.WLS_CONTAINER_NAME;
@@ -1695,10 +1697,9 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   public void whenPodCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
-    testSupport.failOnCreate(POD, NS, new UnrecoverableErrorBuilderImpl()
-        .withReason("FieldValueNotFound")
-        .withMessage("Test this failure")
-        .build());
+    testSupport.failOnCreate(POD, NS, new V1Status()
+        .reason("FieldValueNotFound")
+        .message("Test this failure"), HTTP_OK);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1708,10 +1709,9 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   public void whenPodCreationFailsDueToUnprocessableEntityFailure_createFailedKubernetesEvent() {
-    testSupport.failOnCreate(POD, NS, new UnrecoverableErrorBuilderImpl()
-        .withReason("FieldValueNotFound")
-        .withMessage("Test this failure")
-        .build());
+    testSupport.failOnCreate(POD, NS, new V1Status()
+        .reason("FieldValueNotFound")
+        .message("Test this failure"), HTTP_OK);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1724,10 +1724,9 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenPodCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
-    testSupport.failOnCreate(POD, NS, new UnrecoverableErrorBuilderImpl()
-        .withReason("FieldValueNotFound")
-        .withMessage("Test this failure")
-        .build());
+    testSupport.failOnCreate(POD, NS, new V1Status()
+        .reason("FieldValueNotFound")
+        .message("Test this failure"), HTTP_OK);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1736,7 +1735,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenPodCreationFailsDueToQuotaExceeded_reportInDomainStatus() {
-    testSupport.failOnCreate(POD, NS, createQuotaExceededException());
+    testSupport.failOnCreate(POD, NS, createQuotaExceededStatus(), HTTP_FORBIDDEN);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1746,7 +1745,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenPodCreationFailsDueToQuotaExceeded_generateFailedEvent() {
-    testSupport.failOnCreate(POD, NS, createQuotaExceededException());
+    testSupport.failOnCreate(POD, NS, createQuotaExceededStatus(), HTTP_FORBIDDEN);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1757,8 +1756,8 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
             getLocalizedString(KUBERNETES_EVENT_ERROR)));
   }
 
-  private ApiException createQuotaExceededException() {
-    return new ApiException(HttpURLConnection.HTTP_FORBIDDEN, getQuotaExceededMessage());
+  private V1Status createQuotaExceededStatus() {
+    return new V1Status().message(getQuotaExceededMessage());
   }
 
   private String getQuotaExceededMessage() {
@@ -1767,7 +1766,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   @Test
   void whenPodCreationFailsDueToQuotaExceeded_abortFiber() {
-    testSupport.failOnCreate(POD, NS, createQuotaExceededException());
+    testSupport.failOnCreate(POD, NS, createQuotaExceededStatus(), HTTP_FORBIDDEN);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 

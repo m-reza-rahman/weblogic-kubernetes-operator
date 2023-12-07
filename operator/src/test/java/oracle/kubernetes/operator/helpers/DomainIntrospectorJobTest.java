@@ -44,6 +44,7 @@ import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
+import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.common.utils.SchemaConversionUtils;
@@ -87,8 +88,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
-import static com.meterware.simplestub.Stub.createStrictStub;
-import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_DEFAULT_INIT_CONTAINER_COMMAND;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX;
 import static oracle.kubernetes.common.logging.MessageKeys.INTROSPECTOR_FLUENTD_CONTAINER_TERMINATED;
@@ -109,6 +108,7 @@ import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
 import static oracle.kubernetes.operator.KubernetesConstants.DOMAIN;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_FORBIDDEN;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTION_COMPLETE;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTOR_JOB;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
@@ -1394,10 +1394,9 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenPodCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
-    testSupport.failOnCreate(JOB, NS, new UnrecoverableErrorBuilderImpl()
-        .withReason("FieldValueNotFound")
-        .withMessage("Test this failure")
-        .build());
+    testSupport.failOnCreate(JOB, NS, new V1Status()
+        .reason("FieldValueNotFound")
+        .message("Test this failure"), HTTP_OK);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1407,10 +1406,9 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenPodCreationFailsDueToUnprocessableEntityFailure_generateFailedEvent() {
-    testSupport.failOnCreate(JOB, NS, new UnrecoverableErrorBuilderImpl()
-        .withReason("FieldValueNotFound")
-        .withMessage("Test this failure")
-        .build());
+    testSupport.failOnCreate(JOB, NS, new V1Status()
+        .reason("FieldValueNotFound")
+        .message("Test this failure"), HTTP_OK);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1427,10 +1425,9 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenPodCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
-    testSupport.failOnCreate(JOB, NS, new UnrecoverableErrorBuilderImpl()
-        .withReason("FieldValueNotFound")
-        .withMessage("Test this failure")
-        .build());
+    testSupport.failOnCreate(JOB, NS, new V1Status()
+        .reason("FieldValueNotFound")
+        .message("Test this failure"), HTTP_OK);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep(), terminalStep);
 
@@ -1555,17 +1552,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   private int getRecheckIntervalSeconds() {
     return oracle.kubernetes.operator.tuning.TuningParameters.getInstance().getDomainPresenceRecheckIntervalSeconds();
-  }
-
-  @Test
-  void whenJobCreateFailsWith409Error_JobIsCreated() {
-    testSupport.addRetryStrategy(createStrictStub(OnConflictRetryStrategyStub.class));
-    testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_CONFLICT);
-
-    testSupport.runSteps(JobHelper.createIntrospectionStartStep());
-
-    assertThat(testSupport.getPacket().get(DOMAIN_INTROSPECTOR_JOB), notNullValue());
-    logRecords.clear();
   }
 
   private DomainResource getUpdatedDomain() {

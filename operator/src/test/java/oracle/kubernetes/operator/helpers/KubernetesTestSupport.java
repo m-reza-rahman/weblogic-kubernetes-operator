@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
-import com.google.gson.JsonSyntaxException;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
@@ -56,11 +55,11 @@ import io.kubernetes.client.openapi.models.V1Scale;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
 import io.kubernetes.client.openapi.models.V1SelfSubjectAccessReview;
+import io.kubernetes.client.openapi.models.V1SelfSubjectRulesReview;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
-import io.kubernetes.client.openapi.models.V1SubjectRulesReviewStatus;
 import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
@@ -77,7 +76,6 @@ import jakarta.json.JsonPatch;
 import jakarta.json.JsonStructure;
 import okhttp3.internal.http2.ErrorCode;
 import okhttp3.internal.http2.StreamResetException;
-import oracle.kubernetes.operator.calls.Client;
 import oracle.kubernetes.operator.calls.KubernetesApi;
 import oracle.kubernetes.operator.calls.KubernetesApiFactory;
 import oracle.kubernetes.operator.calls.RequestBuilder;
@@ -142,7 +140,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   public Memento install() {
     support(CUSTOM_RESOURCE_DEFINITION, V1CustomResourceDefinition.class);
     support(SELF_SUBJECT_ACCESS_REVIEW, V1SelfSubjectAccessReview.class);
-    support(SELF_SUBJECT_RULES_REVIEW, V1SubjectRulesReviewStatus.class);
+    support(SELF_SUBJECT_RULES_REVIEW, V1SelfSubjectRulesReview.class);
     support(SUBJECT_ACCESS_REVIEW, V1SubjectAccessReview.class);
     support(TOKEN_REVIEW, V1TokenReview.class);
     support(PV, V1PersistentVolume.class, this::createPvList);
@@ -223,7 +221,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     return new V1ListMeta().resourceVersion(Long.toString(++resourceVersion));
   }
 
-  private void support(String resourceName, Class<?> resourceClass) {
+  private <T extends KubernetesType> void support(String resourceName, Class<T> resourceClass) {
     dataTypes.put(resourceClass, resourceName);
     repositories.put(resourceName, new DataRepository<>(resourceClass));
   }
@@ -403,10 +401,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
    *
    * @param resourceType the type of resource
    * @param namespace the namespace containing the resource
-   * @param apiException the Kubernetes exception to associate with the failure
+   * @param status the Kubernetes error status
+   * @param httpCode the HTTP return code
    */
-  public void failOnCreate(String resourceType, String namespace, ApiException apiException) {
-    failure = new Failure(Operation.create, resourceType, null, namespace, apiException);
+  public void failOnCreate(String resourceType, String namespace, V1Status status, int httpCode) {
+    failure = new Failure(Operation.create, resourceType, null, namespace, status, httpCode);
   }
 
   /**
@@ -433,20 +432,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
    */
   public void failOnReplaceStatus(String resourceType, String name, String namespace, int httpStatus) {
     failure = new Failure(Operation.replaceStatus, resourceType, name, namespace, httpStatus);
-  }
-
-  /**
-   * Specifies that a replace operation should fail if it matches the specified conditions. Applies to
-   * namespaced resources and replaces any existing failure checks.
-   *
-   * @param resourceType the type of resource
-   * @param name the name of the resource
-   * @param namespace the namespace containing the resource
-   */
-  public void failOnReplaceWithStreamResetException(String resourceType, String name, String namespace) {
-    ApiException ae = new ApiException("StreamResetException: stream was reset: NO_ERROR",
-            new StreamResetException(ErrorCode.NO_ERROR), 0, null, null);
-    failure = new Failure(Operation.replace, resourceType, name, namespace, ae);
   }
 
   /**
@@ -482,10 +467,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
    * @param resourceType the type of resource
    * @param name the name of the resource
    * @param namespace the namespace containing the resource
-   * @param apiException the kubernetes failure to associate with the failure
+   * @param status the kubernetes status to associate with the failure
+   * @param httpCode the HTTP return code
    */
-  public void failOnResource(@Nonnull String resourceType, String name, String namespace, ApiException apiException) {
-    failure = new Failure(resourceType, name, namespace, apiException);
+  public void failOnResource(@Nonnull String resourceType, String name, String namespace, V1Status status, int httpCode) {
+    failure = new Failure(resourceType, name, namespace, status, httpCode);
   }
 
   /**
@@ -600,27 +586,29 @@ public class KubernetesTestSupport extends FiberTestSupport {
     private final String resourceType;
     private final String name;
     private final String namespace;
-    private final ApiException apiException;
+    private final V1Status status;
+    private final int httpCode;
     private Operation operation;
 
-    public Failure(String resourceType, String name, String namespace, int httpStatus) {
-      this(resourceType, name, namespace, new ApiException(httpStatus, "failure reported in test"));
+    public Failure(String resourceType, String name, String namespace, int httpCode) {
+      this(resourceType, name, namespace, new V1Status().reason("failure reported in test"), httpCode);
     }
 
-    Failure(@Nonnull String resourceType, String name, String namespace, ApiException apiException) {
+    Failure(@Nonnull String resourceType, String name, String namespace, V1Status status, int httpCode) {
       this.resourceType = resourceType;
       this.name = name;
       this.namespace = namespace;
-      this.apiException = apiException;
+      this.status = status;
+      this.httpCode = httpCode;
     }
 
-    Failure(Operation operation, String resourceType, String name, String namespace, int httpStatus) {
-      this(resourceType, name, namespace, httpStatus);
+    Failure(Operation operation, String resourceType, String name, String namespace, int httpCode) {
+      this(resourceType, name, namespace, httpCode);
       this.operation = operation;
     }
 
-    Failure(Operation operation, String resourceType, String name, String namespace, ApiException apiException) {
-      this(resourceType, name, namespace, apiException);
+    Failure(Operation operation, String resourceType, String name, String namespace, V1Status status, int httpCode) {
+      this(resourceType, name, namespace, status, httpCode);
       this.operation = operation;
     }
 
@@ -633,17 +621,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     <DataType extends KubernetesType>
     KubernetesApiResponse<DataType> getExceptionResponse() {
-      final V1Status status;
-      try {
-        status = Client.getInstance().getJSON().deserialize(apiException.getResponseBody(), V1Status.class);
-      } catch (JsonSyntaxException jsonEx) {
-        return new KubernetesApiResponse<>(
-            new V1Status().code(apiException.getCode()).message(apiException.getResponseBody()), apiException.getCode());
-      }
-      if (null == status) {
-        throw new RuntimeException(apiException);
-      }
-      return new KubernetesApiResponse<>(status, apiException.getCode());
+      return new KubernetesApiResponse<>(status, httpCode);
     }
 
     @Override
@@ -707,21 +685,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
   }
 
-  static class HttpErrorException extends RuntimeException {
-    @Serial
-    private static final long serialVersionUID  = 1L;
-
-    private final ApiException apiException;
-
-    HttpErrorException(ApiException apiException) {
-      this.apiException = apiException;
-    }
-
-    ApiException getApiException() {
-      return apiException;
-    }
-  }
-
   private class KubernetesTestSupportMemento implements Memento {
 
     public KubernetesTestSupportMemento() {
@@ -748,65 +711,92 @@ public class KubernetesTestSupport extends FiberTestSupport {
       return new KubernetesApi<>() {
         @Override
         public KubernetesApiResponse<ApiType> get(String name, GetOptions getOptions) {
-          // HERE
-          CallContext<ApiType> callContext = new CallContext<>(
-              Operation.read, getResourceName(apiTypeClass), null, null, null);
-          return callContext.execute();
+          return new CallContext<ApiType>(
+              Operation.read, getResourceName(apiTypeClass), null, name)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> get(String namespace, String name, GetOptions getOptions) {
-          return null;
+          return new CallContext<ApiType>(
+              Operation.read, getResourceName(apiTypeClass), namespace, name)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiListType> list(ListOptions listOptions) {
-          return null;
+          return new CallContext<ApiListType>(
+              Operation.list, getResourceName(apiTypeClass), null, null, null, null,
+              listOptions.getFieldSelector(), listOptions.getLabelSelector(), null)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiListType> list(String namespace, ListOptions listOptions) {
-          return null;
+          return new CallContext<ApiListType>(
+              Operation.list, getResourceName(apiTypeClass), namespace, null, null, null,
+              listOptions.getFieldSelector(), listOptions.getLabelSelector(), null)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> create(ApiType object, CreateOptions createOptions) {
-          return null;
+          V1ObjectMeta meta = object.getMetadata();
+          return new CallContext<>(
+              Operation.create, getResourceName(apiTypeClass), meta.getNamespace(), meta.getName(), object)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> create(String namespace, ApiType object, CreateOptions createOptions) {
-          return null;
+          V1ObjectMeta meta = object.getMetadata();
+          return new CallContext<>(
+              Operation.create, getResourceName(apiTypeClass), namespace, meta.getName(), object)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> update(ApiType object, UpdateOptions updateOptions) {
-          return null;
+          V1ObjectMeta meta = object.getMetadata();
+          return new CallContext<>(
+              Operation.replace, getResourceName(apiTypeClass), meta.getNamespace(), meta.getName(), object)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> updateStatus(ApiType object, Function<ApiType, Object> status, UpdateOptions updateOptions) {
-          return null;
+          V1ObjectMeta meta = object.getMetadata();
+          return new CallContext<>(
+              Operation.replaceStatus, getResourceName(apiTypeClass), meta.getNamespace(), meta.getName(), object)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> patch(String name, String patchType, V1Patch patch, PatchOptions patchOptions) {
-          return null;
+          return new CallContext<ApiType>(
+              Operation.patch, getResourceName(apiTypeClass), null, name, patch)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> patch(String namespace, String name, String patchType, V1Patch patch, PatchOptions patchOptions) {
-          return null;
+          return new CallContext<ApiType>(
+              Operation.patch, getResourceName(apiTypeClass), namespace, name, patch)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> delete(String name, DeleteOptions deleteOptions) {
-          return null;
+          return new CallContext<ApiType>(
+              Operation.delete, getResourceName(apiTypeClass), null, name)
+              .execute();
         }
 
         @Override
         public KubernetesApiResponse<ApiType> delete(String namespace, String name, DeleteOptions deleteOptions) {
-          return null;
+          return new CallContext<ApiType>(
+              Operation.delete, getResourceName(apiTypeClass), namespace, name)
+              .execute();
         }
       };
     }
@@ -818,7 +808,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
   private class DataRepository<T extends KubernetesType> {
     private final Map<String, T> data = new HashMap<>();
-    private final Class<?> resourceType;
+    private final Class<T> resourceType;
     private Function<List<T>, KubernetesListObject> listFactory;
     private final Map<String, List<T>> continuations = new HashMap<>();
     private List<Consumer<T>> onCreateActions = new ArrayList<>();
@@ -827,16 +817,16 @@ public class KubernetesTestSupport extends FiberTestSupport {
     private Method getStatusMethod;
     private Method setStatusMethod;
 
-    public DataRepository(Class<?> resourceType) {
+    public DataRepository(Class<T> resourceType) {
       this.resourceType = resourceType;
     }
 
-    public DataRepository(Class<?> resourceType, Function<List<T>, KubernetesListObject> listFactory) {
+    public DataRepository(Class<T> resourceType, Function<List<T>, KubernetesListObject> listFactory) {
       this.resourceType = resourceType;
       this.listFactory = listFactory;
     }
 
-    public DataRepository(Class<?> resourceType, NamespacedDataRepository<T> parent) {
+    public DataRepository(Class<T> resourceType, NamespacedDataRepository<T> parent) {
       this.resourceType = resourceType;
       copyFieldsFromParent(parent);
     }
@@ -1187,9 +1177,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
   private class NamespacedDataRepository<T extends KubernetesType> extends DataRepository<T> {
     private final Map<String, DataRepository<T>> repositories = new HashMap<>();
-    private final Class<?> resourceType;
+    private final Class<T> resourceType;
 
-    NamespacedDataRepository(Class<?> resourceType, Function<List<T>, KubernetesListObject> listFactory) {
+    NamespacedDataRepository(Class<T> resourceType, Function<List<T>, KubernetesListObject> listFactory) {
       super(resourceType, listFactory);
       this.resourceType = resourceType;
     }
@@ -1270,18 +1260,32 @@ public class KubernetesTestSupport extends FiberTestSupport {
     private String requestNamespace;
     private String requestName;
     private String requstCall;
-    private Object requestBody;
+    private DataType requestBody;
     private Operation operation;
+    private V1Patch patch;
     private String cont = null;
 
-    CallContext(Operation operation, String resourceType) {
-      this(operation, resourceType, null, null, null);
+    CallContext(Operation operation, String resourceType, String namespace, String name) {
+      this(operation, resourceType, namespace, name, null, null, null, null, null);
+    }
+
+    CallContext(Operation operation, String resourceType, String namespace, String name, DataType body) {
+      this(operation, resourceType, namespace, name, body, null, null, null, null);
+    }
+
+    CallContext(Operation operation, String resourceType, String namespace, String name, V1Patch patch) {
+      this(operation, resourceType, namespace, name, null, patch, null, null, null);
     }
 
     CallContext(Operation operation, String resourceType,
+                String namespace, String name, DataType body, V1Patch patch,
                 String fieldSelector, String labelSelector, Integer gracePeriodSeconds) {
       this.operation = operation;
       this.resourceType = resourceType;
+      this.requestNamespace = namespace;
+      this.requestName = name;
+      this.requestBody = body;
+      this.patch = patch;
       this.fieldSelector = fieldSelector;
       this.labelSelector = labelSelector == null ? null : labelSelector.split(",");
       this.gracePeriodSeconds = gracePeriodSeconds;
@@ -1348,7 +1352,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> patchResource(DataRepository<T> dataRepository) {
-      return new KubernetesApiResponse<>(dataRepository.patchResource(requestName, requestNamespace, (V1Patch) requestBody));
+      return new KubernetesApiResponse<>(dataRepository.patchResource(requestName, requestNamespace, patch));
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> listResources(Integer limit, String cont, DataRepository<T> dataRepository) {
