@@ -106,6 +106,7 @@ import static oracle.kubernetes.operator.DomainStatusMatcher.hasStatus;
 import static oracle.kubernetes.operator.EventTestUtils.getExpectedEventMessage;
 import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
 import static oracle.kubernetes.operator.KubernetesConstants.DOMAIN;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_FORBIDDEN;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
@@ -1396,7 +1397,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   void whenPodCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
     testSupport.failOnCreate(JOB, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message("Test this failure"), HTTP_OK);
+        .message("Test this failure"), HTTP_BAD_REQUEST);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1408,7 +1409,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   void whenPodCreationFailsDueToUnprocessableEntityFailure_generateFailedEvent() {
     testSupport.failOnCreate(JOB, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message("Test this failure"), HTTP_OK);
+        .message("Test this failure"), HTTP_BAD_REQUEST);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1427,7 +1428,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   void whenPodCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
     testSupport.failOnCreate(JOB, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message("Test this failure"), HTTP_OK);
+        .message("Test this failure"), HTTP_BAD_REQUEST);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep(), terminalStep);
 

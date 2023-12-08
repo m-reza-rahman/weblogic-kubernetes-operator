@@ -4,11 +4,11 @@
 package oracle.kubernetes.operator.work;
 
 import java.io.File;
-import java.util.ArrayDeque;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -167,34 +167,43 @@ public class FiberTestSupport {
 
   abstract static class ExecutorServiceStub implements ExecutorService {
 
-    private final Queue<Runnable> queue = new ArrayDeque<>();
-    private Runnable current;
-    private int numItemsRun;
+    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+
+    private final AtomicReference<Runnable> current = new AtomicReference<>();
+    private final AtomicInteger numItemsRun = new AtomicInteger(0);
 
     static ExecutorServiceStub create() {
       return createStrictStub(ExecutorServiceStub.class);
     }
 
     int getNumItemsRun() {
-      return numItemsRun;
+      return numItemsRun.get();
     }
 
     @Override
     public void execute(@Nullable Runnable command) {
-      queue.add(command);
-      if (current == null) {
-        runNextRunnable();
+      if (command != null) {
+        if (current.compareAndSet(null, command)) {
+          try {
+            runAndIncrementNumItemsRun(command);
+          } finally {
+            current.set(null);
+          }
+        } else {
+          executorService.execute(() -> {
+            runAndIncrementNumItemsRun(command);
+          });
+        }
       }
     }
 
-    private void runNextRunnable() {
-      while (null != (current = queue.poll())) {
-        current.run();
-        numItemsRun++;
-        current = null;
+    private void runAndIncrementNumItemsRun(Runnable command) {
+      try {
+        command.run();
+      } finally {
+        numItemsRun.incrementAndGet();
       }
     }
-
   }
 
   static class CompletionCallbackStub implements Fiber.CompletionCallback {

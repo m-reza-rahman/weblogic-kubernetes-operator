@@ -129,6 +129,7 @@ import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_IMAGE;
 import static oracle.kubernetes.operator.KubernetesConstants.DOMAIN;
 import static oracle.kubernetes.operator.KubernetesConstants.DOMAIN_DEBUG_CONFIG_MAP_SUFFIX;
 import static oracle.kubernetes.operator.KubernetesConstants.EXPORTER_CONTAINER_NAME;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_FORBIDDEN;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
@@ -1699,7 +1700,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
   public void whenPodCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
     testSupport.failOnCreate(POD, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message("Test this failure"), HTTP_OK);
+        .message("Test this failure"), HTTP_BAD_REQUEST);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1711,7 +1712,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
   public void whenPodCreationFailsDueToUnprocessableEntityFailure_createFailedKubernetesEvent() {
     testSupport.failOnCreate(POD, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message("Test this failure"), HTTP_OK);
+        .message("Test this failure"), HTTP_BAD_REQUEST);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 
@@ -1726,7 +1727,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
   void whenPodCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
     testSupport.failOnCreate(POD, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message("Test this failure"), HTTP_OK);
+        .message("Test this failure"), HTTP_BAD_REQUEST);
 
     testSupport.runSteps(getStepFactory(), terminalStep);
 

@@ -47,6 +47,7 @@ import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.operator.DomainStatusMatcher.hasStatus;
 import static oracle.kubernetes.operator.EventTestUtils.getExpectedEventMessage;
 import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_CONFLICT;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
@@ -221,7 +222,7 @@ class PersistentVolumeHelperTest {
     testSupport.defineResources(domainPresenceInfo.getDomain());
     testSupport.failOnCreate(PV, null, new V1Status()
             .reason("FieldValueNotFound")
-            .message("Test this failure"), HTTP_OK);
+            .message("Test this failure"), HTTP_BAD_REQUEST);
 
     runPersistentVolumeHelper();
 
@@ -234,7 +235,7 @@ class PersistentVolumeHelperTest {
     testSupport.defineResources(domainPresenceInfo.getDomain());
     testSupport.failOnCreate(PV, null, new V1Status()
         .reason("FieldValueNotFound")
-        .message("Test this failure"), HTTP_OK);
+        .message("Test this failure"), HTTP_BAD_REQUEST);
 
     runPersistentVolumeHelper();
 
@@ -250,7 +251,7 @@ class PersistentVolumeHelperTest {
     testSupport.defineResources(domainPresenceInfo.getDomain());
     testSupport.failOnCreate(PV, null, new V1Status()
             .reason("FieldValueNotFound")
-            .message("Test this failure"), HTTP_OK);
+            .message("Test this failure"), HTTP_BAD_REQUEST);
 
     runPersistentVolumeHelper();
 

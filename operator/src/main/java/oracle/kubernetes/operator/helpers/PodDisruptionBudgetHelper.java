@@ -269,7 +269,7 @@ public class PodDisruptionBudgetHelper {
       labels.put(DOMAINUID_LABEL, info.getDomainUid());
       labels.put(CLUSTERNAME_LABEL, clusterName);
       return new V1PodDisruptionBudget()
-              .metadata(new V1ObjectMeta().name(getPDBName()).labels(labels))
+              .metadata(new V1ObjectMeta().name(getPDBName()).namespace(info.getNamespace()).labels(labels))
               .apiVersion(PDB_API_VERSION)
               .spec(new V1PodDisruptionBudgetSpec().minAvailable(new IntOrString(minAvailable))
                       .selector(new V1LabelSelector().matchLabels(labels)));

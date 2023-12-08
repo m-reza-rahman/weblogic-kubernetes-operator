@@ -66,6 +66,7 @@ import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.operator.DomainStatusMatcher.hasStatus;
 import static oracle.kubernetes.operator.EventTestUtils.getEventsWithReason;
 import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
 import static oracle.kubernetes.operator.ProcessingConstants.CLUSTER_NAME;
@@ -456,7 +457,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
     testSupport.defineResources(domainPresenceInfo.getDomain());
     testSupport.failOnCreate(SERVICE, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message(FAILURE_MESSAGE), HTTP_OK);
+        .message(FAILURE_MESSAGE), HTTP_BAD_REQUEST);
 
     runServiceHelper();
 
@@ -469,7 +470,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
     testSupport.defineResources(domainPresenceInfo.getDomain());
     testSupport.failOnCreate(SERVICE, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message(FAILURE_MESSAGE), HTTP_OK);
+        .message(FAILURE_MESSAGE), HTTP_BAD_REQUEST);
 
     runServiceHelper();
 
@@ -498,7 +499,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
     testSupport.defineResources(domainPresenceInfo.getDomain());
     testSupport.failOnCreate(SERVICE, NS, new V1Status()
         .reason("FieldValueNotFound")
-        .message(FAILURE_MESSAGE), HTTP_OK);
+        .message(FAILURE_MESSAGE), HTTP_BAD_REQUEST);
 
     runServiceHelper();
 
