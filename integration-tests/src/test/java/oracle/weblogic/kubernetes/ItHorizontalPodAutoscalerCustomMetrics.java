@@ -154,7 +154,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     assertNotNull(namespaces.get(2), "Namespace list is null");
     monitoringNS = namespaces.get(2);
 
-    logger.info("Get a unique namespace for nginx");
+    logger.info("Get a unique namespace for Nginx");
     assertNotNull(namespaces.get(3), "Namespace list is null");
     String nginxNamespace = namespaces.get(3);
 
