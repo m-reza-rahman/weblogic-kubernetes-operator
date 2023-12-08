@@ -26,11 +26,11 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import com.meterware.simplestub.Memento;
+import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
@@ -74,11 +74,10 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonPatch;
 import jakarta.json.JsonStructure;
-import okhttp3.internal.http2.ErrorCode;
-import okhttp3.internal.http2.StreamResetException;
 import oracle.kubernetes.operator.calls.KubernetesApi;
 import oracle.kubernetes.operator.calls.KubernetesApiFactory;
 import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.RequestStep;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
@@ -137,7 +136,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
    *
    * @return a memento which can be used to restore the production factory
    */
-  public Memento install() {
+  public Memento install() throws NoSuchFieldException {
     support(CUSTOM_RESOURCE_DEFINITION, V1CustomResourceDefinition.class);
     support(SELF_SUBJECT_ACCESS_REVIEW, V1SelfSubjectAccessReview.class);
     support(SELF_SUBJECT_RULES_REVIEW, V1SelfSubjectRulesReview.class);
@@ -161,7 +160,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     supportNamespaced(SERVICE, V1Service.class, this::createServiceList);
     supportNamespaced(SCALE, V1Scale.class);
 
-    return new KubernetesTestSupportMemento();
+    return StaticStubSupport.install(RequestStep.class, "factory", new KubernetesApiFactoryImpl());
   }
 
   private ClusterList createClusterList(List<ClusterResource> items) {
@@ -682,25 +681,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     void doAction() {
       action.run();
-    }
-  }
-
-  private class KubernetesTestSupportMemento implements Memento {
-
-    public KubernetesTestSupportMemento() {
-      CallBuilder.setStepFactory(new AsyncRequestStepFactoryImpl());
-      CallBuilder.setCallDispatcher(new CallDispatcherImpl());
-    }
-
-    @Override
-    public void revert() {
-      CallBuilder.resetStepFactory();
-      CallBuilder.resetCallDispatcher();
-    }
-
-    @Override
-    public <T> T getOriginalValue() {
-      throw new UnsupportedOperationException();
     }
   }
 

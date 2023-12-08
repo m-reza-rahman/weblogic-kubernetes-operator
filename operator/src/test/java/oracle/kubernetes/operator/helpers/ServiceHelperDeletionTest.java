@@ -31,7 +31,7 @@ class ServiceHelperDeletionTest extends ServiceHelperTestBase {
   }
 
   @BeforeEach
-  public void setUpDeletionTest() {
+  public void setUpDeletionTest() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger());
     mementos.add(testSupport.install());
 

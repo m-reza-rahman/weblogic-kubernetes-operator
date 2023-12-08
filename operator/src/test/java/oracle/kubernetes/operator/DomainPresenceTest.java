@@ -33,6 +33,7 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Engine;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.FiberGate;
+import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.ThreadFactorySingleton;
 import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.utils.TestUtils;
@@ -612,13 +613,15 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
     private final List<MakeRightClusterOperationStub> clusterOperationStubs = new ArrayList<>();
     private final Map<String, Map<String, DomainPresenceInfo>> domains = new ConcurrentHashMap<>();
     private final Map<String, Map<String, ClusterPresenceInfo>> clusters = new ConcurrentHashMap<>();
+    private final FiberTestSupport testSupport = new FiberTestSupport();
+
     private final Map<String, FiberGate> makeRightFiberGates = createMakeRightFiberGateMap();
     private boolean statusUpdated = false;
 
     @NotNull
     private Map<String, FiberGate> createMakeRightFiberGateMap() {
       Map<String, FiberGate> map = new ConcurrentHashMap<>();
-      map.put(NS, new TestFiberGate(new Engine()));
+      map.put(NS, new TestFiberGate(testSupport.getEngine()));
       return map;
     }
 

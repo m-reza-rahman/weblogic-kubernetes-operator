@@ -11,6 +11,7 @@ import java.net.http.HttpResponse;
 import java.util.Optional;
 
 import io.kubernetes.client.openapi.models.V1Pod;
+import okhttp3.Request;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
@@ -30,11 +31,19 @@ import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadC
  */
 public class HttpRequestStep extends Step {
 
+  interface RequestSender {
+    HttpResponse<String> send(HttpRequest request) throws IOException, InterruptedException;
+  }
+
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
   private static final long DEFAULT_TIMEOUT_SECONDS = 5;
 
+  private static final RequestSender DEFAULT_SENDER = HttpRequestStep::send;
+
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
+  private static RequestSender sender = DEFAULT_SENDER;
+
   private final HttpRequest request;
   private long timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
   private static final HttpClient httpClient = HttpClient.newBuilder()
@@ -85,12 +94,16 @@ public class HttpRequestStep extends Step {
     DomainPresenceInfo info = getDomainPresenceInfo(packet);
     try (ThreadLoggingContext ignored =
              setThreadContext().namespace(getNamespaceFromInfo(info)).domainUid(getDomainUIDFromInfo(info))) {
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response = sender.send(request);
       recordResponse(response, packet);
     } catch (IOException | InterruptedException e) {
       recordThrowableResponse(e, packet);
     }
     return doNext(packet);
+  }
+
+  public static HttpResponse<String> send(HttpRequest request) throws IOException, InterruptedException {
+    return httpClient.send(request, HttpResponse.BodyHandlers.ofString());
   }
 
   private String getDomainUIDFromInfo(DomainPresenceInfo info) {

@@ -46,7 +46,7 @@ class SecretHelperTest {
   private final List<LogRecord> logRecords = new ArrayList<>();
 
   @BeforeEach
-  public void setUp() {
+  public void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords, SECRET_NOT_FOUND, SECRET_DATA_NOT_FOUND));
     mementos.add(testSupport.install());

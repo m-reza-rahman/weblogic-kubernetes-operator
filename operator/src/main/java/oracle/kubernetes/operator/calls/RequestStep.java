@@ -40,9 +40,11 @@ public abstract class RequestStep<
   public static final String CONTINUE = "continue";
   public static final int FIBER_TIMEOUT = 0;
 
-  private static KubernetesApiFactory factory = new KubernetesApiFactory() {
+  private static final KubernetesApiFactory DEFAULT_FACTORY = new KubernetesApiFactory() {
   };
 
+  @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
+  private static KubernetesApiFactory factory = DEFAULT_FACTORY;
   private final Class<A> apiTypeClass;
   private final Class<L> apiListTypeClass;
   private final String apiGroup;

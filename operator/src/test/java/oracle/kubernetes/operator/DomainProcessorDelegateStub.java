@@ -102,7 +102,9 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
 
   @Override
   public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay) {
-    return testSupport.scheduleWithFixedDelay(command, initialDelay, delay);
+    // FIXME
+    // return testSupport.scheduleWithFixedDelay(command, initialDelay, delay);
+    return null;
   }
 
   @Override

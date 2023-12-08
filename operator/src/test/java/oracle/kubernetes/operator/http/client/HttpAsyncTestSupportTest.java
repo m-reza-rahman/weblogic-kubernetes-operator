@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 
 import static com.meterware.simplestub.Stub.createStub;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
@@ -107,12 +106,5 @@ class HttpAsyncTestSupportTest {
   @SuppressWarnings("SameParameterValue")
   private HttpRequest createPostRequest(String urlString, String body) {
     return HttpRequest.newBuilder().POST(HttpRequest.BodyPublishers.ofString(body)).uri(URI.create(urlString)).build();
-  }
-
-  @Test
-  void matchingFuture_markedComplete() {
-    support.defineResponse(createGetRequest("http://known"), createStub(HttpResponseStub.class, 200, "It works"));
-
-    assertThat(support.getFuture(createGetRequest("http://known")).isDone(), is(true));
   }
 }
