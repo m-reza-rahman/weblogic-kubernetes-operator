@@ -221,6 +221,9 @@ class ItMiiDomain {
 
     String configMapName = "default-secure-configmap";
     String yamlString = "topology:\n"
+        + "  SecurityConfiguration:\n"
+        + "     SecureMode:\n"
+        + "       SecureModeEnabled: true\n"
         + "  Server:\n"
         + "    'admin-server':\n"
         + "       SSL: \n"
