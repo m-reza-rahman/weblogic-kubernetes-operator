@@ -102,7 +102,7 @@ public interface TestConstants {
   // It depends on the default value of BASE_IMAGES_REPO. 
   // Following defaults are assumining OCIR as default for BASE_IMAGES_REPO.
   public static final String WEBLOGIC_IMAGE_NAME_DEFAULT = "weblogic141200";
-  public static final String WEBLOGIC_IMAGE_TAG_DEFAULT = "oracle-7";
+  public static final String WEBLOGIC_IMAGE_TAG_DEFAULT = "oracle-8";
   public static final String FMWINFRA_IMAGE_NAME_DEFAULT = "fmw-infrastructure141200";
   public static final String FMWINFRA_IMAGE_TAG_DEFAULT = "oracle-8";
   public static final String FMWINFRA_IMAGE_TAG_12213 = "12.2.1.3";
