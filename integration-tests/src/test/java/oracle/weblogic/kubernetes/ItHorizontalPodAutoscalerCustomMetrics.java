@@ -374,18 +374,19 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     params.command(KUBERNETES_CLI + " apply -f " + targetHPAFile);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
     assertEquals(0, result.exitValue(), "Failed to create hpa or autoscale, result " + result);
-    /* check if hpa output contains something like 7%/50%
+    /* check if hpa output does not contain <unknown>
      * kubectl get hpa --all-namespaces
-     * NAMESPACE   NAME         REFERENCE            TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-     * ns-qsjlcw   hpacluster   Cluster/hpacluster   4%/50%    2         4         2          18m
+     * NAMESPACE   NAME                REFERENCE                  TARGETS    MINPODS   MAXPODS   REPLICAS   AGE
+     * ns-qsjlcw   custommetrics-hpa   Cluster/hpacustomcluster   0/5        2         3         2          52s
+     *
      * when its not ready, it looks
-     * NAMESPACE   NAME         REFERENCE            TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
-     * ns-qsjlcw   hpacluster   Cluster/hpacluster   <unknown>/50%    2         4         2          18m
+     * NAMESPACE   NAME                REFERENCE                  TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+     * ns-qsjlcw   custommetrics-hpa   Cluster/hpacustomcluster   <unknown>/5    2         4         2          18m
      */
     testUntil(withLongRetryPolicy,
-        () -> verifyHPA(domainNamespace, "%/"),
+        () -> verifyHPA(domainNamespace, "custommetrics-hpa"),
         logger,
-        "hpa output contains something like 7%/50% in namespace {0}",
+        "hpa is ready in namespace {0}",
         domainNamespace);
   }
 
@@ -396,7 +397,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
 
     ExecResult result = Command.withParams(params).executeAndReturnResult();
     logger.info(result.stdout());
-    return result.stdout().contains(expectedOutput);
+    return result.stdout().contains(expectedOutput) && !result.stdout().contains("unknown");
   }
 
   // verify custom metrics is exposed via prometheus adapter
