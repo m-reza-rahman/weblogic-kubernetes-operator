@@ -374,7 +374,19 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     params.command(KUBERNETES_CLI + " apply -f " + targetHPAFile);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
     assertEquals(0, result.exitValue(), "Failed to create hpa or autoscale, result " + result);
-    assertTrue(verifyHPA(domainNamespace, "custommetrics-hpa"));
+    /* check if hpa output contains something like 7%/50%
+     * kubectl get hpa --all-namespaces
+     * NAMESPACE   NAME         REFERENCE            TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+     * ns-qsjlcw   hpacluster   Cluster/hpacluster   4%/50%    2         4         2          18m
+     * when its not ready, it looks
+     * NAMESPACE   NAME         REFERENCE            TARGETS   MINPODS   MAXPODS   REPLICAS   AGE
+     * ns-qsjlcw   hpacluster   Cluster/hpacluster   <unknown>/50%    2         4         2          18m
+     */
+    testUntil(withLongRetryPolicy,
+        () -> verifyHPA(domainNamespace, "%/"),
+        logger,
+        "hpa output contains something like 7%/50% in namespace {0}",
+        domainNamespace);
   }
 
   // verify hpa is getting the metrics
