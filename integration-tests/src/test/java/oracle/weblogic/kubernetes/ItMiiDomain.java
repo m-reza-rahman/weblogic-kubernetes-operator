@@ -288,7 +288,7 @@ class ItMiiDomain {
     if (!WEBLOGIC_SLIM) {
       String curlCmd = "curl --globoff -sk --show-error --noproxy '*' "
           + " https://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+          + "/console/signin/ --write-out %{http_code} -o /dev/null";
       logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
       assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
       logger.info("WebLogic console is accessible thru default-secure service");
@@ -306,7 +306,7 @@ class ItMiiDomain {
     if (!WEBLOGIC_SLIM) {
       String curlCmd2 = "curl -g -s --show-error --noproxy '*' "
           + " http://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+          + "/console/signin/ --write-out %{http_code} -o /dev/null";
       logger.info("Executing default nodeport curl command {0}", curlCmd2);
       assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
       logger.info("WebLogic console is accessible thru default service");
