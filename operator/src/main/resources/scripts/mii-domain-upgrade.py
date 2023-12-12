@@ -34,7 +34,7 @@ def checkIfSecureModeEnabledForDomain(domain, domain_version):
     # Cannot use domain.getDomainVersion() -> it returns the version of the wls currently using, not
     # the value in <domain-version>*</domain-version>
     #
-    secureModeEnabled = domain.isProductionModeEnabled() and not LegalHelper.versionEarlierThan(domain_version, "14.1.2.0")
+    secureModeEnabled = domain.isProductionModeEnabled() and not LegalHelper.versionEarlierThan(domain_version, "15.1.2.0")
 
   trace("Writing secure mode status as " + str(secureModeEnabled))
   fh = open('/tmp/mii_domain_upgrade.txt', 'w')

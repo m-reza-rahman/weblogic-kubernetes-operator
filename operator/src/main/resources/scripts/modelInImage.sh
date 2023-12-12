@@ -784,11 +784,11 @@ createPrimordialDomain() {
 checkSecureModeForUpgrade() {
     trace "Checking existing domain configuration "
     local cur_wl_ver="`getWebLogicVersion`"
-    local exp_wl_ver="14.1.2.0.0"
+    local exp_wl_ver="15.1.2.0.0"
     trace "Current pod version " $cur_wl_ver
-    # Only do this if the wls version in the pod is >= 14.1.2.0
+    # Only do this if the wls version in the pod is >= 15.1.2.0
     if versionGE "${cur_wl_ver}" "${exp_wl_ver}" ; then
-      trace "Checking if upgrade to 14.1.2.0 or higher needs model patch"
+      trace "Checking if upgrade to 15.1.2.0 or higher needs model patch"
       mkdir /tmp/miiupgdomain
       cd /tmp/miiupgdomain && base64 -d ${PRIMORDIAL_DOMAIN_ZIPPED} > ${LOCAL_PRIM_DOMAIN_ZIP}.tmp && tar -pxzf ${LOCAL_PRIM_DOMAIN_ZIP}.tmp
       createFolder "/tmp/miiupgdomain${DOMAIN_HOME}/lib" "This is the './lib' directory within directory 'domain.spec.domainHome'." || exitOrLoop
