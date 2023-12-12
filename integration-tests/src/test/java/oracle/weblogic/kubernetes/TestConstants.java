@@ -440,6 +440,8 @@ public interface TestConstants {
   public static final String METRICS_SERVER_YAML =
       "https://github.com/kubernetes-sigs/metrics-server/releases/download/metrics-server-helm-chart-3.8.2/components.yaml";
   
+  public static final boolean SECURE_PRODUCTION_MODE = WEBLOGIC_IMAGE_TAG_DEFAULT.startsWith("oracle-8") ? true : false;
+  
   // verrazzano related constants
   public static final String VZ_INGRESS_NS = "ingress-nginx";
   public static final String VZ_SYSTEM_NS = "verrazzano-system";

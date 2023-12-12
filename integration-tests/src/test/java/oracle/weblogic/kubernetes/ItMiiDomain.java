@@ -62,6 +62,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_TWO_APP_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.SECURE_PRODUCTION_MODE;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_PASSWORD;
@@ -150,7 +151,7 @@ class ItMiiDomain {
   private static volatile boolean mainThreadDone = false;
   private static String miiDomainNegativeNamespace = null;
   private String encryptionSecretName = "encryptionsecret";
-  private AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + this.getClass().getSimpleName());
+  private AppParams appParams = defaultAppParams().appArchiveDir(ARCHIVE_DIR + this.getClass().getSimpleName());  
 
   /**
    * Install Operator.
@@ -221,17 +222,6 @@ class ItMiiDomain {
             "weblogicenc", "weblogicenc");
 
     String configMapName = "default-secure-configmap";
-    /*
-    String yamlString = "topology:\n"
-        + "  SecurityConfiguration:\n"
-        + "     SecureMode:\n"
-        + "       SecureModeEnabled: true\n"
-        + "  Server:\n"
-        + "    'admin-server':\n"
-        + "       SSL: \n"
-        + "         Enabled: true \n"
-        + "         ListenPort: '" + adminServerSecurePort + "' \n";
-    */
     String yamlString = "topology:\n"
         + "  Server:\n"
         + "    'admin-server':\n"
@@ -276,10 +266,14 @@ class ItMiiDomain {
 
     // check and wait for the application to be accessible in all server pods
     for (int i = 1; i <= replicaCount; i++) {
+      String msPort = "8001";
+      if (SECURE_PRODUCTION_MODE) {
+        msPort = "8500";
+      }
       checkAppRunning(
           domainNamespace,
           managedServerPrefix + i,
-          "8001",
+          msPort,
           "sample-war/index.jsp",
           MII_APP_RESPONSE_V1 + i);
     }
@@ -300,7 +294,7 @@ class ItMiiDomain {
     if (!WEBLOGIC_SLIM) {
       String curlCmd = "curl --globoff -sk --show-error --noproxy '*' "
           + " https://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+          + "/weblogic/ready --write-out %{http_code} -o /dev/null";
       logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
       assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
       logger.info("WebLogic console is accessible thru default-secure service");
