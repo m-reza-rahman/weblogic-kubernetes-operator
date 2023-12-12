@@ -220,10 +220,18 @@ class ItMiiDomain {
             "weblogicenc", "weblogicenc");
 
     String configMapName = "default-secure-configmap";
+    /*
     String yamlString = "topology:\n"
         + "  SecurityConfiguration:\n"
         + "     SecureMode:\n"
         + "       SecureModeEnabled: true\n"
+        + "  Server:\n"
+        + "    'admin-server':\n"
+        + "       SSL: \n"
+        + "         Enabled: true \n"
+        + "         ListenPort: '" + adminServerSecurePort + "' \n";
+    */
+    String yamlString = "topology:\n"
         + "  Server:\n"
         + "    'admin-server':\n"
         + "       SSL: \n"
