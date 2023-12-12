@@ -101,7 +101,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-sequential")
 @Tag("kind-parallel")
 public class ItHorizontalPodAutoscalerCustomMetrics {
-  private static final String MONEXP_MODEL_FILE = "model.monexp.yaml";
+  private static final String MONEXP_MODEL_FILE = "model.monexp.custommetrics.yaml";
   private static final String MONEXP_IMAGE_NAME = "monexp-image";
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
   private static final String SESSMIGR_APP_WAR_NAME = "sessmigr-war";
