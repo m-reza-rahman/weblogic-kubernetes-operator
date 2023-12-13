@@ -482,8 +482,8 @@ public class LoadBalancerUtils {
         if (host.contains(":")) {
           host = "[" + host + "]";
         }
-        String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-            + "' http://" + host + ":" + nodeport
+        String curlCmd = "curl -kg --silent --show-error --noproxy '*' -H 'host: " + ingressHost
+            + "' https://" + host + ":" + nodeport
             + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
         logger.info("Executing curl command {0}", curlCmd);

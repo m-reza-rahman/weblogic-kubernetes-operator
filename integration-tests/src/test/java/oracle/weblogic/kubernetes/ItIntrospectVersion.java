@@ -283,8 +283,8 @@ class ItIntrospectVersion {
 
     logger.info("Getting port for default channel");
     int defaultChannelPort = assertDoesNotThrow(()
-        -> getServicePort(introDomainNamespace, getExternalServicePodName(adminServerPodName), "default"),
-        "Getting admin server default port failed");
+        -> getServicePort(introDomainNamespace, getExternalServicePodName(adminServerPodName), "default-admin"),
+        "Getting admin server default-admin port failed");
     logger.info("default channel port: {0}", defaultChannelPort);
     assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
 
@@ -1130,7 +1130,7 @@ class ItIntrospectVersion {
     p.setProperty("cluster_name", cluster1Name);
     p.setProperty("admin_server_name", adminServerName);
     p.setProperty("managed_server_port", Integer.toString(managedServerPort));
-    p.setProperty("admin_server_port", "7001");
+    p.setProperty("admin_server_port", "7002");
     p.setProperty("admin_username", wlsUserName);
     p.setProperty("admin_password", wlsPassword);
     p.setProperty("admin_t3_public_address", K8S_NODEPORT_HOST);
@@ -1182,17 +1182,7 @@ class ItIntrospectVersion {
             .serverPod(new ServerPod() //serverpod
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
-                    .value("-Dweblogic.StdoutDebugEnabled=false "
-                        + "-Dweblogic.kernel.debug=true "
-                        + "-Dweblogic.debug.DebugMessaging=true "
-                        + "-Dweblogic.debug.DebugConnection=true "
-                        + "-Dweblogic.debug.DebugUnicastMessaging=true "
-                        + "-Dweblogic.debug.DebugClusterHeartbeats=true "
-                        + "-Dweblogic.debug.DebugJNDI=true "
-                        + "-Dweblogic.debug.DebugJNDIResolution=true "
-                        + "-Dweblogic.debug.DebugCluster=true "
-                        + "-Dweblogic.ResolveDNSName=true "
-                        + "-Dweblogic.MaxMessageSize=20000000"))
+                    .value("-Dweblogic.StdoutDebugEnabled=false"))
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom "))
@@ -1206,7 +1196,7 @@ class ItIntrospectVersion {
             .adminServer(new AdminServer() //admin server
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
-                        .channelName("default")
+                        .channelName("default-admin")
                         .nodePort(getNextFreePort())))));
 
     // create secrets

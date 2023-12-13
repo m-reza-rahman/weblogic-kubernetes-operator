@@ -37,6 +37,8 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.SECURE_PRODUCTION_MODE;
+import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
@@ -84,7 +86,7 @@ class ItManagedCoherence {
   private static final String domainUid = "coherence-managed-domain";
   private static final int NUMBER_OF_CLUSTERS = 2;
   private static final String CLUSTER_NAME_PREFIX = "cluster-";
-  private static final int MANAGED_SERVER_PORT = 8001;
+  private static final int MANAGED_SERVER_PORT = 8500;
   private static final int replicaCount = 2;
   private static String adminServerPodName = domainUid + "-admin-server";
 
@@ -296,12 +298,25 @@ class ItManagedCoherence {
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
-                        .channelName("default")
+                        .channelName("default-admin")
+                        .nodePort(getNextFreePort()))
+                    .addChannelsItem(new Channel()
+                        .channelName("default-secure")
                         .nodePort(getNextFreePort()))))
             .configuration(new Configuration()
                 .model(new Model()
                     .domainType("WLS"))
                 .introspectorJobActiveDeadlineSeconds(300L)));
+    if (SECURE_PRODUCTION_MODE) {
+      domain.getSpec().getServerPod()
+          .addEnvItem(new V1EnvVar()
+              .name("JAVA_OPTIONS")
+              .value(SSL_PROPERTIES))
+          .addEnvItem(new V1EnvVar()
+              .name("WLSDEPLOY_PROPERTIES")
+              .value(SSL_PROPERTIES));
+    }
+
     setPodAntiAffinity(domain);
     logger.info("Create domain custom resource for domainUid {0} in namespace {1}",
         domainUid, domainNamespace);
@@ -370,7 +385,7 @@ class ItManagedCoherence {
                                     String hostName,
                                     String hostAndPort) {
     logger.info("Add initial data to cache");
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -kg --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=add&first=")
         .append(firstName)
@@ -379,7 +394,7 @@ class ItManagedCoherence {
         .append("' ")
         .append("-X POST -H 'host: ")
         .append(hostName)
-        .append("' http://")
+        .append("' https://")
         .append(hostAndPort)
         .append("/")
         .append(COHERENCE_APP_NAME)
