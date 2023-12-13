@@ -477,7 +477,7 @@ public class CommonMiiTestUtils {
                         .channelName("default-secure")
                         .nodePort(0))
                     .addChannelsItem(new oracle.weblogic.domain.Channel()
-                        .channelName("default-secure")
+                        .channelName("default-admin")
                         .nodePort(0))))
             .configuration(new oracle.weblogic.domain.Configuration()
                 .model(new oracle.weblogic.domain.Model()

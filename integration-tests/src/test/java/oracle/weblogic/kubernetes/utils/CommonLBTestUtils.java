@@ -511,11 +511,11 @@ public class CommonLBTestUtils {
     StringBuffer curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
         + namespace + " " + adminServerPodName)
         .append(" -- /bin/bash -c \"")
-        .append("curl -g --user ")
+        .append("curl -kg --user ")
         .append(userName)
         .append(":")
         .append(password)
-        .append(" http://" + adminServerPodName + ":" + adminPort)
+        .append(" https://" + adminServerPodName + ":" + adminPort)
         .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
         .append("echo ${status}");
     logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
