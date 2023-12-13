@@ -64,6 +64,8 @@ import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
+import static oracle.weblogic.kubernetes.TestConstants.SECURE_PRODUCTION_MODE;
+import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
@@ -345,6 +347,15 @@ public class CommonMiiTestUtils {
       DomainSpec domainSpec = domain.getSpec();
       domainSpec.dataHome(dataHome);
       domain.spec(domainSpec);
+    }
+    if (SECURE_PRODUCTION_MODE) {
+      domain.getSpec().getServerPod()
+          .addEnvItem(new V1EnvVar()
+              .name("JAVA_OPTIONS")
+              .value(SSL_PROPERTIES))
+          .addEnvItem(new V1EnvVar()
+              .name("WLSDEPLOY_PROPERTIES")
+              .value(SSL_PROPERTIES));
     }
 
     createDomainAndVerify(domain, domainNamespace);
