@@ -291,8 +291,9 @@ class ItManagedCoherence {
             .serverPod(new ServerPod()
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
-                    .value("-Dweblogic.StdoutDebugEnabled=false "
-                        + "-Dweblogic.security.SSL.ignoreHostnameVerification=true "))
+                    .value("-Dweblogic.StdoutDebugEnabled=false  "
+                        + "-Dweblogic.security.TrustKeyStore=DemoTrust "
+                        + "-Dweblogic.security.SSL.ignoreHostnameVerification=true"))
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
@@ -310,9 +311,6 @@ class ItManagedCoherence {
                 .introspectorJobActiveDeadlineSeconds(300L)));
     if (SECURE_PRODUCTION_MODE) {
       domain.getSpec().getServerPod()
-          .addEnvItem(new V1EnvVar()
-              .name("JAVA_OPTIONS")
-              .value(SSL_PROPERTIES))
           .addEnvItem(new V1EnvVar()
               .name("WLSDEPLOY_PROPERTIES")
               .value(SSL_PROPERTIES));
