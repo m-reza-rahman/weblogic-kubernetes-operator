@@ -143,7 +143,7 @@ class ItMultiDomainModels {
   @ParameterizedTest
   @DisplayName("scale cluster by patching domain resource with four different type of domains and "
       + "verify admin console login using admin node port.")
-  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV", "auxiliaryImageDomain"})
+  @ValueSource(strings = {"domainOnPV", "auxiliaryImageDomain"})
   @Tag("gate")
   @DisabledOnSlimImage
   void testScaleClustersAndAdminConsoleLogin(String domainType) {

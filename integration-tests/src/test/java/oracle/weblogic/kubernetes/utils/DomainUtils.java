@@ -948,8 +948,10 @@ public class DomainUtils {
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
-                        .channelName("default")
-                        .nodePort(getNextFreePort())))));
+                        .channelName("default-secure")
+                        .nodePort(getNextFreePort())).addChannelsItem(new Channel()
+                    .channelName("default-admin")
+                    .nodePort(getNextFreePort())))));
 
     // create cluster resource for the domain
     if (!Cluster.doesClusterExist(clusterResName, CLUSTER_VERSION, domainNamespace)) {
@@ -1452,7 +1454,10 @@ public class DomainUtils {
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
-                        .channelName("default")
+                        .channelName("default-secure")
+                        .nodePort(getNextFreePort()))
+                    .addChannelsItem(new Channel()
+                        .channelName("default-admin")
                         .nodePort(getNextFreePort()))))
             .configuration(new Configuration()
                 .model(new Model()
