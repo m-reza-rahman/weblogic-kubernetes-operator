@@ -12,6 +12,7 @@ import java.util.Map;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import java.nio.file.Files;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -25,6 +26,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.BuildApplication;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -58,6 +60,7 @@ import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
+import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithTLSCertKey;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -176,8 +179,15 @@ class ItManagedCoherence {
       }
       // clusterNameMsPortMap.put(clusterName, managedServerPort);
       logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-      createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-          traefikHelmParams.getReleaseName());
+      String clustertlsSecretName = domainUid + "-administration-traefik-tls-secret";
+      String clusterIngressHost = domainUid + "." + domainNamespace + ".administration.ssl.test";
+      createCertKeyFiles(clusterIngressHost);
+      assertDoesNotThrow(() -> createSecretWithTLSCertKey(clustertlsSecretName,
+          domainNamespace, tlsKeyFile, tlsCertFile));
+      Map<String, String> annotations = new HashMap<>();
+      annotations.put("ingress.kubernetes.io/protocol", "https");
+      createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, annotations, true, 
+          clustertlsSecretName, traefikHelmParams.getReleaseName());
 
       String clusterHostname = domainUid + "." + domainNamespace + ".cluster-1.test";
       // get ingress service Name and Nodeport
@@ -185,7 +195,7 @@ class ItManagedCoherence {
       String traefikNamespace = traefikHelmParams.getNamespace();
 
       int ingressServiceNodePort = assertDoesNotThrow(()
-              -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
+              -> getServiceNodePort(traefikNamespace, ingressServiceName, "websecure"),
           "Getting Ingress Service node port failed");
       logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
 
@@ -411,12 +421,12 @@ class ItManagedCoherence {
   private ExecResult getCacheSize(String hostName, String hostAndPort) {
     logger.info("Get the number of records in cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -kg --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=size' ")
         .append("-H 'host: ")
         .append(hostName)
-        .append("' http://")
+        .append("' https://")
         .append(hostAndPort)
         .append("/")
         .append(COHERENCE_APP_NAME)
@@ -435,12 +445,12 @@ class ItManagedCoherence {
   private ExecResult getCacheContents(String hostName, String hostAndPort) {
     logger.info("Get the records from cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -kg --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=get' ")
         .append("-H 'host: ")
         .append(hostName)
-        .append("' http://")
+        .append("' https://")
         .append(hostAndPort)
         .append("/")
         .append(COHERENCE_APP_NAME)
@@ -459,12 +469,12 @@ class ItManagedCoherence {
   private ExecResult clearCache(String hostName, String hostAndPort) {
     logger.info("Clean the cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -kg --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-H 'host: ")
         .append(hostName)
-        .append("' http://")
+        .append("' https://")
         .append(hostAndPort)
         .append("/")
         .append(COHERENCE_APP_NAME)
@@ -482,12 +492,12 @@ class ItManagedCoherence {
 
   private boolean checkCoheranceApp(String hostName, String hostAndPort) {
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -kg --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-X POST -H 'host: ")
         .append(hostName)
-        .append("' http://")
+        .append("' https://")
         .append(hostAndPort)
         .append("/")
         .append(COHERENCE_APP_NAME)
@@ -504,5 +514,19 @@ class ItManagedCoherence {
         curlCmd);
     return true;
   }
+  
+  private static Path tlsCertFile;
+  private static Path tlsKeyFile;
+  
+  private static void createCertKeyFiles(String cn) {
+    assertDoesNotThrow(() -> {
+      tlsKeyFile = Files.createTempFile("tls", ".key");
+      tlsCertFile = Files.createTempFile("tls", ".crt");
+      String command = "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout " + tlsKeyFile
+          + " -out " + tlsCertFile + " -subj \"/CN=" + cn + "\"";
+      logger.info("Executing command: {0}", command);
+      ExecCommand.exec(command, true);
+    });
+  }  
 
 }

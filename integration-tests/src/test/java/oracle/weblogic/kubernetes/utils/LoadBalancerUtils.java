@@ -441,6 +441,7 @@ public class LoadBalancerUtils {
    * @param domainNamespace WebLogic domain namespace in which the domain exists
    * @param nodeport node port of the ingress controller
    * @param clusterNameMSPortMap the map with key as cluster name and the value as managed server port of the cluster
+   * @param annotations for secure service
    * @param setIngressHost if false does not set ingress host
    * @param tlsSecret name of the TLS secret if any
    * @param ingressTraefikClass the ingressClass for Traefik
@@ -451,6 +452,7 @@ public class LoadBalancerUtils {
       String domainNamespace,
       int nodeport,
       Map<String, Integer> clusterNameMSPortMap,
+      Map<String, String> annotations,
       boolean setIngressHost,
       String tlsSecret,
       String ingressTraefikClass) {
@@ -461,7 +463,7 @@ public class LoadBalancerUtils {
 
     List<String> ingressHostList =
         createIngress(ingressName, domainNamespace, domainUid,
-            clusterNameMSPortMap, null, ingressTraefikClass, setIngressHost, tlsSecret);
+            clusterNameMSPortMap, annotations, ingressTraefikClass, setIngressHost, tlsSecret);
 
     assertNotNull(ingressHostList,
         String.format("Ingress creation failed for domain %s in namespace %s", domainUid, domainNamespace));
