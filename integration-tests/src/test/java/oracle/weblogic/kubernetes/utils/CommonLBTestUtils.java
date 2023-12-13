@@ -517,7 +517,7 @@ public class CommonLBTestUtils {
         .append(password)
         .append(" https://" + adminServerPodName + ":" + adminPort)
         .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
-        .append("echo ${status}");
+        .append("echo ${status} \"");
     logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
     try {
       ExecResult result = ExecCommand.exec(new String(curlCmd), true);
