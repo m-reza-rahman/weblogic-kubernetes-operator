@@ -180,7 +180,8 @@ class KubernetesTestSupportTest {
     testSupport.setAddCreationTimestamp(true);
 
     SystemClockTestSupport.increment();
-    testSupport.runSteps(RequestBuilder.DOMAIN.update(createDomain(NS, "domain1"), (ResponseStep<DomainResource>) null));
+    testSupport.runSteps(RequestBuilder.DOMAIN.update(createDomain(NS, "domain1"),
+        (ResponseStep<DomainResource>) null));
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(getCreationTimestamp(updatedDomain), not(equalTo(getCreationTimestamp(originalDomain))));
@@ -192,7 +193,8 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(originalDomain);
 
     SystemClockTestSupport.increment();
-    testSupport.runSteps(RequestBuilder.DOMAIN.update(createDomain(NS, "domain1"), (ResponseStep<DomainResource>) null));
+    testSupport.runSteps(RequestBuilder.DOMAIN.update(createDomain(NS, "domain1"),
+        (ResponseStep<DomainResource>) null));
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(getCreationTimestamp(updatedDomain), equalTo(getCreationTimestamp(originalDomain)));
@@ -244,7 +246,8 @@ class KubernetesTestSupportTest {
 
   @Test
   void afterPatchDomainAsynchronously_statusIsUnchanged() {
-    DomainResource originalDomain = createDomain(NS, "domain").withStatus(new DomainStatus().withMessage("leave this"));
+    DomainResource originalDomain = createDomain(NS, "domain")
+        .withStatus(new DomainStatus().withMessage("leave this"));
     testSupport.defineResources(originalDomain);
 
     JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
@@ -259,7 +262,8 @@ class KubernetesTestSupportTest {
 
   @Test
   void afterPatchDomainSynchronously_statusIsUnchanged() throws ApiException {
-    DomainResource originalDomain = createDomain(NS, "domain").withStatus(new DomainStatus().withMessage("leave this"));
+    DomainResource originalDomain = createDomain(NS, "domain")
+        .withStatus(new DomainStatus().withMessage("leave this"));
     testSupport.defineResources(originalDomain);
 
     JsonPatchBuilder patchBuilder = Json.createPatchBuilder();

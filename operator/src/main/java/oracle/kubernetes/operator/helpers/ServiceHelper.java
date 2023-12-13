@@ -60,7 +60,6 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.forDomainUidSelector;
 import static oracle.kubernetes.operator.LabelConstants.getCreatedByOperatorSelector;
 import static oracle.kubernetes.operator.LabelConstants.getServiceTypeSelector;
-import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLabel;
 import static oracle.kubernetes.operator.helpers.OperatorServiceType.EXTERNAL;
 
 public class ServiceHelper {
@@ -958,10 +957,10 @@ public class ServiceHelper {
           new ListOptions().labelSelector(forDomainUidSelector(info.getDomainUid()) + ","
               + getCreatedByOperatorSelector() + "," + getServiceTypeSelector("EXTERNAL")),
           new ActionResponseStep<>() {
-        public Step createSuccessStep(V1ServiceList result, Step next) {
-          return new DeleteServiceListStep(result.getItems(), next);
-        }
-      });
+            public Step createSuccessStep(V1ServiceList result, Step next) {
+              return new DeleteServiceListStep(result.getItems(), next);
+            }
+          });
     }
 
 

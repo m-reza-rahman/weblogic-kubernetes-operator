@@ -87,9 +87,11 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public static final RequestBuilder<CoreV1Event, CoreV1EventList> EVENT =
       new RequestBuilder<>(CoreV1Event.class, CoreV1EventList.class, "", "v1", "events");
   public static final RequestBuilder<V1PersistentVolume, V1PersistentVolumeList> PV =
-      new RequestBuilder<>(V1PersistentVolume.class, V1PersistentVolumeList.class, "", "v1", "persistentvolumes");
+      new RequestBuilder<>(V1PersistentVolume.class, V1PersistentVolumeList.class,
+          "", "v1", "persistentvolumes");
   public static final RequestBuilder<V1PersistentVolumeClaim, V1PersistentVolumeClaimList> PVC =
-      new RequestBuilder<>(V1PersistentVolumeClaim.class, V1PersistentVolumeClaimList.class, "", "v1", "persistentvolumeclaims");
+      new RequestBuilder<>(V1PersistentVolumeClaim.class, V1PersistentVolumeClaimList.class,
+          "", "v1", "persistentvolumeclaims");
 
   public static final RequestBuilder<V1CustomResourceDefinition, V1CustomResourceDefinitionList> CRD =
       new RequestBuilder<>(V1CustomResourceDefinition.class, V1CustomResourceDefinitionList.class,

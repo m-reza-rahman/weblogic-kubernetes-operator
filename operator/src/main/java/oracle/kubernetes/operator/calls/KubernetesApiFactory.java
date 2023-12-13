@@ -8,14 +8,15 @@ import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.util.generic.GenericKubernetesApi;
 
 public interface KubernetesApiFactory {
-  default <ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-  KubernetesApi<ApiType, ApiListType> create(Class<ApiType> apiTypeClass, Class<ApiListType> apiListTypeClass,
-                                             String apiGroup, String apiVersion, String resourcePlural) {
+  default <A extends KubernetesObject, L extends KubernetesListObject>
+      KubernetesApi<A, L> create(Class<A> apiTypeClass, Class<L> apiListTypeClass,
+                                 String apiGroup, String apiVersion, String resourcePlural) {
     return new KubernetesApiImpl<>(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
   }
-  class KubernetesApiImpl<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-      extends GenericKubernetesApi<ApiType, ApiListType> implements KubernetesApi<ApiType, ApiListType> {
-    public KubernetesApiImpl(Class<ApiType> apiTypeClass, Class<ApiListType> apiListTypeClass,
+
+  class KubernetesApiImpl<A extends KubernetesObject, L extends KubernetesListObject>
+      extends GenericKubernetesApi<A, L> implements KubernetesApi<A, L> {
+    public KubernetesApiImpl(Class<A> apiTypeClass, Class<L> apiListTypeClass,
                              String apiGroup, String apiVersion, String resourcePlural) {
       super(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, Client.getInstance());
     }

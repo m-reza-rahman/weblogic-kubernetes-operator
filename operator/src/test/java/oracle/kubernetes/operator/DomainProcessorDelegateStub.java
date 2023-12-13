@@ -5,7 +5,6 @@ package oracle.kubernetes.operator;
 
 import java.io.File;
 import java.util.Optional;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.models.V1Job;
@@ -25,7 +24,6 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.operator.JobWatcher.getFailedReason;
 import static oracle.kubernetes.operator.JobWatcher.isFailed;
-import static oracle.kubernetes.operator.ProcessingConstants.DELEGATE_COMPONENT_NAME;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
 
 /**

@@ -3,6 +3,8 @@
 
 package oracle.kubernetes.operator.calls;
 
+import java.util.function.Function;
+
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
@@ -14,9 +16,7 @@ import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import io.kubernetes.client.util.generic.options.UpdateOptions;
 
-import java.util.function.Function;
-
-public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType extends KubernetesListObject> {
+public interface KubernetesApi<A extends KubernetesObject, L extends KubernetesListObject> {
 
   /**
    * Get kubernetes api response.
@@ -24,7 +24,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param name the name
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> get(String name) {
+  default KubernetesApiResponse<A> get(String name) {
     return get(name, new GetOptions());
   }
 
@@ -35,7 +35,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param getOptions the get options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> get(String name, final GetOptions getOptions);
+  KubernetesApiResponse<A> get(String name, final GetOptions getOptions);
 
   /**
    * Get kubernetes api response under the namespace.
@@ -44,7 +44,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param name the name
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> get(String namespace, String name) {
+  default KubernetesApiResponse<A> get(String namespace, String name) {
     return get(namespace, name, new GetOptions());
   }
 
@@ -56,7 +56,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param getOptions the get options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> get(String namespace, String name, final GetOptions getOptions);
+  KubernetesApiResponse<A> get(String namespace, String name, final GetOptions getOptions);
 
 
   /**
@@ -64,7 +64,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    *
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiListType> list() {
+  default KubernetesApiResponse<L> list() {
     return list(new ListOptions());
   }
 
@@ -74,7 +74,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param listOptions the list options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiListType> list(final ListOptions listOptions);
+  KubernetesApiResponse<L> list(final ListOptions listOptions);
 
   /**
    * List kubernetes api response under the namespace.
@@ -82,7 +82,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param namespace the namespace
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiListType> list(String namespace) {
+  default KubernetesApiResponse<L> list(String namespace) {
     return list(namespace, new ListOptions());
   }
 
@@ -93,7 +93,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param listOptions the list options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiListType> list(String namespace, final ListOptions listOptions);
+  KubernetesApiResponse<L> list(String namespace, final ListOptions listOptions);
 
   /**
    * Create kubernetes api response, if the namespace in the object is present, it will send a
@@ -102,7 +102,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param object the object
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> create(ApiType object) {
+  default KubernetesApiResponse<A> create(A object) {
     return create(object, new CreateOptions());
   }
 
@@ -113,7 +113,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param createOptions the create options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> create(ApiType object, final CreateOptions createOptions);
+  KubernetesApiResponse<A> create(A object, final CreateOptions createOptions);
 
   /**
    * Create kubernetes api response.
@@ -123,8 +123,8 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param createOptions the create options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> create(
-      String namespace, ApiType object, final CreateOptions createOptions);
+  KubernetesApiResponse<A> create(
+      String namespace, A object, final CreateOptions createOptions);
 
   /**
    * Create kubernetes api response, if the namespace in the object is present, it will send a
@@ -133,7 +133,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param object the object
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> update(ApiType object) {
+  default KubernetesApiResponse<A> update(A object) {
     return update(object, new UpdateOptions());
   }
 
@@ -144,7 +144,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param updateOptions the update options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> update(ApiType object, final UpdateOptions updateOptions);
+  KubernetesApiResponse<A> update(A object, final UpdateOptions updateOptions);
 
   /**
    * Create kubernetes api response, if the namespace in the object is present, it will send a
@@ -154,8 +154,8 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param status function to extract the status from the object
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> updateStatus(
-      ApiType object, Function<ApiType, Object> status) {
+  default KubernetesApiResponse<A> updateStatus(
+      A object, Function<A, Object> status) {
     return updateStatus(object, status, new UpdateOptions());
   }
 
@@ -167,8 +167,8 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param updateOptions the update options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> updateStatus(
-      ApiType object, Function<ApiType, Object> status, final UpdateOptions updateOptions);
+  KubernetesApiResponse<A> updateStatus(
+      A object, Function<A, Object> status, final UpdateOptions updateOptions);
 
   /**
    * Patch kubernetes api response.
@@ -178,7 +178,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param patch the string patch content
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> patch(String name, String patchType, V1Patch patch) {
+  default KubernetesApiResponse<A> patch(String name, String patchType, V1Patch patch) {
     return patch(name, patchType, patch, new PatchOptions());
   }
 
@@ -191,7 +191,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param patchOptions the patch options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> patch(
+  KubernetesApiResponse<A> patch(
       String name, String patchType, V1Patch patch, final PatchOptions patchOptions);
 
   /**
@@ -203,7 +203,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param patch the string patch content
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> patch(
+  default KubernetesApiResponse<A> patch(
       String namespace, String name, String patchType, V1Patch patch) {
     return patch(namespace, name, patchType, patch, new PatchOptions());
   }
@@ -218,7 +218,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param patchOptions the patch options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> patch(
+  KubernetesApiResponse<A> patch(
       String namespace,
       String name,
       String patchType,
@@ -231,7 +231,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param name the name
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> delete(String name) {
+  default KubernetesApiResponse<A> delete(String name) {
     return delete(name, new DeleteOptions());
   }
 
@@ -242,7 +242,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param deleteOptions the delete options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> delete(String name, final DeleteOptions deleteOptions);
+  KubernetesApiResponse<A> delete(String name, final DeleteOptions deleteOptions);
 
   /**
    * Delete kubernetes api response under the namespace.
@@ -251,7 +251,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param name the name
    * @return the kubernetes api response
    */
-  default KubernetesApiResponse<ApiType> delete(String namespace, String name) {
+  default KubernetesApiResponse<A> delete(String namespace, String name) {
     return delete(namespace, name, new DeleteOptions());
   }
 
@@ -263,7 +263,7 @@ public interface KubernetesApi<ApiType extends KubernetesObject, ApiListType ext
    * @param deleteOptions the delete options
    * @return the kubernetes api response
    */
-  KubernetesApiResponse<ApiType> delete(
+  KubernetesApiResponse<A> delete(
       String namespace, String name, final DeleteOptions deleteOptions);
 
 }

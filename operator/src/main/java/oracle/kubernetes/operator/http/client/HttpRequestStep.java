@@ -11,7 +11,6 @@ import java.net.http.HttpResponse;
 import java.util.Optional;
 
 import io.kubernetes.client.openapi.models.V1Pod;
-import okhttp3.Request;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;

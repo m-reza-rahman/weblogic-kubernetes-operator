@@ -233,7 +233,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   @SuppressWarnings({"SameParameterValue", "UnusedReturnValue"})
-  private <T extends KubernetesType> NamespacedDataRepository<T> supportNamespaced(String resourceName, Class<T> resourceClass) {
+  private <T extends KubernetesType> NamespacedDataRepository<T> supportNamespaced(
+      String resourceName, Class<T> resourceClass) {
     final NamespacedDataRepository<T> dataRepository = new NamespacedDataRepository<>(resourceClass, null);
     dataTypes.put(resourceClass, resourceName);
     repositories.put(resourceName, dataRepository);
@@ -469,7 +470,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
    * @param status the kubernetes status to associate with the failure
    * @param httpCode the HTTP return code
    */
-  public void failOnResource(@Nonnull String resourceType, String name, String namespace, V1Status status, int httpCode) {
+  public void failOnResource(@Nonnull String resourceType, String name, String namespace,
+                             V1Status status, int httpCode) {
     failure = new Failure(resourceType, name, namespace, status, httpCode);
   }
 
@@ -525,60 +527,70 @@ public class KubernetesTestSupport extends FiberTestSupport {
   private enum Operation {
     create {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.createResource(dataRepository);
       }
     },
     delete {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.deleteResource(dataRepository);
       }
     },
     read {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.readResource(dataRepository);
       }
     },
     readMetadata {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.readMetadata(dataRepository);
       }
     },
     replace {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.replaceResource(dataRepository);
       }
     },
     replaceStatus {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.replaceResourceStatus(dataRepository);
       }
     },
     list {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.listResources(callContext.getLimit(), callContext.getContinue(), dataRepository);
       }
     },
     patch {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.patchResource(dataRepository);
       }
     },
     deleteCollection {
       @Override
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return callContext.deleteCollection(dataRepository);
       }
     };
 
-    abstract <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository);
+    abstract <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                         DataRepository<T> dataRepository);
   }
 
   static class Failure {
@@ -618,8 +630,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
           && (namespace == null || Objects.equals(namespace, resourceNamespace));
     }
 
-    <DataType extends KubernetesType>
-    KubernetesApiResponse<DataType> getExceptionResponse() {
+    <D extends KubernetesType> KubernetesApiResponse<D> getExceptionResponse() {
       return new KubernetesApiResponse<>(status, httpCode);
     }
 
@@ -685,42 +696,42 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   private class KubernetesApiFactoryImpl implements KubernetesApiFactory {
-    public <ApiType extends KubernetesObject, ApiListType extends KubernetesListObject>
-    KubernetesApi<ApiType, ApiListType> create(Class<ApiType> apiTypeClass, Class<ApiListType> apiListTypeClass,
-                                               String apiGroup, String apiVersion, String resourcePlural) {
+    public <A extends KubernetesObject, L extends KubernetesListObject> KubernetesApi<A, L>
+        create(Class<A> apiTypeClass, Class<L> apiListTypeClass,
+               String apiGroup, String apiVersion, String resourcePlural) {
       return new KubernetesApi<>() {
         @Override
-        public KubernetesApiResponse<ApiType> get(String name, GetOptions getOptions) {
-          return new CallContext<ApiType>(
+        public KubernetesApiResponse<A> get(String name, GetOptions getOptions) {
+          return new CallContext<A>(
               Operation.read, getResourceName(apiTypeClass), null, name)
               .execute();
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> get(String namespace, String name, GetOptions getOptions) {
-          return new CallContext<ApiType>(
+        public KubernetesApiResponse<A> get(String namespace, String name, GetOptions getOptions) {
+          return new CallContext<A>(
               Operation.read, getResourceName(apiTypeClass), namespace, name)
               .execute();
         }
 
         @Override
-        public KubernetesApiResponse<ApiListType> list(ListOptions listOptions) {
-          return new CallContext<ApiListType>(
+        public KubernetesApiResponse<L> list(ListOptions listOptions) {
+          return new CallContext<L>(
               Operation.list, getResourceName(apiTypeClass), null, null, null, null,
               listOptions.getFieldSelector(), listOptions.getLabelSelector(), null)
               .execute();
         }
 
         @Override
-        public KubernetesApiResponse<ApiListType> list(String namespace, ListOptions listOptions) {
-          return new CallContext<ApiListType>(
+        public KubernetesApiResponse<L> list(String namespace, ListOptions listOptions) {
+          return new CallContext<L>(
               Operation.list, getResourceName(apiTypeClass), namespace, null, null, null,
               listOptions.getFieldSelector(), listOptions.getLabelSelector(), null)
               .execute();
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> create(ApiType object, CreateOptions createOptions) {
+        public KubernetesApiResponse<A> create(A object, CreateOptions createOptions) {
           V1ObjectMeta meta = object.getMetadata();
           return new CallContext<>(
               Operation.create, getResourceName(apiTypeClass), meta.getNamespace(), meta.getName(), object)
@@ -728,7 +739,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> create(String namespace, ApiType object, CreateOptions createOptions) {
+        public KubernetesApiResponse<A> create(String namespace, A object, CreateOptions createOptions) {
           V1ObjectMeta meta = object.getMetadata();
           return new CallContext<>(
               Operation.create, getResourceName(apiTypeClass), namespace, meta.getName(), object)
@@ -736,7 +747,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> update(ApiType object, UpdateOptions updateOptions) {
+        public KubernetesApiResponse<A> update(A object, UpdateOptions updateOptions) {
           V1ObjectMeta meta = object.getMetadata();
           return new CallContext<>(
               Operation.replace, getResourceName(apiTypeClass), meta.getNamespace(), meta.getName(), object)
@@ -744,7 +755,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> updateStatus(ApiType object, Function<ApiType, Object> status, UpdateOptions updateOptions) {
+        public KubernetesApiResponse<A> updateStatus(A object, Function<A, Object> status,
+                                                     UpdateOptions updateOptions) {
           V1ObjectMeta meta = object.getMetadata();
           return new CallContext<>(
               Operation.replaceStatus, getResourceName(apiTypeClass), meta.getNamespace(), meta.getName(), object)
@@ -752,29 +764,31 @@ public class KubernetesTestSupport extends FiberTestSupport {
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> patch(String name, String patchType, V1Patch patch, PatchOptions patchOptions) {
-          return new CallContext<ApiType>(
+        public KubernetesApiResponse<A> patch(String name, String patchType, V1Patch patch,
+                                              PatchOptions patchOptions) {
+          return new CallContext<A>(
               Operation.patch, getResourceName(apiTypeClass), null, name, patch)
               .execute();
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> patch(String namespace, String name, String patchType, V1Patch patch, PatchOptions patchOptions) {
-          return new CallContext<ApiType>(
+        public KubernetesApiResponse<A> patch(String namespace, String name, String patchType, V1Patch patch,
+                                              PatchOptions patchOptions) {
+          return new CallContext<A>(
               Operation.patch, getResourceName(apiTypeClass), namespace, name, patch)
               .execute();
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> delete(String name, DeleteOptions deleteOptions) {
-          return new CallContext<ApiType>(
+        public KubernetesApiResponse<A> delete(String name, DeleteOptions deleteOptions) {
+          return new CallContext<A>(
               Operation.delete, getResourceName(apiTypeClass), null, name)
               .execute();
         }
 
         @Override
-        public KubernetesApiResponse<ApiType> delete(String namespace, String name, DeleteOptions deleteOptions) {
-          return new CallContext<ApiType>(
+        public KubernetesApiResponse<A> delete(String namespace, String name, DeleteOptions deleteOptions) {
+          return new CallContext<A>(
               Operation.delete, getResourceName(apiTypeClass), namespace, name)
               .execute();
         }
@@ -1232,7 +1246,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
   }
 
-  private class CallContext<DataType extends KubernetesType> {
+  private class CallContext<D extends KubernetesType> {
     private final String fieldSelector;
     private final String[] labelSelector;
     private final Integer gracePeriodSeconds;
@@ -1240,7 +1254,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     private String requestNamespace;
     private String requestName;
     private String requstCall;
-    private DataType requestBody;
+    private D requestBody;
     private Operation operation;
     private V1Patch patch;
     private String cont = null;
@@ -1249,7 +1263,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       this(operation, resourceType, namespace, name, null, null, null, null, null);
     }
 
-    CallContext(Operation operation, String resourceType, String namespace, String name, DataType body) {
+    CallContext(Operation operation, String resourceType, String namespace, String name, D body) {
       this(operation, resourceType, namespace, name, body, null, null, null, null);
     }
 
@@ -1258,7 +1272,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     CallContext(Operation operation, String resourceType,
-                String namespace, String name, DataType body, V1Patch patch,
+                String namespace, String name, D body, V1Patch patch,
                 String fieldSelector, String labelSelector, Integer gracePeriodSeconds) {
       this.operation = operation;
       this.resourceType = resourceType;
@@ -1292,7 +1306,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       operation = Operation.deleteCollection;
     }
 
-    private KubernetesApiResponse<DataType> execute() {
+    private KubernetesApiResponse<D> execute() {
       try {
         if (failure != null && failure.matches(resourceType, requestName, requestNamespace, operation)) {
           try {
@@ -1317,12 +1331,13 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends KubernetesType> KubernetesApiResponse<T>replaceResource(DataRepository<T> dataRepository) {
+    private <T extends KubernetesType> KubernetesApiResponse<T> replaceResource(DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(dataRepository.replaceResource(requestName, (T) requestBody));
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends KubernetesType> KubernetesApiResponse<T> replaceResourceStatus(DataRepository<T> dataRepository) {
+    private <T extends KubernetesType> KubernetesApiResponse<T> replaceResourceStatus(
+        DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(dataRepository.replaceResourceStatus(requestName, (T) requestBody));
     }
 
@@ -1335,8 +1350,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
       return new KubernetesApiResponse<>(dataRepository.patchResource(requestName, requestNamespace, patch));
     }
 
-    private <T extends KubernetesType> KubernetesApiResponse<T> listResources(Integer limit, String cont, DataRepository<T> dataRepository) {
-      return new KubernetesApiResponse<>(dataRepository.listResources(requestNamespace, limit, cont, fieldSelector, labelSelector));
+    private <T extends KubernetesType> KubernetesApiResponse<T> listResources(Integer limit, String cont,
+                                                                              DataRepository<T> dataRepository) {
+      return new KubernetesApiResponse<>(
+          dataRepository.listResources(requestNamespace, limit, cont, fieldSelector, labelSelector));
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> readResource(DataRepository<T> dataRepository) {
@@ -1361,7 +1378,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     public <T extends KubernetesType> KubernetesApiResponse<T> deleteCollection(DataRepository<T> dataRepository) {
-      return new KubernetesApiResponse<>(dataRepository.deleteResourceCollection(requestNamespace), HttpURLConnection.HTTP_OK);
+      return new KubernetesApiResponse<>(
+          dataRepository.deleteResourceCollection(requestNamespace), HttpURLConnection.HTTP_OK);
     }
   }
 

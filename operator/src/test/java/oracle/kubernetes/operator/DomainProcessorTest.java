@@ -1730,7 +1730,8 @@ class DomainProcessorTest {
   private void createJobPodAndSetCompletedStatus(V1Job job) {
     Map<String, String> labels = new HashMap<>();
     labels.put(LabelConstants.JOBNAME_LABEL, getJobName());
-    testSupport.defineResources(new V1Pod().metadata(new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS)));
+    testSupport.defineResources(new V1Pod().metadata(
+        new V1ObjectMeta().name(getJobName()).labels(labels).namespace(NS)));
     job.setStatus(createCompletedStatus());
   }
 
