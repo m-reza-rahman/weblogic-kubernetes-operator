@@ -33,7 +33,6 @@ topology:
             WebServer:
                 WebServerLog:
                     BufferSizeKb: 1
-
 appDeployments:
     Application:
         myear:

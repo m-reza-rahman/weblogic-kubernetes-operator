@@ -543,11 +543,11 @@ class ItDBOperator {
   private boolean checkJmsServerRuntime(String jmsServer, String managedServer) {
     ExecResult result = null;
     int adminServiceNodePort
-        = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default");
+        = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default-admin");
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
+    StringBuffer curlString = new StringBuffer("status=$(curl -kg --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + hostAndPort)
+    curlString.append("https://" + hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JMSRuntime/JMSServers/")
@@ -574,11 +574,11 @@ class ItDBOperator {
   private boolean checkStoreRuntime(String storeName, String managedServer) {
     ExecResult result = null;
     int adminServiceNodePort
-        = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default");
+        = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default-admin");
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
+    StringBuffer curlString = new StringBuffer("status=$(curl -kg --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("http://" + hostAndPort)
+    curlString.append("https://" + hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/persistentStoreRuntimes/")
@@ -607,11 +607,11 @@ class ItDBOperator {
   private boolean checkJtaRecoveryServiceRuntime(String managedServer, String recoveryService, String active) {
     ExecResult result = null;
     int adminServiceNodePort
-        = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default");
+        = getServiceNodePort(wlsDomainNamespace, getExternalServicePodName(wlsAdminServerPodName), "default-admin");
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
-    StringBuffer curlString = new StringBuffer("curl --user "
+    StringBuffer curlString = new StringBuffer("curl -kg --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-    curlString.append("\"http://" + hostAndPort)
+    curlString.append("\"https://" + hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
         .append("/JTARuntime/recoveryRuntimeMBeans/")

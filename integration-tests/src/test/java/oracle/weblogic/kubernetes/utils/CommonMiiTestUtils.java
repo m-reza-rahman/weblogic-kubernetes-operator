@@ -815,7 +815,10 @@ public class CommonMiiTestUtils {
         .adminServer(new AdminServer()
             .adminService(new AdminService()
                 .addChannelsItem(new Channel()
-                    .channelName("default")
+                    .channelName("default-admin")
+                    .nodePort(0))
+                .addChannelsItem(new Channel()
+                    .channelName("default-secure")
                     .nodePort(0))))
         .configuration(new Configuration()
             .secrets(securityList)
@@ -830,6 +833,16 @@ public class CommonMiiTestUtils {
     if (setDataHome) {
       domainSpec.dataHome(uniquePath + "/data");
     }
+    if (SECURE_PRODUCTION_MODE) {
+      domainSpec.getServerPod()
+          .addEnvItem(new V1EnvVar()
+              .name("JAVA_OPTIONS")
+              .value(SSL_PROPERTIES))
+          .addEnvItem(new V1EnvVar()
+              .name("WLSDEPLOY_PROPERTIES")
+              .value(SSL_PROPERTIES));
+    }
+
     // create the domain CR
     DomainResource domain = new DomainResource()
         .apiVersion(DOMAIN_API_VERSION)
