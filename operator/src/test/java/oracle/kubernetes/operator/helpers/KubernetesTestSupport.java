@@ -1340,7 +1340,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> readResource(DataRepository<T> dataRepository) {
-      return new KubernetesApiResponse<>(dataRepository.readResource(requestName, requestNamespace));
+      try {
+        return new KubernetesApiResponse<>(dataRepository.readResource(requestName, requestNamespace));
+      } catch (NotFoundException nfe) {
+        return new KubernetesApiResponse<>(new V1Status().message(nfe.getMessage()), HttpURLConnection.HTTP_NOT_FOUND);
+      }
     }
 
     @SuppressWarnings("unchecked")

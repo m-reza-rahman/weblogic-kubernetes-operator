@@ -121,7 +121,7 @@ public class PvcWatcher implements PvcAwaiterStepFactory {
     @Override
     Step createReadAsyncStep(String name, String namespace, String domainUid,
                              ResponseStep<V1PersistentVolumeClaim> responseStep) {
-      return RequestBuilder.PVC.get(name, namespace, responseStep);
+      return RequestBuilder.PVC.get(namespace, name, responseStep);
     }
 
     @Override
@@ -136,7 +136,7 @@ public class PvcWatcher implements PvcAwaiterStepFactory {
         public Void onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
           DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
           V1PersistentVolumeClaim pvc = callResponse.getObject();
-          if (isReady(callResponse.getObject()) || callback.didResumeFiber()) {
+          if (isReady(pvc) || callback.didResumeFiber()) {
             callback.proceedFromWait(callResponse.getObject());
             processor.updateDomainStatus(pvc, info);
             return doNext(packet);

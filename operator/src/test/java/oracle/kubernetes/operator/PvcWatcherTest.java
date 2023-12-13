@@ -14,6 +14,7 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimStatus;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
+import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.SystemClock;
@@ -51,6 +52,7 @@ class PvcWatcherTest {
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(testSupport.install());
+    mementos.add(TuningParametersStub.install());
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
   }
 
@@ -84,7 +86,8 @@ class PvcWatcherTest {
   }
 
   private V1PersistentVolumeClaim createPvc() {
-    return new V1PersistentVolumeClaim().metadata(new V1ObjectMeta().name("test").creationTimestamp(getCurrentTime()));
+    return new V1PersistentVolumeClaim().metadata(new V1ObjectMeta().name("test")
+        .namespace(NS).creationTimestamp(getCurrentTime()));
   }
 
   private OffsetDateTime getCurrentTime() {
