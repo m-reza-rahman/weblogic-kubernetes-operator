@@ -153,9 +153,9 @@ class ItMultiDomainModels {
     String domainUid = domain.getSpec().getDomainUid();
     String domainNamespace = domain.getMetadata().getNamespace();
     String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
-    logger.info("Getting node port for default channel");
+    logger.info("Getting node port for default-secure channel");
     int serviceNodePort = assertDoesNotThrow(() -> getServiceNodePort(
-        domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+        domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure"),
         "Getting admin server node port failed");
 
     // In OKD cluster, get the routeHost for the external admin service
@@ -197,7 +197,7 @@ class ItMultiDomainModels {
     testUntil(
         assertDoesNotThrow(
           () -> {
-            return () -> adminLoginPageAccessible(adminServerPodName, "7001",
+            return () -> adminLoginPageAccessible(adminServerPodName, "9002",
             domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
           },
         "Access to admin console page failed"), logger, "Console login validation failed");

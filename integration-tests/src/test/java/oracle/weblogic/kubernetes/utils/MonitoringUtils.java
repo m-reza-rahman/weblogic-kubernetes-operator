@@ -83,6 +83,8 @@ import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_PUSHGATEWAY_IM
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_PUSHGATEWAY_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_REPO_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_REPO_URL;
+import static oracle.weblogic.kubernetes.TestConstants.SECURE_PRODUCTION_MODE;
+import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MONITORING_EXPORTER_DOWNLOAD_URL;
@@ -974,7 +976,16 @@ public class MonitoringUtils {
     setPodAntiAffinity(domain);
     // create domain using model in image
     logger.info("Create model in image domain {0} in namespace {1} using image {2}",
-        domainUid, namespace, miiImage);
+        domainUid, namespace, miiImage);    
+    if (SECURE_PRODUCTION_MODE) {
+      domain.getSpec().getServerPod()
+          .addEnvItem(new V1EnvVar()
+              .name("JAVA_OPTIONS")
+              .value(SSL_PROPERTIES))
+          .addEnvItem(new V1EnvVar()
+              .name("WLSDEPLOY_PROPERTIES")
+              .value(SSL_PROPERTIES));
+    }
     if (monexpConfig != null) {
       //String monexpImage = "${OCIR_HOST}/${WKT_TENANCY}/exporter:beta";
       logger.info("yaml config file path : " + monexpConfig);

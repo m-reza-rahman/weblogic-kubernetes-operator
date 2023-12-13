@@ -47,8 +47,6 @@ import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
-import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static java.nio.file.Files.copy;
@@ -506,64 +504,34 @@ public class CommonLBTestUtils {
    * @throws IOException when connection to console fails
    */
   public static boolean adminLoginPageAccessible(String adminServerPodName, String adminPort, String namespace,
-                                                 String userName, String password)
+      String userName, String password)
       throws IOException {
     LoggingFacade logger = getLogger();
-    if (WEBLOGIC_SLIM) {
-      logger.info("Check REST Console for WebLogic slim image");
-      StringBuffer curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
-          + namespace + " " + adminServerPodName)
-          .append(" -- /bin/bash -c \"")
-          .append("curl -g --user ")
-          .append(userName)
-          .append(":")
-          .append(password)
-          .append(" http://" + adminServerPodName + ":" + adminPort)
-          .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
-          .append("echo ${status}");
-      logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
-      try {
-        ExecResult result = ExecCommand.exec(new String(curlCmd), true);
-        String response = result.stdout().trim();
-        logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-            result.exitValue(), response, result.stderr());
-        return response.contains("200");
-      } catch (IOException | InterruptedException ex) {
-        logger.info("Exception in checkRestConsole {0}", ex);
-        return false;
-      }
-    } else {
-      // generic/dev Image
-      logger.info("Check administration Console for generic/dev image");
-      String curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
-          + namespace + " " + adminServerPodName)
-          .append(" -- /bin/bash -c \"")
-          .append("curl --user ")
-          .append(userName)
-          .append(":")
-          .append(password)
-          .append(" http://" + adminServerPodName + ":" + adminPort)
-          .append("/console/login/LoginForm.jsp")
-          .append("\"").toString();
-
-      boolean adminAccessible = false;
-      String expectedValue = "Oracle WebLogic Server Administration Console";
-      for (int i = 1; i <= 10; i++) {
-        logger.info("Iteration {0} out of 10: Accessing WebLogic console ", i);
-        logger.info("check administration console: curl command {0} expectedValue {1}", curlCmd, expectedValue);
-        adminAccessible = Command
-            .withParams(new CommandParams()
-                .command(curlCmd))
-            .executeAndVerify(expectedValue);
-
-        if (adminAccessible) {
-          getLogger().info("Console login passed");
-          break;
-        }
-      }
-      return adminAccessible;
+    logger.info("Check REST Console for WebLogic image");
+    StringBuffer curlCmd = new StringBuffer(KUBERNETES_CLI + " exec -n "
+        + namespace + " " + adminServerPodName)
+        .append(" -- /bin/bash -c \"")
+        .append("curl -g --user ")
+        .append(userName)
+        .append(":")
+        .append(password)
+        .append(" http://" + adminServerPodName + ":" + adminPort)
+        .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
+        .append("echo ${status}");
+    logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
+    try {
+      ExecResult result = ExecCommand.exec(new String(curlCmd), true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      return response.contains("200");
+    } catch (IOException | InterruptedException ex) {
+      logger.info("Exception in checkRestConsole {0}", ex);
+      return false;
     }
   }
+    
+  
 
   /**
    * Create a properties file for WebLogic domain configuration.
