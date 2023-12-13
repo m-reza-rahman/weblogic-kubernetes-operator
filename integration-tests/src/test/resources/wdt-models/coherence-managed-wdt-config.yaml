@@ -39,18 +39,20 @@ topology:
                 ServerTemplate: 'cluster-2-template'
     Server:
         'admin-server':
-            NetworkAccessPoint:
-                T3Channel:
-                    PublicPort: 30012
-                    ListenPort: 30012
-                    PublicAddress: kubernetes
+            SSL:
+              Enabled : true
+              ListenPort: 7002
     ServerTemplate:
         'cluster-1-template':
-            ListenPort: 8001
+            SSL:
+              Enabled : true
+              ListenPort: 8500
             Cluster: 'cluster-1'
             CoherenceClusterSystemResource: CoherenceCluster
         'cluster-2-template':
-            ListenPort: 8001
+            SSL:
+              Enabled : true
+              ListenPort: 8500
             Cluster: 'cluster-2'
             CoherenceClusterSystemResource: CoherenceCluster
 resources:
