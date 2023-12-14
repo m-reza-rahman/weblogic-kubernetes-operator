@@ -8,6 +8,9 @@ domainInfo:
 topology:
     Name: "wls-domain1"
     ProductionModeEnabled: 'true'
+    SecurityConfiguration:
+      SecureMode:
+        SecureModeEnabled: false
     AdminServerName: "admin-server"
     Cluster:
         "cluster-1":
@@ -27,7 +30,7 @@ topology:
             WebServer:
                 WebServerLog:
                     BufferSizeKb: 1
-
+                    
 appDeployments:
     Application:
         myear:
