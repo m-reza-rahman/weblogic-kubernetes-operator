@@ -464,7 +464,9 @@ public class CommonMiiTestUtils {
             .serverPod(new oracle.weblogic.domain.ServerPod()
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
-                    .value("-Dweblogic.security.SSL.ignoreHostnameVerification=true"))
+                    .value("-Dweblogic.security.SSL.ignoreHostnameVerification=true "
+                        + " -Dweblogic.security.TrustKeyStore=DemoTrust"
+                        + " -Dweblogic.security.SSL.ignoreHostnameVerification=true"))
                 .addEnvItem(new io.kubernetes.client.openapi.models.V1EnvVar()
                     .name("JAVA_OPTIONS")
                     .value("-Dweblogic.StdoutDebugEnabled=false"))
