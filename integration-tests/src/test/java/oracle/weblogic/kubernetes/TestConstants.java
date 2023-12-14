@@ -101,10 +101,10 @@ public interface TestConstants {
   // Default image names, tags to be used to downlaod base images 
   // It depends on the default value of BASE_IMAGES_REPO. 
   // Following defaults are assumining OCIR as default for BASE_IMAGES_REPO.
-  public static final String WEBLOGIC_IMAGE_NAME_DEFAULT = "test-images/weblogic";
-  public static final String WEBLOGIC_IMAGE_TAG_DEFAULT = "12.2.1.4";
-  public static final String FMWINFRA_IMAGE_NAME_DEFAULT = "test-images/fmw-infrastructure";
-  public static final String FMWINFRA_IMAGE_TAG_DEFAULT = "12.2.1.4";
+  public static final String WEBLOGIC_IMAGE_NAME_DEFAULT = "weblogic141200";
+  public static final String WEBLOGIC_IMAGE_TAG_DEFAULT = "oracle-8";
+  public static final String FMWINFRA_IMAGE_NAME_DEFAULT = "fmw-infrastructure141200";
+  public static final String FMWINFRA_IMAGE_TAG_DEFAULT = "oracle-8";
   public static final String FMWINFRA_IMAGE_TAG_12213 = "12.2.1.3";
   public static final String DB_IMAGE_NAME_DEFAULT = "test-images/database/enterprise";
   public static final String DB_PREBUILT_IMAGE_NAME_DEFAULT = "test-images/database/express";
