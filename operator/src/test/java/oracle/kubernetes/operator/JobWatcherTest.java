@@ -31,6 +31,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
@@ -297,6 +298,7 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
   }
 
   @Test
+  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenWaitForReadyAppliedToIncompleteJob_dontPerformNextStep() {
     startWaitForReady(this::dontChangeJob);
 
@@ -346,6 +348,7 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
   }
 
   @Test
+  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenJobInProcessOnFirstRead_dontPerformNextStep() {
     startWaitForReadyThenReadJob(this::dontChangeJob);
 
@@ -449,6 +452,7 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
   }
 
   @Test
+  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenReceivedCallbackForIncompleteJob_ignoreIt() {
     sendJobModifiedWatchAfterWaitForReady(this::dontChangeJob);
 

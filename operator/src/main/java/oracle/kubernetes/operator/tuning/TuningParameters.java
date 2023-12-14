@@ -265,17 +265,17 @@ public class TuningParameters {
       this.mountPointDir = mountPointDir;
       readParameters();
       long delay = getParameter("configMapUpdateDelay", 10L);
-      executor.execute(() -> {
+      Optional.ofNullable(executor).ifPresent(ex -> ex.execute(() -> {
         try {
           Thread.sleep(delay * 1000);
-          while (!executor.isShutdown()) {
+          while (!ex.isShutdown()) {
             readParameters();
             Thread.sleep(delay * 1000);
           }
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
-      });
+      }));
     }
   }
 

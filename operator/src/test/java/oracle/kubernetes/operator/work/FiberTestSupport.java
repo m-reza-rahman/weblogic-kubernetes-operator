@@ -197,6 +197,11 @@ public class FiberTestSupport {
       }
     }
 
+    @Override
+    public boolean isShutdown() {
+      return false;
+    }
+
     private void runAndIncrementNumItemsRun(Runnable command) {
       try {
         command.run();

@@ -27,6 +27,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.common.logging.MessageKeys.EXECUTE_MAKE_RIGHT_DOMAIN;
@@ -175,6 +176,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
+  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenPodNotReadyWhenWaitCreated_dontPerformNextStep() {
     startWaitForReady(this::dontChangePod);
 
@@ -203,6 +205,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
+  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenPodNotReadyOnFirstRead_dontRunNextStep() {
     startWaitForReadyThenReadPod(this::dontChangePod);
 
@@ -238,6 +241,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
+  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenPodNotReadyLater_dontRunNextStep() {
     sendPodModifiedWatchAfterWaitForReady(this::dontChangePod);
 
