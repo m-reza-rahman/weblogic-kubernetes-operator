@@ -4,10 +4,14 @@
 domainInfo:
   AdminUserName: '@@SECRET:__weblogic-credentials__:username@@'
   AdminPassword: '@@SECRET:__weblogic-credentials__:password@@'
-  ServerStartMode: 'prod'
 
 topology:
   Name: "wls-monexp-domain-1"
+  ProductionModeEnabled: 'true'
+  SecurityConfiguration:
+      SecureMode:
+        SecureModeEnabled: false
+
   AdminServerName: "admin-server"
 
   Cluster:
