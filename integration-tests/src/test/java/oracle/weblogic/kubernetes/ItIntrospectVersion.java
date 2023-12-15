@@ -27,6 +27,7 @@ import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -1219,6 +1220,7 @@ class ItIntrospectVersion {
     domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
 
     setPodAntiAffinity(domain);
+    getLogger().info(Yaml.dump(domain));
     // verify the domain custom resource is created
     createDomainAndVerify(domain, introDomainNamespace);
 
