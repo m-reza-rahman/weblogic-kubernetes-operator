@@ -4,10 +4,12 @@
 domainInfo:
     AdminUserName: '@@PROP:AdminUserName@@'
     AdminPassword: '@@PROP:AdminPassword@@'
-    ServerStartMode: 'prod'
 topology:
     AdminServerName: 'admin-server'
-    ProductionModeEnabled: true
+    ProductionModeEnabled: 'true'
+    SecurityConfiguration:
+      SecureMode:
+        SecureModeEnabled: false 
     Log:
         FileName: domain1.log
     Cluster:
