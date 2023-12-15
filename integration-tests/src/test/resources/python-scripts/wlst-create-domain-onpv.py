@@ -89,6 +89,12 @@ def create_domain():
   cd('/')
   if production_mode_enabled == "true":
     cmo.setProductionModeEnabled(true)
+    cdir='/SecurityConfiguration/'+domain_name
+    cd(cdir)
+    secm=create(domain_name,'SecureMode')
+    xdir='SecureMode/'+domain_name
+    cd(xdir)
+    set('SecureModeEnabled','false')
   else: 
     cmo.setProductionModeEnabled(false)
   updateDomain()
