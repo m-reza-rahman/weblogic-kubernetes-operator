@@ -200,7 +200,14 @@ public abstract class Step {
    * @param packet Packet to provide when invoking the next step
    */
   protected Void doNext(Step step, Packet packet) {
+    if (isCancelled(packet)) {
+      return null;
+    }
     return Optional.ofNullable(step).map(s -> s.apply(packet)).orElse(null);
+  }
+
+  protected boolean isCancelled(Packet packet) {
+    return Optional.ofNullable(packet.getFiber()).map(Fiber::isCancelled).orElse(true);
   }
 
   /**
@@ -248,8 +255,9 @@ public abstract class Step {
     try {
       unit.sleep(delay);
 
-      // TODO: Check for cancellation before invoking next step
-
+      if (isCancelled(packet)) {
+        return null;
+      }
       return step.apply(packet);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -305,6 +313,9 @@ public abstract class Step {
       doneSignal.acquire();
 
       if (throwables.isEmpty()) {
+        if (isCancelled(packet)) {
+          return null;
+        }
         return step.apply(packet);
       } else if (throwables.size() == 1) {
         Throwable t = throwables.get(0);

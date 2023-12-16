@@ -18,7 +18,6 @@ import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.AsyncFiber;
-import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -201,7 +200,7 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
   private void resumeWhenReady(Packet packet, Semaphore resumeSignal) {
     Callback callback = new Callback(resumeSignal, packet);
     addCallback(getResourceName(), callback);
-    checkUpdatedResource(packet, Fiber.getCurrentIfSet(), callback);
+    checkUpdatedResource(packet, packet.getFiber(), callback);
   }
 
   // It is possible that the watch event was received between the time the step was created, and the time the callback

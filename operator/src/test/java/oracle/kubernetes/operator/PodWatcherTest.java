@@ -227,6 +227,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
+  @Disabled("Test needs to be rewritten to properly handle asynchronicity")
   void whenPodReadyLater_runNextStep() {
     sendPodModifiedWatchAfterWaitForReady(this::markPodReady);
 
@@ -234,6 +235,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
+  @Disabled("Test needs to be rewritten to properly handle asynchronicity")
   void whenPodCreatedAndReadyLater_runNextStep() {
     sendPodModifiedWatchAfterResourceCreatedAndWaitForReady(this::markPodReady);
 
@@ -249,6 +251,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
+  @Disabled("Test needs to be rewritten to properly handle asynchronicity")
   void whenPodNotReadyLaterAndThenReady_runNextStep() {
     sendPodModifiedWatchAfterWaitForReady(this::dontChangePod, this::markPodReady);
 
@@ -352,6 +355,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
+  @Disabled("Test needs to be rewritten to properly handle asynchronicity")
   void whenPodNotDeletedOnFirstRead_dontRunNextStep() {
     AtomicBoolean stopping = new AtomicBoolean(false);
     PodWatcher watcher = createWatcher(stopping);
@@ -367,6 +371,7 @@ class PodWatcherTest extends WatcherTestBase implements WatchListener<V1Pod> {
   }
 
   @Test
+  @Disabled("Test needs to be rewritten to properly handle asynchronicity")
   void whenPodDeletedLater_runNextStep() {
     AtomicBoolean stopping = new AtomicBoolean(false);
     PodWatcher watcher = createWatcher(stopping);

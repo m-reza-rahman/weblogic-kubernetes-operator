@@ -82,7 +82,7 @@ public class FiberGate {
    */
   public void startNewFiberIfCurrentFiberMatches(
       String domainUid, Step strategy, Packet packet, CompletionCallback callback) {
-    requestNewFiberStart(domainUid, Fiber.getCurrentIfSet(), strategy, packet, callback);
+    requestNewFiberStart(domainUid, packet.getFiber(), strategy, packet, callback);
   }
 
   /**

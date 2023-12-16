@@ -103,12 +103,16 @@ public final class Fiber implements AsyncFiber {
   }
 
   private String getStatus() {
-    switch (status.get()) {
-      case NOT_COMPLETE: return "NOT_COMPLETE";
-      case DONE: return "DONE";
-      case CANCELLED: return "CANCELLED";
-      default: return "UNKNOWN: " + status.get();
-    }
+    return switch (status.get()) {
+      case NOT_COMPLETE -> "NOT_COMPLETE";
+      case DONE -> "DONE";
+      case CANCELLED -> "CANCELLED";
+      default -> "UNKNOWN: " + status.get();
+    };
+  }
+
+  public boolean isCancelled() {
+    return CANCELLED == status.get();
   }
 
   /**
