@@ -4,11 +4,13 @@
 domainInfo:
     AdminUserName: '@@PROP:adminUsername@@'
     AdminPassword: '@@PROP:adminPassword@@'
-    ServerStartMode: prod
 topology:
     Name: '@@PROP:domainName@@'
     AdminServerName: '@@PROP:adminServerName@@'
     ProductionModeEnabled: '@@PROP:productionModeEnabled@@'
+    SecurityConfiguration:
+        SecureMode:
+            SecureModeEnabled: false
     Cluster:
         '@@PROP:clusterName@@':
             DynamicServers:
