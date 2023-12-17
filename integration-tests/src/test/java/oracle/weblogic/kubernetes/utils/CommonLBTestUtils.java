@@ -841,18 +841,18 @@ public class CommonLBTestUtils {
     if (!isHostRouting) {
       consoleUrl.append(pathLocation);
     }
-
+    String credentials = " --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT;
     consoleUrl.append("/management/tenant-monitoring/servers/");
     String curlCmd;
     if (isHostRouting) {
-      curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
+      curlCmd = String.format("curl " + credentials + " -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
           ingressHostName, consoleUrl.toString());
     } else {
       if (isTLS) {
-        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
-            + "-H 'WL-Proxy-SSL: false' %s", consoleUrl.toString());
+        curlCmd = String.format("curl " + credentials + " -g -ks --show-error --noproxy '*' "
+            + "-H 'WL-Proxy-Client-IP: 1.2.3.4' -H 'WL-Proxy-SSL: false' %s", consoleUrl.toString());
       } else {
-        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' %s", consoleUrl.toString());
+        curlCmd = String.format("curl " + credentials + " -g -ks --show-error --noproxy '*' %s", consoleUrl.toString());
       }
     }
 
