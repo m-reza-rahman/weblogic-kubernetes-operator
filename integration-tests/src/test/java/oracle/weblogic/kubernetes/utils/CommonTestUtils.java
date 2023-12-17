@@ -1515,7 +1515,7 @@ public class CommonTestUtils {
 
     String hostAndPort = (hosts.length == 0) ? host + ":" + istioIngressPort : hosts[0];
     // verify WebLogic console is accessible before port forwarding using ingress port
-    String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
+    String consoleUrl = "http://" + hostAndPort + "/management/tenant-monitoring/servers/";
 
     boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
     assertTrue(checkConsole, "Failed to access WebLogic console");
@@ -1528,7 +1528,7 @@ public class CommonTestUtils {
     logger.info("Forwarded local port is {0}", forwardedPort);
 
     // verify WebLogic console is accessible after port forwarding using the forwarded port
-    consoleUrl = "http://" + localhost + ":" + forwardedPort + "/console/login/LoginForm.jsp";
+    consoleUrl = "http://" + localhost + ":" + forwardedPort + "/management/tenant-monitoring/servers/";
     checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
     assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
     logger.info("WebLogic console is accessible thru port forwarding");
