@@ -294,7 +294,7 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
   }
 
   public static Optional<DomainPresenceInfo> fromPacket(Packet packet) {
-    return Optional.of((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
+    return Optional.ofNullable((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
   }
 
   public String getAdminServerName() {
