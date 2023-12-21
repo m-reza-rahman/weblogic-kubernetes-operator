@@ -518,7 +518,7 @@ public class JobHelper {
       @Override
       public Void onSuccess(Packet packet, KubernetesApiResponse<RequestBuilder.StringObject> callResponse) {
         Optional.ofNullable(callResponse.getObject())
-            .ifPresent(result -> processIntrospectionResult(packet, result.getValue()));
+            .ifPresent(result -> processIntrospectionResult(packet, result.value()));
 
         addFluentdContainerLogAsSevereStatus(packet);
 
@@ -538,7 +538,7 @@ public class JobHelper {
       @Nonnull
       private Boolean isDomainIntrospectionComplete(KubernetesApiResponse<RequestBuilder.StringObject> callResponse) {
         return Optional.ofNullable(callResponse).map(KubernetesApiResponse::getObject)
-            .map(RequestBuilder.StringObject::getValue)
+            .map(RequestBuilder.StringObject::value)
             .map(r -> r.contains(DOMAIN_INTROSPECTION_COMPLETE)).orElse(false);
       }
 

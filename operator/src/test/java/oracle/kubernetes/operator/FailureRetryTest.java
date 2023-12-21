@@ -28,7 +28,6 @@ import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -75,7 +74,6 @@ class FailureRetryTest {
     mementos.add(testSupport.install());
     mementos.add(TuningParametersStub.install());
     mementos.add(UnitTestHash.install());
-    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(new DomainProcessorTestSupport().install());
 
     testSupport.defineResources(domain);

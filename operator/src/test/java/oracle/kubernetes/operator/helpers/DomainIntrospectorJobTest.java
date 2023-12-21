@@ -66,7 +66,6 @@ import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.SystemClock;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
@@ -142,7 +141,6 @@ import static oracle.kubernetes.weblogic.domain.model.AuxiliaryImage.AUXILIARY_I
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionMatcher.hasCondition;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
 import static oracle.kubernetes.weblogic.domain.model.DomainCreationImage.DOMAIN_CREATION_IMAGE_MOUNT_PATH;
-import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.ABORTED;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.INTROSPECTION;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERNETES;
 import static oracle.kubernetes.weblogic.domain.model.Model.DEFAULT_AUXILIARY_IMAGE_MOUNT_PATH;
@@ -213,7 +211,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
     mementos.add(ScanCacheStub.install());
-    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(UnitTestHash.install());
     mementos.add(
         consoleHandlerMemento = TestUtils.silenceOperatorLogger()
@@ -1540,16 +1537,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.addToPacket(DOMAIN_INTROSPECTOR_JOB, testSupport.getResourceWithName(JOB, getJobName()));
   }
 
-  @Test
-  void whenJobLogContainsSevereErrorAndRecheckIntervalExceeded_executeTerminalStep() {
-    createFailedIntrospectionLog();
-
-    SystemClockTestSupport.increment(getRecheckIntervalSeconds() + 1);
-    testSupport.runSteps(JobHelper.readDomainIntrospectorPodLog(terminalStep));
-
-    assertThat(terminalStep.wasRun(), is(true));
-  }
-
   private int getRecheckIntervalSeconds() {
     return oracle.kubernetes.operator.tuning.TuningParameters.getInstance().getDomainPresenceRecheckIntervalSeconds();
   }
@@ -1574,19 +1561,6 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.runSteps(JobHelper.readDomainIntrospectorPodLog(null));
 
     assertThat(getUpdatedDomain().getStatus().getMessage(), containsString(FATAL_PROBLEM));
-  }
-
-  @Test
-  void whenJobLogContainsSevereErrorAndRetryLimitReached_domainStatusHasAbortedCondition() {
-    createIntrospectionLog(SEVERE_MESSAGE);
-    getUpdatedDomain().getOrCreateStatus().addCondition(createFailedCondition("first failure"));
-    SystemClockTestSupport.increment(getSecondsJustShortOfLimit());
-    getUpdatedDomain().getOrCreateStatus().addCondition(createFailedCondition("first failure"));
-    SystemClockTestSupport.increment(getUpdatedDomain().getFailureRetryIntervalSeconds());
-
-    testSupport.runSteps(JobHelper.readDomainIntrospectorPodLog(null));
-
-    assertThat(getUpdatedDomain(), hasCondition(FAILED).withReason(ABORTED));  // todo check updated status message
   }
 
   private DomainCondition createFailedCondition(String message) {

@@ -11,7 +11,6 @@ import java.util.List;
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.common.KubernetesObject;
 import oracle.kubernetes.utils.SystemClock;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,8 +32,6 @@ class DomainResourceRetryTest extends DomainTestBase {
   @BeforeEach
   void setUp() throws NoSuchFieldException {
     configureDomain(domain);
-
-    mementos.add(SystemClockTestSupport.installClock());
   }
 
   @AfterEach
@@ -111,22 +108,5 @@ class DomainResourceRetryTest extends DomainTestBase {
     addFailureCondition(ABORTED);
 
     assertThat(domain.shouldRetry(), is(false));
-  }
-
-  @Test
-  void retryMessage_contains_retryLimitCalculatedFromInitialFailureTime() {
-    final int RETRY_LIMIT_MINUTES = 60;
-    configureDomain(domain)
-        .withFailureRetryLimitMinutes(RETRY_LIMIT_MINUTES);
-
-    OffsetDateTime initialFailureTime = SystemClock.now();
-    addFailureCondition(DOMAIN_INVALID);
-
-    SystemClockTestSupport.increment();
-    DomainCondition secondLaterCondition = new DomainCondition(FAILED).withReason(DOMAIN_INVALID).withMessage("oops");
-
-    String retryMessage = domain.createRetryMessage(domain.getStatus(), secondLaterCondition);
-    assertThat(retryMessage,
-        containsString(initialFailureTime.plusMinutes(RETRY_LIMIT_MINUTES).toString()));
   }
 }

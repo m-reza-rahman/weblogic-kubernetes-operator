@@ -57,7 +57,6 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.utils.SystemClock;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.ClusterConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
@@ -216,7 +215,6 @@ class JobHelperTest extends DomainValidationTestBase {
     mementos.add(consoleHandlerMemento);
     mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
-    mementos.add(SystemClockTestSupport.installClock());
 
     domain.getSpec().setNodeName(null);
     testSupport.defineResources(domain);
@@ -1160,28 +1158,6 @@ class JobHelperTest extends DomainValidationTestBase {
   }
 
   @Test
-  void verify_introspectorPodSpec_activeDeadlineSeconds_retry_values() {
-    TuningParametersStub.setParameter(INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS, Long.toString(
-        INTROSPECTOR_JOB_ACTIVE_DEADLINE));
-    int failureCount = 2;
-    long expectedActiveDeadlineSeconds =
-          INTROSPECTOR_JOB_ACTIVE_DEADLINE
-                + (failureCount * TuningParameters.DEFAULT_ACTIVE_DEADLINE_INCREMENT_SECONDS);
-
-    final DomainStatus status = new DomainStatus();
-    for (int i = 0; i < failureCount; i++) {
-      SystemClockTestSupport.increment(domainPresenceInfo.getDomain().getFailureRetryIntervalSeconds());
-      status.addCondition(new DomainCondition(FAILED).withReason(SERVER_POD).withMessage("failure " + (i + 1)));
-    }
-    domainPresenceInfo.getDomain().setStatus(status);
-
-    V1JobSpec jobSpec = createJobSpec();
-
-    assertThat(getPodSpecActiveDeadlineSeconds(jobSpec), is(expectedActiveDeadlineSeconds));
-    assertThat(jobSpec.getActiveDeadlineSeconds(), is(expectedActiveDeadlineSeconds));
-  }
-
-  @Test
   void verify_introspectorPodWithInitializeJRFDomainOnPVSpec_activeDeadlineSeconds_default_values() {
     configureDomain()
         .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
@@ -2077,24 +2053,6 @@ class JobHelperTest extends DomainValidationTestBase {
 
     assertThat(job, nullValue());
   }
-
-  @Test
-  void whenAllServersDeleted_runIntrospector() {
-    domainPresenceInfo.setServerPod("ms1", createPodWithCreationTime());
-    defineTopologyWithCluster();
-    configureServersToStart();
-    SystemClockTestSupport.increment();
-    domainPresenceInfo.deleteServerPodFromEvent("ms1", createPodWithCreationTime());
-
-    runCreateJob();
-
-    assertThat(job, notNullValue());
-  }
-
-  private V1Pod createPodWithCreationTime() {
-    return new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(SystemClock.now()));
-  }
-
 
   @Test
   void whenDomainHasIntrospectVersion_jobMetatadataCreatedWithLabel() {

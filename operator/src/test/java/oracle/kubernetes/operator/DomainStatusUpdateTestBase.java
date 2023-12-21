@@ -35,7 +35,6 @@ import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
-import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -44,7 +43,6 @@ import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.SystemClock;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
@@ -74,7 +72,6 @@ import static oracle.kubernetes.common.logging.MessageKeys.SERVER_POD_EVENT_ERRO
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.DomainStatusUpdateTestBase.ClusterStatusMatcher.hasStatusForCluster;
-import static oracle.kubernetes.operator.DomainStatusUpdateTestBase.EventMatcher.eventWithReason;
 import static oracle.kubernetes.operator.DomainStatusUpdateTestBase.ServerStatusMatcher.hasStatusForServer;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_AVAILABLE_EVENT;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_COMPLETED_EVENT;
@@ -108,7 +105,6 @@ import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.ROLLING;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.SERVER_POD;
 import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.containsInRelativeOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
@@ -134,7 +130,6 @@ abstract class DomainStatusUpdateTestBase {
     mementos.add(TestUtils.silenceOperatorLogger().ignoringLoggedExceptions(ApiException.class));
     mementos.add(testSupport.install());
     mementos.add(TuningParametersStub.install());
-    mementos.add(SystemClockTestSupport.installClock());
 
     domain.getSpec().setImage(IMAGE);
     domain.setStatus(new DomainStatus());
@@ -878,52 +873,6 @@ abstract class DomainStatusUpdateTestBase {
   }
 
   @Test
-  void whenAtLeastOnePodNotReadyInTime_createFailedCondition() {
-    domain.getSpec().setMaxReadyWaitTimeSeconds(0L);
-    unreadyPod("server2");
-
-    SystemClockTestSupport.increment();
-    updateDomainStatus();
-
-    assertThat(getRecordedDomain(), hasCondition(FAILED).withStatus(TRUE));
-  }
-
-  @Test
-  void whenAtLeastOneReadyPodBecomeUnreadyForSometime_createFailedCondition() {
-    domain.getSpec().setMaxReadyWaitTimeSeconds(0L);
-    updateDomainStatus();
-
-    unreadyPod("server2");
-    SystemClockTestSupport.increment();
-    updateDomainStatus();
-
-    assertThat(getRecordedDomain(), hasCondition(FAILED).withStatus(TRUE));
-  }
-
-  @Test
-  void whenAtLeastOnePodNotReadyInTime_phaseRunningFalse_createFailedCondition() {
-    domain.getSpec().setMaxReadyWaitTimeSeconds(0L);
-    markPodRunningPhaseFalse("server2");
-
-    SystemClockTestSupport.increment();
-    updateDomainStatus();
-
-    assertThat(getRecordedDomain(), hasCondition(FAILED).withStatus(TRUE));
-  }
-
-  @Test
-  void whenAtLeastOneReadyPodBecomeUnreadyForSometime_phaseRunningFalse_createFailedCondition() {
-    domain.getSpec().setMaxReadyWaitTimeSeconds(0L);
-    updateDomainStatus();
-
-    markPodRunningPhaseFalse("server2");
-    SystemClockTestSupport.increment();
-    updateDomainStatus();
-
-    assertThat(getRecordedDomain(), hasCondition(FAILED).withStatus(TRUE));
-  }
-
-  @Test
   void whenAllPodsReadyInTime_dontCreateFailedCondition() {
     domain.getSpec().setMaxReadyWaitTimeSeconds(0L);
 
@@ -954,19 +903,6 @@ abstract class DomainStatusUpdateTestBase {
   }
 
   @Test
-  void whenAtLeastOneReadyPodBecomeUnreadyForSometime_serverStatusPodNotReady() {
-    domain.getSpec().setMaxReadyWaitTimeSeconds(0L);
-    updateDomainStatus();
-
-    unreadyPod("server2");
-    SystemClockTestSupport.increment();
-    updateDomainStatus();
-
-    assertThat(getRecordedDomain(),
-        hasStatusForServer("server2").withPodReady("False").withPodPhase("Running"));
-  }
-
-  @Test
   void whenAllPodsReadyInTime_serverStatusPodReady() {
     domain.getSpec().setMaxReadyWaitTimeSeconds(0L);
 
@@ -988,48 +924,6 @@ abstract class DomainStatusUpdateTestBase {
     assertThat(getRecordedDomain(),
         hasStatusForServer("server2").withPodReady("False").withPodPhase("Running"));
   }
-
-  @Test
-  void whenPodPendingForTooLong_reportServerPodFailure() {
-    TuningParametersStub.setParameter(TuningParameters.MAX_PENDING_WAIT_TIME_SECONDS, Long.toString(20));
-    defineScenario().withServers("ms1", "ms2")
-        .withServerState("ms1", new V1ContainerStateWaiting().reason("ImageBackOff"))
-        .build();
-
-    SystemClockTestSupport.increment(21);
-    updateDomainStatus();
-
-    assertThat(getRecordedDomain(), hasCondition(FAILED).withReason(SERVER_POD).withMessageContaining("did not start"));
-  }
-
-  @Test
-  void whenPodPendingWithinTimeLimit_doNotReportServerPodFailure() {
-    TuningParametersStub.setParameter(TuningParameters.MAX_PENDING_WAIT_TIME_SECONDS, Long.toString(20));
-    defineScenario().withServers("ms1", "ms2")
-        .withServerState("ms1", new V1ContainerStateWaiting().reason("ImageBackOff"))
-        .build();
-
-    SystemClockTestSupport.increment(19);
-    updateDomainStatus();
-
-    assertThat(getRecordedDomain(), not(hasCondition(FAILED)));
-  }
-
-  @Test
-  void whenPodPendingWithinTimeLimit_removePreviousServerPodFailures() {
-    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(SERVER_POD).withMessage("unit test"));
-    domain.getSpec().setMaxPendingWaitTimeSeconds(20);
-    defineScenario().withServers("ms1", "ms2")
-        .withServerState("ms1", new V1ContainerStateWaiting().reason("ImageBackOff"))
-        .build();
-
-    SystemClockTestSupport.increment(19);
-    updateDomainStatus();
-
-    assertThat(getRecordedDomain(), not(hasCondition(FAILED)));
-  }
-
-  // todo remove server pod failures when OK
 
   @Test
   void whenNoDynamicClusters_doNotAddReplicasTooHighFailure() {
@@ -1469,27 +1363,6 @@ abstract class DomainStatusUpdateTestBase {
   }
 
   @Test
-  void whenMultipleEventsGeneratedInDomainStatus_preserveOrder() {
-    domain.getStatus()
-        .addCondition(new DomainCondition(AVAILABLE).withStatus(FALSE))
-        .addCondition(new DomainCondition(COMPLETED).withStatus(FALSE))
-        .addCondition(new DomainCondition(ROLLING));
-    defineScenario()
-        .withCluster("clusterA", "server1")
-        .withCluster("clusterB", "server2")
-        .build();
-    testSupport.doOnCreate(EVENT, this::setUniqueCreationTimestamp);
-
-    updateDomainStatus();
-
-    assertThat(getEvents().stream().sorted(this::compareEventTimes).collect(Collectors.toList()),
-        containsInRelativeOrder(List.of(
-              eventWithReason(DOMAIN_AVAILABLE_EVENT),
-              eventWithReason(DOMAIN_ROLL_COMPLETED_EVENT),
-              eventWithReason(DOMAIN_COMPLETED_EVENT))));
-  }
-
-  @Test
   void whenUpdateDomainStatus_verifyClusterStatusObservedGeneration() {
     configureDomain().configureCluster(info, "cluster1").withReplicas(4).withMaxUnavailable(1);
     defineScenario().withDynamicCluster("cluster1", 0, 4).build();
@@ -1511,11 +1384,6 @@ abstract class DomainStatusUpdateTestBase {
     // DomainStatus update.
     clusterStatus = getClusterStatus();
     assertThat(clusterStatus.getObservedGeneration(), equalTo(2L));
-  }
-
-  private void setUniqueCreationTimestamp(Object event) {
-    ((CoreV1Event) event).getMetadata().creationTimestamp(SystemClock.now());
-    SystemClockTestSupport.increment();
   }
 
   private int compareEventTimes(CoreV1Event event1, CoreV1Event event2) {

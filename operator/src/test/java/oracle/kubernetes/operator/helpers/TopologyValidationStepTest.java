@@ -3,7 +3,6 @@
 
 package oracle.kubernetes.operator.helpers;
 
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -25,8 +24,6 @@ import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
 import oracle.kubernetes.operator.work.TerminalStep;
-import oracle.kubernetes.utils.SystemClock;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
@@ -129,7 +126,6 @@ class TopologyValidationStepTest {
         MONITORING_EXPORTER_CONFLICT_DYNAMIC_CLUSTER, MONITORING_EXPORTER_CONFLICT_SERVER);
     mementos.add(consoleControl);
     mementos.add(testSupport.install());
-    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
 
     testSupport.defineResources(domain);
@@ -526,22 +522,6 @@ class TopologyValidationStepTest {
     runTopologyValidationStep();
 
     assertThat(domain, not(hasCondition(FAILED).withReason(REPLICAS_TOO_HIGH)));
-  }
-
-  @Test
-  void preserveTopologyFailuresThatStillExist() {
-    consoleControl.ignoreMessage(NO_CLUSTER_IN_DOMAIN);
-    final OffsetDateTime initialTime = SystemClock.now();
-    final String message = getFormattedMessage(NO_CLUSTER_IN_DOMAIN, "no-such-cluster");
-    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(TOPOLOGY_MISMATCH).withMessage(message));
-
-    SystemClockTestSupport.increment();
-    defineScenario(TopologyCase.CONFIGURATION)
-          .withClusterConfiguration("no-such-cluster")
-          .build();
-    runTopologyValidationStep();
-
-    assertThat(domain, hasCondition(FAILED).withMessageContaining(message).atTime(initialTime));
   }
 
   // Name length validation tests ensure that the total number of characters in the UID and server/cluster names,

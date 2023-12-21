@@ -37,7 +37,6 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
@@ -123,7 +122,6 @@ class ShutdownManagedServerStepTest {
 
     mementos.add(testSupport.install());
     mementos.add(httpSupport.install());
-    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
     mementos.add(UnitTestHash.install());
 

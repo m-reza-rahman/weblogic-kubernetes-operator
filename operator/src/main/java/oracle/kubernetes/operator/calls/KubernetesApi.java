@@ -19,140 +19,140 @@ import io.kubernetes.client.util.generic.options.UpdateOptions;
 public interface KubernetesApi<A extends KubernetesObject, L extends KubernetesListObject> {
 
   /**
-   * Get kubernetes api response.
+   * Get Kubernetes API response.
    *
    * @param name the name
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> get(String name) {
     return get(name, new GetOptions());
   }
 
   /**
-   * Get kubernetes api response.
+   * Get Kubernetes API response.
    *
    * @param name the name
    * @param getOptions the get options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> get(String name, final GetOptions getOptions);
 
   /**
-   * Get kubernetes api response under the namespace.
+   * Get Kubernetes API response under the namespace.
    *
    * @param namespace the namespace
    * @param name the name
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> get(String namespace, String name) {
     return get(namespace, name, new GetOptions());
   }
 
   /**
-   * Get kubernetes api response.
+   * Get Kubernetes API response.
    *
    * @param namespace the namespace
    * @param name the name
    * @param getOptions the get options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> get(String namespace, String name, final GetOptions getOptions);
 
 
   /**
-   * List kubernetes api response cluster-scoped.
+   * List Kubernetes API response cluster-scoped.
    *
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<L> list() {
     return list(new ListOptions());
   }
 
   /**
-   * List kubernetes api response.
+   * List Kubernetes API response.
    *
    * @param listOptions the list options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<L> list(final ListOptions listOptions);
 
   /**
-   * List kubernetes api response under the namespace.
+   * List Kubernetes API response under the namespace.
    *
    * @param namespace the namespace
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<L> list(String namespace) {
     return list(namespace, new ListOptions());
   }
 
   /**
-   * List kubernetes api response.
+   * List Kubernetes API response.
    *
    * @param namespace the namespace
    * @param listOptions the list options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<L> list(String namespace, final ListOptions listOptions);
 
   /**
-   * Create kubernetes api response, if the namespace in the object is present, it will send a
+   * Create Kubernetes API response, if the namespace in the object is present, it will send a
    * namespace-scoped requests, vice versa.
    *
    * @param object the object
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> create(A object) {
     return create(object, new CreateOptions());
   }
 
   /**
-   * Create kubernetes api response.
+   * Create Kubernetes API response.
    *
    * @param object the object
    * @param createOptions the create options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> create(A object, final CreateOptions createOptions);
 
   /**
-   * Create kubernetes api response.
+   * Create Kubernetes API response.
    *
    * @param namespace the namespace
    * @param object the object
    * @param createOptions the create options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> create(
       String namespace, A object, final CreateOptions createOptions);
 
   /**
-   * Create kubernetes api response, if the namespace in the object is present, it will send a
+   * Create Kubernetes API response, if the namespace in the object is present, it will send a
    * namespace-scoped requests, vice versa.
    *
    * @param object the object
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> update(A object) {
     return update(object, new UpdateOptions());
   }
 
   /**
-   * Update kubernetes api response.
+   * Update Kubernetes API response.
    *
    * @param object the object
    * @param updateOptions the update options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> update(A object, final UpdateOptions updateOptions);
 
   /**
-   * Create kubernetes api response, if the namespace in the object is present, it will send a
+   * Create Kubernetes API response, if the namespace in the object is present, it will send a
    * namespace-scoped requests, vice versa.
    *
    * @param object the object
    * @param status function to extract the status from the object
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> updateStatus(
       A object, Function<A, Object> status) {
@@ -160,48 +160,48 @@ public interface KubernetesApi<A extends KubernetesObject, L extends KubernetesL
   }
 
   /**
-   * Update status of kubernetes api response.
+   * Update status of Kubernetes API response.
    *
    * @param object the object
    * @param status function to extract the status from the object
    * @param updateOptions the update options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> updateStatus(
       A object, Function<A, Object> status, final UpdateOptions updateOptions);
 
   /**
-   * Patch kubernetes api response.
+   * Patch Kubernetes API response.
    *
    * @param name the name
    * @param patchType the patch type, supported values defined in V1Patch
    * @param patch the string patch content
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> patch(String name, String patchType, V1Patch patch) {
     return patch(name, patchType, patch, new PatchOptions());
   }
 
   /**
-   * Patch kubernetes api response.
+   * Patch Kubernetes API response.
    *
    * @param name the name
    * @param patchType the patch type
    * @param patch the patch
    * @param patchOptions the patch options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> patch(
       String name, String patchType, V1Patch patch, final PatchOptions patchOptions);
 
   /**
-   * Patch kubernetes api response under the namespace.
+   * Patch Kubernetes API response under the namespace.
    *
    * @param namespace the namespace
    * @param name the name
    * @param patchType the patch type, supported values defined in V1Patch
    * @param patch the string patch content
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> patch(
       String namespace, String name, String patchType, V1Patch patch) {
@@ -209,14 +209,14 @@ public interface KubernetesApi<A extends KubernetesObject, L extends KubernetesL
   }
 
   /**
-   * Patch kubernetes api response.
+   * Patch Kubernetes API response.
    *
    * @param namespace the namespace
    * @param name the name
    * @param patchType the patch type
    * @param patch the patch
    * @param patchOptions the patch options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> patch(
       String namespace,
@@ -226,44 +226,69 @@ public interface KubernetesApi<A extends KubernetesObject, L extends KubernetesL
       final PatchOptions patchOptions);
 
   /**
-   * Delete kubernetes api response.
+   * Delete Kubernetes API response.
    *
    * @param name the name
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> delete(String name) {
     return delete(name, new DeleteOptions());
   }
 
   /**
-   * Delete kubernetes api response.
+   * Delete Kubernetes API response.
    *
    * @param name the name
    * @param deleteOptions the delete options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> delete(String name, final DeleteOptions deleteOptions);
 
   /**
-   * Delete kubernetes api response under the namespace.
+   * Delete Kubernetes API response under the namespace.
    *
    * @param namespace the namespace
    * @param name the name
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   default KubernetesApiResponse<A> delete(String namespace, String name) {
     return delete(namespace, name, new DeleteOptions());
   }
 
   /**
-   * Delete kubernetes api response.
+   * Delete Kubernetes API response.
    *
    * @param namespace the namespace
    * @param name the name
    * @param deleteOptions the delete options
-   * @return the kubernetes api response
+   * @return the Kubernetes API response
    */
   KubernetesApiResponse<A> delete(
       String namespace, String name, final DeleteOptions deleteOptions);
 
+  /**
+   * Delete collection Kubernetes API response.
+   *
+   * @param namespace the namespace
+   * @param listOptions the list options
+   * @param deleteOptions the delete options
+   * @return the Kubernetes API response
+   */
+  KubernetesApiResponse<RequestBuilder.V1StatusObject> deleteCollection(
+      String namespace, final ListOptions listOptions, final DeleteOptions deleteOptions);
+
+  /**
+   * Pod logs Kubernetes API response.
+   * @param namespace the namespace
+   * @param name the pod name
+   * @param container the container name
+   * @return the Kubernetes API response
+   */
+  KubernetesApiResponse<RequestBuilder.StringObject> logs(String namespace, String name, String container);
+
+  /**
+   * Version code Kubernetes API response.
+   * @return the Kubernetes API response
+   */
+  KubernetesApiResponse<RequestBuilder.VersionInfoObject> getVersionCode();
 }

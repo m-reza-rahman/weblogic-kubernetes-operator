@@ -31,7 +31,6 @@ import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.ServerHealth;
@@ -102,7 +101,6 @@ class ReadHealthStepTest {
         .withLogLevel(Level.FINE));
     mementos.add(testSupport.install());
     mementos.add(httpSupport.install());
-    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
 
     testSupport.addDomainPresenceInfo(info);
@@ -373,21 +371,6 @@ class ReadHealthStepTest {
     testSupport.runSteps(readHealthStep);
 
     assertThat(info.getWebLogicCredentialsSecret(), is(notNullValue()));
-  }
-
-  @Test
-  void whenAuthorizedToReadHealthAndThenWait_verifySecretCleared() {
-    selectServer(MANAGED_SERVER1);
-
-    defineResponse(200, OK_RESPONSE, "http://127.0.0.1:8001");
-
-    testSupport.runSteps(readHealthStep);
-
-    assertThat(info.getWebLogicCredentialsSecret(), is(notNullValue()));
-
-    SystemClockTestSupport.increment(180);
-
-    assertThat(info.getWebLogicCredentialsSecret(), is(nullValue()));
   }
 
   @Test

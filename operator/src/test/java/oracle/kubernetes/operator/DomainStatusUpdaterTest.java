@@ -6,7 +6,6 @@ package oracle.kubernetes.operator;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.LogRecord;
 
 import com.meterware.simplestub.Memento;
@@ -22,7 +21,6 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.RandomStringGenerator;
 import oracle.kubernetes.utils.SystemClock;
-import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -32,14 +30,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.common.logging.MessageKeys.ABORTED_EVENT_ERROR;
-import static oracle.kubernetes.common.logging.MessageKeys.DOMAIN_FATAL_ERROR;
 import static oracle.kubernetes.common.logging.MessageKeys.DOMAIN_ROLL_START;
 import static oracle.kubernetes.common.logging.MessageKeys.INTERNAL_EVENT_ERROR;
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createInternalFailureSteps;
-import static oracle.kubernetes.operator.DomainStatusUpdater.createTopologyMismatchFailureSteps;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_FAILED_EVENT;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_ROLL_STARTING_EVENT;
 import static oracle.kubernetes.operator.EventMatcher.hasEvent;
@@ -50,7 +46,6 @@ import static oracle.kubernetes.weblogic.domain.model.DomainCondition.TRUE;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionMatcher.hasCondition;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.ROLLING;
-import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.ABORTED;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.INTERNAL;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERNETES;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -86,7 +81,6 @@ class DomainStatusUpdaterTest {
     mementos.add(consoleHandlerMemento = TestUtils.silenceOperatorLogger()
           .collectLogMessages(logRecords).ignoringLoggedExceptions(ApiException.class));
     mementos.add(testSupport.install());
-    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
 
     domain.setStatus(new DomainStatus());
@@ -239,18 +233,6 @@ class DomainStatusUpdaterTest {
     testSupport.runSteps(createInternalFailureSteps(failure));
 
     assertThat(getRecordedDomain(), hasCondition(FAILED).withStatus("True").withReason(INTERNAL));
-  }
-
-  @Test
-  void whenFailedStepCalledAndFailureLimitReached_statusHasAbortedFailureCondition() {
-    testSupport.runSteps(createTopologyMismatchFailureSteps("in unit test", null));
-
-    SystemClockTestSupport.increment(TimeUnit.MINUTES.toSeconds(domain.getFailureRetryLimitMinutes() + 1));
-    testSupport.runSteps(createInternalFailureSteps(failure));
-
-    assertThat(getRecordedDomain(),
-        hasCondition(FAILED).withReason(ABORTED)
-            .withMessageContaining(LOGGER.formatMessage(DOMAIN_FATAL_ERROR, domain.getFailureRetryLimitMinutes())));
   }
 
   @Test

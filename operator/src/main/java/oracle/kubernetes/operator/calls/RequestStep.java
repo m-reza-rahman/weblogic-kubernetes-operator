@@ -15,7 +15,6 @@ import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.models.V1ListMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
@@ -546,7 +545,7 @@ public abstract class RequestStep<
     }
   }
 
-  private static <D extends KubernetesType> KubernetesApiResponse<D> responseFromApiException(
+  static <D extends KubernetesType> KubernetesApiResponse<D> responseFromApiException(
       ApiClient apiClient, ApiException e) {
     checkForIOException(e);
     final V1Status status;
@@ -598,14 +597,7 @@ public abstract class RequestStep<
 
     KubernetesApiResponse<RequestBuilder.StringObject> execute(
         KubernetesApi<V1Pod, V1PodList> client, Packet packet) {
-      CoreV1Api c = new CoreV1Api(Client.getInstance());
-      try {
-        return new KubernetesApiResponse<>(new RequestBuilder.StringObject(
-            c.readNamespacedPodLog(name, namespace, container,
-            null, null, null, null, null, null, null, null)));
-      } catch (ApiException e) {
-        return responseFromApiException(c.getApiClient(), e);
-      }
+      return client.logs(namespace, name, container);
     }
   }
 
@@ -645,14 +637,25 @@ public abstract class RequestStep<
 
     KubernetesApiResponse<RequestBuilder.V1StatusObject> execute(
         KubernetesApi<V1Pod, V1PodList> client, Packet packet) {
-      CoreV1Api c = new CoreV1Api(Client.getInstance());
-      try {
-        return new KubernetesApiResponse<>(new RequestBuilder.V1StatusObject(
-            c.deleteCollectionNamespacedPod(namespace, null, null, null, listOptions.getFieldSelector(), null,
-                listOptions.getLabelSelector(), null, null, null, null, null, null, null, deleteOptions)));
-      } catch (ApiException e) {
-        return responseFromApiException(c.getApiClient(), e);
-      }
+      return client.deleteCollection(namespace, listOptions, deleteOptions);
+    }
+  }
+
+  public static class VersionCodeRequestStep
+      extends RequestStep<KubernetesObject, KubernetesListObject, RequestBuilder.VersionInfoObject> {
+    /**
+     * Construct logs request step.
+     *
+     * @param next Response step
+     */
+    public VersionCodeRequestStep(
+        ResponseStep<RequestBuilder.VersionInfoObject> next) {
+      super(next, KubernetesObject.class, KubernetesListObject.class, "", "", "");
+    }
+
+    KubernetesApiResponse<RequestBuilder.VersionInfoObject> execute(
+        KubernetesApi<KubernetesObject, KubernetesListObject> client, Packet packet) {
+      return client.getVersionCode();
     }
   }
 }

@@ -11,14 +11,13 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.VersionApi;
 import io.kubernetes.client.openapi.models.V1ResourceRule;
 import io.kubernetes.client.openapi.models.V1SelfSubjectRulesReview;
 import io.kubernetes.client.openapi.models.V1SubjectRulesReviewStatus;
 import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.OperatorMain;
-import oracle.kubernetes.operator.calls.Client;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Operation;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Resource;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -210,8 +209,7 @@ public final class HealthCheckHelper {
     try {
       while (true) {
         try {
-          VersionApi client = new VersionApi(Client.getInstance());
-          return createAndValidateKubernetesVersion(client.getCode());
+          return createAndValidateKubernetesVersion(RequestBuilder.VERSION.versionCode().value());
         } catch (ApiException e) {
           Thread.sleep(TuningParameters.getInstance().getInitializationRetryDelaySeconds() * 1000L);
         }

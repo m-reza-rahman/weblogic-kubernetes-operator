@@ -63,6 +63,7 @@ import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
 import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
+import io.kubernetes.client.openapi.models.VersionInfo;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -89,6 +90,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 @SuppressWarnings("WeakerAccess")
 public class KubernetesTestSupport extends FiberTestSupport {
+  public static final VersionInfo TEST_VERSION_INFO = new VersionInfo().major("1").minor("18").gitVersion("0");
   public static final String CONFIG_MAP = "ConfigMap";
   public static final String CUSTOM_RESOURCE_DEFINITION = "CRD";
   public static final String NAMESPACE = "Namespace";
@@ -581,6 +583,14 @@ public class KubernetesTestSupport extends FiberTestSupport {
         return callContext.patchResource(dataRepository);
       }
     },
+    getVersion {
+      @Override
+      @SuppressWarnings("unchecked")
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+        return (KubernetesApiResponse<T>) new KubernetesApiResponse<>(
+            new RequestBuilder.VersionInfoObject(TEST_VERSION_INFO));
+      }
+    },
     deleteCollection {
       @Override
       <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
@@ -790,6 +800,25 @@ public class KubernetesTestSupport extends FiberTestSupport {
         public KubernetesApiResponse<A> delete(String namespace, String name, DeleteOptions deleteOptions) {
           return new CallContext<A>(
               Operation.delete, getResourceName(apiTypeClass), namespace, name)
+              .execute();
+        }
+
+        @Override
+        public KubernetesApiResponse<RequestBuilder.V1StatusObject> deleteCollection(String namespace, ListOptions listOptions, DeleteOptions deleteOptions) {
+          return new CallContext<RequestBuilder.V1StatusObject>(
+              Operation.deleteCollection, getResourceName(apiTypeClass), namespace, null)
+              .execute();
+        }
+
+        @Override
+        public KubernetesApiResponse<RequestBuilder.StringObject> logs(String namespace, String name, String container) {
+          return null;
+        }
+
+        @Override
+        public KubernetesApiResponse<RequestBuilder.VersionInfoObject> getVersionCode() {
+          return new CallContext<RequestBuilder.VersionInfoObject>(
+              Operation.getVersion, null, null, null)
               .execute();
         }
       };

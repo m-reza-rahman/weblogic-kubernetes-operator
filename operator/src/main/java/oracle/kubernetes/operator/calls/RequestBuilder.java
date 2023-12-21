@@ -41,6 +41,7 @@ import io.kubernetes.client.openapi.models.V1SubjectAccessReview;
 import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
+import io.kubernetes.client.openapi.models.VersionInfo;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -69,6 +70,8 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   static <X extends KubernetesListObject> RequestBuilder<?, X> lookupByListType(Class<X> type) {
     return (RequestBuilder<?, X>) REQUEST_BUILDER_LIST_MAP.get(type);
   }
+
+  public static final VersionCodeRequestBuilder VERSION = new VersionCodeRequestBuilder();
 
   public static final RequestBuilder<DomainResource, DomainList> DOMAIN =
       new RequestBuilder<>(DomainResource.class, DomainList.class, "weblogic.oracle", "v9", "domains");
@@ -738,16 +741,25 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
     }
   }
 
-  public static class StringObject implements KubernetesObject {
-    private final String value;
+  public record StringObject(String value) implements KubernetesObject {
 
-    public StringObject(String value) {
-      this.value = value;
+    @Override
+    public V1ObjectMeta getMetadata() {
+      return null;
     }
 
-    public String getValue() {
-      return value;
+    @Override
+    public String getApiVersion() {
+      return null;
     }
+
+    @Override
+    public String getKind() {
+      return null;
+    }
+  }
+
+  public record VersionInfoObject(VersionInfo value) implements KubernetesObject {
 
     @Override
     public V1ObjectMeta getMetadata() {
@@ -824,5 +836,35 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
           responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
           namespace, listOptions, deleteOptions);
     }
+  }
+
+  public static class VersionCodeRequestBuilder extends RequestBuilder<KubernetesObject, KubernetesListObject> {
+
+    public VersionCodeRequestBuilder() {
+      super(KubernetesObject.class, KubernetesListObject.class, "", "", "");
+    }
+
+    /**
+     * Step to return version info.
+     * @param responseStep Response step
+     * @return Request step
+     */
+    public RequestStep<KubernetesObject, KubernetesListObject, VersionInfoObject> versionCode(
+        ResponseStep<VersionInfoObject> responseStep) {
+      return new RequestStep.VersionCodeRequestStep(responseStep);
+    }
+
+    /**
+     * Get version info.
+     * @return Version info
+     * @throws ApiException On failure
+     */
+    public VersionInfoObject versionCode() throws ApiException {
+      DirectResponseStep<VersionInfoObject> response = new DirectResponseStep<>();
+      RequestStep<KubernetesObject, KubernetesListObject, VersionInfoObject> step = versionCode(response);
+      step.apply(new Packet());
+      return response.get();
+    }
+
   }
 }
