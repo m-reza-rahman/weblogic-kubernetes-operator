@@ -749,6 +749,14 @@ public class JobStepContext extends BasePodStepContext {
           }
         });
 
+    Optional.ofNullable(getDomain().getFluentbitSpecification())
+            .ifPresent(fluentbit -> {
+              if (Boolean.TRUE.equals(fluentbit.getWatchIntrospectorLogs())) {
+                FluentbitHelper.addFluentbitContainer(fluentbit,
+                        containers, getDomain(), true);
+              }
+            });
+
     return containers;
 
   }

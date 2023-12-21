@@ -240,6 +240,15 @@ public class DomainCommonConfigurator extends DomainConfigurator {
   }
 
   @Override
+  public DomainConfigurator withFluentbitConfiguration(boolean watchIntrospectorLog,
+                                                       String credentialName, String fluentbitConfig,
+                                                       List<String> args, List<String> command) {
+    getDomainSpec().withFluentbitConfiguration(watchIntrospectorLog, credentialName,
+            fluentbitConfig, args, command);
+    return this;
+  }
+
+  @Override
   public DomainConfigurator withServerPodShutdownSpec(Shutdown shutdown) {
     getDomainSpec().setShutdown(shutdown);
     return this;

@@ -170,6 +170,8 @@ public class MessageKeys {
   public static final String PVC_IS_BOUND = "WLSKO-0237";
   public static final String WAITING_FOR_PVC_TO_BIND = "WLSKO-0238";
   public static final String PVC_NOT_BOUND_ERROR = "WLSKO-0239";
+  public static final String FLUENTBIT_CONFIGMAP_CREATED = "WLSKO-0240";
+  public static final String FLUENTBIT_CONFIGMAP_REPLACED = "WLSKO-0241";
 
   // domain status messages
   public static final String MAKE_RIGHT_WILL_RETRY = "WLSDO-0000";

@@ -320,6 +320,10 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
     return spec.getFluentdSpecification();
   }
 
+  public FluentbitSpecification getFluentbitSpecification() {
+    return spec.getFluentbitSpecification();
+  }
+
   /**
    * Return the MII domain.spec.configuration.model.onlineUpdate.nonDynamicChangesMethod
    * @return {@link MIINonDynamicChangesMethod}

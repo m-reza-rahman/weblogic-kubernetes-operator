@@ -427,6 +427,29 @@ public class DomainSpec extends BaseConfiguration {
   }
 
   /**
+   *  FluentBit configuration
+   */
+  @Description("In progress")
+  private FluentbitSpecification fluentbitSpecification;
+
+  public FluentbitSpecification getFluentbitSpecification() {
+    return fluentbitSpecification;
+  }
+
+  DomainSpec withFluentbitConfiguration(boolean watchIntrospectorLog, String credentialName,
+                                      String fluentbitConfig, List<String> args, List<String> command) {
+    if (fluentbitSpecification == null) {
+      fluentbitSpecification = new FluentbitSpecification();
+    }
+    fluentbitSpecification.setWatchIntrospectorLogs(watchIntrospectorLog);
+    fluentbitSpecification.setElasticSearchCredentials(credentialName);
+    fluentbitSpecification.setFluentbitConfiguration(fluentbitConfig);
+    fluentbitSpecification.setContainerArgs(args);
+    fluentbitSpecification.setContainerCommand(command);
+    return this;
+  }
+
+  /**
    * The configuration for the introspector job pod.
    *
    */
@@ -1107,7 +1130,8 @@ public class DomainSpec extends BaseConfiguration {
             .append("serverStartPolicy", serverStartPolicy)
             .append("webLogicCredentialsSecret", webLogicCredentialsSecret)
             .append("fluentdSpecification", fluentdSpecification)
-            .append("replaceVariablesInJavaOptions", replaceVariablesInJavaOptions);
+            .append("replaceVariablesInJavaOptions", replaceVariablesInJavaOptions)
+                .append("fluentbitSpecification", fluentbitSpecification);
 
     return builder.toString();
   }
@@ -1140,7 +1164,8 @@ public class DomainSpec extends BaseConfiguration {
             .append(serverStartPolicy)
             .append(webLogicCredentialsSecret)
             .append(fluentdSpecification)
-            .append(replaceVariablesInJavaOptions);
+            .append(replaceVariablesInJavaOptions)
+                .append(fluentbitSpecification);
 
     return builder.toHashCode();
   }
@@ -1180,6 +1205,7 @@ public class DomainSpec extends BaseConfiguration {
             .append(getMaxClusterConcurrentShutdown(), rhs.getMaxClusterConcurrentShutdown())
             .append(getMaxClusterUnavailable(), rhs.getMaxClusterUnavailable())
             .append(fluentdSpecification, rhs.getFluentdSpecification())
+                .append(fluentbitSpecification, rhs.getFluentbitSpecification())
             .append(replaceVariablesInJavaOptions, rhs.replaceVariablesInJavaOptions);
     return builder.isEquals();
   }

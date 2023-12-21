@@ -103,6 +103,8 @@ public abstract class BasePodStepContext extends StepContextBase {
 
   abstract List<V1Volume> getFluentdVolumes();
 
+  abstract List<V1Volume> getFluentbitVolumes();
+
   protected V1Container createPrimaryContainer() {
     return new V1Container()
         .name(getContainerName())
@@ -222,6 +224,7 @@ public abstract class BasePodStepContext extends StepContextBase {
     return new V1PodSpec()
         .containers(getContainers())
         .volumes(getFluentdVolumes())
+            .volumes(getFluentbitVolumes())
         .addContainersItem(createPrimaryContainer())
         .affinity(getServerSpec().getAffinity())
         .topologySpreadConstraints(getTopologySpreadConstraints())

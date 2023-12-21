@@ -16,6 +16,11 @@ public interface StepContextConstants {
   String FLUENTD_CONFIGMAP_NAME_SUFFIX = "-" + OLD_FLUENTD_CONFIGMAP_NAME;
   String FLUENTD_CONTAINER_NAME = "fluentd";
   String FLUENTD_CONFIG_DATA_NAME = "fluentd.conf";
+  String FLUENTBIT_CONTAINER_NAME = "fluent-bit";
+  String FLUENTBIT_CONFIG_DATA_NAME = "fluent-bit.conf";
+  String FLUENTBIT_PARSER_CONFIG_DATA_NAME = "parsers.conf";
+  String FLUENTBIT_CONFIGMAP_VOLUME = "weblogic-fluentbit-configmap-volume";
+  String FLUENTBIT_CONFIGMAP_NAME_SUFFIX = "-" + "weblogic-fluentbit-configmap";
   String SECRETS_MOUNT_PATH = "/weblogic-operator/secrets";
   String OPSS_KEY_MOUNT_PATH = "/weblogic-operator/opss-walletkey-secret";
   String RUNTIME_ENCRYPTION_SECRET_MOUNT_PATH = "/weblogic-operator/model-runtime-secret";

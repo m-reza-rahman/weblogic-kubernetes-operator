@@ -308,6 +308,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
         Step.chain(
             ConfigMapHelper.createOrReplaceFluentdConfigMapStep(),
             domainIntrospectionSteps(),
+            ConfigMapHelper.createOrReplaceFluentbitConfigMapStep(),
             new DomainStatusStep(),
             DomainProcessorImpl.bringAdminServerUp(delegate.getPodAwaiterStepFactory(info.getNamespace())),
             managedServerStrategy);
