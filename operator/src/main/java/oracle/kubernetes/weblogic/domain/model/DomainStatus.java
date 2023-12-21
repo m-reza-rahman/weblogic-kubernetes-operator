@@ -163,6 +163,7 @@ public class DomainStatus {
       throw new IllegalArgumentException("May not add condition " + newCondition);
     } else if (isRetryableFailure(newCondition, isInitDomainOnPV)) {
       lastFailureTime = newCondition.getLastTransitionTime();
+      LOGGER.info("DEBUG: isRetryableFailure is true. Setting the lastFailureTime to " + lastFailureTime);
     }
 
 

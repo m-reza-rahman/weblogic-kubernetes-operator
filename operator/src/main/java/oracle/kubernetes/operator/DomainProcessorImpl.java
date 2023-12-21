@@ -95,7 +95,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   private static final String ERROR = "ERROR";
 
   @SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal"})
-  private static String debugPrefix = null;  // Debugging: set this to a non-null value to dump the make-right steps
+  private static String debugPrefix = "true";  // Debugging: set this to a non-null value to dump the make-right steps
 
   /** A map that holds at most one FiberGate per namespace to run make-right steps. */
   @SuppressWarnings("FieldMayBeFinal")
@@ -384,18 +384,24 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   private boolean shouldContinue(MakeRightDomainOperation operation, DomainPresenceInfo liveInfo) {
     final DomainPresenceInfo cachedInfo = getExistingDomainPresenceInfo(liveInfo);
     if (isNewDomain(cachedInfo)) {
+      LOGGER.info("DEBUG: isNewDomain is true, return true. ");
       return true;
     } else if (liveInfo.isFromOutOfDateEvent(operation, cachedInfo)) {
+      LOGGER.info("DEBUG: liveInfo.isFromOutOfDateEvent is true, return false. ");
       return false;
     } else if (isDeleting(operation)) {
       return true;
     } else if (liveInfo.isDomainProcessingHalted(cachedInfo)) {
+      LOGGER.info("DEBUG: liveInfo.isDomainProcessingHalted is true, return false. ");
       return false;
     } else if (isExplicitRecheckWithoutRetriableFailure(operation, liveInfo)
         || liveInfo.isDomainGenerationChanged(cachedInfo)) {
+      LOGGER.info("DEBUG: isExplicitRecheckWithoutRetriableFailure or isDomainGenerationChanged"
+          + " is true, return true. ");
       return true;
     } else {
       cachedInfo.setDomain(liveInfo.getDomain());
+      LOGGER.info("DEBUG: no conditions matched in shouldContinue, return false. ");
       return false;
     }
   }
@@ -418,10 +424,15 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   
   private boolean isExplicitRecheckWithoutRetriableFailure(
       MakeRightDomainOperation operation, DomainPresenceInfo info) {
+    LOGGER.info("DEBUG: operation.isExplicitRecheck() is " + operation.isExplicitRecheck());
+    LOGGER.info("DEBUG: hasRetriableFailureNonRetryingOperation is "
+        + hasRetriableFailureNonRetryingOperation(operation, info));
     return operation.isExplicitRecheck() && !hasRetriableFailureNonRetryingOperation(operation, info);
   }
 
   private boolean hasRetriableFailureNonRetryingOperation(MakeRightDomainOperation operation, DomainPresenceInfo info) {
+    LOGGER.info("DEBUG: info.hasRetriableFailure() is " + info.hasRetriableFailure());
+    LOGGER.info("DEBUG: operation.isRetryOnFailure() is " + operation.isRetryOnFailure());
     return info.hasRetriableFailure() && !operation.isRetryOnFailure();
   }
 
@@ -450,7 +461,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private void logStartingDomain(DomainPresenceInfo presenceInfo) {
-    LOGGER.fine(MessageKeys.PROCESSING_DOMAIN, presenceInfo.getDomainUid());
+    LOGGER.info(MessageKeys.PROCESSING_DOMAIN, presenceInfo.getDomainUid());
   }
 
   private void logNotStartingDomain(DomainPresenceInfo info) {
@@ -928,7 +939,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private void handleModifiedDomain(DomainResource domain) {
-    LOGGER.fine(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
+    LOGGER.info(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
         .withEventData(new EventData(DOMAIN_CHANGED))
@@ -1075,10 +1086,12 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     @Nonnull
     private Boolean shouldRetry(Packet packet) {
-      return DomainPresenceInfo.fromPacket(packet)
+      boolean shouldRetry = DomainPresenceInfo.fromPacket(packet)
           .map(DomainPresenceInfo::getDomain)
           .map(DomainResource::shouldRetry)
           .orElse(false);
+      LOGGER.info("DEBUG: should retry on fiber completion is " + shouldRetry);
+      return shouldRetry;
     }
 
     private void scheduleRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
@@ -1148,8 +1161,10 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       Optional.ofNullable(debugPrefix).ifPresent(prefix -> packet.put(Fiber.DEBUG_FIBER, prefix));
 
       if (operation.isWillInterrupt()) {
+        LOGGER.info("DEBUG: Interrupt the current fiber and create a new one.");
         gate.startFiber(presenceInfo.getResourceName(), firstStep, packet, createCompletionCallback());
       } else {
+        LOGGER.info("DEBUG: If the fiber for domain exists, use existing fiber instead of create a new one.");
         gate.startFiberIfNoCurrentFiber(presenceInfo.getResourceName(), firstStep, packet, createCompletionCallback());
       }
     }
