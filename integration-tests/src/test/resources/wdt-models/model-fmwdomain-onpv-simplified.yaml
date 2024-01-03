@@ -4,7 +4,6 @@
 domainInfo:
     AdminUserName: '@@PROP:adminUsername@@'
     AdminPassword: '@@PROP:adminPassword@@'
-    ServerStartMode: 'prod'
     RCUDbInfo:
         rcu_prefix: '@@PROP:rcuSchemaPrefix@@'
         rcu_schema_password: '@@PROP:rcuSchemaPassword@@'
@@ -12,6 +11,10 @@ domainInfo:
         rcu_admin_password: '@@PROP:rcuSysPassword@@'
 
 topology:
+    ProductionModeEnabled: 'true'
+    SecurityConfiguration:
+      SecureMode:
+        SecureModeEnabled: false  
     AdminServerName: "admin-server"
     Name: "jrfonpv-simplified"
     Log:

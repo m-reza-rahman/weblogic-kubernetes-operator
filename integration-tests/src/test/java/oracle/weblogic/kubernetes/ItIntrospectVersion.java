@@ -1351,14 +1351,6 @@ class ItIntrospectVersion {
           }
           String response = result.stdout().trim();
           logger.info(response);
-          /*
-          HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-          if (response.statusCode() != 200) {
-            logger.info("Response code is not 200 retrying...");
-            return false;
-          }
-
-          */
           boolean health = true;
           for (String managedServer : managedServerNames) {
             health = health && response.contains(managedServer + ":HEALTH_OK");
