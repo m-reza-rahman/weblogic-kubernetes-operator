@@ -772,6 +772,18 @@ public class JobStepContext extends BasePodStepContext {
     return volumes;
   }
 
+  protected List<V1Volume> getFluentbitVolumes() {
+    List<V1Volume> volumes = new ArrayList<>();
+    Optional.ofNullable(getDomain())
+            .map(DomainResource::getFluentbitSpecification)
+            .ifPresent(c -> volumes.add(new V1Volume().name(FLUENTBIT_CONFIGMAP_VOLUME)
+                    .configMap(new V1ConfigMapVolumeSource()
+                            .name(getDomainUid() + FLUENTBIT_CONFIGMAP_NAME_SUFFIX)
+                            .defaultMode(420))));
+    return volumes;
+  }
+
+
   protected String getDomainHome() {
     return getDomain().getDomainHome();
   }
