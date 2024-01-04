@@ -39,7 +39,7 @@ class Infra12213Provisioner:
         domainHome = self.createBaseDomain(domainName, user, password, adminListenPort, adminName, managedNameBase,
                                            managedServerPort, prodMode, managedCount, clusterName
                                            )
-        self.extendDomain(domainHome, db, dbPrefix, dbPassword, exposeAdminT3Channel, t3ChannelPublicAddress,
+        self.extendDomain(domainName, domainHome, db, dbPrefix, dbPassword, exposeAdminT3Channel, t3ChannelPublicAddress,
                           t3ChannelPort)
 
     def createBaseDomain(self, domainName, user, password, adminListenPort, adminName, managedNameBase, managedServerPort, prodMode, managedCount, clusterName):
@@ -112,23 +112,11 @@ class Infra12213Provisioner:
         print 'Writing base domain...'
         writeDomain(domainHome)
         closeTemplate()
-        
-        if (prodMode == 'true'):
-          readDomain(domainHome)
-          cmo.setProductionModeEnabled(true)
-          cdir='/SecurityConfiguration/'+domainName
-          cd(cdir)
-          secm=create(domainName,'SecureMode')
-          xdir='SecureMode/'+domainName
-          cd(xdir)
-          set('SecureModeEnabled','false')
-          updateDomain()
-          print 'Domain updated successfully'
         print 'Base domain created at ' + domainHome
         return domainHome
 
 
-    def extendDomain(self, domainHome, db, dbPrefix, dbPassword, exposeAdminT3Channel, t3ChannelPublicAddress,
+    def extendDomain(self, domainName, domainHome, db, dbPrefix, dbPassword, exposeAdminT3Channel, t3ChannelPublicAddress,
                      t3ChannelPort):
         print 'Extending domain at ' + domainHome
         print 'Database  ' + db
@@ -184,6 +172,20 @@ class Infra12213Provisioner:
         updateDomain()
         print 'Domain updated successfully'
         closeDomain()
+        if (prodMode == 'true'):
+          print 'Setting securemode to false'
+          readDomain(domainHome)
+          cmo.setProductionModeEnabled(true)
+          cdir='/SecurityConfiguration/'+domainName
+          cd(cdir)
+          secm=create(domainName,'SecureMode')
+          xdir='SecureMode/'+domainName
+          cd(xdir)
+          set('SecureModeEnabled','false')
+          updateDomain()
+          print 'Domain updated successfully'
+          closeDomain()
+          print 'Closed domain'
         return
 
 
