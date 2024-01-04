@@ -112,6 +112,18 @@ class Infra12213Provisioner:
         print 'Writing base domain...'
         writeDomain(domainHome)
         closeTemplate()
+        
+        if (prodMode == 'true'):
+          readDomain(domainHome)
+          cmo.setProductionModeEnabled(true)
+          cdir='/SecurityConfiguration/'+domainName
+          cd(cdir)
+          secm=create(domainName,'SecureMode')
+          xdir='SecureMode/'+domainName
+          cd(xdir)
+          set('SecureModeEnabled','false')
+          updateDomain()
+          print 'Domain updated successfully'
         print 'Base domain created at ' + domainHome
         return domainHome
 
