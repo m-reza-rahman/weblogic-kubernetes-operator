@@ -4,13 +4,16 @@
 domainInfo:
     AdminUserName: '@@PROP:adminUsername@@'
     AdminPassword: '@@PROP:adminPassword@@'
-    ServerStartMode: 'prod'
     RCUDbInfo:
         rcu_prefix: '@@PROP:rcuSchemaPrefix@@'
         rcu_schema_password: '@@PROP:rcuSchemaPassword@@'
         rcu_db_conn_string: '@@PROP:rcuDb@@'
 
 topology:
+    ProductionModeEnabled: 'true'
+    SecurityConfiguration:
+      SecureMode:
+        SecureModeEnabled: false   
     AdminServerName: "admin-server"
     Name: "fmw-domaininpv-rcu"
     Log:
