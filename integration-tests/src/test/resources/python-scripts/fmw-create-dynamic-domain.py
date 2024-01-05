@@ -138,7 +138,7 @@ class Infra12213Provisioner:
 
         return domainHome
 
-    def extendDomain(self, domainHome, db, dbPrefix, dbPassword, exposeAdminT3Channel, t3ChannelPublicAddress,
+    def extendDomain(self, domainName, domainHome, db, dbPrefix, dbPassword, exposeAdminT3Channel, t3ChannelPublicAddress,
                      t3ChannelPort, managedCount):
         print 'Extending domain at ' + domainHome
         print 'Database  ' + db
@@ -189,6 +189,20 @@ class Infra12213Provisioner:
         updateDomain()
         print 'Domain updated successfully'
         closeDomain()
+        if (prodMode == 'true'):
+          print 'Setting securemode to false'
+          readDomain(domainHome)
+          cmo.setProductionModeEnabled(true)
+          cdir='/SecurityConfiguration/'+domainName
+          cd(cdir)
+          secm=create(domainName,'SecureMode')
+          xdir='SecureMode/'+domainName
+          cd(xdir)
+          set('SecureModeEnabled','false')
+          updateDomain()
+          print 'Domain updated successfully'
+          closeDomain()
+          print 'Closed domain'
         return
 
     ###########################################################################
