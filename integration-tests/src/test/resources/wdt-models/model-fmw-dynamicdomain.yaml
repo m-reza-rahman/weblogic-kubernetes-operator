@@ -4,13 +4,16 @@
 domainInfo:
     AdminUserName: '@@SECRET:__weblogic-credentials__:username@@'
     AdminPassword: '@@SECRET:__weblogic-credentials__:password@@'
-    ServerStartMode: 'prod'
     RCUDbInfo:
         rcu_prefix: '@@SECRET:@@ENV:DOMAIN_UID@@-rcu-access:rcu_prefix@@'
         rcu_schema_password: '@@SECRET:@@ENV:DOMAIN_UID@@-rcu-access:rcu_schema_password@@'
         rcu_db_conn_string: '@@SECRET:@@ENV:DOMAIN_UID@@-rcu-access:rcu_db_conn_string@@'
 
 topology:
+    ProductionModeEnabled: 'true'
+    SecurityConfiguration:
+      SecureMode:
+        SecureModeEnabled: false   
     AdminServerName: "admin-server"
     Name: "domain1"
     Log:
