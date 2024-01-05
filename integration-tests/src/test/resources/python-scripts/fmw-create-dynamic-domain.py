@@ -38,7 +38,7 @@ class Infra12213Provisioner:
                           exposeAdminT3Channel=None, t3ChannelPublicAddress=None, t3ChannelPort=None):
         domainHome = self.createBaseDomain(domainName, user, password, adminListenPort, adminName, managedNameBase,
                                            managedServerPort, prodMode, managedCount, clusterName)
-        self.extendDomain(domainHome, db, dbPrefix, dbPassword, exposeAdminT3Channel, t3ChannelPublicAddress, t3ChannelPort, managedCount)
+        self.extendDomain(domainName, domainHome, db, dbPrefix, dbPassword, exposeAdminT3Channel, t3ChannelPublicAddress, t3ChannelPort, managedCount)
 
     def createBaseDomain(self, domainName, user, password, adminListenPort, adminName, managedNameBase, managedServerPort, prodMode, managedCount, clusterName):
         baseTemplate = self.replaceTokens(self.JRF_12213_TEMPLATES['baseTemplate'])
