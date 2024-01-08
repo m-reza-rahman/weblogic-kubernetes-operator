@@ -380,7 +380,7 @@ nodes:
     image: ${kind_image}
     extraPortMappings:
       - containerPort: 30500
-        hostPort: 500
+        hostPort: 1500
     extraMounts:
       - hostPath: ${pv_root}
         containerPath: ${pv_root}

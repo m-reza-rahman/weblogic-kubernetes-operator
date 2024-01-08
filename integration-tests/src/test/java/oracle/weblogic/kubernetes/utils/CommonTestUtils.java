@@ -1251,7 +1251,7 @@ public class CommonTestUtils {
         host = K8S_NODEPORT_HOST;
       } else {
         if (servicePort >= 30500 && servicePort <= 30600) {
-          servicePort -= 30000;
+          servicePort -= 29000;
         }
         host = InetAddress.getLocalHost().getHostAddress();
       }
