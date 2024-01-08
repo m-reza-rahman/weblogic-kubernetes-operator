@@ -50,7 +50,7 @@ pipeline {
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
 
-        CLUSTER_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'parcluster' : 'seqcluster'}"
+        CLUSTER_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'xdomcluster' : 'seqcluster'}"
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
         MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-gate' : 'oke-gate'}"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
@@ -594,7 +594,7 @@ EOF
                                 mkdir -m777 -p ${result_root}/kubelogs
                                 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 sudo mv -f ${result_root}/* "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
-                                ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
+                                #${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
 
                             '''
 
@@ -614,7 +614,7 @@ EOF
                         echo 'Remove old OKE cluster (if any)...'
 
                         if [ -f "$OCI_PROP_FILE" ] && [ -f "${WORKSPACE}/terraform/oke.delete.sh" ]; then
-                            ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
+                            #${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
                         fi
                         rm -f ${jenkins_home_directory}/.oci/config
                         rm -f ${jenkins_home_directory}/.oci/oci-signing-key.pem
