@@ -2046,9 +2046,10 @@ def isSecureModeEnabledForDomain(domain):
   cd('/SecurityConfiguration/' + domain.getName())
   childs = ls(returnType='c', returnMap='true')
   if 'SecureMode' in childs:
+    cd('SecureMode')
     child_objs = ls(returnMap='true', returnType='c')
     if not child_objs.isEmpty():
-      cd('SecureMode/' + child_objs[0])
+      cd(child_objs[0])
       attributes = ls(returnType='a', returnMap='true')
       if attributes['SecureModeEnabled']:
         secureModeEnabled = True
