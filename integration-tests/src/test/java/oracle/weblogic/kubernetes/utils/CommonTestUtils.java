@@ -6,7 +6,9 @@ package oracle.weblogic.kubernetes.utils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +35,7 @@ import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
@@ -651,12 +654,7 @@ public class CommonTestUtils {
                                                    String resourcesName, String expectedStatusCode) {
     final LoggingFacade logger = getLogger();
 
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
-    String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
-    logger.info("hostAndPort = {0} ", hostAndPort);
+    String hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
 
     StringBuffer curlString = new StringBuffer("status=$(curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
@@ -770,12 +768,7 @@ public class CommonTestUtils {
                                        String resourcesPath, String expectedValue) {
     final LoggingFacade logger = getLogger();
 
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
-    String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
-    logger.info("hostAndPort = {0} ", hostAndPort);
+    String hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
 
     StringBuffer curlString = new StringBuffer("curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
@@ -834,12 +827,7 @@ public class CommonTestUtils {
                                                         String expectedValue) {
     final LoggingFacade logger = getLogger();
 
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
-    String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + nodePort;
-    logger.info("hostAndPort = {0} ", hostAndPort);
+    String hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
 
     StringBuffer curlString = new StringBuffer("curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
@@ -1248,7 +1236,7 @@ public class CommonTestUtils {
   }
 
   /**
-   * Evaluates the route host name for OKD env, and host:serviceport for othe env's.
+   * Evaluates the route host name for OKD env, and host:serviceport for other env's.
    *
    * @param hostName - in OKD it is host name when svc is exposed as a route, null otherwise
    * @param servicePort - port of the service to access
@@ -1256,13 +1244,26 @@ public class CommonTestUtils {
    */
   public static String getHostAndPort(String hostName, int servicePort) {
     LoggingFacade logger = getLogger();
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
+
+    try {
+      String host;
+      if (TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        host = K8S_NODEPORT_HOST;
+      } else {
+        if (servicePort >= 30500 && servicePort <= 30600) {
+          servicePort -= 30000;
+        }
+        host = InetAddress.getLocalHost().getHostAddress();
+      }
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      String hostAndPort = ((OKD) ? hostName : host + ":" + servicePort);
+      logger.info("hostAndPort = {0} ", hostAndPort);
+      return hostAndPort;
+    } catch (UnknownHostException e) {
+      throw new RuntimeException(e);
     }
-    String hostAndPort = ((OKD) ? hostName : host + ":" + servicePort);
-    logger.info("hostAndPort = {0} ", hostAndPort);
-    return hostAndPort;
   }
 
   /**
@@ -1507,13 +1508,8 @@ public class CommonTestUtils {
                                        String... hosts) {
     LoggingFacade logger = getLogger();
 
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      // use IPV6
-      host = "[" + host + "]";
-    }
+    String hostAndPort = getHostAndPort(null, istioIngressPort);
 
-    String hostAndPort = (hosts.length == 0) ? host + ":" + istioIngressPort : hosts[0];
     // verify WebLogic console is accessible before port forwarding using ingress port
     String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
 

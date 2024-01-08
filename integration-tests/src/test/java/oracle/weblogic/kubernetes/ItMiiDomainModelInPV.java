@@ -258,9 +258,12 @@ public class ItMiiDomainModelInPV {
     // create domain custom resource and verify all the pods came up
     logger.info("Creating domain custom resource with domainUid {0} and image {1}",
         domainUid, image);
+
+    // HERE -- looking for where nodePort value is set
+
     DomainResource domainCR = CommonMiiTestUtils.createDomainResource(domainUid, domainNamespace,
         image, adminSecretName, createSecretsForImageRepos(domainNamespace), encryptionSecretName,
-        2, List.of(clusterName), true);
+        2, List.of(clusterName), true, 30500);
     domainCR.spec().configuration().model().withModelHome(modelMountPath + "/model");
     domainCR.spec().serverPod()
         .addVolumesItem(new V1Volume()
