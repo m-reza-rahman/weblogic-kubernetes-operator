@@ -352,7 +352,17 @@ public class ItMiiDomainModelInPV {
             return health;
           } else {
             // In non-internal OKE env, verifyMemberHealth using adminSvcExtHost by sending HTTP request from local VM
-            adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+
+            // TEST, HERE
+            String extSvcPodName = getExternalServicePodName(adminServerPodName);
+            System.out.println("**** adminServerPodName=" + adminServerPodName);
+            System.out.println("**** extSvcPodName=" + extSvcPodName);
+
+            adminSvcExtHost = createRouteForOKD(extSvcPodName, domainNamespace);
+
+            System.out.println("**** adminSvcExtHost=" + adminSvcExtHost);
+
+
             logger.info("admin svc host = {0}", adminSvcExtHost);
 
             logger.info("Getting node port for default channel");
@@ -361,8 +371,17 @@ public class ItMiiDomainModelInPV {
                     "Getting admin server node port failed");
             String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
 
+
+            System.out.println("**** hostAndPort=" + hostAndPort);
+
+
             String url = "http://" + hostAndPort
                 + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
+
+
+            System.out.println("**** url=" + url);
+
+
             HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
             assertEquals(200, response.statusCode(), "Status code not equals to 200");
             boolean health = true;
