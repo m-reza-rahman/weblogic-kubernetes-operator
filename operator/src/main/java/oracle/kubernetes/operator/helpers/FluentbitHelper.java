@@ -219,8 +219,7 @@ public class FluentbitHelper {
     private static V1VolumeMount createFluentbitConfigmapVolumeMount() {
         return new V1VolumeMount()
                 .name(FLUENTBIT_CONFIGMAP_VOLUME)
-                .mountPath("/fluent-bit/etc")
-                .subPath(FLUENTBIT_CONFIG_DATA_NAME);
+                .mountPath("/fluent-bit/etc/");
     }
 
 }

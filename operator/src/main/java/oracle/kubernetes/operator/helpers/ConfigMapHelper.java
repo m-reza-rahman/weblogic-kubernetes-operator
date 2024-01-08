@@ -1154,7 +1154,7 @@ public class ConfigMapHelper {
     private static Step replaceFluentbitConfigMap(DomainPresenceInfo info, Step next) {
       return new CallBuilder()
               .replaceConfigMapAsync(
-                      info.getDomainUid() + FLUENTD_CONFIGMAP_NAME_SUFFIX,
+                      info.getDomainUid() + FLUENTBIT_CONFIGMAP_NAME_SUFFIX,
                       info.getNamespace(),
                       FluentbitHelper.getFluentbitConfigMap(info),
                       new ReplaceFluentbitConfigMapResponseStep(next));
