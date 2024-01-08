@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Stream;
 
 import io.kubernetes.client.openapi.models.V1Container;
@@ -109,7 +108,7 @@ public class ItMiiDomainModelInPV {
   private static String domainNamespace = null;
 
   // domain constants
-  private static Map<String, String> params = new HashMap<>();
+  private static List<Parameters> params = new ArrayList<>();
   private static String domainUid1 = "domain1";
   private static String domainUid2 = "domain2";
   private static String adminServerName = "admin-server";
@@ -177,8 +176,8 @@ public class ItMiiDomainModelInPV {
     // build a new MII image with custom wdtHome
     buildMIIandPushToRepo(MII_BASIC_IMAGE_NAME, miiImageTagCustom, modelMountPath + "/model");
 
-    params.put("domain2", miiImageCustom);
-    params.put("domain1", miiImagePV);
+    params.add(new Parameters("domain2", miiImageCustom, 30500));
+    params.add(new Parameters("domain1", miiImagePV, 30501));
 
     // create secret for admin credentials
     logger.info("Creating secret for admin credentials");
@@ -250,10 +249,10 @@ public class ItMiiDomainModelInPV {
   @DisplayName("Create MII domain with model and application file from PV and custom wdtModelHome")
   @Tag("gate")
   @Tag("crio")
-  void testMiiDomainWithModelAndApplicationInPV(Entry<String, String> params) {
+  void testMiiDomainWithModelAndApplicationInPV(Parameters params) {
 
-    String domainUid = params.getKey();
-    String image = params.getValue();
+    String domainUid = params.domainUid;
+    String image = params.image;
 
     // create domain custom resource and verify all the pods came up
     logger.info("Creating domain custom resource with domainUid {0} and image {1}",
@@ -263,7 +262,7 @@ public class ItMiiDomainModelInPV {
 
     DomainResource domainCR = CommonMiiTestUtils.createDomainResource(domainUid, domainNamespace,
         image, adminSecretName, createSecretsForImageRepos(domainNamespace), encryptionSecretName,
-        2, List.of(clusterName), true, 30500);
+        2, List.of(clusterName), true, params.nodePort);
     domainCR.spec().configuration().model().withModelHome(modelMountPath + "/model");
     domainCR.spec().serverPod()
         .addVolumesItem(new V1Volume()
@@ -291,9 +290,11 @@ public class ItMiiDomainModelInPV {
 
   }
 
+  private record Parameters(String domainUid, String image, int nodePort) {}
+
   // generates the stream of objects used by parametrized test.
-  private static Stream<Entry<String, String>> paramProvider() {
-    return params.entrySet().stream();
+  private static Stream<Parameters> paramProvider() {
+    return params.stream();
   }
 
   // create domain resource and verify all the server pods are ready

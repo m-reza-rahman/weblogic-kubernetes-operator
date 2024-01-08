@@ -381,6 +381,8 @@ nodes:
     extraPortMappings:
       - containerPort: 30500
         hostPort: 1500
+      - containerPort: 30501
+        hostPort: 1501
     extraMounts:
       - hostPath: ${pv_root}
         containerPath: ${pv_root}
