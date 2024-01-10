@@ -296,8 +296,8 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
-    createNginxIngressHostRouting(domainUid, "admin-server", 7001);
-    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "30880", false));
+    String hostHeader = createNginxIngressHostRouting(domainUid, "admin-server", 7001);
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "30880", false, hostHeader));
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
