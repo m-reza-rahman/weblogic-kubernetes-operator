@@ -458,14 +458,17 @@ public class ApplicationUtils {
    * @return true if REST interface is accessible
    * @throws IOException when connection to admin server fails
    */
-  public static boolean verifyAdminServerRESTAccess(String host, String port, boolean secure)
+  public static boolean verifyAdminServerRESTAccess(String host, String port, boolean secure, String hostHeader)
       throws IOException {
     getLogger().info("Check REST interface availability");
     StringBuffer curlCmd = new StringBuffer("status=$(curl -kg --user ");
     if (host.contains(":")) {
       host = "[" + host + "]";
     }
-    curlCmd.append(ADMIN_USERNAME_DEFAULT)
+    curlCmd.append(" -H 'host: ")
+        .append(hostHeader)
+        .append("' ")
+        .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
         .append(" ")

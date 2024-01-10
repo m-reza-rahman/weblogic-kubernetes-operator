@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
+import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.Operator;
 import oracle.weblogic.kubernetes.actions.impl.OperatorParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
@@ -51,6 +52,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
@@ -643,7 +645,8 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     deleteNamespace(nginxNamespace);
     assertDoesNotThrow(() -> new Namespace().name(nginxNamespace).create());
     getLogger().info("Installing NGINX in namespace {0}", nginxNamespace);
-    installAndVerifyNginx(nginxNamespace, 30880, 30443);
+    NginxParams params = installAndVerifyNginx(nginxNamespace, 30880, 30443);
+    assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, params.getIngressClassName()));    
     String curlCmd = KUBERNETES_CLI + " get all -A";
     try {
       ExecCommand.exec(new String(curlCmd), true);

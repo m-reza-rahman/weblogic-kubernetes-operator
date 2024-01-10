@@ -4,6 +4,8 @@
 package oracle.weblogic.kubernetes;
 
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 
 import static oracle.weblogic.kubernetes.actions.TestActions.listNamespaces;
@@ -447,6 +449,8 @@ public interface TestConstants {
   public static final boolean VZ_ENV = assertDoesNotThrow(() -> listNamespaces().stream()
         .anyMatch(ns -> ns.equals(VZ_SYSTEM_NS)));
   public static final String LARGE_DOMAIN_TESTING_PROPS_FILE =
-      "largedomaintesting.props";
+      "largedomaintesting.props";  
   
+  public static final Path INGRESS_CLASS_FILE_NAME = assertDoesNotThrow(()
+      -> Files.createTempFile("ingressclass", ".name"));
 }
