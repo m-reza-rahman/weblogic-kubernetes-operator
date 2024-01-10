@@ -468,6 +468,7 @@ public class ApplicationUtils {
     curlCmd.append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
+        .append(" ")
         .append(secure ? " https://" : "http://")
         .append(host)
         .append(":")
