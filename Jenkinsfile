@@ -378,6 +378,12 @@ nodes:
     image: ${kind_image}
   - role: worker
     image: ${kind_image}
+    kubeadmConfigPatches:
+    - |
+      kind: InitConfiguration
+      nodeRegistration:
+        kubeletExtraArgs:
+          node-labels: "ingress-ready=true"
     extraPortMappings:
       - containerPort: 30500
         hostPort: 1500

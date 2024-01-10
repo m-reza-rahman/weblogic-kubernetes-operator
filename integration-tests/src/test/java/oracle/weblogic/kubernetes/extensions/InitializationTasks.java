@@ -23,6 +23,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.actions.impl.Operator;
 import oracle.weblogic.kubernetes.actions.impl.OperatorParams;
@@ -104,6 +105,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.installIstio;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.uninstallIstio;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.awaitility.Awaitility.with;
@@ -296,6 +298,10 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         
         //install webhook to prevent every operator installation trying to update crd
         installWebHookOnlyOperator("DomainOnPvSimplification=true");
+        //install NGINX when running with podman container runtime
+        if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+          installNginxLB();
+        }
 
         // set initialization success to true, not counting the istio installation as not all tests use istio
         isInitializationSuccessful = true;
@@ -629,6 +635,21 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         true, // webhookOnly
         "null" // domainNamespace
     );
+  }
+  
+  String nginxNamespace = "ns-nginx";
+
+  private void installNginxLB() {
+    deleteNamespace(nginxNamespace);
+    assertDoesNotThrow(() -> new Namespace().name(nginxNamespace).create());
+    getLogger().info("Installing NGINX in namespace {0}", nginxNamespace);
+    installAndVerifyNginx(nginxNamespace, 30880, 30443);
+    String curlCmd = KUBERNETES_CLI + " get all -A";
+    try {
+      ExecCommand.exec(new String(curlCmd), true);
+    } catch (IOException | InterruptedException ex) {
+      getLogger().info("Exception in get all {0}", ex);
+    }
   }
 
 }

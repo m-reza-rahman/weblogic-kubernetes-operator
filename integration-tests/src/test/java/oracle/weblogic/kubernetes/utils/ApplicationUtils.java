@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes.utils;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -447,6 +448,42 @@ public class ApplicationUtils {
     } else {
       assertFalse(checkConsole, "Shouldn't be able to access WebLogic console");
       logger.info("WebLogic console is not accessible");
+    }
+  }
+
+  /**
+   * Verify admin server is accessible through REST interface.
+   *
+   * @param port the port of load balancer configured to access admin server
+   * @return true if REST interface is accessible
+   * @throws IOException when connection to admin server fails
+   */
+  public static boolean verifyAdminServerRESTAccess(String host, String port, boolean secure)
+      throws IOException {
+    getLogger().info("Check REST interface availability");
+    StringBuffer curlCmd = new StringBuffer("status=$(curl -kg --user ");
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    curlCmd.append(ADMIN_USERNAME_DEFAULT)
+        .append(":")
+        .append(ADMIN_PASSWORD_DEFAULT)
+        .append(secure ? " https://" : "http://")
+        .append(host)
+        .append(":")
+        .append(port)
+        .append("/management/tenant-monitoring/servers/ --show-error -w %{http_code}); ")
+        .append("echo ${status}");
+    getLogger().info("checkRestConsole : curl command {0}", new String(curlCmd));
+    try {
+      ExecResult result = ExecCommand.exec(new String(curlCmd), true);
+      String response = result.stdout().trim();
+      getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      return response.contains("200");
+    } catch (IOException | InterruptedException ex) {
+      getLogger().info("Exception in checkRestConsole {0}", ex);
+      return false;
     }
   }
 }
