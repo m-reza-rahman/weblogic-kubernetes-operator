@@ -299,17 +299,30 @@ public class ItMiiDomainModelInPV {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
     String curlCmd = KUBERNETES_CLI + " get all -A";
+    ExecResult result = null;
     try {
       logger.info("Executing {0}", curlCmd);
-      ExecResult result = ExecCommand.exec(curlCmd, true);
+      result = ExecCommand.exec(curlCmd, true);
+      curlCmd = KUBERNETES_CLI + " get nodes -o wide";
+      result = ExecCommand.exec(curlCmd, true);
+    } catch (IOException | InterruptedException ex) {
+      getLogger().info("Exception in get all {0}", ex);
+    }
+    curlCmd = KUBERNETES_CLI + " --namespace ns-nginx get nodes "
+        + "-o jsonpath=\"{.items[0].status.addresses[1].address}\")";
+    try {
+      logger.info("Executing {0}", curlCmd);
+      result = ExecCommand.exec(curlCmd, true);
       logger.info(result.stdout());
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in get all {0}", ex);
     }
+    String nodeIp = result.stdout().trim();
     String hostHeader = createNginxIngressHostRouting(domainUid, "admin-server", 7001);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "2080", false, hostHeader));
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
-        "2080", false, hostHeader));    
+        "2080", false, hostHeader));
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess(nodeIp, "30880", false, hostHeader));
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
