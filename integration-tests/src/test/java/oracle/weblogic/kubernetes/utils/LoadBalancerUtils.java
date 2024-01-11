@@ -132,7 +132,7 @@ public class LoadBalancerUtils {
   public static NginxParams installAndVerifyNginx(String nginxNamespace,
                                                  int nodeportshttp,
                                                  int nodeportshttps) {
-    return installAndVerifyNginx(nginxNamespace, nodeportshttp, nodeportshttps, NGINX_CHART_VERSION);
+    return installAndVerifyNginx(nginxNamespace, nodeportshttp, nodeportshttps, NGINX_CHART_VERSION, null);
   }
 
   /**
@@ -142,12 +142,14 @@ public class LoadBalancerUtils {
    * @param nodeportshttp the http nodeport of NGINX
    * @param nodeportshttps the https nodeport of NGINX
    * @param chartVersion the chart version of NGINX
+   * @param type type of service LoadBalancer or NodePort
    * @return the NGINX Helm installation parameters
    */
   public static NginxParams installAndVerifyNginx(String nginxNamespace,
                                                  int nodeportshttp,
                                                  int nodeportshttps,
-                                                 String chartVersion) {
+                                                 String chartVersion,
+                                                 String type) {
     LoggingFacade logger = getLogger();
     createTestRepoSecret(nginxNamespace);
 
@@ -172,6 +174,9 @@ public class LoadBalancerUtils {
       nginxParams
           .nodePortsHttp(nodeportshttp)
           .nodePortsHttps(nodeportshttps);
+    }
+    if (type != null) {
+      nginxParams.type(type);
     }
     if (K8S_NODEPORT_HOST.contains(":")) {
       nginxParams.ipFamilies(Arrays.asList("IPv6"));
