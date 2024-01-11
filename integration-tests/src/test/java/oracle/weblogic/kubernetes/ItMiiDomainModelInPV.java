@@ -298,13 +298,23 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
-    String curlCmd = KUBERNETES_CLI + " get all -A";
+    String curlCmd;
     ExecResult result = null;
     try {
+      curlCmd = KUBERNETES_CLI + " get all -A";
       logger.info("Executing {0}", curlCmd);
       result = ExecCommand.exec(curlCmd, true);
+      logger.info(result.stdout());
+      
       curlCmd = KUBERNETES_CLI + " get nodes -o wide";
+      logger.info("Executing {0}", curlCmd);
       result = ExecCommand.exec(curlCmd, true);
+      logger.info(result.stdout());
+      
+      curlCmd = KUBERNETES_CLI + " --namespace ns-nginx get nodes -o wide";
+      logger.info("Executing {0}", curlCmd);
+      result = ExecCommand.exec(curlCmd, true);
+      logger.info(result.stdout());
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in get all {0}", ex);
     }
@@ -323,6 +333,18 @@ public class ItMiiDomainModelInPV {
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
         "2080", false, hostHeader));
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(nodeIp, "30880", false, hostHeader));
+    
+    curlCmd = KUBERNETES_CLI + " get nodes "
+        + "-o jsonpath=\"{.items[0].status.addresses[1].address}\")";
+    try {
+      logger.info("Executing {0}", curlCmd);
+      result = ExecCommand.exec(curlCmd, true);
+      logger.info(result.stdout());
+    } catch (IOException | InterruptedException ex) {
+      getLogger().info("Exception in get all {0}", ex);
+    }
+    String nodeIp2 = result.stdout().trim();
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess(nodeIp2, "30880", false, hostHeader));
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
