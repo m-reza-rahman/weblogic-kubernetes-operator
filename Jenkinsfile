@@ -390,10 +390,10 @@ nodes:
       - containerPort: 30501
         hostPort: 1501
       - containerPort: 80
-        hostPort: 30880
+        hostPort: 2080
         protocol: TCP
       - containerPort: 443
-        hostPort: 30443
+        hostPort: 2443
         protocol: TCP
     extraMounts:
       - hostPath: ${pv_root}

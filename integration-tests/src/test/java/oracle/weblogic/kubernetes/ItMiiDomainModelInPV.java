@@ -307,9 +307,9 @@ public class ItMiiDomainModelInPV {
       getLogger().info("Exception in get all {0}", ex);
     }
     String hostHeader = createNginxIngressHostRouting(domainUid, "admin-server", 7001);
-    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "30880", false, hostHeader));
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "2080", false, hostHeader));
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
-        "30880", false, hostHeader));    
+        "2080", false, hostHeader));    
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
