@@ -299,7 +299,9 @@ public class ItMiiDomainModelInPV {
     }
     String curlCmd = KUBERNETES_CLI + " get all -A";
     try {
-      ExecCommand.exec(new String(curlCmd), true);
+      logger.info("Executing {0}", curlCmd);
+      ExecResult result = ExecCommand.exec(curlCmd, true);
+      logger.info(result.stdout());
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in get all {0}", ex);
     }
