@@ -567,6 +567,8 @@ public class ItMiiDomainModelInPV {
     ingressRules.add(ingressRule);
 
     String ingressName = domainNamespace + "-" + serviceName;
+    Map<String, String> annotations = new HashMap<>();
+    annotations.put("", "");
     assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
         Files.readString(INGRESS_CLASS_FILE_NAME), ingressRules, null));
 
