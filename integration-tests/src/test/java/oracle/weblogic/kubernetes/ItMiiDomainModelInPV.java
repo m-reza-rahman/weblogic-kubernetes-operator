@@ -342,7 +342,10 @@ public class ItMiiDomainModelInPV {
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "2080", false, hostHeader));
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
         "2080", false, hostHeader));
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
+        "30880", false, hostHeader));    
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(nodeIp, "30880", false, hostHeader));
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess(nodeIp, "2080", false, hostHeader));
     
     curlCmd = KUBERNETES_CLI + " get nodes "
         + "-o jsonpath={.items[1].status.addresses[0].address}";
@@ -355,6 +358,7 @@ public class ItMiiDomainModelInPV {
     }
     String nodeIp2 = result.stdout().trim();
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(nodeIp2, "30880", false, hostHeader));
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess(nodeIp2, "2080", false, hostHeader));
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
