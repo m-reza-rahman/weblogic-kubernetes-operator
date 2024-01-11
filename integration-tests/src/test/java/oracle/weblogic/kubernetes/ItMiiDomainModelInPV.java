@@ -329,7 +329,7 @@ public class ItMiiDomainModelInPV {
       getLogger().info("Exception in get all {0}", ex);
     }
     curlCmd = KUBERNETES_CLI + " --namespace ns-nginx get nodes "
-        + "-o jsonpath=\"{.items[0].status.addresses[1].address}\")";
+        + "-o jsonpath=\"{.items[0].status.addresses[0].address}\"";
     try {
       logger.info("Executing {0}", curlCmd);
       result = ExecCommand.exec(curlCmd, true);
@@ -345,7 +345,7 @@ public class ItMiiDomainModelInPV {
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(nodeIp, "30880", false, hostHeader));
     
     curlCmd = KUBERNETES_CLI + " get nodes "
-        + "-o jsonpath=\"{.items[0].status.addresses[1].address}\")";
+        + "-o jsonpath={.items[1].status.addresses[0].address}";
     try {
       logger.info("Executing {0}", curlCmd);
       result = ExecCommand.exec(curlCmd, true);
