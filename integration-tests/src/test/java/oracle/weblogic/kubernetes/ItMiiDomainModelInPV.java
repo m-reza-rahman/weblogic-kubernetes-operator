@@ -315,6 +315,16 @@ public class ItMiiDomainModelInPV {
       logger.info("Executing {0}", curlCmd);
       result = ExecCommand.exec(curlCmd, true);
       logger.info(result.stdout());
+      
+      curlCmd = KUBERNETES_CLI + " --namespace ns-nginx get nodes -o yaml";
+      logger.info("Executing {0}", curlCmd);
+      result = ExecCommand.exec(curlCmd, true);
+      logger.info(result.stdout());
+
+      curlCmd = KUBERNETES_CLI + " --namespace ns-nginx get nodes -o json";
+      logger.info("Executing {0}", curlCmd);
+      result = ExecCommand.exec(curlCmd, true);
+      logger.info(result.stdout());
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in get all {0}", ex);
     }
