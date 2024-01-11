@@ -461,13 +461,14 @@ public class ApplicationUtils {
   public static boolean verifyAdminServerRESTAccess(String host, String port, boolean secure, String hostHeader)
       throws IOException {
     getLogger().info("Check REST interface availability");
-    StringBuffer curlCmd = new StringBuffer("status=$(curl -kg --user ");
+    StringBuffer curlCmd = new StringBuffer("status=$(curl -kg --noproxy '*'");
     if (host.contains(":")) {
       host = "[" + host + "]";
     }
     curlCmd.append(" -H 'host: ")
         .append(hostHeader)
         .append("' ")
+        .append("--user ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)

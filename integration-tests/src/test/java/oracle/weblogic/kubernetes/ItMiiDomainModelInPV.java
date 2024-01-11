@@ -296,6 +296,12 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
+    String curlCmd = KUBERNETES_CLI + " get all -A";
+    try {
+      ExecCommand.exec(new String(curlCmd), true);
+    } catch (IOException | InterruptedException ex) {
+      getLogger().info("Exception in get all {0}", ex);
+    }
     String hostHeader = createNginxIngressHostRouting(domainUid, "admin-server", 7001);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "30880", false, hostHeader));
 
