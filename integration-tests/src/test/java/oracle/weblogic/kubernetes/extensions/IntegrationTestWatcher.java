@@ -370,6 +370,8 @@ public class IntegrationTestWatcher implements
 
     // collect the logs in ns-webhook namespace
     LoggingUtil.collectLogs("ns-webhook", resultDir.toString());
+    // collect the logs in ns-nginx namespace
+    LoggingUtil.collectLogs("ns-nginx", resultDir.toString());    
     
     // collect logs for verrzzano environment    
     if (VZ_ENV) {

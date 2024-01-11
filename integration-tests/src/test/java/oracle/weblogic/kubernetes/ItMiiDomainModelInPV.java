@@ -104,6 +104,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * This test class verify creating a domain from model and application archive files stored in the persistent
@@ -308,10 +309,11 @@ public class ItMiiDomainModelInPV {
     String hostHeader = createNginxIngressHostRouting(domainUid, "admin-server", 7001);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "30880", false, hostHeader));
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
-        "30880", false, hostHeader));
+        "30880", false, hostHeader));    
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
+    fail("Failing test");
 
   }
 
