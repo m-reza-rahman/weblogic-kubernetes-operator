@@ -340,6 +340,7 @@ public class ItMiiDomainModelInPV {
     String nodeIp = result.stdout().trim();
     String hostHeader = createNginxIngressHostRouting(domainUid, "admin-server", 7001);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "2080", false, hostHeader));
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "30880", false, hostHeader));
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
         "2080", false, hostHeader));
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
