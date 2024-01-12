@@ -360,14 +360,11 @@ public class ItMiiDomainModelInPV {
 
             // TEST, HERE
             String extSvcPodName = getExternalServicePodName(adminServerPodName);
-            System.out.println("**** adminServerPodName=" + adminServerPodName);
-            System.out.println("**** extSvcPodName=" + extSvcPodName);
+            logger.info("**** adminServerPodName={0}", adminServerPodName);
+            logger.info("**** extSvcPodName={0}", extSvcPodName);
 
             adminSvcExtHost = createRouteForOKD(extSvcPodName, domainNamespace);
-
-            System.out.println("**** adminSvcExtHost=" + adminSvcExtHost);
-
-
+            logger.info("**** adminSvcExtHost={0}", adminSvcExtHost);
             logger.info("admin svc host = {0}", adminSvcExtHost);
 
             logger.info("Getting node port for default channel");
@@ -382,11 +379,11 @@ public class ItMiiDomainModelInPV {
               hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
               curlCmd.append(" -H 'host: " + hostHeader + "' ");
             }
-            System.out.println("**** hostAndPort=" + hostAndPort);
+            logger.info("**** hostAndPort={0}", hostAndPort);
             String url = "http://" + hostAndPort
                 + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
             curlCmd.append(url);
-            System.out.println("**** url=" + curlCmd);
+            logger.info("**** url={0}", curlCmd);
 
             ExecResult result = null;
             try {
