@@ -319,6 +319,16 @@ public class ItMiiDomainModelInPV {
       String response = result.stdout().trim();
       getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
           result.exitValue(), response, result.stderr());
+
+      curlCmd = "curl -vkg --noproxy '*' -H 'host: " + hostHeader
+          + "' http://" + InetAddress.getLocalHost().getHostAddress()
+          + ":" + "2080" + "/clusterview/ClusterViewServlet?user="
+          + ADMIN_USERNAME_DEFAULT + "&password=" + ADMIN_PASSWORD_DEFAULT;
+      result = ExecCommand.exec(new String(curlCmd), true);
+      response = result.stdout().trim();
+      getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in checkRestConsole {0}", ex);
     }
