@@ -381,7 +381,7 @@ public class ItMiiDomainModelInPV {
             }
             logger.info("**** hostAndPort={0}", hostAndPort);
             String url = "\"http://" + hostAndPort
-                + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password+"\"";
+                + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password + "\"";
             curlCmd.append(url);
             logger.info("**** url={0}", curlCmd);
 
