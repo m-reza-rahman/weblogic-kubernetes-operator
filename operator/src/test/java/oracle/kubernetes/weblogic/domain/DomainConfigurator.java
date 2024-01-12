@@ -427,6 +427,7 @@ public abstract class DomainConfigurator {
 
     public abstract DomainConfigurator withFluentbitConfiguration(boolean watchIntrospectorLog,
                                                                   String credentialName, String fluentbitConfig,
+                                                                  String parserConfig,
                                                                   List<String> args, List<String> command);
 
     public abstract DomainConfigurator withServerPodShutdownSpec(Shutdown shutdown);

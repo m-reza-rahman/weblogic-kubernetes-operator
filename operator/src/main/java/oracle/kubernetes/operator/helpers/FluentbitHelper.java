@@ -84,11 +84,41 @@ public class FluentbitHelper {
         FluentbitSpecification fluentbitSpecification = info.getDomain().getFluentbitSpecification();
 
         // Make sure every line has a next line character, otherwise fluentbit will fail.
-        if (fluentbitSpecification.getFluentbitConfiguration() != null) {
+        if (fluentbitSpecification.getFluentbitConfiguration() != null && fluentbitSpecification.getParserConfiguration() != null) {
             fluentbitConfBuilder.append(fluentbitSpecification.getFluentbitConfiguration());
-        }
-        if (fluentbitSpecification.getParserConfiguration() != null) {
             parserConfBuilder.append(fluentbitSpecification.getParserConfiguration());
+        }
+        else {
+            fluentbitConfBuilder.append("[SERVICE]\n");
+            fluentbitConfBuilder.append("    parsers_file parsers.conf\n");
+            fluentbitConfBuilder.append("[INPUT]\n");
+            fluentbitConfBuilder.append("    Name tail\n");
+            fluentbitConfBuilder.append("    Path \"${LOG_PATH}\"\n");
+            fluentbitConfBuilder.append("    Read_From_Head true\n");
+            fluentbitConfBuilder.append("    multiline_parser \n");
+            fluentbitConfBuilder.append("    Tag \"${DOMAIN_UID}\"\n");
+            fluentbitConfBuilder.append("[FILTER]\n");
+            fluentbitConfBuilder.append("    Match \"${DOMAIN_UID}\"\n");
+            fluentbitConfBuilder.append("    Name parser\n");
+            fluentbitConfBuilder.append("    preserve_key true\n");
+            fluentbitConfBuilder.append("    parser \"${DOMAIN_UID}\"\n");
+            fluentbitConfBuilder.append("    key_name log\n");
+            fluentbitConfBuilder.append("[OUTPUT]");
+            fluentbitConfBuilder.append("    name stdout\n");
+            fluentbitConfBuilder.append("    Match *\n");
+
+            parserConfBuilder.append("[MULTILINE_PARSER]\n");
+            parserConfBuilder.append("    Name multiline-" + "\"${DOMAIN_UID}\"\n");
+            parserConfBuilder.append("    type regex\n");
+            parserConfBuilder.append("    rule      \"start_state\"   \"/^####(.*)/\"       \"cont\"\n");
+            parserConfBuilder.append("    rule      \"cont\"          \"/^(?!####)(.*)/\"    \"cont\"\n");
+            parserConfBuilder.append("[PARSER]");
+            parserConfBuilder.append("    Name \"${DOMAIN_UID}\"\n");
+            parserConfBuilder.append("    Format regex\n");
+            parserConfBuilder.append("    Time_Key timestamp\n");
+            parserConfBuilder.append("    regex /^####<(?<timestamp>(.*?))> <(?<level>(.*?))> <(?<subSystem>(.*?))> <(?<serverName>(.*?))> <(?<serverName2>(.*?))>"
+                    + " <(?<threadName>(.*?))> <(?<info1>(.*?))> <(?<info2>(.*?))> <(?<info3>(.*?))>"
+                    + " <(?<sequenceNumber>(.*?))> <(?<severity>(.*?))> <(?<messageID>(.*?))> <(?<message>((?m).*?))>/");
         }
         Map<String, String> labels = new HashMap<>();
         labels.put("weblogic.domainUID", domainUid);

@@ -162,6 +162,8 @@ import static oracle.kubernetes.operator.helpers.SecretHelper.PASSWORD_KEY;
 import static oracle.kubernetes.operator.helpers.SecretHelper.USERNAME_KEY;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIGMAP_NAME_SUFFIX;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIG_DATA_NAME;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTBIT_CONFIG_DATA_NAME;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTBIT_CONFIGMAP_NAME_SUFFIX;
 import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.OK_RESPONSE;
 import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.createExpectedRequest;
 import static oracle.kubernetes.operator.tuning.TuningParameters.INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
@@ -1801,6 +1803,41 @@ class DomainProcessorTest {
             .orElse(null), equalTo("<match>me</match>"));
   }
 
+  @Test
+  void whenFluentbitSpecified_verifyConfigMap() {
+    domainConfigurator
+            .withFluentbitConfiguration(true, "fluentbit-cred",
+                    null, null, null, null)
+            .configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
+    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
+
+    processor.createMakeRightOperation(newInfo).execute();
+
+    V1ConfigMap fluentbitConfigMap = testSupport.getResourceWithName(CONFIG_MAP, UID + FLUENTBIT_CONFIGMAP_NAME_SUFFIX);
+
+    assertThat(Optional.ofNullable(fluentbitConfigMap)
+            .map(V1ConfigMap::getData)
+            .stream().anyMatch(map -> map.containsKey(FLUENTBIT_CONFIG_DATA_NAME)), equalTo(true));
+
+  }
+
+  @Test
+  void whenFluentbitSpecifiedWithConfig_verifyConfigMap() {
+    domainConfigurator
+            .withFluentbitConfiguration(true, "fluentbit-cred",
+                    "[OUTPUT]", "[PARSER]", null, null)
+            .configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
+    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
+
+    processor.createMakeRightOperation(newInfo).execute();
+
+    V1ConfigMap fluentbitConfigMap = testSupport.getResourceWithName(CONFIG_MAP, UID + FLUENTBIT_CONFIGMAP_NAME_SUFFIX);
+
+    assertThat(Optional.ofNullable(fluentbitConfigMap)
+            .map(V1ConfigMap::getData)
+            .map(d -> d.get(FLUENTBIT_CONFIG_DATA_NAME))
+            .orElse(null), equalTo("[OUTPUT]"));
+  }
 
   V1JobStatus createTimedOutStatus() {
     return new V1JobStatus().addConditionsItem(new V1JobCondition().status("True").type("Failed")
