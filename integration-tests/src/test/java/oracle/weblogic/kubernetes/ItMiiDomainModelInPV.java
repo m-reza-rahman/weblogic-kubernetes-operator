@@ -106,7 +106,6 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * This test class verify creating a domain from model and application archive files stored in the persistent
@@ -300,13 +299,11 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
-    String hostHeader = createNginxIngressHostRouting(domainUid, "admin-server", 7001);
+    String hostHeader = createNginxIngressHostRouting(domainUid, adminServerName, 7001);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
         "2080", false, hostHeader));
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
-    fail("Failing test");
-
   }
 
   private record Parameters(String domainUid, String image, int nodePort) {}
@@ -557,7 +554,7 @@ public class ItMiiDomainModelInPV {
             .paths(Collections.singletonList(httpIngressPath)));
     ingressRules.add(ingressRule);
 
-    String ingressName = domainNamespace + "-" + serviceName;
+    String ingressName = domainUid + "-" + serviceName;
     assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
         Files.readString(INGRESS_CLASS_FILE_NAME), ingressRules, null));
 
