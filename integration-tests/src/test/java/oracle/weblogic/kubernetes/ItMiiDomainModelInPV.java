@@ -138,6 +138,7 @@ public class ItMiiDomainModelInPV {
   private static boolean isUseSecret;
 
   private static String adminSvcExtHost = null;
+  private static String hostHeader;
 
   /**
    * 1. Get namespaces for operator and WebLogic domain.
@@ -287,7 +288,7 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
-    String hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+    hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
@@ -377,16 +378,20 @@ public class ItMiiDomainModelInPV {
                 -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
                     "Getting admin server node port failed");
             String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+            
+            Map<String, String> headers = null;
             if (TestConstants.KIND_CLUSTER
                 && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
               hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+              headers = new HashMap<>();
+              headers.put("host", hostHeader);
             }
             System.out.println("**** hostAndPort=" + hostAndPort);
             String url = "http://" + hostAndPort
                 + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
             System.out.println("**** url=" + url);
 
-            HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
+            HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
             assertEquals(200, response.statusCode(), "Status code not equals to 200");
             boolean health = true;
             for (String managedServer : managedServerNames) {
