@@ -378,13 +378,13 @@ public class ItMiiDomainModelInPV {
             
             StringBuffer curlCmd = new StringBuffer("curl -vkg --noproxy '*' ");
             if (TestConstants.KIND_CLUSTER
-            && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+                && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
               hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
               curlCmd.append(" -H 'host: " + hostHeader + "' ");
             }
             System.out.println("**** hostAndPort=" + hostAndPort);
             String url = "http://" + hostAndPort
-            + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
+                + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
             curlCmd.append(url);
             System.out.println("**** url=" + curlCmd);
 
