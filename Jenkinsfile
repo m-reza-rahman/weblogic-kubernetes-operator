@@ -389,10 +389,10 @@ nodes:
         hostPort: 1500
       - containerPort: 30501
         hostPort: 1501
-      - containerPort: 80
+      - containerPort: 30880
         hostPort: 2080
         protocol: TCP
-      - containerPort: 443
+      - containerPort: 30443
         hostPort: 2443
         protocol: TCP
     extraMounts:
