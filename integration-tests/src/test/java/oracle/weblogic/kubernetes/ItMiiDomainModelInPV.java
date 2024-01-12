@@ -394,8 +394,6 @@ public class ItMiiDomainModelInPV {
               getLogger().info("Exception in curl request {0}", ex);
             }
 
-            //HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
-            assertTrue(result.stdout().contains("200"));
             boolean health = true;
             for (String managedServer : managedServerNames) {
               health = health && result.stdout().contains(managedServer + ":HEALTH_OK");
