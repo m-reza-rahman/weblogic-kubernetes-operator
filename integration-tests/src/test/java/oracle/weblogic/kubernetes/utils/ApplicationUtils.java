@@ -485,7 +485,7 @@ public class ApplicationUtils {
       String response = result.stdout().trim();
       getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
           result.exitValue(), response, result.stderr());
-      return response.contains("200");
+      return response.contains("RUNNING");
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in checkRestConsole {0}", ex);
       return false;

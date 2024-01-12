@@ -63,6 +63,8 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -646,7 +648,8 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     deleteNamespace(nginxNamespace);
     assertDoesNotThrow(() -> new Namespace().name(nginxNamespace).create());
     getLogger().info("Installing NGINX in namespace {0}", nginxNamespace);
-    NginxParams params = installAndVerifyNginx(nginxNamespace, 30880, 30443, NGINX_CHART_VERSION, "NodePort");
+    NginxParams params = installAndVerifyNginx(nginxNamespace, NGINX_INGRESS_HTTP_NODEPORT, 
+        NGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, "NodePort");
     assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, params.getIngressClassName()));    
     String curlCmd = KUBERNETES_CLI + " get all -A";
     try {

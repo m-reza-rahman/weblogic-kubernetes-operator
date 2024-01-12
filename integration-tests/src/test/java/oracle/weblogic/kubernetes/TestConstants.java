@@ -199,15 +199,17 @@ public interface TestConstants {
   public static final String NGINX_REPO_NAME = "ingress-nginx";
   public static final String NGINX_CHART_NAME = "ingress-nginx";
   public static final String NGINX_CHART_VERSION = "4.0.17";
-  //public static final String NGINX_CHART_VERSION = "4.9.0";
   public static final String NGINX_INGRESS_IMAGE_DIGEST =
       "sha256:314435f9465a7b2973e3aa4f2edad7465cc7bcdc8304be5d146d70e4da136e51";
-  //public static final String NGINX_INGRESS_IMAGE_DIGEST =
-  //    "sha256:b3aba22b1da80e7acfc52b115cae1d4c687172cbf2b742d5b502419c25ff340e";
   public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/ingress-nginx/controller";
-  //public static final String TEST_NGINX_IMAGE_NAME = "registry.k8s.io/ingress-nginx/controller";
   public static final String NGINX_INGRESS_IMAGE_TAG = "v1.2.0";
-  //public static final String NGINX_INGRESS_IMAGE_TAG = "v1.9.5";
+  public static final int NGINX_INGRESS_HTTP_NODEPORT = 30880;
+  public static final int NGINX_INGRESS_HTTPS_NODEPORT = 30443;
+  public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2080;
+  public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2443;
+  
+  public static final Path INGRESS_CLASS_FILE_NAME = assertDoesNotThrow(()
+      -> Files.createTempFile("ingressclass", ".name"));  
 
   // Traefik constants
   public static final String TRAEFIK_REPO_URL = "https://helm.traefik.io/traefik";
@@ -455,7 +457,5 @@ public interface TestConstants {
         .anyMatch(ns -> ns.equals(VZ_SYSTEM_NS)));
   public static final String LARGE_DOMAIN_TESTING_PROPS_FILE =
       "largedomaintesting.props";  
-  
-  public static final Path INGRESS_CLASS_FILE_NAME = assertDoesNotThrow(()
-      -> Files.createTempFile("ingressclass", ".name"));
+
 }

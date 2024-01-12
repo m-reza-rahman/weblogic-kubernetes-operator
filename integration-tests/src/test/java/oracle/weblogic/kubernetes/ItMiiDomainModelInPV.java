@@ -23,7 +23,6 @@ import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
 import io.kubernetes.client.openapi.models.V1IngressBackend;
 import io.kubernetes.client.openapi.models.V1IngressRule;
 import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
-import io.kubernetes.client.openapi.models.V1IngressTLS;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
@@ -61,6 +60,8 @@ import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -80,6 +81,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExis
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
+import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.checkIngressReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
@@ -298,41 +300,9 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
-    String curlCmd;
-    ExecResult result = null;
-    try {
-      curlCmd = KUBERNETES_CLI + " get all -A";
-      logger.info("Executing {0}", curlCmd);
-      result = ExecCommand.exec(curlCmd, true);
-      logger.info(result.stdout());
-    } catch (IOException | InterruptedException ex) {
-      getLogger().info("Exception in get all {0}", ex);
-    }
     String hostHeader = createNginxIngressHostRouting(domainUid, "admin-server", 7001);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
         "2080", false, hostHeader));
-    
-    try {
-      curlCmd = "curl -vkg --noproxy '*' -H 'host: " + hostHeader
-          + "' http://" + InetAddress.getLocalHost().getHostAddress() + ":" + "2080" + "/console/login/LoginForm.jsp";
-      result = ExecCommand.exec(new String(curlCmd), true);
-      String response = result.stdout().trim();
-      getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-          result.exitValue(), response, result.stderr());
-
-      curlCmd = "curl -vkg --noproxy '*' -H 'host: " + hostHeader
-          + "' http://" + InetAddress.getLocalHost().getHostAddress()
-          + ":" + "2080" + "/clusterview/ClusterViewServlet?user="
-          + ADMIN_USERNAME_DEFAULT + "&password=" + ADMIN_PASSWORD_DEFAULT;
-      result = ExecCommand.exec(new String(curlCmd), true);
-      response = result.stdout().trim();
-      getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-          result.exitValue(), response, result.stderr());
-
-    } catch (IOException | InterruptedException ex) {
-      getLogger().info("Exception in checkRestConsole {0}", ex);
-    }
-
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
     fail("Failing test");
@@ -571,7 +541,6 @@ public class ItMiiDomainModelInPV {
 
     // create ingress rules for two domains
     List<V1IngressRule> ingressRules = new ArrayList<>();
-    List<V1IngressTLS> tlsList = new ArrayList<>();
 
     V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
         .path(null)
@@ -589,8 +558,6 @@ public class ItMiiDomainModelInPV {
     ingressRules.add(ingressRule);
 
     String ingressName = domainNamespace + "-" + serviceName;
-    Map<String, String> annotations = new HashMap<>();
-    annotations.put("", "");
     assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
         Files.readString(INGRESS_CLASS_FILE_NAME), ingressRules, null));
 
@@ -599,6 +566,7 @@ public class ItMiiDomainModelInPV {
         .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
         .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
         .contains(ingressName);
+    checkIngressReady(true, ingressHost, false, NGINX_INGRESS_HTTP_HOSTPORT, NGINX_INGRESS_HTTPS_HOSTPORT, "");
 
     logger.info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
     return ingressHost;
