@@ -65,6 +65,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_WDT_MODEL_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_NAMESPACE;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -642,21 +643,24 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     );
   }
   
-  String nginxNamespace = "ns-nginx";
-
   private void installNginxLB() {
-    deleteNamespace(nginxNamespace);
-    assertDoesNotThrow(() -> new Namespace().name(nginxNamespace).create());
-    getLogger().info("Installing NGINX in namespace {0}", nginxNamespace);
-    NginxParams params = installAndVerifyNginx(nginxNamespace, NGINX_INGRESS_HTTP_NODEPORT, 
+    deleteNamespace(NGINX_NAMESPACE);
+    assertDoesNotThrow(() -> new Namespace().name(NGINX_NAMESPACE).create());
+    getLogger().info("Installing NGINX in namespace {0}", NGINX_NAMESPACE);
+    NginxParams params = installAndVerifyNginx(NGINX_NAMESPACE, NGINX_INGRESS_HTTP_NODEPORT,
         NGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, "NodePort");
-    assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, params.getIngressClassName()));    
+    assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, params.getIngressClassName()));
     String curlCmd = KUBERNETES_CLI + " get all -A";
     try {
-      ExecCommand.exec(new String(curlCmd), true);
+      ExecCommand.exec(curlCmd, true);
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in get all {0}", ex);
     }
+    //TO-DO for OKD to use NGINX for all service access
+    //expose NGINX node port service and get route host
+    //oc -n ns-abcdef expose service nginx-release-nginx-ingress-nginx-controller
+    //oc -n ns-abcdef get routes nginx-release-nginx-ingress-nginx-controller '-o=jsonpath={.spec.host}'
+    //
   }
 
 }

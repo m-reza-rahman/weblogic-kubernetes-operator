@@ -454,11 +454,14 @@ public class ApplicationUtils {
   /**
    * Verify admin server is accessible through REST interface.
    *
-   * @param port the port of load balancer configured to access admin server
+   * @param host host name to connect to
+   * @param port the port configured to access admin server
+   * @param secure is https
+   * @param hostHeader header to pass in curl
    * @return true if REST interface is accessible
    * @throws IOException when connection to admin server fails
    */
-  public static boolean verifyAdminServerRESTAccess(String host, String port, boolean secure, String hostHeader)
+  public static boolean verifyAdminServerRESTAccess(String host, int port, boolean secure, String hostHeader)
       throws IOException {
     getLogger().info("Check REST interface availability");
     StringBuffer curlCmd = new StringBuffer("status=$(curl -vkg --noproxy '*'");

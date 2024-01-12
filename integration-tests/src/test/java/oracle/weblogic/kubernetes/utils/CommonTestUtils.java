@@ -32,6 +32,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
+import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
+import io.kubernetes.client.openapi.models.V1IngressBackend;
+import io.kubernetes.client.openapi.models.V1IngressRule;
+import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
+import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.domain.DomainResource;
@@ -55,8 +61,10 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.CLUSTER_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.HTTPS_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.HTTP_PROXY;
+import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.NODE_IP;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -82,9 +90,11 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE_DOWNLOAD_FILENAME_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLE_DOWNLOAD_URL_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
+import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApi;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithWLDF;
@@ -95,6 +105,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.podStateNotCh
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceExists;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndCheckForServerNameInResponse;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToImageContainer;
@@ -1255,15 +1266,23 @@ public class CommonTestUtils {
         }
         host = InetAddress.getLocalHost().getHostAddress();
       }
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
+      host = formatIPv6Host(host);
       String hostAndPort = ((OKD) ? hostName : host + ":" + servicePort);
       logger.info("hostAndPort = {0} ", hostAndPort);
       return hostAndPort;
     } catch (UnknownHostException e) {
       throw new RuntimeException(e);
     }
+  }
+  
+  /**
+   * Format hostname for IPV6 address.
+   *
+   * @param hostname name of the host
+   * @return formatted for ipv6
+   */
+  public static String formatIPv6Host(String hostname) {
+    return hostname.contains(":") ? "[" + hostname + "]" : hostname;
   }
 
   /**
@@ -2223,4 +2242,56 @@ public class CommonTestUtils {
     return () -> checkAppIsRunningInServerPod(domainNamespace,
         serverPodName, serverPort, resourcePath, expectedStatusCode);
   }
+  
+  /**
+   * Create ingress resource for a single service.
+   *
+   * @param domainNamespace namespace in which the service exists
+   * @param domainUid domain resource name
+   * @param serviceName name of the service for which to create ingress routing
+   * @param port container port of the service
+   * @return hostheader
+   */
+  public static String createNginxIngressHostRouting(String domainNamespace, String domainUid,
+      String serviceName, int port) {
+    // create an ingress in domain namespace
+    // set the ingress rule host
+    String ingressHost = domainNamespace + "." + domainUid + "." + serviceName;
+
+    // create ingress rules for two domains
+    List<V1IngressRule> ingressRules = new ArrayList<>();
+
+    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
+        .path(null)
+        .pathType("ImplementationSpecific")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name(domainUid + "-" + serviceName)
+                .port(new V1ServiceBackendPort().number(port)))
+        );
+
+    V1IngressRule ingressRule = new V1IngressRule()
+        .host(ingressHost)
+        .http(new V1HTTPIngressRuleValue()
+            .paths(Collections.singletonList(httpIngressPath)));
+    ingressRules.add(ingressRule);
+
+    String ingressName = domainUid + "-" + serviceName;
+    assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
+        Files.readString(INGRESS_CLASS_FILE_NAME), ingressRules, null));
+
+    // check the ingress was found in the domain namespace
+    assertThat(assertDoesNotThrow(() -> listIngresses(domainNamespace)))
+        .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
+        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
+        .contains(ingressName);
+    String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
+        + "' http://localhost:" + NGINX_INGRESS_HTTP_HOSTPORT
+        + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+    getLogger().info("Executing curl command {0}", curlCmd);
+    assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
+
+    getLogger().info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
+    return ingressHost;
+  }  
 }

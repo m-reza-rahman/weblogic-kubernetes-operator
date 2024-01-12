@@ -17,17 +17,11 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import io.kubernetes.client.openapi.models.V1Container;
-import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
-import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
-import io.kubernetes.client.openapi.models.V1IngressBackend;
-import io.kubernetes.client.openapi.models.V1IngressRule;
-import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
-import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.DomainResource;
@@ -55,7 +49,6 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_USERNAME;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
-import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
@@ -69,18 +62,16 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_VERSION;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_BUILD_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createImage;
-import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultWitParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageRepoLogin;
-import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
-import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -99,7 +90,6 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodNam
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -297,8 +287,8 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
-    String hostHeader = createNginxIngressHostRouting(domainUid, adminServerName, 7001);
-    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "2080", false, hostHeader));
+    String hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
   }
@@ -387,17 +377,14 @@ public class ItMiiDomainModelInPV {
                 -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
                     "Getting admin server node port failed");
             String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-
-
+            if (TestConstants.KIND_CLUSTER
+                && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+              hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+            }
             System.out.println("**** hostAndPort=" + hostAndPort);
-
-
             String url = "http://" + hostAndPort
                 + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
-
-
             System.out.println("**** url=" + url);
-
 
             HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
             assertEquals(200, response.statusCode(), "Status code not equals to 200");
@@ -527,49 +514,5 @@ public class ItMiiDomainModelInPV {
           image);
     }
   }
-  
-  private static String createNginxIngressHostRouting(String domainUid, String serviceName, int port) {
-    // create an ingress in domain namespace
-    // set the ingress rule host
-    String ingressHost = domainNamespace + "." + domainUid + "." + serviceName;
-
-    // create ingress rules for two domains
-    List<V1IngressRule> ingressRules = new ArrayList<>();
-
-    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
-        .path(null)
-        .pathType("ImplementationSpecific")
-        .backend(new V1IngressBackend()
-            .service(new V1IngressServiceBackend()
-                .name(domainUid + "-" + serviceName)
-                .port(new V1ServiceBackendPort().number(port)))
-        );
-
-    V1IngressRule ingressRule = new V1IngressRule()
-        .host(ingressHost)
-        .http(new V1HTTPIngressRuleValue()
-            .paths(Collections.singletonList(httpIngressPath)));
-    ingressRules.add(ingressRule);
-
-    String ingressName = domainUid + "-" + serviceName;
-    assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
-        Files.readString(INGRESS_CLASS_FILE_NAME), ingressRules, null));
-
-    // check the ingress was found in the domain namespace
-    assertThat(assertDoesNotThrow(() -> listIngresses(domainNamespace)))
-        .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
-        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
-        .contains(ingressName);
-    String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-        + "' http://localhost:" + NGINX_INGRESS_HTTP_HOSTPORT
-        + "/weblogic/ready --write-out %{http_code} -o /dev/null";
-    getLogger().info("Executing curl command {0}", curlCmd);
-    assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
-    //checkIngressReady(true, ingressHost, false, NGINX_INGRESS_HTTP_HOSTPORT, NGINX_INGRESS_HTTPS_HOSTPORT, "");
-
-    logger.info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
-    return ingressHost;
-  }
-
 
 }
