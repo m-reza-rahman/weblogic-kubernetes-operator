@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -300,8 +299,7 @@ public class ItMiiDomainModelInPV {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
     String hostHeader = createNginxIngressHostRouting(domainUid, adminServerName, 7001);
-    assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(),
-        "2080", false, hostHeader));
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", "2080", false, hostHeader));
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
   }
