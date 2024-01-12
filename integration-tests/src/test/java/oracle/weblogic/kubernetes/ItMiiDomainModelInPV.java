@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,7 +32,6 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.CommonMiiTestUtils;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -91,7 +89,6 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -379,23 +376,32 @@ public class ItMiiDomainModelInPV {
                     "Getting admin server node port failed");
             String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
             
-            Map<String, String> headers = null;
+            StringBuffer curlCmd = new StringBuffer("curl -vkg --noproxy '*' ");
             if (TestConstants.KIND_CLUSTER
-                && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+            && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
               hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
-              headers = new HashMap<>();
-              headers.put("host", hostHeader);
+              curlCmd.append(" -H 'host: " + hostHeader + "' ");
             }
             System.out.println("**** hostAndPort=" + hostAndPort);
             String url = "http://" + hostAndPort
-                + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
-            System.out.println("**** url=" + url);
+            + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
+            curlCmd.append(url);
+            System.out.println("**** url=" + curlCmd);
 
-            HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
-            assertEquals(200, response.statusCode(), "Status code not equals to 200");
+            ExecResult result = null;
+            try {
+              result = ExecCommand.exec(new String(curlCmd), true);
+              getLogger().info("exitCode: {0}, \nstdout:\n{1}, \nstderr:\n{2}",
+                  result.exitValue(), result.stdout(), result.stderr());
+            } catch (IOException | InterruptedException ex) {
+              getLogger().info("Exception in curl request {0}", ex);
+            }
+
+            //HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
+            assertTrue(result.stdout().contains("200"));
             boolean health = true;
             for (String managedServer : managedServerNames) {
-              health = health && response.body().contains(managedServer + ":HEALTH_OK");
+              health = health && result.stdout().contains(managedServer + ":HEALTH_OK");
               if (health) {
                 logger.info(managedServer + " is healthy");
               } else {
