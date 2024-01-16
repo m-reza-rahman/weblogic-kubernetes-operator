@@ -20,10 +20,6 @@ traceTiming "POD '${SERVICE_NAME}' MAIN START"
 
 trace "Starting WebLogic Server '${SERVER_NAME}'."
 
-ulimit -a
-ulimit -aH
-cat /proc/sys/kernel/pid_max
-
 if [ ${DOMAIN_SOURCE_TYPE} == "FromModel" ]; then
   source ${SCRIPTPATH}/modelInImage.sh
 

@@ -4,9 +4,6 @@
 
 echo "Launching Oracle WebLogic Server Kubernetes Operator..."
 
-ulimit -a
-ulimit -aH
-
 # Relays SIGTERM to all java processes
 relay_SIGTERM() {
   pid=`grep java /proc/[0-9]*/comm | awk -F / '{ print $3; }'`
