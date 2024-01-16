@@ -321,12 +321,11 @@ public class ItMiiDomainModelInPV {
   }
 
   private static void verifyMemberHealth(String adminServerPodName, List<String> managedServerNames,
-      String user, String password) {
+      String user, String code) {
 
     logger.info("Checking the health of servers in cluster");
 
-    testUntil(
-        () -> {
+    testUntil(() -> {
           if (OKE_CLUSTER) {
             // In internal OKE env, verifyMemberHealth in admin server pod
             int adminPort = 7001;
@@ -335,7 +334,7 @@ public class ItMiiDomainModelInPV {
                 + adminServerPodName + ":"
                 + adminPort + "/clusterview/ClusterViewServlet"
                 + "\"?user=" + user
-                + "&password=" + password + "\"";
+                + "&password=" + code + "\"";
 
             ExecResult result = null;
             try {
@@ -381,7 +380,7 @@ public class ItMiiDomainModelInPV {
             }
             logger.info("**** hostAndPort={0}", hostAndPort);
             String url = "\"http://" + hostAndPort
-                + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password + "\"";
+                + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + code + "\"";
             curlCmd.append(url);
             logger.info("**** url={0}", curlCmd);
 
