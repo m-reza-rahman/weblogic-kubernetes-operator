@@ -326,85 +326,85 @@ public class ItMiiDomainModelInPV {
     logger.info("Checking the health of servers in cluster");
 
     testUntil(() -> {
-          if (OKE_CLUSTER) {
-            // In internal OKE env, verifyMemberHealth in admin server pod
-            int adminPort = 7001;
-            final String command = KUBERNETES_CLI + " exec -n "
-                + domainNamespace + "  " + adminServerPodName + " -- curl http://"
-                + adminServerPodName + ":"
-                + adminPort + "/clusterview/ClusterViewServlet"
-                + "\"?user=" + user
-                + "&password=" + code + "\"";
+      if (OKE_CLUSTER) {
+        // In internal OKE env, verifyMemberHealth in admin server pod
+        int adminPort = 7001;
+        final String command = KUBERNETES_CLI + " exec -n "
+            + domainNamespace + "  " + adminServerPodName + " -- curl http://"
+            + adminServerPodName + ":"
+            + adminPort + "/clusterview/ClusterViewServlet"
+            + "\"?user=" + user
+            + "&password=" + code + "\"";
 
-            ExecResult result = null;
-            try {
-              result = ExecCommand.exec(command, true);
-            } catch (IOException | InterruptedException ex) {
-              logger.severe(ex.getMessage());
-            }
-            String response = result.stdout().trim();
-            logger.info(response);
-            boolean health = true;
-            for (String managedServer : managedServerNames) {
-              health = health && response.contains(managedServer + ":HEALTH_OK");
-              if (health) {
-                logger.info(managedServer + " is healthy");
-              } else {
-                logger.info(managedServer + " health is not OK or server not found");
-              }
-            }
-            return health;
+        ExecResult result = null;
+        try {
+          result = ExecCommand.exec(command, true);
+        } catch (IOException | InterruptedException ex) {
+          logger.severe(ex.getMessage());
+        }
+        String response = result.stdout().trim();
+        logger.info(response);
+        boolean health = true;
+        for (String managedServer : managedServerNames) {
+          health = health && response.contains(managedServer + ":HEALTH_OK");
+          if (health) {
+            logger.info(managedServer + " is healthy");
           } else {
-            // In non-internal OKE env, verifyMemberHealth using adminSvcExtHost by sending HTTP request from local VM
-
-            // TEST, HERE
-            String extSvcPodName = getExternalServicePodName(adminServerPodName);
-            logger.info("**** adminServerPodName={0}", adminServerPodName);
-            logger.info("**** extSvcPodName={0}", extSvcPodName);
-
-            adminSvcExtHost = createRouteForOKD(extSvcPodName, domainNamespace);
-            logger.info("**** adminSvcExtHost={0}", adminSvcExtHost);
-            logger.info("admin svc host = {0}", adminSvcExtHost);
-
-            logger.info("Getting node port for default channel");
-            int serviceNodePort = assertDoesNotThrow(()
-                -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
-                    "Getting admin server node port failed");
-            String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-            
-            StringBuffer curlCmd = new StringBuffer("curl -vkg --noproxy '*' ");
-            if (TestConstants.KIND_CLUSTER
-                && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-              hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
-              curlCmd.append(" -H 'host: " + hostHeader + "' ");
-            }
-            logger.info("**** hostAndPort={0}", hostAndPort);
-            String url = "\"http://" + hostAndPort
-                + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + code + "\"";
-            curlCmd.append(url);
-            logger.info("**** url={0}", curlCmd);
-
-            ExecResult result = null;
-            try {
-              result = ExecCommand.exec(new String(curlCmd), true);
-              getLogger().info("exitCode: {0}, \nstdout:\n{1}, \nstderr:\n{2}",
-                  result.exitValue(), result.stdout(), result.stderr());
-            } catch (IOException | InterruptedException ex) {
-              getLogger().info("Exception in curl request {0}", ex);
-            }
-
-            boolean health = true;
-            for (String managedServer : managedServerNames) {
-              health = health && result.stdout().contains(managedServer + ":HEALTH_OK");
-              if (health) {
-                logger.info(managedServer + " is healthy");
-              } else {
-                logger.info(managedServer + " health is not OK or server not found");
-              }
-            }
-            return health;
+            logger.info(managedServer + " health is not OK or server not found");
           }
-        },
+        }
+        return health;
+      } else {
+        // In non-internal OKE env, verifyMemberHealth using adminSvcExtHost by sending HTTP request from local VM
+
+        // TEST, HERE
+        String extSvcPodName = getExternalServicePodName(adminServerPodName);
+        logger.info("**** adminServerPodName={0}", adminServerPodName);
+        logger.info("**** extSvcPodName={0}", extSvcPodName);
+
+        adminSvcExtHost = createRouteForOKD(extSvcPodName, domainNamespace);
+        logger.info("**** adminSvcExtHost={0}", adminSvcExtHost);
+        logger.info("admin svc host = {0}", adminSvcExtHost);
+
+        logger.info("Getting node port for default channel");
+        int serviceNodePort = assertDoesNotThrow(()
+            -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+            "Getting admin server node port failed");
+        String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+
+        StringBuffer curlCmd = new StringBuffer("curl -vkg --noproxy '*' ");
+        if (TestConstants.KIND_CLUSTER
+            && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+          hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+          curlCmd.append(" -H 'host: " + hostHeader + "' ");
+        }
+        logger.info("**** hostAndPort={0}", hostAndPort);
+        String url = "\"http://" + hostAndPort
+            + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + code + "\"";
+        curlCmd.append(url);
+        logger.info("**** url={0}", curlCmd);
+
+        ExecResult result = null;
+        try {
+          result = ExecCommand.exec(new String(curlCmd), true);
+          getLogger().info("exitCode: {0}, \nstdout:\n{1}, \nstderr:\n{2}",
+              result.exitValue(), result.stdout(), result.stderr());
+        } catch (IOException | InterruptedException ex) {
+          getLogger().info("Exception in curl request {0}", ex);
+        }
+
+        boolean health = true;
+        for (String managedServer : managedServerNames) {
+          health = health && result.stdout().contains(managedServer + ":HEALTH_OK");
+          if (health) {
+            logger.info(managedServer + " is healthy");
+          } else {
+            logger.info(managedServer + " health is not OK or server not found");
+          }
+        }
+        return health;
+      }
+    },
         logger,
         "Verifying the health of all cluster members");
   }
