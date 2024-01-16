@@ -69,7 +69,9 @@ import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
@@ -95,11 +97,13 @@ import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomRe
 import static oracle.weblogic.kubernetes.actions.impl.Pod.getPod;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podStateNotChanged;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -205,6 +209,7 @@ class ItIntrospectVersion {
   private static LoggingFacade logger = null;
   private static final int managedServerPort = 7100;
   private static int adminPort = 7001;
+  private static String hostHeader;
 
   /**
    * Assigns unique namespaces for operator and domains.
@@ -1181,19 +1186,6 @@ class ItIntrospectVersion {
             .serverStartPolicy("IfNeeded")
             .serverPod(new ServerPod() //serverpod
                 .addEnvItem(new V1EnvVar()
-                    .name("JAVA_OPTIONS")
-                    .value("-Dweblogic.StdoutDebugEnabled=false "
-                        + "-Dweblogic.kernel.debug=true "
-                        + "-Dweblogic.debug.DebugMessaging=true "
-                        + "-Dweblogic.debug.DebugConnection=true "
-                        + "-Dweblogic.debug.DebugUnicastMessaging=true "
-                        + "-Dweblogic.debug.DebugClusterHeartbeats=true "
-                        + "-Dweblogic.debug.DebugJNDI=true "
-                        + "-Dweblogic.debug.DebugJNDIResolution=true "
-                        + "-Dweblogic.debug.DebugCluster=true "
-                        + "-Dweblogic.ResolveDNSName=true "
-                        + "-Dweblogic.MaxMessageSize=20000000"))
-                .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom "))
                 .addVolumesItem(new V1Volume()
@@ -1264,6 +1256,10 @@ class ItIntrospectVersion {
     for (int i = 1; i <= cluster1ReplicaCount; i++) {
       managedServerNames.add(cluster1ManagedServerNameBase + i);
     }
+    
+    hostHeader = createNginxIngressHostRouting(introDomainNamespace, domainUid, adminServerName, adminPort);
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, wlsUserName, wlsPassword);
@@ -1313,61 +1309,90 @@ class ItIntrospectVersion {
   }
 
   private static void verifyMemberHealth(String adminServerPodName, List<String> managedServerNames,
-                                         String user, String password) {
-
-    logger.info("Getting node port for default channel");
-    int serviceNodePort = assertDoesNotThrow(()
-        -> getServiceNodePort(introDomainNamespace, getExternalServicePodName(adminServerPodName), "default"),
-        "Getting admin server node port failed");
-
-    String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-    logger.info("hostAndPort = {0} ", hostAndPort);
+      String user, String code) {
 
     logger.info("Checking the health of servers in cluster");
-    String url = "http://" + hostAndPort
-        + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
 
-
-    final String command = KUBERNETES_CLI + " exec -n "
+    testUntil(() -> {
+      if (OKE_CLUSTER) {
+        // In internal OKE env, verifyMemberHealth in admin server pod
+        int adminPort = 7001;
+        final String command = KUBERNETES_CLI + " exec -n "
             + introDomainNamespace + "  " + adminServerPodName + " -- curl http://"
-            //+ wlsUserName
-            //+ ":"
-            //+ wlsPassword
-            //+ "@"
             + adminServerPodName + ":"
             + adminPort + "/clusterview/ClusterViewServlet"
             + "\"?user=" + user
-            + "&password=" + password + "\"";
+            + "&password=" + code + "\"";
 
-    testUntil(
-        () -> {
-          ExecResult result = null;
-          try {
-            result = ExecCommand.exec(command, true);
-          } catch (IOException | InterruptedException ex) {
-            logger.severe(ex.getMessage());
+        ExecResult result = null;
+        try {
+          result = ExecCommand.exec(command, true);
+        } catch (IOException | InterruptedException ex) {
+          logger.severe(ex.getMessage());
+        }
+        String response = result.stdout().trim();
+        logger.info(response);
+        boolean health = true;
+        for (String managedServer : managedServerNames) {
+          health = health && response.contains(managedServer + ":HEALTH_OK");
+          if (health) {
+            logger.info(managedServer + " is healthy");
+          } else {
+            logger.info(managedServer + " health is not OK or server not found");
           }
-          String response = result.stdout().trim();
-          logger.info(response);
-          /*
-          HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-          if (response.statusCode() != 200) {
-            logger.info("Response code is not 200 retrying...");
-            return false;
-          }
+        }
+        return health;
+      } else {
+        // In non-internal OKE env, verifyMemberHealth using adminSvcExtHost by sending HTTP request from local VM
 
-          */
-          boolean health = true;
-          for (String managedServer : managedServerNames) {
-            health = health && response.contains(managedServer + ":HEALTH_OK");
-            if (health) {
-              logger.info(managedServer + " is healthy");
-            } else {
-              logger.info(managedServer + " health is not OK or server not found");
-            }
+        // TEST, HERE
+        String extSvcPodName = getExternalServicePodName(adminServerPodName);
+        logger.info("**** adminServerPodName={0}", adminServerPodName);
+        logger.info("**** extSvcPodName={0}", extSvcPodName);
+
+        adminSvcExtHost = createRouteForOKD(extSvcPodName, introDomainNamespace);
+        logger.info("**** adminSvcExtHost={0}", adminSvcExtHost);
+        logger.info("admin svc host = {0}", adminSvcExtHost);
+
+        logger.info("Getting node port for default channel");
+        int serviceNodePort = assertDoesNotThrow(()
+            -> getServiceNodePort(introDomainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+            "Getting admin server node port failed");
+        String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+
+        StringBuffer curlCmd = new StringBuffer("curl -vkg --noproxy '*' ");
+        if (TestConstants.KIND_CLUSTER
+            && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+          hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+          curlCmd.append(" -H 'host: " + hostHeader + "' ");
+        }
+        logger.info("**** hostAndPort={0}", hostAndPort);
+        String url = "\"http://" + hostAndPort
+            + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + code + "\"";
+        curlCmd.append(url);
+        logger.info("**** url={0}", curlCmd);
+
+        ExecResult result = null;
+        try {
+          result = ExecCommand.exec(new String(curlCmd), true);
+          getLogger().info("exitCode: {0}, \nstdout:\n{1}, \nstderr:\n{2}",
+              result.exitValue(), result.stdout(), result.stderr());
+        } catch (IOException | InterruptedException ex) {
+          getLogger().info("Exception in curl request {0}", ex);
+        }
+
+        boolean health = true;
+        for (String managedServer : managedServerNames) {
+          health = health && result.stdout().contains(managedServer + ":HEALTH_OK");
+          if (health) {
+            logger.info(managedServer + " is healthy");
+          } else {
+            logger.info(managedServer + " health is not OK or server not found");
           }
-          return health;
-        },
+        }
+        return health;
+      }
+    },
         logger,
         "Verifying the health of all cluster members");
   }
