@@ -155,6 +155,8 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
             .orElse(false);
   }
 
+  // HERE
+
   private boolean versionsUnchanged(DomainPresenceInfo cachedInfo) {
     return hasSameIntrospectVersion(cachedInfo)
         && hasSameRestartVersion(cachedInfo)

@@ -1,4 +1,4 @@
-// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.weblogic.domain.model;
@@ -45,6 +45,11 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
   @SerializedName("reason")
   @Expose
   private DomainFailureReason reason;
+
+  @Description("Details about the failure. This field will only be set when the condition type is Failed.")
+  @SerializedName("failureInfo")
+  @Expose
+  private DomainConditionFailureInfo failureInfo;
 
   @Description("The status of the condition. Can be True, False, Unknown.")
   @SerializedName("status")
@@ -198,6 +203,19 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
     return type;
   }
 
+  public DomainConditionFailureInfo getFailureInfo() {
+    return failureInfo;
+  }
+
+  public void setFailureInfo(DomainConditionFailureInfo failureInfo) {
+    this.failureInfo = failureInfo;
+  }
+
+  public DomainCondition withFailureInfo(DomainConditionFailureInfo failureInfo) {
+    setFailureInfo(failureInfo);
+    return this;
+  }
+
   /**
    * Set the severity for the current FAILED condition. This is not allowed for other types.
    * @param severity the new severity value
@@ -246,6 +264,7 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
     Optional.ofNullable(reason).ifPresent(r -> sb.append(" reason: ").append(r));
     Optional.ofNullable(severity).ifPresent(m -> sb.append(" severity: ").append(m));
     Optional.ofNullable(message).ifPresent(m -> sb.append(" message: ").append(m));
+    Optional.ofNullable(failureInfo).ifPresent(f -> sb.append(" failureInfo: ").append(f));
     return sb.toString();
   }
 
@@ -257,6 +276,7 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
         .append(type)
         .append(status)
         .append(severity)
+        .append(failureInfo)
         .toHashCode();
   }
 
@@ -274,6 +294,7 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
         .append(type, rhs.type)
         .append(status, rhs.status)
         .append(severity, rhs.severity)
+        .append(failureInfo, rhs.failureInfo)
         .isEquals();
   }
 
@@ -293,7 +314,7 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
   private static final ObjectPatch<DomainCondition> conditionPatch = createObjectPatch(DomainCondition.class)
         .withStringField("message", DomainCondition::getMessage)
         .withStringField("status", DomainCondition::getStatus)
-        .withEnumField("reason", DomainCondition::getReason)
+        .withEnumField("reason", DomainCondition::getReason) // FIXME: how to support failureInfo
         .withEnumField("type", DomainCondition::getType)
         .withEnumField("severity", DomainCondition::getSeverity);
 
