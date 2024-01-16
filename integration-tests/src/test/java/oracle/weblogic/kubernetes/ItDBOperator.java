@@ -61,6 +61,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
@@ -126,6 +127,8 @@ class ItDBOperator {
   private static LoggingFacade logger = null;
 
   private String fmwDomainUid = "fmwdomain-mii-db";
+  private String adminServerName = "admin-server";
+  private static int adminPort = 7001;  
   private String fmwAdminServerPodName = fmwDomainUid + "-admin-server";
   private String fmwManagedServerPrefix = fmwDomainUid + "-managed-server";
   private int replicaCount = 2;
@@ -149,6 +152,8 @@ class ItDBOperator {
   private final Path domainLifecycleSamplePath = Paths.get(samplePath + "/scripts/domain-lifecycle");
   private final String fmwClusterResName = fmwDomainUid + "-" + clusterName;
   private final String wlsClusterResName = wlsDomainUid + "-" + clusterName;
+  
+  private static String hostHeader;
 
   /**
    * Start DB service and create RCU schema.
@@ -280,7 +285,8 @@ class ItDBOperator {
     verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
     // Expose the admin service external node port as  a route for OKD
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(fmwAdminServerPodName), fmwDomainNamespace);
-    verifyEMconsoleAccess(fmwDomainNamespace, fmwDomainUid, adminSvcExtHost);
+    hostHeader = createNginxIngressHostRouting(fmwDomainNamespace, fmwDomainUid, adminServerName, adminPort);
+    verifyEMconsoleAccess(fmwDomainNamespace, fmwDomainUid, adminSvcExtHost, hostHeader);
 
     //Reuse the same RCU schema to restart JRF domain
     testReuseRCUschemaToRestartDomain();

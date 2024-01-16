@@ -37,6 +37,7 @@ import oracle.weblogic.domain.PersistentVolumeClaim;
 import oracle.weblogic.domain.PersistentVolumeClaimSpec;
 import oracle.weblogic.domain.PersistentVolumeSpec;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.jetbrains.annotations.NotNull;
@@ -47,6 +48,7 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.YAML_MAX_FILE_SIZE_PROPERTY;
@@ -325,7 +327,8 @@ public class FmwUtils {
    * @param domainNamespace  namespace where the domain exists
    * @param adminSvcExtHost Used only in OKD env - this is the route host created for AS external service
    */
-  public static void verifyEMconsoleAccess(String domainNamespace, String domainUid, String adminSvcExtHost) {
+  public static void verifyEMconsoleAccess(String domainNamespace, String domainUid, 
+      String adminSvcExtHost, String...header) {
 
     LoggingFacade logger = getLogger();
     String adminServerPodName = domainUid + "-admin-server";
@@ -340,7 +343,14 @@ public class FmwUtils {
     }
     logger.info("admin svc host = {0}", adminSvcExtHost);
     String hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
+    String hostHeader = "";
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      hostHeader = " -H 'host: " + hostHeader + "' ";
+    }
     String curlCmd1 = "curl -s -L --show-error --noproxy '*' "
+        + hostHeader
         + " http://" + hostAndPort
         + "/em --write-out %{http_code} -o /dev/null";
     logger.info("Executing default nodeport curl command {0}", curlCmd1);
