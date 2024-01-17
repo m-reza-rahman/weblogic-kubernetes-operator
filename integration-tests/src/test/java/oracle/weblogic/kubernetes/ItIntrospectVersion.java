@@ -1361,39 +1361,23 @@ class ItIntrospectVersion {
             -> getServiceNodePort(introDomainNamespace, getExternalServicePodName(adminServerPodName), "default"),
             "Getting admin server node port failed");
         String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-
-        StringBuffer curlCmd = new StringBuffer("curl -vkg --noproxy '*' ");
+        
+        Map<String, String> headers = null;
         if (TestConstants.KIND_CLUSTER
             && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
           hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
-          curlCmd.append(" -H 'host: " + hostHeader + "' ");
+          headers = new HashMap<>();
+          headers.put("host", hostHeader);
         }
-        logger.info("**** hostAndPort={0}", hostAndPort);
-        String url = "\"http://" + hostAndPort
-            + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + code + "\"";
-        curlCmd.append(url);
-        logger.info("**** url={0}", curlCmd);
 
-        ExecResult result = null;
-        try {
-          result = ExecCommand.exec(new String(curlCmd), true);
-          getLogger().info("exitCode: {0}, \nstdout:\n{1}, \nstderr:\n{2}",
-              result.exitValue(), result.stdout(), result.stderr());
-        } catch (IOException | InterruptedException ex) {
-          getLogger().info("Exception in curl request {0}", ex);
-        }
-        
-        Map<String, String> headers = new HashMap<>();
-        headers.put("host", hostHeader);
-        String url1 = "http://" + hostAndPort
+        String url = "http://" + hostAndPort
             + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + code;
-        HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url1, headers, true));
-        logger.info("OracleHttpClient: {0}", response.statusCode());
-        logger.info("OracleHttpClient: {0}", response.body());
-        
+        HttpResponse<String> response;
+        response = OracleHttpClient.get(url, headers, true);
+
         boolean health = true;
         for (String managedServer : managedServerNames) {
-          health = health && result.stdout().contains(managedServer + ":HEALTH_OK");
+          health = health && response.body().contains(managedServer + ":HEALTH_OK");
           if (health) {
             logger.info(managedServer + " is healthy");
           } else {
