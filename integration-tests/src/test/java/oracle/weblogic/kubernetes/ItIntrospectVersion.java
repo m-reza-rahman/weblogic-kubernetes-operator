@@ -1385,7 +1385,9 @@ class ItIntrospectVersion {
         
         Map<String, String> headers = new HashMap<>();
         headers.put("host", hostHeader);
-        HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, headers, true));
+        String url1 = "http://" + hostAndPort
+            + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + code;
+        HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url1, headers, true));
         logger.info("OracleHttpClient: {0}", response.statusCode());
         logger.info("OracleHttpClient: {0}", response.body());
         
