@@ -1130,6 +1130,21 @@ public class MonitoringUtils {
             ADMIN_PASSWORD_DEFAULT,
             host,
             nodeport);
+    String curlCmdDebug =
+        String.format("curl -g --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s:%s/wls-exporter/messages",
+            nginxHost,
+            ADMIN_USERNAME_DEFAULT,
+            ADMIN_PASSWORD_DEFAULT,
+            host,
+            nodeport);
+    assertDoesNotThrow(() -> {
+      ExecResult result = ExecCommand.exec(curlCmdDebug, true);
+      String response = result.stdout().trim();
+      logger.info("Response for iteration {0}: exitValue {1}, stdout {2}, stderr {3}",
+          1, result.exitValue(), response, result.stderr());
+    });
+
+
     testUntil(withLongRetryPolicy,
         callTestWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 50),
         logger,

@@ -59,3 +59,5 @@ queries:
   - JTARuntime:
       prefix: wls_jta_
       key: name
+      healthState:
+        prefix: health_
