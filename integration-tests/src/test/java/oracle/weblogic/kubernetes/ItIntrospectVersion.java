@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -47,6 +48,7 @@ import oracle.weblogic.kubernetes.utils.BuildApplication;
 import oracle.weblogic.kubernetes.utils.CommonTestUtils;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -1380,7 +1382,13 @@ class ItIntrospectVersion {
         } catch (IOException | InterruptedException ex) {
           getLogger().info("Exception in curl request {0}", ex);
         }
-
+        
+        Map<String, String> headers = new HashMap<>();
+        headers.put("host", hostHeader);
+        HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, headers, true));
+        logger.info("OracleHttpClient: {0}", response.statusCode());
+        logger.info("OracleHttpClient: {0}", response.body());
+        
         boolean health = true;
         for (String managedServer : managedServerNames) {
           health = health && result.stdout().contains(managedServer + ":HEALTH_OK");

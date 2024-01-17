@@ -488,6 +488,7 @@ EOF
                             echo "-Dwko.it.collect.logs.on.success=\"${COLLECT_LOGS_ON_SUCCESS}\""                       >> ${WORKSPACE}/.mvn/maven.config
                             echo "-DWLSIMG_BUILDER=\"podman\""                                                           >> ${WORKSPACE}/.mvn/maven.config
                             echo "-Dwko.it.remoteconsole.version=\"${REMOTECONSOLE_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
+                            echo "-Djdk.httpclient.allowRestrictedHeaders=\"host\""                                      >> ${WORKSPACE}/.mvn/maven.config    
 
                             echo "${WORKSPACE}/.mvn/maven.config contents:"
                             cat "${WORKSPACE}/.mvn/maven.config"
