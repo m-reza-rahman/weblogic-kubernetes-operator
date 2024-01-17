@@ -41,6 +41,7 @@ import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
@@ -553,6 +554,11 @@ class ItDBOperator {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
     StringBuffer curlString = new StringBuffer("status=$(curl --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      curlString.append(" -H 'host: " + hostHeader + "' ");
+    }
     curlString.append("http://" + hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
@@ -584,6 +590,11 @@ class ItDBOperator {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
     StringBuffer curlString = new StringBuffer("status=$(curl --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      curlString.append(" -H 'host: " + hostHeader + "' ");
+    }    
     curlString.append("http://" + hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
@@ -617,6 +628,11 @@ class ItDBOperator {
     String hostAndPort = getHostAndPort(adminSvcExtRouteHost, adminServiceNodePort);
     StringBuffer curlString = new StringBuffer("curl --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      curlString.append(" -H 'host: " + hostHeader + "' ");
+    }
     curlString.append("\"http://" + hostAndPort)
         .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
         .append(managedServer)
