@@ -314,9 +314,10 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
   private static final ObjectPatch<DomainCondition> conditionPatch = createObjectPatch(DomainCondition.class)
         .withStringField("message", DomainCondition::getMessage)
         .withStringField("status", DomainCondition::getStatus)
-        .withEnumField("reason", DomainCondition::getReason) // FIXME: how to support failureInfo
+        .withEnumField("reason", DomainCondition::getReason)
         .withEnumField("type", DomainCondition::getType)
-        .withEnumField("severity", DomainCondition::getSeverity);
+        .withEnumField("severity", DomainCondition::getSeverity)
+        .withObjectField("failureInfo", DomainCondition::getFailureInfo, DomainConditionFailureInfo.getObjectPatch());
 
   static ObjectPatch<DomainCondition> getObjectPatch() {
     return conditionPatch;

@@ -8,6 +8,8 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import static oracle.kubernetes.weblogic.domain.model.ObjectPatch.createObjectPatch;
+
 public class DomainConditionFailureInfo {
 
   @Description("The introspectVersion set when the Failed condition occurred.")
@@ -106,4 +108,14 @@ public class DomainConditionFailureInfo {
         .append(introspectImage)
         .toHashCode();
   }
+
+  private static final ObjectPatch<DomainConditionFailureInfo> healthPatch = createObjectPatch(DomainConditionFailureInfo.class)
+      .withStringField("introspectVersion", DomainConditionFailureInfo::getIntrospectVersion)
+      .withStringField("restartVersion", DomainConditionFailureInfo::getRestartVersion)
+      .withStringField("introspectImage", DomainConditionFailureInfo::getIntrospectImage);
+
+  static ObjectPatch<DomainConditionFailureInfo> getObjectPatch() {
+    return healthPatch;
+  }
+
 }
