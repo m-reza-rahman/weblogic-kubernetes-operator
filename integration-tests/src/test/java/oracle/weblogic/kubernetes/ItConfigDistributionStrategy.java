@@ -285,8 +285,7 @@ class ItConfigDistributionStrategy {
           String baseUri = "http://" + hostAndPort + "/clusterview/";
           String serverListUri = "ClusterViewServlet?user=" + ADMIN_USERNAME_DEFAULT
               + "&password=" + ADMIN_PASSWORD_DEFAULT;
-          HttpResponse<String> response = OracleHttpClient.get(baseUri + serverListUri,
-              headers, true);
+          HttpResponse<String> response = OracleHttpClient.get(baseUri + serverListUri, headers, true);
           return response.statusCode() == 200;
         },
         logger,
@@ -666,19 +665,25 @@ class ItConfigDistributionStrategy {
             "default"),
         "Getting admin server node port failed");
 
-    String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-    logger.info("hostAndPort = {0} ", hostAndPort);
-
-    //verify server attribute MaxMessageSize
-    String appURI = "/clusterview/ConfigServlet?"
-        + "attributeTest=true&"
-        + "serverType=adminserver&"
-        + "serverName=" + adminServerName;
-    String url = "http://" + hostAndPort + appURI;
-
     return (()
         -> {
-      HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
+      String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+      logger.info("hostAndPort = {0} ", hostAndPort);
+
+      //verify server attribute MaxMessageSize
+      String appURI = "/clusterview/ConfigServlet?"
+          + "attributeTest=true&"
+          + "serverType=adminserver&"
+          + "serverName=" + adminServerName;
+      Map<String, String> headers = null;
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+        headers = new HashMap<>();
+        headers.put("host", hostHeader);
+      }
+      String url = "http://" + hostAndPort + appURI;
+      HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
       assertEquals(200, response.statusCode(), "Status code not equals to 200");
       return response.body().contains("MaxMessageSize=".concat(maxMessageSize));
     });
@@ -792,7 +797,7 @@ class ItConfigDistributionStrategy {
           String baseUri = "http://" + hostAndPort + "/clusterview/ConfigServlet?";
           
           String dsConnectionPoolTestUrl = baseUri + appURI;
-          HttpResponse<String> response = OracleHttpClient.get(dsConnectionPoolTestUrl, true);
+          HttpResponse<String> response = OracleHttpClient.get(dsConnectionPoolTestUrl, headers, true);
           if (response.statusCode() != 200) {
             logger.info("Response code is not 200 retrying...");
             return false;
