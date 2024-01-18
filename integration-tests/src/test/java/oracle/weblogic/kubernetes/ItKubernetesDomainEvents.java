@@ -23,9 +23,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
-import oracle.weblogic.domain.AdminServer;
-import oracle.weblogic.domain.AdminService;
-import oracle.weblogic.domain.Channel;
 import oracle.weblogic.domain.ClusterList;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
@@ -836,12 +833,7 @@ class ItKubernetesDomainEvents {
                                             .claimName(pvcName)))
                             .addVolumeMountsItem(new V1VolumeMount()
                                     .mountPath("/shared")
-                                    .name(pvName)))
-                    .adminServer(new AdminServer() //admin server
-                            .adminService(new AdminService()
-                                    .addChannelsItem(new Channel()
-                                            .channelName("default")
-                                            .nodePort(getNextFreePort()))))));
+                                    .name(pvName)))));
     setPodAntiAffinity(domain);
     domain = createClusterResourceAndAddReferenceToDomain(
         cluster1Name, cluster1Name, domainNamespace, domain, replicaCount);
