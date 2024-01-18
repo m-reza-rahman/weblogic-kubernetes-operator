@@ -457,6 +457,10 @@ public interface TestConstants {
   public static final boolean VZ_ENV = assertDoesNotThrow(() -> listNamespaces().stream()
         .anyMatch(ns -> ns.equals(VZ_SYSTEM_NS)));
   public static final String LARGE_DOMAIN_TESTING_PROPS_FILE =
-      "largedomaintesting.props";  
+      "largedomaintesting.props";
+  
+  //node ports used by the integration tests
+  public static final int ITEXTERNALNODEPORTSERVICE_CONAINERPORT = 32156;
+  public static final int ITEXTERNALNODEPORTSERVICE_HOSTPORT = 2156;
 
 }
