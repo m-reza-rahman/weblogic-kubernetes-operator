@@ -30,29 +30,27 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_WDT_MODEL_FILE;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodRestarted;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createPushAuxiliaryImageWithDomainConfig;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
-import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.adminLoginPageAccessible;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResourceWithAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createAndVerifyDomainInImageUsingWdt;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainOnPvUsingWdt;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.shutdownDomainAndVerify;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDeleted;
-import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
@@ -83,6 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItMultiDomainModels {
 
   // domain constants
+  private static final String adminServerName = "admin-server";
   private static final String clusterName = "cluster-1";
   private static final int replicaCount = 1;
   private static final String wlSecretName = "weblogic-credentials";
@@ -97,6 +96,7 @@ class ItMultiDomainModels {
   private static String domainOnPVNamespace = null;
   private static String domainInImageNamespace = null;
   private static String auxiliaryImageDomainNamespace = null;
+  private static String hostHeader;  
 
   /**
    * Install operator.
@@ -142,7 +142,7 @@ class ItMultiDomainModels {
    */
   @ParameterizedTest
   @DisplayName("scale cluster by patching domain resource with four different type of domains and "
-      + "verify admin console login using admin node port.")
+      + "verify admin server is accessible via REST interface.")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV", "auxiliaryImageDomain"})
   @Tag("gate")
   @DisabledOnSlimImage
@@ -152,14 +152,6 @@ class ItMultiDomainModels {
     // get the domain properties
     String domainUid = domain.getSpec().getDomainUid();
     String domainNamespace = domain.getMetadata().getNamespace();
-    String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
-    logger.info("Getting node port for default channel");
-    int serviceNodePort = assertDoesNotThrow(() -> getServiceNodePort(
-        domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
-        "Getting admin server node port failed");
-
-    // In OKD cluster, get the routeHost for the external admin service
-    String routeHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
 
     String dynamicServerPodName = domainUid + "-managed-server1";
     OffsetDateTime dynTs = getPodCreationTime(domainNamespace, dynamicServerPodName);
@@ -193,15 +185,9 @@ class ItMultiDomainModels {
       checkPodDeleted(managedServerPrefix + i, domainUid, domainNamespace);
     }
 
-    logger.info("Validating WebLogic admin server access by login to console");
-    testUntil(
-        assertDoesNotThrow(
-          () -> {
-            return () -> adminLoginPageAccessible(adminServerPodName, "7001",
-            domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
-          },
-        "Access to admin console page failed"), logger, "Console login validation failed");
-
+    logger.info("Validating WebLogic admin server access by REST");
+    hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader)); 
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
   }
