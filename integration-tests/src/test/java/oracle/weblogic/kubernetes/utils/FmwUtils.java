@@ -347,7 +347,7 @@ public class FmwUtils {
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
-      hostHeader = " -H 'host: " + hostHeader + "' ";
+      hostHeader = " -H 'host: " + header + "' ";
     }
     String curlCmd1 = "curl -s -L --show-error --noproxy '*' "
         + hostHeader

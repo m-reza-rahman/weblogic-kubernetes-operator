@@ -381,6 +381,7 @@ class ItDBOperator {
       checkPodReadyAndServiceExists(wlsManagedServerPrefix + i, wlsDomainUid, wlsDomainNamespace);
     }
 
+    hostHeader = createNginxIngressHostRouting(wlsDomainNamespace, wlsDomainUid, adminServerName, adminPort);
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
   }

@@ -660,7 +660,6 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     //expose NGINX node port service and get route host
     //oc -n ns-abcdef expose service nginx-release-nginx-ingress-nginx-controller
     //oc -n ns-abcdef get routes nginx-release-nginx-ingress-nginx-controller '-o=jsonpath={.spec.host}'
-    //
   }
 
 }
