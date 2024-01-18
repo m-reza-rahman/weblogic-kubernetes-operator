@@ -39,7 +39,7 @@ public class ServiceAccount {
    * @param namespace namespace where the service account exits
    * @return true if the service account exists, false otherwise
    */
-  public static boolean saExists(String name, String namespace) {
+  public static boolean serviceAccountExists(String name, String namespace) {
     V1ServiceAccountList sas = Kubernetes.listServiceAccounts(namespace);
     if (sas != null) {
       for (V1ServiceAccount sa : sas.getItems()) {

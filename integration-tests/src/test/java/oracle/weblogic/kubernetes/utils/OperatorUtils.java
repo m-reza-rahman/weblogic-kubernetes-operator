@@ -442,7 +442,7 @@ public class OperatorUtils {
     LoggingFacade logger = getLogger();
 
     // Create a service account for the unique opNamespace
-    if (!ServiceAccount.saExists(opServiceAccount, opNamespace)) {
+    if (!ServiceAccount.serviceAccountExists(opServiceAccount, opNamespace)) {
       logger.info("Creating service account");
       assertDoesNotThrow(() -> createServiceAccount(new V1ServiceAccount()
           .metadata(new V1ObjectMeta()
@@ -650,13 +650,14 @@ public class OperatorUtils {
     LoggingFacade logger = getLogger();
 
     // Create a service account for the unique opNamespace
-    logger.info("Creating service account");
-    assertDoesNotThrow(() -> createServiceAccount(new V1ServiceAccount()
-        .metadata(new V1ObjectMeta()
-            .namespace(opNamespace)
-            .name(opServiceAccount))));
-    logger.info("Created service account: {0}", opServiceAccount);
-
+    if (!ServiceAccount.serviceAccountExists(opServiceAccount, opNamespace)) {
+      logger.info("Creating service account");
+      assertDoesNotThrow(() -> createServiceAccount(new V1ServiceAccount()
+          .metadata(new V1ObjectMeta()
+              .namespace(opNamespace)
+              .name(opServiceAccount))));
+      logger.info("Created service account: {0}", opServiceAccount);
+    }
 
     // get operator image name
     String operatorImage = getOperatorImageName();
