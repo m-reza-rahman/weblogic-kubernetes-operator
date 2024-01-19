@@ -194,6 +194,7 @@ class ItMonitoringExporterMetricsFiltering {
       ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
           ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
       exporterUrl = String.format("http://%s/wls-exporter", ingressIP);
+      hostPortPrometheus = ingressIP;
     }
     HashMap<String, String> labels = new HashMap<>();
     labels.put("app", "monitoring");
@@ -734,8 +735,8 @@ class ItMonitoringExporterMetricsFiltering {
 
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-        "traefik/traefik-ingress-rules-monitoring.yaml", "ItMonitoringExporterMetrics");
-    createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid, "ItMonitoringExporterMetrics");
+        "traefik/traefik-ingress-rules-monitoring.yaml", "ItMonitoringExporterMetricsFiltering");
+    createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid, "ItMonitoringExporterMetricsFiltering");
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {

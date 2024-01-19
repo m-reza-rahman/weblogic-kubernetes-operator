@@ -3,6 +3,8 @@
 
 package oracle.weblogic.kubernetes.utils;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -1354,9 +1356,64 @@ public class MonitoringUtils {
           .replaceAll("@domain1uid@", domainUID)
           .getBytes(StandardCharsets.UTF_8));
     });
+    assertDoesNotThrow(() -> {
+      BufferedReader br = new BufferedReader(new FileReader(dstFile.getFileName().toString()));
+      for (String line; (line = br.readLine()) != null; ) {
+        logger.info(line);
+      }
+      br.close();
+    });
     String command = KUBERNETES_CLI + " create -f " + dstFile;
     logger.info("Running {0}", command);
     ExecResult result;
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+    command = KUBERNETES_CLI + " get ingress  -o json -n " + namespace;
+    logger.info("Running {0}", command);
+
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+    command = KUBERNETES_CLI + " desribe ingress  -n " + namespace;
+    logger.info("Running {0}", command);
+
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+    command = KUBERNETES_CLI + " get ingress  --all-namespaces ";
+    logger.info("Running {0}", command);
+
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+    command = KUBERNETES_CLI + " get svc  -o json -n " + namespace;
+    logger.info("Running {0}", command);
+
     try {
       result = ExecCommand.exec(command, true);
       String response = result.stdout().trim();
