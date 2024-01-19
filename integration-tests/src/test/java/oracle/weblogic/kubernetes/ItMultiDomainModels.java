@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -11,7 +11,6 @@ import java.util.concurrent.Callable;
 
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.AppParams;
-import oracle.weblogic.kubernetes.annotations.DisabledOnSlimImage;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -135,9 +134,10 @@ class ItMultiDomainModels {
   }
 
   /**
-   * Scale the cluster by patching domain resource for four different
-   * type of domains i.e. domain-on-pv, domain-in-image, model-in-image and domain-with-auxiliary-image
-   * Also verify admin console login using admin node port.
+   * Scale the cluster by patching domain resource for four different type of domains i.e. domain-on-pv,
+   * domain-in-image, model-in-image and domain-with-auxiliary-image Also verify admin server access using REST
+   * interface.
+   *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV, auxiliaryImageDomain
    */
   @ParameterizedTest
@@ -145,8 +145,7 @@ class ItMultiDomainModels {
       + "verify admin server is accessible via REST interface.")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV", "auxiliaryImageDomain"})
   @Tag("gate")
-  @DisabledOnSlimImage
-  void testScaleClustersAndAdminConsoleLogin(String domainType) {
+  void testScaleClustersAndAdminRESTAccess(String domainType) {
     DomainResource domain = createDomainBasedOnDomainType(domainType);
 
     // get the domain properties
@@ -186,8 +185,11 @@ class ItMultiDomainModels {
     }
 
     logger.info("Validating WebLogic admin server access by REST");
-    hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
-    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader)); 
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    }
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
   }
