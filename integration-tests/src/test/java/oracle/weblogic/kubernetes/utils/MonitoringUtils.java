@@ -1387,7 +1387,7 @@ public class MonitoringUtils {
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
-    command = KUBERNETES_CLI + " desribe ingress  -n " + namespace;
+    command = KUBERNETES_CLI + " describe ingress  -n " + namespace;
     logger.info("Running {0}", command);
 
     try {
