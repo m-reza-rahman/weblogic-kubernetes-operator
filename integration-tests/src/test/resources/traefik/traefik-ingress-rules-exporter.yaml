@@ -9,6 +9,8 @@ metadata:
   name: @domain1uid@-cluster1-traefik-pathrouting
   namespace: @NS@
 spec:
+  entryPoints:
+    - web
   routes:
     - kind: Rule
       match: PathPrefix(`/wls-exporter`)
@@ -26,6 +28,8 @@ metadata:
   name: @domain1uid@-cluster2-traefik-pathrouting
   namespace: @NS@
 spec:
+  entryPoints:
+    - web
   routes:
     - kind: Rule
       match: PathPrefix(`/wls-exporter`)

@@ -1375,7 +1375,7 @@ public class MonitoringUtils {
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
-    command = KUBERNETES_CLI + " get ingress  -o json -n " + namespace;
+    command = KUBERNETES_CLI + " get ingressroute  -o yaml -n " + namespace;
     logger.info("Running {0}", command);
 
     try {
@@ -1387,7 +1387,7 @@ public class MonitoringUtils {
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
-    command = KUBERNETES_CLI + " describe ingress  -n " + namespace;
+    command = KUBERNETES_CLI + " describe ingressroute  -n " + namespace;
     logger.info("Running {0}", command);
 
     try {
@@ -1399,7 +1399,7 @@ public class MonitoringUtils {
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
-    command = KUBERNETES_CLI + " get ingress  --all-namespaces ";
+    command = KUBERNETES_CLI + " get ingressroute  --all-namespaces ";
     logger.info("Running {0}", command);
 
     try {
