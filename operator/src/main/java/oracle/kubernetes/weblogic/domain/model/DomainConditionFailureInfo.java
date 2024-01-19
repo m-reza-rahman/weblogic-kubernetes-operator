@@ -24,10 +24,24 @@ public class DomainConditionFailureInfo {
   public DomainConditionFailureInfo() {
   }
 
+  /** Copy constructor.
+   *
+   * @param other Other
+   */
   public DomainConditionFailureInfo(DomainConditionFailureInfo other) {
     this.introspectVersion = other.introspectVersion;
     this.restartVersion = other.restartVersion;
     this.introspectImage = other.introspectImage;
+  }
+
+  /** Construct failure information from Domain spec.
+   *
+   * @param spec Domain spec
+   */
+  public DomainConditionFailureInfo(DomainSpec spec) {
+    this.introspectVersion = spec.getIntrospectVersion();
+    this.restartVersion = spec.getRestartVersion();
+    this.introspectImage = spec.getImage();
   }
 
   public String getIntrospectVersion() {
@@ -92,7 +106,6 @@ public class DomainConditionFailureInfo {
     DomainConditionFailureInfo other = (DomainConditionFailureInfo) o;
 
     return new EqualsBuilder()
-        .appendSuper(super.equals(o))
         .append(introspectVersion, other.introspectVersion)
         .append(restartVersion, other.restartVersion)
         .append(introspectImage, other.introspectImage)
@@ -102,14 +115,14 @@ public class DomainConditionFailureInfo {
   @Override
   public int hashCode() {
     return new HashCodeBuilder(17, 37)
-        .appendSuper(super.hashCode())
         .append(introspectVersion)
         .append(restartVersion)
         .append(introspectImage)
         .toHashCode();
   }
 
-  private static final ObjectPatch<DomainConditionFailureInfo> healthPatch = createObjectPatch(DomainConditionFailureInfo.class)
+  private static final ObjectPatch<DomainConditionFailureInfo> healthPatch =
+      createObjectPatch(DomainConditionFailureInfo.class)
       .withStringField("introspectVersion", DomainConditionFailureInfo::getIntrospectVersion)
       .withStringField("restartVersion", DomainConditionFailureInfo::getRestartVersion)
       .withStringField("introspectImage", DomainConditionFailureInfo::getIntrospectImage);

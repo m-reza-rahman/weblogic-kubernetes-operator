@@ -1,4 +1,4 @@
-// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.weblogic.domain.model;
@@ -715,9 +715,11 @@ public class DomainStatus {
    * Computes a failure condition that accounts for retries and failed inspection messages.
    * @param reason the underlying reason
    * @param message the underlying message
+   * @param isInitDomainOnPV True, if initializing for Domain on PV
+   * @param spec Domain spec
    */
   public DomainCondition createAdjustedFailedCondition(DomainFailureReason reason, String message,
-                                                       boolean isInitDomainOnPV) {
+                                                       boolean isInitDomainOnPV, DomainSpec spec) {
     DomainFailureReason effectiveReason = reason;
     String effectiveMessage = message;
     if (hasJustGotFatalIntrospectorError(effectiveMessage)
@@ -725,7 +727,7 @@ public class DomainStatus {
       effectiveReason = ABORTED;
       effectiveMessage = FATAL_INTROSPECTOR_ERROR_MSG + effectiveMessage;
     }
-    return new DomainCondition(FAILED).withReason(effectiveReason).withMessage(effectiveMessage);
+    return new DomainCondition(FAILED).withReason(effectiveReason).withFailureInfo(spec).withMessage(effectiveMessage);
   }
 
   private boolean hasJustGotFatalIntrospectorError(String message) {

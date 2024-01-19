@@ -81,6 +81,7 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
     this.status = other.status;
     this.markedForDeletion = other.markedForDeletion;
     this.severity = other.severity;
+    this.failureInfo = other.failureInfo;
   }
 
   /**
@@ -213,6 +214,11 @@ public class DomainCondition implements Comparable<DomainCondition>, PatchableCo
 
   public DomainCondition withFailureInfo(DomainConditionFailureInfo failureInfo) {
     setFailureInfo(failureInfo);
+    return this;
+  }
+
+  public DomainCondition withFailureInfo(DomainSpec spec) {
+    setFailureInfo(new DomainConditionFailureInfo(spec));
     return this;
   }
 
