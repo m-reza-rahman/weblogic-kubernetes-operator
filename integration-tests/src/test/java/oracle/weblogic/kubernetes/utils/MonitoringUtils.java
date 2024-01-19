@@ -1357,7 +1357,7 @@ public class MonitoringUtils {
           .getBytes(StandardCharsets.UTF_8));
     });
     assertDoesNotThrow(() -> {
-      BufferedReader br = new BufferedReader(new FileReader(dstFile.getFileName().toString()));
+      BufferedReader br = new BufferedReader(new FileReader(dstFile.toAbsolutePath().toString()));
       for (String line; (line = br.readLine()) != null; ) {
         logger.info(line);
       }
