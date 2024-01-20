@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes.utils;
 
+import java.net.http.HttpResponse;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +45,7 @@ import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.OnlineUpdate;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.domain.ServerService;
+import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.impl.Cluster;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
@@ -62,6 +64,7 @@ import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -78,6 +81,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getJob;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listPods;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.listConfigMaps;
@@ -88,6 +92,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVeri
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyCredentials;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
@@ -1208,18 +1213,38 @@ public class CommonMiiTestUtils {
     }
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
+    
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      int port = getServicePort(domainNamespace, adminServerPodName, "internal-t3");
+      String hostHeader = createNginxIngressHostRouting(domainNamespace,
+          adminServerPodName.split("-" + ADMIN_SERVER_NAME_BASE)[0], adminServerPodName, port);
+      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      Map<String, String> headers = new HashMap<>();
+      headers.put("host", hostHeader);
+      String url = "http://" + hostAndPort + resourcePath;
+      HttpResponse<String> response;
+      try {
+        response = OracleHttpClient.get(url, headers, true);
+        assertEquals(200, response.statusCode());
+        return true;
+      } catch (Exception ex) {
+        return false;
+      }
+    } else {
 
-    curlString.append(hostAndPort)
-        .append(resourcePath)
-        .append(" -g --silent --show-error ")
-        .append(" -o /dev/null ")
-        .append(" -w %{http_code});")
-        .append("echo ${status}");
-    logger.info("checkSystemResource: curl command {0}", new String(curlString));
-    return Command
-        .withParams(new CommandParams()
-            .command(curlString.toString()))
-        .executeAndVerify(expectedStatusCode);
+      curlString.append(hostAndPort)
+          .append(resourcePath)
+          .append(" -g --silent --show-error ")
+          .append(" -o /dev/null ")
+          .append(" -w %{http_code});")
+          .append("echo ${status}");
+      logger.info("checkSystemResource: curl command {0}", new String(curlString));
+      return Command
+          .withParams(new CommandParams()
+              .command(curlString.toString()))
+          .executeAndVerify(expectedStatusCode);
+    }
   }
 
   /**
