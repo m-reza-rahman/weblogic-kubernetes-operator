@@ -591,7 +591,7 @@ class ItMonitoringExporterSideCar {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
       Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
-          .replaceAll("@releasesuffix@", releaseSuffix)
+          .replaceAll("@servicename@", prometheusReleaseName + "-server")
           .getBytes(StandardCharsets.UTF_8));
     });
     String command = KUBERNETES_CLI + " create -f " + dstFile;
