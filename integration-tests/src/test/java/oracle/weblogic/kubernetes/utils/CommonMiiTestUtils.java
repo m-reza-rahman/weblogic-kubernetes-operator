@@ -1265,6 +1265,7 @@ public class CommonMiiTestUtils {
       hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
       Map<String, String> headers = new HashMap<>();
       headers.put("host", hostHeader);
+      headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
       String url = "http://" + hostAndPort + resourcePath;
       HttpResponse<String> response;
       try {
