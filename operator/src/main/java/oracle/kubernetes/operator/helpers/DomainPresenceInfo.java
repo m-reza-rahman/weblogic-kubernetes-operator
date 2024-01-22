@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
@@ -49,6 +49,7 @@ import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.ClusterSpec;
 import oracle.kubernetes.weblogic.domain.model.ClusterStatus;
+import oracle.kubernetes.weblogic.domain.model.DomainConditionFailureInfo;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
@@ -145,7 +146,7 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
    * @param cachedInfo the version of the domain presence info previously processed.
    */
   public boolean isDomainProcessingHalted(DomainPresenceInfo cachedInfo) {
-    return isDomainProcessingAborted() && versionsUnchanged(cachedInfo);
+    return isDomainProcessingAborted() && failureInfoVersionsUnchanged() && versionsUnchanged(cachedInfo);
   }
 
   private boolean isDomainProcessingAborted() {
@@ -155,7 +156,20 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
             .orElse(false);
   }
 
-  // HERE
+  private DomainConditionFailureInfo findFailureInfo() {
+    return Optional.ofNullable(getDomain()).map(DomainResource::getStatus)
+        .map(DomainStatus::getFailureInfo).orElse(null);
+  }
+
+  private boolean failureInfoVersionsUnchanged() {
+    return Optional.ofNullable(findFailureInfo()).map(this::versionsUnchanged).orElse(true);
+  }
+
+  private boolean versionsUnchanged(DomainConditionFailureInfo failureInfo) {
+    return hasSameIntrospectVersion(failureInfo)
+        && hasSameRestartVersion(failureInfo)
+        && hasSameIntrospectImage(failureInfo);
+  }
 
   private boolean versionsUnchanged(DomainPresenceInfo cachedInfo) {
     return hasSameIntrospectVersion(cachedInfo)
@@ -178,8 +192,12 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
         || !KubernetesUtils.isFirstNewer(cachedInfo.getDomain().getMetadata(), getDomain().getMetadata());
   }
 
-  private boolean hasSameIntrospectVersion(DomainPresenceInfo cachedInfo) {
+  private boolean  hasSameIntrospectVersion(DomainPresenceInfo cachedInfo) {
     return Objects.equals(getIntrospectVersion(), cachedInfo.getIntrospectVersion());
+  }
+
+  private boolean  hasSameIntrospectVersion(DomainConditionFailureInfo failureInfo) {
+    return Objects.equals(getIntrospectVersion(), failureInfo.getIntrospectVersion());
   }
 
   private String getIntrospectVersion() {
@@ -193,6 +211,10 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
     return Objects.equals(getRestartVersion(), cachedInfo.getRestartVersion());
   }
 
+  private boolean hasSameRestartVersion(DomainConditionFailureInfo failureInfo) {
+    return Objects.equals(getRestartVersion(), failureInfo.getRestartVersion());
+  }
+
   private String getRestartVersion() {
     return Optional.ofNullable(getDomain())
         .map(DomainResource::getRestartVersion)
@@ -201,6 +223,10 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
 
   private boolean hasSameIntrospectImage(DomainPresenceInfo cachedInfo) {
     return Objects.equals(getIntrospectImage(), cachedInfo.getIntrospectImage());
+  }
+
+  private boolean hasSameIntrospectImage(DomainConditionFailureInfo failureInfo) {
+    return Objects.equals(getIntrospectImage(), failureInfo.getIntrospectImage());
   }
 
   private String getIntrospectImage() {

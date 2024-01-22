@@ -711,6 +711,14 @@ public class DomainStatus {
     return ABORTED == domainCondition.getReason();
   }
 
+  public DomainConditionFailureInfo getFailureInfo() {
+    return conditions.stream()
+        .map(DomainCondition::getFailureInfo)
+        .filter(Objects::nonNull)
+        .findFirst()
+        .orElse(null);
+  }
+
   /**
    * Computes a failure condition that accounts for retries and failed inspection messages.
    * @param reason the underlying reason
