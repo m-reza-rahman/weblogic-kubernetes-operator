@@ -124,7 +124,7 @@ class ItMonitoringExporterMetricsFiltering {
 
 
   /**
-   * Install operator and NGINX. Create model in image domain with multiple clusters.
+   * Install operator . Create model in image domain with multiple clusters.
    * Create ingress for the domain.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
@@ -553,12 +553,12 @@ class ItMonitoringExporterMetricsFiltering {
   @AfterAll
   public void tearDownAll() {
 
-    // uninstall NGINX release
-    logger.info("Uninstalling NGINX");
+    // uninstall Traefik release
+    logger.info("Uninstalling Traefik");
     if (traefikHelmParams != null) {
       assertThat(uninstallTraefik(traefikHelmParams))
-          .as("Test uninstallNginx1 returns true")
-          .withFailMessage("uninstallNginx() did not return true")
+          .as("Test uninstall traefik returns true")
+          .withFailMessage("uninstallTraefik() did not return true")
           .isTrue();
     }
     // delete mii domain images created
@@ -595,7 +595,6 @@ class ItMonitoringExporterMetricsFiltering {
 
     HtmlPage page1 = webClient.getPage(exporterUrl);
 
-    //Thread.sleep(80000000);
     if (page1 == null) {
       //try again
       page1 = webClient.getPage(exporterUrl);
