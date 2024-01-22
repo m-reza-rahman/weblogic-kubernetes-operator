@@ -90,7 +90,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Verify Prometheus, Grafana, Webhook, Coordinator are installed and running
  * Verify the monitoring exporter installed in model in image domain can generate the WebLogic metrics.
- * Verify WebLogic metrics can be accessed via NGINX ingress controller.
+ * Verify WebLogic metrics can be accessed via Traefik ingress controller.
  * Verify WebLogic metrics can be accessed via Prometheus
  */
 @DisplayName("Verify WebLogic Metric is processed as expected by "
@@ -144,7 +144,7 @@ class ItMonitoringExporterSideCar {
 
 
   /**
-   * Install operator and NGINX. Create model in image domain with multiple clusters.
+   * Install operator . Create model in image domain with multiple clusters.
    * Create ingress for the domain.
    *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
@@ -531,7 +531,6 @@ class ItMonitoringExporterSideCar {
   @AfterAll
   public void tearDownAll() {
 
-    // uninstall NGINX release
     logger.info("Uninstalling Traefik");
     if (traefikHelmParams != null) {
       assertThat(uninstallTraefik(traefikHelmParams))
