@@ -1346,7 +1346,8 @@ public class MonitoringUtils {
   public static void createTraefikIngressRoutingRulesForDomain(String namespace, String domainUID) {
     logger.info("Creating ingress rules for prometheus traffic routing");
     Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-exporter.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-exporter.yaml");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
+        namespace, domainUID, "/traefik-ingress-rules-exporter.yaml");
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
