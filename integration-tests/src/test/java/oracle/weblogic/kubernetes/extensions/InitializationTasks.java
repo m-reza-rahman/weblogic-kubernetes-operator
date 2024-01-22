@@ -102,7 +102,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.imageExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
-//import static oracle.weblogic.kubernetes.utils.IstioUtils.installIstio;
+import static oracle.weblogic.kubernetes.utils.IstioUtils.installIstio;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.uninstallIstio;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -301,7 +301,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         isInitializationSuccessful = true;
         if ((!OKD && !OCNE) || (OCNE && !assertDoesNotThrow(() -> Namespace.exists("istio-system")))) {
           logger.info("Installing istio before any test suites are run");
-          //installIstio();
+          installIstio();
         }
       } finally {
         // Initialization is done. Release all waiting other threads. The latch is now disabled so
