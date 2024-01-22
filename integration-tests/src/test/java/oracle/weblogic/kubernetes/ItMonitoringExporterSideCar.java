@@ -607,38 +607,4 @@ class ItMonitoringExporterSideCar {
       logger.severe(ex.getMessage());
     }
   }
-
-
-  private static void createTraefikIngressRoutingRulesDomain(String namespace) {
-    logger.info("Creating ingress rules for domain traffic routing");
-    Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-monitoring.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-monitoring.yaml");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(dstFile);
-      Files.createDirectories(dstFile.getParent());
-      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
-          .replaceAll("@releasesuffix@", releaseSuffix)
-          .getBytes(StandardCharsets.UTF_8));
-    });
-    String command = KUBERNETES_CLI + " create -f " + dstFile;
-    logger.info("Running {0}", command);
-    ExecResult result;
-    try {
-      result = ExecCommand.exec(command, true);
-      String response = result.stdout().trim();
-      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-          result.exitValue(), response, result.stderr());
-      assertEquals(0, result.exitValue(), "Command didn't succeed");
-    } catch (IOException | InterruptedException ex) {
-      logger.severe(ex.getMessage());
-    }
-  }
-
-  private int getTraefikLbNodePort(boolean isHttps) {
-    logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
-    return assertDoesNotThrow(() ->
-            getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
-        "Getting web node port for Traefik loadbalancer failed");
-  }
-
 }
