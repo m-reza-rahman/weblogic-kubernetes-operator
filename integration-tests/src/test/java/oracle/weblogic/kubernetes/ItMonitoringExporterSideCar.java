@@ -586,7 +586,7 @@ class ItMonitoringExporterSideCar {
   private static void createTraefikIngressRoutingRules(String namespace) {
     logger.info("Creating ingress rules for prometheus traffic routing");
     Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-monitoring.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-monitoring.yaml");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "ItMonitoringExporterSideCar/traefik-ingress-rules-monitoring.yaml");
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
