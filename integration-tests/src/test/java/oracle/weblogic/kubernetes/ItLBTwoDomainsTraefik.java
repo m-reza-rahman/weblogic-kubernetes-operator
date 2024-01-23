@@ -221,7 +221,7 @@ class ItLBTwoDomainsTraefik {
   private static void installTraefikIngressController() {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
-    traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+    traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
 
     // create TLS secret for Traefik HTTPS traffic
     for (String domainUid : domainUids) {

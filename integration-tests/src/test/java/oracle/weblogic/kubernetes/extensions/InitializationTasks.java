@@ -28,6 +28,7 @@ import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.Operator;
 import oracle.weblogic.kubernetes.actions.impl.OperatorParams;
+import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
@@ -670,8 +671,9 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     deleteNamespace(TRAEFIK_NAMESPACE);
     assertDoesNotThrow(() -> new Namespace().name(TRAEFIK_NAMESPACE).create());
     getLogger().info("Installing NGINX in namespace {0}", TRAEFIK_NAMESPACE);
-    installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
-        TRAEFIK_INGRESS_HTTPS_NODEPORT);
+    TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
+        TRAEFIK_INGRESS_HTTPS_NODEPORT);    
+    assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, traefikParams.getIngressClassName()));    
     String curlCmd = KUBERNETES_CLI + " get all -A";
     try {
       ExecCommand.exec(curlCmd, true);

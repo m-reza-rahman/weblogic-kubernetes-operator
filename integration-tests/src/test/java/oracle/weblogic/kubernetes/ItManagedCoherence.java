@@ -125,7 +125,7 @@ class ItManagedCoherence {
 
     // install and verify Traefik if not running on OKD
     if (!OKD) {
-      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
     }
 
     // install and verify operator

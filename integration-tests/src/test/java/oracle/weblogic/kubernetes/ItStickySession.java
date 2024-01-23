@@ -138,7 +138,7 @@ class ItStickySession {
     // install and verify Traefik
     if (!OKD) {
       traefikHelmParams =
-          installAndVerifyTraefik(traefikNamespace, 0, 0);
+          installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
     }
 
     // install and verify operator

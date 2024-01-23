@@ -207,7 +207,7 @@ class ItExternalLbTunneling {
 
     if (!OKD) {
       logger.info("Installing Traefik controller using helm");
-      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
     }
 
     // Create SSL certificate and key using openSSL with SAN extension
