@@ -1316,7 +1316,7 @@ public class MonitoringUtils {
                                                                    String ingressRulesFileName) {
     logger.info("Creating ingress rules for prometheus traffic routing");
     Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, ingressRulesFileName);
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, ingressRulesFileName);
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, namespace, serviceName, ingressRulesFileName);
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
@@ -1336,6 +1336,44 @@ public class MonitoringUtils {
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
+  }
+
+  /**
+   * Delete Traefik Ingress routing rules for prometheus.
+   *
+   * @param namespace            namespace of prometheus
+   * @param serviceName          name of exposed service
+   * @param ingressRulesFileName ingress rules file name
+   */
+  public static void deleteTraefikIngressRoutingRulesForMonitoring(String namespace, String serviceName,
+                                                                   String ingressRulesFileName) {
+    logger.info("Deleting ingress rules for prometheus traffic routing");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, namespace, serviceName, ingressRulesFileName);
+    deleteTraefikIngressRoutingRules(dstFile);
+  }
+
+  /**
+   * Delete Traefik Ingress routing rules for prometheus.
+   *
+   * @param dstFile            path for intress rule deployment
+   */
+  public static void deleteTraefikIngressRoutingRules(Path dstFile) {
+
+    String command = KUBERNETES_CLI + " delete -f " + dstFile;
+    logger.info("Running {0}", command);
+    ExecResult result;
+    try {
+      result = ExecCommand.exec(command, true);
+      String response = result.stdout().trim();
+      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+          result.exitValue(), response, result.stderr());
+      assertEquals(0, result.exitValue(), "Command didn't succeed");
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(dstFile);
+    });
   }
 
   /**

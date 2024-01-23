@@ -4,6 +4,7 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -56,6 +57,8 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDo
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForDomain;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
+import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRules;
+import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyPrometheus;
@@ -555,6 +558,12 @@ class ItMonitoringExporterMetricsFiltering {
 
     // uninstall Traefik release
     logger.info("Uninstalling Traefik");
+    deleteTraefikIngressRoutingRulesForMonitoring(monitoringNS,
+        prometheusReleaseName + "-server",
+        "traefik-ingress-rules-monitoring.yaml");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
+        domain1Namespace, domain1Uid, "traefik-ingress-rules-exporter.yaml");
+    deleteTraefikIngressRoutingRules(dstFile);
     if (traefikHelmParams != null) {
       assertThat(uninstallTraefik(traefikHelmParams))
           .as("Test uninstall traefik returns true")

@@ -67,6 +67,7 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPr
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
+import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyPrometheus;
@@ -529,7 +530,9 @@ class ItMonitoringExporterSideCar {
 
   @AfterAll
   public void tearDownAll() {
-
+    deleteTraefikIngressRoutingRulesForMonitoring(monitoringNS,
+        prometheusReleaseName + "-server",
+        "traefik-ingress-rules-monitoring.yaml");
     logger.info("Uninstalling Traefik");
     if (traefikHelmParams != null) {
       assertThat(uninstallTraefik(traefikHelmParams))
@@ -584,8 +587,8 @@ class ItMonitoringExporterSideCar {
   private static void createTraefikIngressRoutingRules(String namespace) {
     logger.info("Creating ingress rules for prometheus traffic routing");
     Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-monitoring.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
-        "ItMonitoringExporterSideCar/traefik-ingress-rules-monitoring.yaml");
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, namespace, prometheusReleaseName + "-server",
+        "/traefik-ingress-rules-monitoring.yaml");
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(dstFile);
       Files.createDirectories(dstFile.getParent());
