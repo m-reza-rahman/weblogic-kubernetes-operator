@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes.utils;
 
+import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -1107,6 +1108,7 @@ public class CommonMiiTestUtils {
       String hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
       Map<String, String> headers = new HashMap<>();
       headers.put("host", hostHeader);
+      headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
       String url = "http://" + hostAndPort + resourcePath;
       HttpResponse<String> response;
       try {
@@ -1258,6 +1260,8 @@ public class CommonMiiTestUtils {
         ingressFound = ingresses.stream().filter(ingress -> ingress.equals(ingressName)).findAny();
         if (ingressFound.isEmpty()) {
           createNginxIngressHostRouting(domainNamespace, domainName, serviceName, port);
+        } else {
+          logger.info("Ingress {0} found, skipping ingress resource creation...", ingressFound);
         }
       } catch (Exception ex) {
         logger.severe(ex.getMessage());
@@ -1270,13 +1274,11 @@ public class CommonMiiTestUtils {
       HttpResponse<String> response;
       try {
         response = OracleHttpClient.get(url, headers, true);
-        assertEquals(200, response.statusCode());
-        return true;
-      } catch (Exception ex) {
+        return Integer.parseInt(expectedStatusCode) == response.statusCode();
+      } catch (IOException | InterruptedException | NumberFormatException ex) {
         return false;
       }
     } else {
-
       curlString.append(hostAndPort)
           .append(resourcePath)
           .append(" -g --silent --show-error ")
