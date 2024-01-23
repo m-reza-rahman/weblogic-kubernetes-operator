@@ -27,6 +27,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_NAME;
@@ -257,6 +258,8 @@ public class LoadBalancerUtils {
         logger,
         "Traefik to be ready in namespace {0}",
         traefikNamespace);
+    
+    assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, traefikParams.getIngressClassName()));
 
     return traefikHelmParams;
   }

@@ -310,7 +310,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         installWebHookOnlyOperator("DomainOnPvSimplification=true");
         //install NGINX when running with podman container runtime
         if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-          installNginxLB();
+          installTraefikLB();
         }
 
         // set initialization success to true, not counting the istio installation as not all tests use istio
@@ -672,7 +672,6 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     getLogger().info("Installing NGINX in namespace {0}", TRAEFIK_NAMESPACE);
     installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
         TRAEFIK_INGRESS_HTTPS_NODEPORT);
-    //assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, params.getIngressClassName()));
     String curlCmd = KUBERNETES_CLI + " get all -A";
     try {
       ExecCommand.exec(curlCmd, true);
