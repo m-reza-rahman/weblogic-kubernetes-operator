@@ -234,6 +234,7 @@ public class LoadBalancerUtils {
     traefikParams
         .nodePortsHttp(nodeportshttp)
         .nodePortsHttps(nodeportshttps);
+    traefikParams.type("NodePort");
 
     // install Traefik
     assertThat(installTraefik(traefikParams))

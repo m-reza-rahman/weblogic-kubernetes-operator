@@ -221,6 +221,11 @@ public interface TestConstants {
   public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
 
   public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v2.10.5";
+  public static final String TRAEFIK_NAMESPACE = "ns-traefik";
+  public static final int TRAEFIK_INGRESS_HTTP_NODEPORT = 30880;
+  public static final int TRAEFIK_INGRESS_HTTPS_NODEPORT = 30443;
+  public static final int TRAEFIK_INGRESS_HTTP_HOSTPORT = 2080;
+  public static final int TRAEFIK_INGRESS_HTTPS_HOSTPORT = 2443;  
 
   // ELK Stack and WebLogic logging exporter constants
   public static final String ELASTICSEARCH_NAME = "elasticsearch";

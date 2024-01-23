@@ -2293,5 +2293,5 @@ public class CommonTestUtils {
 
     getLogger().info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
     return ingressHost;
-  }  
+  }
 }

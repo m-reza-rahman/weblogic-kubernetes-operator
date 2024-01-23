@@ -74,6 +74,9 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_BUILD_IMAGES_IF_EXISTS;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_NAMESPACE;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_IMAGE_DOMAINHOME;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_IMAGE_DOMAINTYPE;
@@ -112,6 +115,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.installIstio;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.uninstallIstio;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.awaitility.Awaitility.with;
@@ -661,5 +665,24 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     //oc -n ns-abcdef expose service nginx-release-nginx-ingress-nginx-controller
     //oc -n ns-abcdef get routes nginx-release-nginx-ingress-nginx-controller '-o=jsonpath={.spec.host}'
   }
+  
+  private void installTraefikLB() {
+    deleteNamespace(TRAEFIK_NAMESPACE);
+    assertDoesNotThrow(() -> new Namespace().name(TRAEFIK_NAMESPACE).create());
+    getLogger().info("Installing NGINX in namespace {0}", TRAEFIK_NAMESPACE);
+    installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
+        TRAEFIK_INGRESS_HTTPS_NODEPORT);
+    //assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, params.getIngressClassName()));
+    String curlCmd = KUBERNETES_CLI + " get all -A";
+    try {
+      ExecCommand.exec(curlCmd, true);
+    } catch (IOException | InterruptedException ex) {
+      getLogger().info("Exception in get all {0}", ex);
+    }
+    //TO-DO for OKD to use NGINX for all service access
+    //expose NGINX node port service and get route host
+    //oc -n ns-abcdef expose service nginx-release-nginx-ingress-nginx-controller
+    //oc -n ns-abcdef get routes nginx-release-nginx-ingress-nginx-controller '-o=jsonpath={.spec.host}'
+  }  
 
 }

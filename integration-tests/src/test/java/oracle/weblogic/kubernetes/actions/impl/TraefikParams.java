@@ -23,13 +23,22 @@ public class TraefikParams {
   private String traefikImage = TRAEFIK_INGRESS_IMAGE_NAME;
   private String traefikImageTag = TRAEFIK_INGRESS_IMAGE_TAG;
   private String traefikRegistry = TRAEFIK_INGRESS_IMAGE_REGISTRY;
+  private String type;
+  private String ingressClassName;
 
   private static final String NODEPORTS_HTTP = "ports.web.nodePort";
   private static final String NODEPORTS_HTTPS = "ports.websecure.nodePort";
   private static final String TRAEFIK_IMAGE = "image.repository";
   private static final String TRAEFIK_IMAGE_REGISTRY = "image.registry";
   private static final String TRAEFIK_IMAGE_TAG = "image.tag";
+  private static final String INGRESS_CLASS_NAME = "ingressClass.name";
+  private static final String TYPE = "service.type";
 
+  
+  public TraefikParams() {
+    ingressClassName = UniqueName.uniqueName("traefik-");
+  }
+  
   public TraefikParams nodePortsHttp(int nodePortsHttp) {
     this.nodePortsHttp = nodePortsHttp;
     return this;
@@ -63,6 +72,15 @@ public class TraefikParams {
     this.traefikImageTag = traefikImageTag;
     return this;
   }
+  
+  public String getIngressClassName() {
+    return ingressClassName;
+  }
+  
+  public TraefikParams type(String type) {
+    this.type = type;
+    return this;
+  }  
 
   /**
    * Loads Helm values into a value map.
@@ -82,6 +100,8 @@ public class TraefikParams {
     values.put(TRAEFIK_IMAGE, traefikImage);
     values.put(TRAEFIK_IMAGE_REGISTRY, traefikRegistry);
     values.put(TRAEFIK_IMAGE_TAG, traefikImageTag);
+    values.put(INGRESS_CLASS_NAME, ingressClassName);
+    values.put(TYPE, type);
 
     values.values().removeIf(Objects::isNull);
     return values;
