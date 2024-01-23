@@ -58,7 +58,6 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngr
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRules;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyPrometheus;
@@ -559,12 +558,14 @@ class ItMonitoringExporterMetricsFiltering {
 
     if (traefikHelmParams != null) {
       logger.info("Uninstalling Traefik");
-      deleteTraefikIngressRoutingRulesForMonitoring(monitoringNS,
+      Path dstFileProm = Paths.get(TestConstants.RESULTS_ROOT,
+          monitoringNS,
           prometheusReleaseName + "-server",
-          "traefik-ingress-rules-monitoring.yaml");
-      Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
+          "traefik", "traefik-ingress-rules-monitoring.yaml");
+      deleteTraefikIngressRoutingRules(dstFileProm);
+      Path dstFileDomain = Paths.get(TestConstants.RESULTS_ROOT,
           domain1Namespace, domain1Uid, "traefik-ingress-rules-exporter.yaml");
-      deleteTraefikIngressRoutingRules(dstFile);
+      deleteTraefikIngressRoutingRules(dstFileDomain);
       assertThat(uninstallTraefik(traefikHelmParams))
           .as("Test uninstall traefik returns true")
           .withFailMessage("uninstallTraefik() did not return true")

@@ -1341,21 +1341,7 @@ public class MonitoringUtils {
   /**
    * Delete Traefik Ingress routing rules for prometheus.
    *
-   * @param namespace            namespace of prometheus
-   * @param serviceName          name of exposed service
-   * @param ingressRulesFileName ingress rules file name
-   */
-  public static void deleteTraefikIngressRoutingRulesForMonitoring(String namespace, String serviceName,
-                                                                   String ingressRulesFileName) {
-    logger.info("Deleting ingress rules for prometheus traffic routing");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, namespace, serviceName, ingressRulesFileName);
-    deleteTraefikIngressRoutingRules(dstFile);
-  }
-
-  /**
-   * Delete Traefik Ingress routing rules for prometheus.
-   *
-   * @param dstFile            path for intress rule deployment
+   * @param dstFile            path for ingress rule deployment
    */
   public static void deleteTraefikIngressRoutingRules(Path dstFile) {
 
