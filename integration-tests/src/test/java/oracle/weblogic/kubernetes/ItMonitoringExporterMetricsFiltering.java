@@ -91,6 +91,7 @@ class ItMonitoringExporterMetricsFiltering {
   private static String domain1Namespace = null;
   private static String domain1Uid = "monexp-domain-4";
   private static int nodeportshttp = 0;
+  private static String host = null;
   private static String ingressIP = null;
   private static List<String> ingressHost1List = null;
 
@@ -173,7 +174,7 @@ class ItMonitoringExporterMetricsFiltering {
     modelList.add(MODEL_DIR + "/" + JDBC_MODEL_FILE);
     miiImage = MonitoringUtils.createAndVerifyMiiImage(monitoringExporterAppDir, modelList,
         STICKYSESS_APP_NAME, SESSMIGR_APP_NAME, MONEXP_IMAGE_NAME);
-    String host = K8S_NODEPORT_HOST;
+    host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
       host = "[" + host + "]";
     }
@@ -182,8 +183,6 @@ class ItMonitoringExporterMetricsFiltering {
       // install Traefik ingress controller for all test cases using Traefik
       installTraefikIngressController();
 
-    } else {
-      hostPortPrometheus = host + ":" + nodeportPrometheus;
     }
 
     clusterNameMsPortMap = new HashMap<>();
@@ -492,7 +491,7 @@ class ItMonitoringExporterMetricsFiltering {
       installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
           domainNamespace,
           domainUid);
-      String hostPort = ingressIP + ":" + nodeportshttp;
+      String hostPort = host + ":" + nodeportshttp;
       if (OKE_CLUSTER_PRIVATEIP) {
         hostPort = ingressIP;
       }
