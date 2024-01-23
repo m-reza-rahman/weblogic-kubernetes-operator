@@ -216,10 +216,6 @@ class ItMonitoringExporterSideCar {
       assertDoesNotThrow(() -> createPvAndPvc(grafanaReleaseName, monitoringNS, labels, className));
     }
     cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
 
     if (OKE_CLUSTER_PRIVATEIP) {
       // install Traefik ingress controller for all test cases using Traefik
@@ -229,8 +225,6 @@ class ItMonitoringExporterSideCar {
       ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
           ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
       hostPortPrometheus = ingressIP;
-    } else {
-      hostPortPrometheus = host + ":" + nodeportPrometheus;
     }
   }
 
@@ -484,6 +478,12 @@ class ItMonitoringExporterSideCar {
       assertDoesNotThrow(() -> ExecCommand.exec(command2, true));
       if (!OKE_CLUSTER_PRIVATEIP) {
         nodeportPrometheus = promHelmParams.getNodePortServer();
+        String host = K8S_NODEPORT_HOST;
+        if (host.contains(":")) {
+          host = "[" + host + "]";
+        }
+        hostPortPrometheus = host + ":" + nodeportPrometheus;
+
       }
       prometheusDomainRegexValue = prometheusRegexValue;
     }
@@ -530,11 +530,12 @@ class ItMonitoringExporterSideCar {
 
   @AfterAll
   public void tearDownAll() {
-    deleteTraefikIngressRoutingRulesForMonitoring(monitoringNS,
-        prometheusReleaseName + "-server",
-        "traefik-ingress-rules-monitoring.yaml");
+
     logger.info("Uninstalling Traefik");
     if (traefikHelmParams != null) {
+      deleteTraefikIngressRoutingRulesForMonitoring(monitoringNS,
+          prometheusReleaseName + "-server",
+          "traefik-ingress-rules-monitoring.yaml");
       assertThat(uninstallTraefik(traefikHelmParams))
           .as("Test uninstallTraefik returns true")
           .withFailMessage("uninstallTraefik did not return true")

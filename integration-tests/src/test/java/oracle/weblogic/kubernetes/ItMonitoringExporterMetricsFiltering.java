@@ -557,14 +557,15 @@ class ItMonitoringExporterMetricsFiltering {
   public void tearDownAll() {
 
     // uninstall Traefik release
-    logger.info("Uninstalling Traefik");
-    deleteTraefikIngressRoutingRulesForMonitoring(monitoringNS,
-        prometheusReleaseName + "-server",
-        "traefik-ingress-rules-monitoring.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
-        domain1Namespace, domain1Uid, "traefik-ingress-rules-exporter.yaml");
-    deleteTraefikIngressRoutingRules(dstFile);
+
     if (traefikHelmParams != null) {
+      logger.info("Uninstalling Traefik");
+      deleteTraefikIngressRoutingRulesForMonitoring(monitoringNS,
+          prometheusReleaseName + "-server",
+          "traefik-ingress-rules-monitoring.yaml");
+      Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
+          domain1Namespace, domain1Uid, "traefik-ingress-rules-exporter.yaml");
+      deleteTraefikIngressRoutingRules(dstFile);
       assertThat(uninstallTraefik(traefikHelmParams))
           .as("Test uninstall traefik returns true")
           .withFailMessage("uninstallTraefik() did not return true")
