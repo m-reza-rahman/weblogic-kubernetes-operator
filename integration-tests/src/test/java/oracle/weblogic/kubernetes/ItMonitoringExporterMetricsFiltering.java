@@ -50,11 +50,11 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForDomain;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRules;
@@ -749,12 +749,17 @@ class ItMonitoringExporterMetricsFiltering {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-    if (OKE_CLUSTER_PRIVATEIP) {
-      // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-      createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-          "traefik/traefik-ingress-rules-monitoring.yaml");
-      createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid);
-    }
+
+    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
+        "traefik/traefik-ingress-rules-monitoring.yaml");
+    //createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid);
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
+        domain1Namespace, domain1Uid, "/traefik-ingress-rules-exporter.yaml");
+    createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
+        "traefik-ingress-rules-exporter.yaml",
+        dstFile, domain1Uid);
+
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {
