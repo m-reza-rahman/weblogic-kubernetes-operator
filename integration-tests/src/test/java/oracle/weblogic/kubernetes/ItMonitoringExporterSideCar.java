@@ -583,9 +583,10 @@ class ItMonitoringExporterSideCar {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-
-    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    createTraefikIngressRoutingRules(monitoringNS);
+    if (OKE_CLUSTER_PRIVATEIP) {
+      // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+      createTraefikIngressRoutingRules(monitoringNS);
+    }
   }
 
   private static void createTraefikIngressRoutingRules(String namespace) {

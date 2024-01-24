@@ -11,7 +11,7 @@ metadata:
 spec:
   routes:
     - kind: Rule
-      match: PathPrefix(`/`)
+      match: PathPrefix(`/api`)
       services:
         - kind: Service
           name: @servicename@

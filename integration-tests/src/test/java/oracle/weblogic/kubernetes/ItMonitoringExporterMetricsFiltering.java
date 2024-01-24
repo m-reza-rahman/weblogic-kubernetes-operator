@@ -191,6 +191,7 @@ class ItMonitoringExporterMetricsFiltering {
     clusterNames.add(cluster2Name);
     nodeportshttp = getTraefikLbNodePort(false);
     exporterUrl = String.format("http://%s:%s/wls-exporter/", host, nodeportshttp);
+    logger.info("exporter url: " + exporterUrl);
     if (OKE_CLUSTER_PRIVATEIP) {
       String ingressServiceName = traefikHelmParams.getReleaseName();
       ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
@@ -748,13 +749,12 @@ class ItMonitoringExporterMetricsFiltering {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-
-    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-        "traefik/traefik-ingress-rules-monitoring.yaml");
-    //createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
-    //    "traefik/traefik-ingress-rules-exporter.yaml", domain1Uid);
-    createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid);
+    if (OKE_CLUSTER_PRIVATEIP) {
+      // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+      createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
+          "traefik/traefik-ingress-rules-monitoring.yaml");
+      createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid);
+    }
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {
