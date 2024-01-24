@@ -2252,7 +2252,7 @@ public class CommonTestUtils {
    * @param port container port of the service
    * @return hostheader
    */
-  public static String createNginxIngressHostRouting(String domainNamespace, String domainUid,
+  public static String createIngressHostRouting(String domainNamespace, String domainUid,
       String serviceName, int port) {
     // create an ingress in domain namespace
     // set the ingress rule host

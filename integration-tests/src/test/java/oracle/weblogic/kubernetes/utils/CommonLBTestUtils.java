@@ -85,7 +85,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourc
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.END_PORT;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.START_PORT;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -223,7 +223,7 @@ public class CommonLBTestUtils {
       } else {
         if (TestConstants.KIND_CLUSTER
             && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-          String hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, ADMIN_SERVER_NAME_BASE, 7001);
+          String hostHeader = createIngressHostRouting(domainNamespace, domainUid, ADMIN_SERVER_NAME_BASE, 7001);
           Map<String, String> headers = new HashMap<>();
           headers.put("host", hostHeader);
           assertDoesNotThrow(()

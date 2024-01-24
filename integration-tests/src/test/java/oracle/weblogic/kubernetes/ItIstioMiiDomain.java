@@ -528,7 +528,7 @@ class ItIstioMiiDomain {
         target, archivePath, domainNamespace + ".org", "testwebapp");
 
     assertNotNull(deployUsingRest, "Application deployment failed");
-    logger.info("Application deployment returned {0}", result.toString());
+    logger.info("Application deployment returned {0}", deployUsingRest.toString());
     assertEquals("202", deployUsingRest.stdout(), "Deployment didn't return HTTP status code 202");
     logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid + "-" + clusterName);
 

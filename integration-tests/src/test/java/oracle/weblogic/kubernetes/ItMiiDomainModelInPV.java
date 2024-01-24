@@ -69,7 +69,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -285,7 +285,7 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
-    hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+    hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);

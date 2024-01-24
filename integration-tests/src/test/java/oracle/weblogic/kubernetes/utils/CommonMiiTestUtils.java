@@ -95,7 +95,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVeri
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyCredentials;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
@@ -1100,7 +1100,7 @@ public class CommonMiiTestUtils {
         List<String> ingresses = TestActions.listIngresses(domainNamespace);
         ingressFound = ingresses.stream().filter(ingress -> ingress.equals(ingressName)).findAny();
         if (ingressFound.isEmpty()) {
-          createNginxIngressHostRouting(domainNamespace, domainName, serviceName, port);
+          createIngressHostRouting(domainNamespace, domainName, serviceName, port);
         }
       } catch (Exception ex) {
         logger.severe(ex.getMessage());
@@ -1259,7 +1259,7 @@ public class CommonMiiTestUtils {
         List<String> ingresses = TestActions.listIngresses(domainNamespace);
         ingressFound = ingresses.stream().filter(ingress -> ingress.equals(ingressName)).findAny();
         if (ingressFound.isEmpty()) {
-          createNginxIngressHostRouting(domainNamespace, domainName, serviceName, port);
+          createIngressHostRouting(domainNamespace, domainName, serviceName, port);
         } else {
           logger.info("Ingress {0} found, skipping ingress resource creation...", ingressFound);
         }

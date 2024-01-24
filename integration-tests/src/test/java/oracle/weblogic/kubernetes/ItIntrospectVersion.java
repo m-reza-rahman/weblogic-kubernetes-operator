@@ -105,7 +105,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourc
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -1259,7 +1259,7 @@ class ItIntrospectVersion {
       managedServerNames.add(cluster1ManagedServerNameBase + i);
     }
     
-    hostHeader = createNginxIngressHostRouting(introDomainNamespace, domainUid, adminServerName, adminPort);
+    hostHeader = createIngressHostRouting(introDomainNamespace, domainUid, adminServerName, adminPort);
     assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     
 

@@ -89,7 +89,7 @@ import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -1053,7 +1053,7 @@ class ItConfigDistributionStrategy {
           managedServerPodNamePrefix + i, domainNamespace);
       checkPodReady(managedServerPodNamePrefix + i, domainUid, domainNamespace);
     }
-    hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, adminPort);    
+    hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, adminPort);    
   }
 
   //deploy application clusterview.war to domain

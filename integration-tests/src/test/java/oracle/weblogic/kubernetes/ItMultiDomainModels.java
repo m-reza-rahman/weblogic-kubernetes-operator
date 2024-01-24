@@ -43,7 +43,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourc
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResourceWithAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createAndVerifyDomainInImageUsingWdt;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainOnPvUsingWdt;
@@ -186,7 +186,7 @@ class ItMultiDomainModels {
 
     logger.info("Validating WebLogic admin server access by REST");
     if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createNginxIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     }

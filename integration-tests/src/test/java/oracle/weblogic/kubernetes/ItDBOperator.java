@@ -62,7 +62,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createNginxIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
@@ -286,7 +286,7 @@ class ItDBOperator {
     verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
     // Expose the admin service external node port as  a route for OKD
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(fmwAdminServerPodName), fmwDomainNamespace);
-    hostHeader = createNginxIngressHostRouting(fmwDomainNamespace, fmwDomainUid, adminServerName, adminPort);
+    hostHeader = createIngressHostRouting(fmwDomainNamespace, fmwDomainUid, adminServerName, adminPort);
     verifyEMconsoleAccess(fmwDomainNamespace, fmwDomainUid, adminSvcExtHost, hostHeader);
 
     //Reuse the same RCU schema to restart JRF domain
@@ -381,7 +381,7 @@ class ItDBOperator {
       checkPodReadyAndServiceExists(wlsManagedServerPrefix + i, wlsDomainUid, wlsDomainNamespace);
     }
 
-    hostHeader = createNginxIngressHostRouting(wlsDomainNamespace, wlsDomainUid, adminServerName, adminPort);
+    hostHeader = createIngressHostRouting(wlsDomainNamespace, wlsDomainUid, adminServerName, adminPort);
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
   }
