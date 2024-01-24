@@ -254,19 +254,7 @@ class ItIstioMiiDomain {
     assertTrue(deployRes, "Failed to deploy Istio DestinationRule");
 
     //int istioIngressPort = getIstioHttpIngressPort();
-    int istioIngressPort;
-    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      istioIngressPort = ISTIO_HTTP_HOSTPORT;
-    } else {
-      istioIngressPort = getIstioHttpIngressPort();
-    }
-    logger.info("Istio Ingress Port is {0}", istioIngressPort);
-    logger.info("K8S_NODEPORT_HOST {0}", K8S_NODEPORT_HOST);
-    try {
-      logger.info("InetAddress.getLocalHost().getHostAddress() {0}", InetAddress.getLocalHost().getHostAddress());
-    } catch (Exception ex) {
-      ;
-    }
+    int istioIngressPort = getIstioHttpIngressPort();
 
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
@@ -277,6 +265,18 @@ class ItIstioMiiDomain {
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
+    
+    try {
+      if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        istioIngressPort = ISTIO_HTTP_HOSTPORT;
+        hostAndPort = InetAddress.getLocalHost().getHostAddress() + ":" + istioIngressPort;
+      }
+      logger.info("Istio Ingress Port is {0}", istioIngressPort);
+      logger.info("K8S_NODEPORT_HOST {0}", K8S_NODEPORT_HOST);
+    } catch (Exception ex) {
+      logger.severe(ex.getMessage());
+    }
+    
     logger.info("hostAndPort is {0}", hostAndPort);
 
     // We can not verify Rest Management console thru Adminstration NodePort
