@@ -755,9 +755,9 @@ class ItMonitoringExporterMetricsFiltering {
         "traefik/traefik-ingress-rules-monitoring.yaml");
     //createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid);
     Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
-        domain1Namespace, domain1Uid, "/traefik-ingress-rules-exporter.yaml");
+        domain1Namespace, domain1Uid, "traefik/traefik-ingress-rules-exporter.yaml");
     createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
-        "traefik-ingress-rules-exporter.yaml",
+        "traefik/traefik-ingress-rules-exporter.yaml",
         dstFile, domain1Uid);
 
   }
