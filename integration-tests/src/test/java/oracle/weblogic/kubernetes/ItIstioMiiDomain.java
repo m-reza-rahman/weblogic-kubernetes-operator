@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.net.InetAddress;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
@@ -260,12 +261,18 @@ class ItIstioMiiDomain {
       istioIngressPort = getIstioHttpIngressPort();
     }
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
+    logger.info("K8S_NODEPORT_HOST {0}", K8S_NODEPORT_HOST);
+    try {
+      logger.info("InetAddress.getLocalHost().getHostAddress() {0}", InetAddress.getLocalHost().getHostAddress());
+    } catch (Exception ex) {
+      ;
+    }
 
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
       // use IPV6
       host = "[" + host + "]";
-    }
+    }    
 
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
