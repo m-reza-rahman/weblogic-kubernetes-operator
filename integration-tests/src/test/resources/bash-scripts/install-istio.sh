@@ -49,6 +49,8 @@ ${KUBERNETES_CLI} create namespace istio-system
   bin/istioctl x precheck
   bin/istioctl install --set meshConfig.enablePrometheusMerge=false --set values.global.imagePullSecrets[0]=docker-istio-secret --set hub=gcr.io/istio-release --set components.cni.enabled=true --set profile=demo -y
   bin/istioctl verify-install
+  ${KUBERNETES_CLI} patch svc -n istio-system istio-ingressgateway --type='json' -p='[{"op":"replace","path":"/spec/ports/1/nodePort","value":32480}]'
+  ${KUBERNETES_CLI} patch svc -n istio-system istio-ingressgateway --type='json' -p='[{"op":"replace","path":"/spec/ports/2/nodePort","value":32490}]'
   bin/istioctl version
 )
 }

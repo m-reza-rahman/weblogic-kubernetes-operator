@@ -355,6 +355,8 @@ public interface TestConstants {
 
   public static final String ISTIO_VERSION =
       getNonEmptySystemProperty("wko.it.istio.version", "1.13.2");
+  public static final int ISTIO_HTTP_HOSTPORT = 2480;
+  public static final int ISTIO_HTTPS_HOSTPORT = 2490;  
 
   //MySQL database constants
   public static final String MYSQL_IMAGE = BASE_IMAGES_PREFIX + "test-images/database/mysql";

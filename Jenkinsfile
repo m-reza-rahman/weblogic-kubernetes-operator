@@ -379,18 +379,16 @@ nodes:
   - role: worker
     image: ${kind_image}
     extraPortMappings:
-      - containerPort: 30500
-        hostPort: 1500
-      - containerPort: 30501
-        hostPort: 1501
       - containerPort: 30880
         hostPort: 2080
         protocol: TCP
       - containerPort: 30443
         hostPort: 2443
         protocol: TCP
-      - containerPort: 32156
-        hostPort: 2156
+      - containerPort: 32480
+        hostPort: 2480
+      - containerPort: 32490
+        hostPort: 2490
     extraMounts:
       - hostPath: ${pv_root}
         containerPath: ${pv_root}
