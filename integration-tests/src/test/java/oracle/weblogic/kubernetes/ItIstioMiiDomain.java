@@ -524,12 +524,12 @@ class ItIstioMiiDomain {
 
     Path archivePath = Paths.get(testWebAppWarLoc);
     String target = "{identity: [clusters,'" + clusterName + "']}";
-    deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-            target, archivePath, domainNamespace + ".org", "testwebapp");
+    ExecResult deployUsingRest = deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+        target, archivePath, domainNamespace + ".org", "testwebapp");
 
-    assertNotNull(result, "Application deployment failed");
+    assertNotNull(deployUsingRest, "Application deployment failed");
     logger.info("Application deployment returned {0}", result.toString());
-    assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
+    assertEquals("202", deployUsingRest.stdout(), "Deployment didn't return HTTP status code 202");
     logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", domainUid + "-" + clusterName);
 
     if (OKE_CLUSTER) {
