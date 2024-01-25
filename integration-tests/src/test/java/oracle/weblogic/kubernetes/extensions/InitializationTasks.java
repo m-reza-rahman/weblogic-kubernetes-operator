@@ -672,7 +672,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     assertDoesNotThrow(() -> new Namespace().name(TRAEFIK_NAMESPACE).create());
     getLogger().info("Installing traefik in namespace {0}", TRAEFIK_NAMESPACE);
     TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
-        TRAEFIK_INGRESS_HTTPS_NODEPORT);    
+        TRAEFIK_INGRESS_HTTPS_NODEPORT, "NodePort");    
     assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, traefikParams.getIngressClassName()));    
     String curlCmd = KUBERNETES_CLI + " get all -A";
     try {

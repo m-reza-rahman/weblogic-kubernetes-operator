@@ -217,8 +217,23 @@ public class LoadBalancerUtils {
    * @return the Traefik Helm installation parameters
    */
   public static TraefikParams installAndVerifyTraefik(String traefikNamespace,
+      int nodeportshttp,
+      int nodeportshttps) {
+    return installAndVerifyTraefik(traefikNamespace, nodeportshttp, nodeportshttps, null);
+  }
+  
+  /** Install Traefik and wait for up to five minutes for the Traefik pod to be ready.
+   *
+   * @param traefikNamespace the namespace in which the Traefik ingress controller is installed
+   * @param nodeportshttp the web nodeport of Traefik
+   * @param nodeportshttps the websecure nodeport of Traefik
+   * @param type NodePort or LoadBalancer
+   * @return the Traefik Helm installation parameters
+   */
+  public static TraefikParams installAndVerifyTraefik(String traefikNamespace,
                                                    int nodeportshttp,
-                                                   int nodeportshttps) {
+                                                   int nodeportshttps,
+                                                   String type) {
     LoggingFacade logger = getLogger();
     // Helm install parameters
     HelmParams traefikHelmParams = new HelmParams()
@@ -234,7 +249,9 @@ public class LoadBalancerUtils {
     traefikParams
         .nodePortsHttp(nodeportshttp)
         .nodePortsHttps(nodeportshttps);
-    traefikParams.type("NodePort");
+    if (type != null) {
+      traefikParams.type(type);
+    }
 
     // install Traefik
     assertThat(installTraefik(traefikParams))
