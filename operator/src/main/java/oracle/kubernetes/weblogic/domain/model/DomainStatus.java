@@ -711,6 +711,10 @@ public class DomainStatus {
     return ABORTED == domainCondition.getReason();
   }
 
+  /**
+   * Retrieve failure information, if any, associated with a condition.
+   * @return the failure information
+   */
   public DomainConditionFailureInfo getFailureInfo() {
     return conditions.stream()
         .map(DomainCondition::getFailureInfo)

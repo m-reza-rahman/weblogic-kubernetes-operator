@@ -139,6 +139,10 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
     return getGeneration(getDomain()).compareTo(getGeneration(cachedInfo.getDomain())) > 0;
   }
 
+  public boolean isMustDomainProcessingRestart() {
+    return !failureInfoVersionsUnchanged();
+  }
+
   /**
    * Returns true if the state of the current domain presence info, when compared with the cached info for the same
    * domain, indicates that the make-right should not be run. The user has a number of options to resume processing
@@ -146,7 +150,7 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
    * @param cachedInfo the version of the domain presence info previously processed.
    */
   public boolean isDomainProcessingHalted(DomainPresenceInfo cachedInfo) {
-    return isDomainProcessingAborted() && failureInfoVersionsUnchanged() && versionsUnchanged(cachedInfo);
+    return isDomainProcessingAborted() && versionsUnchanged(cachedInfo);
   }
 
   private boolean isDomainProcessingAborted() {
