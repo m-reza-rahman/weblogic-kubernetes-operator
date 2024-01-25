@@ -224,7 +224,7 @@ public abstract class BasePodStepContext extends StepContextBase {
     return new V1PodSpec()
         .containers(getContainers())
         .volumes(getFluentdVolumes())
-            .volumes(getFluentbitVolumes())
+        .volumes(getFluentbitVolumes())
         .addContainersItem(createPrimaryContainer())
         .affinity(getServerSpec().getAffinity())
         .topologySpreadConstraints(getTopologySpreadConstraints())
