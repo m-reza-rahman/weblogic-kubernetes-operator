@@ -285,8 +285,12 @@ public class ItMiiDomainModelInPV {
     for (int i = 1; i <= replicaCount; i++) {
       managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
     }
-    hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
-    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", 
+          NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    }
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
   }

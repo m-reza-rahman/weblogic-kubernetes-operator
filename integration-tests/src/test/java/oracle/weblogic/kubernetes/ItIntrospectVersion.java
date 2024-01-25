@@ -1258,14 +1258,15 @@ class ItIntrospectVersion {
     for (int i = 1; i <= cluster1ReplicaCount; i++) {
       managedServerNames.add(cluster1ManagedServerNameBase + i);
     }
-    
-    hostHeader = createIngressHostRouting(introDomainNamespace, domainUid, adminServerName, adminPort);
-    assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
-    
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(introDomainNamespace, domainUid, adminServerName, adminPort);
+      assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", 
+          NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    }    
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, wlsUserName, wlsPassword);
-
   }
 
 
