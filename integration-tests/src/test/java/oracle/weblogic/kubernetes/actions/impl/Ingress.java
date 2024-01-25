@@ -180,8 +180,6 @@ public class Ingress {
                                    List<V1IngressTLS> tlsList) throws ApiException {
 
     // set the ingress
-    //V1IngressClass v1IngressClass = new V1IngressClass();
-    //v1IngressClass.setSpec(new V1IngressClassSpec().controller("traefik.io/ingress-controller"));
     V1Ingress ingress = new V1Ingress()
         .apiVersion(INGRESS_API_VERSION)
         .kind(INGRESS_KIND)

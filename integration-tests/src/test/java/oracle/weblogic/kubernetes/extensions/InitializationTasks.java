@@ -309,7 +309,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
         
         //install webhook to prevent every operator installation trying to update crd
         installWebHookOnlyOperator("DomainOnPvSimplification=true");
-        //install NGINX when running with podman container runtime
+        //install traefik when running with podman container runtime
         if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
           installTraefikLB();
         }
@@ -670,18 +670,19 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
   private void installTraefikLB() {
     deleteNamespace(TRAEFIK_NAMESPACE);
     assertDoesNotThrow(() -> new Namespace().name(TRAEFIK_NAMESPACE).create());
-    getLogger().info("Installing NGINX in namespace {0}", TRAEFIK_NAMESPACE);
+    getLogger().info("Installing traefik in namespace {0}", TRAEFIK_NAMESPACE);
     TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
         TRAEFIK_INGRESS_HTTPS_NODEPORT);    
     assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, traefikParams.getIngressClassName()));    
     String curlCmd = KUBERNETES_CLI + " get all -A";
     try {
-      ExecCommand.exec(curlCmd, true);
+      ExecResult result = ExecCommand.exec(curlCmd, true);
+      getLogger().info(result.stdout());
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in get all {0}", ex);
     }
-    //TO-DO for OKD to use NGINX for all service access
-    //expose NGINX node port service and get route host
+    //TO-DO for OKD to use traefik for all service access
+    //expose traefik node port service and get route host
     //oc -n ns-abcdef expose service nginx-release-nginx-ingress-nginx-controller
     //oc -n ns-abcdef get routes nginx-release-nginx-ingress-nginx-controller '-o=jsonpath={.spec.host}'
   }  
