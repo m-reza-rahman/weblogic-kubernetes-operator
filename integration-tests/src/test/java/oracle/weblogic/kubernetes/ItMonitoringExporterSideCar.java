@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -18,7 +17,6 @@ import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.MonitoringExporterConfiguration;
 import oracle.weblogic.domain.MonitoringExporterSpecification;
-import oracle.weblogic.kubernetes.actions.ActionConstants;
 import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
 import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
@@ -27,7 +25,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
-import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.LoggingUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -84,7 +81,6 @@ import static oracle.weblogic.kubernetes.utils.SessionMigrationUtil.getOrigModel
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -586,35 +582,8 @@ class ItMonitoringExporterSideCar {
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
 
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    //createTraefikIngressRoutingRules(monitoringNS);
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
         "traefik/traefik-ingress-rules-monitoring.yaml");
 
-  }
-
-  private static void createTraefikIngressRoutingRules(String namespace) {
-    logger.info("Creating ingress rules for prometheus traffic routing");
-    Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-monitoring.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, namespace, prometheusReleaseName + "-server",
-        "/traefik-ingress-rules-monitoring.yaml");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(dstFile);
-      Files.createDirectories(dstFile.getParent());
-      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
-          .replaceAll("@servicename@", prometheusReleaseName + "-server")
-          .getBytes(StandardCharsets.UTF_8));
-    });
-    String command = KUBERNETES_CLI + " create -f " + dstFile;
-    logger.info("Running {0}", command);
-    ExecResult result;
-    try {
-      result = ExecCommand.exec(command, true);
-      String response = result.stdout().trim();
-      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-          result.exitValue(), response, result.stderr());
-      assertEquals(0, result.exitValue(), "Command didn't succeed");
-    } catch (IOException | InterruptedException ex) {
-      logger.severe(ex.getMessage());
-    }
   }
 }
