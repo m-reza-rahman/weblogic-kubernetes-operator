@@ -1361,35 +1361,4 @@ public class MonitoringUtils {
       Files.deleteIfExists(dstFile);
     });
   }
-
-  /**
-   * Create Traefik ingress routing rules for domain.
-   * @param namespace domain namespace
-   * @param domainUID domain uid
-   */
-  public static void createTraefikIngressRoutingRulesForDomain(String namespace, String domainUID) {
-    logger.info("Creating ingress rules for prometheus traffic routing");
-    Path srcFile = Paths.get(ActionConstants.RESOURCE_DIR, "traefik/traefik-ingress-rules-exporter.yaml");
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
-        namespace, domainUID, "/traefik-ingress-rules-exporter.yaml");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(dstFile);
-      Files.createDirectories(dstFile.getParent());
-      Files.write(dstFile, Files.readString(srcFile).replaceAll("@NS@", namespace)
-          .replaceAll("@domain1uid@", domainUID)
-          .getBytes(StandardCharsets.UTF_8));
-    });
-    String command = KUBERNETES_CLI + " create -f " + dstFile;
-    logger.info("Running {0}", command);
-    ExecResult result;
-    try {
-      result = ExecCommand.exec(command, true);
-      String response = result.stdout().trim();
-      logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-          result.exitValue(), response, result.stderr());
-      assertEquals(0, result.exitValue(), "Command didn't succeed");
-    } catch (IOException | InterruptedException ex) {
-      logger.severe(ex.getMessage());
-    }
-  }
 }

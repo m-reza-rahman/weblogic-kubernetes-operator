@@ -753,7 +753,7 @@ class ItMonitoringExporterMetricsFiltering {
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
         "traefik/traefik-ingress-rules-monitoring.yaml");
-    //createTraefikIngressRoutingRulesForDomain(domain1Namespace, domain1Uid);
+
     Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
         domain1Namespace, domain1Uid, "traefik/traefik-ingress-rules-exporter.yaml");
     createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,

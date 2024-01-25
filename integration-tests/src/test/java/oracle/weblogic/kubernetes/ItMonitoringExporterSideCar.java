@@ -66,6 +66,7 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.buildMonitoringEx
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
+import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
@@ -583,10 +584,12 @@ class ItMonitoringExporterSideCar {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-    if (OKE_CLUSTER_PRIVATEIP) {
-      // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-      createTraefikIngressRoutingRules(monitoringNS);
-    }
+
+    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+    //createTraefikIngressRoutingRules(monitoringNS);
+    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
+        "traefik/traefik-ingress-rules-monitoring.yaml");
+
   }
 
   private static void createTraefikIngressRoutingRules(String namespace) {
