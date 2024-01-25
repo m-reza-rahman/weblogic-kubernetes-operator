@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 789f7a705b0c55340e836e03dc8dd2bc88947d0ea7e5f1f5656e84f0578b5af4
+    weblogic.sha256: 6aa2c2f4d1e75c6cf0528862283c7986bf1ef0b56b277632dbc841b6838c8e80
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -1006,7 +1006,7 @@ spec:
                       Elastic Search User Password'
                     type: string
                   parserConfiguration:
-                    description: The fluentbit parser configuration text, specify
+                    description: The Fluentbit parser configuration text, specify
                       your own custom fluentbit configuration.
                     type: string
                   resources:
@@ -1038,7 +1038,7 @@ spec:
                       type: string
                     type: array
                   fluentbitConfiguration:
-                    description: The fluentbit configuration text, specify your own
+                    description: The Fluentbit configuration text, specify your own
                       custom fluentbit configuration.
                     type: string
                   watchIntrospectorLogs:

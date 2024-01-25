@@ -427,7 +427,7 @@ public class DomainSpec extends BaseConfiguration {
   }
 
   /**
-   *  FluentBit configuration
+   *  FluentBit configuration.
    */
   @Description("In progress")
   private FluentbitSpecification fluentbitSpecification;

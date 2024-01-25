@@ -425,12 +425,12 @@ public abstract class DomainConfigurator {
                                                               String credentialName, String fluentdConfig,
                                                               List<String> args, List<String> command);
 
-    public abstract DomainConfigurator withFluentbitConfiguration(boolean watchIntrospectorLog,
-                                                                  String credentialName, String fluentbitConfig,
-                                                                  String parserConfig,
-                                                                  List<String> args, List<String> command);
+  public abstract DomainConfigurator withFluentbitConfiguration(boolean watchIntrospectorLog,
+                                                                String credentialName, String fluentbitConfig,
+                                                                String parserConfig,
+                                                                List<String> args, List<String> command);
 
-    public abstract DomainConfigurator withServerPodShutdownSpec(Shutdown shutdown);
+  public abstract DomainConfigurator withServerPodShutdownSpec(Shutdown shutdown);
 
   /**
    * Adds a default server configuration to the domain, if not already present.

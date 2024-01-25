@@ -595,7 +595,7 @@
           "type": "string"
         },
         "parserConfiguration": {
-          "description": "The fluentbit parser configuration text, specify your own custom fluentbit configuration.",
+          "description": "The Fluentbit parser configuration text, specify your own custom fluentbit configuration.",
           "type": "string"
         },
         "resources": {
@@ -610,7 +610,7 @@
           }
         },
         "fluentbitConfiguration": {
-          "description": "The fluentbit configuration text, specify your own custom fluentbit configuration.",
+          "description": "The Fluentbit configuration text, specify your own custom fluentbit configuration.",
           "type": "string"
         },
         "watchIntrospectorLogs": {
