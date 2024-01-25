@@ -1,4 +1,4 @@
-// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.weblogic.domain.model;
@@ -436,14 +436,17 @@ public class DomainSpec extends BaseConfiguration {
     return fluentbitSpecification;
   }
 
-  DomainSpec withFluentbitConfiguration(boolean watchIntrospectorLog, String credentialName,
-                                      String fluentbitConfig, List<String> args, List<String> command) {
+  DomainSpec withFluentbitConfiguration(boolean watchIntrospectorLog,
+                                        String credentialName, String fluentbitConfig,
+                                        String parserConfig,
+                                        List<String> args, List<String> command) {
     if (fluentbitSpecification == null) {
       fluentbitSpecification = new FluentbitSpecification();
     }
     fluentbitSpecification.setWatchIntrospectorLogs(watchIntrospectorLog);
     fluentbitSpecification.setElasticSearchCredentials(credentialName);
     fluentbitSpecification.setFluentbitConfiguration(fluentbitConfig);
+    fluentbitSpecification.setParserConfiguration(parserConfig);
     fluentbitSpecification.setContainerArgs(args);
     fluentbitSpecification.setContainerCommand(command);
     return this;
