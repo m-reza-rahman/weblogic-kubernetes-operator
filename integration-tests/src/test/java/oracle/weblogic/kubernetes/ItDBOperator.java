@@ -286,8 +286,14 @@ class ItDBOperator {
     verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
     // Expose the admin service external node port as  a route for OKD
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(fmwAdminServerPodName), fmwDomainNamespace);
-    hostHeader = createIngressHostRouting(fmwDomainNamespace, fmwDomainUid, adminServerName, adminPort);
-    verifyEMconsoleAccess(fmwDomainNamespace, fmwDomainUid, adminSvcExtHost, hostHeader);
+
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(fmwDomainNamespace, fmwDomainUid, adminServerName, adminPort);
+      verifyEMconsoleAccess(fmwDomainNamespace, fmwDomainUid, adminSvcExtHost, hostHeader);
+    } else {
+      verifyEMconsoleAccess(fmwDomainNamespace, fmwDomainUid, adminSvcExtHost);
+    }
 
     //Reuse the same RCU schema to restart JRF domain
     testReuseRCUschemaToRestartDomain();
