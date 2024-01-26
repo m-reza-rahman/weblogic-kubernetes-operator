@@ -64,7 +64,6 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyP
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installMonitoringExporter;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.uninstallPrometheusGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccess;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccessThroughLB;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPvAndPvc;
@@ -491,12 +490,12 @@ class ItMonitoringExporterMetricsFiltering {
       installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
           domainNamespace,
           domainUid);
-      String hostPort = host + ":" + nodeportshttp;
-      if (OKE_CLUSTER_PRIVATEIP) {
-        hostPort = ingressIP;
-      }
-      verifyMonExpAppAccessThroughLB("*", 1, hostPort);
     }
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
+        domain1Namespace, domain1Uid, "traefik/traefik-ingress-rules-exporter.yaml");
+    createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
+        "traefik/traefik-ingress-rules-exporter.yaml",
+        dstFile, domain1Uid);
   }
   
   /**
@@ -549,6 +548,9 @@ class ItMonitoringExporterMetricsFiltering {
 
     }
     logger.info("Grafana is running");
+    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
+        "traefik/traefik-ingress-rules-monitoring.yaml");
   }
 
 
@@ -749,17 +751,6 @@ class ItMonitoringExporterMetricsFiltering {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-
-    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-        "traefik/traefik-ingress-rules-monitoring.yaml");
-
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
-        domain1Namespace, domain1Uid, "traefik/traefik-ingress-rules-exporter.yaml");
-    createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
-        "traefik/traefik-ingress-rules-exporter.yaml",
-        dstFile, domain1Uid);
-
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {

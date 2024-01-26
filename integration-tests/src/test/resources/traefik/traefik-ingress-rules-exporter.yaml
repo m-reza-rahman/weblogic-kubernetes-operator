@@ -17,20 +17,3 @@ spec:
           name: @domain1uid@-cluster-cluster-1
           namespace: @NS@
           port: 8001
----
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
-metadata:
-  annotations:
-    kubernetes.io/ingress.class: traefik
-  name: @domain1uid@-cluster2-traefik-pathrouting
-  namespace: @NS@
-spec:
-  routes:
-    - kind: Rule
-      match: PathPrefix(`/wls-exporter`)
-      services:
-        - kind: Service
-          name: @domain1uid@-cluster-cluster-2
-          namespace: @NS@
-          port: 8001

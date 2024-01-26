@@ -522,6 +522,9 @@ class ItMonitoringExporterSideCar {
       }
     }
     logger.info("Grafana is running");
+    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
+        "traefik/traefik-ingress-rules-monitoring.yaml");
   }
 
 
@@ -580,10 +583,5 @@ class ItMonitoringExporterSideCar {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
     traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-
-    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-        "traefik/traefik-ingress-rules-monitoring.yaml");
-
   }
 }
