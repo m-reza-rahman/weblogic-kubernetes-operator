@@ -1053,7 +1053,10 @@ class ItConfigDistributionStrategy {
           managedServerPodNamePrefix + i, domainNamespace);
       checkPodReady(managedServerPodNamePrefix + i, domainUid, domainNamespace);
     }
-    hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, adminPort);    
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, adminPort);
+    }
   }
 
   //deploy application clusterview.war to domain

@@ -381,7 +381,10 @@ class ItDBOperator {
       checkPodReadyAndServiceExists(wlsManagedServerPrefix + i, wlsDomainUid, wlsDomainNamespace);
     }
 
-    hostHeader = createIngressHostRouting(wlsDomainNamespace, wlsDomainUid, adminServerName, adminPort);
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(wlsDomainNamespace, wlsDomainUid, adminServerName, adminPort);
+    }
     //Verify JMS/JTA Service migration with File(JDBC) Store
     testMiiJmsJtaServiceMigration();
   }

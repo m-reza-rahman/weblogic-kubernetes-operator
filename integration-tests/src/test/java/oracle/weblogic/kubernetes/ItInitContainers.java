@@ -13,6 +13,9 @@ import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Yaml;
+import oracle.weblogic.domain.AdminServer;
+import oracle.weblogic.domain.AdminService;
+import oracle.weblogic.domain.Channel;
 import oracle.weblogic.domain.ClusterResource;
 import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.Configuration;
@@ -345,6 +348,11 @@ class ItInitContainers {
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
+            .adminServer(new AdminServer()
+                .adminService(new AdminService()
+                    .addChannelsItem(new Channel()
+                        .channelName("default")
+                        .nodePort(0))))
             .configuration(new Configuration()
                 .model(new Model()
                     .domainType(WLS_DOMAIN_TYPE)
