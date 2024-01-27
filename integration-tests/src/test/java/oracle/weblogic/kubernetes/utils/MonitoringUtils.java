@@ -1324,7 +1324,7 @@ public class MonitoringUtils {
           .replaceAll("@servicename@", serviceName)
           .getBytes(StandardCharsets.UTF_8));
     });
-    String command = KUBERNETES_CLI + " create -f " + dstFile;
+    String command = KUBERNETES_CLI + " apply -f " + dstFile;
     logger.info("Running {0}", command);
     ExecResult result;
     try {
