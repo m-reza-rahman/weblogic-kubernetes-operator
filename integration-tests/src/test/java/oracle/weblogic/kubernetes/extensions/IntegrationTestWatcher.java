@@ -371,7 +371,7 @@ public class IntegrationTestWatcher implements
 
     // collect the logs in ns-webhook namespace
     LoggingUtil.collectLogs("ns-webhook", resultDir.toString());
-    // collect the logs in global traefik namespace namespace
+    // collect the logs in global traefik namespace
     LoggingUtil.collectLogs(TRAEFIK_NAMESPACE, resultDir.toString());    
     
     // collect logs for verrzzano environment    

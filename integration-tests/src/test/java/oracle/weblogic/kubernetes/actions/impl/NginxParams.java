@@ -118,6 +118,10 @@ public class NginxParams {
     this.type = type;
     return this;
   }
+  
+  public String getType() {
+    return type;
+  }
 
   public NginxParams helmParams(HelmParams helmParams) {
     this.helmParams = helmParams;

@@ -655,9 +655,9 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     NginxParams params = installAndVerifyNginx(NGINX_NAMESPACE, NGINX_INGRESS_HTTP_NODEPORT,
         NGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, "NodePort");
     assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, params.getIngressClassName()));
-    String curlCmd = KUBERNETES_CLI + " get all -A";
+    String cmd = KUBERNETES_CLI + " get all -A";
     try {
-      ExecCommand.exec(curlCmd, true);
+      ExecCommand.exec(cmd, true);
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in get all {0}", ex);
     }
@@ -674,9 +674,9 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
         TRAEFIK_INGRESS_HTTPS_NODEPORT, "NodePort");    
     assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, traefikParams.getIngressClassName()));    
-    String curlCmd = KUBERNETES_CLI + " get all -A";
+    String cmd = KUBERNETES_CLI + " get all -A";
     try {
-      ExecResult result = ExecCommand.exec(curlCmd, true);
+      ExecResult result = ExecCommand.exec(cmd, true);
       getLogger().info(result.stdout());
     } catch (IOException | InterruptedException ex) {
       getLogger().info("Exception in get all {0}", ex);

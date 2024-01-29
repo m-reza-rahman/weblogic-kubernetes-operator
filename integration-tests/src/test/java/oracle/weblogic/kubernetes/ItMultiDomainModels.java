@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +39,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodRestarted;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccessInAdminPod;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createPushAuxiliaryImageWithDomainConfig;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResourceWithAuxiliaryImage;
@@ -189,6 +191,14 @@ class ItMultiDomainModels {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
+      try {
+        verifyAdminServerRESTAccessInAdminPod(adminServerPodName, "7001",
+            domainNamespace, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
+      } catch (IOException ex) {
+        logger.severe(ex.getMessage());
+      }
     }
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
