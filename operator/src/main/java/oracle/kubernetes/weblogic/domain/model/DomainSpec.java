@@ -429,8 +429,14 @@ public class DomainSpec extends BaseConfiguration {
   /**
    *  FluentBit configuration.
    */
-  @Description("In progress")
-  private FluentbitSpecification fluentbitSpecification;
+  @Description("Automatic fluent-bit sidecar injection. If "
+          + "specified, the operator "
+          + "will deploy a sidecar container alongside each WebLogic Server instance that runs the fluent-bit, "
+          + "Optionally, the introspector job pod can be enabled to deploy with the fluent-bit sidecar container. "
+          + "WebLogic Server instances that are already running when the `fluentbitSpecification` field is created "
+          + "or deleted, will not be affected until they are restarted. When any given server "
+          + "is restarted for another reason, such as a change to the `restartVersion`, then the newly created pod "
+          + " will have the fluent-bit sidecar or not, as appropriate")  private FluentbitSpecification fluentbitSpecification;
 
   public FluentbitSpecification getFluentbitSpecification() {
     return fluentbitSpecification;

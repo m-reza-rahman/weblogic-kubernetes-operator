@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 6aa2c2f4d1e75c6cf0528862283c7986bf1ef0b56b277632dbc841b6838c8e80
+    weblogic.sha256: 8dadbb466beac9921387bc86ee8fd22a48c04fc6085f12d5d21acd77d046adf5
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -986,7 +986,15 @@ spec:
                 - FromModel
                 type: string
               fluentbitSpecification:
-                description: In progress
+                description: Automatic fluent-bit sidecar injection. If specified,
+                  the operator will deploy a sidecar container alongside each WebLogic
+                  Server instance that runs the fluent-bit, Optionally, the introspector
+                  job pod can be enabled to deploy with the fluent-bit sidecar container.
+                  WebLogic Server instances that are already running when the `fluentbitSpecification`
+                  field is created or deleted, will not be affected until they are
+                  restarted. When any given server is restarted for another reason,
+                  such as a change to the `restartVersion`, then the newly created
+                  pod  will have the fluent-bit sidecar or not, as appropriate
                 properties:
                   image:
                     default: fluent/fluentd-kubernetes-daemonset:v1.16.1-debian-elasticsearch7-1.2

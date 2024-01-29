@@ -395,7 +395,7 @@
           ]
         },
         "fluentbitSpecification": {
-          "description": "In progress",
+          "description": "Automatic fluent-bit sidecar injection. If specified, the operator will deploy a sidecar container alongside each WebLogic Server instance that runs the fluent-bit, Optionally, the introspector job pod can be enabled to deploy with the fluent-bit sidecar container. WebLogic Server instances that are already running when the `fluentbitSpecification` field is created or deleted, will not be affected until they are restarted. When any given server is restarted for another reason, such as a change to the `restartVersion`, then the newly created pod  will have the fluent-bit sidecar or not, as appropriate",
           "$ref": "#/definitions/FluentbitSpecification"
         },
         "httpAccessLogInLogHome": {
