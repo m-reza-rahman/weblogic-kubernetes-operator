@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -46,6 +46,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
@@ -62,8 +63,10 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.adminNodePort
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesDomainExist;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminConsoleAccessible;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
@@ -111,6 +114,7 @@ class ItMultiDomainModelsScale {
 
   // domain constants
   private static final int NUMBER_OF_CLUSTERS_MIIDOMAIN = 2;
+  private static final String adminServerName = "admin-server";
   private static final String CLUSTER_NAME_PREFIX = "cluster-";
   private static final int MANAGED_SERVER_PORT = 8001;
   private static final int ADMIN_SERVER_PORT = 7001;
@@ -139,6 +143,7 @@ class ItMultiDomainModelsScale {
   private static String miiImage = null;
   private static String encryptionSecretName = "encryptionsecret";
   private String curlCmd = null;
+  private static String hostHeader = null;
 
   /**
    * Install operator and NGINX.
@@ -247,9 +252,15 @@ class ItMultiDomainModelsScale {
           numberOfServers, replicaCount, curlCmd, managedServersBeforeScale);
     }
 
-    // verify admin console login using admin node port
-    verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
-
+    // verify admin console login
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+    }
+    
     // verify admin console login using ingress controller
     verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
 
@@ -304,8 +315,14 @@ class ItMultiDomainModelsScale {
         numberOfServers, replicaCount, true, externalRestHttpsPort, opNamespace, opServiceAccount,
         false, "", "", 0, "", "", curlCmd, managedServersBeforeScale);
 
-    // verify admin console login using admin node port
-    verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+    // verify admin console login
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+    }
 
     // verify admin console login using ingress controller
     verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
@@ -363,8 +380,14 @@ class ItMultiDomainModelsScale {
         true, domainHome, "scaleDown", 1,
         WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
 
-    // verify admin console login using admin node port
-    verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+    // verify admin console login
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+    }
 
     // verify admin console login using ingress controller
     verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
