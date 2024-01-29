@@ -114,7 +114,7 @@ public class Application {
         .defaultCommandParams()
         .command(cmd)
         .saveResults(true)
-        .redirect(false)
+        .redirect(true)
         .verbose(false);
     return Command.withParams(params).executeAndVerify(expectedResponse);
   }
