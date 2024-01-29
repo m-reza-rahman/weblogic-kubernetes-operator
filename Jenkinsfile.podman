@@ -196,7 +196,6 @@ pipeline {
             when {
                 anyOf {
                     changeRequest()
-                    branch 'main'
                     branch 'release/4.0'
                     branch 'release/3.4'
                 }
