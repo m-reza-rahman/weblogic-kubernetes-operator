@@ -22,6 +22,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import io.kubernetes.client.openapi.ApiException;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
 import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
+import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -49,6 +50,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVol
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPathRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
@@ -96,6 +98,8 @@ class ItMonitoringExporterMetricsFiltering {
   private static String monitoringNS = null;
   private static String traefikNamespace = null;
   private static HelmParams traefikHelmParams = null;
+  private static TraefikParams traefikParams;
+  private static String ingressClassName;
   static PrometheusParams promHelmParams = null;
   GrafanaParams grafanaHelmParams = null;
   private static String monitoringExporterEndToEndDir = null;
@@ -180,7 +184,6 @@ class ItMonitoringExporterMetricsFiltering {
       // install and verify Traefik
       // install Traefik ingress controller for all test cases using Traefik
       installTraefikIngressController();
-
     }
 
     clusterNameMsPortMap = new HashMap<>();
@@ -496,6 +499,8 @@ class ItMonitoringExporterMetricsFiltering {
     createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
         "traefik/traefik-ingress-rules-exporter.yaml",
         dstFile, domain1Uid);
+    createIngressPathRouting(domainNamespace, domainUid, "/wls-exporter", 
+        "cluster-cluster-1", 8001, ingressClassName);
   }
   
   /**
@@ -750,7 +755,9 @@ class ItMonitoringExporterMetricsFiltering {
   private static void installTraefikIngressController() {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
-    traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+    traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+    traefikHelmParams = traefikParams.getHelmParams();
+    ingressClassName = traefikParams.getIngressClassName();
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {
