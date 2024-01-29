@@ -66,7 +66,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_12213;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
@@ -278,7 +278,7 @@ class ItConfigDistributionStrategy {
           Map<String, String> headers = null;
           if (TestConstants.KIND_CLUSTER
               && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-            hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+            hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
             headers = new HashMap<>();
             headers.put("host", hostHeader);
           }
@@ -678,7 +678,7 @@ class ItConfigDistributionStrategy {
       Map<String, String> headers = null;
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+        hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         headers = new HashMap<>();
         headers.put("host", hostHeader);
       }
@@ -704,7 +704,7 @@ class ItConfigDistributionStrategy {
       Map<String, String> headers = null;
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+        hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         headers = new HashMap<>();
         headers.put("host", hostHeader);
       }
@@ -736,7 +736,7 @@ class ItConfigDistributionStrategy {
           Map<String, String> headers = null;
           if (TestConstants.KIND_CLUSTER
               && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-            hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+            hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
             headers = new HashMap<>();
             headers.put("host", hostHeader);
           }
@@ -789,7 +789,7 @@ class ItConfigDistributionStrategy {
           Map<String, String> headers = null;
           if (TestConstants.KIND_CLUSTER
               && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-            hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+            hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
             headers = new HashMap<>();
             headers.put("host", hostHeader);
           }
@@ -827,7 +827,7 @@ class ItConfigDistributionStrategy {
           Map<String, String> headers = null;
           if (TestConstants.KIND_CLUSTER
               && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-            hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+            hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
             headers = new HashMap<>();
             headers.put("host", hostHeader);
           }
@@ -881,7 +881,7 @@ class ItConfigDistributionStrategy {
       Map<String, String> headers = null;
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+        hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         headers = new HashMap<>();
         headers.put("host", hostHeader);
       }

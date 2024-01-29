@@ -67,10 +67,10 @@ import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WLS_DOMAIN_TYPE;
@@ -1105,7 +1105,7 @@ public class CommonMiiTestUtils {
       } catch (Exception ex) {
         logger.severe(ex.getMessage());
       }
-      String hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      String hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
       Map<String, String> headers = new HashMap<>();
       headers.put("host", hostHeader);
       headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
@@ -1266,7 +1266,7 @@ public class CommonMiiTestUtils {
       } catch (Exception ex) {
         logger.severe(ex.getMessage());
       }
-      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
       Map<String, String> headers = new HashMap<>();
       headers.put("host", hostHeader);
       headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);

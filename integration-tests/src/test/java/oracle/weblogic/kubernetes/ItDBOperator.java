@@ -41,9 +41,9 @@ import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -566,7 +566,7 @@ class ItDBOperator {
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
       curlString.append(" -H 'host: " + hostHeader + "' ");
     }
     curlString.append("http://" + hostAndPort)
@@ -602,7 +602,7 @@ class ItDBOperator {
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
       curlString.append(" -H 'host: " + hostHeader + "' ");
     }    
     curlString.append("http://" + hostAndPort)
@@ -640,7 +640,7 @@ class ItDBOperator {
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
       curlString.append(" -H 'host: " + hostHeader + "' ");
     }
     curlString.append("\"http://" + hostAndPort)

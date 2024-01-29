@@ -64,12 +64,12 @@ import static oracle.weblogic.kubernetes.TestConstants.HTTP_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.NODE_IP;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
@@ -2286,7 +2286,7 @@ public class CommonTestUtils {
         .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
         .contains(ingressName);
     String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-        + "' http://localhost:" + NGINX_INGRESS_HTTP_HOSTPORT
+        + "' http://localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     getLogger().info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));

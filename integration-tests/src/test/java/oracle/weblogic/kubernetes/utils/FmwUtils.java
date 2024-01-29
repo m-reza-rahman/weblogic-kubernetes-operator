@@ -48,9 +48,9 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.YAML_MAX_FILE_SIZE_PROPERTY;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -346,7 +346,7 @@ public class FmwUtils {
     String hostHeader = "";
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
       hostHeader = " -H 'host: " + header[0] + "' ";
     }
     String curlCmd1 = "curl -s -L --show-error --noproxy '*' "

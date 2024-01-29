@@ -71,11 +71,11 @@ import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -1262,7 +1262,7 @@ class ItIntrospectVersion {
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(introDomainNamespace, domainUid, adminServerName, adminPort);
       assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", 
-          NGINX_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+          TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     }    
 
     //verify admin server accessibility and the health of cluster members
@@ -1366,7 +1366,7 @@ class ItIntrospectVersion {
         Map<String, String> headers = null;
         if (TestConstants.KIND_CLUSTER
             && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-          hostAndPort = "localhost:" + NGINX_INGRESS_HTTP_HOSTPORT;
+          hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
           headers = new HashMap<>();
           headers.put("host", hostHeader);
         }
