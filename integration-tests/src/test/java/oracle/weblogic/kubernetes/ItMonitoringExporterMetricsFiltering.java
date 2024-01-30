@@ -561,8 +561,10 @@ class ItMonitoringExporterMetricsFiltering {
         "traefik/traefik-ingress-rules-monitoring.yaml");
 
      */
-    createIngressPathRouting(monitoringNS, "/api",
-        prometheusReleaseName + "-server", 80, ingressClassName);
+    if (prometheusRegexValue.equals(prometheusDomainRegexValue)) {
+      createIngressPathRouting(monitoringNS, "/api",
+          prometheusReleaseName + "-server", 80, ingressClassName);
+    }
   }
 
 

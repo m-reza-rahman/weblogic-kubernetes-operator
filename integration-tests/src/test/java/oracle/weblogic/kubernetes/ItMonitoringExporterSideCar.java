@@ -524,9 +524,11 @@ class ItMonitoringExporterSideCar {
       }
     }
     logger.info("Grafana is running");
-    // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    createIngressPathRouting(monitoringNS, "/api",
-        prometheusReleaseName + "-server", 80, ingressClassName);
+    if (prometheusRegexValue.equals(prometheusDomainRegexValue)) {
+      createIngressPathRouting(monitoringNS, "/api",
+          prometheusReleaseName + "-server", 80, ingressClassName);
+    }
+
     /*
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
         "traefik/traefik-ingress-rules-monitoring.yaml");
