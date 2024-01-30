@@ -4,7 +4,6 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -57,8 +56,6 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPr
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRules;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installMonitoringExporter;
@@ -492,14 +489,7 @@ class ItMonitoringExporterMetricsFiltering {
           domainNamespace,
           domainUid);
     }
-    /*
-    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
-        domain1Namespace, domain1Uid, "traefik/traefik-ingress-rules-exporter.yaml");
-    createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
-        "traefik/traefik-ingress-rules-exporter.yaml",
-        dstFile, domain1Uid);
 
-     */
     createIngressPathRouting(domainNamespace, "/wls-exporter",
         domainUid + "-cluster-cluster-1", 8001, ingressClassName);
 
@@ -524,7 +514,6 @@ class ItMonitoringExporterMetricsFiltering {
           promChartVersion,
           prometheusRegexValue, promHelmValuesFileDir);
       assertNotNull(promHelmParams, " Failed to install prometheus");
-      prometheusDomainRegexValue = prometheusRegexValue;
       nodeportPrometheus = promHelmParams.getNodePortServer();
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
@@ -536,13 +525,7 @@ class ItMonitoringExporterMetricsFiltering {
         hostPortPrometheus = ingressIP;
       }
     }
-    //if prometheus already installed change CM for specified domain
-    if (!prometheusRegexValue.equals(prometheusDomainRegexValue)) {
-      logger.info("update prometheus Config Map with domain info");
-      editPrometheusCM(prometheusDomainRegexValue, prometheusRegexValue, monitoringNS,
-          prometheusReleaseName + "-server");
-      prometheusDomainRegexValue = prometheusRegexValue;
-    }
+
     logger.info("Prometheus is running");
     if (grafanaHelmParams == null) {
       String grafanaHelmValuesFileDir =  Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
@@ -561,10 +544,10 @@ class ItMonitoringExporterMetricsFiltering {
         "traefik/traefik-ingress-rules-monitoring.yaml");
 
      */
-    if (prometheusRegexValue.equals(prometheusDomainRegexValue)) {
-      createIngressPathRouting(monitoringNS, "/api",
-          prometheusReleaseName + "-server", 80, ingressClassName);
-    }
+
+    createIngressPathRouting(monitoringNS, "/api",
+        prometheusReleaseName + "-server", 80, ingressClassName);
+
   }
 
 
@@ -575,6 +558,7 @@ class ItMonitoringExporterMetricsFiltering {
 
     if (traefikHelmParams != null) {
       logger.info("Uninstalling Traefik");
+      /*
       Path dstFileProm = Paths.get(TestConstants.RESULTS_ROOT,
           monitoringNS,
           prometheusReleaseName + "-server",
@@ -583,6 +567,8 @@ class ItMonitoringExporterMetricsFiltering {
       Path dstFileDomain = Paths.get(TestConstants.RESULTS_ROOT,
           domain1Namespace, domain1Uid, "traefik-ingress-rules-exporter.yaml");
       deleteTraefikIngressRoutingRules(dstFileDomain);
+
+       */
       assertThat(uninstallTraefik(traefikHelmParams))
           .as("Test uninstall traefik returns true")
           .withFailMessage("uninstallTraefik() did not return true")

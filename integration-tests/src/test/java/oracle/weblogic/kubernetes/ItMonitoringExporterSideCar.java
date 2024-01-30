@@ -5,7 +5,6 @@ package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,7 +65,6 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPr
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyGrafana;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.installAndVerifyPrometheus;
@@ -475,6 +473,10 @@ class ItMonitoringExporterSideCar {
       assertDoesNotThrow(() -> ExecCommand.exec(command1,true));
       String command2 = KUBERNETES_CLI + " describe svc -n " + monitoringNS;
       assertDoesNotThrow(() -> ExecCommand.exec(command2, true));
+      if (prometheusRegexValue.equals(prometheusDomainRegexValue)) {
+        createIngressPathRouting(monitoringNS, "/api",
+            prometheusReleaseName + "-server", 80, ingressClassName);
+      }
       if (!OKE_CLUSTER_PRIVATEIP) {
         nodeportPrometheus = promHelmParams.getNodePortServer();
         String host = K8S_NODEPORT_HOST;
@@ -524,16 +526,6 @@ class ItMonitoringExporterSideCar {
       }
     }
     logger.info("Grafana is running");
-    if (prometheusRegexValue.equals(prometheusDomainRegexValue)) {
-      createIngressPathRouting(monitoringNS, "/api",
-          prometheusReleaseName + "-server", 80, ingressClassName);
-    }
-
-    /*
-    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-        "traefik/traefik-ingress-rules-monitoring.yaml");
-
-     */
   }
 
 
@@ -542,11 +534,6 @@ class ItMonitoringExporterSideCar {
 
     logger.info("Uninstalling Traefik");
     if (traefikHelmParams != null) {
-      Path dstFileProm = Paths.get(TestConstants.RESULTS_ROOT,
-          monitoringNS,
-          prometheusReleaseName + "-server",
-          "traefik", "traefik-ingress-rules-monitoring.yaml");
-      deleteTraefikIngressRoutingRules(dstFileProm);
 
       assertThat(uninstallTraefik(traefikHelmParams))
           .as("Test uninstallTraefik returns true")
