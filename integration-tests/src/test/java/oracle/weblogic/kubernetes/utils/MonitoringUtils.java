@@ -373,7 +373,6 @@ public class MonitoringUtils {
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for prometheus");
 
     assertDoesNotThrow(() -> Files.createDirectories(fileTemp), "Failed to create temp dir for prometheus");
-    //String promValuesFile = OKE_CLUSTER_PRIVATEIP ? "promvaluesoke.yaml" : "promvalues.yaml";
     String promValuesFile = OKE_CLUSTER_PRIVATEIP ? "promvaluesoke.yaml" : "promvalues.yaml";
     logger.info("copy the " + promValuesFile + "  to staging location");
     Path srcPromFile = Paths.get(RESOURCE_DIR, "exporter", promValuesFile);
@@ -1145,32 +1144,6 @@ public class MonitoringUtils {
             ADMIN_PASSWORD_DEFAULT,
             host,
             nodeport);
-    testUntil(withLongRetryPolicy,
-        callTestWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 50),
-        logger,
-        "Verify NGINX can access the monitoring exporter metrics \n"
-            + "from all managed servers in the domain via http");
-  }
-
-  /**
-   * Check monitoring exporter access through lb.
-   * @param lbHost - lb host
-   * @param replicaCount - number of managed servers
-   * @param hostPort - host:port
-   */
-  public static void verifyMonExpAppAccessThroughLB(String lbHost, int replicaCount, String hostPort) {
-
-    List<String> managedServerNames = new ArrayList<>();
-    for (int i = 1; i <= replicaCount; i++) {
-      managedServerNames.add(MANAGED_SERVER_NAME_BASE + i);
-    }
-
-    String curlCmd =
-        String.format("curl -g --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s/wls-exporter/metrics",
-            lbHost,
-            ADMIN_USERNAME_DEFAULT,
-            ADMIN_PASSWORD_DEFAULT,
-            hostPort);
     testUntil(withLongRetryPolicy,
         callTestWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 50),
         logger,
