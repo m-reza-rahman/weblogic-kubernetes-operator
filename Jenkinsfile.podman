@@ -22,13 +22,18 @@ def kind_k8s_map = [
     ]
 ]
 def _kind_image = null
+CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=wls-srg'''
 
 pipeline {
     agent { label 'large-ol9' }
     options {
         timeout(time: 800, unit: 'MINUTES')
     }
-
+    triggers {
+        // timer trigger for "nightly build"
+        parameterizedCron(env.JOB_NAME == 'wko-kind-main-nightly-podman' ?
+        CRON_SETTINGS : '')
+    }
     tools {
         maven 'maven-3.8.7'
         jdk 'jdk21'
