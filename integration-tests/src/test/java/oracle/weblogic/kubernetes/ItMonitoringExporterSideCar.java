@@ -20,6 +20,7 @@ import oracle.weblogic.domain.MonitoringExporterSpecification;
 import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
 import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
+import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -51,6 +52,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPathRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getImageBuilderExtraArgs;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -63,7 +65,6 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.buildMonitoringEx
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
@@ -116,6 +117,7 @@ class ItMonitoringExporterSideCar {
   private static String monitoringNS = null;
   PrometheusParams promHelmParams = null;
   GrafanaParams grafanaHelmParams = null;
+  private static String ingressClassName;
   private static String monitoringExporterEndToEndDir = null;
   private static String monitoringExporterSrcDir = null;
 
@@ -523,8 +525,13 @@ class ItMonitoringExporterSideCar {
     }
     logger.info("Grafana is running");
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+    createIngressPathRouting(monitoringNS, "/api",
+        prometheusReleaseName + "-server", 80, ingressClassName);
+    /*
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
         "traefik/traefik-ingress-rules-monitoring.yaml");
+
+     */
   }
 
 
@@ -582,6 +589,8 @@ class ItMonitoringExporterSideCar {
   private static void installTraefikIngressController() {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
-    traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
+    TraefikParams traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+    traefikHelmParams = traefikParams.getHelmParams();
+    ingressClassName = traefikParams.getIngressClassName();
   }
 }

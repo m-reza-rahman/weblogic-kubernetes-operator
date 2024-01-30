@@ -52,12 +52,10 @@ import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPathRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createTraefikIngressRoutingRulesForMonitoring;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteTraefikIngressRoutingRules;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
@@ -494,13 +492,17 @@ class ItMonitoringExporterMetricsFiltering {
           domainNamespace,
           domainUid);
     }
+    /*
     Path dstFile = Paths.get(TestConstants.RESULTS_ROOT,
         domain1Namespace, domain1Uid, "traefik/traefik-ingress-rules-exporter.yaml");
     createTraefikIngressRoutingRules(domain1Namespace, traefikNamespace,
         "traefik/traefik-ingress-rules-exporter.yaml",
         dstFile, domain1Uid);
-    createIngressPathRouting(domainNamespace, domainUid, "/wls-exporter", 
-        "cluster-cluster-1", 8001, ingressClassName);
+
+     */
+    createIngressPathRouting(domainNamespace, "/wls-exporter",
+        domainUid + "-cluster-cluster-1", 8001, ingressClassName);
+
   }
   
   /**
@@ -554,8 +556,13 @@ class ItMonitoringExporterMetricsFiltering {
     }
     logger.info("Grafana is running");
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
+    /*
     createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
         "traefik/traefik-ingress-rules-monitoring.yaml");
+
+     */
+    createIngressPathRouting(monitoringNS, "/api",
+        prometheusReleaseName + "-server", 80, ingressClassName);
   }
 
 
