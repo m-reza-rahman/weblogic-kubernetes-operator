@@ -51,6 +51,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKD_TRAEFIK_ROUTEHOST;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -61,7 +62,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_VERSION;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_BUILD_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultWitParams;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageRepoLogin;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
@@ -71,20 +71,17 @@ import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createfixPVCOwnerContainer;
 import static oracle.weblogic.kubernetes.utils.PodUtils.execInPod;
-import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -291,8 +288,7 @@ public class ItMiiDomainModelInPV {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
       assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", 
           TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
-    }
-    if (OKD) {
+    } else if (OKD) {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
       getLogger().info("ON OKD Created hostHader: {0}", hostHeader);
     }
@@ -368,7 +364,7 @@ public class ItMiiDomainModelInPV {
         // In non-internal OKE env, verifyMemberHealth using adminSvcExtHost by sending HTTP request from local VM
 
         // TEST, HERE
-        String extSvcPodName = getExternalServicePodName(adminServerPodName);
+        /*String extSvcPodName = getExternalServicePodName(adminServerPodName);
         logger.info("**** adminServerPodName={0}", adminServerPodName);
         logger.info("**** extSvcPodName={0}", extSvcPodName);
 
@@ -380,15 +376,18 @@ public class ItMiiDomainModelInPV {
         int serviceNodePort = assertDoesNotThrow(()
             -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
             "Getting admin server node port failed");
-        String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+        String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);*/
 
+        String hostAndPort = "";
         StringBuffer curlCmd = new StringBuffer("curl -vkg --noproxy '*' ");
         if (TestConstants.KIND_CLUSTER
             && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
           hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
-          curlCmd.append(" -H 'host: " + hostHeader + "' ");
+        } else if (OKD) {
+          hostAndPort = Files.readString(OKD_TRAEFIK_ROUTEHOST);
         }
         logger.info("**** hostAndPort={0}", hostAndPort);
+        curlCmd.append(" -H 'host: " + hostHeader + "' ");
         String url = "\"http://" + hostAndPort
             + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + code + "\"";
         curlCmd.append(url);

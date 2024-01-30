@@ -225,7 +225,10 @@ public interface TestConstants {
   public static final int TRAEFIK_INGRESS_HTTP_NODEPORT = 30880;
   public static final int TRAEFIK_INGRESS_HTTPS_NODEPORT = 30443;
   public static final int TRAEFIK_INGRESS_HTTP_HOSTPORT = 2080;
-  public static final int TRAEFIK_INGRESS_HTTPS_HOSTPORT = 2443;  
+  public static final int TRAEFIK_INGRESS_HTTPS_HOSTPORT = 2443;
+  public static final String TRAEFIK_SERVICENAME = TRAEFIK_RELEASE_NAME + "-traefik";
+  public static final Path OKD_TRAEFIK_ROUTEHOST = assertDoesNotThrow(()
+      -> Files.createTempFile("okd_traefik_routehost", ".name"));
 
   // ELK Stack and WebLogic logging exporter constants
   public static final String ELASTICSEARCH_NAME = "elasticsearch";
