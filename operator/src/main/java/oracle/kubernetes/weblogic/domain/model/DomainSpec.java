@@ -436,7 +436,8 @@ public class DomainSpec extends BaseConfiguration {
           + "WebLogic Server instances that are already running when the `fluentbitSpecification` field is created "
           + "or deleted, will not be affected until they are restarted. When any given server "
           + "is restarted for another reason, such as a change to the `restartVersion`, then the newly created pod "
-          + " will have the fluent-bit sidecar or not, as appropriate")  private FluentbitSpecification fluentbitSpecification;
+          + " will have the fluent-bit sidecar or not, as appropriate")
+  private FluentbitSpecification fluentbitSpecification;
 
   public FluentbitSpecification getFluentbitSpecification() {
     return fluentbitSpecification;
