@@ -492,6 +492,8 @@ class ItMonitoringExporterMetricsFiltering {
 
     createIngressPathRouting(domainNamespace, "/wls-exporter",
         domainUid + "-cluster-cluster-1", 8001, ingressClassName);
+    createIngressPathRouting(domainNamespace, "/wls-exporter",
+        domainUid + "-cluster-cluster-2", 8001, ingressClassName);
 
   }
   
