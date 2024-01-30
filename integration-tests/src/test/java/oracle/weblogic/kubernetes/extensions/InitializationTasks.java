@@ -112,6 +112,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallOperator;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesImageExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.imageExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.addSccToDBSvcAccount;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
@@ -690,6 +691,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     //oc -n ns-traefik get traefik-release8-traefik  '-o=jsonpath={.spec.host}'
     if (OKD) {
       String host = createRouteForOKD(TRAEFIK_SERVICENAME, TRAEFIK_NAMESPACE);
+      addSccToDBSvcAccount("default", TRAEFIK_SERVICENAME);
       assertDoesNotThrow(() -> Files.writeString(OKD_TRAEFIK_ROUTEHOST, host));
     }
   }  
