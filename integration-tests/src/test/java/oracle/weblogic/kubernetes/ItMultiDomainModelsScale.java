@@ -196,7 +196,7 @@ class ItMultiDomainModelsScale {
     // Patch the route just created to set tls termination to passthrough
     setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
 
-    if (!OKD) {
+    if (!OKD && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       // install and verify NGINX
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
@@ -260,10 +260,9 @@ class ItMultiDomainModelsScale {
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
       verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+      // verify admin console login using ingress controller
+      verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
     }
-    
-    // verify admin console login using ingress controller
-    verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
 
     final String hostName = "localhost";
     String forwardedPortNo = startPortForwardProcess(hostName, domainNamespace, domainUid, ADMIN_SERVER_PORT);
@@ -323,10 +322,9 @@ class ItMultiDomainModelsScale {
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
       verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+      // verify admin console login using ingress controller
+      verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
     }
-
-    // verify admin console login using ingress controller
-    verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
 
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
@@ -388,10 +386,9 @@ class ItMultiDomainModelsScale {
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
       verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+      // verify admin console login using ingress controller
+      verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
     }
-
-    // verify admin console login using ingress controller
-    verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
 
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
@@ -734,7 +731,7 @@ class ItMultiDomainModelsScale {
       createRouteForOKD(domainUid + "-cluster-" + clusterName, domainNamespace);
     }
 
-    if (!OKD) {
+    if (!OKD && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
       createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
           true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
