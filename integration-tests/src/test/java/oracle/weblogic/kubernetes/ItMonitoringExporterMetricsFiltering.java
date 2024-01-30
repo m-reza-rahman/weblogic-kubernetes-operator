@@ -49,6 +49,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVol
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPathRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
@@ -492,6 +493,10 @@ class ItMonitoringExporterMetricsFiltering {
 
     createIngressPathRouting(domainNamespace, "/wls-exporter",
         domainUid + "-cluster-cluster-1", 8001, ingressClassName);
+    String curlCmd = "curl -g --silent --show-error --noproxy '*' " + exporterUrl
+        + " --write-out %{http_code} -o /dev/null";
+    getLogger().info("Executing curl command {0}", curlCmd);
+    assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
 
   }
   
