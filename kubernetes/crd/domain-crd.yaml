@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 8dadbb466beac9921387bc86ee8fd22a48c04fc6085f12d5d21acd77d046adf5
+    weblogic.sha256: 9cebd6b908237616316764acd1ad6e66a5da46edfa7325880cc8e5bacb1d2965
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -9898,6 +9898,23 @@ spec:
                       description: Human-readable message indicating details about
                         last transition.
                       type: string
+                    failureInfo:
+                      description: Details about the failure. This field will only
+                        be set when the condition type is Failed.
+                      type: object
+                      properties:
+                        introspectVersion:
+                          description: The introspectVersion set when the Failed condition
+                            occurred.
+                          type: string
+                        introspectImage:
+                          description: The image used by the introspector when the
+                            Failed condition occurred.
+                          type: string
+                        restartVersion:
+                          description: The restartVersion set when the Failed condition
+                            occurred.
+                          type: string
                     status:
                       description: The status of the condition. Can be True, False,
                         Unknown.
