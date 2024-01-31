@@ -328,8 +328,12 @@ class ItIstioMiiDomain {
         + "maxThreadsConstraintRuntime ";
     String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
 
-    boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
-    assertTrue(checkWm, "Failed to access WorkManagerRuntime");
+    //boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
+    Map<String, String> headers = new HashMap<>();
+    headers.put("host", domainNamespace + ".org");
+    headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
+    checkApp(wmRuntimeUrl, headers);
+    //assertTrue(checkWm, "Failed to access WorkManagerRuntime");
     logger.info("Found new work manager runtime");
 
     verifyPodsNotRolled(domainNamespace, pods);
@@ -391,5 +395,16 @@ class ItIstioMiiDomain {
       logger.info(result.stdout());
       logger.info(result.stderr());
     });
+  }
+  
+  private void checkApp(String url, Map<String, String> headers) {
+    testUntil(
+        () -> {
+          HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
+          return response.statusCode() == 200;
+        },
+        logger,
+        "application to be ready {0}",
+        url);
   }
 }
