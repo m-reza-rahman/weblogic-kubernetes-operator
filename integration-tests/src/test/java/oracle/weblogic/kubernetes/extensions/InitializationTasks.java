@@ -675,6 +675,9 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     deleteNamespace(TRAEFIK_NAMESPACE);
     assertDoesNotThrow(() -> new Namespace().name(TRAEFIK_NAMESPACE).create());
     getLogger().info("Installing traefik in namespace {0}", TRAEFIK_NAMESPACE);
+    if (OKD) {
+      addAnyUidToNsSvcAccount("default", TRAEFIK_SERVICENAME);
+    }
     TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
         TRAEFIK_INGRESS_HTTPS_NODEPORT, "NodePort");    
     assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, traefikParams.getIngressClassName()));    
@@ -691,7 +694,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     //oc -n ns-traefik get traefik-release8-traefik  '-o=jsonpath={.spec.host}'
     if (OKD) {
       String host = createRouteForOKD(TRAEFIK_SERVICENAME, TRAEFIK_NAMESPACE);
-      addAnyUidToNsSvcAccount("default", TRAEFIK_SERVICENAME);
+      //addAnyUidToNsSvcAccount("default", TRAEFIK_SERVICENAME);
       assertDoesNotThrow(() -> Files.writeString(OKD_TRAEFIK_ROUTEHOST, host));
     }
   }  
