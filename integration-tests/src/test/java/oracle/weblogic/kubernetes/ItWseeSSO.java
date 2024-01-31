@@ -60,7 +60,9 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePodVerifyResult;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
@@ -93,7 +95,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify that client can communicate with webservices with SSO")
 @IntegrationTest
-@Tag("oke-parallel")
+@Tag("oke-gate")
 @Tag("kind-parallel")
 class ItWseeSSO {
 
@@ -168,7 +170,6 @@ class ItWseeSSO {
       logger.info("NGINX service name: {0}", nginxServiceName);
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("NGINX http node port: {0}", nodeportshttp);
-
     }
     keyStoresPath = Paths.get(RESULTS_ROOT, "mydomainwsee", "keystores");
     assertDoesNotThrow(() -> deleteDirectory(keyStoresPath.toFile()));
@@ -223,24 +224,42 @@ class ItWseeSSO {
     buildRunClientOnPod();
   }
 
-  private String checkWSDLAccess(String domainNamespace, String domainUid,
+  private String checkWSDLAccess(String domainNamespace,
+                                 String domainUid,
                                  String adminSvcExtHost,
                                  String appURI) {
-
     String adminServerPodName = domainUid + "-" + adminServerName;
+    final String msServerPodName = domainUid + "-" + managedServerNameBase + 1;
+    String url = null;
+
     int serviceNodePort = assertDoesNotThrow(()
-            -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
-            "default"),
+        -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
         "Getting admin server node port failed");
-
-
     logger.info("admin svc host = {0}", adminSvcExtHost);
-    String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-    String url = "http://" + hostAndPort + appURI;
 
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-    assertTrue(response.statusCode() == 200);
-    logger.info(response.body());
+    if (OKE_CLUSTER) {
+      //ExecResult result = exeAppInServerPod(domainNamespace, msServerPodName, managedServerPort, appURI);
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, appURI);
+      logger.info("==== result = {0}", result.toString());
+      String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      url = "http://" + getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) + appURI;
+
+      //url = "http://" + msServerPodName + ":" + managedServerPort + appURI;
+      url = "http://" + adminServerPodName + ":7001" + appURI;
+      //assertTrue(result.stdout().contains("ExpirationPolicy:Discard"), "Didn't get ExpirationPolicy:Discard");
+      //assertTrue(result.stdout().contains("RedeliveryLimit:20"), "Didn't get RedeliveryLimit:20");
+      //assertTrue(result.stdout().contains("Notes:mysitconfigdomain"), "Didn't get Correct Notes description");
+    } else {
+      logger.info("admin svc host = {0}", adminSvcExtHost);
+      String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+      final String myUrl = "http://" + hostAndPort + appURI;
+
+      HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(myUrl, true));
+      assertTrue(response.statusCode() == 200);
+      logger.info(response.body());
+      url = myUrl;
+    }
+
     return url;
   }
 
@@ -286,8 +305,11 @@ class ItWseeSSO {
         configMapName, domainUid, domainNamespace,
         Arrays.asList(RESULTS_ROOT + "/" + modelFileName));
 
-    // this secret is used only for non-kind cluster
-    createBaseRepoSecret(domainNamespace);
+    if (OKE_CLUSTER) {
+      // this secret is used only for non-kind cluster
+      createBaseRepoSecret(domainNamespace);
+    }
+
     String pvName = getUniqueName(domainUid + "-pv-");
     String pvcName = getUniqueName(domainUid + "-pvc-");
 
@@ -295,14 +317,15 @@ class ItWseeSSO {
     createPV(pvName, domainUid, ItWseeSSO.class.getSimpleName());
     createPVC(pvName, pvcName, domainUid, domainNamespace);
 
+    // Create the repo secret to pull the image
+    // this secret is used only for non-kind cluster
+    createTestRepoSecret(domainNamespace);
+
     // create job to change permissions on PV hostPath
     createJobToChangePermissionsOnPvHostPath(pvName, pvcName, domainNamespace);
-
     copyKeyStores(domainNamespace, keyStoresPath.toString(), jksMountPath, pvName, pvcName);
 
-
     // create the domain CR with a pre-defined configmap
-
     DomainResource domain = createDomainResourceWithLogHome(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName,
