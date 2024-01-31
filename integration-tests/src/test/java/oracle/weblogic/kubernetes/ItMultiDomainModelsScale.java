@@ -47,9 +47,12 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.WLS_DOMAIN_TYPE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
@@ -67,6 +70,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServe
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
@@ -196,13 +200,17 @@ class ItMultiDomainModelsScale {
     // Patch the route just created to set tls termination to passthrough
     setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
 
-    if (!OKD && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      logger.info("NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      logger.info("NGINX http node port: {0}", nodeportshttp);
+    if (!OKD) {
+      if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        // install and verify NGINX
+        nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        logger.info("NGINX service name: {0}", nginxServiceName);
+        nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+        logger.info("NGINX http node port: {0}", nodeportshttp);
+      } else {
+        nodeportshttp = TRAEFIK_INGRESS_HTTP_NODEPORT;
+      }
     }
   }
 
@@ -254,7 +262,7 @@ class ItMultiDomainModelsScale {
     }
 
     // verify admin console login
-    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
@@ -316,7 +324,7 @@ class ItMultiDomainModelsScale {
         false, "", "", 0, "", "", curlCmd, managedServersBeforeScale);
 
     // verify admin console login
-    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
@@ -380,7 +388,7 @@ class ItMultiDomainModelsScale {
         WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
 
     // verify admin console login
-    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
@@ -581,9 +589,9 @@ class ItMultiDomainModelsScale {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
-      return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s:%s/%s/index.jsp",
+      return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s/%s/index.jsp",
           domainUid + "." + domainNamespace + "." + clusterName + ".test",
-          host, nodeportshttp, appContextRoot);
+          getHostAndPort(host, nodeportshttp), appContextRoot);
     }
   }
 
@@ -731,7 +739,7 @@ class ItMultiDomainModelsScale {
       createRouteForOKD(domainUid + "-cluster-" + clusterName, domainNamespace);
     }
 
-    if (!OKD && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (!OKD && WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
       createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
           true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
