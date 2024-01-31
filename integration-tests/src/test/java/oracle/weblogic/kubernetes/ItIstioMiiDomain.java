@@ -315,23 +315,28 @@ class ItIstioMiiDomain {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
-    replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
-        Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
-
-    String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
-
-    verifyIntrospectorRuns(domainUid, domainNamespace);
-
     String resourcePath = "/management/weblogic/latest/domainRuntime"
         + "/serverRuntimes/managed-server1/applicationRuntimes"
         + "/testwebapp/workManagerRuntimes/newWM/"
         + "maxThreadsConstraintRuntime";
-    String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
-
-    //boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
+    String resourcePath2 = "/management/weblogic/latest/domainRuntime"
+        + "/serverRuntimes/managed-server1/applicationRuntimes"
+        + "/testwebapp/workManagerRuntimes";
+    
     Map<String, String> headers = new HashMap<>();
     headers.put("host", domainNamespace + ".org");
     headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
+    checkApp("http://" + hostAndPort + resourcePath2, headers);
+    
+    replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
+        Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
+
+    String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
+    verifyIntrospectorRuns(domainUid, domainNamespace);
+ 
+    String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
+    //boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
+    checkApp("http://" + hostAndPort + resourcePath2, headers);
     checkApp(wmRuntimeUrl, headers);
     //assertTrue(checkWm, "Failed to access WorkManagerRuntime");
     logger.info("Found new work manager runtime");
