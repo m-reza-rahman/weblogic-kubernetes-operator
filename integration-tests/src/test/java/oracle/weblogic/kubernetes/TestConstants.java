@@ -227,6 +227,7 @@ public interface TestConstants {
   public static final int TRAEFIK_INGRESS_HTTP_HOSTPORT = 2080;
   public static final int TRAEFIK_INGRESS_HTTPS_HOSTPORT = 2443;
   public static final String TRAEFIK_SERVICENAME = TRAEFIK_RELEASE_NAME + "-traefik";
+  public static final String TRAEFIK_SERVICEACCOUNT = TRAEFIK_RELEASE_NAME + "-traefik";
   public static final Path OKD_TRAEFIK_ROUTEHOST = assertDoesNotThrow(()
       -> Files.createTempFile("okd_traefik_routehost", ".name"));
 

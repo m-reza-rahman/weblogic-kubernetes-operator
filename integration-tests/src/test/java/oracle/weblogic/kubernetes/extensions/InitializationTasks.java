@@ -79,6 +79,7 @@ import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_NAMESPACE;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_SERVICEACCOUNT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_SERVICENAME;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_IMAGE_DOMAINHOME;
@@ -676,7 +677,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     assertDoesNotThrow(() -> new Namespace().name(TRAEFIK_NAMESPACE).create());
     getLogger().info("Installing traefik in namespace {0}", TRAEFIK_NAMESPACE);
     if (OKD) {
-      addAnyUidToNsSvcAccount("default", TRAEFIK_NAMESPACE);
+      addAnyUidToNsSvcAccount(TRAEFIK_SERVICEACCOUNT, TRAEFIK_NAMESPACE);
     }
     TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
         TRAEFIK_INGRESS_HTTPS_NODEPORT, "NodePort");    
