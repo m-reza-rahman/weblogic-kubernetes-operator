@@ -70,10 +70,7 @@ pipeline {
         choice(name: 'KIND_VERSION',
                description: 'Kind version.',
                choices: [
-                   '0.18.0',
-                   '0.17.0',
-                   '0.16.0',
-                   '0.15.0'
+                   '0.19.0'
                ]
         )
         choice(name: 'KUBE_VERSION',
