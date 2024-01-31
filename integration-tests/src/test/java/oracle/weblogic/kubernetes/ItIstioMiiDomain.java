@@ -325,7 +325,7 @@ class ItIstioMiiDomain {
     String resourcePath = "/management/weblogic/latest/domainRuntime"
         + "/serverRuntimes/managed-server1/applicationRuntimes"
         + "/testwebapp/workManagerRuntimes/newWM/"
-        + "maxThreadsConstraintRuntime ";
+        + "maxThreadsConstraintRuntime";
     String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
 
     //boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
