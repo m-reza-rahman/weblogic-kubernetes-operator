@@ -341,7 +341,7 @@ public class OKDUtils {
   }
 
   /**
-   * add security context constraints to the service account of namespace.
+   * add privileged security context constraints to the service account of namespace.
    * @param serviceAccount - service account to add to scc
    * @param namespace - namespace to which the service account belongs
    */
@@ -349,6 +349,18 @@ public class OKDUtils {
     assertTrue(Command
         .withParams(new CommandParams()
             .command("oc adm policy add-scc-to-user privileged -z " + serviceAccount + " -n " + namespace))
+        .execute(), "oc expose service failed");
+  }
+
+  /**
+   * add anyuid security context constraints to the service account of namespace.
+   * @param serviceAccount - service account to add to scc
+   * @param namespace - namespace to which the service account belongs
+   */
+  public static void addAnyUidToNsSvcAccount(String serviceAccount, String namespace) {
+    assertTrue(Command
+        .withParams(new CommandParams()
+            .command("oc adm policy add-scc-to-user anyuid -z " + serviceAccount + " -n " + namespace))
         .execute(), "oc expose service failed");
   }
 }

@@ -120,6 +120,7 @@ import static oracle.weblogic.kubernetes.utils.IstioUtils.installIstio;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.uninstallIstio;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
+import static oracle.weblogic.kubernetes.utils.OKDUtils.addAnyUidToNsSvcAccount;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -691,7 +692,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     //oc -n ns-traefik get traefik-release8-traefik  '-o=jsonpath={.spec.host}'
     if (OKD) {
       String host = createRouteForOKD(TRAEFIK_SERVICENAME, TRAEFIK_NAMESPACE);
-      addSccToDBSvcAccount("default", TRAEFIK_SERVICENAME);
+      addAnyUidToNsSvcAccount("default", TRAEFIK_SERVICENAME);
       assertDoesNotThrow(() -> Files.writeString(OKD_TRAEFIK_ROUTEHOST, host));
     }
   }  
