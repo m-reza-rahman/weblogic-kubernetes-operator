@@ -77,7 +77,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test T3 channel deployment")
 @IntegrationTest
 @Tag("olcne-mrg")
-@Tag("oke-sequential")
+//@Tag("oke-sequential")
+@Tag("oke-gate")
 @Tag("kind-sequential")
 class ItT3Channel {
   // namespace constants
