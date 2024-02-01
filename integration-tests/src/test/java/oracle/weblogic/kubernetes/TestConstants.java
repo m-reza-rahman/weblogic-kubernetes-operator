@@ -219,6 +219,7 @@ public interface TestConstants {
   public static final String TRAEFIK_CHART_NAME = "traefik";
   public static final String TRAEFIK_INGRESS_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/traefik";
   public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
+  public static final String TRAEFIK_IMAGE_REPO_SECRET_NAME = "traefik-image-repo-secret";
 
   public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v2.10.5";
   public static final String TRAEFIK_NAMESPACE = "ns-traefik";

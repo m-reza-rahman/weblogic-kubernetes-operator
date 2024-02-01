@@ -44,6 +44,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.ARM;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_EMAIL;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_USERNAME;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_TENANCY;
@@ -76,6 +77,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_BUILD_IMAGES_IF_EXISTS;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_IMAGE_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_NAMESPACE;
@@ -116,6 +118,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.imageExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.FileUtils.checkDirectory;
 import static oracle.weblogic.kubernetes.utils.FileUtils.cleanupDirectory;
+import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageRegistrySecret;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.installIstio;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.uninstallIstio;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
@@ -676,12 +679,18 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     deleteNamespace(TRAEFIK_NAMESPACE);
     assertDoesNotThrow(() -> new Namespace().name(TRAEFIK_NAMESPACE).create());
     getLogger().info("Installing traefik in namespace {0}", TRAEFIK_NAMESPACE);
+
+    // this secret is used for non-kind cluster
+    createImageRegistrySecret(BASE_IMAGES_REPO_USERNAME, BASE_IMAGES_REPO_PASSWORD, BASE_IMAGES_REPO_EMAIL,
+            BASE_IMAGES_REPO, TRAEFIK_IMAGE_REPO_SECRET_NAME, TRAEFIK_NAMESPACE);
+    imageRepoLogin(BASE_IMAGES_REPO, BASE_IMAGES_REPO_USERNAME, BASE_IMAGES_REPO_PASSWORD);
+
     if (OKD) {
       addAnyUidToNsSvcAccount(TRAEFIK_SERVICEACCOUNT, TRAEFIK_NAMESPACE);
-      imageRepoLogin(BASE_IMAGES_REPO, BASE_IMAGES_REPO_USERNAME, BASE_IMAGES_REPO_PASSWORD);
     }
+
     TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
-        TRAEFIK_INGRESS_HTTPS_NODEPORT, "NodePort");    
+        TRAEFIK_INGRESS_HTTPS_NODEPORT, "NodePort", TRAEFIK_IMAGE_REPO_SECRET_NAME);
     assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, traefikParams.getIngressClassName()));    
     String cmd = KUBERNETES_CLI + " get all -A";
     try {
@@ -696,9 +705,9 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     //oc -n ns-traefik get traefik-release8-traefik  '-o=jsonpath={.spec.host}'
     if (OKD) {
       String host = createRouteForOKD(TRAEFIK_SERVICENAME, TRAEFIK_NAMESPACE);
-      //addAnyUidToNsSvcAccount("default", TRAEFIK_SERVICENAME);
       assertDoesNotThrow(() -> Files.writeString(OKD_TRAEFIK_ROUTEHOST, host));
     }
-  }  
+  }
+
 
 }

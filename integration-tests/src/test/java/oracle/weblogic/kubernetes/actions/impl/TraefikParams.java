@@ -23,6 +23,7 @@ public class TraefikParams {
   private String traefikImage = TRAEFIK_INGRESS_IMAGE_NAME;
   private String traefikImageTag = TRAEFIK_INGRESS_IMAGE_TAG;
   private String traefikRegistry = TRAEFIK_INGRESS_IMAGE_REGISTRY;
+  private String traefikImageSecret;
   private String type;
   private String ingressClassName;
 
@@ -31,6 +32,7 @@ public class TraefikParams {
   private static final String TRAEFIK_IMAGE = "image.repository";
   private static final String TRAEFIK_IMAGE_REGISTRY = "image.registry";
   private static final String TRAEFIK_IMAGE_TAG = "image.tag";
+  private static final String TRAEFIK_IMAGE_SECRET = "image.secret";
   private static final String INGRESS_CLASS_NAME = "ingressClass.name";
   private static final String TYPE = "service.type";
 
@@ -84,7 +86,16 @@ public class TraefikParams {
   
   public String getType() {
     return type;
-  }  
+  }
+
+  public TraefikParams traefikImageSecret(String traefikImageSecret) {
+    this.traefikImageSecret = traefikImageSecret;
+    return this;
+  }
+
+  public String geTraefikImageSecret() {
+    return traefikImageSecret;
+  }
 
   /**
    * Loads Helm values into a value map.
@@ -106,6 +117,7 @@ public class TraefikParams {
     values.put(TRAEFIK_IMAGE_TAG, traefikImageTag);
     values.put(INGRESS_CLASS_NAME, ingressClassName);
     values.put(TYPE, type);
+    values.put(TRAEFIK_IMAGE_SECRET, traefikImageSecret);
 
     values.values().removeIf(Objects::isNull);
     return values;

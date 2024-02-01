@@ -221,7 +221,7 @@ public class LoadBalancerUtils {
       int nodeportshttps) {
     return installAndVerifyTraefik(traefikNamespace, nodeportshttp, nodeportshttps, null);
   }
-  
+
   /** Install Traefik and wait for up to five minutes for the Traefik pod to be ready.
    *
    * @param traefikNamespace the namespace in which the Traefik ingress controller is installed
@@ -234,6 +234,23 @@ public class LoadBalancerUtils {
                                                    int nodeportshttp,
                                                    int nodeportshttps,
                                                    String type) {
+    return installAndVerifyTraefik(traefikNamespace, nodeportshttp, nodeportshttps, type, null);
+  }
+  
+  /** Install Traefik and wait for up to five minutes for the Traefik pod to be ready.
+   *
+   * @param traefikNamespace the namespace in which the Traefik ingress controller is installed
+   * @param nodeportshttp the web nodeport of Traefik
+   * @param nodeportshttps the websecure nodeport of Traefik
+   * @param type NodePort or LoadBalancer
+   * @param traefikimagepullsecret the secret to pull Traefik image
+   * @return the Traefik Helm installation parameters
+   */
+  public static TraefikParams installAndVerifyTraefik(String traefikNamespace,
+                                                   int nodeportshttp,
+                                                   int nodeportshttps,
+                                                   String type,
+                                                   String traefikimagepullsecret) {
     LoggingFacade logger = getLogger();
     // Helm install parameters
     HelmParams traefikHelmParams = new HelmParams()
@@ -246,6 +263,13 @@ public class LoadBalancerUtils {
     // Traefik chart values to override
     TraefikParams traefikParams = new TraefikParams()
         .helmParams(traefikHelmParams);
+    // TODO for non-kind cluster set secret to pull images from registry
+    if (traefikimagepullsecret != null) {
+      traefikParams.traefikImageSecret(traefikimagepullsecret);
+      String imagePullSecret = traefikimagepullsecret; //TODO
+      logger.info("Going to install Traekik with traefikImageSecret: {0}",
+          imagePullSecret);
+    }
     traefikParams
         .nodePortsHttp(nodeportshttp)
         .nodePortsHttps(nodeportshttps);
