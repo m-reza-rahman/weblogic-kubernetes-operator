@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
@@ -738,10 +740,16 @@ class ItMultiDomainModelsScale {
       createRouteForOKD(domainUid + "-cluster-" + clusterName, domainNamespace);
     }
 
-    if (!OKD && WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (!OKD) {
       logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-      createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
-          true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
+      if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
+            true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
+      } else {
+        assertDoesNotThrow(()
+            -> createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
+            true, Files.readString(INGRESS_CLASS_FILE_NAME), true, ADMIN_SERVER_PORT));
+      }
     }
   }
 
