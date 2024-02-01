@@ -185,6 +185,8 @@ class ItCrossDomainTransaction {
     // property file
     updatePropertyFile();
 
+    logger.info("============OKE_CLUSTER is: {0}", OKE_CLUSTER);
+
     // install and verify Traefik if not running on OKD
     if (OKE_CLUSTER) {
       traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
@@ -379,8 +381,6 @@ class ItCrossDomainTransaction {
       () -> getServiceNodePort(domain2Namespace, getExternalServicePodName(domain2AdminServerPodName), "default"),
         "Getting admin server node port failed");
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
-
-    logger.info("============OKE_CLUSTER is: {0}", OKE_CLUSTER);
 
     if (OKE_CLUSTER) {
       // get ingress service Name and Nodeport

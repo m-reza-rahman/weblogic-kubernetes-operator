@@ -5,6 +5,7 @@ package oracle.weblogic.kubernetes;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +31,8 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.BuildApplication;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -44,7 +47,9 @@ import static oracle.weblogic.kubernetes.TestConstants.DEFAULT_LISTEN_PORT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -77,8 +82,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test T3 channel deployment")
 @IntegrationTest
 @Tag("olcne-mrg")
-//@Tag("oke-sequential")
-@Tag("oke-gate")
+@Tag("oke-sequential")
 @Tag("kind-sequential")
 class ItT3Channel {
   // namespace constants
@@ -314,6 +318,7 @@ class ItT3Channel {
   private static void verifyMemberHealth(String adminServerPodName, List<String> managedServerNames,
       String user, String password) {
 
+    /*
     logger.info("Getting node port for default channel");
     int serviceNodePort = assertDoesNotThrow(()
         -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
@@ -325,23 +330,65 @@ class ItT3Channel {
       host = "[" + host + "]";
     }
     String url = "http://" + host + ":" + serviceNodePort
-        + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
+        + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;*/
 
-    testUntil(
-        () -> {
-          HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-          assertEquals(200, response.statusCode(), "Status code not equals to 200");
-          boolean health = true;
-          for (String managedServer : managedServerNames) {
-            health = health && response.body().contains(managedServer + ":HEALTH_OK");
-            if (health) {
-              logger.info(managedServer + " is healthy");
-            } else {
-              logger.info(managedServer + " health is not OK or server not found");
-            }
+    testUntil(() -> {
+      if (OKE_CLUSTER) {
+        // In internal OKE env, verifyMemberHealth in admin server pod
+        int adminPort = 7001;
+        final String command = KUBERNETES_CLI + " exec -n "
+            + domainNamespace + "  " + adminServerPodName + " -- curl http://"
+            + adminServerPodName + ":"
+            + adminPort + "/clusterview/ClusterViewServlet"
+            + "\"?user=" + user
+            + "&password=" + password + "\"";
+
+        ExecResult result = null;
+        try {
+          result = ExecCommand.exec(command, true);
+        } catch (IOException | InterruptedException ex) {
+          logger.severe(ex.getMessage());
+        }
+        String response = result.stdout().trim();
+        logger.info(response);
+        boolean health = true;
+        for (String managedServer : managedServerNames) {
+          health = health && response.contains(managedServer + ":HEALTH_OK");
+          if (health) {
+            logger.info(managedServer + " is healthy");
+          } else {
+            logger.info(managedServer + " health is not OK or server not found");
           }
-          return health;
-        },
+        }
+        return health;
+      } else {
+        logger.info("Getting node port for default channel");
+        int serviceNodePort = assertDoesNotThrow(()
+            -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+            "Getting admin server node port failed");
+
+        logger.info("Checking the health of servers in cluster");
+        String host = K8S_NODEPORT_HOST;
+        if (host.contains(":")) {
+          host = "[" + host + "]";
+        }
+        String url = "http://" + host + ":" + serviceNodePort
+            + "/clusterview/ClusterViewServlet?user=" + user + "&password=" + password;
+
+        HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
+        assertEquals(200, response.statusCode(), "Status code not equals to 200");
+        boolean health = true;
+        for (String managedServer : managedServerNames) {
+          health = health && response.body().contains(managedServer + ":HEALTH_OK");
+          if (health) {
+            logger.info(managedServer + " is healthy");
+          } else {
+            logger.info(managedServer + " health is not OK or server not found");
+          }
+        }
+        return health;
+      }
+    },
         logger,
         "Verifying the health of all cluster members");
   }
