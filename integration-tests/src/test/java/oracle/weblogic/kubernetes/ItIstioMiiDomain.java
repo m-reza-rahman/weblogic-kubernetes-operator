@@ -212,6 +212,15 @@ class ItIstioMiiDomain {
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG, configMapName);
     domain = createClusterResourceAndAddReferenceToDomain(
         domainUid + "-" + clusterName, clusterName, domainNamespace, domain, replicaCount);
+    logger.info("useOnlineUpdate {0}", domain.getSpec().getConfiguration().useOnlineUpdate);
+    logger.info(Yaml.dump(domain));
+    try {
+      logger.info("DOMAIN CUSTOM RESOURCE START");
+      logger.info(Yaml.dump(TestActions.getDomainCustomResource(domainUid, domainNamespace)));
+      logger.info("DOMAIN CUSTOM RESOURCE END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }    
 
     // create model in image domain
     createDomainAndVerify(domain, domainNamespace);
@@ -375,6 +384,7 @@ class ItIstioMiiDomain {
 
     replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
+    restartDomain();
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
     verifyIntrospectorRuns(domainUid, domainNamespace);
