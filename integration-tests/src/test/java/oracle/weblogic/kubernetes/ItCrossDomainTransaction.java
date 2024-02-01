@@ -26,6 +26,8 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
+import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.assertions.TestAssertions;
@@ -43,6 +45,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
@@ -58,6 +61,7 @@ import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DbUtils.getDBNodePort;
 import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
@@ -68,6 +72,7 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
@@ -124,13 +129,16 @@ class ItCrossDomainTransaction {
   private static String dbPodIP = null;
   private static int dbPort = 1521;
 
+  private static HelmParams traefikHelmParams = null;
+  private static TraefikParams traefikParams = null;
+
   /**
    * Install Operator.
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *     JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(3) List<String> namespaces) {
+  public static void initAll(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
 
     // get a new unique opNamespace
@@ -145,6 +153,11 @@ class ItCrossDomainTransaction {
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(2), "Namespace list is null");
     domain2Namespace = namespaces.get(2);
+
+    // get a unique Traefik namespace
+    logger.info("Assign a unique namespace for Traefik");
+    assertNotNull(namespaces.get(3), "Namespace list is null");
+    String traefikNamespace = namespaces.get(3);
 
     final int dbListenerPort = getNextFreePort();
     ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
@@ -171,6 +184,12 @@ class ItCrossDomainTransaction {
     // required for this to take effect. So, copying the property file to RESULT_ROOT and updating the
     // property file
     updatePropertyFile();
+
+    // install and verify Traefik if not running on OKD
+    if (OKE_CLUSTER) {
+      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
+      traefikHelmParams = traefikParams.getHelmParams();
+    }
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
@@ -361,7 +380,20 @@ class ItCrossDomainTransaction {
         "Getting admin server node port failed");
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
 
-    hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
+    if (OKE_CLUSTER) {
+      // get ingress service Name and Nodeport
+      String ingressServiceName = traefikHelmParams.getReleaseName();
+      String traefikNamespace = traefikHelmParams.getNamespace();
+
+      int ingressServiceNodePort = assertDoesNotThrow(()
+          -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
+          "Getting Ingress Service node port failed");
+      logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
+
+      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace);
+    } else {
+      hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
+    }
   }
 
   /*
