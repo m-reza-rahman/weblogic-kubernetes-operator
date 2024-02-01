@@ -11,6 +11,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.Yaml;
+import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -157,12 +160,42 @@ class ItMiiDynamicUpdatePart1 {
       pods.put(helper.managedServerPrefix + i, 
           getPodCreationTime(helper.domainNamespace, helper.managedServerPrefix + i));
     }
+    try {
+      logger.info("DOMAIN CUSTOM RESOURCE START");
+      logger.info(Yaml.dump(TestActions.getDomainCustomResource(domainUid, helper.domainNamespace)));
+      logger.info("DOMAIN CUSTOM RESOURCE END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }
+
+    try {
+      logger.info("ADMIN SERVER LOG START");
+      logger.info(Yaml.dump(TestActions.getPodLog(helper.adminServerPodName, helper.domainNamespace)));
+      logger.info("ADMIN SERVER LOG END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }
     replaceConfigMapWithModelFiles(MiiDynamicUpdateHelper.configMapName, domainUid, helper.domainNamespace,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, helper.domainNamespace);
 
     verifyIntrospectorRuns(domainUid, helper.domainNamespace);
+    try {
+      logger.info("DOMAIN CUSTOM RESOURCE START");
+      logger.info(Yaml.dump(TestActions.getDomainCustomResource(domainUid, helper.domainNamespace)));
+      logger.info("DOMAIN CUSTOM RESOURCE END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }
+
+    try {
+      logger.info("ADMIN SERVER LOG START");
+      logger.info(Yaml.dump(TestActions.getPodLog(helper.adminServerPodName, helper.domainNamespace)));
+      logger.info("ADMIN SERVER LOG END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }    
 
     testUntil(
         () -> checkWorkManagerRuntime(helper.adminSvcExtHost, helper.domainNamespace,

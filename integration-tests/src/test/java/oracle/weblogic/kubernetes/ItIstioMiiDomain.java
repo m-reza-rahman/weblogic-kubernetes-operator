@@ -15,15 +15,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.OnlineUpdate;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.TestActions;
 import oracle.weblogic.kubernetes.annotations.DisabledOn12213Image;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -338,11 +341,43 @@ class ItIstioMiiDomain {
     headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
     checkApp("http://" + hostAndPort + resourcePath2, headers);
     
+    try {
+      logger.info("DOMAIN CUSTOM RESOURCE START");
+      logger.info(Yaml.dump(TestActions.getDomainCustomResource(domainUid, domainNamespace)));
+      logger.info("DOMAIN CUSTOM RESOURCE END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }
+
+    try {
+      logger.info("ADMIN SERVER LOG START");
+      logger.info(Yaml.dump(TestActions.getPodLog(adminServerPodName, domainNamespace, "weblogic-server")));
+      logger.info("ADMIN SERVER LOG END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }
+
     replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
     verifyIntrospectorRuns(domainUid, domainNamespace);
+    
+    try {
+      logger.info("DOMAIN CUSTOM RESOURCE START");
+      logger.info(Yaml.dump(TestActions.getDomainCustomResource(domainUid, domainNamespace)));
+      logger.info("DOMAIN CUSTOM RESOURCE END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }
+    
+    try {
+      logger.info("ADMIN SERVER LOG START");
+      logger.info(Yaml.dump(TestActions.getPodLog(adminServerPodName, domainNamespace, "weblogic-server")));
+      logger.info("ADMIN SERVER LOG END");
+    } catch (ApiException ex) {
+      logger.severe(ex.getMessage());
+    }    
  
     String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
     //boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");

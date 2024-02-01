@@ -16,6 +16,7 @@ import java.util.concurrent.Callable;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -89,6 +90,8 @@ public class ConfigMapUtils {
     Map<String, String> data = new HashMap<>();
 
     for (String modelFile : modelFiles) {
+      logger.info("Adding model file {0}", modelFile);
+      assertDoesNotThrow(() -> logger.info(Files.readString(Paths.get(modelFile))));
       addModelFile(data, modelFile);
     }
 
@@ -99,6 +102,7 @@ public class ConfigMapUtils {
     V1ConfigMap configMap = new V1ConfigMap()
         .data(data)
         .metadata(meta);
+    logger.info(Yaml.dump(configMap));
 
     assertTrue(assertDoesNotThrow(() -> createConfigMap(configMap),
         String.format("Create ConfigMap %s failed due to Kubernetes client  ApiException", configMapName)),
