@@ -105,7 +105,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
     + "rolling restart behavior in a multi-cluster MII domain and "
     + "the sample application can be accessed via NGINX ingress controller")
 @Tag("kind-sequential")
-@Tag("oke-gate")
+@Tag("oke-sequential")
 @IntegrationTest
 class ItMultiDomainModelsScale {
 
@@ -712,8 +712,11 @@ class ItMultiDomainModelsScale {
 
     if (!OKD) {
       logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-      createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
-          true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
+      //createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
+      //true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
+
+      createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
+          false, nginxHelmParams.getIngressClassName(), false, 0);
     }
   }
 
