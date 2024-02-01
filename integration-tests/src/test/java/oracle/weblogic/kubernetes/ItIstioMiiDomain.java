@@ -46,6 +46,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.ISTIO_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -328,18 +329,33 @@ class ItIstioMiiDomain {
       pods.put(managedServerPrefix + i, getPodCreationTime(domainNamespace, managedServerPrefix + i));
     }
 
+    String resourcePath5 = "/management/weblogic/latest/domainRuntime"
+        + "/serverRuntimes/managed-server1/applicationRuntimes/";
+
+    String resourcePath3 = "/management/weblogic/latest/domainRuntime"
+        + "/serverRuntimes/managed-server1/applicationRuntimes"
+        + "/testwebapp/workManagerRuntimes";
+
+    String resourcePath4 = "/management/weblogic/latest/domainRuntime"
+        + "/serverRuntimes/managed-server1/applicationRuntimes/"
+        + MII_BASIC_APP_DEPLOYMENT_NAME + "/workManagerRuntimes";
+
     String resourcePath = "/management/weblogic/latest/domainRuntime"
         + "/serverRuntimes/managed-server1/applicationRuntimes"
         + "/testwebapp/workManagerRuntimes/newWM/"
         + "maxThreadsConstraintRuntime";
+
     String resourcePath2 = "/management/weblogic/latest/domainRuntime"
-        + "/serverRuntimes/managed-server1/applicationRuntimes"
-        + "/testwebapp/workManagerRuntimes";
+        + "/serverRuntimes/managed-server1/applicationRuntimes/"
+        + MII_BASIC_APP_DEPLOYMENT_NAME + "/workManagerRuntimes/newWM/";
+    
     
     Map<String, String> headers = new HashMap<>();
     headers.put("host", domainNamespace + ".org");
     headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
-    checkApp("http://" + hostAndPort + resourcePath2, headers);
+    checkApp("http://" + hostAndPort + resourcePath5, headers);
+    checkApp("http://" + hostAndPort + resourcePath3, headers);
+    checkApp("http://" + hostAndPort + resourcePath4, headers);
     
     try {
       logger.info("DOMAIN CUSTOM RESOURCE START");
@@ -381,6 +397,9 @@ class ItIstioMiiDomain {
  
     String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
     //boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
+    checkApp("http://" + hostAndPort + resourcePath5, headers);
+    checkApp("http://" + hostAndPort + resourcePath3, headers);
+    checkApp("http://" + hostAndPort + resourcePath4, headers);    
     checkApp("http://" + hostAndPort + resourcePath2, headers);
     checkApp(wmRuntimeUrl, headers);
     //assertTrue(checkWm, "Failed to access WorkManagerRuntime");
