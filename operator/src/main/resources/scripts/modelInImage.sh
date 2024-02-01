@@ -1318,6 +1318,10 @@ restoreZippedDbWallets() {
   if [ "$count" -gt  0 ] ; then
     find ${DOMAIN_HOME}/wlsdeploy/dbWallets/*/*.zip -type f  | xargs -I % sh -c 'unzip -jo % -d $(dirname %) ; rm %'
   fi
+  count=$(find ${DOMAIN_HOME}/config/wlsdeploy/dbWallets/*/*.zip -type f 2>/dev/null | wc -l)
+  if [ "$count" -gt  0 ] ; then
+    find ${DOMAIN_HOME}/config/wlsdeploy/dbWallets/*/*.zip -type f  | xargs -I % sh -c 'unzip -jo % -d $(dirname %) ; rm %'
+  fi
 }
 
 
