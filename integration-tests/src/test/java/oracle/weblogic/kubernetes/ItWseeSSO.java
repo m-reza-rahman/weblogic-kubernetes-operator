@@ -242,7 +242,7 @@ class ItWseeSSO {
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, appURI);
       logger.info("==== result = {0}", result.toString());
       String ingressServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      url = "http://" + getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) + appURI;
+      url = "http://" + getServiceExtIPAddrtOke(ingressServiceName, nginxNamespace) + ":" + nodeportshttp + appURI;
 
       //url = "http://" + msServerPodName + ":" + managedServerPort + appURI;
       //url = "http://" + adminServerPodName + ":7001" + appURI;
