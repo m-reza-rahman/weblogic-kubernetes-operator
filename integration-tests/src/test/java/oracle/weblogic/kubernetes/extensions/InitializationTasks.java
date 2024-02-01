@@ -678,6 +678,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     getLogger().info("Installing traefik in namespace {0}", TRAEFIK_NAMESPACE);
     if (OKD) {
       addAnyUidToNsSvcAccount(TRAEFIK_SERVICEACCOUNT, TRAEFIK_NAMESPACE);
+      imageRepoLogin(BASE_IMAGES_REPO, BASE_IMAGES_REPO_USERNAME, BASE_IMAGES_REPO_PASSWORD);
     }
     TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
         TRAEFIK_INGRESS_HTTPS_NODEPORT, "NodePort");    
