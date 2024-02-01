@@ -747,8 +747,8 @@ class ItMultiDomainModelsScale {
             true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
       } else {
         assertDoesNotThrow(()
-            -> createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
-            true, Files.readString(INGRESS_CLASS_FILE_NAME), true, ADMIN_SERVER_PORT));
+            -> createIngressForDomainAndVerify(domainUid, domainNamespace, TRAEFIK_INGRESS_HTTP_HOSTPORT,
+            clusterNameMsPortMap, true, Files.readString(INGRESS_CLASS_FILE_NAME), true, ADMIN_SERVER_PORT));
       }
     }
   }
