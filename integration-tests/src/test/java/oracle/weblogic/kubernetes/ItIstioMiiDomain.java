@@ -52,6 +52,8 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
+import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
+import static oracle.weblogic.kubernetes.actions.TestActions.startDomain;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
@@ -59,6 +61,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -77,6 +80,8 @@ import static oracle.weblogic.kubernetes.utils.IstioUtils.deployHttpIstioGateway
 import static oracle.weblogic.kubernetes.utils.IstioUtils.deployIstioDestinationRule;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.getIstioHttpIngressPort;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -337,6 +342,8 @@ class ItIstioMiiDomain {
     String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
     //boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
     checkApp("http://" + hostAndPort + resourcePath2, headers);
+    restartDomain();
+    checkApp("http://" + hostAndPort + resourcePath2, headers);
     checkApp(wmRuntimeUrl, headers);
     //assertTrue(checkWm, "Failed to access WorkManagerRuntime");
     logger.info("Found new work manager runtime");
@@ -412,4 +419,36 @@ class ItIstioMiiDomain {
         "application to be ready {0}",
         url);
   }
+  
+  private void restartDomain() {
+    logger.info("Restarting domain {0}", domainNamespace);
+    shutdownDomain(domainUid, domainNamespace);
+
+    logger.info("Checking for admin server pod shutdown");
+    checkPodDoesNotExist(adminServerPodName, domainUid, domainNamespace);
+    logger.info("Checking managed server pods were shutdown");
+    for (int i = 1; i <= replicaCount; i++) {
+      checkPodDoesNotExist(managedServerPrefix + i, domainUid, domainNamespace);
+    }
+
+    startDomain(domainUid, domainNamespace);
+
+    // verify the admin server service created
+    checkServiceExists(adminServerPodName, domainNamespace);
+
+    logger.info("Checking for admin server pod readiness");
+    checkPodReady(adminServerPodName, domainUid, domainNamespace);
+
+    // verify managed server services created
+    for (int i = 1; i <= replicaCount; i++) {
+      logger.info("Checking managed server service {0} is created in namespace {1}",
+          managedServerPrefix + i, domainNamespace);
+      checkServiceExists(managedServerPrefix + i, domainNamespace);
+    }
+
+    logger.info("Checking for managed servers pod readiness");
+    for (int i = 1; i <= replicaCount; i++) {
+      checkPodReady(managedServerPrefix + i, domainUid, domainNamespace);
+    }
+  }  
 }
