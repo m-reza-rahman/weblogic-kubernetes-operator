@@ -47,7 +47,6 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
-import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
@@ -209,7 +208,7 @@ class ItMultiDomainModelsScale {
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
         logger.info("NGINX http node port: {0}", nodeportshttp);
       } else {
-        nodeportshttp = TRAEFIK_INGRESS_HTTP_NODEPORT;
+        nodeportshttp = TRAEFIK_INGRESS_HTTP_HOSTPORT;
       }
     }
   }
