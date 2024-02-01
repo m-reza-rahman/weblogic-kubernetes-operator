@@ -210,6 +210,7 @@ class ItMultiDomainModelsScale {
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
         logger.info("NGINX http node port: {0}", nodeportshttp);
       } else {
+        // if not using docker, use pre-installed Traefik controller
         nodeportshttp = TRAEFIK_INGRESS_HTTP_HOSTPORT;
       }
     }
@@ -223,8 +224,7 @@ class ItMultiDomainModelsScale {
    */
   @ParameterizedTest
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
-  //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
-  @ValueSource(strings = {"modelInImage"})
+  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersByPatchingClusterResource(String domainType) {
 
