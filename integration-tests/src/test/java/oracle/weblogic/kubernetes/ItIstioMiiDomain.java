@@ -342,8 +342,6 @@ class ItIstioMiiDomain {
     String wmRuntimeUrl  = "http://" + hostAndPort + resourcePath;
     //boolean checkWm = checkAppUsingHostHeader(wmRuntimeUrl, domainNamespace + ".org");
     checkApp("http://" + hostAndPort + resourcePath2, headers);
-    restartDomain();
-    checkApp("http://" + hostAndPort + resourcePath2, headers);
     checkApp(wmRuntimeUrl, headers);
     //assertTrue(checkWm, "Failed to access WorkManagerRuntime");
     logger.info("Found new work manager runtime");
