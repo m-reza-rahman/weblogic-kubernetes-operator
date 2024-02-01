@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.makeright;
@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -309,6 +308,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
         Step.chain(
             ConfigMapHelper.createOrReplaceFluentdConfigMapStep(),
             domainIntrospectionSteps(),
+            ConfigMapHelper.createOrReplaceFluentbitConfigMapStep(),
             new DomainStatusStep(),
             DomainProcessorImpl.bringAdminServerUp(delegate.getPodAwaiterStepFactory(info.getNamespace())),
             managedServerStrategy);
@@ -480,7 +480,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
         private void processList(V1PodList list) {
           info.addServerNamesFromPodList(list.getItems().stream()
-              .map(PodHelper::getPodServerName).collect(Collectors.toList()));
+              .map(PodHelper::getPodServerName).toList());
           list.getItems().forEach(this::addPod);
         }
 
@@ -510,7 +510,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
         @Override
         public void completeProcessing(Packet packet) {
           info.getServerNames().stream().filter(
-              s -> !info.getServerNamesFromPodList().contains(s)).collect(Collectors.toList())
+              s -> !info.getServerNamesFromPodList().contains(s)).toList()
               .forEach(name -> info.deleteServerPodFromEvent(name, null));
           info.clearServerPodNamesFromList();
         }

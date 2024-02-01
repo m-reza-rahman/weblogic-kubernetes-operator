@@ -25,6 +25,7 @@ The specification of the operation of the WebLogic domain. Required.
 | `domainUID` | string | Domain unique identifier. It is recommended that this value be unique to assist in future work to identify related domains in active-passive scenarios across data centers; however, it is only required that this value be unique within the namespace, similarly to the names of Kubernetes resources. This value is distinct and need not match the domain name from the WebLogic domain configuration. Defaults to the value of `metadata.name`. |
 | `failureRetryIntervalSeconds` | integer | The wait time in seconds before the start of the next retry after a Severe failure. Defaults to 120. |
 | `failureRetryLimitMinutes` | integer | The time in minutes before the operator will stop retrying Severe failures. Defaults to 1440. |
+| `fluentbitSpecification` | [Fluentbit Specification](#fluentbit-specification) | Automatic fluent-bit sidecar injection. If specified, the operator will deploy a sidecar container alongside each WebLogic Server instance that runs the fluent-bit, Optionally, the introspector job pod can be enabled to deploy with the fluent-bit sidecar container. WebLogic Server instances that are already running when the `fluentbitSpecification` field is created or deleted, will not be affected until they are restarted. When any given server is restarted for another reason, such as a change to the `restartVersion`, then the newly created pod  will have the fluent-bit sidecar or not, as appropriate |
 | `fluentdSpecification` | [Fluentd Specification](#fluentd-specification) | Automatic fluentd sidecar injection. If specified, the operator will deploy a sidecar container alongside each WebLogic Server instance that runs the fluentd, Optionally, the introspector job pod can be enabled to deploy with the fluentd sidecar container. WebLogic Server instances that are already running when the `fluentdSpecification` field is created or deleted, will not be affected until they are restarted. When any given server is restarted for another reason, such as a change to the `restartVersion`, then the newly created pod  will have the fluentd sidecar or not, as appropriate |
 | `httpAccessLogInLogHome` | Boolean | Specifies whether the server HTTP access log files will be written to the same directory specified in `logHome`. Otherwise, server HTTP access log files will be written to the directory configured in the WebLogic domain configuration. Defaults to true. |
 | `image` | string | The WebLogic Server image; required when `domainHomeSourceType` is Image or FromModel; otherwise, defaults to container-registry.oracle.com/middleware/weblogic:12.2.1.4. |
@@ -92,6 +93,22 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | `overridesConfigMap` | string | The name of the ConfigMap for WebLogic configuration overrides. |
 | `secrets` | Array of string | A list of names of the Secrets for WebLogic configuration overrides or model. |
 
+### Fluentbit Specification
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `containerArgs` | Array of string | (Optional) The Fluentbit sidecar container spec's args. Default is: [ -c, /etc/fluent-bit.conf ] if not specified |
+| `containerCommand` | Array of string | (Optional) The Fluentbit sidecar container spec's command. Default is not set if not specified |
+| `elasticSearchCredentials` | string | Fluentbit elastic search credentials. A Kubernetes secret in the same namespace of the domain. It must contains 4 keys: elasticsearchhost - ElasticSearch Host Service Address, elasticsearchport - Elastic Search Service Port, elasticsearchuser - Elastic Search Service User Name, elasticsearchpassword - Elastic Search User Password |
+| `env` | Array of [Env Var](k8s1.13.5.md#env-var) | A list of environment variables to set in the fluentbit container. See `kubectl explain pods.spec.containers.env`. |
+| `fluentbitConfiguration` | string | The Fluentbit configuration text, specify your own custom fluentbit configuration. |
+| `image` | string | The Fluentbit container image name. Defaults to fluent/fluentd-kubernetes-daemonset:v1.16.1-debian-elasticsearch7-1.2 |
+| `imagePullPolicy` | string | The image pull policy for the Fluentbit sidecar container image. Legal values are Always, Never, and IfNotPresent. Defaults to Always if image ends in :latest; IfNotPresent, otherwise. |
+| `parserConfiguration` | string | The Fluentbit parser configuration text, specify your own custom fluentbit configuration. |
+| `resources` | [Resource Requirements](k8s1.13.5.md#resource-requirements) | Memory and CPU minimum requirements and limits for the fluentbit container. See `kubectl explain pods.spec.containers.resources`. |
+| `volumeMounts` | Array of [Volume Mount](k8s1.13.5.md#volume-mount) | Volume mounts for fluentbit container |
+| `watchIntrospectorLogs` | Boolean | Fluentbit will watch introspector logs |
+
 ### Fluentd Specification
 
 | Name | Type | Description |
@@ -128,7 +145,7 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | Name | Type | Description |
 | --- | --- | --- |
 | `configuration` | Map | The configuration for the WebLogic Monitoring Exporter. If WebLogic Server instances are already running and have the monitoring exporter sidecar container, then changes to this field will be propagated to the exporter without requiring the restart of the WebLogic Server instances. |
-| `image` | string | The WebLogic Monitoring Exporter sidecar container image name. Defaults to ghcr.io/oracle/weblogic-monitoring-exporter:2.1.8 |
+| `image` | string | The WebLogic Monitoring Exporter sidecar container image name. Defaults to ghcr.io/oracle/weblogic-monitoring-exporter:2.1.9 |
 | `imagePullPolicy` | string | The image pull policy for the WebLogic Monitoring Exporter sidecar container image. Legal values are Always, Never, and IfNotPresent. Defaults to Always if image ends in :latest; IfNotPresent, otherwise. |
 | `port` | integer | The port exposed by the WebLogic Monitoring Exporter running in the sidecar container. Defaults to 8080. The port value must not conflict with a port used by any WebLogic Server instance, including the ports of built-in channels or network access points (NAPs). |
 | `resources` | [Resource Requirements](k8s1.13.5.md#resource-requirements) | Memory and CPU minimum requirements and limits for the Monitoring exporter sidecar. See `kubectl explain pods.spec.containers.resources`. |
@@ -192,6 +209,7 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 
 | Name | Type | Description |
 | --- | --- | --- |
+| `failureInfo` | [Domain Condition Failure Info](#domain-condition-failure-info) | Details about the failure. This field will only be set when the condition type is Failed. |
 | `lastTransitionTime` | DateTime | Last time the condition transitioned from one status to another. |
 | `message` | string | Human-readable message indicating details about last transition. |
 | `reason` | string | Unique, one-word, CamelCase reason for the condition's last transition. |
@@ -306,6 +324,14 @@ TopologySpreadConstraint specifies how to spread matching pods among the given t
 | `status` | string | The status of the condition. Can be True, False. |
 | `type` | string | The type of the condition. Valid types are Completed, Available, Failed, and Rolling. |
 
+### Domain Condition Failure Info
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `introspectImage` | string | The image used by the introspector when the Failed condition occurred. |
+| `introspectVersion` | string | The introspectVersion set when the Failed condition occurred. |
+| `restartVersion` | string | The restartVersion set when the Failed condition occurred. |
+
 ### Server Health
 
 | Name | Type | Description |
@@ -384,9 +410,9 @@ TopologySpreadConstraint specifies how to spread matching pods among the given t
 | Name | Type | Description |
 | --- | --- | --- |
 | `capacity` | Map | Capacity is the description of the persistent volume's resources and capacity. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#capacity |
-| `hostPath` | [Host Path Volume Source](k8s1.13.5.md#host-path-volume-source) | HostPath represents a directory on the host. Provisioned by a developer or tester. This is useful for single-node development and testing only! On-host storage is not supported in any way and WILL NOT WORK in a multi-node cluster. More info:<br/> https://kubernetes.io/docs/concepts/storage/volumes#hostpath<br/>Represents a host path mapped into a pod. Host path volumes do not support ownership management or SELinux relabeling. |
-| `nfs` | [NFS Volume Source](k8s1.13.5.md#nfs-volume-source) | nfs represents an NFS mount on the host. Provisioned by an admin. More info:<br/>https://kubernetes.io/docs/concepts/storage/volumes#nfs<br/>Represents an NFS mount that lasts the lifetime of a pod. NFS volumes do not support ownership management or SELinux relabeling. |
-| `persistentVolumeReclaimPolicy` | string | PersistentVolumeReclaimPolicy defines what happens to a persistent volume when released from its claim. Valid options are Retain (default for manually created PersistentVolumes), Delete (default for dynamically provisioned PersistentVolumes), and Recycle (deprecated). Recycle must be supported by the volume plugin underlying this PersistentVolume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#reclaiming   |
+| `hostPath` | [Host Path Volume Source](k8s1.13.5.md#host-path-volume-source) | HostPath represents a directory on the host. Provisioned by a developer or tester. This is useful for single-node development and testing only! On-host storage is not supported in any way and WILL NOT WORK in a multi-node cluster. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath. Represents a host path mapped into a pod. Host path volumes do not support ownership management or SELinux relabeling. |
+| `nfs` | [NFS Volume Source](k8s1.13.5.md#nfs-volume-source) | nfs represents an NFS mount on the host. Provisioned by an admin. More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs. Represents an NFS mount that lasts the lifetime of a pod. NFS volumes do not support ownership management or SELinux relabeling. |
+| `persistentVolumeReclaimPolicy` | string | PersistentVolumeReclaimPolicy defines what happens to a persistent volume when released from its claim. Valid options are Retain (default for manually created PersistentVolumes), Delete (default for dynamically provisioned PersistentVolumes), and Recycle (deprecated). Recycle must be supported by the volume plugin underlying this PersistentVolume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#reclaiming |
 | `storageClassName` | string | StorageClassName is the name of StorageClass to which this persistent volume belongs. Empty value means that this volume does not belong to any StorageClass. |
 
 ### Persistent Volume Claim Spec

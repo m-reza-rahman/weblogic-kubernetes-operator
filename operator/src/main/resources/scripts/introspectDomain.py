@@ -284,7 +284,7 @@ class OfflineWlstEnv(object):
           ret = cmo
     except:
       trace("Ignoring cd() exception for cluster '" + cluster.getName() + "' in getDynamicServerOrNone() and returning None.")
-    return ret;
+    return ret
 
   def addGeneratedFile(self, filePath):
     self.generatedFiles.append(filePath)
@@ -1550,9 +1550,10 @@ class SitConfigGenerator(Generator):
                                             listen_port=getAdministrationPort(server, self.env.getDomain()),
                                             protocol='admin')
     elif index == 0:
-      admin_server_port = getRealListenPort(server)
-      self._writeAdminChannelPortForwardNAP(name='internal-t3', server=server,
-                                            listen_port=admin_server_port, protocol='t3')
+      if isListenPortEnabledForServer(server, self.env.getDomain(), False):
+        admin_server_port = getRealListenPort(server)
+        self._writeAdminChannelPortForwardNAP(name='internal-t3', server=server,
+                                              listen_port=admin_server_port, protocol='t3')
 
       ssl_listen_port = getSSLPortIfEnabled(server, self.env.getDomain(), is_server_template=False)
 
@@ -2046,10 +2047,13 @@ def isSecureModeEnabledForDomain(domain):
   cd('/SecurityConfiguration/' + domain.getName())
   childs = ls(returnType='c', returnMap='true')
   if 'SecureMode' in childs:
-    cd('SecureMode/NO_NAME_0')
-    attributes = ls(returnType='a', returnMap='true')
-    if attributes['SecureModeEnabled']:
-      secureModeEnabled = True
+    cd('SecureMode')
+    child_objs = ls(returnMap='true', returnType='c')
+    if not child_objs.isEmpty():
+      cd(child_objs[0])
+      attributes = ls(returnType='a', returnMap='true')
+      if attributes['SecureModeEnabled']:
+        secureModeEnabled = True
   else:
     secureModeEnabled = domain.isProductionModeEnabled() and not LegalHelper.versionEarlierThan(domain.getDomainVersion(), "14.1.2.0")
 

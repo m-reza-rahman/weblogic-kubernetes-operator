@@ -1,4 +1,4 @@
-// Copyright (c) 2019, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2019, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -6,7 +6,6 @@ package oracle.kubernetes.operator;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -93,6 +92,7 @@ import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.ClusterSpec;
 import oracle.kubernetes.weblogic.domain.model.ClusterStatus;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
+import oracle.kubernetes.weblogic.domain.model.DomainConditionFailureInfo;
 import oracle.kubernetes.weblogic.domain.model.DomainConditionType;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
@@ -161,6 +161,8 @@ import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.SECRET;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.SERVICE;
 import static oracle.kubernetes.operator.helpers.SecretHelper.PASSWORD_KEY;
 import static oracle.kubernetes.operator.helpers.SecretHelper.USERNAME_KEY;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTBIT_CONFIGMAP_NAME_SUFFIX;
+import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTBIT_CONFIG_DATA_NAME;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIGMAP_NAME_SUFFIX;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTD_CONFIG_DATA_NAME;
 import static oracle.kubernetes.operator.http.client.HttpAsyncTestSupport.OK_RESPONSE;
@@ -394,7 +396,7 @@ class DomainProcessorTest {
 
   @SuppressWarnings("ConstantConditions")
   private OffsetDateTime laterThan(DomainResource newDomain) {
-    return newDomain.getMetadata().getCreationTimestamp().plus(1, ChronoUnit.SECONDS);
+    return newDomain.getMetadata().getCreationTimestamp().plusSeconds(1);
   }
 
   @Test
@@ -426,7 +428,7 @@ class DomainProcessorTest {
   }
 
   @Test
-  void whenDomainSpecNotChangedWithRetriableFailureButNotRetrying_dontContinueProcessing() {
+  void whenDomainSpecNotChangedWithRetryableFailureButNotRetrying_dontContinueProcessing() {
     originalInfo.setPopulated(true);
     processor.registerDomainPresenceInfo(originalInfo);
     domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
@@ -437,7 +439,7 @@ class DomainProcessorTest {
   }
 
   @Test
-  void whenDomainSpecChangedWithRetriableFailureButNotRetrying_continueProcessing() {
+  void whenDomainSpecChangedWithRetryableFailureButNotRetrying_continueProcessing() {
     originalInfo.setPopulated(true);
     processor.registerDomainPresenceInfo(originalInfo);
     domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
@@ -448,7 +450,7 @@ class DomainProcessorTest {
   }
 
   @Test
-  void whenDomainWithRetriableFailureButForDeletion_continueProcessing() {
+  void whenDomainWithRetryableFailureButForDeletion_continueProcessing() {
     originalInfo.setPopulated(true);
     processor.registerDomainPresenceInfo(originalInfo);
     domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
@@ -459,7 +461,7 @@ class DomainProcessorTest {
   }
 
   @Test
-  void whenDomainWithNonRetriableFailureButForDeletion_continueProcessing() {
+  void whenDomainWithNonRetryableFailureButForDeletion_continueProcessing() {
     originalInfo.setPopulated(true);
     processor.registerDomainPresenceInfo(originalInfo);
     domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(ABORTED));
@@ -470,7 +472,7 @@ class DomainProcessorTest {
   }
 
   @Test
-  void whenDomainWithRetriableFailureAndRetryOnFailure_continueProcess() {
+  void whenDomainWithRetryableFailureAndRetryOnFailure_continueProcess() {
     originalInfo.setPopulated(false);
     processor.registerDomainPresenceInfo(originalInfo);
     domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(DOMAIN_INVALID));
@@ -515,6 +517,48 @@ class DomainProcessorTest {
     domainConfigurator.withRestartVersion("17");
 
     processor.createMakeRightOperation(newInfo).execute();
+
+    assertThat(logRecords, not(containsFine(NOT_STARTING_DOMAINUID_THREAD)));
+  }
+
+  // HERE
+
+  @Test
+  void whenDomainSpecMatchesFailureInfoAndProcessingAborted_dontRunUpdateThread() {
+    DomainResource localDomain = DomainProcessorTestSetup.createTestDomain();
+    DomainConfigurator localConfigurator = configureDomain(localDomain);
+    localConfigurator.withRestartVersion("17");
+    DomainPresenceInfo localInfo = new DomainPresenceInfo(localDomain);
+
+    processor.registerDomainPresenceInfo(localInfo);
+    newDomain.getOrCreateStatus().addCondition(new DomainCondition(FAILED).withReason(ABORTED)
+        .withFailureInfo(new DomainConditionFailureInfo().withRestartVersion("17")).withMessage("ugh"));
+    domainConfigurator.withRestartVersion("17");
+
+    processor.createMakeRightOperation(localInfo).execute();
+
+    assertThat(logRecords, containsFine(NOT_STARTING_DOMAINUID_THREAD));
+  }
+
+  @Test
+  void whenDomainSpecLeadsFailureInfoAndProcessingAborted_runUpdateThread() {
+    // This test assumes a missed watch event or related situation where the
+    // spec has been updated to a new restart version ("18") but where the
+    // original failure and the related abort occurred at a different version ("17")
+
+    DomainResource localDomain = DomainProcessorTestSetup.createTestDomain();
+    localDomain.getOrCreateStatus().addCondition(new DomainCondition(FAILED).withReason(ABORTED)
+        .withFailureInfo(new DomainConditionFailureInfo().withRestartVersion("17")).withMessage("ugh"));
+    DomainConfigurator localConfigurator = configureDomain(localDomain);
+    localConfigurator.withRestartVersion("18");
+    DomainPresenceInfo localInfo = new DomainPresenceInfo(localDomain);
+
+    processor.registerDomainPresenceInfo(localInfo);
+    newDomain.getOrCreateStatus().addCondition(new DomainCondition(FAILED).withReason(ABORTED)
+        .withFailureInfo(new DomainConditionFailureInfo().withRestartVersion("17")).withMessage("ugh"));
+    domainConfigurator.withRestartVersion("18");
+
+    processor.createMakeRightOperation(localInfo).execute();
 
     assertThat(logRecords, not(containsFine(NOT_STARTING_DOMAINUID_THREAD)));
   }
@@ -1802,6 +1846,41 @@ class DomainProcessorTest {
             .orElse(null), equalTo("<match>me</match>"));
   }
 
+  @Test
+  void whenFluentbitSpecified_verifyConfigMap() {
+    domainConfigurator
+            .withFluentbitConfiguration(true, "fluentbit-cred",
+                    null, null, null, null)
+            .configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
+    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
+
+    processor.createMakeRightOperation(newInfo).execute();
+
+    V1ConfigMap fluentbitConfigMap = testSupport.getResourceWithName(CONFIG_MAP, UID + FLUENTBIT_CONFIGMAP_NAME_SUFFIX);
+
+    assertThat(Optional.ofNullable(fluentbitConfigMap)
+            .map(V1ConfigMap::getData)
+            .stream().anyMatch(map -> map.containsKey(FLUENTBIT_CONFIG_DATA_NAME)), equalTo(true));
+
+  }
+
+  @Test
+  void whenFluentbitSpecifiedWithConfig_verifyConfigMap() {
+    domainConfigurator
+            .withFluentbitConfiguration(true, "fluentbit-cred",
+                    "[OUTPUT]", "[PARSER]", null, null)
+            .configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
+    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
+
+    processor.createMakeRightOperation(newInfo).execute();
+
+    V1ConfigMap fluentbitConfigMap = testSupport.getResourceWithName(CONFIG_MAP, UID + FLUENTBIT_CONFIGMAP_NAME_SUFFIX);
+
+    assertThat(Optional.ofNullable(fluentbitConfigMap)
+            .map(V1ConfigMap::getData)
+            .map(d -> d.get(FLUENTBIT_CONFIG_DATA_NAME))
+            .orElse(null), equalTo("[OUTPUT]"));
+  }
 
   V1JobStatus createTimedOutStatus() {
     return new V1JobStatus().addConditionsItem(new V1JobCondition().status("True").type("Failed")
@@ -2427,38 +2506,40 @@ class DomainProcessorTest {
         + ">>> EOF\n"
         + DOMAIN_INTROSPECTION_COMPLETE;
 
-    String topologyxml = "domainValid: true\n"
-            + "domain:\n"
-            + "  name: \"base_domain\"\n"
-            + "  adminServerName: \"admin-server\"\n"
-            + "  configuredClusters:\n"
-            + "  - name: \"cluster-1\"\n"
-            + "    servers:\n"
-            + "      - name: \"managed-server1\"\n"
-            + "        listenPort: 7003\n"
-            + "        listenAddress: \"domain1-managed-server1\"\n"
-            + "        adminPort: 7099\n"
-            + "        sslListenPort: 7104\n"
-            + "      - name: \"managed-server2\"\n"
-            + "        listenPort: 7003\n"
-            + "        listenAddress: \"domain1-managed-server2\"\n"
-            + "        adminPort: 7099\n"
-            + "        sslListenPort: 7104\n"
-            + "  servers:\n"
-            + "    - name: \"admin-server\"\n"
-            + "      listenPort: 7001\n"
-            + "      listenAddress: \"domain1-admin-server\"\n"
-            + "      adminPort: 7099\n"
-            + "    - name: \"server1\"\n"
-            + "      listenPort: 9003\n"
-            + "      adminPort: 7099\n"
-            + "      listenAddress: \"domain1-server1\"\n"
-            + "      sslListenPort: 8003\n"
-            + "    - name: \"server2\"\n"
-            + "      listenPort: 9004\n"
-            + "      listenAddress: \"domain1-server2\"\n"
-            + "      adminPort: 7099\n"
-            + "      sslListenPort: 8004\n";
+    String topologyxml = """
+        domainValid: true
+        domain:
+          name: "base_domain"
+          adminServerName: "admin-server"
+          configuredClusters:
+          - name: "cluster-1"
+            servers:
+              - name: "managed-server1"
+                listenPort: 7003
+                listenAddress: "domain1-managed-server1"
+                adminPort: 7099
+                sslListenPort: 7104
+              - name: "managed-server2"
+                listenPort: 7003
+                listenAddress: "domain1-managed-server2"
+                adminPort: 7099
+                sslListenPort: 7104
+          servers:
+            - name: "admin-server"
+              listenPort: 7001
+              listenAddress: "domain1-admin-server"
+              adminPort: 7099
+            - name: "server1"
+              listenPort: 9003
+              adminPort: 7099
+              listenAddress: "domain1-server1"
+              sslListenPort: 8003
+            - name: "server2"
+              listenPort: 9004
+              listenAddress: "domain1-server2"
+              adminPort: 7099
+              sslListenPort: 8004
+        """;
 
     //establishPreviousIntrospection(null);
     domainConfigurator.configureCluster(newInfo, "cluster-1").withReplicas(2);
@@ -2523,33 +2604,35 @@ class DomainProcessorTest {
         + ">>> EOF\n"
         + DOMAIN_INTROSPECTION_COMPLETE;
 
-    String topologyxml = "domainValid: true\n"
-        + "domain:\n"
-        + "  name: \"base_domain\"\n"
-        + "  adminServerName: \"admin-server\"\n"
-        + "  configuredClusters:\n"
-        + "  - name: \"cluster-1\"\n"
-        + "    servers:\n"
-        + "      - name: \"managed-server1\"\n"
-        + "        listenPort: 7003\n"
-        + "        listenAddress: \"domain1-managed-server1\"\n"
-        + "        sslListenPort: 7104\n"
-        + "      - name: \"managed-server2\"\n"
-        + "        listenPort: 7003\n"
-        + "        listenAddress: \"domain1-managed-server2\"\n"
-        + "        sslListenPort: 7104\n"
-        + "  servers:\n"
-        + "    - name: \"admin-server\"\n"
-        + "      listenPort: 7001\n"
-        + "      listenAddress: \"domain1-admin-server\"\n"
-        + "    - name: \"server1\"\n"
-        + "      listenPort: 9003\n"
-        + "      listenAddress: \"domain1-server1\"\n"
-        + "      sslListenPort: 8003\n"
-        + "    - name: \"server2\"\n"
-        + "      listenPort: 9004\n"
-        + "      listenAddress: \"domain1-server2\"\n"
-        + "      sslListenPort: 8004\n";
+    String topologyxml = """
+        domainValid: true
+        domain:
+          name: "base_domain"
+          adminServerName: "admin-server"
+          configuredClusters:
+          - name: "cluster-1"
+            servers:
+              - name: "managed-server1"
+                listenPort: 7003
+                listenAddress: "domain1-managed-server1"
+                sslListenPort: 7104
+              - name: "managed-server2"
+                listenPort: 7003
+                listenAddress: "domain1-managed-server2"
+                sslListenPort: 7104
+          servers:
+            - name: "admin-server"
+              listenPort: 7001
+              listenAddress: "domain1-admin-server"
+            - name: "server1"
+              listenPort: 9003
+              listenAddress: "domain1-server1"
+              sslListenPort: 8003
+            - name: "server2"
+              listenPort: 9004
+              listenAddress: "domain1-server2"
+              sslListenPort: 8004
+        """;
 
     //establishPreviousIntrospection(null);
     domainConfigurator.configureCluster(newInfo,"cluster-1").withReplicas(2);
@@ -2822,7 +2905,7 @@ class DomainProcessorTest {
     consoleHandlerMemento.ignoreMessage(NOT_STARTING_DOMAINUID_THREAD);
     processor.registerDomainPresenceInfo(originalInfo);
     domain.getSpec().withWebLogicCredentialsSecret(null);
-    int time = 0;
+    long time = 0;
 
     for (int numRetries = 0; numRetries < 5; numRetries++) {
       processor.createMakeRightOperation(originalInfo).withExplicitRecheck().execute();

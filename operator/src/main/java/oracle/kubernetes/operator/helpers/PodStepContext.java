@@ -1,4 +1,4 @@
-// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -108,6 +107,7 @@ import static oracle.kubernetes.operator.helpers.AffinityHelper.DOMAIN_UID_VARIA
 import static oracle.kubernetes.operator.helpers.AffinityHelper.getDefaultAntiAffinity;
 import static oracle.kubernetes.operator.helpers.AnnotationHelper.SHA256_ANNOTATION;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.POD_CYCLE_STARTING;
+import static oracle.kubernetes.operator.helpers.FluentbitHelper.addFluentbitContainer;
 import static oracle.kubernetes.operator.helpers.FluentdHelper.addFluentdContainer;
 import static oracle.kubernetes.operator.helpers.LegalNames.LEGAL_CONTAINER_PORT_NAME_MAX_LENGTH;
 import static oracle.kubernetes.weblogic.domain.model.Model.DEFAULT_WDT_INSTALL_HOME;
@@ -351,7 +351,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       String portNamePrefix = getPortNamePrefix(name);
       // Find ports with the name having the same first 12 characters
       List<V1ContainerPort> containerPortsWithSamePrefix = ports.stream().filter(port ->
-              portNamePrefix.equals(getPortNamePrefix(port.getName()))).collect(Collectors.toList());
+              portNamePrefix.equals(getPortNamePrefix(port.getName()))).toList();
       int index = containerPortsWithSamePrefix.size() + 1;
       String indexStr = String.valueOf(index);
       // zero fill to the left for single digit index (e.g. 01)
@@ -717,14 +717,15 @@ public abstract class PodStepContext extends BasePodStepContext {
             getAuxiliaryImageInitContainers(auxiliaryImages, initContainers));
     initContainers.addAll(getServerSpec().getInitContainers().stream()
             .map(c -> c.env(createEnv(c)).envFrom(c.getEnvFrom()).resources(createResources()))
-        .collect(Collectors.toList()));
+        .toList());
     return initContainers;
   }
 
   protected void getAuxiliaryImageInitContainers(List<AuxiliaryImage> auxiliaryImageList,
                                                  List<V1Container> initContainers) {
     Optional.ofNullable(auxiliaryImageList).ifPresent(cl -> IntStream.range(0, cl.size()).forEach(idx ->
-            initContainers.add(createInitContainerForAuxiliaryImage(cl.get(idx), idx))));
+            initContainers.add(createInitContainerForAuxiliaryImage(cl.get(idx), idx,
+                    getDomain().isInitializeDomainOnPV()))));
   }
 
   // ---------------------- model methods ------------------------------
@@ -781,6 +782,8 @@ public abstract class PodStepContext extends BasePodStepContext {
     exporterContext.addContainer(containers);
     Optional.ofNullable(getDomain().getFluentdSpecification())
         .ifPresent(fluentd -> addFluentdContainer(fluentd, containers, getDomain(), false));
+    Optional.ofNullable(getDomain().getFluentbitSpecification())
+            .ifPresent(fluentbit -> addFluentbitContainer(fluentbit, containers, getDomain(), false));
     return containers;
   }
 
@@ -792,6 +795,17 @@ public abstract class PodStepContext extends BasePodStepContext {
             .configMap(new V1ConfigMapVolumeSource()
                 .name(getDomainUid() + FLUENTD_CONFIGMAP_NAME_SUFFIX)
                 .defaultMode(420))));
+    return volumes;
+  }
+
+  protected List<V1Volume> getFluentbitVolumes() {
+    List<V1Volume> volumes = new ArrayList<>();
+    Optional.ofNullable(getDomain())
+            .map(DomainResource::getFluentbitSpecification)
+            .ifPresent(c -> volumes.add(new V1Volume().name(FLUENTBIT_CONFIGMAP_VOLUME)
+                    .configMap(new V1ConfigMapVolumeSource()
+                            .name(getDomainUid() + FLUENTBIT_CONFIGMAP_NAME_SUFFIX)
+                            .defaultMode(420))));
     return volumes;
   }
 
@@ -1023,10 +1037,9 @@ public abstract class PodStepContext extends BasePodStepContext {
       if (other == this) {
         return true;
       }
-      if (!(other instanceof ConflictStep)) {
+      if (!(other instanceof ConflictStep rhs)) {
         return false;
       }
-      ConflictStep rhs = ((ConflictStep) other);
       return new EqualsBuilder().append(conflictStep, rhs.getConflictStep()).isEquals();
     }
 
@@ -1344,9 +1357,9 @@ public abstract class PodStepContext extends BasePodStepContext {
     private void restoreFluentdVolume(V1Pod recipe, V1Pod currentPod) {
       Optional.ofNullable(recipe.getSpec().getVolumes())
           .ifPresent(volumes -> volumes.stream().filter(volume -> FLUENTD_CONFIGMAP_VOLUME.equals(volume.getName()))
-              .forEach(volume -> {
-                Optional.ofNullable(volume.getConfigMap()).ifPresent(cms -> cms.setName(OLD_FLUENTD_CONFIGMAP_NAME));
-              }));
+              .forEach(volume ->
+                  Optional.ofNullable(volume.getConfigMap())
+                      .ifPresent(cms -> cms.setName(OLD_FLUENTD_CONFIGMAP_NAME))));
     }
 
     private void restoreSecurityContext(V1Pod recipe, V1Pod currentPod) {

@@ -1,11 +1,10 @@
-// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.weblogic.domain.model;
 
 import java.io.File;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -321,6 +320,10 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
     return spec.getFluentdSpecification();
   }
 
+  public FluentbitSpecification getFluentbitSpecification() {
+    return spec.getFluentbitSpecification();
+  }
+
   /**
    * Return the MII domain.spec.configuration.model.onlineUpdate.nonDynamicChangesMethod
    * @return {@link MIINonDynamicChangesMethod}
@@ -409,7 +412,7 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
   }
 
   /**
-   * Name of the secret containing WebLogic startup credentials user name and password.
+   * Name of the secret containing WebLogic startup credentials username and password.
    *
    * @return the secret name
    */
@@ -868,7 +871,7 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
 
   // Adds the domain retry interval to the specified time.
   private OffsetDateTime addRetryInterval(@Nonnull OffsetDateTime startTime) {
-    return startTime.plus(getFailureRetryIntervalSeconds(), ChronoUnit.SECONDS);
+    return startTime.plusSeconds(getFailureRetryIntervalSeconds());
   }
 
   @Nullable
@@ -880,7 +883,7 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
   }
 
   private OffsetDateTime addRetryLimit(@Nonnull OffsetDateTime startTime) {
-    return startTime.plus(getFailureRetryLimitMinutes(), ChronoUnit.MINUTES);
+    return startTime.plusMinutes(getFailureRetryLimitMinutes());
   }
 
   private boolean doesReferenceCluster(@Nonnull String clusterName) {
@@ -935,10 +938,9 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
     if (other == this) {
       return true;
     }
-    if (!(other instanceof DomainResource)) {
+    if (!(other instanceof DomainResource rhs)) {
       return false;
     }
-    DomainResource rhs = ((DomainResource) other);
     return new EqualsBuilder()
         .append(metadata, rhs.metadata)
         .append(apiVersion, rhs.apiVersion)
@@ -979,7 +981,7 @@ public class DomainResource implements KubernetesObject, RetryMessageFactory {
     return spec.getDomainCreationConfigMap();
   }
 
-  public boolean hasRetriableFailure() {
+  public boolean hasRetryableFailure() {
     return Optional.ofNullable(getStatus()).map(DomainStatus::getConditions)
         .orElse(Collections.emptyList()).stream().anyMatch(DomainCondition::isRetriableFailure);
   }

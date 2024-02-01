@@ -49,6 +49,7 @@ import os
 import sys, traceback
 import time
 from java.lang import System
+from java.lang import Boolean
 
 tmp_callerframerecord = inspect.stack()[0]    # 0 represents this line # 1 represents line at caller
 tmp_info = inspect.getframeinfo(tmp_callerframerecord[0])
@@ -157,9 +158,15 @@ class OfflineWlstEnv(object):
   def wlsVersionEarlierThan(self, version):
     # unconventional import within function definition for unit testing
     from weblogic.management.configuration import LegalHelper
+    import weblogic.version as version_helper
+    ver = version_helper.getReleaseBuildVersion()
+    if isinstance(ver, unicode):
+      actual_version = unicode( ver, 'UTF8', 'strict')
+    else:
+      actual_version = str(ver)
     # WLS Domain versions supported by operator are 12.2.1.3 + patches, 12.2.1.4
     # and 14.1.1.0 so current version will only be one of these that are listed.
-    return LegalHelper.versionEarlierThan("14.1.1.0", version)
+    return LegalHelper.versionEarlierThan(actual_version, version)
 
 class SecretManager(object):
 
@@ -444,7 +451,11 @@ def isAdministrationPortEnabledForServer(server, model):
     administrationPortEnabled = server['AdministrationPortEnabled']
   else:
     administrationPortEnabled = isAdministrationPortEnabledForDomain(model)
-  return administrationPortEnabled
+
+  if isinstance(administrationPortEnabled, str) or isinstance(administrationPortEnabled, unicode):
+    return Boolean.valueOf(administrationPortEnabled)
+  else:
+    return administrationPortEnabled
 
 
 def isAdministrationPortEnabledForDomain(model):
@@ -456,7 +467,12 @@ def isAdministrationPortEnabledForDomain(model):
     # AdministrationPortEnabled is not explicitly set so going with the default
     # Starting with 14.1.2.0, the domain's AdministrationPortEnabled default is derived from the domain's SecureMode
     administrationPortEnabled = isSecureModeEnabledForDomain(model)
-  return administrationPortEnabled
+
+  if isinstance(administrationPortEnabled, str) or isinstance(administrationPortEnabled, unicode):
+    return Boolean.valueOf(administrationPortEnabled)
+  else:
+    return administrationPortEnabled
+
 
 
 # Derive the default value for SecureMode of a domain
@@ -476,7 +492,11 @@ def isSecureModeEnabledForDomain(model):
     if 'ProductionModeEnabled' in topology:
       is_production_mode_enabled = topology['ProductionModeEnabled']
     secureModeEnabled = is_production_mode_enabled and not env.wlsVersionEarlierThan("14.1.2.0")
-  return secureModeEnabled
+
+  if isinstance(secureModeEnabled, str) or isinstance(secureModeEnabled, unicode):
+    return Boolean.valueOf(secureModeEnabled)
+  else:
+    return secureModeEnabled
 
 
 def getSSLOrNone(server):
@@ -531,7 +551,7 @@ def addAdminChannelPortForwardNetworkAccessPoints(server):
   admin_server_port = _get_default_listen_port(server)
 
   model = env.getModel()
-
+  secure_mode = isSecureModeEnabledForDomain(model)
   if 'NetworkAccessPoint' not in server:
     server['NetworkAccessPoint'] = {}
 
@@ -549,7 +569,8 @@ def addAdminChannelPortForwardNetworkAccessPoints(server):
     _writeAdminChannelPortForwardNAP(name='internal-admin', server=server,
                                      listen_port=getAdministrationPort(server, model['topology']), protocol='admin')
   elif index == 0:
-    _writeAdminChannelPortForwardNAP(name='internal-t3', server=server, listen_port=admin_server_port, protocol='t3')
+    if not secure_mode and is_listenport_enabled(server):
+      _writeAdminChannelPortForwardNAP(name='internal-t3', server=server, listen_port=admin_server_port, protocol='t3')
 
     ssl = getSSLOrNone(server)
     ssl_listen_port = None
@@ -557,11 +578,24 @@ def addAdminChannelPortForwardNetworkAccessPoints(server):
       ssl_listen_port = ssl['ListenPort']
       if ssl_listen_port is None:
         ssl_listen_port = "7002"
-    elif ssl is None and isSecureModeEnabledForDomain(model):
+    elif ssl is None and secure_mode:
       ssl_listen_port = "7002"
 
     if ssl_listen_port is not None:
       _writeAdminChannelPortForwardNAP(name='internal-t3s', server=server, listen_port=ssl_listen_port, protocol='t3s')
+
+
+def is_listenport_enabled(server):
+  if 'ListenPortEnabled' in server:
+    val = server['ListenPortEnabled']
+    if isinstance(val, str) or isinstance(val, unicode):
+      is_listen_port_enabled = Boolean.valueOf(val)
+    else:
+      is_listen_port_enabled = val
+  else:
+    is_listen_port_enabled = True
+  return is_listen_port_enabled
+
 
 def _writeAdminChannelPortForwardNAP(name, server, listen_port, protocol):
 

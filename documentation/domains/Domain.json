@@ -265,6 +265,10 @@
           "description": "Human-readable message indicating details about last transition.",
           "type": "string"
         },
+        "failureInfo": {
+          "description": "Details about the failure. This field will only be set when the condition type is Failed.",
+          "$ref": "#/definitions/DomainConditionFailureInfo"
+        },
         "status": {
           "description": "The status of the condition. Can be True, False, Unknown.",
           "type": "string"
@@ -274,6 +278,23 @@
         "type",
         "status"
       ]
+    },
+    "DomainConditionFailureInfo": {
+      "type": "object",
+      "properties": {
+        "introspectVersion": {
+          "description": "The introspectVersion set when the Failed condition occurred.",
+          "type": "string"
+        },
+        "introspectImage": {
+          "description": "The image used by the introspector when the Failed condition occurred.",
+          "type": "string"
+        },
+        "restartVersion": {
+          "description": "The restartVersion set when the Failed condition occurred.",
+          "type": "string"
+        }
+      }
     },
     "DomainCreationImage": {
       "type": "object",
@@ -393,6 +414,10 @@
             "PersistentVolume",
             "FromModel"
           ]
+        },
+        "fluentbitSpecification": {
+          "description": "Automatic fluent-bit sidecar injection. If specified, the operator will deploy a sidecar container alongside each WebLogic Server instance that runs the fluent-bit, Optionally, the introspector job pod can be enabled to deploy with the fluent-bit sidecar container. WebLogic Server instances that are already running when the `fluentbitSpecification` field is created or deleted, will not be affected until they are restarted. When any given server is restarted for another reason, such as a change to the `restartVersion`, then the newly created pod  will have the fluent-bit sidecar or not, as appropriate",
+          "$ref": "#/definitions/FluentbitSpecification"
         },
         "httpAccessLogInLogHome": {
           "default": true,
@@ -570,6 +595,68 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/ClusterStatus"
+          }
+        }
+      }
+    },
+    "FluentbitSpecification": {
+      "type": "object",
+      "properties": {
+        "image": {
+          "default": "fluent/fluentd-kubernetes-daemonset:v1.16.1-debian-elasticsearch7-1.2",
+          "description": "The Fluentbit container image name. Defaults to fluent/fluentd-kubernetes-daemonset:v1.16.1-debian-elasticsearch7-1.2",
+          "type": "string"
+        },
+        "imagePullPolicy": {
+          "description": "The image pull policy for the Fluentbit sidecar container image. Legal values are Always, Never, and IfNotPresent. Defaults to Always if image ends in :latest; IfNotPresent, otherwise.",
+          "type": "string"
+        },
+        "elasticSearchCredentials": {
+          "description": "Fluentbit elastic search credentials. A Kubernetes secret in the same namespace of the domain. It must contains 4 keys: elasticsearchhost - ElasticSearch Host Service Address, elasticsearchport - Elastic Search Service Port, elasticsearchuser - Elastic Search Service User Name, elasticsearchpassword - Elastic Search User Password",
+          "type": "string"
+        },
+        "parserConfiguration": {
+          "description": "The Fluentbit parser configuration text, specify your own custom fluentbit configuration.",
+          "type": "string"
+        },
+        "resources": {
+          "description": "Memory and CPU minimum requirements and limits for the fluentbit container. See `kubectl explain pods.spec.containers.resources`.",
+          "$ref": "https://github.com/garethr/kubernetes-json-schema/blob/master/v1.13.5/_definitions.json#/definitions/io.k8s.api.core.v1.ResourceRequirements"
+        },
+        "containerArgs": {
+          "description": "(Optional) The Fluentbit sidecar container spec\u0027s args. Default is: [ -c, /etc/fluent-bit.conf ] if not specified",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fluentbitConfiguration": {
+          "description": "The Fluentbit configuration text, specify your own custom fluentbit configuration.",
+          "type": "string"
+        },
+        "watchIntrospectorLogs": {
+          "description": "Fluentbit will watch introspector logs",
+          "type": "boolean"
+        },
+        "env": {
+          "description": "A list of environment variables to set in the fluentbit container. See `kubectl explain pods.spec.containers.env`.",
+          "type": "array",
+          "items": {
+            "$ref": "https://github.com/garethr/kubernetes-json-schema/blob/master/v1.13.5/_definitions.json#/definitions/io.k8s.api.core.v1.EnvVar"
+          }
+        },
+        "containerCommand": {
+          "description": "(Optional) The Fluentbit sidecar container spec\u0027s command. Default is not set if not specified",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "volumeMounts": {
+          "description": "Volume mounts for fluentbit container",
+          "type": "array",
+          "items": {
+            "$ref": "https://github.com/garethr/kubernetes-json-schema/blob/master/v1.13.5/_definitions.json#/definitions/io.k8s.api.core.v1.VolumeMount"
           }
         }
       }
@@ -792,8 +879,8 @@
       "type": "object",
       "properties": {
         "image": {
-          "default": "ghcr.io/oracle/weblogic-monitoring-exporter:2.1.8",
-          "description": "The WebLogic Monitoring Exporter sidecar container image name. Defaults to ghcr.io/oracle/weblogic-monitoring-exporter:2.1.8",
+          "default": "ghcr.io/oracle/weblogic-monitoring-exporter:2.1.9",
+          "description": "The WebLogic Monitoring Exporter sidecar container image name. Defaults to ghcr.io/oracle/weblogic-monitoring-exporter:2.1.9",
           "type": "string"
         },
         "imagePullPolicy": {
@@ -902,15 +989,15 @@
           "type": "string"
         },
         "nfs": {
-          "description": "nfs represents an NFS mount on the host. Provisioned by an admin. More info:\nhttps://kubernetes.io/docs/concepts/storage/volumes#nfs\nRepresents an NFS mount that lasts the lifetime of a pod. NFS volumes do not support ownership management or SELinux relabeling.",
+          "description": "nfs represents an NFS mount on the host. Provisioned by an admin. More info: https://kubernetes.io/docs/concepts/storage/volumes#nfs. Represents an NFS mount that lasts the lifetime of a pod. NFS volumes do not support ownership management or SELinux relabeling.",
           "$ref": "https://github.com/garethr/kubernetes-json-schema/blob/master/v1.13.5/_definitions.json#/definitions/io.k8s.api.core.v1.NFSVolumeSource"
         },
         "persistentVolumeReclaimPolicy": {
-          "description": "PersistentVolumeReclaimPolicy defines what happens to a persistent volume when released from its claim. Valid options are Retain (default for manually created PersistentVolumes), Delete (default for dynamically provisioned PersistentVolumes), and Recycle (deprecated). Recycle must be supported by the volume plugin underlying this PersistentVolume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#reclaiming  ",
+          "description": "PersistentVolumeReclaimPolicy defines what happens to a persistent volume when released from its claim. Valid options are Retain (default for manually created PersistentVolumes), Delete (default for dynamically provisioned PersistentVolumes), and Recycle (deprecated). Recycle must be supported by the volume plugin underlying this PersistentVolume. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#reclaiming",
           "type": "string"
         },
         "hostPath": {
-          "description": "HostPath represents a directory on the host. Provisioned by a developer or tester. This is useful for single-node development and testing only! On-host storage is not supported in any way and WILL NOT WORK in a multi-node cluster. More info:\n https://kubernetes.io/docs/concepts/storage/volumes#hostpath\nRepresents a host path mapped into a pod. Host path volumes do not support ownership management or SELinux relabeling.",
+          "description": "HostPath represents a directory on the host. Provisioned by a developer or tester. This is useful for single-node development and testing only! On-host storage is not supported in any way and WILL NOT WORK in a multi-node cluster. More info: https://kubernetes.io/docs/concepts/storage/volumes#hostpath. Represents a host path mapped into a pod. Host path volumes do not support ownership management or SELinux relabeling.",
           "$ref": "https://github.com/garethr/kubernetes-json-schema/blob/master/v1.13.5/_definitions.json#/definitions/io.k8s.api.core.v1.HostPathVolumeSource"
         },
         "capacity": {
