@@ -253,9 +253,24 @@ class ItCrossDomainTransaction {
   }
 
   private static void buildApplicationsAndDomains() {
+    if (OKE_CLUSTER) {
+      // get ingress service Name and Nodeport
+      String ingressServiceName = traefikHelmParams.getReleaseName();
+      String traefikNamespace = traefikHelmParams.getNamespace();
+
+      int ingressServiceNodePort = assertDoesNotThrow(()
+          -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
+          "Getting Ingress Service node port failed");
+      logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
+
+      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) + ":" + ingressServiceNodePort;
+    } else {
+      hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
+    }
+
+    logger.info("The hostAndPort is {0}", hostAndPort);
 
     //build application archive
-
     Path targetDir = Paths.get(WORK_DIR,
          ItCrossDomainTransaction.class.getName() + "/txforward");
     Path distDir = buildApplication(Paths.get(APP_DIR, "txforward"), null, null,
@@ -381,23 +396,6 @@ class ItCrossDomainTransaction {
         () -> getServiceNodePort(domain2Namespace, getExternalServicePodName(domain2AdminServerPodName), "default"),
         "Getting admin server node port failed");
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
-
-    if (OKE_CLUSTER) {
-      // get ingress service Name and Nodeport
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      String traefikNamespace = traefikHelmParams.getNamespace();
-
-      int ingressServiceNodePort = assertDoesNotThrow(()
-          -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
-          "Getting Ingress Service node port failed");
-      logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
-
-      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) + ":" + ingressServiceNodePort;
-    } else {
-      hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
-    }
-
-    logger.info("The hostAndPort is {0}", hostAndPort);
   }
 
   /*
