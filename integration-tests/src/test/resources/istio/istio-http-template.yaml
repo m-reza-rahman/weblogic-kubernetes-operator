@@ -43,6 +43,8 @@ spec:
     - match:
         - uri:
             prefix: /myear
+        - uri:
+            prefix: /testwebapp            
         - port: 8001
       route:
         - destination:
