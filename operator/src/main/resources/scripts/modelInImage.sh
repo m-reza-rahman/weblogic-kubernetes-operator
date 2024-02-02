@@ -1397,7 +1397,7 @@ logSevereAndExit() {
   exitOrLoop
 }
 
-# Function to expand the WDT custom folder from the archive before calling update or create domain.
+# Function to expand the WDT custom/wallet folders from the archive before calling update domain.
 expandWdtArchiveCustomDir() {
   cd ${DOMAIN_HOME} || exitOrLoop
   for file in $(sort_files ${IMG_ARCHIVES_ROOTDIR} "*.zip")
@@ -1409,5 +1409,6 @@ expandWdtArchiveCustomDir() {
     done
 
   restoreZippedDbWallets
+  trace "Listing domain home directories"
   ls -lR ${DOMAIN_HOME}
 }
