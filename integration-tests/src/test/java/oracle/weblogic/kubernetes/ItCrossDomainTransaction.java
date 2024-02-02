@@ -32,6 +32,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.assertions.TestAssertions;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -253,23 +255,6 @@ class ItCrossDomainTransaction {
   }
 
   private static void buildApplicationsAndDomains() {
-    if (OKE_CLUSTER) {
-      // get ingress service Name and Nodeport
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      String traefikNamespace = traefikHelmParams.getNamespace();
-
-      int ingressServiceNodePort = assertDoesNotThrow(()
-          -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
-          "Getting Ingress Service node port failed");
-      logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
-
-      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) + ":" + ingressServiceNodePort;
-    } else {
-      hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
-    }
-
-    logger.info("The hostAndPort is {0}", hostAndPort);
-
     //build application archive
     Path targetDir = Paths.get(WORK_DIR,
          ItCrossDomainTransaction.class.getName() + "/txforward");
@@ -378,6 +363,33 @@ class ItCrossDomainTransaction {
 
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(domain2Image);
+
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
+    if (OKE_CLUSTER) {
+      // get ingress service Name and Nodeport
+      String ingressServiceName = traefikHelmParams.getReleaseName();
+      String traefikNamespace = traefikHelmParams.getNamespace();
+
+      int ingressServiceNodePort = assertDoesNotThrow(()
+          -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
+          "Getting Ingress Service node port failed");
+      logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
+
+      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) + ":" + ingressServiceNodePort;
+    } else {
+      hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
+    }
+
+    logger.info("The hostAndPort is {0}", hostAndPort);
 
     //create domain1
     createDomain(domainUid1, domain1Namespace, domain1AdminSecretName, domain1Image);
