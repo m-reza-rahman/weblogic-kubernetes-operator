@@ -32,7 +32,7 @@ public class TraefikParams {
   private static final String TRAEFIK_IMAGE = "image.repository";
   private static final String TRAEFIK_IMAGE_REGISTRY = "image.registry";
   private static final String TRAEFIK_IMAGE_TAG = "image.tag";
-  private static final String TRAEFIK_IMAGE_SECRET = "image.secret";
+  private static final String TRAEFIK_IMAGE_SECRET = "deployment.imagePullSecrets[0].name";
   private static final String INGRESS_CLASS_NAME = "ingressClass.name";
   private static final String TYPE = "service.type";
 
