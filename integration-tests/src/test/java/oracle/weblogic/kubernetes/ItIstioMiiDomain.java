@@ -145,16 +145,13 @@ class ItIstioMiiDomain {
    * Deploy istio gateways and virtual service.
    *
    * Verify server pods are in ready state and services are created.
-   * Verify WebLogic console is accessible thru istio ingress port.
-   * Deploy a web application thru istio http ingress port using REST api.
-   * Access web application thru istio http ingress port using curl.
+   * Verify WebLogic REST interface is accessible thru istio ingress port.
    *
    * Create a configmap with a sparse model file to add a new workmanager
    * with custom min threads constraint and a max threads constraint
    * Patch the domain resource with the configmap.
    * Update the introspect version of the domain resource.
-   * Verify rolling restart of the domain by comparing PodCreationTimestamp
-   * before and after rolling restart.
+   * Verify the changes are applied without rolling restart of the domain by comparing PodCreationTimestamp
    * Verify new work manager is configured.
    */
   @Test
