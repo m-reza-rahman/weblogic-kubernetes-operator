@@ -26,6 +26,8 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.NginxParams;
+import oracle.weblogic.kubernetes.actions.impl.Service;
 import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -75,6 +77,7 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -135,6 +138,8 @@ class ItCrossDomainTransaction {
 
   private static HelmParams traefikHelmParams = null;
   private static TraefikParams traefikParams = null;
+  private static NginxParams nginxHelmParams = null;
+  private static int nginxNodePort;
 
   /**
    * Install Operator.
@@ -142,7 +147,7 @@ class ItCrossDomainTransaction {
    *     JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(4) List<String> namespaces) {
+  public static void initAll(@Namespaces(5) List<String> namespaces) {
     logger = getLogger();
 
     // get a new unique opNamespace
@@ -157,11 +162,6 @@ class ItCrossDomainTransaction {
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(2), "Namespace list is null");
     domain2Namespace = namespaces.get(2);
-
-    // get a unique Traefik namespace
-    logger.info("Assign a unique namespace for Traefik");
-    assertNotNull(namespaces.get(3), "Namespace list is null");
-    String traefikNamespace = namespaces.get(3);
 
     final int dbListenerPort = getNextFreePort();
     ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
@@ -191,8 +191,21 @@ class ItCrossDomainTransaction {
 
     // install and verify Traefik if not running on OKD
     if (OKE_CLUSTER) {
+      // get a unique Traefik namespace
+      logger.info("Assign a unique namespace for Traefik");
+      assertNotNull(namespaces.get(3), "Namespace list is null");
+      String traefikNamespace = namespaces.get(3);
+
+      // get a unique Nginx namespace
+      logger.info("Assign a unique namespace for Nginx");
+      assertNotNull(namespaces.get(4), "Namespace list is null");
+      String nginxNamespace = namespaces.get(4);
+
       traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
       traefikHelmParams = traefikParams.getHelmParams();
+
+      // install and verify Nginx
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
     }
 
     // install and verify operator
@@ -375,6 +388,22 @@ class ItCrossDomainTransaction {
     }
 
     if (OKE_CLUSTER) {
+      // create an ingress in domain namespace
+      String nginxIngressName = domain1Namespace + "-nginx-path-routing";
+      String nginxIngressClassName = nginxHelmParams.getIngressClassName();
+
+      // check the ingress is ready to route the app to the server pod
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      String nginxNamespace = nginxHelmParams.getHelmParams().getNamespace();
+      logger.info("nginxServiceName: {0} and nginxNamespace: {1} :", nginxServiceName, nginxNamespace);
+
+      nginxNodePort = assertDoesNotThrow(() -> Service.getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
+          "Getting Nginx loadbalancer service node port failed");
+      logger.info("Nginx Node port for {0} is: {1} :", nginxServiceName, nginxNodePort);
+
+      hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+      logger.info("Nginx hostAndPort is {0}", hostAndPort);
+
       // get ingress service Name and Nodeport
       String ingressServiceName = traefikHelmParams.getReleaseName();
       String traefikNamespace = traefikHelmParams.getNamespace();
@@ -382,9 +411,10 @@ class ItCrossDomainTransaction {
       int ingressServiceNodePort = assertDoesNotThrow(()
           -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
           "Getting Ingress Service node port failed");
-      logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
+      logger.info("Traefik Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
 
       hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) + ":" + ingressServiceNodePort;
+      logger.info("Traefik hostAndPort is {0}", hostAndPort);
     } else {
       hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     }
