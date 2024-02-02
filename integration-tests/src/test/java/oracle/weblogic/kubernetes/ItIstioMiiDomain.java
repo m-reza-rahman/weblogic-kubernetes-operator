@@ -384,7 +384,7 @@ class ItIstioMiiDomain {
 
     replaceConfigMapWithModelFiles(configMapName, domainUid, domainNamespace,
         Arrays.asList(MODEL_DIR + "/model.config.wm.yaml"), withStandardRetryPolicy);
-    restartDomain();
+    //restartDomain();
 
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
     verifyIntrospectorRuns(domainUid, domainNamespace);
