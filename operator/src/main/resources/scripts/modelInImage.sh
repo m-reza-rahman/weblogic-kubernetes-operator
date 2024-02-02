@@ -1398,6 +1398,8 @@ logSevereAndExit() {
 }
 
 # Function to expand the WDT custom/wallet folders from the archive before calling update domain.
+# The domain may be created by WDT 3 and older archive format, restore any entries prior to update
+#  new 4.0 entry paths are config/**
 expandWdtArchiveCustomDir() {
   cd ${DOMAIN_HOME} || exitOrLoop
   for file in $(sort_files ${IMG_ARCHIVES_ROOTDIR} "*.zip")
