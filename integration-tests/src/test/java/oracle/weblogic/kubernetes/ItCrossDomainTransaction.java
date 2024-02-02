@@ -402,7 +402,7 @@ class ItCrossDomainTransaction {
       logger.info("Nginx Node port for {0} is: {1} :", nginxServiceName, nginxNodePort);
 
       try {
-        Thread.sleep(60000);
+        Thread.sleep(600000);
       } catch (Exception ex) {
         ///
       }
