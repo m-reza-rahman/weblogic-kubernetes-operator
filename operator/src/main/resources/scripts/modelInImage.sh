@@ -1268,8 +1268,8 @@ encrypt_decrypt_domain_secret() {
   trace "Exiting encrypt_decrypt_domain_secret"
 }
 
-# prepare mii server
-restorAppAndLibs() {
+# restore App Libs and others from the archive
+restoreAppAndLibs() {
 
   createFolder "${DOMAIN_HOME}/lib" "This is the './lib' directory within DOMAIN_HOME directory 'domain.spec.domainHome'." || return 1
   local WLSDEPLOY_DOMAINLIB="wlsdeploy/domainLibraries"
@@ -1307,6 +1307,21 @@ restorAppAndLibs() {
         if [ $? -ne 0 ] ; then
           trace SEVERE "Domain Source Type is FromModel, error in extracting application archive ${IMG_ARCHIVES_ROOTDIR}/${file}"
           return 1
+        fi
+
+        if versionGE ${WDT_VERSION} "4.0.0" ; then
+          trace INFO "Newer version of WDT 4.0.0 - check if there is old archive format of these files"
+          if [ -d ${DOMAIN_HOME}/wlsdeploy/dbWallets ] ; then
+            # copy to under DOMAIN_HOME/config
+            mkdir -p ${DOMAIN_HOME}/config/wlsdeploy/dbWallets
+            cp -R ${DOMAIN_HOME}/wlsdeploy/dbWallets/* ${DOMAIN_HOME}/config/wlsdeploy/dbWallets
+          fi
+          if [ -d ${DOMAIN_HOME}/wlsdeploy/custom ] ; then
+            # copy to under DOMAIN_HOME/config
+            mkdir -p ${DOMAIN_HOME}/config/wlsdeploy/custom
+            cp -R ${DOMAIN_HOME}/wlsdeploy/custom/* ${DOMAIN_HOME}/config/wlsdeploy/custom
+          fi
+
         fi
     done
 
@@ -1362,7 +1377,7 @@ prepareMIIServer() {
   # during introspection, it will overwrite the tokenized version in the archive.
     
   trace "Model-in-Image: Restoring apps and libraries"
-  restorAppAndLibs || return 1
+  restoreAppAndLibs || return 1
 
   trace "Model-in-Image: Restore domain config"
   restoreDomainConfig || return 1
@@ -1388,8 +1403,11 @@ expandWdtArchiveCustomDir() {
   for file in $(sort_files ${IMG_ARCHIVES_ROOTDIR} "*.zip")
     do
         ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} wlsdeploy/custom
+        ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} wlsdeploy/dbWallets
+        ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} config/wlsdeploy/custom
+        ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} config/wlsdeploy/dbWallets
     done
 
-  CUSTOM_DIR=${DOMAIN_HOME}/wlsdeploy/custom
-  traceDirs before CUSTOM_DIR
+  restoreZippedDbWallets
+  ls -lR ${DOMAIN_HOME}
 }
