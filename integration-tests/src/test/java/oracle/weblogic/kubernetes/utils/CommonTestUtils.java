@@ -1308,6 +1308,16 @@ public class CommonTestUtils {
           "Can't find external IP address of the service " + serviceName);
 
       logger.info("External IP address of the service is {0} ", serviceExtIPAddr);
+
+      String command = KUBERNETES_CLI + " get all --all-namespaces";
+      logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+      try {
+        ExecResult result0 = ExecCommand.exec(command, true);
+        logger.info("==== result is: {0}", result0.toString());
+      } catch (IOException | InterruptedException ex) {
+        ex.printStackTrace();
+      }
     }
 
     String serviceExtIPAddress = serviceExtIPAddr;

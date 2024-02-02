@@ -401,6 +401,11 @@ class ItCrossDomainTransaction {
           "Getting Nginx loadbalancer service node port failed");
       logger.info("Nginx Node port for {0} is: {1} :", nginxServiceName, nginxNodePort);
 
+      try {
+        Thread.sleep(60000);
+      } catch (Exception ex) {
+        ///
+      }
       hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
       logger.info("Nginx hostAndPort is {0}", hostAndPort);
 
