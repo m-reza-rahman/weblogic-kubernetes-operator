@@ -451,11 +451,13 @@ class ItIstioMiiDomain {
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
             .adminServer(createAdminServer())
             .configuration(new Configuration()
-                     .model(new Model()
-                         .domainType("WLS")
-                         .configMap(configmapName)
-                         .onlineUpdate(new OnlineUpdate().enabled(true))
-                         .runtimeEncryptionSecret(encryptionSecretName))
+                .useOnlineUpdate(true)
+                .model(new Model()
+                    .domainType("WLS")
+                    .configMap(configmapName)
+                    .onlineUpdate(new OnlineUpdate()
+                        .enabled(true))
+                    .runtimeEncryptionSecret(encryptionSecretName))
             .introspectorJobActiveDeadlineSeconds(300L)));
     setPodAntiAffinity(domain);
     return domain;
