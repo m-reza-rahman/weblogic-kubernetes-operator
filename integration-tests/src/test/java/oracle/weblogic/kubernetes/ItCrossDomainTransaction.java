@@ -56,6 +56,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomR
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodIP;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsActive;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
@@ -89,6 +90,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify cross domain transaction is successful")
 @IntegrationTest
+//@Tag("oke-sequential")
 @Tag("oke-gate")
 @Tag("kind-parallel")
 @Tag("okd-wls-srg")
@@ -394,6 +396,8 @@ class ItCrossDomainTransaction {
     } else {
       hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     }
+
+    logger.info("The hostAndPort is {0}", hostAndPort);
   }
 
   /*
@@ -587,14 +591,24 @@ class ItCrossDomainTransaction {
         "Getting admin server node port failed");
 
     if (!WEBLOGIC_SLIM) {
-      logger.info("Validating WebLogic admin console");
-      testUntil(
-          assertDoesNotThrow(() -> {
-            return TestAssertions.adminNodePortAccessible(serviceNodePort,
-                 ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
-          }, "Access to admin server node port failed"),
-          logger,
-          "Console login validation");
+      if (OKE_CLUSTER) {
+        //verify WebLogic console is accessible through default-secure nodeport
+        String curlCmd = "curl -g -sk --show-error --noproxy '*' "
+            + " https://" + hostAndPort
+            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+        logger.info("Executing WebLogic console default-secure nodeport curl command {0}", curlCmd);
+        assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
+        logger.info("WebLogic console is accessible thru default-secure service");
+      } else {
+        logger.info("Validating WebLogic admin console");
+        testUntil(
+            assertDoesNotThrow(() -> {
+              return TestAssertions.adminNodePortAccessible(serviceNodePort,
+                  ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
+            }, "Access to admin server node port failed"),
+            logger,
+            "Console login validation");
+      }
     } else {
       logger.info("Skipping WebLogic Console check for Weblogic slim images");
     }
