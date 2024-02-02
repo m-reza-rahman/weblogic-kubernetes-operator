@@ -292,7 +292,7 @@ class ItMultiDomainModelsScale {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  //@ParameterizedTest
+  @ParameterizedTest
   @DisplayName("scale cluster using REST API for three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
@@ -345,7 +345,7 @@ class ItMultiDomainModelsScale {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  //@ParameterizedTest
+  @ParameterizedTest
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
