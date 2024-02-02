@@ -67,6 +67,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.NODE_IP;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKD_TRAEFIK_ROUTEHOST;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
@@ -2285,11 +2286,29 @@ public class CommonTestUtils {
         .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
         .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
         .contains(ingressName);
-    String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
+    /*String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
         + "' http://localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT
-        + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+        + "/weblogic/ready --write-out %{http_code} -o /dev/null";*/
+    //TODO
+    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost);
+    String hostAndPort = "";
+    if (TestConstants.KIND_CLUSTER
+            && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+    } else if (OKD) {
+      try {
+        hostAndPort = Files.readString(OKD_TRAEFIK_ROUTEHOST);
+      } catch (IOException ex) {
+        getLogger().info("Exception in curl request {0}", ex);
+      }
+    }
+    getLogger().info("**** hostAndPort={0}", hostAndPort);
+
+    String url =  "' http://" + hostAndPort + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+    curlCmd.append(url);
+
     getLogger().info("Executing curl command {0}", curlCmd);
-    assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
+    assertTrue(callWebAppAndWaitTillReady(new String(curlCmd), 60));
 
     getLogger().info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
     return ingressHost;

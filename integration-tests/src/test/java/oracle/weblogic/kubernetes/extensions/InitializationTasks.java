@@ -691,6 +691,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
 
     TraefikParams traefikParams = installAndVerifyTraefik(TRAEFIK_NAMESPACE, TRAEFIK_INGRESS_HTTP_NODEPORT,
         TRAEFIK_INGRESS_HTTPS_NODEPORT, "NodePort", TRAEFIK_IMAGE_REPO_SECRET_NAME);
+    getLogger().info("Traefik ingress class name is {0}, traefikParams.getIngressClassName()");
     assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, traefikParams.getIngressClassName()));    
     String cmd = KUBERNETES_CLI + " get all -A";
     try {
@@ -705,6 +706,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
     //oc -n ns-traefik get traefik-release8-traefik  '-o=jsonpath={.spec.host}'
     if (OKD) {
       String host = createRouteForOKD(TRAEFIK_SERVICENAME, TRAEFIK_NAMESPACE);
+      getLogger().info("Traefik route host name is {0}, host");
       assertDoesNotThrow(() -> Files.writeString(OKD_TRAEFIK_ROUTEHOST, host));
     }
   }
