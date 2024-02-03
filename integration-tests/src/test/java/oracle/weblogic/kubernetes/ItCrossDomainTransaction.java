@@ -395,7 +395,7 @@ class ItCrossDomainTransaction {
               domain1ManagedServerPrefix, domain1Namespace, domain2ManagedServerPrefix, domain2Namespace,
               domain2ManagedServerPrefix, domain2Namespace);
 
-      ExecResult result = exeAppInServerPod(domain1Namespace, domain1AdminServerPodName,7002, resourcePath);
+      ExecResult result = exeAppInServerPod(domain1Namespace, domain1AdminServerPodName,7001, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
     } else {
@@ -573,7 +573,7 @@ class ItCrossDomainTransaction {
       logger.info("Validating WebLogic admin console");
       if (OKE_CLUSTER) {
         String resourcePath = "/console/login/LoginForm.jsp";
-        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
         logger.info("result in OKE_CLUSTER is {0}", result.toString());
         assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
       } else {
