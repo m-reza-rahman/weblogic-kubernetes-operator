@@ -571,13 +571,20 @@ class ItCrossDomainTransaction {
 
     if (!WEBLOGIC_SLIM) {
       logger.info("Validating WebLogic admin console");
-      testUntil(
-          assertDoesNotThrow(() -> {
-            return TestAssertions.adminNodePortAccessible(serviceNodePort,
-                 ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
-          }, "Access to admin server node port failed"),
-          logger,
-          "Console login validation");
+      if (OKE_CLUSTER) {
+        String resourcePath = "/console/login/LoginForm.jsp";
+        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+        logger.info("result in OKE_CLUSTER is {0}", result.toString());
+        assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+      } else {
+        testUntil(
+            assertDoesNotThrow(() -> {
+              return TestAssertions.adminNodePortAccessible(serviceNodePort,
+                  ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
+            }, "Access to admin server node port failed"),
+            logger,
+            "Console login validation");
+      }
     } else {
       logger.info("Skipping WebLogic Console check for Weblogic slim images");
     }
