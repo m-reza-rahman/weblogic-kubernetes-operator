@@ -402,10 +402,21 @@ class ItCrossDomainTransaction {
       logger.info("Nginx Node port for {0} is: {1} :", nginxServiceName, nginxNodePort);
 
       try {
-        Thread.sleep(600000);
+        Thread.sleep(1200000);
       } catch (Exception ex) {
         ///
       }
+
+      command = KUBERNETES_CLI + " get all --all-namespaces";
+      logger.info("after sleeping 20 m curl command to get all --all-namespaces is: {0}", command);
+
+      try {
+        ExecResult result0 = ExecCommand.exec(command, true);
+        logger.info("result is: {0}", result0.toString());
+      } catch (IOException | InterruptedException ex) {
+        ex.printStackTrace();
+      }
+
       hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
       logger.info("Nginx hostAndPort is {0}", hostAndPort);
 
