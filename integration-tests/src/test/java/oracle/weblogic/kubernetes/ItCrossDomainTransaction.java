@@ -469,35 +469,47 @@ class ItCrossDomainTransaction {
   @DisplayName("Check cross domain transcated MDB communication ")
   void testCrossDomainTranscatedMDB() {
 
-    // No extra header info
-    assertTrue(checkAppIsActive(hostAndPort,
-                 "", "mdbtopic","cluster-1",
-                 ADMIN_USERNAME_DEFAULT,ADMIN_PASSWORD_DEFAULT),
-             "MDB application can not be activated on domain1/cluster");
+    if (OKE_CLUSTER) {
+      String resourcePath = String.format("/jmsservlet/jmstest?"
+          + "url=t3://domain2-cluster-cluster-1.%s:8001&"
+          + "cf=jms.ClusterConnectionFactory&"
+          + "action=send&"
+          + "dest=jms/testCdtUniformTopic\"",
+          hostAndPort, domain2Namespace);
 
-    logger.info("MDB application is activated on domain1/cluster");
+      ExecResult result = exeAppInServerPod(domain1Namespace, domain1AdminServerPodName,7001, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    } else {
+      // No extra header info
+      assertTrue(checkAppIsActive(hostAndPort,
+          "", "mdbtopic", "cluster-1",
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
+          "MDB application can not be activated on domain1/cluster");
 
-    String curlRequest = String.format("curl -g -v --show-error --noproxy '*' "
-            + "\"http://%s/jmsservlet/jmstest?"
-            + "url=t3://domain2-cluster-cluster-1.%s:8001&"
-            + "cf=jms.ClusterConnectionFactory&"
-            + "action=send&"
-            + "dest=jms/testCdtUniformTopic\"",
-           hostAndPort, domain2Namespace);
+      logger.info("MDB application is activated on domain1/cluster");
 
-    ExecResult result = null;
-    logger.info("curl command {0}", curlRequest);
-    result = assertDoesNotThrow(
+      String curlRequest = String.format("curl -g -v --show-error --noproxy '*' "
+          + "\"http://%s/jmsservlet/jmstest?"
+          + "url=t3://domain2-cluster-cluster-1.%s:8001&"
+          + "cf=jms.ClusterConnectionFactory&"
+          + "action=send&"
+          + "dest=jms/testCdtUniformTopic\"",
+          hostAndPort, domain2Namespace);
+
+      ExecResult result = null;
+      logger.info("curl command {0}", curlRequest);
+      result = assertDoesNotThrow(
         () -> exec(curlRequest, true));
-    if (result.exitValue() == 0) {
-      logger.info("\n HTTP response is \n " + result.stdout());
-      logger.info("curl command returned {0}", result.toString());
-      assertTrue(result.stdout().contains("Sent (10) message"),
-          "Can not send message to remote Distributed Topic");
+      if (result.exitValue() == 0) {
+        logger.info("\n HTTP response is \n " + result.stdout());
+        logger.info("curl command returned {0}", result.toString());
+        assertTrue(result.stdout().contains("Sent (10) message"),
+            "Can not send message to remote Distributed Topic");
+      }
     }
 
-    assertTrue(checkLocalQueue(),
-         "Expected number of message not found in Accounting Queue");
+    assertTrue(checkLocalQueue(), "Expected number of message not found in Accounting Queue");
   }
 
   private boolean checkLocalQueue() {
