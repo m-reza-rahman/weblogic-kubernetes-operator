@@ -26,15 +26,10 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.NginxParams;
-import oracle.weblogic.kubernetes.actions.impl.Service;
-import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
-import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.assertions.TestAssertions;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +43,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -60,13 +54,12 @@ import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomR
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodIP;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
-import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsActive;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DbUtils.getDBNodePort;
 import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
@@ -77,8 +70,6 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
@@ -86,6 +77,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -95,7 +87,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify cross domain transaction is successful")
 @IntegrationTest
-//@Tag("oke-sequential")
+//@Tag("oke-parallel")
 @Tag("oke-gate")
 @Tag("kind-parallel")
 @Tag("okd-wls-srg")
@@ -136,18 +128,13 @@ class ItCrossDomainTransaction {
   private static String dbPodIP = null;
   private static int dbPort = 1521;
 
-  private static HelmParams traefikHelmParams = null;
-  private static TraefikParams traefikParams = null;
-  private static NginxParams nginxHelmParams = null;
-  private static int nginxNodePort;
-
   /**
    * Install Operator.
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *     JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(5) List<String> namespaces) {
+  public static void initAll(@Namespaces(3) List<String> namespaces) {
     logger = getLogger();
 
     // get a new unique opNamespace
@@ -188,25 +175,6 @@ class ItCrossDomainTransaction {
     // required for this to take effect. So, copying the property file to RESULT_ROOT and updating the
     // property file
     updatePropertyFile();
-
-    // install and verify Traefik if not running on OKD
-    if (OKE_CLUSTER) {
-      // get a unique Traefik namespace
-      logger.info("Assign a unique namespace for Traefik");
-      assertNotNull(namespaces.get(3), "Namespace list is null");
-      String traefikNamespace = namespaces.get(3);
-
-      // get a unique Nginx namespace
-      logger.info("Assign a unique namespace for Nginx");
-      assertNotNull(namespaces.get(4), "Namespace list is null");
-      String nginxNamespace = namespaces.get(4);
-
-      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
-      traefikHelmParams = traefikParams.getHelmParams();
-
-      // install and verify Nginx
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-    }
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
@@ -268,7 +236,9 @@ class ItCrossDomainTransaction {
   }
 
   private static void buildApplicationsAndDomains() {
+
     //build application archive
+
     Path targetDir = Paths.get(WORK_DIR,
          ItCrossDomainTransaction.class.getName() + "/txforward");
     Path distDir = buildApplication(Paths.get(APP_DIR, "txforward"), null, null,
@@ -377,66 +347,6 @@ class ItCrossDomainTransaction {
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(domain2Image);
 
-    String command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-    try {
-      ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("result is: {0}", result0.toString());
-    } catch (IOException | InterruptedException ex) {
-      ex.printStackTrace();
-    }
-
-    if (OKE_CLUSTER) {
-      // create an ingress in domain namespace
-      String nginxIngressName = domain1Namespace + "-nginx-path-routing";
-      String nginxIngressClassName = nginxHelmParams.getIngressClassName();
-
-      // check the ingress is ready to route the app to the server pod
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      String nginxNamespace = nginxHelmParams.getHelmParams().getNamespace();
-      logger.info("nginxServiceName: {0} and nginxNamespace: {1} :", nginxServiceName, nginxNamespace);
-
-      nginxNodePort = assertDoesNotThrow(() -> Service.getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
-          "Getting Nginx loadbalancer service node port failed");
-      logger.info("Nginx Node port for {0} is: {1} :", nginxServiceName, nginxNodePort);
-
-      try {
-        Thread.sleep(1200000);
-      } catch (Exception ex) {
-        ///
-      }
-
-      command = KUBERNETES_CLI + " get all --all-namespaces";
-      logger.info("after sleeping 20 m curl command to get all --all-namespaces is: {0}", command);
-
-      try {
-        ExecResult result0 = ExecCommand.exec(command, true);
-        logger.info("result is: {0}", result0.toString());
-      } catch (IOException | InterruptedException ex) {
-        ex.printStackTrace();
-      }
-
-      hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-      logger.info("Nginx hostAndPort is {0}", hostAndPort);
-
-      // get ingress service Name and Nodeport
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      String traefikNamespace = traefikHelmParams.getNamespace();
-
-      int ingressServiceNodePort = assertDoesNotThrow(()
-          -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
-          "Getting Ingress Service node port failed");
-      logger.info("Traefik Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
-
-      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) + ":" + ingressServiceNodePort;
-      logger.info("Traefik hostAndPort is {0}", hostAndPort);
-    } else {
-      hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
-    }
-
-    logger.info("The hostAndPort is {0}", hostAndPort);
-
     //create domain1
     createDomain(domainUid1, domain1Namespace, domain1AdminSecretName, domain1Image);
     domain1AdminExtSvcRouteHost = adminExtSvcRouteHost;
@@ -451,9 +361,11 @@ class ItCrossDomainTransaction {
     assertNotEquals(-1, domain1AdminServiceNodePort, "admin server default node port is not valid");
 
     admin2ServiceNodePort = assertDoesNotThrow(
-        () -> getServiceNodePort(domain2Namespace, getExternalServicePodName(domain2AdminServerPodName), "default"),
+      () -> getServiceNodePort(domain2Namespace, getExternalServicePodName(domain2AdminServerPodName), "default"),
         "Getting admin server node port failed");
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
+
+    hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
   }
 
   /*
@@ -476,20 +388,31 @@ class ItCrossDomainTransaction {
   @DisplayName("Check cross domain transaction works")
   void testCrossDomainTransaction() {
 
-    String curlRequest = String.format("curl -g -v --show-error --noproxy '*' "
-            + "http://%s/TxForward/TxForward?urls=t3://%s.%s:7001,t3://%s1.%s:8001,t3://%s1.%s:8001,t3://%s2.%s:8001",
-        hostAndPort, domain1AdminServerPodName, domain1Namespace,
-        domain1ManagedServerPrefix, domain1Namespace, domain2ManagedServerPrefix, domain2Namespace,
-        domain2ManagedServerPrefix, domain2Namespace);
+    if (OKE_CLUSTER) {
+      String resourcePath =
+          String.format("/TxForward/TxForward?urls=t3://%s.%s:7001,t3://%s1.%s:8001,t3://%s1.%s:8001,t3://%s2.%s:8001",
+              domain1AdminServerPodName, domain1Namespace,
+              domain1ManagedServerPrefix, domain1Namespace, domain2ManagedServerPrefix, domain2Namespace,
+              domain2ManagedServerPrefix, domain2Namespace);
 
-    ExecResult result = null;
-    logger.info("curl command {0}", curlRequest);
-    result = assertDoesNotThrow(
-        () -> exec(curlRequest, true));
-    if (result.exitValue() == 0) {
-      logger.info("\n HTTP response is \n " + result.stdout());
-      logger.info("curl command returned {0}", result.toString());
-      assertTrue(result.stdout().contains("Status=Committed"), "crossDomainTransaction failed");
+      ExecResult result = exeAppInServerPod(domain1Namespace, domain1AdminServerPodName,7002, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    } else {
+      String curlRequest = String.format("curl -g -v --show-error --noproxy '*' "
+          + "http://%s/TxForward/TxForward?urls=t3://%s.%s:7001,t3://%s1.%s:8001,t3://%s1.%s:8001,t3://%s2.%s:8001",
+            hostAndPort, domain1AdminServerPodName, domain1Namespace,
+            domain1ManagedServerPrefix, domain1Namespace, domain2ManagedServerPrefix, domain2Namespace,
+            domain2ManagedServerPrefix, domain2Namespace);
+
+      ExecResult result = null;
+      logger.info("curl command {0}", curlRequest);
+      result = assertDoesNotThrow(() -> exec(curlRequest, true));
+      if (result.exitValue() == 0) {
+        logger.info("\n HTTP response is \n " + result.stdout());
+        logger.info("curl command returned {0}", result.toString());
+        assertTrue(result.stdout().contains("Status=Committed"), "crossDomainTransaction failed");
+      }
     }
   }
 
@@ -647,24 +570,14 @@ class ItCrossDomainTransaction {
         "Getting admin server node port failed");
 
     if (!WEBLOGIC_SLIM) {
-      if (OKE_CLUSTER) {
-        //verify WebLogic console is accessible through default-secure nodeport
-        String curlCmd = "curl -g -sk --show-error --noproxy '*' "
-            + " https://" + hostAndPort
-            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
-        logger.info("Executing WebLogic console default-secure nodeport curl command {0}", curlCmd);
-        assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-        logger.info("WebLogic console is accessible thru default-secure service");
-      } else {
-        logger.info("Validating WebLogic admin console");
-        testUntil(
-            assertDoesNotThrow(() -> {
-              return TestAssertions.adminNodePortAccessible(serviceNodePort,
-                  ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
-            }, "Access to admin server node port failed"),
-            logger,
-            "Console login validation");
-      }
+      logger.info("Validating WebLogic admin console");
+      testUntil(
+          assertDoesNotThrow(() -> {
+            return TestAssertions.adminNodePortAccessible(serviceNodePort,
+                 ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
+          }, "Access to admin server node port failed"),
+          logger,
+          "Console login validation");
     } else {
       logger.info("Skipping WebLogic Console check for Weblogic slim images");
     }
