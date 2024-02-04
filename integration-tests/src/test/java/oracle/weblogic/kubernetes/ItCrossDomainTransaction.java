@@ -474,7 +474,7 @@ class ItCrossDomainTransaction {
           + "url=t3://domain2-cluster-cluster-1.%s:8001&"
           + "cf=jms.ClusterConnectionFactory&"
           + "action=send&"
-          + "dest=jms/testCdtUniformTopic\"",
+          + "dest=jms/testCdtUniformTopic",
           hostAndPort, domain2Namespace);
 
       ExecResult result = exeAppInServerPod(domain1Namespace, domain1AdminServerPodName,7001, resourcePath);
