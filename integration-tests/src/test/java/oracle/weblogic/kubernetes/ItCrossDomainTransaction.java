@@ -475,11 +475,11 @@ class ItCrossDomainTransaction {
           + "cf=jms.ClusterConnectionFactory&"
           + "action=send&"
           + "dest=jms/testCdtUniformTopic",
-          hostAndPort, domain2Namespace);
+          domain2Namespace);
 
       ExecResult result = exeAppInServerPod(domain1Namespace, domain1AdminServerPodName,7001, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
-      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+      assertEquals(0, result.exitValue(), "Failed toactivate MDB application on domain1/cluster");
     } else {
       // No extra header info
       assertTrue(checkAppIsActive(hostAndPort,
@@ -513,18 +513,27 @@ class ItCrossDomainTransaction {
   }
 
   private boolean checkLocalQueue() {
-    String curlString = String.format("curl -g -v --show-error --noproxy '*' "
-            + "\"http://%s/jmsservlet/jmstest?"
-            + "url=t3://localhost:7001&"
-            + "action=receive&dest=jms.testAccountingQueue\"",
-            hostAndPort);
+    if (OKE_CLUSTER) {
+      String resourcePath = "/jmsservlet/jmstest?url=t3://localhost:7001&"
+          + "action=receive&dest=jms.testAccountingQueue";
 
-    logger.info("curl command {0}", curlString);
+      ExecResult result = exeAppInServerPod(domain1Namespace, domain1AdminServerPodName,7001, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to update local queue");
+    } else {
+      String curlString = String.format("curl -g -v --show-error --noproxy '*' "
+          + "\"http://%s/jmsservlet/jmstest?"
+          + "url=t3://localhost:7001&"
+          + "action=receive&dest=jms.testAccountingQueue\"",
+          hostAndPort);
 
-    testUntil(
-        () -> exec(new String(curlString), true).stdout().contains("Messages are distributed"),
-        logger,
-        "local queue to be updated");
+      logger.info("curl command {0}", curlString);
+
+      testUntil(
+          () -> exec(new String(curlString), true).stdout().contains("Messages are distributed"),
+          logger,
+          "local queue to be updated");
+    }
     return true;
   }
 
