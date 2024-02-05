@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -27,6 +29,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,6 +44,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -72,6 +76,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -93,7 +98,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify that client can communicate with webservices with SSO")
 @IntegrationTest
-@Tag("oke-parallel")
+//@Tag("oke-parallel")
+@Tag("oke-gate")
 @Tag("kind-parallel")
 class ItWseeSSO {
 
@@ -168,6 +174,27 @@ class ItWseeSSO {
       logger.info("NGINX service name: {0}", nginxServiceName);
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("NGINX http node port: {0}", nodeportshttp);
+
+      int managedServerPort = 8001;
+      Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
+      clusterNameMsPortMap.put(clusterName, managedServerPort);
+
+      String ingressClassName = nginxHelmParams.getIngressClassName();
+      List<String> ingressHostList
+          = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
+          false, ingressClassName, false, 0);
+
+      logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
+
+      String command = KUBERNETES_CLI + " get all --all-namespaces";
+      logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+      try {
+        ExecResult result0 = ExecCommand.exec(command, true);
+        logger.info("==== result is: {0}", result0.toString());
+      } catch (IOException | InterruptedException ex) {
+        ex.printStackTrace();
+      }
 
     }
     keyStoresPath = Paths.get(RESULTS_ROOT, "mydomainwsee", "keystores");
