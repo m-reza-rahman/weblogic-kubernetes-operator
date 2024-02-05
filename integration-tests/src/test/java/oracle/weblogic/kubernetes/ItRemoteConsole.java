@@ -324,7 +324,24 @@ class ItRemoteConsole {
 
     ingressRules.add(ingressRule);
 
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("==== result is 1: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
     createIngressAndRetryIfFail(60, false, ingressName, domainNamespace, null, ingressClassName, ingressRules, null);
+
+    try {
+      ExecResult result1 = ExecCommand.exec(command, true);
+      logger.info("==== result is 2: {0}", result1.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
 
     // check the ingress was found in the domain namespace
     assertThat(assertDoesNotThrow(() -> listIngresses(domainNamespace)))
