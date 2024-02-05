@@ -10,14 +10,21 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
+import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
+import io.kubernetes.client.openapi.models.V1IngressBackend;
+import io.kubernetes.client.openapi.models.V1IngressRule;
+import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -26,10 +33,13 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.NginxParams;
+import oracle.weblogic.kubernetes.actions.impl.Service;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.assertions.TestAssertions;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +53,9 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
@@ -52,12 +65,15 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodIP;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsActive;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DbUtils.getDBNodePort;
 import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
@@ -68,12 +84,15 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAndRetryIfFail;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -124,13 +143,17 @@ class ItCrossDomainTransaction {
   private static String dbPodIP = null;
   private static int dbPort = 1521;
 
+  private static String nginxNamespace = null;
+  private static NginxParams nginxHelmParams = null;
+  private static int nginxNodePort;
+
   /**
    * Install Operator.
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
    *     JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(3) List<String> namespaces) {
+  public static void initAll(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
 
     // get a new unique opNamespace
@@ -145,6 +168,11 @@ class ItCrossDomainTransaction {
     logger.info("Creating unique namespace for Domain");
     assertNotNull(namespaces.get(2), "Namespace list is null");
     domain2Namespace = namespaces.get(2);
+
+    // get a unique Nginx namespace
+    logger.info("Assign a unique namespace for Nginx");
+    assertNotNull(namespaces.get(3), "Namespace list is null");
+    nginxNamespace = namespaces.get(3);
 
     final int dbListenerPort = getNextFreePort();
     ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
@@ -174,6 +202,13 @@ class ItCrossDomainTransaction {
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
+
+    if (!OKD) {
+      logger.info("Installing Nginx controller using helm");
+      // install and verify Nginx
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+    }
+
     buildApplicationsAndDomains();
   }
 
@@ -617,5 +652,75 @@ class ItCrossDomainTransaction {
             domainUid, domNamespace));
     assertTrue(domCreated, String.format("Create domain custom resource failed with ApiException "
         + "for %s in namespace %s", domainUid, domNamespace));
+  }
+
+  private static void createNginxIngressPathRoutingRules() {
+    // create an ingress in domain namespace
+    final int ADMIN_SERVER_PORT = 7001;
+    String ingressName = domain1Namespace + "-nginx-path-routing";
+    String ingressClassName = nginxHelmParams.getIngressClassName();
+
+    // create ingress rules for two domains
+    List<V1IngressRule> ingressRules = new ArrayList<>();
+    List<V1HTTPIngressPath> httpIngressPaths = new ArrayList<>();
+
+    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
+        .path("/")
+        .pathType("Prefix")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name(domainUid1 + "-admin-server")
+                .port(new V1ServiceBackendPort()
+                    .number(ADMIN_SERVER_PORT)))
+        );
+    httpIngressPaths.add(httpIngressPath);
+
+    V1IngressRule ingressRule = new V1IngressRule()
+        .host("")
+        .http(new V1HTTPIngressRuleValue()
+            .paths(httpIngressPaths));
+
+    ingressRules.add(ingressRule);
+
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("==== result is 1: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
+    createIngressAndRetryIfFail(60, false, ingressName, domain1Namespace, null, ingressClassName, ingressRules, null);
+
+    try {
+      ExecResult result1 = ExecCommand.exec(command, true);
+      logger.info("==== result is 2: {0}", result1.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
+    // check the ingress was found in the domain namespace
+    assertThat(assertDoesNotThrow(() -> listIngresses(domain1Namespace)))
+        .as(String.format("Test ingress %s was found in namespace %s", ingressName, domain1Namespace))
+        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domain1Namespace))
+        .contains(ingressName);
+
+    logger.info("ingress {0} was created in namespace {1}", ingressName, domain1Namespace);
+
+    // check the ingress is ready to route the app to the server pod
+    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    nginxNodePort = assertDoesNotThrow(() -> Service.getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
+      "Getting Nginx loadbalancer service node port failed");
+
+    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + ":" + nginxNodePort;
+
+    String curlCmd = "curl -g --silent --show-error --noproxy '*' http://" + hostAndPort
+        + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+
+    logger.info("Executing curl command {0}", curlCmd);
+    assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
   }
 }

@@ -209,7 +209,7 @@ class ItWseeSSO {
         = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
         false, ingressClassName, false, 0);
     logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
-    
+
     try {
       //sleep 20 min
       logger.info("====== Start sleep 30 min ");
