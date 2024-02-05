@@ -103,7 +103,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify cross domain transaction is successful")
 @IntegrationTest
-@Tag("oke-parallel")
+//@Tag("oke-parallel")
+@Tag("oke-gate")
 @Tag("kind-parallel")
 @Tag("okd-wls-srg")
 class ItCrossDomainTransaction {
