@@ -65,6 +65,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePodVerifyResult;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
@@ -208,6 +209,12 @@ class ItWseeSSO {
         = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
         false, ingressClassName, false, 0);
 
+    try {
+      Thread.sleep(600000);
+    } catch (Exception ex) {
+      //
+    }
+
     logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
 
     String command = KUBERNETES_CLI + " get all --all-namespaces";
@@ -219,6 +226,10 @@ class ItWseeSSO {
     } catch (IOException | InterruptedException ex) {
       ex.printStackTrace();
     }
+
+    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+    logger.info("==== hostAndPort is: {0}", hostAndPort);
   }
 
   /**
