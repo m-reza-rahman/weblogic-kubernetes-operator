@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -63,6 +64,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.startDomain;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.adminNodePortAccessible;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesDomainExist;
@@ -141,7 +143,6 @@ class ItMultiDomainModelsScale {
   private static String opServiceAccount = null;
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
-  //private static int externalRestHttpsPort = 0;
   private static LoggingFacade logger = null;
   private static String miiDomainNamespace = null;
   private static String domainInImageNamespace = null;
@@ -192,8 +193,6 @@ class ItMultiDomainModelsScale {
     installAndVerifyOperator(opNamespace, opServiceAccount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT,
         miiDomainNamespace, domainOnPVNamespace, domainInImageNamespace);
 
-    //externalRestHttpsPort = getServiceNodePort(opNamespace, "external-weblogic-operator-svc");
-
     // This test uses the operator restAPI to scale the domain. To do this in OKD cluster,
     // we need to expose the external service as route and set tls termination to  passthrough
     logger.info("Create a route for the operator external service - only for OKD");
@@ -223,7 +222,7 @@ class ItMultiDomainModelsScale {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  //@ParameterizedTest
+  @ParameterizedTest
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
@@ -265,7 +264,7 @@ class ItMultiDomainModelsScale {
 
     // verify admin console login
     if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
@@ -295,8 +294,7 @@ class ItMultiDomainModelsScale {
    */
   @ParameterizedTest
   @DisplayName("scale cluster using REST API for three different type of domains")
-  //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
-  @ValueSource(strings = {"modelInImage"})
+  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithRestApi(String domainType) {
 
@@ -328,7 +326,7 @@ class ItMultiDomainModelsScale {
 
     // verify admin console login
     if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
@@ -347,7 +345,7 @@ class ItMultiDomainModelsScale {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  //@ParameterizedTest
+  @ParameterizedTest
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
@@ -376,7 +374,7 @@ class ItMultiDomainModelsScale {
     logger.info("BR: curlCmdForWLDFScript = {0}", curlCmdForWLDFScript);
 
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-        replicaCount, replicaCount + 1, false, 0, opNamespace, opServiceAccount,
+        replicaCount, replicaCount + 1, false, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
         true, domainHome, "scaleUp", 1,
         WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
 
@@ -392,7 +390,7 @@ class ItMultiDomainModelsScale {
 
     // verify admin console login
     if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
@@ -848,4 +846,19 @@ class ItMultiDomainModelsScale {
     }
   }
 
+  private String  createIngressHostRoutingIfNotExists(String domainNamespace,
+                                                      String domainUid) {
+    String ingressName = domainNamespace + "-" + domainUid + "-" + adminServerName;
+    String hostHeader = "";
+    try {
+      List<String> ingresses = listIngresses(domainNamespace);
+      Optional<String> ingressFound = ingresses.stream().filter(ingress -> ingress.equals(ingressName)).findAny();
+      if (ingressFound.isEmpty()) {
+        hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      }
+    } catch (Exception ex) {
+      logger.severe(ex.getMessage());
+    }
+    return hostHeader;
+  }
 }
