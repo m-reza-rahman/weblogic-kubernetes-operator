@@ -398,6 +398,7 @@ class ItCrossDomainTransaction {
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
 
     if (OKE_CLUSTER) {
+      logger.info("====== Use OKE_CLUSTER");
       createNginxIngressPathRoutingRules();
 
       try {
@@ -418,9 +419,10 @@ class ItCrossDomainTransaction {
       } catch (IOException | InterruptedException ex) {
         ex.printStackTrace();
       }
+    } else {
+      logger.info("====== Use getHostAndPort");
+      hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     }
-
-    hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
   }
 
   /*
