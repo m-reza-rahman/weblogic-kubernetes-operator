@@ -16,6 +16,34 @@ class WdtUpdateFilterCase(unittest.TestCase):
   def setUp(self):
     self.initialize_environment_variables()
 
+  def assertIsNotNone(self, object, message=None):
+    if object is None:
+      if message is not None:
+        raise Exception(message)
+      else:
+        raise Exception("% is none" % object)
+  def assertIsNone(self, object, message=None):
+    if object is not None:
+      if message is not None:
+        raise Exception(message)
+      else:
+        raise Exception("% is not none" % object)
+  def assertGreater(self, object, value, message=None):
+    if not object > value:
+      raise Exception("%s is not greater than %s" % (object, value))
+  def assertNotIn(self, object, list, message=None):
+    if object in list:
+      if message is not None:
+        raise Exception(message)
+      else:
+        raise Exception("%s is in %s" % (object, list))
+
+  def assertIn(self, object, list, message=None):
+    if not object in list:
+      if message is not None:
+        raise Exception(message)
+      else:
+        raise Exception("%s is not in %s" % (object, list))
 
   def initialize_environment_variables(self):
     os.environ['DOMAIN_UID'] = 'sample-domain1'
@@ -62,7 +90,6 @@ class WdtUpdateFilterCase(unittest.TestCase):
     mock_env= MockOfflineWlstEnv()
     mock_env.open(model)
     model_wdt_mii_filter.env = mock_env
-
     return model
 
   def getModelWithoutMockEnv(self):
@@ -323,7 +350,7 @@ class WdtUpdateFilterCase(unittest.TestCase):
 
   def test_isAdministrationPortEnabledForDomain(self):
     model = self.getModel()
-    self.assertTrue(model_wdt_mii_filter.isAdministrationPortEnabledForDomain(model['topology']))
+    self.assertTrue(model_wdt_mii_filter.isAdministrationPortEnabledForDomain(model))
 
   def test_isAdministrationPortEnabledForServer(self):
     model = self.getModel()
@@ -334,7 +361,7 @@ class WdtUpdateFilterCase(unittest.TestCase):
     # enable Administration port for server
     model['topology']['Server']['admin-server']['AdministrationPortEnabled'] = True
 
-    self.assertTrue(model_wdt_mii_filter.isAdministrationPortEnabledForServer(model['topology']['Server']['admin-server'], model['topology']))
+    self.assertTrue(model_wdt_mii_filter.isAdministrationPortEnabledForServer(model['topology']['Server']['admin-server'], model))
 
   def test_istioVersionRequiresLocalHostBindings(self):
     model = self.getModel()
@@ -440,7 +467,7 @@ class WdtUpdateFilterCase(unittest.TestCase):
 
     topology['SecurityConfiguration']['SecureMode']['SecureModeEnabled'] = 'true'
 
-    isSecureModeEnabled = model_wdt_mii_filter.isSecureModeEnabledForDomain(topology)
+    isSecureModeEnabled = model_wdt_mii_filter.isSecureModeEnabledForDomain(model)
     self.assertTrue(isSecureModeEnabled, "Expected secure mode enabled for domain")
 
   def test_isSecureModeEnabledForDomain_productionModeEnabled(self):
@@ -449,7 +476,7 @@ class WdtUpdateFilterCase(unittest.TestCase):
 
     topology['ProductionModeEnabled'] = 'true'
 
-    isSecureModeEnabled = model_wdt_mii_filter.isSecureModeEnabledForDomain(topology)
+    isSecureModeEnabled = model_wdt_mii_filter.isSecureModeEnabledForDomain(model)
     self.assertTrue(isSecureModeEnabled, "Expected secure mode enabled for domain")
 
   def test_isSecureModeEnabledForDomain_importLegalHelperError(self):
@@ -459,9 +486,9 @@ class WdtUpdateFilterCase(unittest.TestCase):
 
       topology['ProductionModeEnabled'] = 'true'
 
-      isSecureModeEnabled = model_wdt_mii_filter.isSecureModeEnabledForDomain(topology)
+      isSecureModeEnabled = model_wdt_mii_filter.isSecureModeEnabledForDomain(model)
       self.fail("Expected import error for LegalHelper")
-    except ImportError as ie:
+    except ImportError, ie:
       self.assertTrue(ie is not None)
 
   def test_adminserver_name_missing(self):
@@ -482,7 +509,7 @@ class WdtUpdateFilterCase(unittest.TestCase):
       admin_server_exists = 'MyAdminServer' in topology['Server']
       self.assertTrue(admin_server_exists, "Expected MyAdminServer added if AdminServerName is not set")
 
-    except ImportError as ie:
+    except ImportError, ie:
       self.assertTrue(ie is not None)
 
 
