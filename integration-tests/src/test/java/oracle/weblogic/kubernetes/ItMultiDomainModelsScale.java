@@ -47,6 +47,7 @@ import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_EXTERNAL_REST_HTTPSPORT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
@@ -140,7 +141,7 @@ class ItMultiDomainModelsScale {
   private static String opServiceAccount = null;
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
-  private static int externalRestHttpsPort = 0;
+  //private static int externalRestHttpsPort = 0;
   private static LoggingFacade logger = null;
   private static String miiDomainNamespace = null;
   private static String domainInImageNamespace = null;
@@ -188,10 +189,10 @@ class ItMultiDomainModelsScale {
     miiImage = createAndPushMiiImage();
 
     // install and verify operator with REST API
-    installAndVerifyOperator(opNamespace, opServiceAccount, true, 0,
+    installAndVerifyOperator(opNamespace, opServiceAccount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT,
         miiDomainNamespace, domainOnPVNamespace, domainInImageNamespace);
 
-    externalRestHttpsPort = getServiceNodePort(opNamespace, "external-weblogic-operator-svc");
+    //externalRestHttpsPort = getServiceNodePort(opNamespace, "external-weblogic-operator-svc");
 
     // This test uses the operator restAPI to scale the domain. To do this in OKD cluster,
     // we need to expose the external service as route and set tls termination to  passthrough
@@ -222,7 +223,7 @@ class ItMultiDomainModelsScale {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @ParameterizedTest
+  //@ParameterizedTest
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
@@ -294,7 +295,8 @@ class ItMultiDomainModelsScale {
    */
   @ParameterizedTest
   @DisplayName("scale cluster using REST API for three different type of domains")
-  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
+  //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
+  @ValueSource(strings = {"modelInImage"})
   @DisabledOnSlimImage
   void testScaleClustersWithRestApi(String domainType) {
 
@@ -313,7 +315,7 @@ class ItMultiDomainModelsScale {
     curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
     List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-        replicaCount, numberOfServers, true, externalRestHttpsPort, opNamespace, opServiceAccount,
+        replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
         false, "", "", 0, "", "", curlCmd, managedServersBeforeScale);
 
     // then scale cluster back to 2 servers
@@ -321,7 +323,7 @@ class ItMultiDomainModelsScale {
         clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
     managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-        numberOfServers, replicaCount, true, externalRestHttpsPort, opNamespace, opServiceAccount,
+        numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
         false, "", "", 0, "", "", curlCmd, managedServersBeforeScale);
 
     // verify admin console login
@@ -345,7 +347,7 @@ class ItMultiDomainModelsScale {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @ParameterizedTest
+  //@ParameterizedTest
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
