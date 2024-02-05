@@ -208,14 +208,16 @@ class ItWseeSSO {
     List<String> ingressHostList
         = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
         false, ingressClassName, false, 0);
-
+    logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
+    
     try {
-      Thread.sleep(600000);
+      //sleep 20 min
+      logger.info("====== Start sleep 30 min ");
+      Thread.sleep(1800000);
+      logger.info("====== End sleep 30 min ");
     } catch (Exception ex) {
       //
     }
-
-    logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
 
     String command = KUBERNETES_CLI + " get all --all-namespaces";
     logger.info("curl command to get all --all-namespaces is: {0}", command);
@@ -229,7 +231,7 @@ class ItWseeSSO {
 
     String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-    logger.info("==== hostAndPort is: {0}", hostAndPort);
+    logger.info("==== hostAndPort is 1: {0}", hostAndPort);
   }
 
   /**
@@ -254,8 +256,24 @@ class ItWseeSSO {
             -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
             "default"),
         "Getting admin server node port failed");
-    assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
-            "setupPKI.py", K8S_NODEPORT_HOST + " " + serviceNodePort),
+
+    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + " " + serviceNodePort;
+
+    logger.info("==== hostAndPort is 2: {0}", hostAndPort);
+
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("==== result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
+    assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,"setupPKI.py", hostAndPort),
         "Failed to run python script setupPKI.py");
 
     buildRunClientOnPod();
@@ -271,10 +289,16 @@ class ItWseeSSO {
             "default"),
         "Getting admin server node port failed");
 
-
     logger.info("admin svc host = {0}", adminSvcExtHost);
     String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+
+    if (OKE_CLUSTER) {
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+    }
+
     String url = "http://" + hostAndPort + appURI;
+    logger.info("==== url = {0}", url);
 
     HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
     assertTrue(response.statusCode() == 200);
