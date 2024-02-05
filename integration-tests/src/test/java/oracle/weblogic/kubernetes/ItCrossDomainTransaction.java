@@ -71,6 +71,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWai
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsActive;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -94,6 +95,7 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -617,13 +619,20 @@ class ItCrossDomainTransaction {
 
     if (!WEBLOGIC_SLIM) {
       logger.info("Validating WebLogic admin console");
-      testUntil(
-          assertDoesNotThrow(() -> {
-            return TestAssertions.adminNodePortAccessible(serviceNodePort,
-                 ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
-          }, "Access to admin server node port failed"),
-          logger,
-          "Console login validation");
+      if (OKE_CLUSTER) {
+        String resourcePath = "/console/login/LoginForm.jsp";
+        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
+        logger.info("result in OKE_CLUSTER is {0}", result.toString());
+        assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+      } else {
+        testUntil(
+            assertDoesNotThrow(() -> {
+              return TestAssertions.adminNodePortAccessible(serviceNodePort,
+                  ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
+            }, "Access to admin server node port failed"),
+            logger,
+            "Console login validation");
+      }
     } else {
       logger.info("Skipping WebLogic Console check for Weblogic slim images");
     }
