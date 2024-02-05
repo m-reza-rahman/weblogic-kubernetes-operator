@@ -174,29 +174,8 @@ class ItWseeSSO {
       logger.info("NGINX service name: {0}", nginxServiceName);
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("NGINX http node port: {0}", nodeportshttp);
-
-      int managedServerPort = 8001;
-      Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
-      clusterNameMsPortMap.put(clusterName, managedServerPort);
-
-      String ingressClassName = nginxHelmParams.getIngressClassName();
-      List<String> ingressHostList
-          = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
-          false, ingressClassName, false, 0);
-
-      logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
-
-      String command = KUBERNETES_CLI + " get all --all-namespaces";
-      logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-      try {
-        ExecResult result0 = ExecCommand.exec(command, true);
-        logger.info("==== result is: {0}", result0.toString());
-      } catch (IOException | InterruptedException ex) {
-        ex.printStackTrace();
-      }
-
     }
+
     keyStoresPath = Paths.get(RESULTS_ROOT, "mydomainwsee", "keystores");
     assertDoesNotThrow(() -> deleteDirectory(keyStoresPath.toFile()));
     assertDoesNotThrow(() -> Files.createDirectories(keyStoresPath));
@@ -219,6 +198,27 @@ class ItWseeSSO {
     assertTrue(wseeServiceRefAppPath.toFile().exists(), "Application archive is not available");
     wseeServiceRefStubsPath = Paths.get(distDir.toString(), "EchoServiceRefStubs.jar");
     assertTrue(wseeServiceRefStubsPath.toFile().exists(), "client stubs  archive is not available");
+
+    int managedServerPort = 8001;
+    Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
+    clusterNameMsPortMap.put(clusterName, managedServerPort);
+
+    String ingressClassName = nginxHelmParams.getIngressClassName();
+    List<String> ingressHostList
+        = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
+        false, ingressClassName, false, 0);
+
+    logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
+
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("==== result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
   }
 
   /**
