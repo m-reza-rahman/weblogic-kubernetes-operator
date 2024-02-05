@@ -55,7 +55,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
-import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
@@ -204,7 +204,7 @@ class ItCrossDomainTransaction {
     // install and verify operator
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
 
-    if (!OKD) {
+    if (OKE_CLUSTER) {
       logger.info("Installing Nginx controller using helm");
       // install and verify Nginx
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
@@ -396,6 +396,29 @@ class ItCrossDomainTransaction {
       () -> getServiceNodePort(domain2Namespace, getExternalServicePodName(domain2AdminServerPodName), "default"),
         "Getting admin server node port failed");
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
+
+    if (OKE_CLUSTER) {
+      createNginxIngressPathRoutingRules();
+
+      try {
+        //sleep 20 min
+        logger.info("====== Start sleep 30 min ");
+        Thread.sleep(1800000);
+        logger.info("====== End sleep 30 min ");
+      } catch (Exception ex) {
+        //
+      }
+
+      String command = KUBERNETES_CLI + " get all --all-namespaces";
+      logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+      try {
+        ExecResult result0 = ExecCommand.exec(command, true);
+        logger.info("==== result is: {0}", result0.toString());
+      } catch (IOException | InterruptedException ex) {
+        ex.printStackTrace();
+      }
+    }
 
     hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
   }
