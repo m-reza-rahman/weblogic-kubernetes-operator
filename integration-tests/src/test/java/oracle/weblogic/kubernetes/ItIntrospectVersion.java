@@ -1335,6 +1335,8 @@ class ItIntrospectVersion {
         }
         String response = result.stdout().trim();
         logger.info(response);
+        logger.info(result.stderr());
+        logger.info("{0}", result.exitValue());
         boolean health = true;
         for (String managedServer : managedServerNames) {
           health = health && response.contains(managedServer + ":HEALTH_OK");
