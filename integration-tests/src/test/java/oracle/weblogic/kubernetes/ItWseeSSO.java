@@ -64,6 +64,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -90,6 +91,7 @@ import static oracle.weblogic.kubernetes.utils.SslUtils.generateJksStores;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -210,6 +212,7 @@ class ItWseeSSO {
         false, ingressClassName, false, 0);
     logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
 
+    /*
     try {
       //sleep 20 min
       logger.info("====== Start sleep 30 min ");
@@ -217,7 +220,7 @@ class ItWseeSSO {
       logger.info("====== End sleep 30 min ");
     } catch (Exception ex) {
       //
-    }
+    }*/
 
     String command = KUBERNETES_CLI + " get all --all-namespaces";
     logger.info("curl command to get all --all-namespaces is: {0}", command);
@@ -247,21 +250,26 @@ class ItWseeSSO {
     deployApplication(clusterName + "," + adminServerName, domain2Namespace, domain2Uid, wseeServiceAppPath);
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName, domain1Namespace, domain1Uid, wseeServiceRefAppPath);
-    receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2, "/samlSenderVouches/EchoService");
-    senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1, "/EchoServiceRef/Echo");
-    assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
-            "addSAMLRelyingPartySenderConfig.py", receiverURI),
-        "Failed to run python script addSAMLRelyingPartySenderConfig.py");
-    int serviceNodePort = assertDoesNotThrow(()
-            -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
-            "default"),
-        "Getting admin server node port failed");
 
-    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + " " + serviceNodePort;
+    logger.info("check WSDL Access");
+    if (OKE_CLUSTER) {
+      String resourcePath = "/samlSenderVouches/EchoService";
+      ExecResult result = exeAppInServerPod(domain2Namespace, adminServerPodName2,7001, resourcePath);
+      logger.info("result in OKE_CLUSTER to check WSDL (samlSenderVouches/EchoService) Access is {0}",
+          result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
 
-    logger.info("==== hostAndPort is 2: {0}", hostAndPort);
+      resourcePath = "/EchoServiceRef/Echo";
+      result = exeAppInServerPod(domain1Namespace, adminServerPodName1,7001, resourcePath);
+      logger.info("result in OKE_CLUSTER to check WSDL (EchoServiceRef/Echo) Access is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    } else {
+      receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2, "/samlSenderVouches/EchoService");
+      senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1, "/EchoServiceRef/Echo");
+      assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
+          "addSAMLRelyingPartySenderConfig.py", receiverURI),
+          "Failed to run python script addSAMLRelyingPartySenderConfig.py");
+    }
 
     String command = KUBERNETES_CLI + " get all --all-namespaces";
     logger.info("curl command to get all --all-namespaces is: {0}", command);
@@ -272,6 +280,16 @@ class ItWseeSSO {
     } catch (IOException | InterruptedException ex) {
       ex.printStackTrace();
     }
+
+    int serviceNodePort = assertDoesNotThrow(()
+        -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
+        "default"),
+        "Getting admin server node port failed");
+
+    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + " " + serviceNodePort;
+    logger.info("==== hostAndPort is 2: {0}", hostAndPort);
 
     assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,"setupPKI.py", hostAndPort),
         "Failed to run python script setupPKI.py");
