@@ -1395,14 +1395,12 @@ class ItIntrospectVersion {
 
   private void verifyConnectionBetweenClusterMembers(String serverName, List<String> managedServerNames) {
     String podName = domainUid + "-" + serverName;
+    boolean ipv6 = K8S_NODEPORT_HOST.contains(":");
     final String command = String.format(
         KUBERNETES_CLI + " exec -n " + introDomainNamespace + "  " + podName + " -- curl \"http://"
-            + wlsUserName
-            + ":"
-            + wlsPassword
-            + "@" + podName + ":%s/clusterview/ClusterViewServlet"
-            + "?user=" + wlsUserName
-            + "&password=" + wlsPassword + "\"",managedServerPort);
+        + podName + ":%s/clusterview/ClusterViewServlet"
+        + "?user=" + wlsUserName
+        + "&password=" + wlsPassword + "&ipv6=" + ipv6 + "\"", managedServerPort);
     verifyServerCommunication(command, serverName, managedServerNames);
   }
 
