@@ -16,6 +16,7 @@ INTROSPECTCM_MERGED_MODEL="/weblogic-operator/introspectormii/merged_model.json"
 INTROSPECTCM_WLS_VERSION="/weblogic-operator/introspectormii/wls.version"
 INTROSPECTCM_JDK_PATH="/weblogic-operator/introspectormii/jdk.path"
 INTROSPECTCM_SECRETS_AND_ENV_MD5="/weblogic-operator/introspectormii/secrets_and_env.md5"
+INTROSPECTCM_DOMAIN_WDT_VERSION="/weblogic-operator/introspectormii/domain_wdt_version"
 PRIMORDIAL_DOMAIN_ZIPPED="/weblogic-operator/introspectormii/primordial_domainzip.secure"
 WLSDOMAIN_CONFIG_ZIPPED="/weblogic-operator/introspectormii//domainzip.secure"
 INTROSPECTJOB_IMAGE_MD5="/tmp/inventory_image.md5"
@@ -442,6 +443,9 @@ checkWDTVersion() {
     exitOrLoop
   fi
 
+  if versionGE ${WDT_VERSION} "4.0.0" ; then
+     echo "${WDT_VERSION}" > /tmp/domain_wdt_version
+  fi
   trace "Exiting checkWDTVersion"
 }
 
@@ -505,7 +509,7 @@ createModelDomain() {
       trace "Using newly created domain"
     elif [ -f ${PRIMORDIAL_DOMAIN_ZIPPED} ] ; then
       trace "Using existing primordial domain"
-      cd / && base64 -d ${PRIMORDIAL_DOMAIN_ZIPPED} > ${LOCAL_PRIM_DOMAIN_ZIP} && tar -pxzf ${LOCAL_PRIM_DOMAIN_ZIP}
+      restoreIntrospectorPrimordialDomain || return 1
       # create empty lib since we don't archive it in primordial zip and WDT will fail without it
       createFolder "${DOMAIN_HOME}/lib" "This is the './lib' directory within directory 'domain.spec.domainHome'." || exitOrLoop
       # Since the SerializedSystem ini is encrypted, restore it first
@@ -534,6 +538,13 @@ restoreDomainConfig() {
 # Expands into the root directory the MII primordial domain, stored in one or more config maps
 restorePrimordialDomain() {
   restoreEncodedTar "primordial_domainzip.secure" || return 1
+}
+
+restoreIntrospectorPrimordialDomain() {
+  cd / || return 1
+  cat $(ls /weblogic-operator/introspectormii*/primordial_domainzip.secure | sort -t- -k3) > /tmp/domain.secure || return 1
+  base64 -d "/tmp/domain.secure" > $LOCAL_PRIM_DOMAIN_ZIP || return 1
+  tar -pxzf $LOCAL_PRIM_DOMAIN_ZIP || return 1
 }
 
 # Restores the specified directory, targz'ed and stored in one or more config maps after base 64 encoding
@@ -643,7 +654,9 @@ createPrimordialDomain() {
   trace "Entering createPrimordialDomain"
   local create_primordial_tgz=0
   local recreate_domain=0
-  if [  -f ${PRIMORDIAL_DOMAIN_ZIPPED} ] ; then
+
+
+  if [ -f ${PRIMORDIAL_DOMAIN_ZIPPED} ] ; then
     # If there is an existing domain in the cm - this is update in the lifecycle
     # Call WDT validateModel.sh to generate the new merged mdoel
     trace "Checking if security info has been changed"
@@ -670,6 +683,14 @@ createPrimordialDomain() {
       diff_model ${NEW_MERGED_MODEL} ${DECRYPTED_MERGED_MODEL}
     else
       diff_model_v1 ${NEW_MERGED_MODEL} ${DECRYPTED_MERGED_MODEL}
+    fi
+
+    if versionGE ${WDT_VERSION} "4.0.0" ; then
+      # If this is WDT 4.0 or newer and there is an existing primordial domain and NO domain version
+      # and JRF domain
+      if [ -f ${PRIMORDIAL_DOMAIN_ZIPPED} ] && [ ! -f ${INTROSPECTCM_DOMAIN_WDT_VERSION} ] ; then
+        recreate_domain=1
+      fi
     fi
 
     if [ "${MERGED_MODEL_ENVVARS_SAME}" == "false" ] ; then
@@ -1311,11 +1332,6 @@ restoreAppAndLibs() {
 
         if versionGE ${WDT_VERSION} "4.0.0" ; then
           trace INFO "Newer version of WDT 4.0.0 - check if there is old archive format of these files"
-          if [ -d ${DOMAIN_HOME}/wlsdeploy/dbWallets ] ; then
-            # copy to under DOMAIN_HOME/config
-            mkdir -p ${DOMAIN_HOME}/config/wlsdeploy/dbWallets
-            cp -R ${DOMAIN_HOME}/wlsdeploy/dbWallets/* ${DOMAIN_HOME}/config/wlsdeploy/dbWallets
-          fi
           if [ -d ${DOMAIN_HOME}/wlsdeploy/custom ] ; then
             # copy to under DOMAIN_HOME/config
             mkdir -p ${DOMAIN_HOME}/config/wlsdeploy/custom
@@ -1407,7 +1423,7 @@ expandWdtArchiveCustomDir() {
         ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} wlsdeploy/custom
         ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} wlsdeploy/dbWallets
         ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} config/wlsdeploy/custom
-        ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} config/wlsdeploy/dbWallets
+        #${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} config/wlsdeploy/dbWallets
     done
 
   restoreZippedDbWallets

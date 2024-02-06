@@ -150,6 +150,7 @@ class OfflineWlstEnv(object):
     self.JDK_PATH                     = self.INTROSPECT_HOME + "/jdk.path"
     self.MII_SECRETS_AND_ENV_MD5      = self.INTROSPECT_HOME + "/secrets_and_env.md5"
     self.MII_DOMAINZIP_HASH           = self.INTROSPECT_HOME + "/domainzip_hash"
+    self.MII_DOMAIN_WDT_VERSION       = self.INTROSPECT_HOME + "/domain_wdt_version"
     self.MII_WDT_CONFIGMAP_PATH       = self.getEnvOrDef('WDT_CONFIGMAP_PATH',
                                                     '/weblogic-operator/wdt-config-map')
     self.DOMAIN_SOURCE_TYPE           = self.getEnvOrDef("DOMAIN_SOURCE_TYPE", None)
@@ -1124,22 +1125,28 @@ class MII_DomainConfigGenerator(Generator):
 
     # Note: only config type is needed fmwconfig, security is excluded because it's in the primordial and contain
     # all the many policies files
-    packcmd = "tar -pczf /tmp/domain.tar.gz %s/config/config.xml %s/config/jdbc/ %s/config/jms %s/config/coherence " \
+    packcmd = ("tar -pczf /tmp/domain.tar.gz %s/config/config.xml %s/config/jdbc/ %s/config/jms %s/config/coherence " \
               "%s/config/diagnostics %s/config/startup %s/config/configCache %s/config/nodemanager " \
               "%s/wlsdeploy/applications/*.xml " \
-              "%s/config/security %s/config/fmwconfig/servers/*/logging.xml" % ( self.domain_home,
+              "%s/config/wlsdeploy " \
+              "%s/config/security %s/config/fmwconfig/servers/*/logging.xml " \
+              "--exclude=%s/config/wlsdeploy/custom " \
+               % ( self.domain_home,
               self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home,
-              self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home)
+              self.domain_home, self.domain_home,
+              self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home))
     os.system(packcmd)
     domain_data = self.env.readBinaryFile("/tmp/domain.tar.gz")
     b64 = ""
     for s in base64.encodestring(domain_data).splitlines():
       b64 = b64 + s
     self.writeln(b64)
+
     domainzip_hash = md5.new(domain_data).hexdigest()
     fh = open("/tmp/domainzip_hash", "w")
     fh.write(domainzip_hash)
     fh.close()
+
     trace('done zipping up domain ')
 
 
@@ -1953,6 +1960,9 @@ class DomainIntrospector(SecretManager):
         trace("cfgmap write model hash")
         # Must be called after MII_PrimordialDomainGenerator
         MII_IntrospectCMFileGenerator(self.env, self.env.MII_DOMAINZIP_HASH, '/tmp/domainzip_hash').generate()
+        trace("cfgmap write domain wdt version")
+        if os.path.exists('/tmp/domain_wdt_version'):
+          MII_IntrospectCMFileGenerator(self.env, self.env.MII_DOMAIN_WDT_VERSION, '/tmp/domain_wdt_version').generate()
 
       if self.isFromModelAndJRFDomain() or self.isInitializeDomainJRFOnPV():
         trace("cfgmap write JRF wallet")
