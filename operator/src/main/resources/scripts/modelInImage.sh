@@ -1423,7 +1423,6 @@ expandWdtArchiveCustomDir() {
         ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} wlsdeploy/custom
         ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} wlsdeploy/dbWallets
         ${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} config/wlsdeploy/custom
-        #${JAVA_HOME}/bin/jar xf ${IMG_ARCHIVES_ROOTDIR}/${file} config/wlsdeploy/dbWallets
     done
 
   restoreZippedDbWallets
