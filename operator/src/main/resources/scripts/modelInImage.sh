@@ -686,8 +686,8 @@ createPrimordialDomain() {
     fi
 
     if versionGE ${WDT_VERSION} "4.0.0" ; then
-      # If this is WDT 4.0 or newer and there is an existing primordial domain and NO domain version
-      # and JRF domain
+      # If this is WDT 4.0 or newer and there is an existing primordial domain and no domain version
+      # then it is created from WDT 3.x, force recreate of the domain
       if [ -f ${PRIMORDIAL_DOMAIN_ZIPPED} ] && [ ! -f ${INTROSPECTCM_DOMAIN_WDT_VERSION} ] ; then
         recreate_domain=1
       fi
