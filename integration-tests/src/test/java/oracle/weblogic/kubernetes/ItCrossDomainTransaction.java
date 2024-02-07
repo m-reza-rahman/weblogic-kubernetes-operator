@@ -402,6 +402,7 @@ class ItCrossDomainTransaction {
     if (OKE_CLUSTER) {
       logger.info("====== Use OKE_CLUSTER");
       createNginxIngressPathRoutingRules();
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
 
       try {
         //sleep 20 min
@@ -421,6 +422,8 @@ class ItCrossDomainTransaction {
       } catch (IOException | InterruptedException ex) {
         ex.printStackTrace();
       }
+
+      hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
     } else {
       logger.info("====== Use getHostAndPort");
       hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
