@@ -1129,9 +1129,11 @@ class MII_DomainConfigGenerator(Generator):
               "%s/config/diagnostics %s/config/startup %s/config/configCache %s/config/nodemanager " \
               "%s/wlsdeploy/applications/*.xml " \
               "%s/config/wlsdeploy " \
+              "%s/security/saml*.properties " \
+              "%s/security/*.xml " \
               "%s/config/security %s/config/fmwconfig/servers/*/logging.xml " \
               "--exclude=%s/config/wlsdeploy/custom " \
-               % ( self.domain_home,
+               % ( self.domain_home, self.domain_home, self.domain_home,
               self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home,
               self.domain_home, self.domain_home,
               self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home))
