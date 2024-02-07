@@ -116,6 +116,38 @@ public class CdtTxServlet extends HttpServlet {
       javax.sql.DataSource ds = (javax.sql.DataSource) ctx2.lookup("jdbc/TestCdtDataSource");
       System.out.println("Got ds from context - " + ds);
       out.println("Got ds from context - " + ds);
+
+      //huiling
+      java.sql.Connection connZhao = ds.getConnection();
+      String checkTableExistSQL = String.format("desc %s", tableName);
+      Statement stmtZhao = connZhao.createStatement();
+      boolean isResultSet = stmtZhao.execute(checkTableExistSQL);
+
+      System.out.println("check table String = " + checkTableExistSQL);
+      out.println("check table String = " + checkTableExistSQL);
+
+      while (true) {
+        if (isResultSet) {
+          try (ResultSet rs = stmtZhao.getResultSet()) {
+            while (rs.next()) {
+              System.out.println("rs.getString(1) = " + rs.getString(1));
+              out.println("rs.getString(1) = " + rs.getString(1));
+            }
+          }
+        } else {
+          int updateCount = stmtZhao.getUpdateCount();
+          if (updateCount == -1) {
+            // -1 signals no more results
+            break;
+          }
+          System.out.println("updateCount = " + updateCount);
+          out.println("updateCount = " + updateCount);
+        }
+        // move to next result
+        isResultSet = stmtZhao.getMoreResults();
+      }
+      //end huiling
+      
       conn = ds.getConnection();
       System.out.println("Got connection to datasource - " + conn);
       out.println("Got connection to datasource - " + conn);
@@ -199,34 +231,6 @@ public class CdtTxServlet extends HttpServlet {
     Statement stmt = null;
     try {
       //String deleteSQL = = String.format("DROP TABLE %s", tableName);
-      String checkTableExistSQL = String.format("desc %s", tableName);
-      stmt = conn.createStatement();
-      boolean isResultSet = stmt.execute(createSQL);
-
-      System.out.println("check table String = " + checkTableExistSQL);
-      out.println("check table String = " + checkTableExistSQL);
-
-      while (true) {
-        if (isResultSet) {
-          try (ResultSet rs = statement.getResultSet()) {
-            while (rs.next()) {
-              System.out.println("rs.getString(1) = " + rs.getString(1));
-              out.println("rs.getString(1) = " + rs.getString(1));
-            }
-          }
-        } else {
-          int updateCount = statement.getUpdateCount();
-          if (updateCount == -1) {
-            // -1 signals no more results
-            break;
-          }
-          System.out.println("updateCount = " + updateCount);
-          out.println("updateCount = " + updateCount);
-        }
-        // move to next result
-        isResultSet = statement.getMoreResults();
-      }
-
       String createSQL = String.format("create table %s (test_id int, test_data varchar(120))", tableName);
       System.out.println("create table String = " + createSQL);
       out.println("create table String = " + createSQL);
