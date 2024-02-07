@@ -106,9 +106,11 @@ pipeline {
                choices: [
                     // The first item in the list is the default value...
                     '1.27.1',
+                    '1.27.3',
 		    '1.27',
 		    '1.26.4',
                     '1.26',
+            '1.25.11',
 		    '1.25.9',
                     '1.25',
 		    '1.24.13',
@@ -118,7 +120,8 @@ pipeline {
 		    '1.22.17',
                     '1.22',
 		    '1.21.14',
-                    '1.21'
+                    '1.21',
+                    '1.28.0'
                ]
         )
         string(name: 'HELM_VERSION',
