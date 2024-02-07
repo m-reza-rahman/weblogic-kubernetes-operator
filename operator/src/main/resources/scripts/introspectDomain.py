@@ -1126,19 +1126,6 @@ class MII_DomainConfigGenerator(Generator):
     # Note: only certain config type is needed fmwconfig, security (except saml files) is excluded because it's in the primordial and contain
     # all the many policies files
 
-    # packcmd = ("tar -pczf /tmp/domain.tar.gz %s/config/config.xml %s/config/jdbc/ %s/config/jms %s/config/coherence " \
-    #           "%s/config/diagnostics %s/config/startup %s/config/configCache %s/config/nodemanager " \
-    #           "%s/wlsdeploy/applications/*.xml " \
-    #           "%s/config/wlsdeploy " \
-    #           "%s/security/saml*.properties " \
-    #           "%s/security/*.xml " \
-    #           "%s/config/security %s/config/fmwconfig/servers/*/logging.xml " \
-    #           "--exclude=%s/config/wlsdeploy/custom " \
-    #            % ( self.domain_home, self.domain_home, self.domain_home,
-    #           self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home,
-    #           self.domain_home, self.domain_home,
-    #           self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home))
-
     tar_name = "/tmp/domain.tar"
     packcmd = "tar -pcf %s " \
               "--exclude=$DOMAIN_HOME/config/wlsdeploy/custom " \
