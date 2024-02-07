@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -43,6 +43,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Image.getImageEnvVar;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
@@ -102,6 +103,8 @@ class ItFmwDynamicDomainInPV {
   private final String rcuSecretName = domainUid + "-rcu-credentials";
   private static final int replicaCount = 1;
   private String adminSvcExtHost = null;
+  private static String hostHeader;
+  private static int adminPort = 7001;
 
   /**
    * Assigns unique namespaces for DB, operator and domains.
@@ -155,7 +158,14 @@ class ItFmwDynamicDomainInPV {
     verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
     // Expose the admin service external node port as  a route for OKD
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
-    verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost);
+    //TODO verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost);
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainNamespace, adminServerName, adminPort);
+      verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost, hostHeader);
+    } else {
+      verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost);
+    }
   }
 
   private void createFmwDomainAndVerify() {
