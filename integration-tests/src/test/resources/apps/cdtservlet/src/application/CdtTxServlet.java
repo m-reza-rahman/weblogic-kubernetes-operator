@@ -199,12 +199,12 @@ public class CdtTxServlet extends HttpServlet {
     Statement stmt = null;
     try {
       //String deleteSQL = = String.format("DROP TABLE %s", tableName);
-      String checkTableExistSQL = = String.format("desc %s", tableName);
+      String checkTableExistSQL = String.format("desc %s", tableName);
       stmt = conn.createStatement();
-      boolean isResultSet stmt.execute(createSQL);
+      boolean isResultSet = stmt.execute(createSQL);
 
-      System.out.println("create table String = " + createSQL);
-      out.println("create table String = " + createSQL);
+      System.out.println("check table String = " + checkTableExistSQL);
+      out.println("check table String = " + checkTableExistSQL);
 
       while (true) {
         if (isResultSet) {
@@ -261,6 +261,7 @@ public class CdtTxServlet extends HttpServlet {
       stmt.close();
     }
   }
+
   private void insertData(Connection conn, String tableName) throws SQLException {
     Statement stmt = null;
     try {
