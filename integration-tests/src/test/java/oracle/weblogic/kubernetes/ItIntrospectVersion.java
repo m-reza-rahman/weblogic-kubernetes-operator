@@ -498,7 +498,7 @@ class ItIntrospectVersion {
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, 
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, newAdminPort);
+        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
     // verify each managed server can see other member in the cluster
     for (String managedServerName : managedServerNames) {
@@ -1313,18 +1313,19 @@ class ItIntrospectVersion {
   }
 
   private static void verifyMemberHealth(String adminServerPodName, List<String> managedServerNames,
-      String user, String code, int...port) {
+      String user, String code) {
 
     logger.info("Checking the health of servers in cluster");
 
     testUntil(() -> {
       if (OKE_CLUSTER) {
         // In internal OKE env, verifyMemberHealth in admin server pod
-        int adminPort = 7001;
+        int servicePort = getServicePort(introDomainNamespace, 
+            getExternalServicePodName(adminServerPodName), "default");
         final String command = KUBERNETES_CLI + " exec -n "
             + introDomainNamespace + "  " + adminServerPodName + " -- curl http://"
             + adminServerPodName + ":"
-            + ((port.length != 0) ? port[0] : adminPort) + "/clusterview/ClusterViewServlet"
+            + servicePort + "/clusterview/ClusterViewServlet"
             + "\"?user=" + user
             + "&password=" + code + "\"";
 
