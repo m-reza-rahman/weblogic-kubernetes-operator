@@ -9,9 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -29,13 +27,13 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static java.nio.file.Paths.get;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
@@ -44,7 +42,6 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -78,7 +75,6 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -201,22 +197,6 @@ class ItWseeSSO {
     assertTrue(wseeServiceRefAppPath.toFile().exists(), "Application archive is not available");
     wseeServiceRefStubsPath = Paths.get(distDir.toString(), "EchoServiceRefStubs.jar");
     assertTrue(wseeServiceRefStubsPath.toFile().exists(), "client stubs  archive is not available");
-
-    if (OKE_CLUSTER) {
-      int managedServerPort = 8001;
-      Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
-      clusterNameMsPortMap.put(clusterName, managedServerPort);
-
-      String ingressClassName = nginxHelmParams.getIngressClassName();
-      List<String> ingressHostList
-          = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
-          false, ingressClassName, false, 0);
-      logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
-
-      //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      //hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-      //logger.info("==== hostAndPort is 1: {0}", hostAndPort);
-    }
   }
 
   /**
@@ -224,9 +204,13 @@ class ItWseeSSO {
    * A standalone client makes a call to webservice , deployed on domain1 (sender)
    * and provide username/password to invoke via sso webservice on domain2 (receiver)
    * with attached SAML sender-vouches policy
+   *
+   * Disable this test when running in internal OKE because
+   * it failed to parse WSDL http://138.3.103.195/EchoServiceRef/Echo?WSDL when using LBer ext host
    */
   @Test
   @DisplayName("Test Wsee connect with sso")
+  @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER", matches = "true")
   void testInvokeWsee() {
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName, domain2Namespace, domain2Uid, wseeServiceAppPath);
@@ -244,14 +228,10 @@ class ItWseeSSO {
           result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
 
-      receiverURI = "http://" + hostAndPort + resourcePath;
-
       resourcePath = "/EchoServiceRef/Echo";
       result = exeAppInServerPod(domain1Namespace, adminServerPodName1,7001, resourcePath);
       logger.info("result in OKE_CLUSTER to check WSDL (EchoServiceRef/Echo) Access is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
-
-      senderURI = "http://" + hostAndPort + resourcePath;
 
       assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,"setupPKI.py", hostAndPort),
           "Failed to run python script setupPKI.py");
@@ -269,27 +249,6 @@ class ItWseeSSO {
           "setupPKI.py", K8S_NODEPORT_HOST + " " + serviceNodePort),
           "Failed to run python script setupPKI.py");
     }
-
-    String command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-    try {
-      ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("==== result is: {0}", result0.toString());
-    } catch (IOException | InterruptedException ex) {
-      ex.printStackTrace();
-    }
-
-    /*
-    int serviceNodePort = assertDoesNotThrow(()
-        -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
-        "default"),
-        "Getting admin server node port failed");
-
-    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + " " + serviceNodePort;
-    logger.info("==== hostAndPort is 2: {0}", hostAndPort);*/
 
     buildRunClientOnPod();
   }
