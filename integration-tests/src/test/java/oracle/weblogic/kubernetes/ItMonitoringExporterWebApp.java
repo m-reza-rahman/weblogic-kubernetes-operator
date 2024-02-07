@@ -45,6 +45,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
@@ -58,6 +59,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.copyFileToPod;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.exec;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
@@ -108,6 +110,7 @@ class ItMonitoringExporterWebApp {
   private static int nodeportshttp = 0;
   private static int nodeportshttps = 0;
   private static List<String> ingressHost1List = null;
+  private static String ingressIP = null;
 
   private static String monitoringNS = null;
   PrometheusParams promHelmParams = null;
@@ -193,6 +196,8 @@ class ItMonitoringExporterWebApp {
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
 
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       logger.info("NGINX service name: {0}", nginxServiceName);
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
@@ -210,6 +215,9 @@ class ItMonitoringExporterWebApp {
       host = "[" + host + "]";
     }
     exporterUrl = String.format("http://%s:%s/wls-exporter/", host, nodeportshttp);
+    if (OKE_CLUSTER_PRIVATEIP) {
+      exporterUrl = String.format("http://%s/wls-exporter/", ingressIP);
+    }
     HashMap<String, String> labels = new HashMap<>();
     labels.put("app", "monitoring");
     labels.put("weblogic.domainUid", "test");
@@ -249,7 +257,11 @@ class ItMonitoringExporterWebApp {
         ingressHost1List
             = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
                 false, ingressClassName, false, 0);
-        verifyMonExpAppAccessThroughNginx(ingressHost1List.get(0), 1, nodeportshttp);
+        if (OKE_CLUSTER_PRIVATEIP) {
+          verifyMonExpAppAccessThroughNginx(ingressHost1List.get(0), 1, ingressIP);
+        } else {
+          verifyMonExpAppAccessThroughNginx(ingressHost1List.get(0), 1, nodeportshttp);
+        }
         // Need to expose the admin server external service to access the console in OKD cluster only
       } else {
         String hostName = createRouteForOKD(clusterService, domain1Namespace);
