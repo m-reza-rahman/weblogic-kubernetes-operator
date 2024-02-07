@@ -497,7 +497,8 @@ class ItIntrospectVersion {
     }
 
     //verify admin server accessibility and the health of cluster members
-    verifyMemberHealth(adminServerPodName, managedServerNames, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
+    verifyMemberHealth(adminServerPodName, managedServerNames, 
+        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, newAdminPort);
 
     // verify each managed server can see other member in the cluster
     for (String managedServerName : managedServerNames) {
@@ -1312,7 +1313,7 @@ class ItIntrospectVersion {
   }
 
   private static void verifyMemberHealth(String adminServerPodName, List<String> managedServerNames,
-      String user, String code) {
+      String user, String code, int...port) {
 
     logger.info("Checking the health of servers in cluster");
 
@@ -1323,7 +1324,7 @@ class ItIntrospectVersion {
         final String command = KUBERNETES_CLI + " exec -n "
             + introDomainNamespace + "  " + adminServerPodName + " -- curl http://"
             + adminServerPodName + ":"
-            + adminPort + "/clusterview/ClusterViewServlet"
+            + ((port.length != 0) ? port[0] : adminPort) + "/clusterview/ClusterViewServlet"
             + "\"?user=" + user
             + "&password=" + code + "\"";
 
