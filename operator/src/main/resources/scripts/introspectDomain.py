@@ -1123,21 +1123,37 @@ class MII_DomainConfigGenerator(Generator):
     if (str(kubernetes_platform).upper() == 'OPENSHIFT'):
       os.system("chmod -R g=u %s" % self.domain_home)
 
-    # Note: only config type is needed fmwconfig, security is excluded because it's in the primordial and contain
+    # Note: only certain config type is needed fmwconfig, security (except saml files) is excluded because it's in the primordial and contain
     # all the many policies files
-    packcmd = ("tar -pczf /tmp/domain.tar.gz %s/config/config.xml %s/config/jdbc/ %s/config/jms %s/config/coherence " \
-              "%s/config/diagnostics %s/config/startup %s/config/configCache %s/config/nodemanager " \
-              "%s/wlsdeploy/applications/*.xml " \
-              "%s/config/wlsdeploy " \
-              "%s/security/saml*.properties " \
-              "%s/security/*.xml " \
-              "%s/config/security %s/config/fmwconfig/servers/*/logging.xml " \
-              "--exclude=%s/config/wlsdeploy/custom " \
-               % ( self.domain_home, self.domain_home, self.domain_home,
-              self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home,
-              self.domain_home, self.domain_home,
-              self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home))
+
+    # packcmd = ("tar -pczf /tmp/domain.tar.gz %s/config/config.xml %s/config/jdbc/ %s/config/jms %s/config/coherence " \
+    #           "%s/config/diagnostics %s/config/startup %s/config/configCache %s/config/nodemanager " \
+    #           "%s/wlsdeploy/applications/*.xml " \
+    #           "%s/config/wlsdeploy " \
+    #           "%s/security/saml*.properties " \
+    #           "%s/security/*.xml " \
+    #           "%s/config/security %s/config/fmwconfig/servers/*/logging.xml " \
+    #           "--exclude=%s/config/wlsdeploy/custom " \
+    #            % ( self.domain_home, self.domain_home, self.domain_home,
+    #           self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home,
+    #           self.domain_home, self.domain_home,
+    #           self.domain_home, self.domain_home, self.domain_home, self.domain_home, self.domain_home))
+
+    tar_name = "/tmp/domain.tar"
+    packcmd = "tar -pcf %s " \
+              "--exclude=$DOMAIN_HOME/config/wlsdeploy/custom " \
+              "--exclude=$DOMAIN_HOME/config/deployments " \
+              "--exclude=$DOMAIN_HOME/config/fmwconfig " \
+              "$DOMAIN_HOME/wlsdeploy/applications/*.xml " \
+              "$DOMAIN_HOME/config " \
+              "$DOMAIN_HOME/security/saml*.properties " \
+              "$DOMAIN_HOME/security/*.xml " % tar_name
+
     os.system(packcmd)
+    packcmd = "tar -prf %s $DOMAIN_HOME/config/fmwconfig/servers/*/logging.xml" % tar_name
+    os.system(packcmd)
+    os.system("gzip %s" % tar_name)
+
     domain_data = self.env.readBinaryFile("/tmp/domain.tar.gz")
     b64 = ""
     for s in base64.encodestring(domain_data).splitlines():
