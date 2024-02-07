@@ -202,39 +202,21 @@ class ItWseeSSO {
     wseeServiceRefStubsPath = Paths.get(distDir.toString(), "EchoServiceRefStubs.jar");
     assertTrue(wseeServiceRefStubsPath.toFile().exists(), "client stubs  archive is not available");
 
-    int managedServerPort = 8001;
-    Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
-    clusterNameMsPortMap.put(clusterName, managedServerPort);
+    if (OKE_CLUSTER) {
+      int managedServerPort = 8001;
+      Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
+      clusterNameMsPortMap.put(clusterName, managedServerPort);
 
-    String ingressClassName = nginxHelmParams.getIngressClassName();
-    List<String> ingressHostList
-        = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
-        false, ingressClassName, false, 0);
-    logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
+      String ingressClassName = nginxHelmParams.getIngressClassName();
+      List<String> ingressHostList
+          = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
+          false, ingressClassName, false, 0);
+      logger.info("====== ingressHostList.get(0): " + ingressHostList.get(0));
 
-    /*
-    try {
-      //sleep 20 min
-      logger.info("====== Start sleep 30 min ");
-      Thread.sleep(1800000);
-      logger.info("====== End sleep 30 min ");
-    } catch (Exception ex) {
-      //
-    }*/
-
-    String command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-    try {
-      ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("==== result is: {0}", result0.toString());
-    } catch (IOException | InterruptedException ex) {
-      ex.printStackTrace();
+      //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      //hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+      //logger.info("==== hostAndPort is 1: {0}", hostAndPort);
     }
-
-    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-    logger.info("==== hostAndPort is 1: {0}", hostAndPort);
   }
 
   /**
@@ -253,22 +235,39 @@ class ItWseeSSO {
 
     logger.info("check WSDL Access");
     if (OKE_CLUSTER) {
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+
       String resourcePath = "/samlSenderVouches/EchoService";
       ExecResult result = exeAppInServerPod(domain2Namespace, adminServerPodName2,7001, resourcePath);
       logger.info("result in OKE_CLUSTER to check WSDL (samlSenderVouches/EchoService) Access is {0}",
           result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
 
+      receiverURI = "http://" + hostAndPort + resourcePath;
+
       resourcePath = "/EchoServiceRef/Echo";
       result = exeAppInServerPod(domain1Namespace, adminServerPodName1,7001, resourcePath);
       logger.info("result in OKE_CLUSTER to check WSDL (EchoServiceRef/Echo) Access is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      senderURI = "http://" + hostAndPort + resourcePath;
+
+      assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,"setupPKI.py", hostAndPort),
+          "Failed to run python script setupPKI.py");
     } else {
       receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2, "/samlSenderVouches/EchoService");
       senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1, "/EchoServiceRef/Echo");
       assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
           "addSAMLRelyingPartySenderConfig.py", receiverURI),
           "Failed to run python script addSAMLRelyingPartySenderConfig.py");
+      int serviceNodePort = assertDoesNotThrow(()
+          -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
+          "default"),
+          "Getting admin server node port failed");
+      assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
+          "setupPKI.py", K8S_NODEPORT_HOST + " " + serviceNodePort),
+          "Failed to run python script setupPKI.py");
     }
 
     String command = KUBERNETES_CLI + " get all --all-namespaces";
@@ -281,6 +280,7 @@ class ItWseeSSO {
       ex.printStackTrace();
     }
 
+    /*
     int serviceNodePort = assertDoesNotThrow(()
         -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
         "default"),
@@ -289,10 +289,7 @@ class ItWseeSSO {
     String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
         ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + " " + serviceNodePort;
-    logger.info("==== hostAndPort is 2: {0}", hostAndPort);
-
-    assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,"setupPKI.py", hostAndPort),
-        "Failed to run python script setupPKI.py");
+    logger.info("==== hostAndPort is 2: {0}", hostAndPort);*/
 
     buildRunClientOnPod();
   }
@@ -303,9 +300,9 @@ class ItWseeSSO {
 
     String adminServerPodName = domainUid + "-" + adminServerName;
     int serviceNodePort = assertDoesNotThrow(()
-            -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
+        -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
             "default"),
-        "Getting admin server node port failed");
+            "Getting admin server node port failed");
 
     logger.info("admin svc host = {0}", adminSvcExtHost);
     String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
@@ -380,9 +377,7 @@ class ItWseeSSO {
 
     copyKeyStores(domainNamespace, keyStoresPath.toString(), jksMountPath, pvName, pvcName);
 
-
     // create the domain CR with a pre-defined configmap
-
     DomainResource domain = createDomainResourceWithLogHome(domainUid, domainNamespace,
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
         adminSecretName, TEST_IMAGES_REPO_SECRET_NAME, encryptionSecretName,
