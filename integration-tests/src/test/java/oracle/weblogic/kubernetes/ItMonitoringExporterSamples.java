@@ -279,7 +279,7 @@ class ItMonitoringExporterSamples {
         if (OKE_CLUSTER_PRIVATEIP) {
           verifyMonExpAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, ingressIP);
         } else {
-          verifyMonExpAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, ingressIP);
+          verifyMonExpAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, nodeportshttp);
         }
       } else {
         String clusterService = domain2Uid + "-cluster-cluster-1";
