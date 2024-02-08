@@ -267,7 +267,7 @@ class ItMultiDomainModelsScale {
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
       verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
-      // verify admin console login using ingress controller
+      // verify ready app using ingress controller
       verifyReadyAppUsingIngressController(domainUid, domainNamespace);
     }
 
@@ -329,7 +329,7 @@ class ItMultiDomainModelsScale {
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
       verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
-      // verify admin console login using ingress controller
+      // verify ready app using ingress controller
       verifyReadyAppUsingIngressController(domainUid, domainNamespace);
     }
 
@@ -393,7 +393,7 @@ class ItMultiDomainModelsScale {
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
       verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
-      // verify admin console login using ingress controller
+      // verify ready app using ingress controller
       verifyReadyAppUsingIngressController(domainUid, domainNamespace);
     }
 
@@ -795,7 +795,7 @@ class ItMultiDomainModelsScale {
     }
   }
 
-  // verify the admin console login using admin node port
+  // verify the ready app using admin node port
   private void verifyReadyAppUsingAdminNodePort(String domainUid, String domainNamespace) {
 
     String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
@@ -816,7 +816,7 @@ class ItMultiDomainModelsScale {
         "readyapp validation");
   }
 
-  // Verify admin console login using ingress controller
+  // Verify ready app using ingress controller
   private void verifyReadyAppUsingIngressController(String domainUid, String domainNamespace) {
 
     if (!OKD) {
