@@ -46,8 +46,10 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHost
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
+import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
+import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSecretWithUsernamePassword;
-import static oracle.weblogic.kubernetes.utils.DbUtils.setupDBandRCUbyDBOperator;
+import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyEMconsoleAccess;
@@ -138,7 +140,18 @@ class ItFmwDynamicDomainInPV {
         String.format("Failed to create RCU schema for prefix %s in the namespace %s with "
         + "dbUrl %s, dbListenerPost %s", RCUSCHEMAPREFIX, dbNamespace, dbUrl, dbListenerPort));*/
 
-    setupDBandRCUbyDBOperator(RCUSCHEMAPREFIX, RCUSYSPASSWORD, dbName, dbNamespace);
+    //setupDBandRCUbyDBOperator(RCUSCHEMAPREFIX, RCUSYSPASSWORD, dbName, dbNamespace);
+    //install Oracle Database Operator
+    assertDoesNotThrow(() -> installDBOperator(dbNamespace), "Failed to install database operator");
+
+    logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
+    dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
+
+    logger.info("Create RCU schema with fmwImage: {0}, rcuSchemaPrefix: {1}, dbUrl: {2}, "
+        + " dbNamespace: {3}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX, dbUrl, dbNamespace);
+    assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX,
+        dbUrl, dbNamespace));
+
 
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domainNamespace);
