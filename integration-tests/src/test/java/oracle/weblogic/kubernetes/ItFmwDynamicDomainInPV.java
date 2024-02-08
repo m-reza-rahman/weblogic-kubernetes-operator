@@ -36,7 +36,6 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
@@ -48,7 +47,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSecretWithUsernamePassword;
-import static oracle.weblogic.kubernetes.utils.DbUtils.setupDBandRCUschema;
+import static oracle.weblogic.kubernetes.utils.DbUtils.setupDBandRCUbyDBOperator;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyEMconsoleAccess;
@@ -105,6 +104,7 @@ class ItFmwDynamicDomainInPV {
   private String adminSvcExtHost = null;
   private static String hostHeader;
   private static int adminPort = 7001;
+  private static String dbName = domainUid + "my-oracle-db";
 
   /**
    * Assigns unique namespaces for DB, operator and domains.
@@ -118,9 +118,9 @@ class ItFmwDynamicDomainInPV {
     logger.info("Assign a unique namespace for DB and RCU");
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
-    final int dbListenerPort = getNextFreePort();
+    /* TODO final int dbListenerPort = getNextFreePort();
     ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ORACLEDBSUFFIX;
+    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ORACLEDBSUFFIX;*/
 
     logger.info("Assign a unique namespace for operator1");
     assertNotNull(namespaces.get(1), "Namespace is null");
@@ -130,16 +130,15 @@ class ItFmwDynamicDomainInPV {
     assertNotNull(namespaces.get(2), "Namespace is null");
     domainNamespace = namespaces.get(2);
 
-    logger.info("Start DB and create RCU schema for namespace: {0}, dbListenerPort: {1}, RCU prefix: {2}, "
+    /*logger.info("Start DB and create RCU schema for namespace: {0}, dbListenerPort: {1}, RCU prefix: {2}, "
          + "dbUrl: {3}, dbImage: {4},  fmwImage: {5} ", dbNamespace, dbListenerPort, RCUSCHEMAPREFIX, dbUrl,
         DB_IMAGE_TO_USE_IN_SPEC, FMWINFRA_IMAGE_TO_USE_IN_SPEC);
     assertDoesNotThrow(() -> setupDBandRCUschema(DB_IMAGE_TO_USE_IN_SPEC, FMWINFRA_IMAGE_TO_USE_IN_SPEC,
         RCUSCHEMAPREFIX, dbNamespace, getNextFreePort(), dbUrl, dbListenerPort),
         String.format("Failed to create RCU schema for prefix %s in the namespace %s with "
-        + "dbUrl %s, dbListenerPost %s", RCUSCHEMAPREFIX, dbNamespace, dbUrl, dbListenerPort));
+        + "dbUrl %s, dbListenerPost %s", RCUSCHEMAPREFIX, dbNamespace, dbUrl, dbListenerPort));*/
 
-    logger.info("DB image: {0}, FMW image {1} used in the test",
-        DB_IMAGE_TO_USE_IN_SPEC, FMWINFRA_IMAGE_TO_USE_IN_SPEC);
+    setupDBandRCUbyDBOperator(RCUSCHEMAPREFIX, RCUSYSPASSWORD, dbName, dbNamespace);
 
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domainNamespace);

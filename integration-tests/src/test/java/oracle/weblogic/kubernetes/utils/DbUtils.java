@@ -77,6 +77,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_PREBUILT_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DB_OPERATOR_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.DB_PREBUILT_IMAGE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.NFS_SERVER;
@@ -134,6 +135,7 @@ public class DbUtils {
   private static V1Deployment oracleDbDepl = null;
   private static int suffixCount = 0;
   private static Map<String, String> dbMap = new HashMap<>();
+  private static String dbUrl = null;
 
   /**
    * Start Oracle DB instance, create rcu pod and load database schema in the specified namespace.
@@ -167,6 +169,29 @@ public class DbUtils {
     createRcuSchema(fmwImage, rcuSchemaPrefix, dbUrl, dbNamespace);
 
   }
+
+  /**
+   * Create Oracle DB instance, create rcu pod and load database schema in the specified namespace.
+   * @param rcuSchemaPrefix    rcu SchemaPrefix
+   * @param rcuSystemPassword  rcu system password
+   * @param dbName             Oracle DB name
+   * @param dbNamespace        namespace where DB and RCU schema are going to start
+   */
+  public static synchronized void setupDBandRCUbyDBOperator(String rcuSchemaPrefix, String rcuSystemPassword,
+       String dbName, String dbNamespace) {
+
+    //install Oracle Database Operator
+    assertDoesNotThrow(() -> installDBOperator(dbNamespace), "Failed to install database operator");
+    getLogger().info("Create Oracle DB in namespace: {0} ", dbNamespace);
+
+    dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, rcuSystemPassword, dbNamespace));
+
+    getLogger().info("Create RCU schema with fmwImage: {0}, rcuSchemaPrefix: {1}, dbUrl: {2}, "
+        + " dbNamespace: {3}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, rcuSchemaPrefix, dbUrl, dbNamespace);
+    assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, rcuSchemaPrefix,
+        dbUrl, dbNamespace));
+  }
+
 
   /**
    * Start Oracle DB pod and service in the specified namespace.
