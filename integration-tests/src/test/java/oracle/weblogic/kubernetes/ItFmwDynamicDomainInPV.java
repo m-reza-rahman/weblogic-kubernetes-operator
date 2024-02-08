@@ -173,7 +173,7 @@ class ItFmwDynamicDomainInPV {
     //TODO verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost);
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createIngressHostRouting(domainNamespace, domainNamespace, adminServerName, adminPort);
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, adminPort);
       verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost, hostHeader);
     } else {
       verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost);
