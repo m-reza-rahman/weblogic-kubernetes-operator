@@ -59,6 +59,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.copyFileToPod;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.exec;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPathRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
@@ -437,10 +438,16 @@ class ItMonitoringExporterWebApp {
         host = "[" + host + "]";
       }
       hostPortPrometheus = host + ":" + nodeportPrometheus;
+      if (OKE_CLUSTER_PRIVATEIP) {
+        hostPortPrometheus = ingressIP;
+      }
       if (OKD) {
         hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
                 + "-service", monitoringNS) + ":" + nodeportPrometheus;
       }
+      String ingressClassName = nginxHelmParams.getIngressClassName();
+      createIngressPathRouting(monitoringNS, "/api",
+          prometheusReleaseName + "-server", 80, ingressClassName);
     }
     //if prometheus already installed change CM for specified domain
     if (!prometheusRegexValue.equals(prometheusDomainRegexValue)) {
