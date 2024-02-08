@@ -430,6 +430,11 @@ EOF
                     }
                     steps {
                         script {
+                            if (env.JOB_NAME == 'wko-kind-k8sversion') {
+                                currentBuild.description = "${GIT_BRANCH} ${KUBE_VERSION}"
+                            } else {
+                                currentBuild.description = "${GIT_BRANCH} ${MAVEN_PROFILE_NAME}"
+                            }
                             def res = 0
                             res = sh(script: '''
                                     if [ -z "${IT_TEST}" ] && [ "${MAVEN_PROFILE_NAME}" = "integration-tests" ]; then
