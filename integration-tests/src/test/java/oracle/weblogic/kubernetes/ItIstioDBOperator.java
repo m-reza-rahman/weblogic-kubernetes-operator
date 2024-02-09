@@ -820,12 +820,13 @@ class ItIstioDBOperator {
     return domain;
   }
 
-  private void checkApp(String url, Map<String, String> headers, String...expectedResponse) {
+  private void checkApp(String url, Map<String, String> headers, String... expectedResponse) {
     testUntil(
         () -> {
           HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
+          
           return response.statusCode() == 200
-              && expectedResponse.length == 0 ? true : response.body().contains(expectedResponse[0]);
+              && (expectedResponse.length == 0 ? true : response.body().contains(expectedResponse[0]));
         },
         logger,
         "application to be ready {0}",
