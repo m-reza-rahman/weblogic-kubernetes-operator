@@ -1330,15 +1330,6 @@ restoreAppAndLibs() {
           return 1
         fi
 
-        if versionGE ${WDT_VERSION} "4.0.0" ; then
-          trace INFO "Newer version of WDT 4.0.0 - check if there is old archive format of these files"
-          if [ -d ${DOMAIN_HOME}/wlsdeploy/custom ] ; then
-            # copy to under DOMAIN_HOME/config
-            mkdir -p ${DOMAIN_HOME}/config/wlsdeploy/custom
-            cp -R ${DOMAIN_HOME}/wlsdeploy/custom/* ${DOMAIN_HOME}/config/wlsdeploy/custom
-          fi
-
-        fi
     done
 
 }
