@@ -1319,12 +1319,13 @@ restoreAppAndLibs() {
           exitOrLoop
         fi
 
-        # expand the archive apps and shared lib to the wlsdeploy/* directories
-        # the config.xml is referencing them from that path
-        # exclude standalone app module in wlsdeploy/applications/*.xml since it is included int zipped up domain config
-        # zip, the original xml in the archive may have wdt tokenized notations.
+        # expand the archive apps, shared lib and other wlsdeploy/* directories
+        # exclude directories that are already expanded separately and already included in domain config zip
+        #   wlsdeploy/domainBin, wlsdeploy/domainLibraries, config/ - avoid confusion but no harm
+        #   wlsdeploy/applications/*.xml since it is included int zipped up domain config
+        #   zip, the original xml in the archive may have wdt tokenized notations.
         cd ${DOMAIN_HOME} || return 1
-        unzip -o ${IMG_ARCHIVES_ROOTDIR}/${file} -x "wlsdeploy/domainBin/*"
+        unzip -o ${IMG_ARCHIVES_ROOTDIR}/${file} -x "wlsdeploy/domainBin/*" -x "wlsdeploy/domainLibraries/*" -x "wlsdeploy/applications/*.xml" -x "config/*"
         if [ $? -ne 0 ] ; then
           trace SEVERE "Domain Source Type is FromModel, error in extracting application archive ${IMG_ARCHIVES_ROOTDIR}/${file}"
           return 1
@@ -1376,7 +1377,7 @@ prepareMIIServer() {
   encrypt_decrypt_domain_secret "decrypt" ${DOMAIN_HOME} ${MII_PASSPHRASE}
 
   # We restore the app and libs from the archive first,  the domain zip may contain any standalone application
-  # modules under wlsdeploy/applications/*.xml.  In the next step, if any standalon application module exists collected
+  # modules under wlsdeploy/applications/*.xml.  In the next step, if any standalone application module exists collected
   # during introspection, it will overwrite the tokenized version in the archive.
     
   trace "Model-in-Image: Restoring apps and libraries"
