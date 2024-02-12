@@ -1469,6 +1469,47 @@ public class CommonTestUtils {
   }
 
   /**
+   * Start a port-forward process with a given set of attributes.
+   * @param hostName host information to used against address param
+   * @param namespace  namespace
+   * @param port the remote port
+   * @param serviceName name of the service
+   * @return generated local forward port
+   */
+  public static String startPortForwardProcess(String hostName,
+                                               String namespace,
+                                               int port,
+                                               String serviceName) {
+    LoggingFacade logger = getLogger();
+    // Create a unique stdout file for kubectl port-forward command
+    String pfFileName = RESULTS_ROOT + "/pf-" + namespace
+        + "-" + port + ".out";
+
+    logger.info("Start port forward process");
+
+    // Let kubectl choose and allocate a local port number that is not in use
+    StringBuffer cmd = new StringBuffer(KUBERNETES_CLI + " port-forward --address ")
+        .append(hostName)
+        .append(" service/")
+        .append(serviceName)
+        .append(" -n ")
+        .append(namespace)
+        .append(" :")
+        .append(String.valueOf(port))
+        .append(" > ")
+        .append(pfFileName)
+        .append(" 2>&1 &");
+    logger.info("Command to forward port {0} ", cmd.toString());
+    ExecResult result = assertDoesNotThrow(() -> ExecCommand.exec(cmd.toString(), true),
+        String.format("Failed to forward port by running command %s", cmd));
+    assertEquals(0, result.exitValue(),
+        String.format("Failed to forward a local port to admin port. Error is %s ", result.stderr()));
+    assertNotNull(getForwardedPort(pfFileName),
+        "port-forward command fails to assign a local port");
+    return getForwardedPort(pfFileName);
+  }
+
+  /**
    * Stop port-forward process(es) started through startPortForwardProcess.
    * @param domainNamespace namespace where port-forward procees were started
    */
