@@ -562,6 +562,7 @@ EOF
                         if ! kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
                             echo "Failed to delete kind cluster ${kind_name}"
                         fi
+                        sudo chown -R $(whoami) ${WORKSPACE}
                     '''
                 }
             }
