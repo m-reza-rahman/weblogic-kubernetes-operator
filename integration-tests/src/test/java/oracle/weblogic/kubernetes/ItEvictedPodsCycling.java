@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -63,7 +63,7 @@ class ItEvictedPodsCycling {
 
   private static Map<String, String> resourceRequest = new HashMap<>();
   private static Map<String, String> resourceLimit = new HashMap<>();
-  private static final String ephemeralStorage = "50M";
+  private static final String ephemeralStorage = "500M";
 
   private static LoggingFacade logger = null;
 
@@ -97,7 +97,7 @@ class ItEvictedPodsCycling {
   }
 
   /**
-   * Set domain resources limits tp 50M and then use Operator log to verify
+   * Set domain resources limits to 50M and then use Operator log to verify
    * that WLS server pods were evicted due to Pod ephemeral local
    * storage usage exceeds the total limit of containers 50M and replaced. 
    */
