@@ -120,9 +120,6 @@ class ItFmwDynamicDomainInPV {
     logger.info("Assign a unique namespace for DB and RCU");
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
-    /* TODO final int dbListenerPort = getNextFreePort();
-    ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ORACLEDBSUFFIX;*/
 
     logger.info("Assign a unique namespace for operator1");
     assertNotNull(namespaces.get(1), "Namespace is null");
