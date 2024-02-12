@@ -132,15 +132,6 @@ class ItFmwDynamicDomainInPV {
     assertNotNull(namespaces.get(2), "Namespace is null");
     domainNamespace = namespaces.get(2);
 
-    /*logger.info("Start DB and create RCU schema for namespace: {0}, dbListenerPort: {1}, RCU prefix: {2}, "
-         + "dbUrl: {3}, dbImage: {4},  fmwImage: {5} ", dbNamespace, dbListenerPort, RCUSCHEMAPREFIX, dbUrl,
-        DB_IMAGE_TO_USE_IN_SPEC, FMWINFRA_IMAGE_TO_USE_IN_SPEC);
-    assertDoesNotThrow(() -> setupDBandRCUschema(DB_IMAGE_TO_USE_IN_SPEC, FMWINFRA_IMAGE_TO_USE_IN_SPEC,
-        RCUSCHEMAPREFIX, dbNamespace, getNextFreePort(), dbUrl, dbListenerPort),
-        String.format("Failed to create RCU schema for prefix %s in the namespace %s with "
-        + "dbUrl %s, dbListenerPost %s", RCUSCHEMAPREFIX, dbNamespace, dbUrl, dbListenerPort));*/
-
-    //setupDBandRCUbyDBOperator(RCUSCHEMAPREFIX, RCUSYSPASSWORD, dbName, dbNamespace);
     //install Oracle Database Operator
     assertDoesNotThrow(() -> installDBOperator(dbNamespace), "Failed to install database operator");
 
@@ -170,7 +161,6 @@ class ItFmwDynamicDomainInPV {
     verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
     // Expose the admin service external node port as  a route for OKD
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
-    //TODO verifyEMconsoleAccess(domainNamespace, domainUid, adminSvcExtHost);
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, adminPort);
