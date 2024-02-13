@@ -287,7 +287,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     String ingressClassName = nginxHelmParams.getIngressClassName();
     List<String> ingressHostList
         = createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
-        false, ingressClassName, false, 0);
+        true, ingressClassName, false, 0);
     // create hpa with custom metrics
     createHPA();
     //invoke app 20 times to generate metrics with number of opened sessions > 5
