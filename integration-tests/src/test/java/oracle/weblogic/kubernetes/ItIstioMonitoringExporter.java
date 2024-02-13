@@ -103,6 +103,7 @@ class ItIstioMonitoringExporter {
 
   private static String testWebAppWarLoc = null;
   private static String ingressIP = null;
+  private static String hostPortPrometheus = null;
 
   /**
    * Install Operator.
@@ -215,31 +216,30 @@ class ItIstioMonitoringExporter {
           String.valueOf(prometheusPort)), "failed to install istio prometheus");
       isPrometheusDeployed = true;
       oldRegex = String.format("regex: %s;%s", domainNamespace, domainUid);
+      //verify metrics via prometheus
+      String host = formatIPv6Host(K8S_NODEPORT_HOST);
+
+      // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+      hostPortPrometheus = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
+          ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + prometheusPort;
+
+      if (OKE_CLUSTER_PRIVATEIP) {
+
+        String localhost = "localhost";
+        // Forward the non-ssl port 9090
+        String forwardPort = startPortForwardProcess(localhost, istioNamespace, 9090, "prometheus");
+        assertNotNull(forwardPort, "port-forward fails to assign local port");
+        logger.info("Forwarded local port is {0}", forwardPort);
+        hostPortPrometheus = localhost + ":" + forwardPort;
+      }
     } else {
       String newRegex = String.format("regex: %s;%s", domainNamespace, domainUid);
       assertDoesNotThrow(() -> editPrometheusCM(oldRegex, newRegex, "istio-system", "prometheus"),
           "Can't modify Prometheus CM, not possible to monitor " + domainUid);
     }
-    //verify metrics via prometheus
-    String host = formatIPv6Host(K8S_NODEPORT_HOST);
 
-    // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
-    String hostPortPrometheus = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
-        ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + prometheusPort;
-    if (OKE_CLUSTER_PRIVATEIP) {
-
-      String localhost = "localhost";
-      // Forward the non-ssl port 9090
-      String forwardPort = startPortForwardProcess(localhost, istioNamespace, 9090, "prometheus");
-      assertNotNull(forwardPort, "port-forward fails to assign local port");
-      logger.info("Forwarded local port is {0}", forwardPort);
-      hostPortPrometheus = localhost + ":" + forwardPort;
-    }
     checkMetricsViaPrometheus(searchKey, "sessmigr",
                               hostPortPrometheus);
-    if (OKE_CLUSTER_PRIVATEIP) {
-      stopPortForwardProcess(istioNamespace);
-    }
   }
 
   @AfterAll
@@ -254,6 +254,9 @@ class ItIstioMonitoringExporter {
     }
     if (exporterImage != null) {
       deleteImage(exporterImage);
+    }
+    if (OKE_CLUSTER_PRIVATEIP) {
+      stopPortForwardProcess(istioNamespace);
     }
   }
 
