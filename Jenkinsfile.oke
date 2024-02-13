@@ -101,8 +101,7 @@ pipeline {
                        ]
                 )
                 choice(name: 'MAVEN_PROFILE_NAME',
-                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate, oke-sequential1,oke-sequential2,oke-parallelnew
-                        . Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate, oke-sequential1,oke-sequential2,oke-parallelnew. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                         choices: [
                                 'oke-gate',
                                 'oke-sequential1',
