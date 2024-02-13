@@ -49,10 +49,7 @@ pipeline {
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
-
-        CLUSTER_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'parcluster' : 'seqcluster'}"
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
-        MAVEN_PROFILE_NAME = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'oke-gate' : 'oke-gate'}"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
         PARALLEL_RUN = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? true : false}"
     }
@@ -95,7 +92,24 @@ pipeline {
                    '1.9.9'
                ]
         )
-
+        choice(name: 'CLUSTER_NAME',
+                       description: 'Oke cluster name.',
+                       choices: [
+                           'parcluster',
+                           'seq1cluster',
+                           'seq2cluster'
+                       ]
+                )
+                choice(name: 'MAVEN_PROFILE_NAME',
+                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate, oke-sequential1,oke-sequential2,oke-parallelnew
+                        . Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                        choices: [
+                                'oke-gate',
+                                'oke-sequential1',
+                                'oke-sequential2',
+                                'oke-parallelnew'
+                        ]
+                )
         string(name: 'NUMBER_OF_THREADS',
                description: 'Number of threads to run the classes in parallel, default is 3.',
                defaultValue: "3"

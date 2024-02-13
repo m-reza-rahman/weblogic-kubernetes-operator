@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("olcne-mrg")
-@Tag("oke-gate")
+@Tag("oke-sequential1")
 @Tag("oke-arm")
 class ItDataHomeOverride {
 

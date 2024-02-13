@@ -473,6 +473,27 @@
             </properties>
         </profile>
         <profile>
+            <id>oke-sequential1</id>
+            <properties>
+                <skipITs>false</skipITs>
+                <groups>oke-sequential1</groups>
+            </properties>
+        </profile>
+        <profile>
+            <id>oke-sequential2</id>
+            <properties>
+                <skipITs>false</skipITs>
+                <groups>oke-sequential2</groups>
+            </properties>
+        </profile>
+        <profile>
+            <id>oke-parallelnew</id>
+            <properties>
+                <skipITs>false</skipITs>
+                <groups>oke-parallelnew</groups>
+            </properties>
+        </profile>
+        <profile>
             <id>oke-arm</id>
             <properties>
                 <skipITs>false</skipITs>
