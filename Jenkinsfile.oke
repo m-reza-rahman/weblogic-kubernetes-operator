@@ -61,6 +61,11 @@ pipeline {
                defaultValue: ''
         )
 
+        booleanParam(name: 'PARALLEL_RUN',
+                             description: 'Runs tests in parallel. Default is true, test classes run in parallel.',
+                             defaultValue: false
+                )
+
         string(name: 'OKE_KUBE_VERSION',
                description: 'kube version for oke cluster',
                defaultValue: '1.28.2'
