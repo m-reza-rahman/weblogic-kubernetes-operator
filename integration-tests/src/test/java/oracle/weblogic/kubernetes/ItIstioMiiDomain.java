@@ -6,7 +6,6 @@ package oracle.weblogic.kubernetes;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
@@ -31,7 +30,6 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -44,9 +42,9 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.ISTIO_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
-import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
@@ -54,6 +52,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
@@ -101,8 +100,6 @@ class ItIstioMiiDomain {
   private final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-managed-server";
   private final int replicaCount = 2;
-
-  private static String testWebAppWarLoc = null;
 
   private static final String istioNamespace = "istio-system";
   private static final String istioIngressServiceName = "istio-ingressgateway";
@@ -246,20 +243,18 @@ class ItIstioMiiDomain {
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
 
-    Map<String, String> headers = new HashMap<>();
-    headers.put("host", domainNamespace + ".org");
-    headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
-
-    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    String workManagers = "/management/weblogic/latest/domainConfig/selfTuning/workManagers/";
+    String newWM = workManagers + "newWM/";
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT) && !OCNE) {
       istioIngressPort = ISTIO_HTTP_HOSTPORT;
       hostAndPort = InetAddress.getLocalHost().getHostAddress() + ":" + istioIngressPort;
     }
 
     String url = "http://" + hostAndPort + "/management/tenant-monitoring/servers/";
-    HttpResponse<String> response;
-    response = OracleHttpClient.get(url, headers, true);
-    assertEquals(200, response.statusCode());
-    assertTrue(response.body().contains("RUNNING"));
+    checkApp(url);
+
+    String wmUrl = "http://" + hostAndPort + workManagers;
+    checkApp(wmUrl);
 
     if (OKE_CLUSTER) {
       // create secret for internal OKE cluster
@@ -284,11 +279,11 @@ class ItIstioMiiDomain {
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
     verifyIntrospectorRuns(domainUid, domainNamespace);
 
-    String resourcePath = "/management/weblogic/latest/domainRuntime"
-        + "/serverRuntimes/managed-server1/applicationRuntimes/"
-        + MII_BASIC_APP_DEPLOYMENT_NAME + "/workManagerRuntimes/newWM/";    
-    String wmRuntimeUrl = "http://" + hostAndPort + resourcePath;
-    checkApp(wmRuntimeUrl, headers);
+    wmUrl = "http://" + hostAndPort + workManagers;
+    checkApp(wmUrl);
+
+    wmUrl = "http://" + hostAndPort + newWM;
+    checkApp(wmUrl);
     logger.info("Found new work manager runtime");
 
     verifyPodsNotRolled(domainNamespace, pods);
@@ -354,12 +349,9 @@ class ItIstioMiiDomain {
     });
   }
   
-  private void checkApp(String url, Map<String, String> headers) {
+  private void checkApp(String url) {
     testUntil(
-        () -> {
-          HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
-          return response.statusCode() == 200;
-        },
+        () -> checkAppUsingHostHeader(url, domainNamespace + ".org"),
         logger,
         "application to be ready {0}",
         url);
