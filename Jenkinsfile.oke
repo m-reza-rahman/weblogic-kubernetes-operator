@@ -1,6 +1,9 @@
-// Copyright (c) 2023, Oracle and/or its affiliates.
+// Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
+
+CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seqone;PARALLEL_RUN=false
+                   H 12 * * * % MAVEN_PROFILE_NAME=oke-sequential1;CLUSTER_NAME=seqtwo;PARALLEL_RUN=false'''
 
 pipeline {
     agent { label 'large' }
