@@ -273,11 +273,17 @@ class ItIstioGatewaySessionMigration {
     int istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
+    String host;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = "localhost";
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+    } else {
+      host = formatIPv6Host(K8S_NODEPORT_HOST);
+    }
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
-        ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
-        : (TestConstants.KIND_CLUSTER && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))
-        ? "localhost:" + ISTIO_HTTP_HOSTPORT : formatIPv6Host(K8S_NODEPORT_HOST) + ":" + istioIngressPort;
+        ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
 
     String restUrl = "http://" + hostAndPort + "/management/tenant-monitoring/servers/";
     boolean checkConsole = checkAppUsingHostHeader(restUrl, domainNamespace + ".org");
@@ -289,7 +295,7 @@ class ItIstioGatewaySessionMigration {
     ExecResult result = OKE_CLUSTER
         ? deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
             target, archivePath, domainNamespace + ".org", "testwebapp")
-        : deployToClusterUsingRest(K8S_NODEPORT_HOST,
+        : deployToClusterUsingRest(host,
             String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
             clusterName, archivePath, domainNamespace + ".org", "testwebapp");
