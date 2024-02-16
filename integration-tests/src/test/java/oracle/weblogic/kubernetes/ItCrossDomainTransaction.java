@@ -404,15 +404,6 @@ class ItCrossDomainTransaction {
       createNginxIngressPathRoutingRules();
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
 
-      try {
-        //sleep 20 min
-        logger.info("====== Start sleep 30 min ");
-        Thread.sleep(1800000);
-        logger.info("====== End sleep 30 min ");
-      } catch (Exception ex) {
-        //
-      }
-
       String command = KUBERNETES_CLI + " get all --all-namespaces";
       logger.info("curl command to get all --all-namespaces is: {0}", command);
 

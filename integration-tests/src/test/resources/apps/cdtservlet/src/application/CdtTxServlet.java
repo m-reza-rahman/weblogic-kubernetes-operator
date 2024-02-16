@@ -120,8 +120,12 @@ public class CdtTxServlet extends HttpServlet {
       System.out.println("Got connection to datasource - " + conn);
       out.println("Got connection to datasource - " + conn);
 
-      // drop the table if it exists
-      dropTable(conn, tableName);
+      try {
+        // drop the table if it exists
+        dropTable(conn, tableName);
+      } catch (SQLException sqle) {
+        sqle.printStackTrace();
+      }
 
       //create a table in the DB
       createTable(conn, tableName);
