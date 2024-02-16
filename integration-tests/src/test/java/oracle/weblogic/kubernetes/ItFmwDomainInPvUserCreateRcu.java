@@ -174,7 +174,7 @@ public class ItFmwDomainInPvUserCreateRcu {
         String.format("Failed to setup DB in the namespace %s with dbUrl %s, dbListenerPost %s",
             dbNamespace, dbUrl, dbListenerPort));*/
     //install Oracle Database Operator
-    String dbName = ItFmwDomainInPvUserCreateRcu.class.getSimpleName();
+    String dbName = "fmwdomaininpv-rcubyuser" + "my-oracle-db";
     assertDoesNotThrow(() -> installDBOperator(dbNamespace), "Failed to install database operator");
 
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
