@@ -147,9 +147,10 @@ class ItIstioGatewaySessionMigration {
 
     // config the domain with Istio ingress with Istio gateway
     String managedServerPrefix = domainUid + "-managed-server";
-    istioIngressPort = assertDoesNotThrow(() ->
+    assertDoesNotThrow(() ->
         configIstioGatewayModelInImageDomain(miiImage, domainNamespace, domainUid, managedServerPrefix),
         "setup for istio based domain failed");
+    istioIngressPort = getIstioHttpIngressPort();
 
     // map to save HTTP response data
     httpAttrMap = new HashMap<String, String>();
