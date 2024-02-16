@@ -183,12 +183,6 @@ class ItIstioGatewaySessionMigration {
     String istioIngressIP = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : formatIPv6Host(K8S_NODEPORT_HOST);
     
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      istioIngressIP = "localhost";
-      istioIngressPort = ISTIO_HTTP_HOSTPORT;
-    }
-    
     // send a HTTP request to set http session state(count number) and save HTTP session info
     // before shutting down the primary server
     // the NodePort services created by the operator are not usable, because they would expose ports
