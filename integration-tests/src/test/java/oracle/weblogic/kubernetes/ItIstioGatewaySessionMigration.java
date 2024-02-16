@@ -24,15 +24,16 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ISTIO_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.configIstioModelInImageDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
@@ -275,18 +276,12 @@ class ItIstioGatewaySessionMigration {
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
-        : K8S_NODEPORT_HOST + ":" + istioIngressPort;
+        : (TestConstants.KIND_CLUSTER && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))
+        ? "localhost:" + ISTIO_HTTP_HOSTPORT : formatIPv6Host(K8S_NODEPORT_HOST) + ":" + istioIngressPort;
 
-    // We can not verify Rest Management console thru Adminstration NodePort
-    // in istio, as we can not enable Adminstration NodePort
-    if (!WEBLOGIC_SLIM) {
-      String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
-      boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-      assertTrue(checkConsole, "Failed to access WebLogic console");
-      logger.info("WebLogic console is accessible");
-    } else {
-      logger.info("Skipping WebLogic console in WebLogic slim image");
-    }
+    String restUrl = "http://" + hostAndPort + "/management/tenant-monitoring/servers/";
+    boolean checkConsole = checkAppUsingHostHeader(restUrl, domainNamespace + ".org");
+    assertTrue(checkConsole, "Failed to access WebLogic REST interface");
 
     Path archivePath = Paths.get(testWebAppWarLoc);
     String target = "{identity: [clusters,'" + clusterName + "']}";
