@@ -68,6 +68,7 @@ import static oracle.weblogic.kubernetes.TestConstants.NODE_IP;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
@@ -1203,7 +1204,7 @@ public class CommonTestUtils {
       freePort = startingPort + random.nextInt(endingPort - startingPort);
       try {
         isLocalPortFree(freePort, K8S_NODEPORT_HOST);
-        if (OKE_CLUSTER) {
+        if (OKE_CLUSTER && !OKE_CLUSTER_PRIVATEIP) {
           isLocalPortFree(freePort, NODE_IP);
         }
       } catch (IOException ex) {
