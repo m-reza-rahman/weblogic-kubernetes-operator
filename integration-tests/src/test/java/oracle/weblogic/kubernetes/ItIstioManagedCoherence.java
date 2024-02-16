@@ -180,7 +180,7 @@ class ItIstioManagedCoherence {
     hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
     if (TestConstants.KIND_CLUSTER
-        && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostAndPort = "localhost:" + ISTIO_HTTP_HOSTPORT;
     }
   }
