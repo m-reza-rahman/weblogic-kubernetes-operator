@@ -411,6 +411,7 @@ EOF
                             sh ${WORKSPACE}/terraform/oke.create.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
 
                             clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"$CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
+
                             echo "clusterIp : $clusterIP"
                             clusterPublicIP=${clusterIP:1:-6}
                             echo " clusterPublicIP : ${clusterPublicIP}"
@@ -665,23 +666,28 @@ EOF
                         if [ -f "$OCI_PROP_FILE" ] && [ -f "${WORKSPACE}/terraform/oke.delete.sh" ]; then
                             ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
                         fi
+                        compartment_id = "${env.WKT_TEST_COMPARTMENT_ID}"
                         mt_ocid=`oci fs mount-target  list --compartment-id=${compartment_id}  --display-name=${CLUSTER_NAME}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."id"'`
-                        if [ -n "$mt_ocid" ]; then
-                            # Check if the mt_ocid is an array
-                            if [ "$(declare -p mt_ocid 2>/dev/null | grep -o 'declare -a')" == "declare -a" ]; then
-                                # Delete each element in the array
-                                while [ ${#mt_ocid[@]} -gt 0 ]; do
-                                    oci fs mount-target  delete --mount-target-id=${#mt_ocid[@]} --force
-                                    unset 'mt_ocid[${#mt_ocid[@]}-1]'
-                                done
-
-                                echo "Array of mount target deleted."
-                            else
-                                echo "deleting left over mount target."
-                                oci fs mount-target  delete --mount-target-id=${mt_ocid} --force
-                            fi
+                        if [ -z "$mt_ocid" ]; then
+                           echo "No Mount Target leftover"
                         else
-                            echo "mount target was deleted."
+                            if [ -n "$mt_ocid" ]; then
+                                # Check if the mt_ocid is an array
+                                if [ "$(declare -p mt_ocid 2>/dev/null | grep -o 'declare -a')" == "declare -a" ]; then
+                                    # Delete each element in the array
+                                    for ((i=0; i<${#mt_ocid[@]}; i++)); do
+                                        element="${mt_ocid[i]}"
+                                        echo "Deleting $i: $element"
+                                        oci fs mount-target  delete --mount-target-id=$element --force
+                                    done
+                                    echo "Array of mount target deleted."
+                                else
+                                    echo "deleting left over mount target."
+                                    oci fs mount-target  delete --mount-target-id=${mt_ocid} --force
+                                fi
+                            else
+                                echo "mount target was deleted."
+                            fi
                         fi
 
                         if [ "${MAVEN_PROFILE_NAME}" = "oke-gate" ]; then
