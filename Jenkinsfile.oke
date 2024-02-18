@@ -626,11 +626,11 @@ EOF
                                 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 sudo mv -f ${result_root}/* "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 ${WORKSPACE}/terraform/oke.delete.sh ${OCI_PROP_FILE} ${WORKSPACE}/terraform
-                                compname="test"
-                                test_compartment_ocid=$(oci iam compartment list --compartment-id-in-subtree true --all | jq --arg compname "$compname" '.data[] | select(."name"==$compname)' | jq -r ."id")
+                                
+                                test_compartment_ocid=${compartment_id}
                                 echo "oci fs mount-target  list --compartment-id=${test_compartment_ocid}  --display-name=${CLUSTER_NAME}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .\"id\"'"
                                 mt_ocid=`oci fs mount-target  list --compartment-id=${test_compartment_ocid}  --display-name=${CLUSTER_NAME}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."id"'`
-                          
+
                                 if [ -n "$mt_ocid" ]; then
                                     # Check if the mt_ocid is an array
                                     if [ "$(declare -p mt_ocid 2>/dev/null | grep -o 'declare -a')" == "declare -a" ]; then
