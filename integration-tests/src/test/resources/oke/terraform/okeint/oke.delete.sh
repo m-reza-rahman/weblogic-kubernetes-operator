@@ -64,7 +64,7 @@ deleteOKE() {
 }
 
 cleanMT() {
-    test_compartment_ocid=${$compartment_ocid}
+    test_compartment_ocid=${compartment_ocid}
     echo "oci fs mount-target  list --compartment-id=${test_compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .\"id\"'"
     mt_ocid=`oci fs mount-target  list --compartment-id=${test_compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`
     if [ -z "${mt_ocid}" ]; then
