@@ -56,6 +56,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createConfigMap;
@@ -72,6 +73,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToCha
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyUpdateWebLogicCredential;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -130,17 +132,19 @@ class ItMiiUpdateDomainConfig {
   private V1Patch patch = null;
   private final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-managed-server";
-  private final String adminServerName = "admin-server";
+  private static final String adminServerName = "admin-server";
   private final String clusterName = "cluster-1";
   private String adminSvcExtHost = null;
+  private static String hostHeader = null;
 
   private static LoggingFacade logger = null;
 
   /**
    * Install Operator.
    * Create domain resource defintion.
+   *
    * @param namespaces list of namespaces created by the IntegrationTestWatcher by the
-   JUnit engine parameter resolution mechanism
+   *                   JUnit engine parameter resolution mechanism
    */
   @BeforeAll
   public static void initAll(@Namespaces(2) List<String> namespaces) {
@@ -167,20 +171,20 @@ class ItMiiUpdateDomainConfig {
     String adminSecretName = "weblogic-credentials";
     assertDoesNotThrow(() -> createDomainSecret(adminSecretName,
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, domainNamespace),
-            String.format("createSecret failed for %s", adminSecretName));
+        String.format("createSecret failed for %s", adminSecretName));
 
     // create encryption secret
     logger.info("Create encryption secret");
     String encryptionSecretName = "encryptionsecret";
     assertDoesNotThrow(() -> createDomainSecret(encryptionSecretName, "weblogicenc",
             "weblogicenc", domainNamespace),
-             String.format("createSecret failed for %s", encryptionSecretName));
+        String.format("createSecret failed for %s", encryptionSecretName));
 
     logger.info("Create database secret");
-    final String dbSecretName = domainUid  + "-db-secret";
+    final String dbSecretName = domainUid + "-db-secret";
     assertDoesNotThrow(() -> createDatabaseSecret(dbSecretName, "scott",
             "##W%*}!\"'\"`']\\\\//1$$~x", "jdbc:oracle:thin:localhost:/ORCLCDB", domainNamespace),
-             String.format("createSecret failed for %s", dbSecretName));
+        String.format("createSecret failed for %s", dbSecretName));
     String configMapName = "jdbc-jms-wldf-configmap";
 
     createConfigMapAndVerify(
@@ -212,7 +216,12 @@ class ItMiiUpdateDomainConfig {
         clusterName, domainNamespace, domain, replicaCount);
 
     createDomainAndVerify(domain, domainNamespace);
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+    }
   }
+
 
   /**
    * Verify all server pods are running.
@@ -269,12 +278,19 @@ class ItMiiUpdateDomainConfig {
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
 
+    String headers = "";
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      headers = " -H 'host: " + hostHeader + "' ";
+    }
     String curlString = new StringBuffer()
           .append("curl -g --user ")
           .append(ADMIN_USERNAME_DEFAULT)
           .append(":")
           .append(ADMIN_PASSWORD_DEFAULT)
           .append(" ")
+          .append(headers)
           .append("\"http://" + hostAndPort)
           .append("/management/weblogic/latest/domainConfig")
           .append("/JMSServers/TestClusterJmsServer")
