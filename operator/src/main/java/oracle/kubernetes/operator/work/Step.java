@@ -297,7 +297,7 @@ public abstract class Step {
     // start forked fibers
     Fiber fiber = packet.getFiber();
     for (StepAndPacket sp : startDetails) {
-      fiber.createChildFiber().start(sp.step, sp.packet, callback);
+      fiber.createChildFiber().start(sp.step, Optional.ofNullable(sp.packet).orElse(packet.copy()), callback);
     }
 
     try {
