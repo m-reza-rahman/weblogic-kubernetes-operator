@@ -2,8 +2,8 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
-CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seqone;PARALLEL_RUN=false
-                   H 12 * * * % MAVEN_PROFILE_NAME=oke-sequential1;CLUSTER_NAME=seqtwo;PARALLEL_RUN=false'''
+CRON_SETTINGS = '''H 3 * * * % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seqone;PARALLEL_RUN=false
+                   H 1 * * * % MAVEN_PROFILE_NAME=oke-sequential1;CLUSTER_NAME=seqtwo;PARALLEL_RUN=false'''
 
 pipeline {
     agent { label 'large' }
@@ -65,7 +65,7 @@ pipeline {
         )
 
         booleanParam(name: 'PARALLEL_RUN',
-                             description: 'Runs tests in parallel. Default is true, test classes run in parallel.',
+                             description: 'Runs tests in parallel. Default is false.',
                              defaultValue: false
                 )
 
@@ -103,13 +103,13 @@ pipeline {
         choice(name: 'CLUSTER_NAME',
                        description: 'Oke cluster name.',
                        choices: [
-                           'parcluster',
+                           'parone',
                            'seqone',
                            'seqtwo'
                        ]
                 )
                 choice(name: 'MAVEN_PROFILE_NAME',
-                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate, oke-sequential1,oke-sequential2,oke-parallelnew. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate, oke-sequential1,oke-parallelnew. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                         choices: [
                                 'oke-gate',
                                 'oke-sequential1',

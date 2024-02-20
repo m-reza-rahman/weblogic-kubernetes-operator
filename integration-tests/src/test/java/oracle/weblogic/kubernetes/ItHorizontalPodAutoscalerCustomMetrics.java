@@ -50,7 +50,6 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -68,9 +67,6 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourc
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkClusterReplicaCountMatches;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPathRouting;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
@@ -102,7 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to a create MII domain and test autoscaling using HPA and"
     + "custom metrics provided via use of monitoring exporter and prometheus and prometheus adapter")
 @IntegrationTest
-@Tag("oke-test")
+@Tag("oke-sequential")
 @Tag("kind-parallel")
 public class ItHorizontalPodAutoscalerCustomMetrics {
   private static final String MONEXP_MODEL_FILE = "model.monexp.custommetrics.yaml";
@@ -111,7 +107,6 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
   private static final String SESSMIGR_APP_WAR_NAME = "sessmigr-war";
   private static final String SESSMIGT_APP_URL = SESSMIGR_APP_WAR_NAME + "/?getCounter";
   private static final String domainUid = "hpacustomdomain";
-  private static String ingressIP = null;
 
   private static String domainNamespace = null;
   private static String wlClusterName = "cluster-1";
@@ -218,9 +213,6 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     logger.info("NGINX service name: {0}", nginxServiceName);
     nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
     logger.info("NGINX http node port: {0}", nodeportshttp);
-    String host = formatIPv6Host(K8S_NODEPORT_HOST);
-    ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host;
 
     // create cluster resouce with limits and requests in serverPod
     ClusterResource clusterResource =
@@ -262,16 +254,9 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     assertDoesNotThrow(() -> installPrometheus(PROMETHEUS_CHART_VERSION,
         domainNamespace,
         domainUid), "Failed to install Prometheus");
-
-    if (OKE_CLUSTER_PRIVATEIP) {
-      prometheusAdapterHelmParams = assertDoesNotThrow(() -> installAndVerifyPrometheusAdapter(
-          prometheusAdapterReleaseName,
-          monitoringNS, ingressIP, 80), "Failed to install Prometheus Adapter");
-    } else {
-      prometheusAdapterHelmParams = assertDoesNotThrow(() -> installAndVerifyPrometheusAdapter(
-          prometheusAdapterReleaseName,
-          monitoringNS, K8S_NODEPORT_HOST, nodeportPrometheus), "Failed to install Prometheus Adapter");
-    }
+    prometheusAdapterHelmParams = assertDoesNotThrow(() -> installAndVerifyPrometheusAdapter(
+        prometheusAdapterReleaseName,
+        monitoringNS, K8S_NODEPORT_HOST, nodeportPrometheus), "Failed to install Prometheus Adapter");
     // wait till prometheus adapter could get the current custom metrics
     // total_opened_sessions_myear_app to make sure it is ready
     testUntil(withStandardRetryPolicy,
@@ -287,19 +272,17 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
     String ingressClassName = nginxHelmParams.getIngressClassName();
     List<String> ingressHostList
         = createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
-        true, ingressClassName, false, 0);
+        false, ingressClassName, false, 0);
     // create hpa with custom metrics
     createHPA();
     //invoke app 20 times to generate metrics with number of opened sessions > 5
-    String host = formatIPv6Host(K8S_NODEPORT_HOST);
-    String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP : host + ":" + nodeportshttp;
     String curlCmd =
-        String.format("curl --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s/" + SESSMIGT_APP_URL,
+        String.format("curl --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s:%s/" + SESSMIGT_APP_URL,
             ingressHostList.get(0),
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT,
-            hostPort);
-
+            K8S_NODEPORT_HOST,
+            nodeportshttp);
     logger.info("Executing curl command " + curlCmd);
     for (int i = 0; i < 50; i++) {
       assertDoesNotThrow(() -> ExecCommand.exec(curlCmd));
@@ -444,9 +427,6 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
       assertNotNull(promHelmParams, " Failed to install prometheus");
       prometheusDomainRegexValue = prometheusRegexValue;
       nodeportPrometheus = promHelmParams.getNodePortServer();
-      String ingressClassName = nginxHelmParams.getIngressClassName();
-      createIngressPathRouting(monitoringNS, "/",
-          prometheusReleaseName + "-server", 80, ingressClassName);
     }
     //if prometheus already installed change CM for specified domain
     if (!prometheusRegexValue.equals(prometheusDomainRegexValue)) {
