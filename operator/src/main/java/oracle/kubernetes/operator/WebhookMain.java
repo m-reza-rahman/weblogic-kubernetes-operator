@@ -1,11 +1,12 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
 
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.kubernetes.client.common.KubernetesListObject;
@@ -54,7 +55,7 @@ public class WebhookMain extends BaseMain {
   private static NextStepFactory nextStepFactory = WebhookMain::createInitializeWebhookIdentityStep;
 
   static class WebhookMainDelegateImpl extends CoreDelegateImpl implements WebhookMainDelegate {
-    public WebhookMainDelegateImpl(Properties buildProps, ExecutorService executor) {
+    public WebhookMainDelegateImpl(Properties buildProps, ScheduledExecutorService executor) {
       super(buildProps, executor);
     }
 
@@ -135,7 +136,7 @@ public class WebhookMain extends BaseMain {
 
       // start periodic recheck of CRD
       int recheckInterval = TuningParameters.getInstance().getDomainNamespaceRecheckIntervalSeconds();
-      delegate.scheduleWithFixedDelay(recheckCrd(), recheckInterval, recheckInterval);
+      delegate.scheduleWithFixedDelay(recheckCrd(), recheckInterval, recheckInterval, TimeUnit.SECONDS);
 
       markReadyAndStartLivenessThread();
 

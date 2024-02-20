@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
@@ -463,7 +464,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
             () -> new ScheduledStatusUpdater(info.getNamespace(), info.getDomainUid(), loggingFilter)
                 .withTimeoutSeconds(statusUpdateTimeoutSeconds).updateStatus(),
             initialShortDelay,
-            initialShortDelay));
+            initialShortDelay,
+            TimeUnit.SECONDS));
   }
 
   @Override
@@ -1051,19 +1053,9 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
           .orElse(false);
     }
 
-    @SuppressWarnings("all")
     private void scheduleRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
       final MakeRightDomainOperation retry = operation.createRetry(domainPresenceInfo);
-      gate.getExecutor().execute(() -> {
-        try {
-          Thread.sleep(delayUntilNextRetry(domainPresenceInfo) * 1000);
-          if (!gate.getExecutor().isShutdown()) {
-            retry.execute();
-          }
-        } catch (InterruptedException e) {
-          throw new RuntimeException(e);
-        }
-      });
+      gate.getExecutor().schedule(retry::execute, delayUntilNextRetry(domainPresenceInfo), TimeUnit.SECONDS);
     }
     
     private long delayUntilNextRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {

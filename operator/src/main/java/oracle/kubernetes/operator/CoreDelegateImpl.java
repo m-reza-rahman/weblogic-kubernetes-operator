@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -6,7 +6,9 @@ package oracle.kubernetes.operator;
 import java.io.File;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 import oracle.kubernetes.operator.helpers.HealthCheckHelper;
@@ -37,7 +39,7 @@ public class CoreDelegateImpl implements CoreDelegate {
   protected String domainCrdResourceVersion;
   protected String clusterCrdResourceVersion;
 
-  CoreDelegateImpl(Properties buildProps, ExecutorService executor) {
+  CoreDelegateImpl(Properties buildProps, ScheduledExecutorService scheduledExecutorService) {
     buildVersion = getBuildVersion(buildProps);
     deploymentImpl = getBranch(buildProps) + "." + getCommit(buildProps);
     deploymentBuildTime = getBuildTime(buildProps);
@@ -45,7 +47,7 @@ public class CoreDelegateImpl implements CoreDelegate {
     productVersion = new SemanticVersion(buildVersion);
     kubernetesVersion = HealthCheckHelper.performK8sVersionCheck();
 
-    engine = new Engine(executor);
+    engine = new Engine(scheduledExecutorService);
 
     PodHelper.setProductVersion(productVersion.toString());
   }
@@ -122,7 +124,8 @@ public class CoreDelegateImpl implements CoreDelegate {
   }
 
   @Override
-  public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay) {
-    return engine.scheduleWithFixedDelay(command, initialDelay, delay);
+  public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+    ScheduledFuture<?> future = engine.getExecutor().scheduleWithFixedDelay(command, initialDelay, delay, unit);
+    return () -> { return future.cancel(true); };
   }
 }

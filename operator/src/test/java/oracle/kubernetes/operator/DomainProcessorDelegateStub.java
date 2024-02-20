@@ -5,6 +5,7 @@ package oracle.kubernetes.operator;
 
 import java.io.File;
 import java.util.Optional;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.models.V1Job;
@@ -99,10 +100,9 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
   }
 
   @Override
-  public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay) {
-    // FIXME
-    // return testSupport.scheduleWithFixedDelay(command, initialDelay, delay);
-    return null;
+  public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+    ScheduledFuture<?> future = testSupport.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+    return () -> { return future.cancel(true); };
   }
 
   @Override

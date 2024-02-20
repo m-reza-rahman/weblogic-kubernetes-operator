@@ -628,7 +628,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
   @Test
   void whenShutdownMarkerIsCreated_stopWebhook() throws NoSuchFieldException {
     mementos.add(StaticStubSupport.install(
-            BaseMain.class, "wrappedExecutorService", testSupport.getExecutorService()));
+            BaseMain.class, "wrappedExecutorService", testSupport.getScheduledExecutorService()));
     inMemoryFileSystem.defineFile(delegate.getShutdownMarker(), "shutdown");
 
     main.waitForDeath();

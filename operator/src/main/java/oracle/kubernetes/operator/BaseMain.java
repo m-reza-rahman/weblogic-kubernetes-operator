@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -19,10 +19,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 import oracle.kubernetes.common.logging.MessageKeys;
@@ -50,7 +47,7 @@ public abstract class BaseMain {
   static final String GIT_BUILD_TIME_KEY = "git.build.time";
 
   static final ThreadFactory threadFactory = Thread.ofVirtual().factory();
-  static final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+  static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
   static final AtomicReference<OffsetDateTime> lastFullRecheck =
       new AtomicReference<>(SystemClock.now());
   static final Semaphore shutdownSignal = new Semaphore(0);
@@ -154,8 +151,7 @@ public abstract class BaseMain {
 
       logStartingLivenessMessage();
       // every five seconds we need to update the last modified time on the liveness file
-      delegate.scheduleWithFixedDelay(
-              new DeploymentLiveness(delegate), 5, 5);
+      delegate.scheduleWithFixedDelay(new DeploymentLiveness(delegate), 5, 5, TimeUnit.SECONDS);
     } catch (IOException io) {
       LOGGER.severe(MessageKeys.EXCEPTION, io);
     }
@@ -247,7 +243,7 @@ public abstract class BaseMain {
           if (isFileExists(marker)) {
             releaseShutdownSignal();
           }
-        }, 5, 2);
+        }, 5, 2, TimeUnit.SECONDS);
   }
 
   private static boolean isFileExists(File file) {

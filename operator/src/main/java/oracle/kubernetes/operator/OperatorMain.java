@@ -1,4 +1,4 @@
-// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -15,7 +15,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -87,7 +87,7 @@ public class OperatorMain extends BaseMain {
     private final DomainNamespaces domainNamespaces;
     private final AtomicReference<V1CustomResourceDefinition> crdReference;
 
-    public MainDelegateImpl(Properties buildProps, ExecutorService executor) {
+    public MainDelegateImpl(Properties buildProps, ScheduledExecutorService executor) {
       super(buildProps, executor);
 
       domainProcessor = new DomainProcessorImpl(this, productVersion);
@@ -285,8 +285,8 @@ public class OperatorMain extends BaseMain {
       // start periodic retry and recheck
       int recheckInterval = TuningParameters.getInstance().getDomainNamespaceRecheckIntervalSeconds();
       int stuckPodInterval = TuningParameters.getInstance().getStuckPodRecheckSeconds();
-      mainDelegate.scheduleWithFixedDelay(recheckDomains(), recheckInterval, recheckInterval);
-      mainDelegate.scheduleWithFixedDelay(checkStuckPods(), stuckPodInterval, stuckPodInterval);
+      mainDelegate.scheduleWithFixedDelay(recheckDomains(), recheckInterval, recheckInterval, TimeUnit.SECONDS);
+      mainDelegate.scheduleWithFixedDelay(checkStuckPods(), stuckPodInterval, stuckPodInterval, TimeUnit.SECONDS);
 
       markReadyAndStartLivenessThread();
 

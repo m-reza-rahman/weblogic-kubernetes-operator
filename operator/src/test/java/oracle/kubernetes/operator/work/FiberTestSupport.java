@@ -4,11 +4,15 @@
 package oracle.kubernetes.operator.work;
 
 import java.io.File;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayDeque;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -16,8 +20,10 @@ import oracle.kubernetes.operator.MainDelegate;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.logging.LoggingContext;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 
 import static com.meterware.simplestub.Stub.createStrictStub;
+import static com.meterware.simplestub.Stub.createStub;
 import static oracle.kubernetes.operator.logging.LoggingContext.LOGGING_CONTEXT_KEY;
 
 /**
@@ -33,8 +39,8 @@ import static oracle.kubernetes.operator.logging.LoggingContext.LOGGING_CONTEXT_
 @SuppressWarnings("UnusedReturnValue")
 public class FiberTestSupport {
   private final CompletionCallbackStub completionCallback = new CompletionCallbackStub();
-  private final ExecutorServiceStub executor = ExecutorServiceStub.create();
-  private final Engine engine = new Engine(executor);
+  private final ScheduledExecutorStub schedule = ScheduledExecutorStub.create();
+  private final Engine engine = new Engine(schedule);
 
   private Packet packet = new Packet();
 
@@ -43,8 +49,8 @@ public class FiberTestSupport {
     packet.put(ProcessingConstants.DELEGATE_COMPONENT_NAME, mainDelegate);
   }
 
-  public ExecutorService getExecutorService() {
-    return executor;
+  public ScheduledExecutorService getScheduledExecutorService() {
+    return schedule;
   }
 
   /** Creates a single-threaded FiberGate instance. */
@@ -53,10 +59,55 @@ public class FiberTestSupport {
   }
 
   /**
+   * Schedules a runnable to run immediately. In practice, it will run as soon as all previously
+   * queued runnables have complete.
+   *
+   * @param runnable a runnable to be executed by the scheduler.
+   */
+  public void schedule(Runnable runnable) {
+    schedule.execute(runnable);
+  }
+
+  /**
+   * Schedules a runnable to run at some time in the future. See {@link #schedule(Runnable)}.
+   *
+   * @param command a runnable to be executed by the scheduler.
+   * @param delay the number of time units in the future to run.
+   * @param unit the time unit used for the above parameters
+   */
+  public ScheduledFuture<?> schedule(@Nonnull Runnable command, long delay, @Nonnull TimeUnit unit) {
+    return schedule.schedule(command, delay, unit);
+  }
+
+  /**
+   * Schedules a runnable to run immediately and at fixed intervals afterwards. See {@link
+   * #schedule(Runnable)}.
+   *
+   * @param command a runnable to be executed by the scheduler.
+   * @param initialDelay the number of time units in the future to run for the first time.
+   * @param delay the number of time units between scheduled executions
+   * @param unit the time unit used for the above parameters
+   */
+  public ScheduledFuture<?> scheduleWithFixedDelay(
+      Runnable command, long initialDelay, long delay, TimeUnit unit) {
+    return schedule.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+  }
+
+  /**
+   * Returns true if an item is scheduled to run at the specified time.
+   *
+   * @param time the time, in units
+   * @param unit the unit associated with the time
+   */
+  public boolean hasItemScheduledAt(int time, TimeUnit unit) {
+    return schedule.containsItemAt(time, unit);
+  }
+
+  /**
    * Returns the number of items actually run since this object was created.
    */
   public int getNumItemsRun() {
-    return executor.getNumItemsRun();
+    return schedule.getNumItemsRun();
   }
 
   /**
@@ -66,6 +117,17 @@ public class FiberTestSupport {
    */
   public Engine getEngine() {
     return engine;
+  }
+
+  /**
+   * Sets the simulated time, thus triggering the execution of any runnable items associated with
+   * earlier times.
+   *
+   * @param time the time, in units
+   * @param unit the unit associated with the time
+   */
+  public void setTime(long time, TimeUnit unit) {
+    schedule.setTime(time, unit);
   }
 
   public Packet getPacket() {
@@ -160,53 +222,170 @@ public class FiberTestSupport {
     completionCallback.throwOnFailure();
   }
 
+  /**
+   * Ensures that the next task scheduled with a fixed delay will be executed immediately.
+   */
+  public void presetFixedDelay() {
+    schedule.presetFixedDelay = true;
+  }
+
   @FunctionalInterface
   public interface StepFactory {
     Step createStepList(Step next);
   }
 
-  abstract static class ExecutorServiceStub implements ExecutorService {
+  abstract static class ScheduledExecutorStub implements ScheduledExecutorService {
+    /* current time in milliseconds. */
+    private long currentTime = 0;
 
-    private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
+    private final PriorityQueue<ScheduledItem> scheduledItems = new PriorityQueue<>();
+    private final Queue<Runnable> queue = new ArrayDeque<>();
+    private Runnable current;
+    private int numItemsRun;
+    private boolean presetFixedDelay;
 
-    private final AtomicReference<Runnable> current = new AtomicReference<>();
-    private final AtomicInteger numItemsRun = new AtomicInteger(0);
-
-    static ExecutorServiceStub create() {
-      return createStrictStub(ExecutorServiceStub.class);
+    static ScheduledExecutorStub create() {
+      return createStrictStub(ScheduledExecutorStub.class);
     }
 
     int getNumItemsRun() {
-      return numItemsRun.get();
+      return numItemsRun;
+    }
+
+    @Override
+    @Nonnull
+    public ScheduledFuture<?> schedule(
+        @Nonnull Runnable command, long delay, @Nonnull TimeUnit unit) {
+      scheduledItems.add(new ScheduledItem(currentTime + unit.toMillis(delay), command));
+      if (current == null) {
+        runNextRunnable();
+      }
+      return createStub(ScheduledFuture.class);
+    }
+
+    @Override
+    @Nonnull
+    public ScheduledFuture<?> scheduleWithFixedDelay(
+        @Nonnull Runnable command, long initialDelay, long delay, @Nonnull TimeUnit unit) {
+      scheduledItems.add(
+          new PeriodicScheduledItem(
+              currentTime + unit.toMillis(initialDelay), unit.toMillis(delay), command));
+      if (presetFixedDelay) {
+        presetFixedDelay = false;
+        setTime(currentTime + unit.toMillis(initialDelay), TimeUnit.MILLISECONDS);
+      }
+      if (current == null) {
+        runNextRunnable();
+      }
+      return createStub(ScheduledFuture.class);
     }
 
     @Override
     public void execute(@Nullable Runnable command) {
-      if (command != null) {
-        if (current.compareAndSet(null, command)) {
-          try {
-            runAndIncrementNumItemsRun(command);
-          } finally {
-            current.set(null);
-          }
-        } else {
-          executorService.execute(() -> {
-            runAndIncrementNumItemsRun(command);
-          });
-        }
+      queue.add(command);
+      if (current == null) {
+        runNextRunnable();
       }
     }
 
-    @Override
-    public boolean isShutdown() {
+    private void runNextRunnable() {
+      while (null != (current = queue.poll())) {
+        current.run();
+        numItemsRun++;
+        current = null;
+      }
+    }
+
+    /**
+     * Sets the simulated time, thus triggering the execution of any runnable items associated with
+     * earlier times.
+     *
+     * @param time the time, in units
+     * @param unit the unit associated with the time
+     */
+    void setTime(long time, TimeUnit unit) {
+      long newTime = unit.toMillis(time);
+      if (newTime < currentTime) {
+        throw new IllegalStateException(
+            "Attempt to move clock backwards from " + currentTime + " to " + newTime);
+      }
+
+      while (!scheduledItems.isEmpty() && scheduledItems.peek().atTime <= newTime) {
+        executeAsScheduled(scheduledItems.poll());
+      }
+
+      currentTime = newTime;
+    }
+
+    private void executeAsScheduled(ScheduledItem item) {
+      currentTime = item.atTime;
+      adjustSystemClock(currentTime);
+      execute(item.runnable);
+      if (item.isReschedulable()) {
+        scheduledItems.add(item.rescheduled());
+      }
+    }
+
+    private void adjustSystemClock(long currentTime) {
+      Optional.ofNullable(SystemClockTestSupport.getTestStartTime())
+          .ifPresent(startTime -> adjustSystemClock(currentTime, startTime));
+    }
+
+    private void adjustSystemClock(long currentTime, OffsetDateTime initialClockTime) {
+      SystemClockTestSupport.setCurrentTime(initialClockTime.plus(currentTime, ChronoUnit.MILLIS));
+    }
+
+    /**
+     * Returns true if a runnable item has been scheduled for the specified time.
+     *
+     * @param time the time, in units
+     * @param unit the unit associated with the time
+     * @return true if such an item exists
+     */
+    boolean containsItemAt(long time, TimeUnit unit) {
+      for (ScheduledItem scheduledItem : scheduledItems) {
+        if (scheduledItem.atTime == unit.toMillis(time)) {
+          return true;
+        }
+      }
       return false;
     }
 
-    private void runAndIncrementNumItemsRun(Runnable command) {
-      try {
-        command.run();
-      } finally {
-        numItemsRun.incrementAndGet();
+    private static class ScheduledItem implements Comparable<ScheduledItem> {
+      private final long atTime;
+      private final Runnable runnable;
+
+      ScheduledItem(long atTime, Runnable runnable) {
+        this.atTime = atTime;
+        this.runnable = runnable;
+      }
+
+      // Return true if the item should be rescheduled after it is run.
+      private boolean isReschedulable() {
+        return rescheduled() != null;
+      }
+
+      @Override
+      public int compareTo(@Nonnull ScheduledItem o) {
+        return Long.compare(atTime, o.atTime);
+      }
+
+      ScheduledItem rescheduled() {
+        return null;
+      }
+    }
+
+    private static class PeriodicScheduledItem extends ScheduledItem {
+      private final long interval;
+
+      PeriodicScheduledItem(long atTime, long interval, Runnable runnable) {
+        super(atTime, runnable);
+        this.interval = interval;
+      }
+
+      @Override
+      ScheduledItem rescheduled() {
+        return new PeriodicScheduledItem(super.atTime + interval, interval, super.runnable);
       }
     }
   }

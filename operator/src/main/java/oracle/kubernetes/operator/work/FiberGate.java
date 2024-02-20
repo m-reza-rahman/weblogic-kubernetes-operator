@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.work;
@@ -6,7 +6,7 @@ package oracle.kubernetes.operator.work;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 
@@ -42,7 +42,7 @@ public class FiberGate {
     return new HashMap<>(gateMap);
   }
 
-  public ExecutorService getExecutor() {
+  public ScheduledExecutorService getExecutor() {
     return engine.getExecutor();
   }
 

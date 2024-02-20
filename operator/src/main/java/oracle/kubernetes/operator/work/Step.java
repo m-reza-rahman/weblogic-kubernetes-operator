@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.work;
@@ -252,16 +252,7 @@ public abstract class Step {
    * @param unit Delay time unit
    */
   protected Void doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
-    try {
-      unit.sleep(delay);
-
-      if (isCancelled(packet)) {
-        return null;
-      }
-      return step.apply(packet);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
+    packet.getFiber().delay(step, packet, delay, unit);
     return null;
   }
 

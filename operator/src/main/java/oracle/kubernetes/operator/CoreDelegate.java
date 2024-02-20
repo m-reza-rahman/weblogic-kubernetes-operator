@@ -1,10 +1,11 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
@@ -58,6 +59,6 @@ public interface CoreDelegate {
 
   void runStepsInternal(Packet packet, Step firstStep, Runnable completionAction);
 
-  Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay);
+  Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
 
 }

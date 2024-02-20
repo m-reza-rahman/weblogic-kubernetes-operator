@@ -1,10 +1,11 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.work;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -99,6 +100,16 @@ public final class Fiber implements AsyncFiber {
       if (completionCallback != null) {
         completionCallback.onThrowable(packet, t);
       }
+    }
+  }
+
+  void delay(Step stepline, Packet packet, long delay, TimeUnit unit) {
+    if (!isCancelled()) {
+      owner.getExecutor().schedule(() -> {
+        if (!isCancelled()) {
+          stepline.apply(packet);
+        }
+      }, delay, unit);
     }
   }
 

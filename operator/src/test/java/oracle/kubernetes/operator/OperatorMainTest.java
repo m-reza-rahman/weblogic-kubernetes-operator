@@ -1344,7 +1344,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   @ResourceLock(value = "operatorMain")
   void whenShutdownMarkerIsCreated_stopOperator() throws NoSuchFieldException {
     mementos.add(StaticStubSupport.install(
-            BaseMain.class, "executor", testSupport.getExecutorService()));
+            BaseMain.class, "executor", testSupport.getScheduledExecutorService()));
     inMemoryFileSystem.defineFile(delegate.getShutdownMarker(), "shutdown");
 
     operatorMain.doMain();
