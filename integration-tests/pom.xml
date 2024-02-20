@@ -480,13 +480,6 @@
             </properties>
         </profile>
         <profile>
-            <id>oke-sequential2</id>
-            <properties>
-                <skipITs>false</skipITs>
-                <groups>oke-sequential2</groups>
-            </properties>
-        </profile>
-        <profile>
             <id>oke-parallelnew</id>
             <properties>
                 <skipITs>false</skipITs>
