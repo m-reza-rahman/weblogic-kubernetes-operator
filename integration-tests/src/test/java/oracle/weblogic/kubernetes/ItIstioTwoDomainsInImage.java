@@ -69,6 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("oke-sequential1")
+@Tag("oke-parallelnew")
 class ItIstioTwoDomainsInImage {
 
   private static String opNamespace = null;

@@ -96,6 +96,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("oke-sequential1")
 @Tag("okd-fmw-cert")
 @Tag("olcne-sequential")
+@Tag("oke-parallelnew")
 class ItFmwDomainOnPV {
 
   private static String domainNamespace = null;

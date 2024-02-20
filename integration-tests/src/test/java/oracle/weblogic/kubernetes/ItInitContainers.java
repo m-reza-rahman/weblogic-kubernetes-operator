@@ -78,6 +78,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("okd-wls-mrg")
 @Tag("oke-sequential1")
 @Tag("oke-arm")
+@Tag("oke-parallelnew")
 class ItInitContainers {
 
   private static String opNamespace = null;

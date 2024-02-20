@@ -57,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("olcne-mrg")
 @Tag("kind-parallel")
 @Tag("oke-sequential1")
+@Tag("oke-parallelnew")
 class ItLBTwoDomainsTraefik {
 
   private static final int numberOfDomains = 2;

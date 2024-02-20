@@ -111,6 +111,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("okd-wls-mrg")
 @Tag("oke-sequential1")
 @Tag("oke-arm")
+@Tag("oke-parallelnew")
 class ItDiagnosticsFailedCondition {
 
   private static String domainNamespace = null;

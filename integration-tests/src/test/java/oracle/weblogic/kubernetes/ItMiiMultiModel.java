@@ -77,6 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("okd-wls-srg")
 @Tag("oke-gate")
 @Tag("oke-arm")
+@Tag("oke-parallelnew")
 class ItMiiMultiModel {
 
   private static String domainNamespace = null;

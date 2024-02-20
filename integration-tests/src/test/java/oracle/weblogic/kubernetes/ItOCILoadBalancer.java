@@ -46,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @IntegrationTest
 @Tag("oke-gate")
 @Tag("oke-arm")
+@Tag("oke-parallelnew")
 class ItOCILoadBalancer {
   // domain constants
   private static final int replicaCount = 2;

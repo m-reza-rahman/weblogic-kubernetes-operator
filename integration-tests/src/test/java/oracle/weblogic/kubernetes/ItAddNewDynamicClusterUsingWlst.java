@@ -52,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("kind-parallel")
 @Tag("olcne-mrg")
 @Tag("oke-sequential1")
+@Tag("oke-parallelnew")
 class ItAddNewDynamicClusterUsingWlst {
 
   // domain constants

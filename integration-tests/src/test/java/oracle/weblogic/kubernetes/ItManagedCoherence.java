@@ -71,6 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
 @Tag("oke-sequential1")
+@Tag("oke-parallelnew")
 class ItManagedCoherence {
 
   // constants for Coherence
