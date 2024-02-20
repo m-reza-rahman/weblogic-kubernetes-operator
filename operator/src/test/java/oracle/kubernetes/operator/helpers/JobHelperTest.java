@@ -57,6 +57,7 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.utils.SystemClock;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.ClusterConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
@@ -217,6 +218,7 @@ class JobHelperTest extends DomainValidationTestBase {
     mementos.add(consoleHandlerMemento);
     mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
+    mementos.add(SystemClockTestSupport.installClock());
 
     domain.getSpec().setNodeName(null);
     testSupport.defineResources(domain);

@@ -1,8 +1,9 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +29,9 @@ import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
+import oracle.kubernetes.weblogic.domain.model.DomainCommonConfigurator;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
@@ -74,6 +77,7 @@ class FailureRetryTest {
     mementos.add(testSupport.install());
     mementos.add(TuningParametersStub.install());
     mementos.add(UnitTestHash.install());
+    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(new DomainProcessorTestSupport().install());
 
     testSupport.defineResources(domain);
@@ -99,8 +103,53 @@ class FailureRetryTest {
     assertThat(domain.getNextRetryTime(), Matchers.greaterThan(testStartTime));
   }
 
+  @Test
+  void whenNotYetNextRetryTime_dontExecuteRetry() {
+    domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
+
+    final OffsetDateTime nextRetryTime = domain.getNextRetryTime().minusSeconds(2);
+    setCurrentTime(nextRetryTime);
+
+    assertThat(domainInvalidStep.numTimesRun, equalTo(1));
+  }
+
+  @Test
+  void whenNextRetryTime_executeRetry() {
+    domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
+
+    setCurrentTime(getRecordedDomain().getNextRetryTime());
+
+    assertThat(domainInvalidStep.numTimesRun, equalTo(2));
+  }
+
+  @Test
+  void whenFailureStillExistsAfterRetry_updateLastFailureTime() {
+    domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
+
+    final OffsetDateTime nextRetryTime = domain.getNextRetryTime();
+    setCurrentTime(nextRetryTime);
+
+    assertThat(getRecordedDomain().getStatus().getInitialFailureTime(), equalTo(testStartTime));
+    assertThat(getRecordedDomain().getStatus().getLastFailureTime(), equalTo(nextRetryTime));
+  }
+
   private DomainResource getRecordedDomain() {
     return testSupport.<DomainResource>getResources(KubernetesTestSupport.DOMAIN).get(0);
+  }
+
+  private void setCurrentTime(OffsetDateTime newTime) {
+    final Duration offset = Duration.between(testStartTime, newTime);
+    testSupport.setTime(offset.toSeconds(), TimeUnit.SECONDS);
+  }
+
+  @Test
+  void whenRetryAfterRetryLimit_addAbortedFailure() {
+    new DomainCommonConfigurator(domain).withFailureRetryLimitMinutes(10);
+    domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
+
+    testSupport.setTime(getTimeAfterRetryLimit(), TimeUnit.SECONDS);
+
+    assertThat(getRecordedDomain(), hasCondition(FAILED).withReason(ABORTED));
   }
 
   // A time by which the retry which exceeds the limit will be executed
@@ -115,6 +164,16 @@ class FailureRetryTest {
     domainProcessor.createMakeRightOperation(info).withExplicitRecheck().execute();
 
     assertThat(getRecordedDomain(), hasCondition(FAILED).withReason(ABORTED));
+  }
+
+  @Test
+  void afterAbortedConditionAdded_dontRetryAutomatically() {
+    domain.getStatus().addCondition(new DomainCondition(FAILED).withReason(ABORTED).withMessage("in test"));
+    final int numTimesRunToAborted = domainInvalidStep.numTimesRun;
+
+    testSupport.setTime(getTimeAfterRetryLimit() + 10 * domain.getFailureRetryIntervalSeconds(), TimeUnit.SECONDS);
+
+    assertThat(domainInvalidStep.numTimesRun, equalTo(numTimesRunToAborted));
   }
 
   @Test

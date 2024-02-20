@@ -29,6 +29,7 @@ import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
 import oracle.kubernetes.operator.work.Step;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import org.hamcrest.Matchers;
 import org.hamcrest.junit.MatcherAssert;
@@ -65,6 +66,7 @@ class InitializeWebhookIdentityStepTest {
 
     mementos.add(testSupport.install());
 
+    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
     mementos.add(InMemoryCertificates.install());
     mementos.add(inMemoryFileSystem.install());

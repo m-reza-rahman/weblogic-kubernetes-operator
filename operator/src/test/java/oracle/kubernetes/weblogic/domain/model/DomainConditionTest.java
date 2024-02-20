@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.meterware.simplestub.Memento;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.operator.ProcessingConstants.FATAL_DOMAIN_INVALID_ERROR;
@@ -34,9 +36,19 @@ class DomainConditionTest {
 
   private final List<Memento> mementos = new ArrayList<>();
 
+  @BeforeEach
+  public void setUp() throws Exception {
+    mementos.add(SystemClockTestSupport.installClock());
+  }
+
   @AfterEach
   public void tearDown() {
     mementos.forEach(Memento::revert);
+  }
+
+  @Test
+  void whenCreated_conditionHasLastTransitionTime() {
+    assertThat(new DomainCondition(AVAILABLE).getLastTransitionTime(), SystemClockTestSupport.isDuringTest());
   }
 
   @Test
@@ -57,6 +69,14 @@ class DomainConditionTest {
     assertThat(new DomainCondition(FAILED).hasType(FAILED), is(true));
     assertThat(new DomainCondition(COMPLETED).hasType(AVAILABLE), is(false));
     assertThat(new DomainCondition(CONFIG_CHANGES_PENDING_RESTART).hasType(CONFIG_CHANGES_PENDING_RESTART), is(true));
+  }
+
+  @Test
+  void equalsIgnoresLastTransitionTime() {
+    DomainCondition oldCondition = new DomainCondition(AVAILABLE).withStatus("True");
+    SystemClockTestSupport.increment();
+
+    assertThat(oldCondition.equals(new DomainCondition(AVAILABLE).withStatus("True")), is(true));
   }
 
   @Test

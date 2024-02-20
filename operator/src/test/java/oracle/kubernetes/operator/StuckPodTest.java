@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -20,16 +22,25 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static com.meterware.simplestub.Stub.createStrictStub;
+import static oracle.kubernetes.common.logging.MessageKeys.POD_FORCE_DELETED;
+import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.createTestDomain;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.POD;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 class StuckPodTest {
 
@@ -52,6 +63,7 @@ class StuckPodTest {
   public void setUp() throws Exception {
     mementos.add(consoleMemento = TestUtils.silenceOperatorLogger());
     mementos.add(testSupport.install());
+    mementos.add(SystemClockTestSupport.installClock());
     mementos.add(TuningParametersStub.install());
     mementos.add(NoopWatcherStarter.install());
 
@@ -63,6 +75,82 @@ class StuckPodTest {
     testSupport.throwOnCompletionFailure();
     
     mementos.forEach(Memento::revert);
+  }
+
+  @Test
+  void whenServerPodNotDeleted_ignoreIt() {
+    SystemClockTestSupport.increment(DELETION_GRACE_PERIOD_SECONDS);
+
+    processing.checkStuckPods(NS);
+
+    assertThat(getSelectedPod(SERVER_POD_1), notNullValue());
+  }
+
+  @Test
+  void whenServerPodNotStuck_ignoreIt() {
+    markAsDelete(getSelectedPod(SERVER_POD_1));
+    SystemClockTestSupport.increment(DELETION_GRACE_PERIOD_SECONDS - 1);
+
+    processing.checkStuckPods(NS);
+
+    assertThat(getSelectedPod(SERVER_POD_1), notNullValue());
+  }
+
+  @Test
+  void whenServerPodStuck_deleteIt() {
+    markAsDelete(getSelectedPod(SERVER_POD_1));
+    SystemClockTestSupport.increment(DELETION_GRACE_PERIOD_SECONDS + 1);
+
+    processing.checkStuckPods(NS);
+
+    assertThat(getSelectedPod(SERVER_POD_1), nullValue());
+  }
+
+  @Test
+  void whenStuckServerPodDeleted_logMessage() {
+    final List<LogRecord> logMessages = new ArrayList<>();
+    consoleMemento.collectLogMessages(logMessages, POD_FORCE_DELETED).withLogLevel(Level.INFO);
+    markAsDelete(getSelectedPod(SERVER_POD_1));
+    SystemClockTestSupport.increment(DELETION_GRACE_PERIOD_SECONDS + 1);
+
+    processing.checkStuckPods(NS);
+
+    assertThat(logMessages, containsInfo(POD_FORCE_DELETED).withParams(SERVER_POD_1, NS));
+  }
+
+  @Test
+  void whenServerPodDeleted_specifyZeroGracePeriod() {
+    markAsDelete(getSelectedPod(SERVER_POD_1));
+    SystemClockTestSupport.increment(DELETION_GRACE_PERIOD_SECONDS + 1);
+    testSupport.doOnDelete(POD, this::recordGracePeriodSeconds);
+
+    processing.checkStuckPods(NS);
+
+    assertThat(gracePeriodSeconds, equalTo(0));
+  }
+
+  private void recordGracePeriodSeconds(Integer gracePeriodSeconds) {
+    this.gracePeriodSeconds = gracePeriodSeconds;
+  }
+
+  @Test
+  void whenServerPodStuck_initiateMakeRightProcessing() {
+    markAsDelete(getSelectedPod(SERVER_POD_2));
+    SystemClockTestSupport.increment(DELETION_GRACE_PERIOD_SECONDS + 1);
+
+    processing.checkStuckPods(NS);
+
+    assertThat(mainDelegate.makeRightInvoked(domain), is(true));
+  }
+
+  @Test
+  void whenForeignPodStuck_ignoreIt() {
+    markAsDelete(getSelectedPod(FOREIGN_POD));
+    SystemClockTestSupport.increment(DELETION_GRACE_PERIOD_SECONDS + 1);
+
+    processing.checkStuckPods(NS);
+
+    assertThat(getSelectedPod(FOREIGN_POD), notNullValue());
   }
 
   private V1Pod getSelectedPod(String name) {

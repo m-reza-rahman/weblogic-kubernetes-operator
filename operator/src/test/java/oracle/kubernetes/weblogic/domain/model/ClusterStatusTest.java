@@ -3,11 +3,14 @@
 
 package oracle.kubernetes.weblogic.domain.model;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.meterware.simplestub.Memento;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -22,6 +25,11 @@ class ClusterStatusTest {
   static final ClusterStatus cluster10 = new ClusterStatus().withClusterName("cluster10");
   static final ClusterStatus nullCluster = new ClusterStatus();
   private final List<Memento> mementos = new ArrayList<>();
+
+  @BeforeEach
+  void setUp() throws Exception {
+    mementos.add(SystemClockTestSupport.installClock());
+  }
 
   @AfterEach
   void tearDown() {
@@ -66,6 +74,22 @@ class ClusterStatusTest {
         nullCluster.compareTo(cluster1), lessThan(0));
     assertThat("ClusterStatus for cluster1 should be ordered after ClusterStatus without cluster name",
         cluster1.compareTo(nullCluster), greaterThan(0));
+  }
+
+  @Test
+  void verifyAdd_duplicateCondition_hasOneEntry() {
+    ClusterCondition condition = new ClusterCondition(ClusterConditionType.AVAILABLE)
+        .withStatus(ClusterCondition.FALSE);
+    final OffsetDateTime initialTime = condition.getLastTransitionTime();
+    SystemClockTestSupport.increment();
+    ClusterCondition newCondition = new ClusterCondition(ClusterConditionType.AVAILABLE)
+        .withStatus(ClusterCondition.FALSE);
+    cluster1.addCondition(condition);
+    cluster1.addCondition(newCondition);
+
+    assertThat(cluster1.getConditions().size(), equalTo(1));
+    assertThat(cluster1.getConditions().get(0), equalTo(condition));
+    assertThat(cluster1.getConditions().get(0).getLastTransitionTime(), equalTo(initialTime));
   }
 
   @Test

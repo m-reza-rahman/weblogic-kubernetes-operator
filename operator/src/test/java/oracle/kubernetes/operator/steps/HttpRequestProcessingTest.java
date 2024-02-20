@@ -16,6 +16,7 @@ import oracle.kubernetes.operator.http.client.HttpResponseStub;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.utils.SystemClock;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +45,7 @@ class HttpRequestProcessingTest {
   @BeforeEach
   void setUp() throws NoSuchFieldException {
     mementos.add(httpSupport.install());
+    mementos.add(SystemClockTestSupport.installClock());
 
     HttpRequestProcessing.clearCookies();
     packet.put(AUTHORIZATION_SOURCE, new AuthorizationSourceStub());
@@ -102,6 +104,26 @@ class HttpRequestProcessingTest {
     cacheSessionCookie(HOST1_URL_STRING1, "4567");
 
     assertThat(createGetRequest(HOST1_URL_STRING2).headers().allValues("Cookie"), contains("SESSION=4567"));
+  }
+
+  @Test
+  void afterOneHourWithNoAccess_clearCookie() {
+    cacheSessionCookie(HOST1_URL_STRING1, "1234");
+
+    SystemClockTestSupport.setCurrentTime(expirationTime);
+
+    assertThat(createGetRequest(HOST1_URL_STRING1).headers().allValues("Cookie"), empty());
+  }
+
+  @Test
+  void intermediateAccesses_delayExpiration() {
+    cacheSessionCookie(HOST1_URL_STRING1, "1234");
+    SystemClockTestSupport.increment(SECONDS_PER_HOUR / 2);
+    createGetRequest(HOST1_URL_STRING1);
+
+    SystemClockTestSupport.setCurrentTime(expirationTime);
+
+    assertThat(createGetRequest(HOST1_URL_STRING2).headers().allValues("Cookie"), contains("SESSION=1234"));
   }
 
   private HttpRequest createGetRequest(String url) {
