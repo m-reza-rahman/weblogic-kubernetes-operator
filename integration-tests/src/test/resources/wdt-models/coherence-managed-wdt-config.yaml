@@ -4,9 +4,11 @@
 domainInfo:
     AdminUserName: '@@PROP:AdminUserName@@'
     AdminPassword: '@@PROP:AdminPassword@@'
-    ServerStartMode: 'prod'
 topology:
     AdminServerName: 'admin-server'
+    SecurityConfiguration:
+      SecureMode:
+        SecureModeEnabled: false  
     Log:
         FileName: domain1.log
     Cluster:
