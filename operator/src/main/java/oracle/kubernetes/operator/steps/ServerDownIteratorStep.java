@@ -22,6 +22,7 @@ import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo.ServerShutdownInfo;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -65,8 +66,8 @@ public class ServerDownIteratorStep extends Step {
     }
 
     @Nonnull
-    private List<StepAndPacket> createShutdownDetails() {
-      List<StepAndPacket> shutdownDetails =
+    private List<Fiber.StepAndPacket> createShutdownDetails() {
+      List<Fiber.StepAndPacket> shutdownDetails =
               this.serverShutdownInfos.stream()
                       .filter(ssi -> !isServerInCluster(ssi))
                       .map(ssi -> createManagedServerDownDetails(packet, ssi)).collect(Collectors.toList());
@@ -80,11 +81,11 @@ public class ServerDownIteratorStep extends Step {
       return ssi.getClusterName() != null;
     }
 
-    private StepAndPacket createManagedServerDownDetails(Packet packet, ServerShutdownInfo ssi) {
+    private Fiber.StepAndPacket createManagedServerDownDetails(Packet packet, ServerShutdownInfo ssi) {
       if (ssi.isServiceOnly()) {
-        return new StepAndPacket(createServiceStep(ssi), createPacketForServer(packet, ssi));
+        return new Fiber.StepAndPacket(createServiceStep(ssi), createPacketForServer(packet, ssi));
       } else {
-        return new StepAndPacket(new ServerDownStep(ssi.getName(), null), createPacketForServer(packet, ssi));
+        return new Fiber.StepAndPacket(new ServerDownStep(ssi.getName(), null), createPacketForServer(packet, ssi));
       }
     }
 
@@ -120,13 +121,13 @@ public class ServerDownIteratorStep extends Step {
     }
 
     @Nonnull
-    private List<StepAndPacket> createShutdownWaiters() {
+    private List<Fiber.StepAndPacket> createShutdownWaiters() {
       return serverShutdownInfos.stream().map(this::createServerDownWaiter).toList();
     }
 
     @Nonnull
-    private StepAndPacket createServerDownWaiter(ServerShutdownInfo ssi) {
-      return new StepAndPacket(createWaitSteps(ssi), createPacketForServer(packet, ssi));
+    private Fiber.StepAndPacket createServerDownWaiter(ServerShutdownInfo ssi) {
+      return new Fiber.StepAndPacket(createWaitSteps(ssi), createPacketForServer(packet, ssi));
     }
 
     @Nullable
@@ -156,7 +157,7 @@ public class ServerDownIteratorStep extends Step {
 
   private static class ShutdownClusteredServersStepFactory {
 
-    private final Queue<StepAndPacket> serversToShutdown = new ConcurrentLinkedQueue<>();
+    private final Queue<Fiber.StepAndPacket> serversToShutdown = new ConcurrentLinkedQueue<>();
     private final int maxConcurrency;
     private final int replicaCount;
 
@@ -165,15 +166,15 @@ public class ServerDownIteratorStep extends Step {
       this.replicaCount = replicaCount;
     }
 
-    void add(StepAndPacket serverToShutdown) {
+    void add(Fiber.StepAndPacket serverToShutdown) {
       serversToShutdown.add(serverToShutdown);
     }
 
-    Collection<StepAndPacket> getServerShutdownStepAndPackets(DomainPresenceInfo info) {
+    Collection<Fiber.StepAndPacket> getServerShutdownStepAndPackets(DomainPresenceInfo info) {
       if ((maxConcurrency == 0) || (replicaCount == 0) || info.getDomain().isShuttingDown()) {
         return serversToShutdown;
       }
-      ArrayList<StepAndPacket> steps = new ArrayList<>(maxConcurrency);
+      ArrayList<Fiber.StepAndPacket> steps = new ArrayList<>(maxConcurrency);
       IntStream.range(0, maxConcurrency)
               .forEach(i -> steps.add(ShutdownClusteredServersStep.createStepAndPacket(serversToShutdown)));
       return steps;
@@ -181,9 +182,9 @@ public class ServerDownIteratorStep extends Step {
   }
 
   static class RunInParallelStep extends Step {
-    final Collection<StepAndPacket> shutdownDetails;
+    final Collection<Fiber.StepAndPacket> shutdownDetails;
 
-    RunInParallelStep(Collection<StepAndPacket> shutdownDetails) {
+    RunInParallelStep(Collection<Fiber.StepAndPacket> shutdownDetails) {
       this.shutdownDetails = shutdownDetails;
     }
 
@@ -199,13 +200,13 @@ public class ServerDownIteratorStep extends Step {
 
   static class ShutdownClusteredServersStep extends Step {
 
-    private final Queue<StepAndPacket> serversToShutdown;
+    private final Queue<Fiber.StepAndPacket> serversToShutdown;
 
-    static StepAndPacket createStepAndPacket(Queue<StepAndPacket> serversToShutdown) {
-      return new StepAndPacket(new ShutdownClusteredServersStep(serversToShutdown), null);
+    static Fiber.StepAndPacket createStepAndPacket(Queue<Fiber.StepAndPacket> serversToShutdown) {
+      return new Fiber.StepAndPacket(new ShutdownClusteredServersStep(serversToShutdown), null);
     }
 
-    ShutdownClusteredServersStep(Queue<StepAndPacket> serversToShutdown) {
+    ShutdownClusteredServersStep(Queue<Fiber.StepAndPacket> serversToShutdown) {
       super(null);
       this.serversToShutdown = serversToShutdown;
     }
@@ -216,7 +217,7 @@ public class ServerDownIteratorStep extends Step {
       if (serversToShutdown.isEmpty()) {
         return doNext(packet);
       } else {
-        Collection<StepAndPacket> servers = Collections.singletonList(serversToShutdown.poll());
+        Collection<Fiber.StepAndPacket> servers = Collections.singletonList(serversToShutdown.poll());
         return doForkJoin(this, packet, servers);
       }
     }

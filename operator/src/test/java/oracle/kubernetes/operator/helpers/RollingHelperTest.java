@@ -36,7 +36,7 @@ import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-import oracle.kubernetes.operator.work.Step.StepAndPacket;
+import oracle.kubernetes.operator.work.Fiber.StepAndPacket;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
@@ -140,11 +140,11 @@ class RollingHelperTest {
     return new DomainPresenceInfo(domain);
   }
 
-  private Step.StepAndPacket createRollingStepAndPacket(String serverName) {
+  private StepAndPacket createRollingStepAndPacket(String serverName) {
     return createRollingStepAndPacket(getServerPod(serverName), serverName);
   }
 
-  private Step.StepAndPacket createRollingStepAndPacket(V1Pod serverPod, String serverName) {
+  private StepAndPacket createRollingStepAndPacket(V1Pod serverPod, String serverName) {
     Packet packet = testSupport.getPacket().copy();
     Optional.ofNullable(serverName)
           .filter(this::isClustered)
@@ -153,7 +153,7 @@ class RollingHelperTest {
     packet.put(ProcessingConstants.SERVER_NAME, serverName);
 
     packet.put(SERVER_SCAN, getServerConfig(serverName));
-    return new Step.StepAndPacket(createCyclePodStep(serverPod, packet), packet);
+    return new StepAndPacket(createCyclePodStep(serverPod, packet), packet);
   }
 
   boolean isClustered(String serverName) {
@@ -319,7 +319,7 @@ class RollingHelperTest {
   }
 
   @SuppressWarnings("unchecked")
-  private Map<String, Step.StepAndPacket> serversMarkedForRoll(Packet packet) {
+  private Map<String, StepAndPacket> serversMarkedForRoll(Packet packet) {
     return DomainPresenceInfo.fromPacket(packet)
         .map(DomainPresenceInfo::getServersToRoll)
         .orElse(Collections.EMPTY_MAP);

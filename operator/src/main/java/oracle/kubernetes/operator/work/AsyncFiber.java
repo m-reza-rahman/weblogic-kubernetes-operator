@@ -10,8 +10,9 @@ public interface AsyncFiber {
 
   /**
    * Creates a child Fiber. If this Fiber is cancelled, so will all the children.
-   *
+   * @param completionCallback The callback to be invoked when the processing is finished and the
+   *     final packet is available.
    * @return a new child fiber
    */
-  Fiber createChildFiber();
+  Fiber createChildFiber(Fiber.CompletionCallback completionCallback);
 }

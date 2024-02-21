@@ -36,16 +36,17 @@ public class Engine {
   /**
    * Creates a new fiber in a suspended state.
    *
-   * <p>To start the returned fiber, call {@link Fiber#start(Step,Packet,Fiber.CompletionCallback)}.
+   * <p>To start the returned fiber, call {@link Fiber#start(Step,Packet)}.
    * It will start executing the given {@link Step} with the given {@link Packet}.
-   *
+   * @param completionCallback The callback to be invoked when the processing is finished and the
+   *     final packet is available.
    * @return new Fiber
    */
-  public Fiber createFiber() {
-    return new Fiber(this);
+  public Fiber createFiber(Fiber.CompletionCallback completionCallback) {
+    return new Fiber(completionCallback, this);
   }
 
-  Fiber createChildFiber(Fiber parent) {
-    return new Fiber(this, parent);
+  Fiber createChildFiber(Fiber.CompletionCallback completionCallback, Fiber parent) {
+    return new Fiber(completionCallback, this, parent);
   }
 }

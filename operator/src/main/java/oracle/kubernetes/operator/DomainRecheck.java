@@ -30,6 +30,7 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -284,11 +285,11 @@ class DomainRecheck {
       if (domainNamespaces == null) {
         return doNext(packet);
       } else {
-        Collection<StepAndPacket> startDetails = new ArrayList<>();
+        Collection<Fiber.StepAndPacket> startDetails = new ArrayList<>();
 
         for (String ns : domainNamespaces) {
           try (ThreadLoggingContext ignored = setThreadContext().namespace(ns)) {
-            startDetails.add(new StepAndPacket(stepFactory.apply(ns), packet.copy()));
+            startDetails.add(new Fiber.StepAndPacket(stepFactory.apply(ns), packet.copy()));
           }
         }
         return doForkJoin(getNext(), packet, startDetails);

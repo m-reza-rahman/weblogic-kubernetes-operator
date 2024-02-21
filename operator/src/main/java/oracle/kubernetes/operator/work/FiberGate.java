@@ -31,7 +31,7 @@ public class FiberGate {
    */
   public FiberGate(Engine engine) {
     this.engine = engine;
-    this.placeholder = engine.createFiber();
+    this.placeholder = engine.createFiber(null);
   }
 
   /**
@@ -103,8 +103,7 @@ public class FiberGate {
 
     private final String domainUid;
     private final Fiber fiber;
-    private final CompletionCallback gateCallback;
-    private Fiber old;
+    private final Fiber old;
     private final Step steps;
     private final Packet packet;
 
@@ -114,13 +113,12 @@ public class FiberGate {
       this.steps = steps;
       this.packet = packet;
 
-      fiber = engine.createFiber();
-      gateCallback = new FiberGateCompletionCallback(callback, domainUid, fiber);
+      fiber = engine.createFiber(new FiberGateCompletionCallback(callback, domainUid));
     }
 
     void invoke() {
       if (isAllowed()) {
-        fiber.start(steps, packet, gateCallback);
+        fiber.start(steps, packet);
       }
     }
 
@@ -152,12 +150,10 @@ public class FiberGate {
 
     private final CompletionCallback callback;
     private final String domainUid;
-    private final Fiber fiber;
 
-    public FiberGateCompletionCallback(CompletionCallback callback, String domainUid, Fiber fiber) {
+    public FiberGateCompletionCallback(CompletionCallback callback, String domainUid) {
       this.callback = callback;
       this.domainUid = domainUid;
-      this.fiber = fiber;
     }
 
     @Override
@@ -165,7 +161,7 @@ public class FiberGate {
       try {
         callback.onCompletion(packet);
       } finally {
-        gateMap.remove(domainUid, fiber);
+        gateMap.remove(domainUid, packet.getFiber());
       }
     }
 
@@ -174,7 +170,7 @@ public class FiberGate {
       try {
         callback.onThrowable(packet, throwable);
       } finally {
-        gateMap.remove(domainUid, fiber);
+        gateMap.remove(domainUid, packet.getFiber());
       }
     }
   }

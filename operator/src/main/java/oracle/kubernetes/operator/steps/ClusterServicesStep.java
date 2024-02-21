@@ -12,6 +12,7 @@ import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -23,7 +24,7 @@ public class ClusterServicesStep extends Step {
 
   @Override
   public Void apply(Packet packet) {
-    Collection<StepAndPacket> startDetails = new ArrayList<>();
+    Collection<Fiber.StepAndPacket> startDetails = new ArrayList<>();
 
     // Add cluster services
     WlsDomainConfig config = (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
@@ -33,7 +34,7 @@ public class ClusterServicesStep extends Step {
         WlsClusterConfig clusterConfig = entry.getValue();
         p.put(ProcessingConstants.CLUSTER_NAME, clusterConfig.getClusterName());
 
-        startDetails.add(new StepAndPacket(PodDisruptionBudgetHelper
+        startDetails.add(new Fiber.StepAndPacket(PodDisruptionBudgetHelper
                 .createPodDisruptionBudgetForClusterStep(ServiceHelper.createForClusterStep(null)), p));
       }
     }

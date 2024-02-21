@@ -42,6 +42,7 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -598,7 +599,7 @@ public class ConfigMapHelper {
 
       @Override
       public Void apply(Packet packet) {
-        Collection<StepAndPacket> startDetails = splitter.split(data).stream()
+        Collection<Fiber.StepAndPacket> startDetails = splitter.split(data).stream()
               .map(c -> c.createStepAndPacket(packet))
               .toList();
         packet.put(NUM_CONFIG_MAPS, Integer.toString(startDetails.size()));
@@ -715,8 +716,8 @@ public class ConfigMapHelper {
       return key.startsWith(SIT_CONFIG_FILE_PREFIX);
     }
 
-    public Step.StepAndPacket createStepAndPacket(Packet packet) {
-      return new Step.StepAndPacket(verifyConfigMap(null), packet.copy());
+    public Fiber.StepAndPacket createStepAndPacket(Packet packet) {
+      return new Fiber.StepAndPacket(verifyConfigMap(null), packet.copy());
     }
   }
 
@@ -768,9 +769,9 @@ public class ConfigMapHelper {
       if (configMapNames.isEmpty()) {
         return doNext(packet);
       } else {
-        Collection<StepAndPacket> startDetails = new ArrayList<>();
+        Collection<Fiber.StepAndPacket> startDetails = new ArrayList<>();
         for (String configMapName : configMapNames) {
-          startDetails.add(new StepAndPacket(
+          startDetails.add(new Fiber.StepAndPacket(
                 new DeleteIntrospectorConfigMapStep(domainUid, namespace, configMapName), packet));
         }
         return doForkJoin(getNext(), packet, startDetails);

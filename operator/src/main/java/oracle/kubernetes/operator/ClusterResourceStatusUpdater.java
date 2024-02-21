@@ -23,6 +23,7 @@ import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.ClusterCondition;
@@ -82,9 +83,9 @@ public class ClusterResourceStatusUpdater {
 
     private static Step createUpdateClusterResourceStatusSteps(Packet packet,
                                                                Collection<ClusterResource> clusterResources) {
-      List<StepAndPacket> result = clusterResources.stream()
+      List<Fiber.StepAndPacket> result = clusterResources.stream()
           .filter(res -> createContext(packet, res).isClusterResourceStatusChanged())
-          .map(res -> new StepAndPacket(createContext(packet, res).createReplaceClusterResourceStatusStep(), packet))
+          .map(res -> new Fiber.StepAndPacket(createContext(packet, res).createReplaceClusterResourceStatusStep(), packet))
           .toList();
       return result.isEmpty() ? null : new RunInParallelStep(result);
     }
@@ -138,9 +139,9 @@ public class ClusterResourceStatusUpdater {
   }
 
   private static class RunInParallelStep extends Step {
-    final Collection<StepAndPacket> statusUpdateSteps;
+    final Collection<Fiber.StepAndPacket> statusUpdateSteps;
 
-    RunInParallelStep(Collection<StepAndPacket> statusUpdateSteps) {
+    RunInParallelStep(Collection<Fiber.StepAndPacket> statusUpdateSteps) {
       this.statusUpdateSteps = statusUpdateSteps;
     }
 

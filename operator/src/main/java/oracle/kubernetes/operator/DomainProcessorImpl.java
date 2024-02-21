@@ -917,8 +917,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private static void logThrowable(Throwable throwable) {
-    if (throwable instanceof Step.MultiThrowable) {
-      for (Throwable t : ((Step.MultiThrowable) throwable).getThrowables()) {
+    if (throwable instanceof Fiber.MultiThrowable) {
+      for (Throwable t : ((Fiber.MultiThrowable) throwable).getThrowables()) {
         logThrowable(t);
       }
     } else {

@@ -34,7 +34,7 @@ class FiberTest {
   private final FiberTestSupport testSupport = new FiberTestSupport();
   private final Packet packet = new Packet();
   private final CompletionCallbackImpl completionCallback = new CompletionCallbackImpl();
-  private final Fiber fiber = testSupport.getEngine().createFiber();
+  private final Fiber fiber = testSupport.getEngine().createFiber(completionCallback);
 
   private final List<Step> stepList = new ArrayList<>();
   private final List<Throwable> throwableList = new ArrayList<>();
@@ -71,7 +71,7 @@ class FiberTest {
   }
 
   private void runSteps(Step... steps) {
-    fiber.start(Step.chain(steps), packet, completionCallback);
+    fiber.start(Step.chain(steps), packet);
   }
 
   @Test
@@ -173,9 +173,9 @@ class FiberTest {
     }
 
     @Nonnull
-    private List<StepAndPacket> createStepAndPacketList(Packet packet) {
+    private List<Fiber.StepAndPacket> createStepAndPacketList(Packet packet) {
       return Arrays.stream(childSteps)
-            .map(s -> new StepAndPacket(s, packet.copy()))
+            .map(s -> new Fiber.StepAndPacket(s, packet.copy()))
             .collect(Collectors.toList());
     }
   }

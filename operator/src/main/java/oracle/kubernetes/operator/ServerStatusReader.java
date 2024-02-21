@@ -33,6 +33,7 @@ import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.KubernetesExec;
 import oracle.kubernetes.operator.utils.KubernetesExecFactory;
 import oracle.kubernetes.operator.utils.KubernetesExecFactoryImpl;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.OperatorUtils;
@@ -90,7 +91,7 @@ public class ServerStatusReader {
       AtomicInteger remainingServerHealthToRead = new AtomicInteger();
       packet.put(ProcessingConstants.REMAINING_SERVERS_HEALTH_TO_READ, remainingServerHealthToRead);
 
-      Collection<StepAndPacket> startDetails =
+      Collection<Fiber.StepAndPacket> startDetails =
           info.getServerPods()
               .map(pod -> createStatusReaderStep(packet, pod))
               .toList();
@@ -115,8 +116,8 @@ public class ServerStatusReader {
       return new ServerStatusReaderStep(serverName, timeoutSeconds, new ServerHealthStep(serverName, pod, null));
     }
 
-    private StepAndPacket createStatusReaderStep(Packet packet, V1Pod pod) {
-      return new StepAndPacket(
+    private Fiber.StepAndPacket createStatusReaderStep(Packet packet, V1Pod pod) {
+      return new Fiber.StepAndPacket(
           createServerStatusReaderStep(pod, PodHelper.getPodServerName(pod), timeoutSeconds),
           packet.copy());
     }

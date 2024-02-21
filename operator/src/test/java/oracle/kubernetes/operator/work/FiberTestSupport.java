@@ -185,8 +185,8 @@ public class FiberTestSupport {
    * @param step the first step to run
    */
   public Packet runSteps(Packet packet, Step step) {
-    Fiber fiber = engine.createFiber();
-    fiber.start(step, packet, completionCallback);
+    Fiber fiber = engine.createFiber(completionCallback);
+    fiber.start(step, packet);
 
     return packet;
   }

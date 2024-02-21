@@ -208,11 +208,10 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
   // if it is now ready
   private void checkUpdatedResource(Packet packet, AsyncFiber fiber, Callback callback) {
     fiber
-        .createChildFiber()
+        .createChildFiber(null)
         .start(
             createReadAndIfReadyCheckStep(callback),
-            packet.copy(),
-            null);
+            packet.copy());
   }
 
   Step createReadAndIfReadyCheckStep(Callback callback) {

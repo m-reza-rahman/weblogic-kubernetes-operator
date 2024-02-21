@@ -29,6 +29,7 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.tuning.TuningParameters;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.apache.commons.lang3.ArrayUtils;
@@ -272,20 +273,20 @@ public class Namespaces {
     public Void apply(Packet packet) {
       NamespaceValidationContext validationContext = new NamespaceValidationContext(packet, domainNamespaces);
       getNonNullConfiguredDomainNamespaces().forEach(validationContext::validateConfiguredNamespace);
-      List<StepAndPacket> nsStopEventSteps = getCreateNSStopEventSteps(packet, validationContext);
+      List<Fiber.StepAndPacket> nsStopEventSteps = getCreateNSStopEventSteps(packet, validationContext);
       stopRemovedNamespaces(validationContext);
       return doNext(Step.chain(createNamespaceWatchStopEventsStep(nsStopEventSteps), getNext()), packet);
     }
 
-    private List<StepAndPacket> getCreateNSStopEventSteps(Packet packet, NamespaceValidationContext validationContext) {
+    private List<Fiber.StepAndPacket> getCreateNSStopEventSteps(Packet packet, NamespaceValidationContext validationContext) {
       return domainNamespaces.getNamespaces().stream()
           .filter(validationContext::isNotManaged)
           .map(n -> createNSStopEventDetails(packet, n)).toList();
     }
 
-    private StepAndPacket createNSStopEventDetails(Packet packet, String namespace) {
+    private Fiber.StepAndPacket createNSStopEventDetails(Packet packet, String namespace) {
       LOGGER.info(MessageKeys.END_MANAGING_NAMESPACE, namespace);
-      return new StepAndPacket(getSteps(namespace), packet.copy());
+      return new Fiber.StepAndPacket(getSteps(namespace), packet.copy());
     }
 
     private Step getSteps(String ns) {
@@ -298,14 +299,14 @@ public class Namespaces {
       return Step.chain(steps.toArray(new Step[0]));
     }
 
-    private Step createNamespaceWatchStopEventsStep(List<StepAndPacket> nsStopEventDetails) {
+    private Step createNamespaceWatchStopEventsStep(List<Fiber.StepAndPacket> nsStopEventDetails) {
       return new NamespaceWatchStopEventsStep(nsStopEventDetails);
     }
 
     static class NamespaceWatchStopEventsStep extends Step {
-      final List<StepAndPacket> nsStopEventDetails;
+      final List<Fiber.StepAndPacket> nsStopEventDetails;
 
-      NamespaceWatchStopEventsStep(List<StepAndPacket> nsStopEventDetails) {
+      NamespaceWatchStopEventsStep(List<Fiber.StepAndPacket> nsStopEventDetails) {
         this.nsStopEventDetails = nsStopEventDetails;
       }
 

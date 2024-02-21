@@ -39,6 +39,7 @@ import oracle.kubernetes.operator.processing.EffectiveServerSpec;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -616,7 +617,7 @@ public class PodHelper {
         return doNext(packet);
       }
 
-      private Map<String, Step.StepAndPacket> serversMarkedForRoll(Packet packet) {
+      private Map<String, Fiber.StepAndPacket> serversMarkedForRoll(Packet packet) {
         return DomainPresenceInfo.fromPacket(packet)
             .map(DomainPresenceInfo::getServersToRoll)
             .orElse(Collections.emptyMap());
@@ -658,13 +659,13 @@ public class PodHelper {
     }
 
 
-    private Step.StepAndPacket createRollRequest(Step deferredStep) {
-      return new Step.StepAndPacket(deferredStep, packet.copy());
+    private Fiber.StepAndPacket createRollRequest(Step deferredStep) {
+      return new Fiber.StepAndPacket(deferredStep, packet.copy());
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Step.StepAndPacket> getServersToRoll() {
-      return (Map<String, Step.StepAndPacket>) packet.get(SERVERS_TO_ROLL);
+    private Map<String, Fiber.StepAndPacket> getServersToRoll() {
+      return (Map<String, Fiber.StepAndPacket>) packet.get(SERVERS_TO_ROLL);
     }
 
     @Override

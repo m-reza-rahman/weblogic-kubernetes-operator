@@ -27,6 +27,7 @@ import oracle.kubernetes.operator.helpers.SecretHelper;
 import oracle.kubernetes.operator.http.client.HttpResponseStep;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.wlsconfig.PortDetails;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -352,11 +353,11 @@ public class MonitoringExporterSteps {
       if (serverNames == null) {
         return doNext(packet);
       } else {
-        Collection<StepAndPacket> startDetails = new ArrayList<>();
+        Collection<Fiber.StepAndPacket> startDetails = new ArrayList<>();
 
         try (ThreadLoggingContext ignored = ThreadLoggingContext.setThreadContext().namespace(getNamespace(packet))) {
           for (String serverName : serverNames) {
-            startDetails.add(new StepAndPacket(stepFactory.apply(serverName), packet.copy()));
+            startDetails.add(new Fiber.StepAndPacket(stepFactory.apply(serverName), packet.copy()));
           }
         }
         return doForkJoin(getNext(), packet, startDetails);

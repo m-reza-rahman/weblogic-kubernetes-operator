@@ -23,6 +23,7 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
@@ -107,10 +108,10 @@ public class StuckPodProcessing {
       if (stuckPodList.isEmpty()) {
         return doNext(packet);
       } else {
-        Collection<StepAndPacket> startDetails = new ArrayList<>();
+        Collection<Fiber.StepAndPacket> startDetails = new ArrayList<>();
 
         for (V1Pod pod : stuckPodList) {
-          startDetails.add(new StepAndPacket(createForcedDeletePodStep(pod), packet.copy()));
+          startDetails.add(new Fiber.StepAndPacket(createForcedDeletePodStep(pod), packet.copy()));
         }
         return doForkJoin(readExistingNamespaces(), packet, startDetails);
       }

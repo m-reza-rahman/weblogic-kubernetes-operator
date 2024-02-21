@@ -3,18 +3,13 @@
 
 package oracle.kubernetes.operator.work;
 
-import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-
-import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 
 /** Individual step in a processing flow. */
 public abstract class Step {
@@ -268,79 +263,8 @@ public abstract class Step {
    * @param startDetails Pairs of step and packet to use when starting child fibers
    */
   protected Void doForkJoin(
-      Step step, Packet packet, Collection<StepAndPacket> startDetails) {
-    final Semaphore doneSignal = new Semaphore(0);
-    final AtomicInteger count = new AtomicInteger(startDetails.size());
-    final List<Throwable> throwables = new ArrayList<>();
-    CompletionCallback callback = new CompletionCallback() {
-      @Override
-      public void onThrowable(Packet p, Throwable throwable) {
-        synchronized (throwables) {
-          throwables.add(throwable);
-        }
-        mark();
-      }
-
-      @Override
-      public void onCompletion(Packet p) {
-        mark();
-      }
-
-      public void mark() {
-        int current = count.decrementAndGet();
-        if (current <= 0) {
-          doneSignal.release();
-        }
-      }
-    };
-
-    // start forked fibers
-    Fiber fiber = packet.getFiber();
-    for (StepAndPacket sp : startDetails) {
-      fiber.createChildFiber().start(sp.step, Optional.ofNullable(sp.packet).orElse(packet.copy()), callback);
-    }
-
-    try {
-      doneSignal.acquire();
-
-      if (throwables.isEmpty()) {
-        if (isCancelled(packet)) {
-          return null;
-        }
-        return step.apply(packet);
-      } else if (throwables.size() == 1) {
-        Throwable t = throwables.get(0);
-        return doTerminate(t, packet);
-      } else {
-        return doTerminate(new MultiThrowable(throwables), packet);
-      }
-    } catch (InterruptedException ignore) {
-      Thread.currentThread().interrupt();
-    }
-    return doEnd(packet);
-  }
-
-  /** Multi-exception. */
-  public static class MultiThrowable extends RuntimeException {
-    @Serial
-    private static final long serialVersionUID  = 1L;
-    private final transient List<Throwable> throwables;
-
-    private MultiThrowable(List<Throwable> throwables) {
-      super(throwables.get(0));
-      this.throwables = throwables;
-    }
-
-    /**
-     * The multiple exceptions wrapped by this exception.
-     *
-     * @return Multiple exceptions
-     */
-    public List<Throwable> getThrowables() {
-      return throwables;
-    }
-  }
-
-  public record StepAndPacket(Step step, Packet packet) {
+      Step step, Packet packet, Collection<Fiber.StepAndPacket> startDetails) {
+    packet.getFiber().forkJoin(step, packet, startDetails);
+    return null;
   }
 }

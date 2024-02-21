@@ -3,13 +3,18 @@
 
 package oracle.kubernetes.operator.work;
 
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
+
+import static oracle.kubernetes.operator.work.Step.THROWABLE;
 
 /**
  * Represents the execution of one processing flow.
@@ -19,7 +24,8 @@ public final class Fiber implements AsyncFiber {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private static final int NOT_COMPLETE = 0;
   private static final int DONE = 1;
-  private static final int CANCELLED = 2;
+  private static final int SUSPENDED = 2;
+  private static final int CANCELLED = 3;
   private static final ThreadLocal<Fiber> CURRENT_FIBER = new ThreadLocal<>();
   /** Used to allocate unique number for each fiber. */
   private static final AtomicInteger iotaGen = new AtomicInteger();
@@ -28,6 +34,7 @@ public final class Fiber implements AsyncFiber {
   private final Fiber parent;
   private final int id;
   private final AtomicInteger status = new AtomicInteger(NOT_COMPLETE);
+  private final CompletionCallback completionCallback;
   private Packet packet;
   /** The next action for this Fiber. */
   private Collection<Fiber> children = null;
@@ -37,11 +44,21 @@ public final class Fiber implements AsyncFiber {
     this(null);
   }
 
-  Fiber(Engine engine) {
-    this(engine, null);
+  /**
+   * Create Fiber with a completion callback.
+   * @param completionCallback The callback to be invoked when the processing is finished and the
+   *     final packet is available.
+   */
+  public Fiber(CompletionCallback completionCallback) {
+    this(completionCallback, null);
   }
 
-  Fiber(Engine engine, Fiber parent) {
+  Fiber(CompletionCallback completionCallback, Engine engine) {
+    this(completionCallback, engine, null);
+  }
+
+  Fiber(CompletionCallback completionCallback, Engine engine, Fiber parent) {
+    this.completionCallback = completionCallback;
     this.owner = engine;
     this.parent = parent;
     id = (parent == null) ? iotaGen.incrementAndGet() : (parent.children.size() + 1);
@@ -61,10 +78,8 @@ public final class Fiber implements AsyncFiber {
    *
    * @param stepline The first step of the stepline that will act on the packet.
    * @param packet The packet to be passed to {@code Step#apply(Packet)}.
-   * @param completionCallback The callback to be invoked when the processing is finished and the
-   *     final packet is available.
    */
-  public void start(Step stepline, Packet packet, CompletionCallback completionCallback) {
+  public void start(Step stepline, Packet packet) {
     if (status.get() == NOT_COMPLETE) {
       LOGGER.finer("{0} started", getName());
       packet.setFiber(this);
@@ -76,7 +91,7 @@ public final class Fiber implements AsyncFiber {
           final Fiber oldFiber = CURRENT_FIBER.get();
           CURRENT_FIBER.set(this);
           try {
-            doRun(stepline, packet, completionCallback);
+            doRun(stepline, packet);
           } finally {
             if (oldFiber == null) {
               CURRENT_FIBER.remove();
@@ -89,14 +104,20 @@ public final class Fiber implements AsyncFiber {
     }
   }
 
-  private void doRun(Step stepline, Packet packet, CompletionCallback completionCallback) {
+  private void doRun(Step stepline, Packet packet) {
     this.packet = packet;
     try {
       stepline.apply(packet);
       if (status.compareAndSet(NOT_COMPLETE, DONE) && completionCallback != null) {
-        completionCallback.onCompletion(packet);
+        Throwable t = (Throwable) packet.get(THROWABLE);
+        if (t != null) {
+          completionCallback.onThrowable(packet, t);
+        } else {
+          completionCallback.onCompletion(packet);
+        }
       }
     } catch (Throwable t) {
+      status.set(DONE);
       if (completionCallback != null) {
         completionCallback.onThrowable(packet, t);
       }
@@ -104,18 +125,59 @@ public final class Fiber implements AsyncFiber {
   }
 
   void delay(Step stepline, Packet packet, long delay, TimeUnit unit) {
-    if (!isCancelled()) {
+    if (status.compareAndSet(NOT_COMPLETE, SUSPENDED)) {
       owner.getExecutor().schedule(() -> {
-        if (!isCancelled()) {
+        if (status.compareAndSet(SUSPENDED, NOT_COMPLETE)) {
           stepline.apply(packet);
         }
       }, delay, unit);
     }
   }
 
+  void forkJoin(Step step, Packet packet, Collection<StepAndPacket> startDetails) {
+    final AtomicInteger count = new AtomicInteger(startDetails.size());
+    final List<Throwable> throwables = new ArrayList<>();
+    CompletionCallback callback = new CompletionCallback() {
+      @Override
+      public void onThrowable(Packet p, Throwable throwable) {
+        synchronized (throwables) {
+          throwables.add(throwable);
+        }
+        mark();
+      }
+
+      @Override
+      public void onCompletion(Packet p) {
+        mark();
+      }
+
+      public void mark() {
+        int current = count.decrementAndGet();
+        if (current <= 0) {
+          if (status.compareAndSet(SUSPENDED, NOT_COMPLETE)) {
+            if (throwables.isEmpty()) {
+              step.apply(packet);
+            } else {
+              if (completionCallback != null) {
+                Throwable t = (throwables.size() == 1) ? throwables.get(0) : new MultiThrowable(throwables);
+                completionCallback.onThrowable(packet, t);
+              }
+            }
+          }
+        }
+      }
+    };
+
+    // start forked fibers
+    for (StepAndPacket sp : startDetails) {
+      createChildFiber(callback).start(sp.step, Optional.ofNullable(sp.packet).orElse(packet.copy()));
+    }
+  }
+
   private String getStatus() {
     return switch (status.get()) {
       case NOT_COMPLETE -> "NOT_COMPLETE";
+      case SUSPENDED -> "SUSPENDED";
       case DONE -> "DONE";
       case CANCELLED -> "CANCELLED";
       default -> "UNKNOWN: " + status.get();
@@ -132,12 +194,12 @@ public final class Fiber implements AsyncFiber {
    * @return Child fiber
    */
   @Override
-  public Fiber createChildFiber() {
+  public Fiber createChildFiber(CompletionCallback completionCallback) {
     synchronized (this) {
       if (children == null) {
         children = new ArrayList<>();
       }
-      Fiber child = owner.createChildFiber(this);
+      Fiber child = owner.createChildFiber(completionCallback, this);
 
       children.add(child);
       if (status.get() != NOT_COMPLETE) {
@@ -186,7 +248,7 @@ public final class Fiber implements AsyncFiber {
    */
   public void cancel() {
     // Mark fiber as cancelled, if not already done
-    status.compareAndSet(NOT_COMPLETE, CANCELLED);
+    status.getAndUpdate(state -> state != DONE ? CANCELLED : DONE);
 
     if (LOGGER.isFinerEnabled()) {
       LOGGER.finer("{0} cancelled", getName());
@@ -219,5 +281,29 @@ public final class Fiber implements AsyncFiber {
      * @param throwable The throwable
      */
     void onThrowable(Packet packet, Throwable throwable);
+  }
+
+  public record StepAndPacket(Step step, Packet packet) {
+  }
+
+  /** Multi-exception. */
+  public static class MultiThrowable extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID  = 1L;
+    private final transient List<Throwable> throwables;
+
+    private MultiThrowable(List<Throwable> throwables) {
+      super(throwables.get(0));
+      this.throwables = throwables;
+    }
+
+    /**
+     * The multiple exceptions wrapped by this exception.
+     *
+     * @return Multiple exceptions
+     */
+    public List<Throwable> getThrowables() {
+      return throwables;
+    }
   }
 }

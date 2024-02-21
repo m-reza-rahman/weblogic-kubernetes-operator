@@ -15,6 +15,7 @@ import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.RollingHelper;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -38,8 +39,8 @@ public class ManagedServerUpAfterStep extends Step {
   }
 
   @SuppressWarnings("unchecked")
-  @NotNull Map<String, StepAndPacket> getServersToRoll(Packet packet) {
-    return Optional.ofNullable((Map<String, StepAndPacket>) packet.get(ProcessingConstants.SERVERS_TO_ROLL))
+  @NotNull Map<String, Fiber.StepAndPacket> getServersToRoll(Packet packet) {
+    return Optional.ofNullable((Map<String, Fiber.StepAndPacket>) packet.get(ProcessingConstants.SERVERS_TO_ROLL))
           .orElseGet(Collections::emptyMap);
   }
 

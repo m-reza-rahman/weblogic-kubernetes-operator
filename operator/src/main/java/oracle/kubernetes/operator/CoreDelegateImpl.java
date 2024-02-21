@@ -115,8 +115,8 @@ public class CoreDelegateImpl implements CoreDelegate {
 
   @Override
   public void runStepsInternal(Packet packet, Step firstStep, Runnable completionAction) {
-    Fiber f = engine.createFiber();
-    f.start(firstStep, packet, andThenDo(completionAction));
+    Fiber f = engine.createFiber(andThenDo(completionAction));
+    f.start(firstStep, packet);
   }
 
   private static BaseMain.NullCompletionCallback andThenDo(Runnable completionAction) {
