@@ -78,7 +78,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("olcne-mrg")
 @Tag("kind-parallel")
-@Tag("oke-gate")
 @Tag("oke-arm")
 @Tag("oke-parallelnew")
 class ItRecoveryDomainInPV  {
