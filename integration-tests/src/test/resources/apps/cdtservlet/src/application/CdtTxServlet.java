@@ -120,13 +120,6 @@ public class CdtTxServlet extends HttpServlet {
       System.out.println("Got connection to datasource - " + conn);
       out.println("Got connection to datasource - " + conn);
 
-      try {
-        // drop the table if it exists
-        dropTable(conn, tableName);
-      } catch (SQLException sqle) {
-        sqle.printStackTrace();
-      }
-
       //create a table in the DB
       createTable(conn, tableName);
 
@@ -241,13 +234,36 @@ public class CdtTxServlet extends HttpServlet {
   }
   private void insertData(Connection conn, String tableName) throws SQLException {
     Statement stmt = null;
+
+    DELETE FROM table_name WHERE condition;
+
+    try {
+      int id = 1;
+      String data = "yay! this got in the db table";
+      String deleteSQL = String.format("delete from %s where test_id = '%d'", tableName, id);
+      System.out.println("deleteSQL = " + deleteSQL);
+      stmt = conn.createStatement();
+      stmt.execute(deleteSQL);
+      out.println("Done deleting a row - closing stmt");
+      stmt.close();
+    } catch (SQLException sqle) {
+      System.out.println("Got SQL Exception when deleting a row from table ");
+      sqle.getMessage();
+      throw sqle;
+    } finally {
+      out.println("Done deleting a row - closing stmt");
+      stmt.close();
+    }
+
     try {
       int id = 1;
       String data = "yay! this got in the db table";
       String insertSQL = String.format("insert into %s values ('%d','%s')", tableName, id, data);
+      System.out.println("insertSQL = " + insertSQL);
       out.println("insertSQL = " + insertSQL);
       stmt = conn.createStatement();
-      out.println("Created Statement");
+      System.out.println("Inserted Statement");
+      out.println("Inserted Statement");
       stmt.execute(insertSQL);
     } catch (SQLException sqle) {
       System.out.println("Got SQL Exception when inserting into table ");
