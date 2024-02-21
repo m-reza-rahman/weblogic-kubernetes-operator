@@ -240,7 +240,13 @@ pipeline {
                                 error('KIND_VERSION or KUBE_VERSION were null')
                             }
                             echo "Kind Image = ${_kind_image}"
+                            if (env.JOB_NAME == 'wko-kind-k8sversion') {
+                                currentBuild.description = "${GIT_BRANCH} ${KUBE_VERSION}"
+                            } else {
+                                currentBuild.description = "${GIT_BRANCH} ${MAVEN_PROFILE_NAME}"
+                            }
                         }
+
                     }
                 }
 
@@ -392,6 +398,8 @@ nodes:
         hostPort: 2480
       - containerPort: 32490
         hostPort: 2490
+      - containerPort: 30511
+        hostPort: 1511
     extraMounts:
       - hostPath: ${pv_root}
         containerPath: ${pv_root}
@@ -430,6 +438,7 @@ EOF
                     }
                     steps {
                         script {
+
                             def res = 0
                             res = sh(script: '''
                                     if [ -z "${IT_TEST}" ] && [ "${MAVEN_PROFILE_NAME}" = "integration-tests" ]; then
@@ -555,6 +564,7 @@ EOF
                         if ! kind delete cluster --name ${kind_name} --kubeconfig "${kubeconfig_file}"; then
                             echo "Failed to delete kind cluster ${kind_name}"
                         fi
+                        sudo chown -R $(whoami) ${WORKSPACE}
                     '''
                 }
             }

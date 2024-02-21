@@ -51,6 +51,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPathRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
@@ -172,10 +173,8 @@ class ItMonitoringExporterMetricsFiltering {
     modelList.add(MODEL_DIR + "/" + JDBC_MODEL_FILE);
     miiImage = MonitoringUtils.createAndVerifyMiiImage(monitoringExporterAppDir, modelList,
         STICKYSESS_APP_NAME, SESSMIGR_APP_NAME, MONEXP_IMAGE_NAME);
-    host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
+    host = formatIPv6Host(K8S_NODEPORT_HOST);
+
     if (!OKD) {
       // install and verify Traefik
       // install Traefik ingress controller for all test cases using Traefik
@@ -520,10 +519,7 @@ class ItMonitoringExporterMetricsFiltering {
           prometheusRegexValue, promHelmValuesFileDir);
       assertNotNull(promHelmParams, " Failed to install prometheus");
       nodeportPrometheus = promHelmParams.getNodePortServer();
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
+      String host = formatIPv6Host(K8S_NODEPORT_HOST);
       hostPortPrometheus = host + ":" + nodeportPrometheus;
 
       if (OKE_CLUSTER_PRIVATEIP) {
@@ -544,11 +540,6 @@ class ItMonitoringExporterMetricsFiltering {
     }
     logger.info("Grafana is running");
     // create ingress rules with non-tls host routing, tls host routing and path routing for Traefik
-    /*
-    createTraefikIngressRoutingRulesForMonitoring(monitoringNS, prometheusReleaseName + "-server",
-        "traefik/traefik-ingress-rules-monitoring.yaml");
-
-     */
 
     createIngressPathRouting(monitoringNS, "/api",
         prometheusReleaseName + "-server", 80, ingressClassName);
@@ -563,17 +554,7 @@ class ItMonitoringExporterMetricsFiltering {
 
     if (traefikHelmParams != null) {
       logger.info("Uninstalling Traefik");
-      /*
-      Path dstFileProm = Paths.get(TestConstants.RESULTS_ROOT,
-          monitoringNS,
-          prometheusReleaseName + "-server",
-          "traefik", "traefik-ingress-rules-monitoring.yaml");
-      deleteTraefikIngressRoutingRules(dstFileProm);
-      Path dstFileDomain = Paths.get(TestConstants.RESULTS_ROOT,
-          domain1Namespace, domain1Uid, "traefik-ingress-rules-exporter.yaml");
-      deleteTraefikIngressRoutingRules(dstFileDomain);
 
-       */
       assertThat(uninstallTraefik(traefikHelmParams))
           .as("Test uninstall traefik returns true")
           .withFailMessage("uninstallTraefik() did not return true")
