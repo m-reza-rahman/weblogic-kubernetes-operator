@@ -31,6 +31,7 @@ import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
@@ -64,6 +65,7 @@ import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
 import io.kubernetes.client.openapi.models.VersionInfo;
+import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -808,6 +810,16 @@ public class KubernetesTestSupport extends FiberTestSupport {
           return new CallContext<RequestBuilder.V1StatusObject>(
               Operation.deleteCollection, getResourceName(apiTypeClass), namespace, null)
               .execute();
+        }
+
+        @Override
+        public Watchable<A> watch(ListOptions listOptions) throws ApiException {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Watchable<A> watch(String namespace, ListOptions listOptions) throws ApiException {
+          throw new UnsupportedOperationException();
         }
 
         @Override

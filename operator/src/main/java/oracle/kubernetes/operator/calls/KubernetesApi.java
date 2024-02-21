@@ -8,6 +8,8 @@ import java.util.function.Function;
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -276,6 +278,23 @@ public interface KubernetesApi<A extends KubernetesObject, L extends KubernetesL
    */
   KubernetesApiResponse<RequestBuilder.V1StatusObject> deleteCollection(
       String namespace, final ListOptions listOptions, final DeleteOptions deleteOptions);
+
+  /**
+   * Create watch.
+   * @param listOptions the list options
+   * @return the watchable
+   * @throws ApiException thrown on failure
+   */
+  Watchable<A> watch(final ListOptions listOptions) throws ApiException;
+
+  /**
+   * Create watch.
+   * @param namespace the namespace
+   * @param listOptions the list options
+   * @return the watchable
+   * @throws ApiException thrown on failure
+   */
+  Watchable<A> watch(String namespace, final ListOptions listOptions) throws ApiException;
 
   /**
    * Pod logs Kubernetes API response.

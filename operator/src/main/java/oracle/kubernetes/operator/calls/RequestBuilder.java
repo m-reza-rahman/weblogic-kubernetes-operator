@@ -42,6 +42,7 @@ import io.kubernetes.client.openapi.models.V1TokenReview;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
 import io.kubernetes.client.openapi.models.VersionInfo;
+import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -718,6 +719,31 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
     RequestStep<A, L, A> step = updateStatus(object, status, updateOptions, response);
     step.apply(new Packet());
     return response.get();
+  }
+
+  /**
+   * Create watch.
+   * @param listOptions the list options
+   * @return the watchable
+   * @throws ApiException thrown on failure
+   */
+  public Watchable<A> watch(final ListOptions listOptions) throws ApiException {
+    KubernetesApi<A, L> client
+            = RequestStep.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+    return client.watch(listOptions);
+  }
+
+  /**
+   * Create watch.
+   * @param namespace the namespace
+   * @param listOptions the list options
+   * @return the watchable
+   * @throws ApiException thrown on failure
+   */
+  public Watchable<A> watch(String namespace, final ListOptions listOptions) throws ApiException {
+    KubernetesApi<A, L> client
+            = RequestStep.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+    return client.watch(namespace, listOptions);
   }
 
   private static class DirectResponseStep<R extends KubernetesType> extends ResponseStep<R> {

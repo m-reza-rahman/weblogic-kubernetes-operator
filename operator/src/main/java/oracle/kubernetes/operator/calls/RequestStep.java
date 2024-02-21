@@ -42,6 +42,12 @@ public abstract class RequestStep<
   private static final KubernetesApiFactory DEFAULT_FACTORY = new KubernetesApiFactory() {
   };
 
+  public static <KO extends KubernetesObject, KLO extends KubernetesListObject>
+  KubernetesApi<KO, KLO> create(Class<KO> apiTypeClass, Class<KLO> apiListTypeClass,
+                             String apiGroup, String apiVersion, String resourcePlural) {
+    return factory.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+  }
+
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
   private static KubernetesApiFactory factory = DEFAULT_FACTORY;
   private final Class<A> apiTypeClass;
@@ -97,8 +103,7 @@ public abstract class RequestStep<
 
   @Override
   public Void apply(Packet packet) {
-    KubernetesApi<A, L> client = factory.create(
-        apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+    KubernetesApi<A, L> client = create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
     KubernetesApiResponse<R> result = execute(client, packet);
 
     // update packet
