@@ -18,12 +18,13 @@ role mapping policies are more restrictive.
 
 Some important secured production mode changes are:
 
-*  Plain HTTP listen ports are disabled.  Any application code, utilities, or ingresses that use plain HTTP listen ports must be changed.
+* Plain HTTP listen ports are disabled.  Any application code, utilities, or ingresses that use plain HTTP listen ports must be changed.
 
-*  SSL listen ports must be enabled for every server in the domain.  Each server must have at least one SSL listen port set up, either in the default channel or in one of the custom network channels.  If none is explicitly enabled, WebLogic Server, by default, will enable the default SSL listen port and use the demo SSL certificate.   
+* SSL listen ports must be enabled for every server in the domain.  Each server must have at least one SSL listen port set up, either in the default channel or in one of the custom network channels.  If none is explicitly enabled, WebLogic Server, by default, will enable the default SSL listen port and use the demo SSL certificate.   
 Note that demo SSL certificates should **not** be used in a production environment; you should set up SSL listen ports with valid SSL certificates in all server instances.
+* For more information, see [Using demo SSL certificates in v14.1.2.0.0 or later]({{< relref "/managing-domains/model-in-image/overview#using-demo-ssl-certificates-in-v141200-or-later" >}}).
 
-For more information, see the [secured production mode](https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0) documentation.
+For more information about secured production mode, see the [secured production mode](https://docs.oracle.com/en/middleware/fusion-middleware/weblogic-server/12.2.1.4/lockd/secure.html#GUID-ADF914EF-0FB6-446E-B6BF-D230D8B0A5B0) documentation.
 
 **NOTE**: If the domain is _not_ in production mode, then none of the security changes apply.
 
