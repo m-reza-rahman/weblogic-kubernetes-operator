@@ -72,7 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("Test the monitoring WebLogic Domain via istio provided Prometheus")
 @IntegrationTest
-@Tag("oke-gate")
+@Tag("oke-parallelnew")
 @Tag("kind-parallel")
 @Tag("olcne-mrg")
 class ItIstioMonitoringExporter {
