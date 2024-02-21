@@ -182,7 +182,7 @@ class ItStickySession {
   @DisplayName("Create a Traefik ingress resource and verify that two HTTP connections are sticky to the same server")
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testSameSessionStickinessUsingTraefik() {
-    final String ingressServiceName = traefikHelmParams.getReleaseName();
+    
     final String channelName = "web";
 
     // create Traefik ingress resource
@@ -198,8 +198,15 @@ class ItStickySession {
         .append(".test").toString();
 
     // get Traefik ingress service Nodeport
-    int ingressServiceNodePort =
-        getIngressServiceNodePort(traefikNamespace, ingressServiceName, channelName);
+    int ingressServiceNodePort;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      ingressServiceNodePort = TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
+    } else {
+      final String ingressServiceName = traefikHelmParams.getReleaseName();
+      ingressServiceNodePort
+          = getIngressServiceNodePort(traefikNamespace, ingressServiceName, channelName);
+    }
 
     // verify that two HTTP connections are sticky to the same server
     sendHttpRequestsToTestSessionStickinessAndVerify(hostName, ingressServiceNodePort);
@@ -463,16 +470,16 @@ class ItStickySession {
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
-      if (!OKD) {
-        final String ingressServiceName = traefikHelmParams.getReleaseName();
-        hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : getHostAndPort(hostName, servicePort);
-      } else if (TestConstants.KIND_CLUSTER
+      if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
         hostAndPort = assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()
             + ":" + TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT);
-      } else {
+      } else if (OKD) {
         hostAndPort = getHostAndPort(hostName, servicePort);
+      } else {
+        final String ingressServiceName = traefikHelmParams.getReleaseName();
+        hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : getHostAndPort(hostName, servicePort);
       }
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
