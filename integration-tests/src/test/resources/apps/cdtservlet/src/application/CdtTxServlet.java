@@ -235,8 +235,6 @@ public class CdtTxServlet extends HttpServlet {
   private void insertData(Connection conn, String tableName) throws SQLException {
     Statement stmt = null;
 
-    DELETE FROM table_name WHERE condition;
-
     try {
       int id = 1;
       String data = "yay! this got in the db table";
