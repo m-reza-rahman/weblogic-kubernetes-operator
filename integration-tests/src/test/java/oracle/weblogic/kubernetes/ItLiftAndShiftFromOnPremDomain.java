@@ -100,7 +100,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Tag("toolkits-srg")
 @Tag("okd-wls-mrg")
 @Tag("olcne-mrg")
-@Tag("oke-sequential1")
 @Tag("oke-parallelnew")
 @IntegrationTest
 class ItLiftAndShiftFromOnPremDomain {

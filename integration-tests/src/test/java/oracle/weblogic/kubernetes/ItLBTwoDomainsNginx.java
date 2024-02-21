@@ -66,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @IntegrationTest
 @Tag("olcne-mrg")
 @Tag("kind-parallel")
-@Tag("oke-sequential1")
 @Tag("oke-parallelnew")
 class ItLBTwoDomainsNginx {
 

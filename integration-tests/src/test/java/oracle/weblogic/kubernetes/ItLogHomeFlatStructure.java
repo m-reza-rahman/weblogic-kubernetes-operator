@@ -85,7 +85,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("olcne-mrg")
 @Tag("kind-parallel")
-@Tag("oke-sequential1")
 @Tag("oke-arm")
 @Tag("oke-parallelnew")
 class ItLogHomeFlatStructure {
