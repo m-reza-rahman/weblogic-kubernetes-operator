@@ -98,7 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify that client can communicate with webservices with SSO")
 @IntegrationTest
 //@Tag("oke-parallel")
-@Tag("oke-gate")
+@Tag("oke-sequential")
 @Tag("kind-parallel")
 class ItWseeSSO {
 
