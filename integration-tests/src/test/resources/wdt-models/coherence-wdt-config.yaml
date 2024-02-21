@@ -6,6 +6,7 @@ domainInfo:
     AdminPassword: '@@PROP:AdminPassword@@'
 topology:
     AdminServerName: 'admin-server'
+    ProductionModeEnabled: true
     SecurityConfiguration:
       SecureMode:
         SecureModeEnabled: false   
