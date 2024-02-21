@@ -186,8 +186,15 @@ class ItStickySession {
     final String channelName = "web";
 
     // create Traefik ingress resource
-    final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";    
-    createTraefikIngressRoutingRules(domainNamespace, traefikNamespace, ingressResourceFileName, domainUid);
+    final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";
+    String traefikns;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      traefikns = TestConstants.TRAEFIK_NAMESPACE;
+    } else {
+      traefikns = traefikNamespace;
+    }
+    createTraefikIngressRoutingRules(domainNamespace, traefikns, ingressResourceFileName, domainUid);
 
     String hostName = new StringBuffer()
         .append(domainUid)
