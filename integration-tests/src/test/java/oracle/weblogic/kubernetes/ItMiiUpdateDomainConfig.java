@@ -130,7 +130,7 @@ class ItMiiUpdateDomainConfig {
   private static final String pvcName = getUniqueName(domainUid + "-pvc-");
   private StringBuffer curlString = null;
   private V1Patch patch = null;
-  private final String adminServerPodName = domainUid + "-admin-server";
+  private static final String adminServerPodName = domainUid + "-admin-server";
   private final String managedServerPrefix = domainUid + "-managed-server";
   private static final String adminServerName = "admin-server";
   private final String clusterName = "cluster-1";
@@ -216,6 +216,9 @@ class ItMiiUpdateDomainConfig {
         clusterName, domainNamespace, domain, replicaCount);
 
     createDomainAndVerify(domain, domainNamespace);
+    // verify the admin server service and pod created
+    checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
+
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
