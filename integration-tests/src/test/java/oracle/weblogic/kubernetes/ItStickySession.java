@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +137,8 @@ class ItStickySession {
     domainNamespace = namespaces.get(2);
 
     // install and verify Traefik
-    if (!OKD) {
+    if (!OKD && !(TestConstants.KIND_CLUSTER
+            && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
       traefikHelmParams =
           installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
     }
@@ -184,7 +186,7 @@ class ItStickySession {
     final String channelName = "web";
 
     // create Traefik ingress resource
-    final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";
+    final String ingressResourceFileName = "traefik/traefik-ingress-rules-stickysession.yaml";    
     createTraefikIngressRoutingRules(domainNamespace, traefikNamespace, ingressResourceFileName, domainUid);
 
     String hostName = new StringBuffer()
@@ -465,10 +467,13 @@ class ItStickySession {
         final String ingressServiceName = traefikHelmParams.getReleaseName();
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
             ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : getHostAndPort(hostName, servicePort);
+      } else if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        hostAndPort = assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()
+            + ":" + TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT);
       } else {
         hostAndPort = getHostAndPort(hostName, servicePort);
       }
-
 
       curlCmd.append(" --noproxy '*' -H 'host: ")
           .append(hostName)
