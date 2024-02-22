@@ -208,7 +208,7 @@ public class CdtTxServlet extends HttpServlet {
       out.println("Done checking table exist 0 - closing stmt: " + checkDone);
       stmt.close();
 
-      String selectSQL = String.format("select table_name from user_tables where table_name='%s'", tableName);;
+      selectSQL = String.format("select table_name from user_tables where table_name='%s'", tableName);;
       System.out.println("selectSQL 1= " + selectSQL);
       out.println("selectSQL 1= " + selectSQL);
       stmt = conn.createStatement();
