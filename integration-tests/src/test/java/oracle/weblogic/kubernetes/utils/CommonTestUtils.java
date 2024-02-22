@@ -1573,9 +1573,20 @@ public class CommonTestUtils {
             isFileExistAndNotEmpty(portForwardFileName),
             logger,
             "forwarded port number is written to the file " + portForwardFileName));
+
+    String forwardedPortNo = null;
+    String expectedMsg = "Forwarding from";
+    testUntil(
+        () -> {
+          String portFile = assertDoesNotThrow(() -> Files.readAllLines(Paths.get(portForwardFileName)).get(0));
+          return portFile.contains(expectedMsg);
+        },
+        getLogger(),
+        "Waiting until command result contains expected message \"{0}\"",
+        expectedMsg);
     String portFile = assertDoesNotThrow(() -> Files.readAllLines(Paths.get(portForwardFileName)).get(0));
     logger.info("Port forward info:\n {0}", portFile);
-    String forwardedPortNo = null;
+
     String regex = ".*Forwarding.*:(\\d+).*";
     Pattern pattern = Pattern.compile(regex, Pattern.DOTALL | Pattern.MULTILINE);
     Matcher matcher = pattern.matcher(portFile);
