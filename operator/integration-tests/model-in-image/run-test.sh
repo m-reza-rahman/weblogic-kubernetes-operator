@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #
@@ -420,11 +420,11 @@ if [ "$DO_INITIAL_MAIN" = "true" ]; then
 
   if [ ! "$DRY_RUN" = "true" ]; then
     diefast # (cheat to speedup a subsequent roll/shutdown)
-    testapp internal cluster-1 "Hello World!"
+    testapp internal cluster-1 v1 "Hello World!"
     if [ "$OKD" = "true" ]; then
       testapp OKD  cluster-1 "Hello World!" 
     else
-      testapp traefik  cluster-1 "Hello World!"
+      testapp traefik  cluster-1 v1 "Hello World!"
     fi
   fi
 
@@ -461,14 +461,14 @@ if [ "$DO_UPDATE1" = "true" ]; then
 
   if [ ! "$DRY_RUN" = "true" ]; then
     diefast # (cheat to speedup a subsequent roll/shutdown)
-    testapp internal cluster-1 "mynewdatasource"
+    testapp internal cluster-1 v1 "mynewdatasource"
     if [ "$OKD" = "true" ]; then
       routeHost=$(getRouteHost "${DOMAIN_UID}-cluster-cluster-1")
       echo $routeHost
       doCommand -c export ROUTE_HOST=${routeHost}
       testapp OKD  cluster-1 "mynewdatasource" 
     else
-      testapp traefik  cluster-1 "mynewdatasource"
+      testapp traefik  cluster-1 v1 "mynewdatasource"
     fi
   fi
 
@@ -521,18 +521,18 @@ if [ "$DO_UPDATE2" = "true" ]; then
 
   if [ ! "$DRY_RUN" = "true" ]; then
     diefast # (cheat to speedup a subsequent roll/shutdown)
-    testapp internal cluster-1 "name....domain2"
+    testapp internal cluster-1 v1 "name....domain2"
     if [ "$OKD" = "true" ]; then
       testapp OKD cluster-1 "name....domain2" 
     else
-      testapp traefik  cluster-1 "name....domain2"
+      testapp traefik  cluster-1 v1 "name....domain2"
     fi
     doCommand -c export DOMAIN_UID=$DOMAIN_UID1
-    testapp internal cluster-1 "name....domain1"
+    testapp internal cluster-1 v1 "name....domain1"
     if [ "$OKD" = "true" ]; then
       testapp OKD  cluster-1 "name....domain2" 
     else
-      testapp traefik  cluster-1 "name....domain1"
+      testapp traefik  cluster-1 v1 "name....domain1"
     fi
   fi
 
@@ -583,14 +583,14 @@ if [ "$DO_UPDATE3_MAIN" = "true" ]; then
 
   if [ ! "$DRY_RUN" = "true" ]; then
     diefast # (cheat to speedup a subsequent roll/shutdown)
-    testapp internal cluster-1 "v2"
+    testapp internal cluster-1 v2 "v2"
     if [ "$OKD" = "true" ]; then
       routeHost=$(getRouteHost "${DOMAIN_UID}-cluster-cluster-1")
       echo $routeHost
       doCommand -c export ROUTE_HOST=${routeHost}
-      testapp OKD  cluster-1 "v2" 
+      testapp OKD  cluster-1 "v2"
     else
-      testapp traefik  cluster-1 "v2"
+      testapp traefik  cluster-1 v2 "v2"
     fi
   fi
 
@@ -634,10 +634,10 @@ if [ "$DO_UPDATE4" = "true" ]; then
   waitForDomain Completed
 
   if [ ! "$DRY_RUN" = "true" ]; then
-    testapp internal cluster-1 "'SampleMinThreads' with configured count: 2" 60 quiet
-    testapp internal cluster-1 "'SampleMaxThreads' with configured count: 20" 
+    testapp internal cluster-1 v2 "'SampleMinThreads' with configured count: 2" 60 quiet
+    testapp internal cluster-1 v2 "'SampleMaxThreads' with configured count: 20"
     if [ "$DO_ASSUME_DB" = "true" ]; then
-      testapp internal cluster-1 "Datasource 'mynewdatasource':  State='Running', testPool='Passed'"
+      testapp internal cluster-1 v2 "Datasource 'mynewdatasource':  State='Running', testPool='Passed'"
     fi
 
     podInfoAfter="$(getPodInfo | grep -v introspectVersion)"
