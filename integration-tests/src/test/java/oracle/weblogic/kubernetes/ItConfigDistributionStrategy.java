@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -1001,11 +1001,7 @@ class ItConfigDistributionStrategy {
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
                     .value("-Dweblogic.debug.DebugSituationalConfig=true "
-                        + "-Dweblogic.debug.DebugSituationalConfigDumpXml=true "
-                        + "-Dweblogic.kernel.debug=true "
-                        + "-Dweblogic.debug.DebugMessaging=true "
-                        + "-Dweblogic.debug.DebugConnection=true "
-                        + "-Dweblogic.ResolveDNSName=true"))
+                        + "-Dweblogic.debug.DebugSituationalConfigDumpXml=true "))
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom "))
@@ -1020,7 +1016,7 @@ class ItConfigDistributionStrategy {
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
                         .channelName("default")
-                        .nodePort(getNextFreePort())))));
+                        .nodePort(0)))));
     setPodAntiAffinity(domain);
     
     // create cluster object
