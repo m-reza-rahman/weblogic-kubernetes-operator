@@ -225,6 +225,12 @@ public class CdtTxServlet extends HttpServlet {
       System.out.println("Done checking table exist 2 - closing stmt: " + checkDone2);
       out.println("Done checking table exist 2 - closing stmt: " + checkDone2);
       stmt.close();
+
+      System.out.println("===deleting table before create if exists");
+      out.println("===deleting table before create if exists");
+      dropTable();
+      System.out.println("===Done deleting table before create if exists");
+      out.println("===Done deleting table before create if exists");
     } catch (SQLException sqle) {
       System.out.println("Got SQL Exception when checking table exist from table ");
       sqle.getMessage();
