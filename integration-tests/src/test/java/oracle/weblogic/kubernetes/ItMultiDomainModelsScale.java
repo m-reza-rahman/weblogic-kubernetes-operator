@@ -251,19 +251,34 @@ class ItMultiDomainModelsScale {
         numberOfServers = 3;
       }
 
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
-          clusterName, domainUid, domainNamespace, numberOfServers);
-      curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
-      List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          replicaCount, numberOfServers, curlCmd, managedServersBeforeScale);
+      if (OKE_CLUSTER) {
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
+            domainUid + "-" + MANAGED_SERVER_NAME_BASE, replicaCount, numberOfServers,
+            null, null);
 
-      // then scale cluster back to 1 servers
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-          clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
-      managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          numberOfServers, replicaCount, curlCmd, managedServersBeforeScale);
+        // then scale cluster back to 1 servers
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
+            domainUid + "-" + MANAGED_SERVER_NAME_BASE, numberOfServers, replicaCount,
+            null, null);
+      } else {
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers);
+        curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+        List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            replicaCount, numberOfServers, curlCmd, managedServersBeforeScale);
+
+        // then scale cluster back to 1 servers
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+        managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            numberOfServers, replicaCount, curlCmd, managedServersBeforeScale);
+      }
     }
 
     // verify admin console login
