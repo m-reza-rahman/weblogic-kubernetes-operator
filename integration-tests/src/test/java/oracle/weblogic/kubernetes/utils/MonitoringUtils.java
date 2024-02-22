@@ -543,12 +543,14 @@ public class MonitoringUtils {
     // wait for the promethues adapter pod to be ready
     logger.info("Wait for the prometheus adapter pod is ready in namespace {0}", promAdapterNamespace);
     String command = KUBERNETES_CLI + " get pods  -n " + promAdapterNamespace;
+
     assertDoesNotThrow(() -> {
       ExecResult result = ExecCommand.exec(command, true);
       String response = result.stdout().trim();
       logger.info("Response : exitValue {0}, stdout {1}, stderr {2}",
           result.exitValue(), response, result.stderr());
     });
+    logger.info("Get pod name for adapter in namespace {0}", promAdapterNamespace);
     String podName = assertDoesNotThrow(() -> getPodName(promAdapterNamespace, "prometheus-adapterhpatest"),
         "Can't find prometheus-adapter pod");
     checkPodExists(podName,null, promAdapterNamespace);
