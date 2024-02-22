@@ -48,6 +48,7 @@ import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_EXTERNAL_REST_HTTPSPORT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
@@ -76,6 +77,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
@@ -142,6 +144,7 @@ class ItMultiDomainModelsScale {
   private static String opNamespace = null;
   private static String opServiceAccount = null;
   private static NginxParams nginxHelmParams = null;
+  private static String nginxNamespace = null;
   private static int nodeportshttp = 0;
   private static LoggingFacade logger = null;
   private static String miiDomainNamespace = null;
@@ -172,7 +175,7 @@ class ItMultiDomainModelsScale {
     // get a unique NGINX namespace
     logger.info("Get a unique namespace for NGINX");
     assertNotNull(namespaces.get(1), "Namespace list is null");
-    String nginxNamespace = namespaces.get(1);
+    nginxNamespace = namespaces.get(1);
 
     // get unique namespaces for three different type of domains
     logger.info("Getting unique namespaces for three different type of domains");
@@ -590,9 +593,13 @@ class ItMultiDomainModelsScale {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
+
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : getHostAndPort(host, nodeportshttp);
+
       return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s/%s/index.jsp",
-          domainUid + "." + domainNamespace + "." + clusterName + ".test",
-          getHostAndPort(host, nodeportshttp), appContextRoot);
+          domainUid + "." + domainNamespace + "." + clusterName + ".test", hostAndPort, appContextRoot);
     }
   }
 
@@ -745,6 +752,9 @@ class ItMultiDomainModelsScale {
       if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
         createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
             true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
+      } else if (OKE_CLUSTER) {
+        createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
+            false, nginxHelmParams.getIngressClassName(), false, 0);
       } else {
         assertDoesNotThrow(()
             -> createIngressForDomainAndVerify(domainUid, domainNamespace, TRAEFIK_INGRESS_HTTP_HOSTPORT,
@@ -828,9 +838,14 @@ class ItMultiDomainModelsScale {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
+
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host + ":" + nodeportshttp;
+
       String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
           + domainUid + "." + domainNamespace + ".adminserver.test"
-          + "' http://" + host + ":" + nodeportshttp
+          + "' http://" + hostAndPort
           + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
 
       logger.info("Executing curl command {0}", curlCmd);
