@@ -34,6 +34,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.PROJECT_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RBAC_API_GROUP;
@@ -442,7 +443,11 @@ public class Domain {
     assertNotNull(decodedToken, "Couldn't get secret, token is null");
     String hostAndPort = getHostAndPort(opExternalSvc, externalRestHttpsPort);
     if (host != null) {
-      hostAndPort = host + ":" + externalRestHttpsPort;
+      if (OKE_CLUSTER) {
+        hostAndPort = host;
+      } else {
+        hostAndPort = host + ":" + externalRestHttpsPort;
+      }
     }
 
     // build the curl command to scale the cluster

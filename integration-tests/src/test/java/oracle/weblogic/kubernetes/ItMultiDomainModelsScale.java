@@ -257,6 +257,15 @@ class ItMultiDomainModelsScale {
       if (OKE_CLUSTER) {
         logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
             clusterName, domainUid, domainNamespace, numberOfServers);
+        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
+            domainUid + "-" + MANAGED_SERVER_NAME_BASE, replicaCount, numberOfServers,
+            false, 0, "", "",
+            false, "", "", 0, "",
+            "", null, null);
+
         scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
             domainUid + "-" + MANAGED_SERVER_NAME_BASE, replicaCount, numberOfServers,
             null, null);

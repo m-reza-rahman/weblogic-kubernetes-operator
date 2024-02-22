@@ -455,7 +455,8 @@ public class CommonTestUtils {
                                            String myWebAppName,
                                            String curlCmdForWLDFApp,
                                            String curlCmd,
-                                           List<String> expectedServerNames) {
+                                           List<String> expectedServerNames,
+                                           String... host) {
     LoggingFacade logger = getLogger();
     // get the original managed server pod creation timestamp before scale
     List<OffsetDateTime> listOfPodCreationTimestamp = new ArrayList<>();
@@ -472,13 +473,23 @@ public class CommonTestUtils {
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers",
         clusterName, domainUid, domainNamespace, replicasAfterScale);
     if (withRestApi) {
-      assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApi(domainUid, clusterName,
-          replicasAfterScale, externalRestHttpsPort, opNamespace, opServiceAccount)))
-          .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
-              clusterName, domainUid, domainNamespace))
-          .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
-              clusterName, domainUid, domainNamespace))
-          .isTrue();
+      if (OKE_CLUSTER) {
+        assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApi(domainUid, clusterName,
+            replicasAfterScale, domainUid, externalRestHttpsPort, opNamespace, opServiceAccount)))
+            .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
+                clusterName, domainUid, domainNamespace))
+            .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
+                clusterName, domainUid, domainNamespace))
+            .isTrue();
+      } else {
+        assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApi(domainUid, clusterName,
+            replicasAfterScale, externalRestHttpsPort, opNamespace, opServiceAccount)))
+            .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
+                clusterName, domainUid, domainNamespace))
+            .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
+                clusterName, domainUid, domainNamespace))
+            .isTrue();
+      }
     } else if (withWLDF) {
       // scale the cluster using WLDF policy
       assertThat(assertDoesNotThrow(() -> scaleClusterWithWLDF(clusterName, domainUid, domainNamespace,
@@ -500,7 +511,7 @@ public class CommonTestUtils {
     verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
         replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
   }
-  
+
   /**
    * Verify the number of servers are as expected after Scale.
    * Verify the sample app can be accessed through NGINX if curlCmd is not null.
