@@ -63,6 +63,7 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.downloadMonitorin
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.editPrometheusCM;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
+import static oracle.weblogic.kubernetes.utils.PodUtils.getPodName;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -227,7 +228,8 @@ class ItIstioMonitoringExporter {
       if (OKE_CLUSTER_PRIVATEIP) {
         String localhost = "localhost";
         // Forward the non-ssl port 9090
-        String forwardPort = startPortForwardProcess(localhost, istioNamespace, 9090, "prometheus");
+        String podName = getPodName(istioNamespace, "prometheus-");
+        String forwardPort = startPortForwardProcess(localhost, istioNamespace, 9090, podName);
         assertNotNull(forwardPort, "port-forward fails to assign local port");
         logger.info("Forwarded local port is {0}", forwardPort);
         hostPortPrometheus = localhost + ":" + forwardPort;

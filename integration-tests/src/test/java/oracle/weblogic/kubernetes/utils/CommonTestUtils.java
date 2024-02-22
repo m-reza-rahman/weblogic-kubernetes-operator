@@ -101,6 +101,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithWLD
 import static oracle.weblogic.kubernetes.actions.impl.UniqueName.random;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsNotValid;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsValid;
+import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podStateNotChanged;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceExists;
@@ -1504,25 +1505,31 @@ public class CommonTestUtils {
    * @param hostName host information to used against address param
    * @param namespace  namespace
    * @param port the remote port
-   * @param serviceName name of the service
+   * @param podName name of the pod
    * @return generated local forward port
    */
   public static String startPortForwardProcess(String hostName,
                                                String namespace,
                                                int port,
-                                               String serviceName) {
+                                               String podName) {
     LoggingFacade logger = getLogger();
     // Create a unique stdout file for kubectl port-forward command
     String pfFileName = RESULTS_ROOT + "/pf-" + namespace
         + "-" + port + ".out";
+    testUntil(
+        assertDoesNotThrow(() -> isPodReady(namespace, null, podName),
+            "podIsReady failed with ApiException"),
+        logger,
+        "pod {0} to be running in namespace {1}", podName,
+        namespace);
 
     logger.info("Start port forward process");
 
     // Let kubectl choose and allocate a local port number that is not in use
     StringBuffer cmd = new StringBuffer(KUBERNETES_CLI + " port-forward --address ")
         .append(hostName)
-        .append(" service/")
-        .append(serviceName)
+        .append(" pod/")
+        .append(podName)
         .append(" -n ")
         .append(namespace)
         .append(" :")
@@ -1575,15 +1582,6 @@ public class CommonTestUtils {
             "forwarded port number is written to the file " + portForwardFileName));
 
     String forwardedPortNo = null;
-    String expectedMsg = "Forwarding from";
-    testUntil(
-        () -> {
-          String portFile = assertDoesNotThrow(() -> Files.readAllLines(Paths.get(portForwardFileName)).get(0));
-          return portFile.contains(expectedMsg);
-        },
-        getLogger(),
-        "Waiting until command result contains expected message \"{0}\"",
-        expectedMsg);
     String portFile = assertDoesNotThrow(() -> Files.readAllLines(Paths.get(portForwardFileName)).get(0));
     logger.info("Port forward info:\n {0}", portFile);
 
