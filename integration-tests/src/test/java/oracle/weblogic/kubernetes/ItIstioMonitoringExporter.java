@@ -15,6 +15,7 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
@@ -93,6 +95,7 @@ class ItIstioMonitoringExporter {
   private static final String istioIngressServiceName = "istio-ingressgateway";
 
   private boolean isPrometheusDeployed = false;
+  private boolean isPrometheusPortForward = false;
   private static LoggingFacade logger = null;
   private static String oldRegex;
   private static String miiImageSideCar = null;
@@ -227,10 +230,24 @@ class ItIstioMonitoringExporter {
 
         String localhost = "localhost";
         // Forward the non-ssl port 9090
-        String forwardPort = startPortForwardProcess(localhost, istioNamespace, 9090, "prometheus");
-        assertNotNull(forwardPort, "port-forward fails to assign local port");
-        logger.info("Forwarded local port is {0}", forwardPort);
-        hostPortPrometheus = localhost + ":" + forwardPort;
+        try {
+          String forwardPort = startPortForwardProcess(localhost, istioNamespace, 9090, "prometheus");
+          assertNotNull(forwardPort, "port-forward fails to assign local port");
+          logger.info("Forwarded local port is {0}", forwardPort);
+          hostPortPrometheus = localhost + ":" + forwardPort;
+          isPrometheusPortForward = true;
+        } catch (Exception ex) {
+          //try again
+          String command1 = KUBERNETES_CLI + " get svc prometheus -n " + istioNamespace;
+          assertDoesNotThrow(() -> ExecCommand.exec(command1,true));
+          String command2 = KUBERNETES_CLI + " describe svc prometheus -n " + istioNamespace;
+          assertDoesNotThrow(() -> ExecCommand.exec(command2, true));
+          String forwardPort = startPortForwardProcess(localhost, istioNamespace, 9090, "prometheus");
+          assertNotNull(forwardPort, "port-forward fails to assign local port");
+          logger.info("Forwarded local port is {0}", forwardPort);
+          hostPortPrometheus = localhost + ":" + forwardPort;
+          isPrometheusPortForward = true;
+        }
       }
     } else {
       String newRegex = String.format("regex: %s;%s", domainNamespace, domainUid);
