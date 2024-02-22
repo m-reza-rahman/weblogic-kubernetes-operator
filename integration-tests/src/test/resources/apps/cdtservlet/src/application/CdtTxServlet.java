@@ -206,9 +206,10 @@ public class CdtTxServlet extends HttpServlet {
       stmt = conn.createStatement();
       boolean checkDone = stmt.execute(selectSQL);
       System.out.println("Done checking table exist 0 - closing stmt: " + checkDone);
-      out.println("Done checking table exist 0 - closing stmt: " + checkDone);
+      out.println("=== Done checking table exist 0 - closing stmt: " + checkDone);
       stmt.close();
 
+      /*
       selectSQL = String.format("select table_name from user_tables where table_name='%s'", tableName);;
       System.out.println("selectSQL 1= " + selectSQL);
       out.println("selectSQL 1= " + selectSQL);
@@ -225,7 +226,7 @@ public class CdtTxServlet extends HttpServlet {
       boolean checkDone2 = stmt.execute(selectSQL);
       System.out.println("Done checking table exist 2 - closing stmt: " + checkDone2);
       out.println("Done checking table exist 2 - closing stmt: " + checkDone2);
-      stmt.close();
+      stmt.close();*/
 
       System.out.println("===deleting table before create if exists");
       out.println("===deleting table before create if exists");
