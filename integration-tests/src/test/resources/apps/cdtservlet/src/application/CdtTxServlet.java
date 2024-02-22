@@ -176,6 +176,7 @@ public class CdtTxServlet extends HttpServlet {
     } finally {
       try {
         dropTable(conn, tableName);
+        conn.close();
       } catch (SQLException sqle) {
         sqle.printStackTrace();
       }
@@ -228,7 +229,7 @@ public class CdtTxServlet extends HttpServlet {
 
       System.out.println("===deleting table before create if exists");
       out.println("===deleting table before create if exists");
-      dropTable();
+      dropTable(conn, tableName);
       System.out.println("===Done deleting table before create if exists");
       out.println("===Done deleting table before create if exists");
     } catch (SQLException sqle) {
