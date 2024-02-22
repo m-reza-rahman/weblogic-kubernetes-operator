@@ -263,7 +263,11 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
         domainNamespace,
         domainUid), "Failed to install Prometheus");
 
-
+    String promURL = prometheusReleaseName + "-server." + monitoringNS + ".svc.cluster.local";
+    prometheusAdapterHelmParams = assertDoesNotThrow(() -> installAndVerifyPrometheusAdapter(
+        prometheusAdapterReleaseName,
+        monitoringNS, promURL, 80), "Failed to install Prometheus Adapter");
+    /*
     if (OKE_CLUSTER_PRIVATEIP) {
       String promURL = prometheusReleaseName + "-server." + monitoringNS + ".svc.cluster.local";
       prometheusAdapterHelmParams = assertDoesNotThrow(() -> installAndVerifyPrometheusAdapter(
@@ -274,6 +278,8 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
           prometheusAdapterReleaseName,
           monitoringNS, K8S_NODEPORT_HOST, nodeportPrometheus), "Failed to install Prometheus Adapter");
     }
+
+    */
     // wait till prometheus adapter could get the current custom metrics
     // total_opened_sessions_myear_app to make sure it is ready
     testUntil(withStandardRetryPolicy,
