@@ -550,7 +550,14 @@ public class MonitoringUtils {
       logger.info("Response : exitValue {0}, stdout {1}, stderr {2}",
           result.exitValue(), response, result.stderr());
     });
+    testUntil(
+        searchForKey(command, "prometheus-adapterhpatest"),
+        logger,
+        "Check pod creation {0} ",
+        "prometheus-adapterhpatest");
+    
     logger.info("Get pod name for adapter in namespace {0}", promAdapterNamespace);
+
     String podName = assertDoesNotThrow(() -> getPodName(promAdapterNamespace, "prometheus-adapterhpatest"),
         "Can't find prometheus-adapter pod");
     checkPodExists(podName,null, promAdapterNamespace);
