@@ -171,7 +171,7 @@ public class CdtTxServlet extends HttpServlet {
       }
 
     } catch (Exception unk) {
-      out.println("Got Exception when inserting data into db table or JMS queue " + unk);
+      out.println("Got Exception when creating table or inserting data into db table or JMS queue " + unk);
       unk.printStackTrace();
     } finally {
       try {
@@ -197,6 +197,49 @@ public class CdtTxServlet extends HttpServlet {
 
   private void createTable(Connection conn, String tableName) throws SQLException {
     Statement stmt = null;
+
+    try {
+      String selectSQL = String.format("select table_name from user_tables where table_name='%s'", tableName);;
+      System.out.println("selectSQL 1= " + selectSQL);
+      stmt = conn.createStatement();
+      stmt.execute(selectSQL);
+      System.out.println("Done checking table exist 1 - closing stmt");
+      stmt.close();
+
+      selectSQL = String.format("select * from %s where rownum=1", tableName);;
+      System.out.println("selectSQL 2= " + selectSQL);
+      stmt = conn.createStatement();
+      stmt.execute(selectSQL);
+      System.out.println("Done checking table exist 2 - closing stmt");
+      stmt.close();
+    } catch (SQLException sqle) {
+      System.out.println("Got SQL Exception when checking table exist from table ");
+      sqle.getMessage();
+      throw sqle;
+    } finally {
+      out.println("Done checking table exist - closing stmt");
+      stmt.close();
+    }
+
+    /*
+    try {
+      int id = 1;
+      String data = "yay! this got in the db table";
+      String deleteSQL = String.format("delete from %s where test_id = '%d'", tableName, id);
+      System.out.println("deleteSQL = " + deleteSQL);
+      stmt = conn.createStatement();
+      stmt.execute(deleteSQL);
+      out.println("Done deleting a row - closing stmt");
+      stmt.close();
+    } catch (SQLException sqle) {
+      System.out.println("Got SQL Exception when deleting a row from table ");
+      sqle.getMessage();
+      throw sqle;
+    } finally {
+      out.println("Done deleting a row - closing stmt");
+      stmt.close();
+    }*/
+
     try {
       String createSQL = String.format("create table %s (test_id int, test_data varchar(120))", tableName);
       System.out.println("create table String = " + createSQL);
@@ -204,7 +247,7 @@ public class CdtTxServlet extends HttpServlet {
       stmt = conn.createStatement();
       stmt.execute(createSQL);
     } catch (SQLException sqle) {
-      System.out.println("Got SQL Exception when creating table ");
+      System.out.println("Got SQL Exception when creating table ==> " + sqle.getMessage().toString());
       out.println("Got SQL Exception when creating table ");
       sqle.getMessage();
       throw sqle;
@@ -234,24 +277,6 @@ public class CdtTxServlet extends HttpServlet {
   }
   private void insertData(Connection conn, String tableName) throws SQLException {
     Statement stmt = null;
-
-    try {
-      int id = 1;
-      String data = "yay! this got in the db table";
-      String deleteSQL = String.format("delete from %s where test_id = '%d'", tableName, id);
-      System.out.println("deleteSQL = " + deleteSQL);
-      stmt = conn.createStatement();
-      stmt.execute(deleteSQL);
-      out.println("Done deleting a row - closing stmt");
-      stmt.close();
-    } catch (SQLException sqle) {
-      System.out.println("Got SQL Exception when deleting a row from table ");
-      sqle.getMessage();
-      throw sqle;
-    } finally {
-      out.println("Done deleting a row - closing stmt");
-      stmt.close();
-    }
 
     try {
       int id = 1;
