@@ -62,6 +62,7 @@ import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
@@ -83,7 +84,9 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
@@ -96,6 +99,7 @@ import static oracle.weblogic.kubernetes.utils.DbUtils.deleteOracleDB;
 import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.uninstallDBOperator;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
@@ -126,7 +130,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to a create Istio enabled FMW model in image domain and WebLogic domain using Oracle "
     + "database created using Oracle Database Operator")
 @IntegrationTest
-@Tag("oke-sequential")
+//@Tag("oke-sequential")
+@Tag("oke-sequential1")
 @Tag("kind-sequential")
 class ItIstioDBOperator {
 
@@ -174,6 +179,9 @@ class ItIstioDBOperator {
 
   private static String hostHeader;
   Map<String, String> httpHeaders;
+
+  private static final String istioNamespace = "istio-system";
+  private static final String istioIngressServiceName = "istio-ingressgateway";
 
   /**
    * Start DB service and create RCU schema.
@@ -328,6 +336,7 @@ class ItIstioDBOperator {
     verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
 
     String clusterName = "cluster-1";
+    String target = "{identity: [clusters,'" + clusterName + "']}";
     int istioIngressPort = enableIstio(clusterName, fmwDomainUid, fmwDomainNamespace, fmwAdminServerPodName);
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
@@ -344,6 +353,11 @@ class ItIstioDBOperator {
       hostAndPort = host + ":" + istioIngressPort;
     }
 
+    // In internal OKE env, use Istio EXTERNAL-IP;
+    if (OKE_CLUSTER) {
+      hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace);
+    }
+
     String url = "http://" + hostAndPort + "/management/tenant-monitoring/servers/";
     checkApp(url, httpHeaders, "RUNNING");
 
@@ -356,18 +370,36 @@ class ItIstioDBOperator {
     }
 
     Path archivePath = Paths.get(testWebAppWarLoc);
-    ExecResult result = null;
 
+    /*
+    ExecResult result = null;
     result = deployToClusterUsingRest(host, String.valueOf(istioIngressPort),
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-        clusterName, archivePath, fmwDomainNamespace + ".org", "testwebapp");
+        clusterName, archivePath, fmwDomainNamespace + ".org", "testwebapp");*/
+
+    ExecResult result = OKE_CLUSTER
+        ? deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+            target, archivePath, fmwDomainNamespace + ".org", "testwebapp")
+        : deployToClusterUsingRest(host, String.valueOf(istioIngressPort),
+            ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+                clusterName, archivePath, fmwDomainNamespace + ".org", "testwebapp");
+
     assertNotNull(result, "Application deployment failed");
     logger.info("Application deployment returned {0}", result.toString());
     assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
+    logger.info("Application {0} deployed successfully at {1}", "testwebapp.war", fmwDomainUid + "-" + clusterName);
 
-    url = "http://" + hostAndPort + "/testwebapp/index.jsp";
-    logger.info("Application Access URL {0}", url);
-    checkApp(url, httpHeaders);
+    if (OKE_CLUSTER) {
+      testUntil(isAppInServerPodReady(fmwDomainNamespace,
+          fmwManagedServerPrefix + 1, 8001, "/testwebapp/index.jsp", "testwebapp"),
+          logger, "Check Deployed App {0} in server {1}",
+          archivePath,
+          target);
+    } else {
+      url = "http://" + hostAndPort + "/testwebapp/index.jsp";
+      logger.info("Application Access URL {0}", url);
+      checkApp(url, httpHeaders);
+    }
   }
 
   /**

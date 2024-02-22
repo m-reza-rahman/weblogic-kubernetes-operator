@@ -750,12 +750,12 @@ class ItMultiDomainModelsScale {
 
     if (!OKD) {
       logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-      if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-        createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
-            true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
-      } else if (OKE_CLUSTER) {
+      if (OKE_CLUSTER) {
         createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
             false, nginxHelmParams.getIngressClassName(), false, 0);
+      } else if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
+            true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
       } else {
         assertDoesNotThrow(()
             -> createIngressForDomainAndVerify(domainUid, domainNamespace, TRAEFIK_INGRESS_HTTP_HOSTPORT,
