@@ -30,6 +30,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -75,6 +76,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServe
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -100,6 +102,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -282,7 +285,13 @@ class ItMultiDomainModelsScale {
     }
 
     // verify admin console login
-    if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (OKE_CLUSTER) {
+      String resourcePath = "/console/login/LoginForm.jsp";
+      final String adminServerPodName = domainUid + "-admin-server";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
