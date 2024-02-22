@@ -202,15 +202,25 @@ public class CdtTxServlet extends HttpServlet {
       String selectSQL = String.format("select table_name from user_tables where table_name='%s'", tableName);;
       System.out.println("selectSQL 1= " + selectSQL);
       stmt = conn.createStatement();
-      stmt.execute(selectSQL);
+      //boolean checkDone = stmt.execute(selectSQL);
+      ResultSet rs =	stmt.executeQuery(selectSQL)
+
+      rs.first();
+      System.out.println("got 1st from table - " + rs.getInt(1));
+      out.println("got 1st from table - " + rs.getInt(1));
+      System.out.println("got from table string - " + rs.getString(2));
+      out.println("got from table string - " + rs.getString(2));
+
       System.out.println("Done checking table exist 1 - closing stmt");
+      out.println("Done checking table exist 1 - closing stmt");
       stmt.close();
 
       selectSQL = String.format("select * from %s where rownum=1", tableName);;
       System.out.println("selectSQL 2= " + selectSQL);
       stmt = conn.createStatement();
-      stmt.execute(selectSQL);
-      System.out.println("Done checking table exist 2 - closing stmt");
+      boolean checkDone = stmt.execute(selectSQL);
+      System.out.println("Done checking table exist 2 - closing stmt: " + checkDone);
+      out.println("Done checking table exist 2 - closing stmt: " + checkDone);
       stmt.close();
     } catch (SQLException sqle) {
       System.out.println("Got SQL Exception when checking table exist from table ");
