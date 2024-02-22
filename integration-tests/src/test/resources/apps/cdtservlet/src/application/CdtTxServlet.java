@@ -203,7 +203,7 @@ public class CdtTxServlet extends HttpServlet {
       System.out.println("selectSQL 1= " + selectSQL);
       stmt = conn.createStatement();
       //boolean checkDone = stmt.execute(selectSQL);
-      ResultSet rs =	stmt.executeQuery(selectSQL)
+      ResultSet rs =	stmt.executeQuery(selectSQL);
 
       rs.first();
       System.out.println("got 1st from table - " + rs.getInt(1));
