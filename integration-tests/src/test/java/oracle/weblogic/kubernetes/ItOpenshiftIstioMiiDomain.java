@@ -258,7 +258,7 @@ class ItOpenshiftIstioMiiDomain {
     String gatewayUrl = result.stdout();
     
     if (!WEBLOGIC_SLIM) {
-      String consoleUrl = gatewayUrl + "/console/login/LoginForm.jsp";
+      String consoleUrl = gatewayUrl + "/weblogic/ready";
       boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console");
       logger.info("WebLogic console is accessible");

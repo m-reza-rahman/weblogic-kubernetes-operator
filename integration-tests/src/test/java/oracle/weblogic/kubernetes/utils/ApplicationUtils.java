@@ -439,7 +439,7 @@ public class ApplicationUtils {
     if (hostName.contains(":")) {
       hostName = "[" + hostName + "]";
     }
-    String consoleUrl = httpKey + hostName + ":" + port + "/console/login/LoginForm.jsp";
+    String consoleUrl = httpKey + hostName + ":" + port + "/weblogic/ready";
 
     boolean checkConsole = assertDoesNotThrow(() ->
         checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org", args));

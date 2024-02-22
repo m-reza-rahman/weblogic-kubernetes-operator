@@ -191,7 +191,7 @@ class ItMiiDomain {
    *
    * Negative test case for when domain resource attribute domain.spec.adminServer.adminChannelPortForwardingEnabled
    * is set to false, the WLS admin console can not be accessed using the forwarded port, like
-   * http://localhost:localPort/console/login/LoginForm.jsp.
+   * http://localhost:localPort/weblogic/ready.
    */
   @Test
   @Order(1)
@@ -288,7 +288,7 @@ class ItMiiDomain {
     logger.info("Found the administration service nodePort {0}", sslNodePort);
     String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
 
-    final String resourcePath = "/console/login/LoginForm.jsp";
+    final String resourcePath = "/weblogic/ready";
     if (!WEBLOGIC_SLIM) {
       if (OKE_CLUSTER) {
         testUntil(
@@ -300,7 +300,7 @@ class ItMiiDomain {
       } else {
         String curlCmd = "curl -skg --show-error --noproxy '*' "
             + " https://" + hostAndPort
-            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+            + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
         assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
         logger.info("WebLogic console is accessible thru default-secure service");
@@ -327,7 +327,7 @@ class ItMiiDomain {
       } else {
         String curlCmd2 = "curl -skg --show-error --noproxy '*' "
             + " http://" + hostAndPort
-            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+            + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         logger.info("Executing default nodeport curl command {0}", curlCmd2);
         assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
       }
@@ -340,7 +340,7 @@ class ItMiiDomain {
 
     // Test that `kubectl port-foward` is able to forward a local port to default channel port (7001 in this test)
     // and default secure channel port (7002 in this test)
-    // Verify that the WLS admin console can not be accessed using http://localhost:localPort/console/login/LoginForm.jsp
+    // Verify that the WLS admin console can not be accessed using http://localhost:localPort/weblogic/ready
     String forwardedPortNo = startPortForwardProcess(hostName, domainNamespace, domainUid, adminServerPort);
     verifyAdminConsoleAccessible(domainNamespace, hostName, forwardedPortNo, false, Boolean.FALSE);
 

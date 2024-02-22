@@ -322,7 +322,7 @@ class ItLargeMiiDomainsClusters {
         // String curlCmd = "curl -s --show-error --noproxy '*' "
         String curlCmd = "curl -s --show-error "
             + " http://" + hostAndPort
-            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+            + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         logger.info("Executing default nodeport curl command {0}", curlCmd);
         assertTrue(callWebAppAndWaitTillReady(curlCmd, 5));
         logger.info("WebLogic console is accessible thru default service");

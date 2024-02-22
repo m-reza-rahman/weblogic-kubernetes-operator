@@ -124,7 +124,7 @@ class ItMiiDomainUpgradeToSecureMode {
   private final String imageTag12214 = "12.2.1.4";
   private final String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
   private final String sampleAppUri = "/sample-war/index.jsp";
-  private final String legacyConsoleUri = "/console/login/LoginForm.jsp";
+  private final String legacyConsoleUri = "/weblogic/ready";
   private final String wlsConsoleText = "WebLogic Administration Console";
   private final String wlsConsoleMoved = "This document you requested has moved";
   private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"

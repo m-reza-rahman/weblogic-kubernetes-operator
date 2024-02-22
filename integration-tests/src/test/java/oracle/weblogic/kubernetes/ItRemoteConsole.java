@@ -236,7 +236,7 @@ class ItRemoteConsole {
     //verify WebLogic console is accessible through default-secure nodeport
     String curlCmd = "curl -g -sk --show-error --noproxy '*' "
           + " https://" + hostAndPort
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+          + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     logger.info("Executing WebLogic console default-secure nodeport curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
     logger.info("WebLogic console is accessible thru default-secure service");

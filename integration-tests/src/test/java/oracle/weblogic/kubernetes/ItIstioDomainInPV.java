@@ -333,7 +333,7 @@ class ItIstioDomainInPV  {
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
     if (!WEBLOGIC_SLIM) {
-      String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
+      String consoleUrl = "http://" + hostAndPort + "/weblogic/ready";
       boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console");
       logger.info("WebLogic console is accessible");
@@ -341,7 +341,7 @@ class ItIstioDomainInPV  {
       String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
       assertNotNull(forwardPort, "port-forward fails to assign local port");
       logger.info("Forwarded local port is {0}", forwardPort);
-      consoleUrl = "http://" + localhost + ":" + forwardPort + "/console/login/LoginForm.jsp";
+      consoleUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
       checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
       logger.info("WebLogic console is accessible thru port forwarding");

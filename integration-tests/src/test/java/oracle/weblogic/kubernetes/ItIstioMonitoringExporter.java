@@ -346,7 +346,7 @@ class ItIstioMonitoringExporter {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
-      String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
+      String consoleUrl = "http://" + host + ":" + istioIngressPort + "/weblogic/ready";
       boolean checkConsole =
           checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console");

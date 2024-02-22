@@ -165,7 +165,7 @@ public class Domain {
     String consoleUrl = new StringBuffer()
         .append("http://")
         .append(hostAndPort)
-        .append("/console/login/LoginForm.jsp").toString();
+        .append("/weblogic/ready").toString();
 
     getLogger().info("Accessing WebLogic console with url {0}", consoleUrl);
     final WebClient webClient = new WebClient();

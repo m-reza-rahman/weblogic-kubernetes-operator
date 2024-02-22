@@ -831,7 +831,7 @@ class ItMultiDomainModelsScale {
       String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
           + domainUid + "." + domainNamespace + ".adminserver.test"
           + "' http://" + host + ":" + nodeportshttp
-          + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
+          + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
       logger.info("Executing curl command {0}", curlCmd);
       testUntil(() -> callWebAppAndWaitTillReady(curlCmd, 5),

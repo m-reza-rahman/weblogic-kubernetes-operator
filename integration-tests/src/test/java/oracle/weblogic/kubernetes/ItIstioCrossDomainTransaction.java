@@ -376,7 +376,7 @@ class ItIstioCrossDomainTransaction {
       String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
           ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
 
-      String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
+      String consoleUrl = "http://" + hostAndPort + "/weblogic/ready";
 
       boolean checkConsole =
           checkAppUsingHostHeader(consoleUrl, "domain1-" + domain1Namespace + ".org");

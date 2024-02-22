@@ -484,7 +484,7 @@ public class CommonLBTestUtils {
           .append(host)
           .append(":")
           .append(nodePort)
-          .append("/console/login/LoginForm.jsp").toString();
+          .append("/weblogic/ready").toString();
 
       boolean adminAccessible = false;
       for (int i = 1; i <= 10; i++) {
@@ -558,7 +558,7 @@ public class CommonLBTestUtils {
           .append(":")
           .append(password)
           .append(" http://" + adminServerPodName + ":" + adminPort)
-          .append("/console/login/LoginForm.jsp")
+          .append("/weblogic/ready")
           .append("\"").toString();
 
       boolean adminAccessible = false;
@@ -923,7 +923,7 @@ public class CommonLBTestUtils {
       consoleUrl.append(pathLocation);
     }
 
-    consoleUrl.append("/console/login/LoginForm.jsp");
+    consoleUrl.append("/weblogic/ready");
     String curlCmd;
     if (isHostRouting) {
       curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",

@@ -284,7 +284,7 @@ class ItIstioTwoDomainsInImage {
     // in istio, as we can not enable Adminstration NodePort
 
     if (!WEBLOGIC_SLIM) {
-      String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
+      String consoleUrl = "http://" + hostAndPort + "/weblogic/ready";
       boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace1 + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic console on domain1");
       logger.info("WebLogic console on domain1 is accessible");
@@ -329,7 +329,7 @@ class ItIstioTwoDomainsInImage {
     // We can not verify Rest Management console thru Adminstration NodePort
     // in istio, as we can not enable Adminstration NodePort
     if (!WEBLOGIC_SLIM) {
-      String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
+      String consoleUrl = "http://" + hostAndPort + "/weblogic/ready";
       boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace2 + ".org");
       assertTrue(checkConsole, "Failed to access domain2 WebLogic console");
       logger.info("WebLogic console on domain2 is accessible");
