@@ -478,21 +478,21 @@ public class CommonLBTestUtils {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
-      getLogger().info("Check administration Console for generic/dev image");
+      getLogger().info("Check weblogic/ready app for generic/dev image");
       String consoleUrl = new StringBuffer()
           .append("http://")
           .append(host)
           .append(":")
           .append(nodePort)
-          .append("/console/login/LoginForm.jsp").toString();
+          .append("/weblogic/ready").toString();
 
       boolean adminAccessible = false;
       for (int i = 1; i <= 10; i++) {
-        getLogger().info("Iteration {0} out of 10: Accessing WebLogic console with url {1}", i, consoleUrl);
+        getLogger().info("Iteration {0} out of 10: Accessing weblogic/ready app with url {1}", i, consoleUrl);
         final WebClient webClient = new WebClient();
         webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
         final HtmlPage loginPage = assertDoesNotThrow(() -> webClient.getPage(consoleUrl),
-            "connection to the WebLogic admin console failed");
+            "connection to the WebLogic ready app failed");
         HtmlForm form = loginPage.getFormByName("loginData");
         form.getInputByName("j_username").type(ADMIN_USERNAME_DEFAULT);
         form.getInputByName("j_password").type(ADMIN_PASSWORD_DEFAULT);
@@ -923,7 +923,7 @@ public class CommonLBTestUtils {
       consoleUrl.append(pathLocation);
     }
 
-    consoleUrl.append("/console/login/LoginForm.jsp");
+    consoleUrl.append("/weblogic/ready");
     String curlCmd;
     if (isHostRouting) {
       curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
