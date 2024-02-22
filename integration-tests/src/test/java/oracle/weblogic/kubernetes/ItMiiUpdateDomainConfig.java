@@ -1090,6 +1090,13 @@ class ItMiiUpdateDomainConfig {
   private void verifyJdbcRuntime(String resourcesName, String expectedOutput) {
     int adminServiceNodePort
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+    String hostAndPort = getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+    String headers = "";
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      headers = " -H 'host: " + hostHeader + "' ";
+    }
 
     ExecResult result = null;
     curlString = new StringBuffer("curl -g --user ")
@@ -1097,7 +1104,8 @@ class ItMiiUpdateDomainConfig {
          .append(":")
          .append(ADMIN_PASSWORD_DEFAULT)
          .append(" ")
-         .append("http://" + getHostAndPort(adminSvcExtHost, adminServiceNodePort))
+         .append(headers)
+         .append("http://" + hostAndPort)
          .append("/management/wls/latest/datasources/id/")
          .append(resourcesName)
          .append("/")
