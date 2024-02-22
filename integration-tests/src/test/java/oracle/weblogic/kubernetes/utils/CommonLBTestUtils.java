@@ -479,7 +479,7 @@ public class CommonLBTestUtils {
         host = "[" + host + "]";
       }
       getLogger().info("Check administration Console for generic/dev image");
-      String consoleUrl = new StringBuffer()
+      String readyAppUrl = new StringBuffer()
           .append("http://")
           .append(host)
           .append(":")
@@ -488,10 +488,10 @@ public class CommonLBTestUtils {
 
       boolean adminAccessible = false;
       for (int i = 1; i <= 10; i++) {
-        getLogger().info("Iteration {0} out of 10: Accessing WebLogic console with url {1}", i, consoleUrl);
+        getLogger().info("Iteration {0} out of 10: Accessing WebLogic console with url {1}", i, readyAppUrl);
         final WebClient webClient = new WebClient();
         webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
-        final HtmlPage loginPage = assertDoesNotThrow(() -> webClient.getPage(consoleUrl),
+        final HtmlPage loginPage = assertDoesNotThrow(() -> webClient.getPage(readyAppUrl),
             "connection to the WebLogic admin console failed");
         HtmlForm form = loginPage.getFormByName("loginData");
         form.getInputByName("j_username").type(ADMIN_USERNAME_DEFAULT);
@@ -901,7 +901,7 @@ public class CommonLBTestUtils {
                                              String ingressHostName,
                                              String pathLocation,
                                              String... hostName) {
-    StringBuffer consoleUrl = new StringBuffer();
+    StringBuffer readyAppUrl = new StringBuffer();
     String hostAndPort;
     if (hostName != null && hostName.length > 0) {
       hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;
@@ -914,26 +914,26 @@ public class CommonLBTestUtils {
     }
 
     if (isTLS) {
-      consoleUrl.append("https://");
+      readyAppUrl.append("https://");
     } else {
-      consoleUrl.append("http://");
+      readyAppUrl.append("http://");
     }
-    consoleUrl.append(hostAndPort);
+    readyAppUrl.append(hostAndPort);
     if (!isHostRouting) {
-      consoleUrl.append(pathLocation);
+      readyAppUrl.append(pathLocation);
     }
 
-    consoleUrl.append("/weblogic/ready");
+    readyAppUrl.append("/weblogic/ready");
     String curlCmd;
     if (isHostRouting) {
       curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
-          ingressHostName, consoleUrl.toString());
+          ingressHostName, readyAppUrl.toString());
     } else {
       if (isTLS) {
         curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
-            + "-H 'WL-Proxy-SSL: false' %s", consoleUrl.toString());
+            + "-H 'WL-Proxy-SSL: false' %s", readyAppUrl.toString());
       } else {
-        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' %s", consoleUrl.toString());
+        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' %s", readyAppUrl.toString());
       }
     }
 

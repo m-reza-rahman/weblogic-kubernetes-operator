@@ -42,7 +42,6 @@ import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_TENANCY;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.listPods;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Command.defaultCommandParams;
@@ -494,19 +493,16 @@ public class IstioUtils {
     // in istio, as we can not enable Administration NodePort
     LoggingFacade logger = getLogger();
     logger.info("Verifying Istio Service @IngressPort [{0}]", istioIngressPort);
-    if (!WEBLOGIC_SLIM) {
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-      String consoleUrl = "http://" + host + ":" + istioIngressPort + "/weblogic/ready";
-      boolean checkConsole =
-          checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-      assertTrue(checkConsole, "Failed to access WebLogic console");
-      logger.info("WebLogic console is accessible");
-    } else {
-      logger.info("Skipping WebLogic console in WebLogic slim image");
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
     }
+    String readyAppUrl = "http://" + host + ":" + istioIngressPort + "/weblogic/ready";
+    boolean checlReadyApp =
+        checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+    assertTrue(checlReadyApp, "Failed to access ready app");
+    logger.info("ready app is accessible");
+
   }
 
   /**

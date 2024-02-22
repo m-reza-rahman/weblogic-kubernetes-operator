@@ -186,7 +186,7 @@ class ItMiiDomain {
    * Make sure the pre-packaged application in domain image gets deployed to
    * the cluster and accessible from all the managed server pods
    * Make sure two external NodePort services are created in domain namespace.
-   * Make sure WebLogic console is accessible through both
+   * Make sure ready app is accessible through both
    *   `default-secure` service and `default` service.
    *
    * Negative test case for when domain resource attribute domain.spec.adminServer.adminChannelPortForwardingEnabled
@@ -289,24 +289,20 @@ class ItMiiDomain {
     String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
 
     final String resourcePath = "/weblogic/ready";
-    if (!WEBLOGIC_SLIM) {
-      if (OKE_CLUSTER) {
-        testUntil(
-            isAppInServerPodReady(domainNamespace,
-               adminServerPodName, 7001, resourcePath, ""),
-            logger, "verify EM console access {0} in server {1}",
-            resourcePath,
-            adminServerPodName);
-      } else {
-        String curlCmd = "curl -skg --show-error --noproxy '*' "
-            + " https://" + hostAndPort
-            + "/weblogic/ready --write-out %{http_code} -o /dev/null";
-        logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
-        assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-        logger.info("WebLogic console is accessible thru default-secure service");
-      }
+    if (OKE_CLUSTER) {
+      testUntil(
+          isAppInServerPodReady(domainNamespace,
+             adminServerPodName, 7001, resourcePath, ""),
+          logger, "verify EM console access {0} in server {1}",
+          resourcePath,
+          adminServerPodName);
     } else {
-      logger.info("Skipping WebLogic console in WebLogic slim image");
+      String curlCmd = "curl -skg --show-error --noproxy '*' "
+          + " https://" + hostAndPort
+          + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+      logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
+      assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
+      logger.info("ready app is accessible thru default-secure service");
     }
 
     int nodePort = getServiceNodePort(
@@ -331,7 +327,7 @@ class ItMiiDomain {
         logger.info("Executing default nodeport curl command {0}", curlCmd2);
         assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
       }
-      logger.info("WebLogic console is accessible thru default service");
+      logger.info("ready app is accessible thru default service");
     } else {
       logger.info("Checking Rest API management console in WebLogic slim image");
       verifyCredentials(7001, adminServerPodName, domainNamespace,

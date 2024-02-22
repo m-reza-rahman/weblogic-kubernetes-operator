@@ -250,7 +250,7 @@ class ItProductionSecureMode {
     String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, defaultAdminPort);
     logger.info("The hostAndPort is {0}", hostAndPort);
 
-    String resourcePath = "/weblogic/ready";
+    String resourcePath = "/console/login/LoginForm.jsp";
     if (!WEBLOGIC_SLIM) {
       if (OKE_CLUSTER) {
         ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
@@ -259,7 +259,7 @@ class ItProductionSecureMode {
       } else {
         String curlCmd = "curl -g -sk --show-error --noproxy '*' "
             + " https://" + hostAndPort
-            + "/weblogic/ready --write-out %{http_code} "
+            + "/console/login/LoginForm.jsp --write-out %{http_code} "
             + " -o /dev/null";
         logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
         assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
@@ -272,7 +272,7 @@ class ItProductionSecureMode {
       logger.info("Forwarded admin-port is {0}", forwardPort);
       String curlCmd = "curl -sk --show-error --noproxy '*' "
           + " https://" + localhost + ":" + forwardPort
-          + "/weblogic/ready --write-out %{http_code} "
+          + "/console/login/LoginForm.jsp --write-out %{http_code} "
           + " -o /dev/null";
       logger.info("Executing default-admin port-fwd curl command {0}", curlCmd);
       assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
@@ -285,7 +285,7 @@ class ItProductionSecureMode {
       logger.info("Forwarded ssl port is {0}", forwardPort);
       curlCmd = "curl -g -sk --show-error --noproxy '*' "
           + " https://" + localhost + ":" + forwardPort
-          + "/weblogic/ready --write-out %{http_code} "
+          + "/console/login/LoginForm.jsp --write-out %{http_code} "
           + " -o /dev/null";
       logger.info("Executing default-admin port-fwd curl command {0}", curlCmd);
       assertFalse(callWebAppAndWaitTillReady(curlCmd, 10));
