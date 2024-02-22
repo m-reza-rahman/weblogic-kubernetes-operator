@@ -400,15 +400,15 @@ class ItMiiUpdateDomainConfig {
       logger.info("Found the JDBCSystemResource configuration");
     } else {
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "JDBCSystemResources", "TestDataSource", "200");
+          "JDBCSystemResources", "TestDataSource", "200", hostHeader);
       logger.info("Found the JDBCSystemResource configuration");
 
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "JMSSystemResources", "TestClusterJmsModule", "200");
+          "JMSSystemResources", "TestClusterJmsModule", "200", hostHeader);
       logger.info("Found the JMSSystemResource configuration");
 
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "WLDFSystemResources", "TestWldfModule", "200");
+          "WLDFSystemResources", "TestWldfModule", "200", hostHeader);
       logger.info("Found the WLDFSystemResource configuration");
 
       verifyJdbcRuntime("TestDataSource", "jdbc:oracle:thin:localhost");
@@ -492,9 +492,9 @@ class ItMiiUpdateDomainConfig {
           = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
       assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "JDBCSystemResources", "TestDataSource", "404");
+          "JDBCSystemResources", "TestDataSource", "404", hostHeader);
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "JMSSystemResources", "TestClusterJmsModule", "404");
+          "JMSSystemResources", "TestClusterJmsModule", "404", hostHeader);
     }
   }
 
@@ -575,11 +575,11 @@ class ItMiiUpdateDomainConfig {
       assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
 
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "JDBCSystemResources", "TestDataSource2", "200");
+          "JDBCSystemResources", "TestDataSource2", "200", hostHeader);
       logger.info("Found the JDBCSystemResource configuration");
 
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "JMSSystemResources", "TestClusterJmsModule2", "200");
+          "JMSSystemResources", "TestClusterJmsModule2", "200", hostHeader);
       logger.info("Found the JMSSystemResource configuration");
     }
 
@@ -907,9 +907,9 @@ class ItMiiUpdateDomainConfig {
           = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
       assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "JDBCSystemResources", "TestDataSource", "404");
+          "JDBCSystemResources", "TestDataSource", "404", hostHeader);
       verifySystemResourceConfiguration(adminSvcExtHost, adminServiceNodePort,
-          "JMSSystemResources", "TestClusterJmsModule", "404");
+          "JMSSystemResources", "TestClusterJmsModule", "404", hostHeader);
     }
   }
 
@@ -1023,11 +1023,18 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+    String headers = "";
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      headers = " -H 'host: " + hostHeader + "' ";
+    }
     StringBuffer checkClusterBaseCmd = new StringBuffer("curl -g --user ")
         .append(ADMIN_USERNAME_DEFAULT)
         .append(":")
         .append(ADMIN_PASSWORD_DEFAULT)
         .append(" ")
+        .append(headers)
         .append("http://" + hostAndPort)
         .append("/management/tenant-monitoring/servers/")
         .append(managedServer)
