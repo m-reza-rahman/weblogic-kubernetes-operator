@@ -558,7 +558,7 @@ public class CommonLBTestUtils {
           .append(":")
           .append(password)
           .append(" http://" + adminServerPodName + ":" + adminPort)
-          .append("/console/login/LoginForm.jsp")
+          .append("/weblogic/ready")
           .append("\"").toString();
 
       boolean adminAccessible = false;
