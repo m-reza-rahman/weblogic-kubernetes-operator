@@ -102,7 +102,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to a create MII domain and test autoscaling using HPA and"
     + "custom metrics provided via use of monitoring exporter and prometheus and prometheus adapter")
 @IntegrationTest
-@Tag("oke-gate")
+@Tag("oke-parallelnew")
 @Tag("kind-parallel")
 public class ItHorizontalPodAutoscalerCustomMetrics {
   private static final String MONEXP_MODEL_FILE = "model.monexp.custommetrics.yaml";
@@ -263,10 +263,12 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
         domainNamespace,
         domainUid), "Failed to install Prometheus");
 
+
     if (OKE_CLUSTER_PRIVATEIP) {
+      String promURL = prometheusReleaseName + "-server." + monitoringNS + ".svc.cluster.local";
       prometheusAdapterHelmParams = assertDoesNotThrow(() -> installAndVerifyPrometheusAdapter(
           prometheusAdapterReleaseName,
-          monitoringNS, ingressIP, 80), "Failed to install Prometheus Adapter");
+          monitoringNS, promURL, 80), "Failed to install Prometheus Adapter");
     } else {
       prometheusAdapterHelmParams = assertDoesNotThrow(() -> installAndVerifyPrometheusAdapter(
           prometheusAdapterReleaseName,
