@@ -199,33 +199,35 @@ public class CdtTxServlet extends HttpServlet {
     Statement stmt = null;
 
     try {
+      String selectSQL = String.format("desc '%s'", tableName);;
+      System.out.println("selectSQL 0= " + selectSQL);
+      out.println("selectSQL 0= " + selectSQL);
+      stmt = conn.createStatement();
+      boolean checkDone = stmt.execute(selectSQL);
+      System.out.println("Done checking table exist 0 - closing stmt: " + checkDone);
+      out.println("Done checking table exist 0 - closing stmt: " + checkDone);
+      stmt.close();
+
       String selectSQL = String.format("select table_name from user_tables where table_name='%s'", tableName);;
       System.out.println("selectSQL 1= " + selectSQL);
+      out.println("selectSQL 1= " + selectSQL);
       stmt = conn.createStatement();
-      //boolean checkDone = stmt.execute(selectSQL);
-      ResultSet rs =	stmt.executeQuery(selectSQL);
-
-      rs.first();
-      System.out.println("got 1st from table - " + rs.getInt(1));
-      out.println("got 1st from table - " + rs.getInt(1));
-      System.out.println("got from table string - " + rs.getString(2));
-      out.println("got from table string - " + rs.getString(2));
-
-      System.out.println("Done checking table exist 1 - closing stmt");
-      out.println("Done checking table exist 1 - closing stmt");
+      boolean checkDone1 = stmt.execute(selectSQL);
+      System.out.println("Done checking table exist 1 - closing stmt: " + checkDone1);
+      out.println("Done checking table exist 1 - closing stmt: " + checkDone1);
       stmt.close();
 
       selectSQL = String.format("select * from %s where rownum=1", tableName);;
       System.out.println("selectSQL 2= " + selectSQL);
+      out.println("selectSQL 2= " + selectSQL);
       stmt = conn.createStatement();
-      boolean checkDone = stmt.execute(selectSQL);
-      System.out.println("Done checking table exist 2 - closing stmt: " + checkDone);
-      out.println("Done checking table exist 2 - closing stmt: " + checkDone);
+      boolean checkDone2 = stmt.execute(selectSQL);
+      System.out.println("Done checking table exist 2 - closing stmt: " + checkDone2);
+      out.println("Done checking table exist 2 - closing stmt: " + checkDone2);
       stmt.close();
     } catch (SQLException sqle) {
       System.out.println("Got SQL Exception when checking table exist from table ");
       sqle.getMessage();
-      throw sqle;
     } finally {
       out.println("Done checking table exist - closing stmt");
       stmt.close();
