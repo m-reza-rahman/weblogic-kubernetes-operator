@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
@@ -236,7 +237,7 @@ class ItIstioMonitoringExporter {
           logger.info("Forwarded local port is {0}", forwardPort);
           hostPortPrometheus = localhost + ":" + forwardPort;
           isPrometheusPortForward = true;
-        } catch (Exception ex) {
+        } catch (AssertionFailedError ex) {
           //try again
           String command1 = KUBERNETES_CLI + " get svc prometheus -n " + istioNamespace;
           assertDoesNotThrow(() -> ExecCommand.exec(command1,true));
