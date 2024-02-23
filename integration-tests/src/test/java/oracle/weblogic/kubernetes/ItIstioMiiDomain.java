@@ -89,6 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("kind-parallel")
 @Tag("olcne-srg")
 @Tag("oke-parallelnew")
+
 class ItIstioMiiDomain {
 
   private static String opNamespace = null;

@@ -22,7 +22,10 @@ def kind_k8s_map = [
     ]
 ]
 def _kind_image = null
-CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=wls-srg'''
+CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=kind-parallel
+                   H 2 * * * % MAVEN_PROFILE_NAME=kind-sequential
+                   H 3 * * * % MAVEN_PROFILE_NAME=wls-srg'''
+
 pipeline {
     agent { label 'large-ol9' }
     options {
@@ -69,6 +72,7 @@ pipeline {
         choice(name: 'MAVEN_PROFILE_NAME',
                 description: 'Profile to use in mvn command to run the tests. Possible values are wls-srg (the default), integration-tests, toolkits-srg, kind-sequential and kind-upgrade. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                 choices: [
+		        'kind-parallel',
                         'wls-srg',
                         'integration-tests',
                         'kind-sequential',
@@ -398,8 +402,12 @@ nodes:
         hostPort: 2480
       - containerPort: 32490
         hostPort: 2490
+      - containerPort: 32156
+        hostPort: 2156
       - containerPort: 30511
         hostPort: 1511
+      - containerPort: 32159
+        hostPort: 2160
     extraMounts:
       - hostPath: ${pv_root}
         containerPath: ${pv_root}
