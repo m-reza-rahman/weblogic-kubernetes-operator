@@ -82,7 +82,7 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
   @Nonnull
   public Packet createPacket() {
     Packet packet = new Packet();
-    packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, liveInfo);
+    packet.put(ProcessingConstants.CLUSTER_PRESENCE_INFO, liveInfo);
     packet.put(ProcessingConstants.DELEGATE_COMPONENT_NAME, delegate);
     packet.put(ProcessingConstants.MAKE_RIGHT_DOMAIN_OPERATION, this);
     return packet;

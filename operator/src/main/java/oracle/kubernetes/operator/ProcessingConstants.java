@@ -28,6 +28,7 @@ public interface ProcessingConstants {
   String SERVER_HEALTH_MAP = "serverHealthMap";
 
   String DOMAIN_PRESENCE_INFO = "dpi";
+  String CLUSTER_PRESENCE_INFO = "cpi";
   String DOMAIN_TOPOLOGY = "domainTopology";
   String JOB_POD = "jobPod";
   String JOB_POD_INTROSPECT_CONTAINER_TERMINATED = "JOB_POD_CONTAINER_TERMINATED";

@@ -327,7 +327,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   public void definePodLog(String name, String namespace, Object contents) {
-    repositories.get(PODLOG).createResourceInNamespace(name, namespace, contents);
+    repositories.get(PODLOG).createResourceInNamespace(name, namespace,
+            new RequestBuilder.StringObject(contents.toString()));
   }
 
   /**
@@ -814,7 +815,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
         @Override
         public KubernetesApiResponse<RequestBuilder.StringObject> logs(
                 String namespace, String name, String container) {
-          return null;
+          return new CallContext<RequestBuilder.StringObject>(
+                  Operation.read, PODLOG, namespace, name)
+                  .execute();
         }
 
         @Override
@@ -1065,10 +1068,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     @SuppressWarnings("unchecked")
     private T getDeleteResult(String name, String namespace, String call) {
-      if (call.equals(DELETE_POD)) {
+      if (DELETE_POD.equals(call)) {
         return (T) new V1Pod().metadata(new V1ObjectMeta().name(name).namespace(namespace));
       } else {
-        return (T) new V1Status().code(200);
+        return (T) new RequestBuilder.V1StatusObject(new V1Status().code(200));
       }
     }
 
