@@ -126,6 +126,6 @@ public class CoreDelegateImpl implements CoreDelegate {
   @Override
   public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
     ScheduledFuture<?> future = engine.getExecutor().scheduleWithFixedDelay(command, initialDelay, delay, unit);
-    return () -> { return future.cancel(true); };
+    return () -> future.cancel(true);
   }
 }

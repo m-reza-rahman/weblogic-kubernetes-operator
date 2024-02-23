@@ -60,9 +60,9 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   private static final KubernetesApiFactory DEFAULT_KUBERNETES_API_FACTORY = new KubernetesApiFactory() {
   };
 
-  public static <KO extends KubernetesObject, KLO extends KubernetesListObject>
-  KubernetesApi<KO, KLO> createKubernetesApi(Class<KO> apiTypeClass, Class<KLO> apiListTypeClass,
-                                String apiGroup, String apiVersion, String resourcePlural) {
+  public static <X extends KubernetesObject, Y extends KubernetesListObject>
+      KubernetesApi<X, Y> createKubernetesApi(Class<X> apiTypeClass, Class<Y> apiListTypeClass,
+                                              String apiGroup, String apiVersion, String resourcePlural) {
     return kubernetesApiFactory.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
   }
 
@@ -72,9 +72,9 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   private static final WatchApiFactory DEFAULT_WATCH_API_FACTORY = new WatchApiFactory() {
   };
 
-  public static <KO extends KubernetesObject, KLO extends KubernetesListObject>
-  WatchApi<KO> createWatchApi(Class<KO> apiTypeClass, Class<KLO> apiListTypeClass,
-                                String apiGroup, String apiVersion, String resourcePlural) {
+  public static <X extends KubernetesObject, Y extends KubernetesListObject>
+      WatchApi<X> createWatchApi(Class<X> apiTypeClass, Class<Y> apiListTypeClass,
+                                 String apiGroup, String apiVersion, String resourcePlural) {
     return watchApiFactory.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
   }
 

@@ -78,7 +78,6 @@ import jakarta.json.JsonStructure;
 import oracle.kubernetes.operator.calls.KubernetesApi;
 import oracle.kubernetes.operator.calls.KubernetesApiFactory;
 import oracle.kubernetes.operator.calls.RequestBuilder;
-import oracle.kubernetes.operator.calls.RequestStep;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
@@ -586,7 +585,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
     getVersion {
       @Override
       @SuppressWarnings("unchecked")
-      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext, DataRepository<T> dataRepository) {
+      <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
+                                                                  DataRepository<T> dataRepository) {
         return (KubernetesApiResponse<T>) new KubernetesApiResponse<>(
             new RequestBuilder.VersionInfoObject(TEST_VERSION_INFO));
       }
@@ -804,14 +804,16 @@ public class KubernetesTestSupport extends FiberTestSupport {
         }
 
         @Override
-        public KubernetesApiResponse<RequestBuilder.V1StatusObject> deleteCollection(String namespace, ListOptions listOptions, DeleteOptions deleteOptions) {
+        public KubernetesApiResponse<RequestBuilder.V1StatusObject> deleteCollection(
+                String namespace, ListOptions listOptions, DeleteOptions deleteOptions) {
           return new CallContext<RequestBuilder.V1StatusObject>(
               Operation.deleteCollection, getResourceName(apiTypeClass), namespace, null)
               .execute();
         }
 
         @Override
-        public KubernetesApiResponse<RequestBuilder.StringObject> logs(String namespace, String name, String container) {
+        public KubernetesApiResponse<RequestBuilder.StringObject> logs(
+                String namespace, String name, String container) {
           return null;
         }
 

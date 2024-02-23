@@ -90,8 +90,19 @@ public class StubWatchFactory implements WatchApiFactory {
     exceptionOnNext = e;
   }
 
+  /**
+   * Create watch api.
+   * @param <A> Kubernetes object type
+   * @param <L> Kubernetes list object type
+   * @param apiTypeClass api type
+   * @param apiListTypeClass api list type
+   * @param apiGroup group
+   * @param apiVersion version
+   * @param resourcePlural plural
+   * @return the watch api
+   */
   public <A extends KubernetesObject, L extends KubernetesListObject>
-  WatchApi<A> create(Class<A> apiTypeClass, Class<L> apiListTypeClass,
+      WatchApi<A> create(Class<A> apiTypeClass, Class<L> apiListTypeClass,
                      String apiGroup, String apiVersion, String resourcePlural) {
     return new WatchApi<A>() {
       @Override

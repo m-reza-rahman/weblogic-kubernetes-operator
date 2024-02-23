@@ -278,7 +278,8 @@ public class Namespaces {
       return doNext(Step.chain(createNamespaceWatchStopEventsStep(nsStopEventSteps), getNext()), packet);
     }
 
-    private List<Fiber.StepAndPacket> getCreateNSStopEventSteps(Packet packet, NamespaceValidationContext validationContext) {
+    private List<Fiber.StepAndPacket> getCreateNSStopEventSteps(Packet packet,
+                                                                NamespaceValidationContext validationContext) {
       return domainNamespaces.getNamespaces().stream()
           .filter(validationContext::isNotManaged)
           .map(n -> createNSStopEventDetails(packet, n)).toList();

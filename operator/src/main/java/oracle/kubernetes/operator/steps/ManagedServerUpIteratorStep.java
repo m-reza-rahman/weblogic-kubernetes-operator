@@ -172,7 +172,8 @@ public class ManagedServerUpIteratorStep extends Step {
     final int maxConcurrency;
     final AtomicInteger numStarted = new AtomicInteger(0);
 
-    StartManagedServersStep(String clusterName, int maxConcurrency, Collection<Fiber.StepAndPacket> startDetails, Step next) {
+    StartManagedServersStep(String clusterName, int maxConcurrency,
+                            Collection<Fiber.StepAndPacket> startDetails, Step next) {
       super(next);
       this.clusterName = clusterName;
       this.maxConcurrency = maxConcurrency;

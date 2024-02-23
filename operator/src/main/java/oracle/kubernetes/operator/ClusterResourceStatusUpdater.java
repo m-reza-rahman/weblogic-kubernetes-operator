@@ -85,7 +85,8 @@ public class ClusterResourceStatusUpdater {
                                                                Collection<ClusterResource> clusterResources) {
       List<Fiber.StepAndPacket> result = clusterResources.stream()
           .filter(res -> createContext(packet, res).isClusterResourceStatusChanged())
-          .map(res -> new Fiber.StepAndPacket(createContext(packet, res).createReplaceClusterResourceStatusStep(), packet))
+          .map(res -> new Fiber.StepAndPacket(
+                  createContext(packet, res).createReplaceClusterResourceStatusStep(), packet))
           .toList();
       return result.isEmpty() ? null : new RunInParallelStep(result);
     }

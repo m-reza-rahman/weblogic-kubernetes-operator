@@ -8,8 +8,6 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.options.ListOptions;
 
-import java.util.function.Function;
-
 public interface WatchApi<A extends KubernetesObject> {
 
   /**
