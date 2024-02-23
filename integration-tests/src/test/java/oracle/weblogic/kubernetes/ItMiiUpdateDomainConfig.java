@@ -219,6 +219,7 @@ class ItMiiUpdateDomainConfig {
     // verify the admin server service and pod created
     checkPodReadyAndServiceExists(adminServerPodName, domainUid, domainNamespace);
 
+    // create ingress for admin service
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
@@ -281,6 +282,7 @@ class ItMiiUpdateDomainConfig {
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
 
+    // use traefik LB for kind cluster with ingress host header in url
     String headers = "";
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
@@ -1023,6 +1025,8 @@ class ItMiiUpdateDomainConfig {
         = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     String hostAndPort =
         OKE_CLUSTER ? adminServerPodName + ":7001" : getHostAndPort(adminSvcExtHost, adminServiceNodePort);
+
+    // use traefik LB for kind cluster with ingress host header in url
     String headers = "";
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {

@@ -742,6 +742,8 @@ public class CommonTestUtils {
     final LoggingFacade logger = getLogger();
 
     String hostAndPort = getHostAndPort(adminRouteHost, nodePort);
+    
+    // use traefik LB for kind cluster with ingress host header in url
     String headers = "";
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
