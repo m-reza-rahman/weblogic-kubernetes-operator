@@ -67,6 +67,7 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_USERNAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.TestConstants.WLS_DOMAIN_TYPE;
@@ -97,9 +98,11 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainResourc
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podImagePatched;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminConsoleAccessible;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkClusterReplicaCountMatches;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
@@ -145,6 +148,9 @@ class ItMiiDomain {
 
   private String domainUid = "domain1";
   private String domainUid1 = "domain2";
+  private static int adminPort = 7001;
+  private static final String adminServerName = "admin-server";
+  private static String hostHeader;
   private String miiImagePatchAppV2 = null;
   private String miiImageAddSecondApp = null;
   private static LoggingFacade logger = null;
@@ -276,6 +282,13 @@ class ItMiiDomain {
 
     logger.info("All the servers in Domain {0} are running and application is available", domainUid);
 
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+      assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost",
+          TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    }
+
     int sslNodePort = getServiceNodePort(
          domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
     // In OKD cluster, we need to set the target port of the route to be the ssl port
@@ -298,12 +311,23 @@ class ItMiiDomain {
             resourcePath,
             adminServerPodName);
       } else {
-        String curlCmd = "curl -skg --show-error --noproxy '*' "
+        /*TODO String curlCmd = "curl -skg --show-error --noproxy '*' "
             + " https://" + hostAndPort
-            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";
-        logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
-        assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
-        logger.info("WebLogic console is accessible thru default-secure service");
+            + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";*/
+        StringBuffer curlCmd = new StringBuffer("curl -s -L --show-error --noproxy '*' ");
+        if (TestConstants.KIND_CLUSTER
+            && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+          hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+          curlCmd.append(" -H 'host: " + hostHeader + "' ");
+        }
+        logger.info("**** hostAndPort={0}", hostAndPort);
+        String url = "\" http://" + hostAndPort
+            + "/em/faces/targetauth/emasLogin --write-out %{http_code} -o /dev/null" + "\"";
+        curlCmd.append(url);
+
+        logger.info("Executing default-admin curl command {0}", curlCmd);
+        assertTrue(callWebAppAndWaitTillReady(new String(curlCmd), 10));
+        logger.info("WebLogic EM console is accessible thru default-secure service");
       }
     } else {
       logger.info("Skipping WebLogic console in WebLogic slim image");
