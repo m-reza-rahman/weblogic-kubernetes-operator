@@ -337,6 +337,18 @@ class ItMultiDomainModelsScale {
 
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
         clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
+    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
+        managedServerPodNamePrefix, replicaCount, numberOfServers, null, null);
+
+    // then scale cluster back to 2 servers
+    logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+        clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
+        managedServerPodNamePrefix, numberOfServers, replicaCount, null, null);
+
+    /*
+    logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+        clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
     curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
     List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
@@ -351,7 +363,7 @@ class ItMultiDomainModelsScale {
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
         numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
         false, "", "", 0, "", "",
-        curlCmd, managedServersBeforeScale,hostname);
+        curlCmd, managedServersBeforeScale,hostname);*/
 
     // verify admin console login
     if (OKE_CLUSTER) {

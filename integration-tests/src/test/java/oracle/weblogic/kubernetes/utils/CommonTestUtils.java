@@ -64,6 +64,7 @@ import static oracle.weblogic.kubernetes.TestConstants.HTTP_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+//import static oracle.weblogic.kubernetes.TestConstants.MII_APP_RESPONSE_V1;
 import static oracle.weblogic.kubernetes.TestConstants.NODE_IP;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -99,6 +100,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApi;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithWLDF;
 import static oracle.weblogic.kubernetes.actions.impl.UniqueName.random;
+//import static oracle.weblogic.kubernetes.assertions.TestAssertions.appAccessibleInPod;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsNotValid;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsValid;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podStateNotChanged;
@@ -107,6 +109,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceExists
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndCheckForServerNameInResponse;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHostHeader;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withQuickRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToImageContainer;
 import static oracle.weblogic.kubernetes.utils.FileUtils.isFileExistAndNotEmpty;
@@ -541,8 +544,21 @@ public class CommonTestUtils {
               clusterName, domainUid, domainNamespace))
           .isTrue();
     }
+
     verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
         replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
+    /*
+    if (OKE_CLUSTER) {
+      // check and wait for the application to be accessible in all server pods
+      for (int i = 1; i <= replicasAfterScale; i++) {
+        // check if the application is accessible inside of a server pod
+        appAccessibleInPod(domainNamespace, manageServerPodNamePrefix + i,
+            "8001", "sample-war/index.jsp", MII_APP_RESPONSE_V1 + i);
+      }
+    } else {
+      verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
+          replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
+    }*/
   }
 
   /**
