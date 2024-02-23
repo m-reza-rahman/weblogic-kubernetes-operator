@@ -199,26 +199,27 @@ public class CdtTxServlet extends HttpServlet {
   private void createTable(Connection conn, String tableName) throws SQLException {
     Statement stmt = null;
 
-    /*
     try {
-      String selectSQL = String.format("desc '%s'", tableName);;
+      //String selectSQL = String.format("desc '%s'; ROLLBACK; commit; UNLOCK TABLES;", tableName);
+      String selectSQL = String.format("desc '%s'; UNLOCK TABLES;", tableName);
       System.out.println("selectSQL 0=== " + selectSQL);
-      out.println("selectSQL 0= " + selectSQL);
+      out.println("=== selectSQL 0= " + selectSQL);
       stmt = conn.createStatement();
       boolean checkDone = stmt.execute(selectSQL);
       System.out.println("Done checking table exist 0 - closing stmt: " + checkDone);
       out.println("=== Done checking table exist 0 - closing stmt: " + checkDone);
       stmt.close();
 
-      selectSQL = String.format("select table_name from user_tables where table_name='%s'", tableName);;
+      selectSQL = String.format("SELECT object_id FROM dba_objects WHERE object_name='%s'", tableName);;
       System.out.println("selectSQL 1= " + selectSQL);
-      out.println("selectSQL 1= " + selectSQL);
+      out.println("=== selectSQL 1= " + selectSQL);
       stmt = conn.createStatement();
       boolean checkDone1 = stmt.execute(selectSQL);
       System.out.println("Done checking table exist 1 - closing stmt: " + checkDone1);
-      out.println("Done checking table exist 1 - closing stmt: " + checkDone1);
+      out.println("=== Done checking table exist 1 - closing stmt: " + checkDone1);
       stmt.close();
 
+      /*
       selectSQL = String.format("select * from %s where rownum=1", tableName);;
       System.out.println("selectSQL 2= " + selectSQL);
       out.println("selectSQL 2= " + selectSQL);
@@ -232,14 +233,14 @@ public class CdtTxServlet extends HttpServlet {
       out.println("===deleting table before create if exists");
       dropTable(conn, tableName);
       System.out.println("===Done deleting table before create if exists");
-      out.println("===Done deleting table before create if exists");
+      out.println("===Done deleting table before create if exists");*/
     } catch (SQLException sqle) {
       System.out.println("Got SQL Exception when checking table exist from table ");
       sqle.getMessage();
     } finally {
       out.println("Done checking table exist - closing stmt");
       stmt.close();
-    }*/
+    }
 
     try {
     /*
@@ -252,15 +253,15 @@ public class CdtTxServlet extends HttpServlet {
       out.println("Done deleting a row - closing stmt");
       stmt.close();*/
 
-    System.out.println("===deleting table before create if exists");
-    out.println("===deleting table before create if exists");
-    String dropSQL = String.format("drop table %s purge", tableName);
-    System.out.println("===deleting table String = " + dropSQL);
-    out.println("===deleting table String = " + dropSQL);
-    stmt = conn.createStatement();
-    stmt.execute(dropSQL);
-    System.out.println("===Done deleting table before create if exists");
-    out.println("===Done deleting table before create if exists");
+      System.out.println("===deleting table before create if exists");
+      out.println("===deleting table before create if exists");
+      String dropSQL = String.format("drop table %s purge", tableName);
+      System.out.println("===deleting table String = " + dropSQL);
+      out.println("===deleting table String = " + dropSQL);
+      stmt = conn.createStatement();
+      stmt.execute(dropSQL);
+      System.out.println("===Done deleting table before create if exists");
+      out.println("===Done deleting table before create if exists");
     } catch (SQLException sqle) {
       System.out.println("===Got SQL Exception when deleting table " + sqle.getMessage());
       out.println("===Got SQL Exception when deleting table " + sqle.getMessage());
