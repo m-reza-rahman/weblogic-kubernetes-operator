@@ -179,22 +179,10 @@ class ItIstioDomainInPV  {
     String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
     final int replicaCount = 2;
     final int t3ChannelPort = getNextFreePort();
-    
-    String host;
-    int istioIngressPort;
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      host = "localhost";
-      istioIngressPort = ISTIO_HTTP_HOSTPORT;
-    } else {
-      istioIngressPort = getIstioHttpIngressPort();
-      logger.info("Istio Ingress Port is {0}", istioIngressPort);
-      host = formatIPv6Host(K8S_NODEPORT_HOST);
-    }    
-
+  
     // In internal OKE env, use Istio EXTERNAL-IP; in non-internal-OKE env, use K8S_NODEPORT_HOST
     String hostName = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
-        ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host;
+        ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
 
     // create pull secrets for WebLogic image when running in non Kind Kubernetes cluster
     // this secret is used only for non-kind cluster
@@ -332,21 +320,42 @@ class ItIstioDomainInPV  {
 
     // In internal OKE env, use Istio EXTERNAL-IP;
     // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
+    
+    String host;
+    int istioIngressPort;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = "localhost";
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+    } else {
+      istioIngressPort = getIstioHttpIngressPort();
+      logger.info("Istio Ingress Port is {0}", istioIngressPort);
+      host = formatIPv6Host(K8S_NODEPORT_HOST);
+    }
     String hostAndPort = hostName.contains(K8S_NODEPORT_HOST) ? host + ":" + istioIngressPort : hostName;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+      hostAndPort = host + ":" + istioIngressPort;
+    }
 
     String consoleUrl = "http://" + hostAndPort + "/weblogic/ready";
     boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
     assertTrue(checkConsole, "Failed to access WebLogic readyapp ");
     logger.info("WebLogic console is accessible");
-    String localhost = "localhost";
-    String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
-    assertNotNull(forwardPort, "port-forward fails to assign local port");
-    logger.info("Forwarded local port is {0}", forwardPort);
-    consoleUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
-    checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
-    logger.info("WebLogic readyapp is accessible thru port forwarding");
-    stopPortForwardProcess(domainNamespace);
+    if (!(TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
+      String localhost = "localhost";
+      String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
+      assertNotNull(forwardPort, "port-forward fails to assign local port");
+      logger.info("Forwarded local port is {0}", forwardPort);
+      consoleUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
+      checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
+      assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
+      logger.info("WebLogic readyapp is accessible thru port forwarding");
+      stopPortForwardProcess(domainNamespace);
+    }
 
     ExecResult result = null;
     if (isWebLogicPsuPatchApplied()) {
