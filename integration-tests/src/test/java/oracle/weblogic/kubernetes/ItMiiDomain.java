@@ -321,7 +321,7 @@ class ItMiiDomain {
           curlCmd.append(" -H 'host: " + hostHeader + "' ");
         }
         logger.info("**** hostAndPort={0}", hostAndPort);
-        String url = "\" http://" + hostAndPort
+        String url = "\"http://" + hostAndPort
             + "/em/faces/targetauth/emasLogin --write-out %{http_code} -o /dev/null" + "\"";
         curlCmd.append(url);
 
