@@ -555,7 +555,7 @@ public class MonitoringUtils {
         logger,
         "Check pod creation {0} ",
         "prometheus-adapterhpatest");
-    
+
     logger.info("Get pod name for adapter in namespace {0}", promAdapterNamespace);
 
     String podName = assertDoesNotThrow(() -> getPodName(promAdapterNamespace, "prometheus-adapterhpatest"),

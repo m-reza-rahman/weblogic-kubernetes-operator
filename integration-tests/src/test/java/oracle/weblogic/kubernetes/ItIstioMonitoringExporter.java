@@ -378,24 +378,7 @@ class ItIstioMonitoringExporter {
     boolean deployRes = assertDoesNotThrow(
         () -> deployHttpIstioGatewayAndVirtualservice(targetHttpFile));
     assertTrue(deployRes, "Failed to deploy Http Istio Gateway/VirtualService");
-    /*
-    String prometheusService = domainUid + "-cluster-" + clusterName + "." + domainNamespace + ".svc.cluster.local";
 
-    Map<String, String> templateMap  = new HashMap<>();
-    templateMap.put("NAMESPACE", domainNamespace);
-    templateMap.put("DUID", domainUid);
-    templateMap.put("ADMIN_SERVICE",adminServerPodName);
-    templateMap.put("CLUSTER_SERVICE", clusterService);
-
-    Path srcHttpFile = Paths.get(RESOURCE_DIR, "istio", "istio-http-template.yaml");
-    Path targetHttpFile = assertDoesNotThrow(
-        () -> generateFileFromTemplate(srcHttpFile.toString(), "istio-http.yaml", templateMap));
-    logger.info("Generated Http VS/Gateway file path is {0}", targetHttpFile);
-
-    boolean deployRes = assertDoesNotThrow(
-        () -> deployHttpIstioGatewayAndVirtualservice(targetHttpFile));
-    assertTrue(deployRes, "Failed to deploy Http Istio Gateway/VirtualService");
-  */
     Path srcDrFile = Paths.get(RESOURCE_DIR, "istio", "istio-dr-template.yaml");
     Path targetDrFile = assertDoesNotThrow(
         () -> generateFileFromTemplate(srcDrFile.toString(), "istio-dr.yaml", templateMap));
