@@ -314,20 +314,20 @@ class ItMiiDomain {
         /*TODO String curlCmd = "curl -skg --show-error --noproxy '*' "
             + " https://" + hostAndPort
             + "/console/login/LoginForm.jsp --write-out %{http_code} -o /dev/null";*/
-        StringBuffer curlCmd = new StringBuffer("curl -s -L --show-error --noproxy '*' ");
+        StringBuffer curlCmd = new StringBuffer("curl -skg --show-error --noproxy '*' ");
         if (TestConstants.KIND_CLUSTER
             && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
           hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
           curlCmd.append(" -H 'host: " + hostHeader + "' ");
         }
         logger.info("**** hostAndPort={0}", hostAndPort);
-        String url = "\"http://" + hostAndPort
-            + "/em/faces/targetauth/emasLogin --write-out %{http_code} -o /dev/null" + "\"";
+        String url = "\"https://" + hostAndPort
+            + "/weblogic/ready --write-out %{http_code} -o /dev/null" + "\"";
         curlCmd.append(url);
 
         logger.info("Executing default-admin curl command {0}", curlCmd);
         assertTrue(callWebAppAndWaitTillReady(new String(curlCmd), 10));
-        logger.info("WebLogic EM console is accessible thru default-secure service");
+        logger.info("WebLogic ready app is accessible thru default-secure service");
       }
     } else {
       logger.info("Skipping WebLogic console in WebLogic slim image");
