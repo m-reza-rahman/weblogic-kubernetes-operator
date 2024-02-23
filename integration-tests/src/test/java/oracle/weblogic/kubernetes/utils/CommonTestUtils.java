@@ -547,18 +547,6 @@ public class CommonTestUtils {
 
     verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
         replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
-    /*
-    if (OKE_CLUSTER) {
-      // check and wait for the application to be accessible in all server pods
-      for (int i = 1; i <= replicasAfterScale; i++) {
-        // check if the application is accessible inside of a server pod
-        appAccessibleInPod(domainNamespace, manageServerPodNamePrefix + i,
-            "8001", "sample-war/index.jsp", MII_APP_RESPONSE_V1 + i);
-      }
-    } else {
-      verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
-          replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
-    }*/
   }
 
   /**
