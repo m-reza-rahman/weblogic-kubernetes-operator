@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("olcne-mrg")
-@Tag("oke-parallelnew")
+@Tag("oke-gate")
 
 class ItAddNewDynamicClusterUsingWlst {
 
