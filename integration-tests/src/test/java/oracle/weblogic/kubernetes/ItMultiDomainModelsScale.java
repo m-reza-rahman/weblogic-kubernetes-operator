@@ -254,43 +254,27 @@ class ItMultiDomainModelsScale {
         numberOfServers = 3;
       }
 
+      String hostname = null;
+
       if (OKE_CLUSTER) {
-        logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
-            clusterName, domainUid, domainNamespace, numberOfServers);
         String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-        String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-
-        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
-            domainUid + "-" + MANAGED_SERVER_NAME_BASE, replicaCount, numberOfServers,
-            false, 0, "", "",
-            false, "", "", 0, "",
-            "", null, null);
-
-        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
-            domainUid + "-" + MANAGED_SERVER_NAME_BASE, replicaCount, numberOfServers,
-            null, null);
-
-        // then scale cluster back to 1 servers
-        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
-        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
-            domainUid + "-" + MANAGED_SERVER_NAME_BASE, numberOfServers, replicaCount,
-            null, null);
-      } else {
-        logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
-            clusterName, domainUid, domainNamespace, numberOfServers);
-        curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
-        List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
-        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-            replicaCount, numberOfServers, curlCmd, managedServersBeforeScale);
-
-        // then scale cluster back to 1 servers
-        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
-        managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
-        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-            numberOfServers, replicaCount, curlCmd, managedServersBeforeScale);
+        hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
       }
+
+      logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
+          clusterName, domainUid, domainNamespace, numberOfServers);
+      curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+      logger.info("1. ===curlCmd from generateCurlCmd: {0}", curlCmd);
+      List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          replicaCount, numberOfServers, curlCmd, managedServersBeforeScale, hostname);
+
+      // then scale cluster back to 1 servers
+      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+          clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+      managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          numberOfServers, replicaCount, curlCmd, managedServersBeforeScale, hostname);
     }
 
     // verify admin console login
@@ -344,6 +328,12 @@ class ItMultiDomainModelsScale {
     String clusterName = domain.getSpec().getClusters().get(0).getName();
     String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
     int numberOfServers = 3;
+    String hostname = null;
+
+    if (OKE_CLUSTER) {
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+    }
 
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
         clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
@@ -351,7 +341,8 @@ class ItMultiDomainModelsScale {
     List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
         replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
-        false, "", "", 0, "", "", curlCmd, managedServersBeforeScale);
+        false, "", "", 0, "", "",
+        curlCmd, managedServersBeforeScale,hostname);
 
     // then scale cluster back to 2 servers
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
@@ -359,10 +350,17 @@ class ItMultiDomainModelsScale {
     managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
         numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
-        false, "", "", 0, "", "", curlCmd, managedServersBeforeScale);
+        false, "", "", 0, "", "",
+        curlCmd, managedServersBeforeScale,hostname);
 
     // verify admin console login
-    if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (OKE_CLUSTER) {
+      String resourcePath = "/console/login/LoginForm.jsp";
+      final String adminServerPodName = domainUid + "-admin-server";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
@@ -387,7 +385,6 @@ class ItMultiDomainModelsScale {
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithWLDF(String domainType) {
-
     DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
 
     // get domain properties
@@ -396,6 +393,12 @@ class ItMultiDomainModelsScale {
     String domainHome = domain.getSpec().getDomainHome();
     int numClusters = domain.getSpec().getClusters().size();
     String clusterName = domain.getSpec().getClusters().get(0).getName();
+    String hostname = null;
+
+    if (OKE_CLUSTER) {
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+    }
 
     String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
 
@@ -413,7 +416,7 @@ class ItMultiDomainModelsScale {
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
         replicaCount, replicaCount + 1, false, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
         true, domainHome, "scaleUp", 1,
-        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
+        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale,hostname);
 
     // scale down the cluster by 1 server
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
@@ -423,10 +426,16 @@ class ItMultiDomainModelsScale {
     scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
         replicaCount + 1, replicaCount, false, 0, opNamespace, opServiceAccount,
         true, domainHome, "scaleDown", 1,
-        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
+        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale, hostname);
 
     // verify admin console login
-    if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (OKE_CLUSTER) {
+      String resourcePath = "/console/login/LoginForm.jsp";
+      final String adminServerPodName = domainUid + "-admin-server";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
