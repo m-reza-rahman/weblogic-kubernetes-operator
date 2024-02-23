@@ -40,7 +40,7 @@ public class CdtTxServlet extends HttpServlet {
   private TransactionManager tm = (TransactionManager)
       TransactionHelper.getTransactionHelper().getTransactionManager();
   PrintWriter out = null;
-  String tableName = "cdt_table";
+  String tableName = "cdt_table1";
   java.sql.Connection conn;
 
   /**
@@ -199,6 +199,7 @@ public class CdtTxServlet extends HttpServlet {
   private void createTable(Connection conn, String tableName) throws SQLException {
     Statement stmt = null;
 
+    /*
     try {
       //String selectSQL = String.format("desc '%s'; ROLLBACK; commit; UNLOCK TABLES;", tableName);
       String selectSQL = String.format("desc '%s'; UNLOCK TABLES;", tableName);
@@ -219,7 +220,6 @@ public class CdtTxServlet extends HttpServlet {
       out.println("=== Done checking table exist 1 - closing stmt: " + checkDone1);
       stmt.close();
 
-      /*
       selectSQL = String.format("select * from %s where rownum=1", tableName);;
       System.out.println("selectSQL 2= " + selectSQL);
       out.println("selectSQL 2= " + selectSQL);
@@ -233,14 +233,14 @@ public class CdtTxServlet extends HttpServlet {
       out.println("===deleting table before create if exists");
       dropTable(conn, tableName);
       System.out.println("===Done deleting table before create if exists");
-      out.println("===Done deleting table before create if exists");*/
+      out.println("===Done deleting table before create if exists");
     } catch (SQLException sqle) {
       System.out.println("Got SQL Exception when checking table exist from table ");
       sqle.getMessage();
     } finally {
       out.println("Done checking table exist - closing stmt");
       stmt.close();
-    }
+    }*/
 
     try {
     /*
