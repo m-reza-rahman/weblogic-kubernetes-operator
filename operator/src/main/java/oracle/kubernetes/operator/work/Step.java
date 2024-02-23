@@ -202,7 +202,7 @@ public abstract class Step {
   }
 
   protected boolean isCancelled(Packet packet) {
-    return Optional.ofNullable(packet.getFiber()).map(Fiber::isCancelled).orElse(true);
+    return Optional.ofNullable(packet.getFiber()).map(Fiber::isCancelled).orElse(false);
   }
 
   /**
