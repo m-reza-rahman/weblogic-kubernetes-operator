@@ -57,6 +57,30 @@ import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
 public class RequestBuilder<A extends KubernetesObject, L extends KubernetesListObject> {
+  private static final KubernetesApiFactory DEFAULT_KUBERNETES_API_FACTORY = new KubernetesApiFactory() {
+  };
+
+  public static <KO extends KubernetesObject, KLO extends KubernetesListObject>
+  KubernetesApi<KO, KLO> createKubernetesApi(Class<KO> apiTypeClass, Class<KLO> apiListTypeClass,
+                                String apiGroup, String apiVersion, String resourcePlural) {
+    return kubernetesApiFactory.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+  }
+
+  @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
+  private static KubernetesApiFactory kubernetesApiFactory = DEFAULT_KUBERNETES_API_FACTORY;
+
+  private static final WatchApiFactory DEFAULT_WATCH_API_FACTORY = new WatchApiFactory() {
+  };
+
+  public static <KO extends KubernetesObject, KLO extends KubernetesListObject>
+  WatchApi<KO> createWatchApi(Class<KO> apiTypeClass, Class<KLO> apiListTypeClass,
+                                String apiGroup, String apiVersion, String resourcePlural) {
+    return watchApiFactory.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+  }
+
+  @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
+  private static WatchApiFactory watchApiFactory = DEFAULT_WATCH_API_FACTORY;
+
   private static final Map<Class<? extends KubernetesObject>, RequestBuilder<?, ?>> REQUEST_BUILDER_MAP
       = new HashMap<>();
   private static final Map<Class<? extends KubernetesListObject>, RequestBuilder<?, ?>> REQUEST_BUILDER_LIST_MAP
@@ -728,8 +752,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException thrown on failure
    */
   public Watchable<A> watch(final ListOptions listOptions) throws ApiException {
-    KubernetesApi<A, L> client
-            = RequestStep.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+    WatchApi<A> client = createWatchApi(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
     return client.watch(listOptions);
   }
 
@@ -741,8 +764,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException thrown on failure
    */
   public Watchable<A> watch(String namespace, final ListOptions listOptions) throws ApiException {
-    KubernetesApi<A, L> client
-            = RequestStep.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+    WatchApi<A> client = createWatchApi(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
     return client.watch(namespace, listOptions);
   }
 

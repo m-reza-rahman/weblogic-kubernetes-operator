@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -11,7 +11,8 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Watch.Response;
 import io.kubernetes.client.util.Watchable;
-import oracle.kubernetes.operator.builders.WatchBuilder;
+import io.kubernetes.client.util.generic.options.ListOptions;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.watcher.WatchListener;
 
@@ -56,10 +57,9 @@ public class ServiceWatcher extends Watcher<V1Service> {
   }
 
   @Override
-  public Watchable<V1Service> initiateWatch(WatchBuilder watchBuilder) throws ApiException {
-    return watchBuilder
-        .withLabelSelectors(LabelConstants.DOMAINUID_LABEL, LabelConstants.CREATEDBYOPERATOR_LABEL)
-        .createServiceWatch(ns);
+  public Watchable<V1Service> initiateWatch(ListOptions options) throws ApiException {
+    return RequestBuilder.SERVICE.watch(ns,
+            options.labelSelector(LabelConstants.DOMAINUID_LABEL + "," + LabelConstants.CREATEDBYOPERATOR_LABEL));
   }
 
   @Override

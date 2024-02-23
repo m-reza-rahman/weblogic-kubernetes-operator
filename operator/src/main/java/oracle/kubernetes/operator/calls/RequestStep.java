@@ -39,17 +39,6 @@ public abstract class RequestStep<
   public static final String CONTINUE = "continue";
   public static final int FIBER_TIMEOUT = 0;
 
-  private static final KubernetesApiFactory DEFAULT_FACTORY = new KubernetesApiFactory() {
-  };
-
-  public static <KO extends KubernetesObject, KLO extends KubernetesListObject>
-  KubernetesApi<KO, KLO> create(Class<KO> apiTypeClass, Class<KLO> apiListTypeClass,
-                             String apiGroup, String apiVersion, String resourcePlural) {
-    return factory.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
-  }
-
-  @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
-  private static KubernetesApiFactory factory = DEFAULT_FACTORY;
   private final Class<A> apiTypeClass;
   private final Class<L> apiListTypeClass;
   private final String apiGroup;
@@ -103,7 +92,8 @@ public abstract class RequestStep<
 
   @Override
   public Void apply(Packet packet) {
-    KubernetesApi<A, L> client = create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+    KubernetesApi<A, L> client
+            = RequestBuilder.createKubernetesApi(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
     KubernetesApiResponse<R> result = execute(client, packet);
 
     // update packet

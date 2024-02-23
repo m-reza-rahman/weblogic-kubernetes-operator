@@ -1,4 +1,4 @@
-// Copyright (c) 2019, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2019, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -10,7 +10,8 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
-import oracle.kubernetes.operator.builders.WatchBuilder;
+import io.kubernetes.client.util.generic.options.ListOptions;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.watcher.WatchListener;
 
 /**
@@ -49,9 +50,8 @@ public class NamespaceWatcher extends Watcher<V1Namespace> {
   }
 
   @Override
-  public Watchable<V1Namespace> initiateWatch(WatchBuilder watchBuilder) throws ApiException {
-    return watchBuilder
-        .createNamespacesWatch();
+  public Watchable<V1Namespace> initiateWatch(ListOptions options) throws ApiException {
+    return RequestBuilder.NAMESPACE.watch(options);
   }
 
   @Override

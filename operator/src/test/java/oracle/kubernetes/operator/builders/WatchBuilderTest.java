@@ -12,8 +12,10 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.NoopWatcherStarter;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -69,7 +71,7 @@ class WatchBuilderTest {
             .withMetadata(createMetaData("cluster1", NAMESPACE));
     StubWatchFactory.addCallResponses(createAddResponse(cluster));
 
-    Watchable<ClusterResource> clusterWatch = new WatchBuilder().createClusterWatch(NAMESPACE);
+    Watchable<ClusterResource> clusterWatch = RequestBuilder.CLUSTER.watch(NAMESPACE, new ListOptions());
 
     assertThat(clusterWatch, contains(addEvent(cluster)));
   }
@@ -83,7 +85,7 @@ class WatchBuilderTest {
             .withMetadata(createMetaData("cluster1", NAMESPACE, BOOKMARK_RESOURCE_VERSION));
     StubWatchFactory.addCallResponses(createBookmarkResponse(cluster));
 
-    Watchable<ClusterResource> clusterWatch = new WatchBuilder().createClusterWatch(NAMESPACE);
+    Watchable<ClusterResource> clusterWatch = RequestBuilder.CLUSTER.watch(NAMESPACE, new ListOptions());
 
     assertThat(clusterWatch, contains(bookmarkEvent(cluster)));
   }
@@ -97,7 +99,7 @@ class WatchBuilderTest {
             .withMetadata(createMetaData("domain1", NAMESPACE));
     StubWatchFactory.addCallResponses(createAddResponse(domain));
 
-    Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
+    Watchable<DomainResource> domainWatch = RequestBuilder.DOMAIN.watch(NAMESPACE, new ListOptions());
 
     assertThat(domainWatch, contains(addEvent(domain)));
   }
@@ -111,7 +113,7 @@ class WatchBuilderTest {
                     .withMetadata(createMetaData("domain1", NAMESPACE, BOOKMARK_RESOURCE_VERSION));
     StubWatchFactory.addCallResponses(createBookmarkResponse(domain));
 
-    Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
+    Watchable<DomainResource> domainWatch = RequestBuilder.DOMAIN.watch(NAMESPACE, new ListOptions());
 
     assertThat(domainWatch, contains(bookmarkEvent(domain)));
   }
@@ -152,7 +154,7 @@ class WatchBuilderTest {
             .withMetadata(createMetaData("domain2", NAMESPACE));
     StubWatchFactory.addCallResponses(createModifyResponse(domain1), createDeleteResponse(domain2));
 
-    Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
+    Watchable<DomainResource> domainWatch = RequestBuilder.DOMAIN.watch(NAMESPACE, new ListOptions());
 
     assertThat(domainWatch, contains(List.of(modifyEvent(domain1), deleteEvent(domain2))));
   }
@@ -161,7 +163,7 @@ class WatchBuilderTest {
   void whenDomainWatchReceivesErrorResponse_returnItFromIterator() throws Exception {
     StubWatchFactory.addCallResponses(createErrorResponse(HTTP_ENTITY_TOO_LARGE));
 
-    Watchable<DomainResource> domainWatch = new WatchBuilder().createDomainWatch(NAMESPACE);
+    Watchable<DomainResource> domainWatch = RequestBuilder.DOMAIN.watch(NAMESPACE, new ListOptions());
 
     assertThat(domainWatch, contains(errorEvent(HTTP_ENTITY_TOO_LARGE)));
   }
@@ -177,11 +179,10 @@ class WatchBuilderTest {
 
     StubWatchFactory.addCallResponses(createModifyResponse(service));
 
-    Watchable<V1Service> serviceWatch =
-        new WatchBuilder()
-            .withResourceVersion(startResourceVersion)
-            .withLabelSelector(DOMAINUID_LABEL + "," + CREATEDBYOPERATOR_LABEL)
-            .createServiceWatch(NAMESPACE);
+    Watchable<V1Service> serviceWatch = RequestBuilder.SERVICE.watch(NAMESPACE,
+            new ListOptions()
+                    .resourceVersion(startResourceVersion)
+                    .labelSelector(DOMAINUID_LABEL + "," + CREATEDBYOPERATOR_LABEL));
 
     assertThat(serviceWatch, contains(modifyEvent(service)));
     assertThat(StubWatchFactory.getRequestParameters().get(0),
@@ -196,11 +197,8 @@ class WatchBuilderTest {
         new V1Pod().apiVersion(API_VERSION).kind("Pod").metadata(createMetaData("pod4", NAMESPACE));
     StubWatchFactory.addCallResponses(createAddResponse(pod));
 
-    Watchable<V1Pod> podWatch =
-        new WatchBuilder()
-            .withFieldSelector("thisValue")
-            .withLimit(25)
-            .createPodWatch(NAMESPACE);
+    Watchable<V1Pod> podWatch = RequestBuilder.POD.watch(NAMESPACE,
+            new ListOptions().fieldSelector("thisValue").limit(25));
 
     assertThat(podWatch, contains(addEvent(pod)));
     assertThat(StubWatchFactory.getRequestParameters().get(0),
@@ -210,7 +208,7 @@ class WatchBuilderTest {
   @Test
   void whenPodWatchFindsNoData_hasNextReturnsFalse() throws Exception {
 
-    Watchable<V1Pod> podWatch = new WatchBuilder().createPodWatch(NAMESPACE);
+    Watchable<V1Pod> podWatch = RequestBuilder.POD.watch(NAMESPACE, new ListOptions());
 
     assertThat(podWatch.hasNext(), is(false));
   }

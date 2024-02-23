@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -12,7 +12,8 @@ import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
-import oracle.kubernetes.operator.builders.WatchBuilder;
+import io.kubernetes.client.util.generic.options.ListOptions;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.watcher.WatchListener;
 
 import static oracle.kubernetes.operator.ProcessingConstants.OPERATOR_EVENT_LABEL_FILTER;
@@ -58,8 +59,8 @@ public class OperatorEventWatcher extends Watcher<CoreV1Event> {
   }
 
   @Override
-  public Watchable<CoreV1Event> initiateWatch(WatchBuilder watchBuilder) throws ApiException {
-    return watchBuilder.withLabelSelector(OPERATOR_EVENT_LABEL_FILTER).createEventWatch(ns);
+  public Watchable<CoreV1Event> initiateWatch(ListOptions options) throws ApiException {
+    return RequestBuilder.EVENT.watch(ns, options.labelSelector(OPERATOR_EVENT_LABEL_FILTER));
   }
 
   @Override

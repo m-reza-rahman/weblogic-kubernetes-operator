@@ -34,7 +34,6 @@ import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.builders.WatchBuilder;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
@@ -194,10 +193,9 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
   }
 
   @Override
-  public Watchable<V1Job> initiateWatch(WatchBuilder watchBuilder) throws ApiException {
-    return watchBuilder
-        .withLabelSelectors(LabelConstants.DOMAINUID_LABEL, LabelConstants.CREATEDBYOPERATOR_LABEL)
-        .createJobWatch(namespace);
+  public Watchable<V1Job> initiateWatch(ListOptions options) throws ApiException {
+    return RequestBuilder.JOB.watch(namespace,
+            options.labelSelector(LabelConstants.DOMAINUID_LABEL + "," + LabelConstants.CREATEDBYOPERATOR_LABEL));
   }
 
   /**

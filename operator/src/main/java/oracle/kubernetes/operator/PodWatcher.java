@@ -21,8 +21,8 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.builders.WatchBuilder;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
@@ -103,10 +103,9 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
   }
 
   @Override
-  public Watchable<V1Pod> initiateWatch(WatchBuilder watchBuilder) throws ApiException {
-    return watchBuilder
-        .withLabelSelectors(LabelConstants.DOMAINUID_LABEL, LabelConstants.CREATEDBYOPERATOR_LABEL)
-        .createPodWatch(namespace);
+  public Watchable<V1Pod> initiateWatch(ListOptions options) throws ApiException {
+    return RequestBuilder.POD.watch(namespace,
+            options.labelSelector(LabelConstants.DOMAINUID_LABEL + "," + LabelConstants.CREATEDBYOPERATOR_LABEL));
   }
 
   @Override

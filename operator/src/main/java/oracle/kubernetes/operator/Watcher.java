@@ -1,4 +1,4 @@
-// Copyright (c) 2017, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator;
@@ -15,8 +15,8 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
+import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
-import oracle.kubernetes.operator.builders.WatchBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
@@ -174,9 +174,9 @@ abstract class Watcher<T> {
     }
     try (Watchable<T> watch =
         initiateWatch(
-            new WatchBuilder()
-                .withResourceVersion(resourceVersion)
-                .withTimeoutSeconds(getWatchLifetime()))) {
+            new ListOptions()
+                .resourceVersion(resourceVersion)
+                .timeoutSeconds(getWatchLifetime()))) {
       while (hasNext(watch)) {
         Watch.Response<T> item = watch.next();
 
@@ -218,11 +218,11 @@ abstract class Watcher<T> {
   /**
    * Initiates a watch by using the watch builder to request any updates for the specified watcher.
    *
-   * @param watchBuilder the watch builder, initialized with the current resource version.
+   * @param options options, initialized with the current resource version.
    * @return Watch object or null if the operation should end
    * @throws ApiException if there is an API error.
    */
-  public abstract Watchable<T> initiateWatch(WatchBuilder watchBuilder) throws ApiException;
+  public abstract Watchable<T> initiateWatch(ListOptions options) throws ApiException;
 
   /**
    * Gets the Kubernetes namespace associated with the watcher.
