@@ -438,7 +438,7 @@ public class CommonLBTestUtils {
    */
   private static boolean adminNodePortAccessible(int nodePort)
       throws IOException {
-    getLogger().info("Check REST Console for WebLogic ");
+    getLogger().info("Check REST Console for WebLogic Image");
     StringBuffer curlCmd = new StringBuffer("status=$(curl -g --user ");
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
@@ -467,14 +467,14 @@ public class CommonLBTestUtils {
   }
 
   /**
-   * Verify admin console is accessible by login to WebLogic console.
+   * Verify REST console is accessible by login to WebLogic Server.
    *
    * @param adminServerPodName admin server pod
    * @param adminPort admin port
    * @param namespace admin server pod namespace
    * @param userName WebLogic administration server user name
    * @param password WebLogic administration server password
-   * @return true if login to WebLogic administration console is successful
+   * @return true if login to WebLogic REST console is successful
    * @throws IOException when connection to console fails
    */
   public static boolean adminLoginPageAccessible(String adminServerPodName, String adminPort, String namespace,
@@ -491,8 +491,8 @@ public class CommonLBTestUtils {
           .append(password)
           .append(" http://" + adminServerPodName + ":" + adminPort)
           .append("/management/tenant-monitoring/servers/ --silent --show-error -o /dev/null -w %{http_code} && ")
-          .append("echo ${status}");
-    logger.info("checkRestConsole : curl command {0}", new String(curlCmd));
+          .append("echo ${status}\"");
+    logger.info("checkRestConsole : k8s exec command {0}", new String(curlCmd));
     try {
       ExecResult result = ExecCommand.exec(new String(curlCmd), true);
       String response = result.stdout().trim();
