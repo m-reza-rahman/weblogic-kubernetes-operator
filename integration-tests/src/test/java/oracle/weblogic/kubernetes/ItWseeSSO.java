@@ -219,6 +219,8 @@ class ItWseeSSO {
 
     logger.info("check WSDL Access");
     if (OKE_CLUSTER) {
+      receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2, "/samlSenderVouches/EchoService");
+      senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1, "/EchoServiceRef/Echo");
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
 
