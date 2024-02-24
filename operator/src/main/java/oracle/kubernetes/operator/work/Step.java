@@ -15,8 +15,8 @@ import javax.annotation.Nullable;
 public abstract class Step {
   public static final String THROWABLE = "throwable";
 
-  private static final StepAction SUSPEND = new StepAction();
-  private static final StepAction END = new StepAction();
+  static final StepAction SUSPEND = new StepAction();
+  static final StepAction END = new StepAction();
 
   private Step next;
 

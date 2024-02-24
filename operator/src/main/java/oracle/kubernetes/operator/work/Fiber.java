@@ -24,8 +24,7 @@ public final class Fiber implements AsyncFiber {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private static final int NOT_COMPLETE = 0;
   private static final int DONE = 1;
-  private static final int SUSPENDED = 2;
-  private static final int CANCELLED = 3;
+  private static final int CANCELLED = 2;
   private static final ThreadLocal<Fiber> CURRENT_FIBER = new ThreadLocal<>();
   /** Used to allocate unique number for each fiber. */
   private static final AtomicInteger iotaGen = new AtomicInteger();
@@ -81,56 +80,51 @@ public final class Fiber implements AsyncFiber {
    */
   public void start(Step stepline, Packet packet) {
     if (status.get() == NOT_COMPLETE) {
-      LOGGER.finer("{0} started", getName());
       packet.setFiber(this);
+      LOGGER.finer("{0} started", getName());
 
-      owner.addRunnable(() -> {
-        if (status.get() == NOT_COMPLETE) {
-          clearThreadInterruptedStatus();
-
-          final Fiber oldFiber = CURRENT_FIBER.get();
-          CURRENT_FIBER.set(this);
-          try {
-            doRun(stepline, packet);
-          } finally {
-            if (oldFiber == null) {
-              CURRENT_FIBER.remove();
-            } else {
-              CURRENT_FIBER.set(oldFiber);
-            }
-          }
-        }
-      });
+      owner.addRunnable(() -> doRun(stepline, packet));
     }
   }
 
   private void doRun(Step stepline, Packet packet) {
-    this.packet = packet;
-    try {
-      stepline.apply(packet);
-      if (status.compareAndSet(NOT_COMPLETE, DONE) && completionCallback != null) {
-        Throwable t = (Throwable) packet.get(THROWABLE);
-        if (t != null) {
-          completionCallback.onThrowable(packet, t);
-        } else {
-          completionCallback.onCompletion(packet);
+    if (status.get() == NOT_COMPLETE) {
+      clearThreadInterruptedStatus();
+
+      final Fiber oldFiber = CURRENT_FIBER.get();
+      CURRENT_FIBER.set(this);
+      try {
+        this.packet = packet;
+        try {
+          if (Step.END.equals(stepline.apply(packet))
+                  && status.compareAndSet(NOT_COMPLETE, DONE)
+                  && completionCallback != null) {
+            Throwable t = (Throwable) packet.get(THROWABLE);
+            if (t != null) {
+              completionCallback.onThrowable(packet, t);
+            } else {
+              completionCallback.onCompletion(packet);
+            }
+          }
+        } catch (Throwable t) {
+          if (status.compareAndSet(NOT_COMPLETE, DONE)
+                  && completionCallback != null) {
+            completionCallback.onThrowable(packet, t);
+          }
         }
-      }
-    } catch (Throwable t) {
-      status.set(DONE);
-      if (completionCallback != null) {
-        completionCallback.onThrowable(packet, t);
+      } finally {
+        if (oldFiber == null) {
+          CURRENT_FIBER.remove();
+        } else {
+          CURRENT_FIBER.set(oldFiber);
+        }
       }
     }
   }
 
   void delay(Step stepline, Packet packet, long delay, TimeUnit unit) {
-    if (status.compareAndSet(NOT_COMPLETE, SUSPENDED)) {
-      owner.getExecutor().schedule(() -> {
-        if (status.compareAndSet(SUSPENDED, NOT_COMPLETE)) {
-          stepline.apply(packet);
-        }
-      }, delay, unit);
+    if (status.get() == NOT_COMPLETE) {
+      owner.getExecutor().schedule(() -> doRun(stepline, packet), delay, unit);
     }
   }
 
@@ -154,9 +148,9 @@ public final class Fiber implements AsyncFiber {
       public void mark() {
         int current = count.decrementAndGet();
         if (current <= 0) {
-          if (status.compareAndSet(SUSPENDED, NOT_COMPLETE)) {
+          if (status.get() == NOT_COMPLETE) {
             if (throwables.isEmpty()) {
-              step.apply(packet);
+              doRun(step, packet);
             } else {
               if (completionCallback != null) {
                 Throwable t = (throwables.size() == 1) ? throwables.get(0) : new MultiThrowable(throwables);
@@ -177,7 +171,6 @@ public final class Fiber implements AsyncFiber {
   private String getStatus() {
     return switch (status.get()) {
       case NOT_COMPLETE -> "NOT_COMPLETE";
-      case SUSPENDED -> "SUSPENDED";
       case DONE -> "DONE";
       case CANCELLED -> "CANCELLED";
       default -> "UNKNOWN: " + status.get();
@@ -248,7 +241,7 @@ public final class Fiber implements AsyncFiber {
    */
   public void cancel() {
     // Mark fiber as cancelled, if not already done
-    status.getAndUpdate(state -> state != DONE ? CANCELLED : DONE);
+    status.compareAndSet(NOT_COMPLETE, DONE);
 
     if (LOGGER.isFinerEnabled()) {
       LOGGER.finer("{0} cancelled", getName());
