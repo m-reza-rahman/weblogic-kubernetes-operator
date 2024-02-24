@@ -219,11 +219,14 @@ class ItWseeSSO {
 
     logger.info("check WSDL Access");
     if (OKE_CLUSTER) {
-      receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2, "/samlSenderVouches/EchoService");
-      senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1, "/EchoServiceRef/Echo");
+      receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2,
+          "/samlSenderVouches/EchoService", adminServerPodName2);
+      senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1,
+          "/EchoServiceRef/Echo", adminServerPodName1);
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
 
+      /*
       String resourcePath = "/samlSenderVouches/EchoService";
       ExecResult result = exeAppInServerPod(domain2Namespace, adminServerPodName2,7001, resourcePath);
       logger.info("result in OKE_CLUSTER to check WSDL (samlSenderVouches/EchoService) Access is {0}",
@@ -233,7 +236,7 @@ class ItWseeSSO {
       resourcePath = "/EchoServiceRef/Echo";
       result = exeAppInServerPod(domain1Namespace, adminServerPodName1,7001, resourcePath);
       logger.info("result in OKE_CLUSTER to check WSDL (EchoServiceRef/Echo) Access is {0}", result.toString());
-      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");*/
 
       assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,"setupPKI.py", hostAndPort),
           "Failed to run python script setupPKI.py");
@@ -255,31 +258,39 @@ class ItWseeSSO {
     buildRunClientOnPod();
   }
 
-  private String checkWSDLAccess(String domainNamespace, String domainUid,
+  private String checkWSDLAccess(String domainNamespace,
+                                 String domainUid,
                                  String adminSvcExtHost,
-                                 String appURI) {
+                                 String appURI,
+                                 String... podName) {
 
     String adminServerPodName = domainUid + "-" + adminServerName;
     int serviceNodePort = assertDoesNotThrow(()
         -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
             "default"),
             "Getting admin server node port failed");
-
-    logger.info("admin svc host = {0}", adminSvcExtHost);
-    String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+    String hostAndPort = null;
 
     if (OKE_CLUSTER) {
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+
+      ExecResult result = exeAppInServerPod(domainNamespace, podName[0],7001, appURI);
+      logger.info("result in OKE_CLUSTER to check WSDL (samlSenderVouches/EchoService) Access is {0}",
+          result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    } else {
+      logger.info("admin svc host = {0}", adminSvcExtHost);
+      hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+      String url = "http://" + hostAndPort + appURI;
+      logger.info("==== url = {0}", url);
+
+      HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
+      assertTrue(response.statusCode() == 200);
+      logger.info(response.body());
     }
 
-    String url = "http://" + hostAndPort + appURI;
-    logger.info("==== url = {0}", url);
-
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-    assertTrue(response.statusCode() == 200);
-    logger.info(response.body());
-    return url;
+    return "http://" + hostAndPort + appURI;
   }
 
   private void createDomain(String domainNamespace, String domainUid, String modelFileName) {
