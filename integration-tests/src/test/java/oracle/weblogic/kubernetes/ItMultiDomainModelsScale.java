@@ -345,6 +345,7 @@ class ItMultiDomainModelsScale {
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
 
+      /*
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
       curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
@@ -361,9 +362,8 @@ class ItMultiDomainModelsScale {
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
           numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
           false, "", "", 0, "", "",
-          curlCmd, managedServersBeforeScale, hostname);
+          curlCmd, managedServersBeforeScale, hostname);*/
 
-      /*
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
@@ -373,7 +373,7 @@ class ItMultiDomainModelsScale {
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
-          managedServerPodNamePrefix, numberOfServers, replicaCount, null, null);*/
+          managedServerPodNamePrefix, numberOfServers, replicaCount, null, null);
     } else {
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
