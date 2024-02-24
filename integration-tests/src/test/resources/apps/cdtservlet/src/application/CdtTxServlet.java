@@ -242,8 +242,8 @@ public class CdtTxServlet extends HttpServlet {
       stmt.close();
     }*/
 
-    try {
     /*
+    try {
       int id = 1;
       String data = "yay! this got in the db table";
       String deleteSQL = String.format("delete from %s where test_id = '%d'", tableName, id);
@@ -251,7 +251,7 @@ public class CdtTxServlet extends HttpServlet {
       stmt = conn.createStatement();
       stmt.execute(deleteSQL);
       out.println("Done deleting a row - closing stmt");
-      stmt.close();*/
+      stmt.close();
 
       System.out.println("===deleting table before create if exists");
       out.println("===deleting table before create if exists");
@@ -270,7 +270,7 @@ public class CdtTxServlet extends HttpServlet {
       System.out.println("===Done deleting table - closing stmt");
       out.println("===Done deleting table - closing stmt");
       stmt.close();
-    }
+    }*/
 
     try {
       String createSQL = String.format("create table %s (test_id int, test_data varchar(120))", tableName);
