@@ -121,7 +121,7 @@ public class CdtTxServlet extends HttpServlet {
       out.println("Got connection to datasource - " + conn);
 
       //create a table in the DB
-      createTable(conn, tableName);
+      //createTable(conn, tableName);
 
       try {
         tm.begin();
