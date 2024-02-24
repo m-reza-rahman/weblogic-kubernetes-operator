@@ -339,11 +339,16 @@ class ItMultiDomainModelsScale {
     String clusterName = domain.getSpec().getClusters().get(0).getName();
     String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
     int numberOfServers = 3;
+    String hostname = null;
 
     if (OKE_CLUSTER) {
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
-          false, "", "", 0, "", "", null, null);
+          replicaCount, numberOfServers, true, 0, "", "",
+          false, "", "", 0, "", "",
+          null, null, hostname);
 
       /*
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
