@@ -21,7 +21,7 @@ public class WatchPodReadyAdminStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     WlsDomainConfig domainTopology =
         (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);

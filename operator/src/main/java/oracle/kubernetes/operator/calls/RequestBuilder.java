@@ -771,12 +771,12 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   private static class DirectResponseStep<R extends KubernetesType> extends ResponseStep<R> {
     private KubernetesApiResponse<R> callResponse;
 
-    public Void onFailure(Packet packet, KubernetesApiResponse<R> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<R> callResponse) {
       this.callResponse = callResponse;
       return doEnd(packet);
     }
 
-    public Void onSuccess(Packet packet, KubernetesApiResponse<R> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<R> callResponse) {
       this.callResponse = callResponse;
       return doEnd(packet);
     }

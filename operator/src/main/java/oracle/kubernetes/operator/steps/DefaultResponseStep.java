@@ -28,14 +28,14 @@ public class DefaultResponseStep<T extends KubernetesType> extends ResponseStep<
   }
 
   @Override
-  public Void onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
+  public StepAction onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
     return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
         ? onSuccess(packet, callResponse)
         : super.onFailure(packet, callResponse);
   }
 
   @Override
-  public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+  public StepAction onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
     return doNext(packet);
   }
 }

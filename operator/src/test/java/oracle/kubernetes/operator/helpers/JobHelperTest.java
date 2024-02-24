@@ -52,25 +52,18 @@ import oracle.kubernetes.operator.JobAwaiterStepFactory;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
+import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.work.Packet;
+import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.ClusterConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfigurator;
 import oracle.kubernetes.weblogic.domain.DomainConfiguratorFactory;
 import oracle.kubernetes.weblogic.domain.ServerConfigurator;
-import oracle.kubernetes.weblogic.domain.model.CreateIfNotExists;
-import oracle.kubernetes.weblogic.domain.model.DomainOnPV;
-import oracle.kubernetes.weblogic.domain.model.DomainResource;
-import oracle.kubernetes.weblogic.domain.model.DomainSpec;
-import oracle.kubernetes.weblogic.domain.model.DomainStatus;
-import oracle.kubernetes.weblogic.domain.model.DomainValidationTestBase;
-import oracle.kubernetes.weblogic.domain.model.InitializeDomainOnPV;
-import oracle.kubernetes.weblogic.domain.model.Opss;
-import oracle.kubernetes.weblogic.domain.model.ServerEnvVars;
-import oracle.kubernetes.weblogic.domain.model.ServerStatus;
+import oracle.kubernetes.weblogic.domain.model.*;
 import org.hamcrest.Matcher;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -121,6 +114,8 @@ import static oracle.kubernetes.operator.helpers.StepContextConstants.OPSS_WALLE
 import static oracle.kubernetes.operator.helpers.StepContextConstants.WDTCONFIGMAP_MOUNT_PATH;
 import static oracle.kubernetes.operator.tuning.TuningParameters.INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
 import static oracle.kubernetes.operator.tuning.TuningParameters.KUBERNETES_PLATFORM_NAME;
+import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
+import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.SERVER_POD;
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_RUNNING_SERVERS_STATES;
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_USE_ONLINE_UPDATE;
 import static oracle.kubernetes.weblogic.domain.model.IntrospectorJobEnvVars.MII_WDT_ACTIVATE_TIMEOUT;
@@ -1198,6 +1193,28 @@ class JobHelperTest extends DomainValidationTestBase {
   }
 
   @Test
+  void verify_introspectorPodSpec_activeDeadlineSeconds_retry_values() {
+    TuningParametersStub.setParameter(INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS, Long.toString(
+        INTROSPECTOR_JOB_ACTIVE_DEADLINE));
+    int failureCount = 2;
+    long expectedActiveDeadlineSeconds =
+          INTROSPECTOR_JOB_ACTIVE_DEADLINE
+                + (failureCount * TuningParameters.DEFAULT_ACTIVE_DEADLINE_INCREMENT_SECONDS);
+
+    final DomainStatus status = new DomainStatus();
+    for (int i = 0; i < failureCount; i++) {
+      SystemClockTestSupport.increment(domainPresenceInfo.getDomain().getFailureRetryIntervalSeconds());
+      status.addCondition(new DomainCondition(FAILED).withReason(SERVER_POD).withMessage("failure " + (i + 1)));
+    }
+    domainPresenceInfo.getDomain().setStatus(status);
+
+    V1JobSpec jobSpec = createJobSpec();
+
+    assertThat(getPodSpecActiveDeadlineSeconds(jobSpec), is(expectedActiveDeadlineSeconds));
+    assertThat(jobSpec.getActiveDeadlineSeconds(), is(expectedActiveDeadlineSeconds));
+  }
+
+  @Test
   void verify_introspectorPodWithInitializeJRFDomainOnPVSpec_activeDeadlineSeconds_default_values() {
     configureDomain()
         .withDomainHomeSourceType(DomainSourceType.PERSISTENT_VOLUME)
@@ -2093,6 +2110,24 @@ class JobHelperTest extends DomainValidationTestBase {
 
     assertThat(job, nullValue());
   }
+
+  @Test
+  void whenAllServersDeleted_runIntrospector() {
+    domainPresenceInfo.setServerPod("ms1", createPodWithCreationTime());
+    defineTopologyWithCluster();
+    configureServersToStart();
+    SystemClockTestSupport.increment();
+    domainPresenceInfo.deleteServerPodFromEvent("ms1", createPodWithCreationTime());
+
+    runCreateJob();
+
+    assertThat(job, notNullValue());
+  }
+
+  private V1Pod createPodWithCreationTime() {
+    return new V1Pod().metadata(new V1ObjectMeta().creationTimestamp(SystemClock.now()));
+  }
+
 
   @Test
   void whenDomainHasIntrospectVersion_jobMetatadataCreatedWithLabel() {

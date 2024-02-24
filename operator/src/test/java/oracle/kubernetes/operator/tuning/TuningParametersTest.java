@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.tuning;
@@ -7,11 +7,13 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
+import oracle.kubernetes.operator.work.FiberTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +31,7 @@ class TuningParametersTest {
   private final List<Memento> mementos = new ArrayList<>();
   private final InMemoryFileSystem inMemoryFileSystem = InMemoryFileSystem.createInstance();
   private final Function<String, Path> getInMemoryPath = inMemoryFileSystem::getPath;
+  private final FiberTestSupport testSupport = new FiberTestSupport();
 
   @BeforeEach
   void setUp() throws NoSuchFieldException {
@@ -50,7 +53,7 @@ class TuningParametersTest {
 
   private TuningParameters getTuningParameters() {
     if (TuningParameters.getInstance() == null) {
-      TuningParameters.initializeInstance(null, mountPointDir);
+      TuningParameters.initializeInstance(testSupport.getEngine().getExecutor(), mountPointDir);
     }
     return TuningParameters.getInstance();
   }
@@ -72,6 +75,17 @@ class TuningParametersTest {
 
   private void configureParameter(String name, String value) {
     inMemoryFileSystem.defineFile(new File(mountPointDir, name), value);
+  }
+
+  @Test
+  void whenTuningParametersConfiguredAfterStart_facadesReturnConfiguredValues() {
+    configureParameter("domainNamespaceRecheckIntervalSeconds", "12");
+    readInitialParameters();
+
+    configureParameter("domainNamespaceRecheckIntervalSeconds", "9");
+    testSupport.setTime(1, TimeUnit.MINUTES);
+
+    assertThat(getTuningParameters().getNamespaceRecheckIntervalSeconds(), equalTo(9));
   }
 
   // Force initialization of tuning parameters instance, thus reading the initial values.

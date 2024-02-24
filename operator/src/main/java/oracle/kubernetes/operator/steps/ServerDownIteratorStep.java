@@ -41,7 +41,7 @@ public class ServerDownIteratorStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     return doNext(new IteratorContext(packet, serverShutdownInfos).createNextSteps(), packet);
   }
 
@@ -189,7 +189,7 @@ public class ServerDownIteratorStep extends Step {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (shutdownDetails.isEmpty()) {
         return doNext(getNext(), packet);
       } else {
@@ -212,7 +212,7 @@ public class ServerDownIteratorStep extends Step {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
 
       if (serversToShutdown.isEmpty()) {
         return doNext(packet);

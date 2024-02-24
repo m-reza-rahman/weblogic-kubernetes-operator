@@ -75,7 +75,7 @@ public class ShutdownManagedServerStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     LOGGER.fine(MessageKeys.BEGIN_SERVER_SHUTDOWN_REST, serverName);
     V1Service service = getDomainPresenceInfo(packet).getServerService(serverName);
 
@@ -314,7 +314,7 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       getDomainPresenceInfo(packet).setServerPodBeingDeleted(PodHelper.getPodServerName(pod), true);
       ShutdownManagedServerProcessing processing = new ShutdownManagedServerProcessing(packet, service, pod);
       ShutdownManagedServerResponseStep shutdownManagedServerResponseStep =
@@ -340,7 +340,7 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     @Override
-    public Void onSuccess(Packet packet, HttpResponse<String> response) {
+    public StepAction onSuccess(Packet packet, HttpResponse<String> response) {
       LOGGER.fine(MessageKeys.SERVER_SHUTDOWN_REST_SUCCESS, serverName);
       removeShutdownRequestRetryCount(packet);
       PodAwaiterStepFactory pw = (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
@@ -348,7 +348,7 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     @Override
-    public Void onFailure(Packet packet, HttpResponse<String> response) {
+    public StepAction onFailure(Packet packet, HttpResponse<String> response) {
       if (getThrowableResponse(packet) != null) {
         Throwable throwable = getThrowableResponse(packet);
         if (shouldRetry(packet)) {
@@ -406,7 +406,7 @@ public class ShutdownManagedServerStep extends Step {
 
   static class DomainUpdateStep extends DefaultResponseStep<DomainResource> {
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getObject() != null) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.setDomain(callResponse.getObject());

@@ -63,7 +63,7 @@ public class ManagedServerUpIteratorStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     if (startupInfos.isEmpty()) {
       return doNext(packet);
     }
@@ -185,7 +185,7 @@ public class ManagedServerUpIteratorStep extends Step {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
 
       if (startDetailsQueue.isEmpty()) {
         return doNext(packet);

@@ -15,6 +15,9 @@ import javax.annotation.Nullable;
 public abstract class Step {
   public static final String THROWABLE = "throwable";
 
+  private static final StepAction SUSPEND = new StepAction();
+  private static final StepAction END = new StepAction();
+
   private Step next;
 
   /** Create a step with no next step. */
@@ -177,14 +180,14 @@ public abstract class Step {
    *
    * @param packet Packet
    */
-  public abstract Void apply(Packet packet);
+  public abstract @Nonnull StepAction apply(Packet packet);
 
   /**
    * Invokes the next step, if set.
    *
    * @param packet Packet to provide when invoking the next step
    */
-  protected Void doNext(Packet packet) {
+  protected StepAction doNext(Packet packet) {
     return doNext(next, packet);
   }
 
@@ -194,11 +197,11 @@ public abstract class Step {
    * @param step The step
    * @param packet Packet to provide when invoking the next step
    */
-  protected Void doNext(Step step, Packet packet) {
+  protected StepAction doNext(Step step, Packet packet) {
     if (isCancelled(packet)) {
-      return null;
+      return END;
     }
-    return Optional.ofNullable(step).map(s -> s.apply(packet)).orElse(null);
+    return Optional.ofNullable(step).map(s -> s.apply(packet)).orElse(END);
   }
 
   protected boolean isCancelled(Packet packet) {
@@ -210,8 +213,8 @@ public abstract class Step {
    *
    * @param packet Packet
    */
-  protected final Void doEnd(Packet packet) {
-    return doNext(null, packet);
+  protected final StepAction doEnd(Packet packet) {
+    return END;
   }
 
   /**
@@ -221,7 +224,7 @@ public abstract class Step {
    * @param packet Packet
    * @return Next action that will end processing with a throwable
    */
-  protected final Void doTerminate(Throwable throwable, Packet packet) {
+  protected final StepAction doTerminate(Throwable throwable, Packet packet) {
     packet.put(THROWABLE, throwable);
     return doEnd(packet);
   }
@@ -234,7 +237,7 @@ public abstract class Step {
    * @param unit Delay time unit
    */
   @SuppressWarnings("SameParameterValue")
-  protected Void doRetry(Packet packet, long delay, TimeUnit unit) {
+  protected StepAction doRetry(Packet packet, long delay, TimeUnit unit) {
     return doDelay(this, packet, delay, unit);
   }
 
@@ -246,9 +249,9 @@ public abstract class Step {
    * @param delay Delay time
    * @param unit Delay time unit
    */
-  protected Void doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
+  protected StepAction doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
     packet.getFiber().delay(step, packet, delay, unit);
-    return null;
+    return SUSPEND;
   }
 
   public Step getNext() {
@@ -262,9 +265,20 @@ public abstract class Step {
    * @param packet Resume packet
    * @param startDetails Pairs of step and packet to use when starting child fibers
    */
-  protected Void doForkJoin(
+  protected StepAction doForkJoin(
       Step step, Packet packet, Collection<Fiber.StepAndPacket> startDetails) {
     packet.getFiber().forkJoin(step, packet, startDetails);
-    return null;
+    return SUSPEND;
+  }
+
+  /**
+   * The return type for apply() and the "do" methods. Intentionally making this not an
+   * enum to force derived classes of Step to use the "do" methods as the return
+   * from their implementation of apply().
+   */
+  public static final class StepAction {
+    private StepAction() {
+      // no-op to make constructor private
+    }
   }
 }

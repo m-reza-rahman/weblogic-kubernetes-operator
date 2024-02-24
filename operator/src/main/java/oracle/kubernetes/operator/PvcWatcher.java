@@ -133,7 +133,7 @@ public class PvcWatcher implements PvcAwaiterStepFactory {
     protected DefaultResponseStep<V1PersistentVolumeClaim> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(null) {
         @Override
-        public Void onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+        public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
           DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
           V1PersistentVolumeClaim pvc = callResponse.getObject();
           if (isReady(pvc) || callback.didResumeFiber()) {

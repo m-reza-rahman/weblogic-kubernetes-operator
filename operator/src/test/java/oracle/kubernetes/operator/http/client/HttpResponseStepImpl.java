@@ -25,13 +25,13 @@ public class HttpResponseStepImpl extends HttpResponseStep {
   }
 
   @Override
-  public Void onSuccess(Packet packet, HttpResponse<String> response) {
+  public StepAction onSuccess(Packet packet, HttpResponse<String> response) {
     successResponse = response;
     return doNext(packet);
   }
 
   @Override
-  public Void onFailure(Packet packet, HttpResponse<String> response) {
+  public StepAction onFailure(Packet packet, HttpResponse<String> response) {
     failureResponse = response;
     return doNext(packet);
   }

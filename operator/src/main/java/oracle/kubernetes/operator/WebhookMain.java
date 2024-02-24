@@ -217,14 +217,14 @@ public class WebhookMain extends BaseMain {
   private class CrdPresenceResponseStep<L extends KubernetesListObject> extends DefaultResponseStep<L> {
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
       warnedOfCrdAbsence = false;
       crdPresenceCheckCount.set(0);
       return super.onSuccess(packet, callResponse);
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<L> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<L> callResponse) {
       if (crdPresenceCheckCount.getAndIncrement() < getCrdPresenceFailureRetryMaxCount()) {
         return doNext(this, packet);
       }
@@ -257,7 +257,7 @@ public class WebhookMain extends BaseMain {
 
   public static class CheckFailureAndCreateEventStep extends Step {
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       Throwable failure = (Throwable) packet.get(EXCEPTION);
       if (failure != null) {
         return doNext(createEventStep(new EventHelper.EventData(WEBHOOK_STARTUP_FAILED, failure.getMessage())

@@ -25,7 +25,6 @@ import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
@@ -141,7 +140,6 @@ class PvcWatcherTest {
   }
 
   @Test
-  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenWaitForReadyAppliedToUnboundPvc_dontPerformNextStep() {
     startWaitForReady(this::dontChangePvc);
 
@@ -149,7 +147,6 @@ class PvcWatcherTest {
   }
 
   @Test
-  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenWaitForReadyAppliedToPendingPvc_performNextStep() {
     startWaitForReady(this::markPvcPending);
 
@@ -169,7 +166,6 @@ class PvcWatcherTest {
   }
 
   @Test
-  @Disabled("RJE - Temporarily disable hanging test")
   void whenPvcBoundOnFirstRead_performNextStep() {
     testSupport.defineResources(createDomain());
     startWaitForReadyThenReadPvc(this::markPvcBound);
@@ -178,7 +174,6 @@ class PvcWatcherTest {
   }
 
   @Test
-  @Disabled("RJE - Temporarily disable hanging test")
   void whenPvcBoundErrorResolved_performNextStep() {
     DomainResource failedDomain = createFailedDomain();
     testSupport.defineResources(failedDomain);
@@ -194,7 +189,6 @@ class PvcWatcherTest {
   }
 
   @Test
-  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenPvcUnboundOnFirstRead_dontPerformNextStep() {
     testSupport.defineResources(createDomain());
     startWaitForReadyThenReadPvc(this::dontChangePvc);
@@ -203,7 +197,6 @@ class PvcWatcherTest {
   }
 
   @Test
-  @Disabled("This test was designed to never reach the waiting condition but also doesn't limit waiting")
   void whenPvcPendingOnFirstRead_dontPerformNextStep() {
     testSupport.defineResources(createDomain());
     startWaitForReadyThenReadPvc(this::markPvcPending);

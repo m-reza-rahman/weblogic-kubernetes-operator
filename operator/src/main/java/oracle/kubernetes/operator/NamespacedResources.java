@@ -216,7 +216,7 @@ class NamespacedResources {
 
   class CompletionStep extends Step {
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       processors.forEach(p -> p.completeProcessing(packet));
       return doNext(packet);
     }
@@ -230,7 +230,7 @@ class NamespacedResources {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       Optional.ofNullable(watcher).ifPresent(Watcher::pause);
       return doNext(packet);
     }
@@ -244,7 +244,7 @@ class NamespacedResources {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
       processors.forEach(p -> p.accept(callResponse.getObject()));
       return doContinueListOrNext(callResponse, packet);
     }

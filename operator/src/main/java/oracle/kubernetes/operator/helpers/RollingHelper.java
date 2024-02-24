@@ -96,7 +96,7 @@ public class RollingHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       final StepContext context = new StepContext(packet);
       context.classifyRollingEntries(rolling);
 
@@ -197,7 +197,7 @@ public class RollingHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doForkJoin(getNext(), packet, serversThatCanRestartNow);
     }
   }
@@ -229,7 +229,7 @@ public class RollingHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       StepContext context = new StepContext(packet, clusterName);
       List<String> readyServers = context.getReadyServers(packet.getValue(DOMAIN_TOPOLOGY));
       if (loggedServersSize != servers.size() || !Objects.equals(loggedReadyServers, readyServers.toString())) {

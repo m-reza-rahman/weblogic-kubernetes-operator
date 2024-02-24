@@ -346,7 +346,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doNext(createContext(packet).createUpdateSteps(getNext()), packet);
     }
 
@@ -368,7 +368,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getObject() != null) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.setDomain(callResponse.getObject());
@@ -377,7 +377,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (isUnrecoverable(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
@@ -396,7 +396,7 @@ public class DomainStatusUpdater {
 
   static class DomainUpdateStep extends ResponseStep<DomainResource> {
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getObject() != null) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.setDomain(callResponse.getObject());
@@ -405,7 +405,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
           ? doNext(null, packet)
           : super.onFailure(packet, callResponse);
@@ -635,7 +635,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (isDomainNotPresent(packet)) {
         return doNext(packet);
       }

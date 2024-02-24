@@ -202,7 +202,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
     protected ResponseStep<V1Pod> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(getNext()) {
         @Override
-        public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+        public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
 
           DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
           String serverName = (String)packet.get(SERVER_NAME);
@@ -367,7 +367,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         if (callResponse.getObject() == null || callback.didResumeFiber()) {
           Optional.ofNullable(info).ifPresent(i -> i.deleteServerPodFromEvent(packet.getValue(SERVER_NAME), null));
@@ -438,7 +438,7 @@ public class PodWatcher extends Watcher<V1Pod> implements WatchListener<V1Pod>, 
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         if (isServerShutdown(info) || isReady(callResponse.getObject()) || callback.didResumeFiber()) {
           Optional.ofNullable(info).ifPresent(i -> i.updateLastKnownServerStatus(serverName, SHUTDOWN_STATE));

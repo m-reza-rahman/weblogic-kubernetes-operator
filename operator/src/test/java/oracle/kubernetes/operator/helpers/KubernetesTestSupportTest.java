@@ -592,14 +592,14 @@ class KubernetesTestSupportTest {
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onFailure(packet, callResponse);
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onSuccess(packet, callResponse);

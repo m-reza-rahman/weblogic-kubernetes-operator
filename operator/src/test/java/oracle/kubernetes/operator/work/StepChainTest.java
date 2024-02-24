@@ -133,7 +133,7 @@ class StepChainTest {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       getStepNames(packet).add(name);
       return doNext(packet);
     }

@@ -164,7 +164,7 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doDelay(next, packet, delay, TimeUnit.SECONDS);
     }
   }
@@ -175,7 +175,7 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
       if (isFailed(job) && "DeadlineExceeded".equals(getFailedReason(job))) {
         return new Step() {
           @Override
-          public Void apply(Packet packet) {
+          public StepAction apply(Packet packet) {
             return doTerminate(new JobWatcher.DeadlineExceededException(job), packet);
           }
         };

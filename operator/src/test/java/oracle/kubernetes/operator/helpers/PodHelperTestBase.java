@@ -2968,7 +2968,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doDelay(next, packet, delay, TimeUnit.SECONDS);
     }
   }

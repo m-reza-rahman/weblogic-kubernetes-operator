@@ -31,7 +31,6 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static com.meterware.simplestub.Stub.createStrictStub;
@@ -91,7 +90,6 @@ public class NamespaceTest {
   }
 
   @Test
-  @Disabled("TOOD")
   void givenJobWatcherForNamespace_afterNamespaceDeletedAndRecreatedHaveDifferentWatcher() {
     initializeNamespaces();
     JobWatcher oldWatcher = domainNamespaces.getJobWatcher(NS);

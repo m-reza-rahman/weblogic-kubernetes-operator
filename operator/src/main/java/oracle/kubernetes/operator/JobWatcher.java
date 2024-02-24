@@ -309,7 +309,7 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
         final IntrospectorTerminationState terminationState = new IntrospectorTerminationState(jobName, packet);
         final V1Pod jobPod = getJobPod(callResponse.getObject());
 
@@ -395,7 +395,7 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
     protected DefaultResponseStep<V1Job> resumeIfReady(Callback callback) {
       return new DefaultResponseStep<>(null) {
         @Override
-        public Void onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+        public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
 
           // The introspect container has exited, setting this so that the job will be considered finished
           // in the WaitDomainIntrospectorJobReadyStep and proceed reading the job pod log and process the result.

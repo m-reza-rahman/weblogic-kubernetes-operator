@@ -116,7 +116,7 @@ public class JobHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       IntrospectorJobStepContext context = new IntrospectorJobStepContext(packet);
       return doNext(Step.chain(functionConstructor.apply(context), getNext()), packet);
     }
@@ -199,7 +199,7 @@ public class JobHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doNext(new IntrospectorJobStepContext(packet).createStartSteps(getNext()), packet);
     }
 
@@ -230,7 +230,7 @@ public class JobHelper {
     private class VerifyIntrospectorJobResponseStep<T extends KubernetesObject> extends DefaultResponseStep<T> {
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
         V1Job job = (V1Job) callResponse.getObject();
         if ((job != null) && (packet.get(DOMAIN_INTROSPECTOR_JOB) == null)) {
           packet.put(DOMAIN_INTROSPECTOR_JOB, job);
@@ -440,7 +440,7 @@ public class JobHelper {
     private class ReadPodLogStep extends Step {
 
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         String containerName;
         V1Pod jobPod = (V1Pod) packet.get(ProcessingConstants.JOB_POD);
         V1ContainerStatus status = getJobPodContainerStatus(jobPod);
@@ -495,7 +495,7 @@ public class JobHelper {
 
     class DeleteDomainIntrospectorJobStep extends Step {
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         logJobDeleted(getDomainUid(), getNamespace(), getJobName(), packet);
         DeleteOptions deleteOptions = (DeleteOptions) new DeleteOptions()
             .gracePeriodSeconds((long) JOB_DELETE_TIMEOUT_SECONDS).propagationPolicy("Foreground");
@@ -516,7 +516,7 @@ public class JobHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<RequestBuilder.StringObject> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<RequestBuilder.StringObject> callResponse) {
         Optional.ofNullable(callResponse.getObject())
             .ifPresent(result -> processIntrospectionResult(packet, result.value()));
 
@@ -557,7 +557,7 @@ public class JobHelper {
         MakeRightDomainOperation.recordInspection(packet);
       }
 
-      private Void handleFailure(Packet packet, V1Job domainIntrospectorJob) {
+      private StepAction handleFailure(Packet packet, V1Job domainIntrospectorJob) {
         Optional.ofNullable(domainIntrospectorJob).ifPresent(job -> logIntrospectorFailure(packet, job));
 
         return doNext(Step.chain(
@@ -661,7 +661,7 @@ public class JobHelper {
     private class ReadDomainIntrospectorPodStep extends Step {
 
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         Throwable t = (Throwable) packet.remove(INTROSPECTOR_JOB_FAILURE_THROWABLE);
         if (t != null) {
           return doTerminate(t, packet);
@@ -771,7 +771,7 @@ public class JobHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
         final V1Pod jobPod
               = Optional.ofNullable(callResponse.getObject())
               .map(V1PodList::getItems)

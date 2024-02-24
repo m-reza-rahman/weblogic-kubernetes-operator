@@ -135,7 +135,7 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (deleting) {
         executor.unregisterClusterPresenceInfo(info);
       } else {

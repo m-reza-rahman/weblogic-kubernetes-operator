@@ -24,7 +24,7 @@ public class DeleteDomainStep extends Step {
 
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     return doNext(DomainPresenceInfo.fromPacket(packet).map(this::createNextSteps).orElseThrow(), packet);
   }
 

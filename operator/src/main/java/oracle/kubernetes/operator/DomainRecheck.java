@@ -89,7 +89,7 @@ class DomainRecheck {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       NamespaceStatus nss = domainNamespaces.getNamespaceStatus(ns);
 
       // we don't have the domain presence information, yet
@@ -154,7 +154,7 @@ class DomainRecheck {
     // If unable to list the namespaces, we may still be able to start them if we are using
     // a strategy that specifies them explicitly.
     @Override
-    protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
+    protected StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
       return useBackupStrategy(callResponse)
             ? doNext(createStartNamespacesStep(Namespaces.getConfiguredDomainNamespaces()), packet)
             : super.onFailureNoRetry(packet, callResponse);
@@ -166,7 +166,7 @@ class DomainRecheck {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
       final Set<String> namespacesToStart = getNamespacesToStart(callResponse.getObject());
       Namespaces.getFoundDomainNamespaces(packet).addAll(namespacesToStart);
 
@@ -233,7 +233,7 @@ class DomainRecheck {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (domainNamespaces.shouldStartNamespace(ns)) {
         return doNext(addNSWatchingStartingEventsStep(), packet);
       }
@@ -281,7 +281,7 @@ class DomainRecheck {
 
     @Override
     @SuppressWarnings("try")
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (domainNamespaces == null) {
         return doNext(packet);
       } else {

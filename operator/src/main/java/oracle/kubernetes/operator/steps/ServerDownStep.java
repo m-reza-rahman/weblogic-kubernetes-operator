@@ -29,7 +29,7 @@ public class ServerDownStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     V1Pod oldPod = info.getServerPod(serverName);
 

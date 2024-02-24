@@ -22,7 +22,7 @@ public abstract class AbstractListStep<T> extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     if (it.hasNext()) {
       return doNext(createActionStep(it.next()), packet);
     } else {

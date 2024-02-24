@@ -217,11 +217,11 @@ public class ServiceHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doVerifyService(getNext(), packet);
     }
 
-    private Void doVerifyService(Step next, Packet packet) {
+    private StepAction doVerifyService(Step next, Packet packet) {
       return doNext(createContext(packet).verifyService(next), packet);
     }
 
@@ -609,7 +609,7 @@ public class ServiceHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         return doNext(
             RequestBuilder.SERVICE.get(getNamespace(), createServiceName(), new ReadServiceResponse(conflictStep)),
             packet);
@@ -647,14 +647,14 @@ public class ServiceHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         V1Service service = callResponse.getObject();
         if (service == null) {
           removeServiceFromRecord();
@@ -671,14 +671,14 @@ public class ServiceHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return doNext(createReplacementService(getNext()), packet);
       }
     }
@@ -692,7 +692,7 @@ public class ServiceHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -700,12 +700,12 @@ public class ServiceHelper {
         }
       }
 
-      private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         logServiceCreated(messageKey);
         addServiceToRecord(callResponse.getObject());
         return doNext(packet);
@@ -722,7 +722,7 @@ public class ServiceHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return doNext(createActionStep(info), packet);
     }

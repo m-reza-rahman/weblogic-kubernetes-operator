@@ -64,7 +64,7 @@ public class PersistentVolumeClaimHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       if (info.getDomain().getInitPvDomainPersistentVolumeClaim() != null) {
         return doNext(createContext(packet).readAndCreatePersistentVolumeClaimStep(getNext()), packet);
@@ -132,7 +132,7 @@ public class PersistentVolumeClaimHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -140,12 +140,12 @@ public class PersistentVolumeClaimHelper {
         }
       }
 
-      private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         logPersistentVolumeClaimCreated(messageKey);
         addPersistentVolumeClaimToRecord(callResponse.getObject());
         return doNext(packet);
@@ -158,14 +158,14 @@ public class PersistentVolumeClaimHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : super.onFailure(packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         V1PersistentVolumeClaim persistentVolumeClaim = callResponse.getObject();
 
@@ -196,7 +196,7 @@ public class PersistentVolumeClaimHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         return doNext(RequestBuilder.PVC.get(info.getNamespace(), getPersistentVolumeClaimName(),
             new ReadResponseStep(conflictStep)), packet);
       }
@@ -271,7 +271,7 @@ public class PersistentVolumeClaimHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       V1PersistentVolumeClaim domainPvc = info.getPersistentVolumeClaim(pvcName);
 

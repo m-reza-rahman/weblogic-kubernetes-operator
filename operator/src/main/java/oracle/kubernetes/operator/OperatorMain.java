@@ -224,7 +224,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<CoreV1EventList> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<CoreV1EventList> callResponse) {
       CoreV1EventList list = callResponse.getObject();
       operatorNamespaceEventWatcher = startWatcher(getOperatorNamespace(), KubernetesUtils.getResourceVersion(list));
       list.getItems().forEach(DomainProcessorImpl::updateEventK8SObjects);
@@ -271,7 +271,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
       namespaceWatcher = createNamespaceWatcher(KubernetesUtils.getResourceVersion(callResponse.getObject()));
       return doNext(packet);
     }
@@ -352,7 +352,7 @@ public class OperatorMain extends BaseMain {
   class CrdPresenceStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doNext(
           RequestBuilder.CRD.get(KubernetesConstants.DOMAIN_CRD_NAME, createReadResponseStep(getNext())), packet);
     }
@@ -371,7 +371,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public Void onSuccess(
+    public StepAction onSuccess(
             Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
       V1CustomResourceDefinition existingCrd = callResponse.getObject();
 
@@ -392,7 +392,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
+    protected StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
       return isNotAuthorizedOrForbidden(callResponse)
           ? doNext(RequestBuilder.DOMAIN.list(getOperatorNamespace(), new CrdPresenceResponseStep(getNext())), packet)
           : super.onFailureNoRetry(packet, callResponse);
@@ -407,7 +407,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<DomainList> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<DomainList> callResponse) {
       LOGGER.info(MessageKeys.WAIT_FOR_CRD_INSTALLATION, CRD_DETECTION_DELAY);
       return doDelay(createCRDPresenceCheck(), packet, CRD_DETECTION_DELAY, TimeUnit.SECONDS);
     }

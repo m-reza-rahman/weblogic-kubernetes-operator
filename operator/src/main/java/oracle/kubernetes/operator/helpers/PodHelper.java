@@ -536,7 +536,7 @@ public class PodHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       PodStepContext context = new AdminPodStepContext(this, packet);
 
       return doNext(context.verifyPod(getNext()), packet);
@@ -612,7 +612,7 @@ public class PodHelper {
       }
 
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         removeFromServersMarkedForRollMap();
         return doNext(packet);
       }
@@ -740,7 +740,7 @@ public class PodHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       ManagedPodStepContext context = new ManagedPodStepContext(this, packet);
 
       return doNext(context.verifyPod(getNext()), packet);
@@ -756,7 +756,7 @@ public class PodHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       final DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       final V1Pod oldPod = info.getServerPod(serverName);
 
@@ -812,7 +812,7 @@ public class PodHelper {
     private Step deletePod(String name, String namespace, long gracePeriodSeconds, Step next) {
       Step conflictStep = RequestBuilder.POD.get(namespace, name, new DefaultResponseStep<>(next) {
         @Override
-        public Void onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+        public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
           V1Pod pod = callResponse.getObject();
 
           if (pod != null && !PodHelper.isDeleting(pod)) {

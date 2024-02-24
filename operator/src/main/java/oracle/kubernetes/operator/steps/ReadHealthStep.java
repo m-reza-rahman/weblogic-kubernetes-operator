@@ -74,7 +74,7 @@ public class ReadHealthStep extends Step {
   // overallHealthState, healthState
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     String serverName = (String) packet.get(ProcessingConstants.SERVER_NAME);
     DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     V1Service service = info.getServerService(serverName);
@@ -188,7 +188,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       ReadHealthProcessing processing = new ReadHealthProcessing(packet, service, pod);
       if (processing.getWlsServerConfig() == null) {
         return doNext(packet);
@@ -214,7 +214,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public Void onSuccess(Packet packet, HttpResponse<String> response) {
+    public StepAction onSuccess(Packet packet, HttpResponse<String> response) {
       try {
         HealthResponseProcessing responseProcessing = new HealthResponseProcessing(packet, response);
         responseProcessing.recordStateAndHealth();
@@ -242,7 +242,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public Void onFailure(Packet packet, HttpResponse<String> response) {
+    public StepAction onFailure(Packet packet, HttpResponse<String> response) {
       new HealthResponseProcessing(packet, response).recordFailedStateAndHealth();
       return doNext(packet);
     }

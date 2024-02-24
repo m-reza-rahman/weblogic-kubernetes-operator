@@ -58,7 +58,7 @@ public class SecretHelper {
     private String namespace;
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo dpi = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       V1Secret secret = dpi.getWebLogicCredentialsSecret();
       if (secret != null) {
@@ -91,7 +91,7 @@ public class SecretHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
         if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
           LoggingFilter loggingFilter = packet.getValue(LoggingFilter.LOGGING_FILTER_PACKET_KEY);
           LOGGER.warning(loggingFilter, SECRET_NOT_FOUND, secretName, namespace, WEBLOGIC_CREDENTIALS);
@@ -101,7 +101,7 @@ public class SecretHelper {
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
         V1Secret secret = callResponse.getObject();
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.setWebLogicCredentialsSecret(secret);

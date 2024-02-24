@@ -237,7 +237,7 @@ class ServerStatusReaderTest extends HttpUserAgentTest {
     public Step apply(Step next) {
       return new Step() {
         @Override
-        public Void apply(Packet packet) {
+        public StepAction apply(Packet packet) {
           serverNames.add((String) packet.get(ProcessingConstants.SERVER_NAME));
           return doNext(packet);
         }

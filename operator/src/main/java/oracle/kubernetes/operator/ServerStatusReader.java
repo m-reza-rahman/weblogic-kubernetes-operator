@@ -84,7 +84,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       packet.put(SERVER_STATE_MAP, new ConcurrentHashMap<String, String>());
       packet.put(SERVER_HEALTH_MAP, new ConcurrentHashMap<String, ServerHealth>());
 
@@ -135,7 +135,7 @@ public class ServerStatusReader {
 
     @Override
     @SuppressWarnings("try")
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       @SuppressWarnings("unchecked")
       final ConcurrentMap<String, String> serverStateMap =
           (ConcurrentMap<String, String>) packet.get(SERVER_STATE_MAP);
@@ -262,7 +262,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       @SuppressWarnings("unchecked")
       ConcurrentMap<String, String> serverStateMap =
           (ConcurrentMap<String, String>) packet.get(SERVER_STATE_MAP);
@@ -287,7 +287,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return doNext(getNextStep(info), packet);
     }

@@ -56,7 +56,7 @@ public class MonitoringExporterSteps {
   public static Step updateExporterSidecars() {
     return new Step() {
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         return doNext(updateExportersWithConfiguration(packet), packet);
       }
 
@@ -143,7 +143,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (PodHelper.isDeleting(getServerPod(packet))) {
         return doNext(packet);
       } else if (PodHelper.isReady(getServerPod(packet))) {
@@ -169,7 +169,7 @@ public class MonitoringExporterSteps {
     // if not match, response should run update step
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       ExporterRequestProcessing processing = new ExporterRequestProcessing(packet);
 
       return doNext(createRequestStep(processing.createConfigurationQueryRequest(),
@@ -184,7 +184,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public Void onSuccess(Packet packet, HttpResponse<String> response) {
+    public StepAction onSuccess(Packet packet, HttpResponse<String> response) {
       if (hasUpToDateConfiguration(packet, response)) {
         return doNext(packet);
       } else {
@@ -211,7 +211,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public Void onFailure(Packet packet, HttpResponse<String> response) {
+    public StepAction onFailure(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
   }
@@ -229,7 +229,7 @@ public class MonitoringExporterSteps {
   private static class ConfigurationUpdateStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       ExporterRequestProcessing processing = new ExporterRequestProcessing(packet);
 
       return doNext(createRequestStep(processing.createConfigurationUpdateRequest(packet),
@@ -311,12 +311,12 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public Void onSuccess(Packet packet, HttpResponse<String> response) {
+    public StepAction onSuccess(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
 
     @Override
-    public Void onFailure(Packet packet, HttpResponse<String> response) {
+    public StepAction onFailure(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
   }
@@ -349,7 +349,7 @@ public class MonitoringExporterSteps {
 
     @Override
     @SuppressWarnings("try")
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (serverNames == null) {
         return doNext(packet);
       } else {

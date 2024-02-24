@@ -27,7 +27,7 @@ public class ManagedServerUpAfterStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     if (getServersToRoll(packet).isEmpty()) {
       return doNext(packet);
     } else if (MakeRightDomainOperation.isInspectionRequired(packet)) {

@@ -948,7 +948,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   public static class PopulatePacketServerMapsStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       populatePacketServerMapsFromDomain(packet);
       return doNext(packet);
     }
@@ -1182,7 +1182,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     private class DomainPresenceInfoStep extends Step {
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         Optional.ofNullable(domains.get(getNamespace()))
             .map(n -> n.get(getDomainUid()))
             .ifPresent(i -> packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, i));

@@ -246,7 +246,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   static class ListClusterResourcesResponseStep extends DefaultResponseStep<ClusterList> {
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<ClusterList> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<ClusterList> callResponse) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       callResponse.getObject().getItems().stream().filter(c -> isForDomain(c, info))
           .forEach(info::addClusterResource);
@@ -270,7 +270,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private class UnregisterStatusUpdaterStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo.fromPacket(packet).ifPresent(this::unregisterStatusUpdater);
       return doNext(packet);
     }
@@ -333,7 +333,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private static class IntrospectionRequestStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       final String requestedIntrospectVersion = getRequestedIntrospectVersion(packet);
       if (!Objects.equals(requestedIntrospectVersion, packet.get(INTROSPECTION_STATE_LABEL))) {
         packet.put(DOMAIN_INTROSPECT_REQUESTED, Optional.ofNullable(requestedIntrospectVersion).orElse("0"));
@@ -353,7 +353,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private class DomainStatusStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo.fromPacket(packet).ifPresent(executor::scheduleDomainStatusUpdates);
       return doNext(packet);
     }
@@ -365,7 +365,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return doNext(
           RequestBuilder.DOMAIN.get(info.getNamespace(), info.getDomainName(), new ReadDomainResponseStep(getNext())),
@@ -379,7 +379,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       DomainPresenceInfo.fromPacket(packet).ifPresent(info -> updateCache(info, callResponse.getObject()));
       return doNext(packet);
     }
@@ -394,7 +394,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
         DomainPresenceInfo.fromPacket(packet).ifPresent(i -> i.setDeleting(true));
         return doNext(createDomainDownPlan(), packet);
@@ -406,7 +406,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private class UnregisterEventK8SObjectsStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo.fromPacket(packet).ifPresent(executor::unregisterDomainEventK8SObjects);
       return doNext(packet);
     }
@@ -422,7 +422,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (deleting) {
         executor.unregisterDomainPresenceInfo(info);
       } else {
@@ -443,7 +443,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doNext(getNextSteps(), packet);
     }
 
@@ -512,7 +512,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
   private static class TailStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doNext(packet);
     }
   }

@@ -23,7 +23,7 @@ public class ClusterServicesStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     Collection<Fiber.StepAndPacket> startDetails = new ArrayList<>();
 
     // Add cluster services

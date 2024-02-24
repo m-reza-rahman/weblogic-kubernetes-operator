@@ -198,7 +198,7 @@ class OperatorLoggingFormatterTest {
   class LoggingStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       try {
         packet.put("MESSAGE", getFormattedMessage());
         return doNext(packet);

@@ -25,7 +25,7 @@ public class DomainPresenceStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     final Step step = getNextSteps(packet);
     return doNext(step, packet);
   }

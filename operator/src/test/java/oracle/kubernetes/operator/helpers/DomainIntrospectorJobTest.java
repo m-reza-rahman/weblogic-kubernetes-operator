@@ -88,6 +88,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
+import static com.meterware.simplestub.Stub.createStrictStub;
+import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_DEFAULT_INIT_CONTAINER_COMMAND;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX;
 import static oracle.kubernetes.common.logging.MessageKeys.INTROSPECTOR_FLUENTD_CONTAINER_TERMINATED;
@@ -142,8 +144,7 @@ import static oracle.kubernetes.weblogic.domain.model.AuxiliaryImage.AUXILIARY_I
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionMatcher.hasCondition;
 import static oracle.kubernetes.weblogic.domain.model.DomainConditionType.FAILED;
 import static oracle.kubernetes.weblogic.domain.model.DomainCreationImage.DOMAIN_CREATION_IMAGE_MOUNT_PATH;
-import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.INTROSPECTION;
-import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERNETES;
+import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.*;
 import static oracle.kubernetes.weblogic.domain.model.Model.DEFAULT_AUXILIARY_IMAGE_MOUNT_PATH;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -1539,8 +1540,28 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.addToPacket(DOMAIN_INTROSPECTOR_JOB, testSupport.getResourceWithName(JOB, getJobName()));
   }
 
+  @Test
+  void whenJobLogContainsSevereErrorAndRecheckIntervalExceeded_executeTerminalStep() {
+    createFailedIntrospectionLog();
+
+    SystemClockTestSupport.increment(getRecheckIntervalSeconds() + 1);
+    testSupport.runSteps(JobHelper.readDomainIntrospectorPodLog(terminalStep));
+
+    assertThat(terminalStep.wasRun(), is(true));
+  }
+
   private int getRecheckIntervalSeconds() {
     return oracle.kubernetes.operator.tuning.TuningParameters.getInstance().getDomainPresenceRecheckIntervalSeconds();
+  }
+
+  @Test
+  void whenJobCreateFailsWith409Error_JobIsCreated() {
+    testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_CONFLICT);
+
+    testSupport.runSteps(JobHelper.createIntrospectionStartStep());
+
+    assertThat(testSupport.getPacket().get(DOMAIN_INTROSPECTOR_JOB), notNullValue());
+    logRecords.clear();
   }
 
   private DomainResource getUpdatedDomain() {
@@ -1563,6 +1584,19 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.runSteps(JobHelper.readDomainIntrospectorPodLog(null));
 
     assertThat(getUpdatedDomain().getStatus().getMessage(), containsString(FATAL_PROBLEM));
+  }
+
+  @Test
+  void whenJobLogContainsSevereErrorAndRetryLimitReached_domainStatusHasAbortedCondition() {
+    createIntrospectionLog(SEVERE_MESSAGE);
+    getUpdatedDomain().getOrCreateStatus().addCondition(createFailedCondition("first failure"));
+    SystemClockTestSupport.increment(getSecondsJustShortOfLimit());
+    getUpdatedDomain().getOrCreateStatus().addCondition(createFailedCondition("first failure"));
+    SystemClockTestSupport.increment(getUpdatedDomain().getFailureRetryIntervalSeconds());
+
+    testSupport.runSteps(JobHelper.readDomainIntrospectorPodLog(null));
+
+    assertThat(getUpdatedDomain(), hasCondition(FAILED).withReason(ABORTED));  // todo check updated status message
   }
 
   private DomainCondition createFailedCondition(String message) {

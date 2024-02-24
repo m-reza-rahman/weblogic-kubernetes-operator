@@ -15,7 +15,7 @@ import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveFailure
 public class WatchDomainIntrospectorJobReadyStep extends Step {
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     V1Job domainIntrospectorJob = (V1Job) packet.get(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB);
 
     if (hasNotCompleted(domainIntrospectorJob)) {

@@ -74,7 +74,7 @@ public class InitializeWebhookIdentityStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     try {
       if (isWebHoodSslIdentityAlreadyCreated()) {
         reuseIdentity();
@@ -104,7 +104,7 @@ public class InitializeWebhookIdentityStep extends Step {
     FileUtils.copyFile(keyFile, webhookKeyFile);
   }
 
-  private Void createIdentity(Packet packet) throws IdentityInitializationException {
+  private StepAction createIdentity(Packet packet) throws IdentityInitializationException {
     try {
       final KeyPair keyPair = identityFactory.createKeyPair();
       final String key = identityFactory.convertToPEM(keyPair.getPrivate());
@@ -160,7 +160,7 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
       V1Secret existingSecret = callResponse.getObject();
       Map<String, byte[]> data = Optional.ofNullable(existingSecret).map(V1Secret::getData).orElse(new HashMap<>());
       if (existingSecret == null) {
@@ -221,7 +221,7 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
       if (isUnrecoverable(callResponse)) {
         return doNext(Step.chain(readSecretResponseStep(getNext(), webhookIdentity), getNext()), packet);
       } else {

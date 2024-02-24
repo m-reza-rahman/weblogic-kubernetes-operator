@@ -66,7 +66,7 @@ public class InitializeInternalIdentityStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     try {
       if (configInternalCertFile.exists() && secretsInternalKeyFile.exists()) {
         // The operator's internal ssl identity has already been created.
@@ -89,7 +89,7 @@ public class InitializeInternalIdentityStep extends Step {
     FileUtils.copyFile(secretsInternalKeyFile, internalKeyFile);
   }
 
-  private Void createInternalIdentity(Packet packet) throws Exception {
+  private StepAction createInternalIdentity(Packet packet) throws Exception {
     KeyPair keyPair = createKeyPair();
     String key = convertToPEM(keyPair.getPrivate());
     writeToFile(key, internalKeyFile);
@@ -158,7 +158,7 @@ public class InitializeInternalIdentityStep extends Step {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
       V1Secret existingSecret = callResponse.getObject();
       if (existingSecret == null) {
         return doNext(createSecret(getNext(), internalOperatorKey), packet);

@@ -1049,7 +1049,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onFailure(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+    public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       if (isUnrecoverable(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
@@ -1057,7 +1057,7 @@ public class JobStepContext extends BasePodStepContext {
       }
     }
 
-    private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+    private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       return doNext(createKubernetesFailureSteps(callResponse), packet);
     }
 
@@ -1066,7 +1066,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       logJobCreated();
       V1Job job = callResponse.getObject();
       if (job != null) {

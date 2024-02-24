@@ -15,7 +15,7 @@ public class BeforeAdminServiceStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     WlsDomainConfig domainTopology =
         (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
     String adminServerName = domainTopology.getAdminServerName();

@@ -265,7 +265,7 @@ class FailureRetryTest {
     private int numTimesRun = 0;
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       numTimesRun++;
       return doNext(DomainStatusUpdater.createDomainInvalidFailureSteps("in unit test"), packet);
     }
@@ -274,7 +274,7 @@ class FailureRetryTest {
   static class AddFatalIntrospectionFailureStep extends Step {
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doNext(DomainStatusUpdater.createIntrospectionFailureSteps(FATAL_INTROSPECTOR_ERROR), packet);
     }
   }
@@ -299,7 +299,7 @@ class FailureRetryTest {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       if (exception instanceof RuntimeException) {
         throw (RuntimeException) exception;
       } else {

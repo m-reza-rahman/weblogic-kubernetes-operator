@@ -91,7 +91,7 @@ public abstract class RequestStep<
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     KubernetesApi<A, L> client
             = RequestBuilder.createKubernetesApi(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
     KubernetesApiResponse<R> result = execute(client, packet);

@@ -23,7 +23,7 @@ public class TerminalStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     executed = true;
     executionCount.getAndIncrement();
     return doNext(null, packet);

@@ -23,7 +23,7 @@ public abstract class ActionResponseStep<T extends KubernetesType> extends Defau
   public abstract Step createSuccessStep(T result, Step next);
 
   @Override
-  public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+  public StepAction onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
     return callResponse.getObject() == null
         ? doNext(packet)
         : doNext(createSuccessStep(callResponse.getObject(),
@@ -39,7 +39,7 @@ public abstract class ActionResponseStep<T extends KubernetesType> extends Defau
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return ActionResponseStep.this.doContinueListOrNext(callResponse, packet);
     }
   }

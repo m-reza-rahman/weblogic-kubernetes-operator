@@ -31,13 +31,13 @@ public abstract class HttpResponseStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     return Optional.ofNullable(getResponse(packet))
         .map(r -> doApply(packet, r))
         .orElse(handlePossibleThrowableOrContinue(packet));
   }
 
-  private Void handlePossibleThrowableOrContinue(Packet packet) {
+  private StepAction handlePossibleThrowableOrContinue(Packet packet) {
     return Optional.ofNullable(getThrowableResponse(packet))
         .map(t -> wrapOnFailure(packet, null))
         .orElse(doNext(packet));
@@ -47,12 +47,12 @@ public abstract class HttpResponseStep extends Step {
     return (Throwable) packet.get(THROWABLE);
   }
 
-  private Void doApply(Packet packet, HttpResponse<String> response) {
+  private StepAction doApply(Packet packet, HttpResponse<String> response) {
     Optional.ofNullable(callback).ifPresent(c -> c.accept(response));
     return isSuccess(response) ? onSuccess(packet, response) : wrapOnFailure(packet, response);
   }
 
-  private Void wrapOnFailure(Packet packet, HttpResponse<String> response) {
+  private StepAction wrapOnFailure(Packet packet, HttpResponse<String> response) {
     if (response != null && (response.statusCode() == HTTP_FORBIDDEN || response.statusCode() == HTTP_UNAUTHORIZED)) {
       Optional.ofNullable(SecretHelper.getAuthorizationSource(packet)).ifPresent(AuthorizationSource::onFailure);
     }
@@ -101,7 +101,7 @@ public abstract class HttpResponseStep extends Step {
    * @param response the response from the server
    * @return the next action for the fiber to take
    */
-  public abstract Void onSuccess(Packet packet, HttpResponse<String> response);
+  public abstract StepAction onSuccess(Packet packet, HttpResponse<String> response);
 
   /**
    * Processes a failure response.
@@ -109,5 +109,5 @@ public abstract class HttpResponseStep extends Step {
    * @param response the response from the server
    * @return the next action for the fiber to take
    */
-  public abstract Void onFailure(Packet packet, HttpResponse<String> response);
+  public abstract StepAction onFailure(Packet packet, HttpResponse<String> response);
 }

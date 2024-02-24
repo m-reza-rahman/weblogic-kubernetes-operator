@@ -122,7 +122,7 @@ class FiberTest {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       recordStep(packet);
       return doNext(packet);
     }
@@ -142,7 +142,7 @@ class FiberTest {
     int count = 2;
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       recordStep(packet);
       return count-- > 0 ? doRetry(packet, 50, TimeUnit.MILLISECONDS) : doNext(packet);
     }
@@ -150,7 +150,7 @@ class FiberTest {
 
   static class ThrowableStep extends BasicStep {
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       recordStep(packet);
 
       throw new RuntimeException("in test");
@@ -168,7 +168,7 @@ class FiberTest {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       return doForkJoin(nextStep, packet, createStepAndPacketList(packet));
     }
 

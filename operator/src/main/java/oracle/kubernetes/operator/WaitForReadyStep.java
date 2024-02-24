@@ -172,7 +172,7 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
   }
 
   @Override
-  public final Void apply(Packet packet) {
+  public final StepAction apply(Packet packet) {
     if (shouldTerminateFiber(initialResource)) {
       return doTerminate(createTerminationException(initialResource), packet);
     } else if (isReady(initialResource)) {
@@ -249,7 +249,7 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return doNext(createReadAsyncStep(resourceName, info.getNamespace(),
               info.getDomainUid(), responseStep), packet);
@@ -266,7 +266,7 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
     }
 
     @Override
-    public Void onSuccess(Packet packet, KubernetesApiResponse<V> callResponse) {
+    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V> callResponse) {
       MakeRightDomainOperation makeRightDomainOperation =
               (MakeRightDomainOperation)packet.get(MAKE_RIGHT_DOMAIN_OPERATION);
       if (makeRightDomainOperation != null) {

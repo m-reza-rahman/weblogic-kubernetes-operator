@@ -88,7 +88,7 @@ public class HttpRequestStep extends Step {
   }
 
   @Override
-  public Void apply(Packet packet) {
+  public StepAction apply(Packet packet) {
     HttpResponseStep.removeResponse(packet);
     DomainPresenceInfo info = getDomainPresenceInfo(packet);
     try (ThreadLoggingContext ignored =

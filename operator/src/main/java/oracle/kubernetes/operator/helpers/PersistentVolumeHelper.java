@@ -60,7 +60,7 @@ public class PersistentVolumeHelper {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       if (info.getDomain().getInitPvDomainPersistentVolume() != null) {
         return doNext(createContext(packet).readAndCreatePersistentVolumeStep(getNext()), packet);
@@ -119,7 +119,7 @@ public class PersistentVolumeHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
+      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
         if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -127,12 +127,12 @@ public class PersistentVolumeHelper {
         }
       }
 
-      private Void updateDomainStatus(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
+      private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
         logPersistentVolumeCreated(messageKey);
         return doNext(packet);
       }
@@ -144,14 +144,14 @@ public class PersistentVolumeHelper {
       }
 
       @Override
-      public Void onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
+      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : super.onFailure(packet, callResponse);
       }
 
       @Override
-      public Void onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
+      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         V1PersistentVolume persistentVolume = callResponse.getObject();
         if (persistentVolume == null) {
@@ -179,7 +179,7 @@ public class PersistentVolumeHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         return doNext(RequestBuilder.PV.get(getPersistentVolumeName(info),
             new ReadResponseStep(conflictStep)), packet);
       }

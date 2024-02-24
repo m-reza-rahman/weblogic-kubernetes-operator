@@ -270,7 +270,7 @@ public class Namespaces {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       NamespaceValidationContext validationContext = new NamespaceValidationContext(packet, domainNamespaces);
       getNonNullConfiguredDomainNamespaces().forEach(validationContext::validateConfiguredNamespace);
       List<Fiber.StepAndPacket> nsStopEventSteps = getCreateNSStopEventSteps(packet, validationContext);
@@ -312,7 +312,7 @@ public class Namespaces {
       }
 
       @Override
-      public Void apply(Packet packet) {
+      public StepAction apply(Packet packet) {
         if (nsStopEventDetails.isEmpty()) {
           return doNext(getNext(), packet);
         } else {

@@ -115,7 +115,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     }
 
     @Override
-    public Void apply(Packet packet) {
+    public StepAction apply(Packet packet) {
       packet.remove(CONTINUE);
       packet.remove(RequestStep.RESPONSE_COMPONENT_NAME);
       packet.remove(RETRY);
@@ -128,7 +128,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
   }
 
   @Override
-  public final Void apply(Packet packet) {
+  public final StepAction apply(Packet packet) {
     @SuppressWarnings("unchecked")
     KubernetesApiResponse<T> response = (KubernetesApiResponse<T>) packet.get(RESPONSE_COMPONENT_NAME);
     if (response == null || !response.isSuccess()) {
@@ -146,7 +146,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @param packet Packet
    * @return Next action for list continue
    */
-  protected final Void doContinueListOrNext(KubernetesApiResponse<T> callResponse, Packet packet) {
+  protected final StepAction doContinueListOrNext(KubernetesApiResponse<T> callResponse, Packet packet) {
     return doContinueListOrNext(callResponse, packet, getNext());
   }
 
@@ -159,7 +159,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @param next Next step, if no continuation
    * @return Next action for list continue
    */
-  protected final Void doContinueListOrNext(KubernetesApiResponse<T> callResponse, Packet packet, Step next) {
+  protected final StepAction doContinueListOrNext(KubernetesApiResponse<T> callResponse, Packet packet, Step next) {
     String cont = accessContinue(callResponse.getObject());
     if (cont != null) {
       packet.put(CONTINUE, cont);
@@ -193,7 +193,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @param packet Packet
    * @return Next action for the original request
    */
-  private Void resetRetryStrategyAndReinvokeRequest(Packet packet) {
+  private StepAction resetRetryStrategyAndReinvokeRequest(Packet packet) {
     @SuppressWarnings("unchecked")
     DefaultRetryStrategy retryStrategy = (DefaultRetryStrategy) packet.get(RETRY);
     if (retryStrategy != null) {
@@ -210,7 +210,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @param callResponse the result of the call
    * @return Next action for fiber processing, which may be a retry
    */
-  public Void onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
+  public StepAction onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
     return onFailure(conflictStep, packet, callResponse);
   }
 
@@ -226,7 +226,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @param callResponse the result of the call
    * @return Next action for fiber processing, which may be a retry
    */
-  public Void onFailure(Step conflictStep, Packet packet, KubernetesApiResponse<T> callResponse) {
+  public StepAction onFailure(Step conflictStep, Packet packet, KubernetesApiResponse<T> callResponse) {
     return Optional.ofNullable(packet.get(RETRY))
         .map(DefaultRetryStrategy.class::cast)
         .map(rs -> rs.doPotentialRetry(conflictStep, packet, callResponse, this::onFailureNoRetry))
@@ -234,10 +234,10 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
   }
 
   interface FailureStrategy<T extends KubernetesType> {
-    public Void onFailureNoRetry(Packet packet, KubernetesApiResponse<T> callResponse);
+    public StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<T> callResponse);
   }
 
-  protected Void onFailureNoRetry(Packet packet, KubernetesApiResponse<T> callResponse) {
+  protected StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<T> callResponse) {
     addDomainFailureStatus(packet, callResponse.getStatus());
     return doEnd(packet);
   }
@@ -249,7 +249,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @param callResponse the result of the call
    * @return Next action for fiber processing
    */
-  public Void onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+  public StepAction onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
     throw new IllegalStateException("Must be overridden, if called");
   }
 
@@ -263,7 +263,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
       this.retryStep = retryStep;
     }
 
-    public Void doPotentialRetry(Step conflictStep, Packet packet,
+    public StepAction doPotentialRetry(Step conflictStep, Packet packet,
                                  KubernetesApiResponse<T> callResponse, FailureStrategy<T> failureStrategy) {
       int statusCode = Optional.ofNullable(callResponse)
           .map(KubernetesApiResponse::getHttpStatusCode).orElse(FIBER_TIMEOUT);
@@ -291,7 +291,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     }
 
     @Nonnull
-    private Void backOffAndRetry(Packet packet, Step nextStep) {
+    private StepAction backOffAndRetry(Packet packet, Step nextStep) {
       final long waitTime = getNextWaitTime();
 
       return doDelay(nextStep, packet, waitTime, TimeUnit.MILLISECONDS);
