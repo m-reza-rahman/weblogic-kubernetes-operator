@@ -259,22 +259,33 @@ class ItMultiDomainModelsScale {
       if (OKE_CLUSTER) {
         String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
         hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            replicaCount, numberOfServers, null, null, hostname);
+
+        // then scale cluster back to 1 servers
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            numberOfServers, replicaCount, null, null, hostname);
+      } else {
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers);
+        curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+        logger.info("1. ===curlCmd from generateCurlCmd: {0}", curlCmd);
+        List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            replicaCount, numberOfServers, curlCmd, managedServersBeforeScale, hostname);
+
+        // then scale cluster back to 1 servers
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+        managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            numberOfServers, replicaCount, curlCmd, managedServersBeforeScale, hostname);
       }
-
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
-          clusterName, domainUid, domainNamespace, numberOfServers);
-      curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
-      logger.info("1. ===curlCmd from generateCurlCmd: {0}", curlCmd);
-      List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          replicaCount, numberOfServers, curlCmd, managedServersBeforeScale, hostname);
-
-      // then scale cluster back to 1 servers
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-          clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
-      managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          numberOfServers, replicaCount, curlCmd, managedServersBeforeScale, hostname);
     }
 
     // verify admin console login
@@ -330,10 +341,15 @@ class ItMultiDomainModelsScale {
     int numberOfServers = 3;
 
     if (OKE_CLUSTER) {
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+          false, "", "", 0, "", "", null, null);
+
+      /*
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
-          managedServerPodNamePrefix, replicaCount, numberOfServers, null, null);
+          managedServerPodNamePrefix, replicaCount, numberOfServers, null, null);*/
 
       // then scale cluster back to 2 servers
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",

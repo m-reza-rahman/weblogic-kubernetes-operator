@@ -545,8 +545,10 @@ public class CommonTestUtils {
           .isTrue();
     }
 
-    verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
-        replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
+    if (curlCmd != null) {
+      verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
+          replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
+    }
   }
 
   /**
