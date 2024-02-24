@@ -40,7 +40,7 @@ public class CdtTxServlet extends HttpServlet {
   private TransactionManager tm = (TransactionManager)
       TransactionHelper.getTransactionHelper().getTransactionManager();
   PrintWriter out = null;
-  String tableName = "cdt_table1";
+  String tableName = "cdt_table";
   java.sql.Connection conn;
 
   /**
@@ -121,7 +121,7 @@ public class CdtTxServlet extends HttpServlet {
       out.println("Got connection to datasource - " + conn);
 
       //create a table in the DB
-      //createTable(conn, tableName);
+      createTable(conn, tableName);
 
       try {
         tm.begin();
@@ -265,6 +265,7 @@ public class CdtTxServlet extends HttpServlet {
     } catch (SQLException sqle) {
       System.out.println("===Got SQL Exception when deleting table " + sqle.getMessage());
       out.println("===Got SQL Exception when deleting table " + sqle.getMessage());
+      tableName = "cdt_table_1";
     } finally {
       System.out.println("===Done deleting table - closing stmt");
       out.println("===Done deleting table - closing stmt");
