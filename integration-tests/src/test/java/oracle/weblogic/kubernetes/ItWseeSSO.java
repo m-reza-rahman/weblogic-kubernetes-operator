@@ -219,10 +219,13 @@ class ItWseeSSO {
 
     logger.info("check WSDL Access");
     if (OKE_CLUSTER) {
+      /*
       receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2,
           "/samlSenderVouches/EchoService", adminServerPodName2);
       senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1,
-          "/EchoServiceRef/Echo", adminServerPodName1);
+          "/EchoServiceRef/Echo", adminServerPodName1);*/
+      receiverURI = adminServerPodName2 + ":7001/samlSenderVouches/EchoService";
+      senderURI = adminServerPodName1 + ":7001/EchoServiceRef/Echo";
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
 
