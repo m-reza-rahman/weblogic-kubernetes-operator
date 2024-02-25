@@ -98,6 +98,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApi;
+import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApiInOpPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithWLDF;
 import static oracle.weblogic.kubernetes.actions.impl.UniqueName.random;
 //import static oracle.weblogic.kubernetes.assertions.TestAssertions.appAccessibleInPod;
@@ -510,8 +511,18 @@ public class CommonTestUtils {
         clusterName, domainUid, domainNamespace, replicasAfterScale);
     if (withRestApi) {
       if (OKE_CLUSTER && hostname != null) {
+        /*
         assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApi(domainUid, clusterName,
             replicasAfterScale, hostname, externalRestHttpsPort, opNamespace, opServiceAccount)))
+            .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
+                clusterName, domainUid, domainNamespace))
+            .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
+                clusterName, domainUid, domainNamespace))
+            .isTrue();*/
+
+        int opExtPort = 8081;
+        assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApiInOpPod(domainUid, clusterName,
+            replicasAfterScale, hostname, opExtPort, opNamespace, opServiceAccount)))
             .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
                 clusterName, domainUid, domainNamespace))
             .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
