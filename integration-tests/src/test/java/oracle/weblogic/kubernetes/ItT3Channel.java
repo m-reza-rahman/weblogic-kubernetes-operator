@@ -285,13 +285,26 @@ class ItT3Channel {
       ex.printStackTrace();
     }
 
-    // deploy application and verify all servers functions normally
-    //deploy clusterview application
-    logger.info("Deploying clusterview app {0} to cluster {1}",
-        clusterViewAppPath, clusterName);
-    deployUsingWlst(adminServerPodName, Integer.toString(t3ChannelPort),
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminServerName + "," + clusterName, clusterViewAppPath,
-        domainNamespace);
+    if (OKE_CLUSTER) {
+      /*
+      t3ChannelPort = assertDoesNotThrow(()
+          -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+          "Getting admin server ext port failed");
+      logger.info("default channel port: {0}", t3ChannelPort);
+      assertNotEquals(-1, t3ChannelPort, "admin server ext Port is not valid");*/
+
+      deployUsingWlst(adminServerPodName, Integer.toString(t3ChannelPort),
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, clusterName + "," + ADMIN_SERVER_NAME_BASE,
+          clusterViewAppPath, domainNamespace);
+    } else {
+      // deploy application and verify all servers functions normally
+      //deploy clusterview application
+      logger.info("Deploying clusterview app {0} to cluster {1}",
+          clusterViewAppPath, clusterName);
+      deployUsingWlst(adminServerPodName, Integer.toString(t3ChannelPort),
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminServerName + "," + clusterName, clusterViewAppPath,
+          domainNamespace);
+    }
 
     List<String> managedServerNames = new ArrayList<String>();
     for (int i = 1; i <= replicaCount; i++) {
