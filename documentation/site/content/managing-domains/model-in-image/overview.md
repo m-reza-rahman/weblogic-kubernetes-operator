@@ -78,7 +78,7 @@ For Model in Image domains, whenever you change any security credentials includi
 The demo CA expires in five years, however, whenever the domain is recreated, the entire set of certificates are regenerated so you _must_ import the demo CA again.  
 
 If you have any external client that needs to communicate with WebLogic Servers using SSL, then you need to import the current self-signing CA cert, `democacert.der`,
-into your local trust store; previously imported certificates will _not_ work.
+into your local trust store. 
 
 ```shell
  keytool -importcert -keystore <keystore path> -alias wlscacert  -file $HOME/Downloads/democacer.der
