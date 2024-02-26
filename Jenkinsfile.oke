@@ -103,7 +103,7 @@ pipeline {
         choice(name: 'CLUSTER_NAME',
                        description: 'Oke cluster name.',
                        choices: [
-                           'huicluster'
+                           'huicluster',
                            'parone',
                            'seqone',
                            'seqtwo'
@@ -473,7 +473,7 @@ EOF
                     }
                 }
 
-            
+
             post {
                 always {
                     sh '''
