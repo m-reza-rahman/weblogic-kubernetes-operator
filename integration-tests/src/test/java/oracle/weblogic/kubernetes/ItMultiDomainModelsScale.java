@@ -51,6 +51,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_EXTERNAL_REST_HTTPSPORT;
+import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
@@ -64,6 +65,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
@@ -345,6 +347,11 @@ class ItMultiDomainModelsScale {
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
 
+      // get operator pod name
+      String operatorPodName = assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
+      assertNotNull(operatorPodName, "Operator pod name returned is null");
+      logger.info("Operator pod name {0}", operatorPodName);
+
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
       curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
@@ -352,7 +359,7 @@ class ItMultiDomainModelsScale {
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
           replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
           false, "", "", 0, "", "",
-          curlCmd, managedServersBeforeScale, hostname);
+          curlCmd, managedServersBeforeScale, operatorPodName);
 
       // then scale cluster back to 2 servers
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
