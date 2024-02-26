@@ -849,7 +849,7 @@ public class CommonLBTestUtils {
       readyAppUrl.append(pathLocation);
     }
 
-    readyAppUrl.append("/weblogic/ready");
+    readyAppUrl.append("/management/tenant-monitoring/servers/");
     String curlCmd;
     if (isHostRouting) {
       curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
@@ -868,12 +868,12 @@ public class CommonLBTestUtils {
       assertDoesNotThrow(() -> TimeUnit.SECONDS.sleep(1));
       ExecResult result;
       try {
-        getLogger().info("Accessing console using curl request, iteration {0}: {1}", i, curlCmd);
+        getLogger().info("Accessing app on admin server using curl request, iteration {0}: {1}", i, curlCmd);
         result = ExecCommand.exec(curlCmd, true);
         String response = result.stdout().trim();
         getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
             result.exitValue(), response, result.stderr());
-        if (response.contains("login")) {
+        if (response.contains("RUNNING")) {
           consoleAccessible = true;
           break;
         }
@@ -881,6 +881,6 @@ public class CommonLBTestUtils {
         getLogger().severe(ex.getMessage());
       }
     }
-    assertTrue(consoleAccessible, "Couldn't access admin server console");
+    assertTrue(consoleAccessible, "Couldn't access admin server app");
   }
 }

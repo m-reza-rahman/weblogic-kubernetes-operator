@@ -124,9 +124,9 @@ class ItMiiDomainUpgradeToSecureMode {
   private final String imageTag12214 = "12.2.1.4";
   private final String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
   private final String sampleAppUri = "/sample-war/index.jsp";
-  private final String legacyConsoleUri = "/weblogic/ready";
-  private final String wlsConsoleText = "WebLogic Administration Console";
-  private final String wlsConsoleMoved = "This document you requested has moved";
+  private final String adminAppUri = "/management/tenant-monitoring/servers";
+  private final String adminAppText = "RUNNING";
+  private final String adminAppMoved = "This document you requested has moved";
   private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"
       + "/serverRuntimes/adminserver/applicationRuntimes";
   
@@ -255,7 +255,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, adminServerName, false, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, false, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -273,7 +273,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, adminServerName, false, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, false, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -338,7 +338,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, adminServerName, false, ingressIP);    
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, false, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -355,7 +355,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, adminServerName, false, ingressIP);
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, false, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -418,7 +418,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, false, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -438,7 +438,7 @@ class ItMiiDomainUpgradeToSecureMode {
     
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, false, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -506,7 +506,7 @@ class ItMiiDomainUpgradeToSecureMode {
     
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, false, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -536,7 +536,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, msName, false, ingressIP);
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);   
+        adminAppUri, adminAppMoved, false, ingressIP);
   }
 
   /**
@@ -595,7 +595,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, adminServerName, false, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, false, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -614,7 +614,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, adminServerName, false, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, false, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -680,7 +680,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, false, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -710,7 +710,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, msName, false, ingressIP);
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);    
+        adminAppUri, adminAppMoved, false, ingressIP);
   }
 
   /**
