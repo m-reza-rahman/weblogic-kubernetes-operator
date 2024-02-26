@@ -275,6 +275,16 @@ class ItT3Channel {
       checkPodReadyAndServiceExists(managedServerPodPrefix + i, domainUid, domainNamespace);
     }
 
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
     // deploy application and verify all servers functions normally
     //deploy clusterview application
     logger.info("Deploying clusterview app {0} to cluster {1}",
