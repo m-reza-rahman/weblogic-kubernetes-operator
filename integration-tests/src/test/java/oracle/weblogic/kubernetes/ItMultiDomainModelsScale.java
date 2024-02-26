@@ -368,7 +368,7 @@ class ItMultiDomainModelsScale {
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
           numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
           false, "", "", 0, "", "",
-          curlCmd, managedServersBeforeScale, hostname);
+          curlCmd, managedServersBeforeScale, operatorPodName);
 
       /*
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
