@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Tag("olcne-mrg")
 @Tag("kind-parallel")
 @Tag("okd-fmw-cert")
-@Tag("oke-parallelnew")
+@Tag("oke-gate")
 
 class ItFmwDynamicClusterMiiDomain {
 
