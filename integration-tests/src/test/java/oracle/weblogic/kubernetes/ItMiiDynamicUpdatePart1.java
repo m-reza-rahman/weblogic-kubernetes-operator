@@ -33,7 +33,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResource
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsRunning;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkApplicationRuntime;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWorkManagerRuntime;
+import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.checkWorkManagerInConfig;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.readMaxThreadsConstraintRuntimeForWorkManager;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.readMinThreadsConstraintRuntimeForWorkManager;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigMapWithModelFiles;
@@ -164,8 +164,7 @@ class ItMiiDynamicUpdatePart1 {
 
     verifyIntrospectorRuns(domainUid, helper.domainNamespace);
 
-    testUntil(
-        () -> checkWorkManagerRuntime(helper.adminSvcExtHost, helper.domainNamespace,
+    testUntil(() -> checkWorkManagerInConfig(helper.adminSvcExtHost, helper.domainNamespace,
             helper.adminServerPodName,MANAGED_SERVER_NAME_BASE + "1",
           workManagerName, "200"),
         logger,

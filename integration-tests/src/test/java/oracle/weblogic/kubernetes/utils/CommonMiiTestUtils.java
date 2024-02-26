@@ -976,10 +976,7 @@ public class CommonMiiTestUtils {
         adminSvcExtHost,
         domainNamespace,
         adminServerPodName,
-        "/management/weblogic/latest/domainRuntime/serverRuntimes/"
-            + serverName
-            + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
-            + "/workManagerRuntimes/" + workManagerName
+        "/management/weblogic/latest/domainConfig/selfTuning/workManagers/" + workManagerName
             + "/minThreadsConstraintRuntime",
         "checkMinThreadsConstraintRuntime");
   }
@@ -1002,10 +999,7 @@ public class CommonMiiTestUtils {
         adminSvcExtHost,
         domainNamespace,
         adminServerPodName,
-        "/management/weblogic/latest/domainRuntime/serverRuntimes/"
-            + serverName
-            + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
-            + "/workManagerRuntimes/" + workManagerName
+        "/management/weblogic/latest/domainConfig/selfTuning/workManagers/" + workManagerName
             + "/maxThreadsConstraintRuntime",
         "checkMaxThreadsConstraintRuntime");
   }
@@ -1022,7 +1016,7 @@ public class CommonMiiTestUtils {
   public static boolean checkWorkManagerRuntime(
       String domainNamespace, String adminServerPodName,
       String serverName, String workManagerName, String expectedStatusCode) {
-    return checkWorkManagerRuntime(null, domainNamespace, adminServerPodName, serverName,
+    return checkWorkManagerInConfig(null, domainNamespace, adminServerPodName, serverName,
                                    workManagerName, expectedStatusCode);
   }
 
@@ -1036,17 +1030,14 @@ public class CommonMiiTestUtils {
    * @param expectedStatusCode the expected response to verify
    * @return true if the REST API reply contains the expected response
    */
-  public static boolean checkWorkManagerRuntime(
+  public static boolean checkWorkManagerInConfig(
       String adminSvcExtHost, String domainNamespace, String adminServerPodName,
       String serverName, String workManagerName, String expectedStatusCode) {
     return checkWeblogicMBean(
         adminSvcExtHost,
         domainNamespace,
         adminServerPodName,
-        "/management/weblogic/latest/domainRuntime/serverRuntimes/"
-            + serverName
-            + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
-            + "/workManagerRuntimes/" + workManagerName,
+        "/management/weblogic/latest/domainConfig/selfTuning/workManagers/" + workManagerName,
         expectedStatusCode);
   }
 
