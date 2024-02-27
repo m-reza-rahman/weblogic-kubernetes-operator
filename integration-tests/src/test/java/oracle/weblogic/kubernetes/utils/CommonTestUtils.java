@@ -889,6 +889,45 @@ public class CommonTestUtils {
 
   /**
    * Check the system resource configuration using REST API.
+   * @param namespace admin server pod namespace
+   * @param serverPodName WebLogic server pod name
+   * @param hostAndPort server hostname and port
+   * @param resourcesPath path of the resource
+   * @param expectedValue expected value returned in the REST call
+   * @return true if the REST API results matches expected status code
+   */
+  public static boolean checkSystemResourceConfigInPod(String namespace,
+                                                       String serverPodName,
+                                                       String hostAndPort,
+                                                       String resourcesPath,
+                                                       String expectedValue) {
+    final LoggingFacade logger = getLogger();
+
+    StringBuffer curlString = new StringBuffer("curl -g --user ");
+    curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" http://" + hostAndPort)
+        .append("/management/weblogic/latest/domainConfig")
+        .append("/")
+        .append(resourcesPath)
+        .append("/");
+
+    String commandToRun = KUBERNETES_CLI + " exec -n "
+        + namespace + "  " + serverPodName + " -- " + curlString;
+    logger.info("curl command to run in admin pod {0} is: {1}", serverPodName, commandToRun);
+
+    ExecResult result = null;
+    try {
+      result = ExecCommand.exec(commandToRun, true);
+      logger.info("result is: {0}", result.toString());
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+
+    return result.stdout().contains(expectedValue);
+  }
+
+  /**
+   * Check the system resource configuration using REST API.
    * @param adminServerPodName admin server pod name
    * @param namespace admin server pod namespace
    * @param resourcesPath path of the resource
