@@ -552,6 +552,10 @@ class ItIstioCrossDomainTransaction {
             + "action=receive&dest=jms.testAccountingQueue\"", host, istioIngressPort);
 
     logger.info("curl command {0}", curlString);
+    String result = assertDoesNotThrow(() -> exec(curlString, true));
+    logger.info("\n HTTP response is \n " + result.stdout());
+    logger.info("curl command returned {0}", result.toString());
+
     testUntil(assertDoesNotThrow(
         () -> () -> exec(curlString, true).stdout().contains("Messages are distributed")),
         logger, "local queue to be updated");
