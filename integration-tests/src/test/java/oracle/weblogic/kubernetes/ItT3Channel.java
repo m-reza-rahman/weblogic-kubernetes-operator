@@ -77,6 +77,7 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -286,12 +287,11 @@ class ItT3Channel {
     }
 
     if (OKE_CLUSTER) {
-      /*
-      t3ChannelPort = assertDoesNotThrow(()
+      int newT3ChannelPort = assertDoesNotThrow(()
           -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
           "Getting admin server ext port failed");
-      logger.info("default channel port: {0}", t3ChannelPort);
-      assertNotEquals(-1, t3ChannelPort, "admin server ext Port is not valid");*/
+      logger.info("default channel port: {0}", newT3ChannelPort);
+      assertNotEquals(-1, newT3ChannelPort, "admin server ext Port is not valid");
 
       deployUsingWlst(adminServerPodName, Integer.toString(t3ChannelPort),
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, clusterName + "," + ADMIN_SERVER_NAME_BASE,
