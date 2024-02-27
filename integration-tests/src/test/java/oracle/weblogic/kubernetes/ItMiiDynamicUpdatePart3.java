@@ -46,6 +46,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfig;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfigInPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
@@ -321,14 +322,19 @@ class ItMiiDynamicUpdatePart3 {
     verifyPodIntrospectVersionUpdated(pods.keySet(), introspectVersion, helper.domainNamespace);
 
     // check datasource configuration using REST api
-    int adminServiceNodePort = OKE_CLUSTER ? 7001 :
-        getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    String adminHost = OKE_CLUSTER ? helper.adminServerPodName : helper.adminSvcExtHost;
-
-    assertTrue(checkSystemResourceConfig(adminHost, adminServiceNodePort,
-        "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
-        "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+    if (OKE_CLUSTER) {
+      assertTrue(checkSystemResourceConfigInPod(helper.domainNamespace, helper.adminServerPodName,
+          helper.adminServerPodName + ":7001",
+          "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
+          "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+          "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
+          "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+    }
     logger.info("JDBCSystemResource configuration found");
 
     // check that the domain status condition contains the correct type and expected reason
@@ -367,17 +373,23 @@ class ItMiiDynamicUpdatePart3 {
     verifyPodIntrospectVersionUpdated(pods.keySet(), introspectVersion, helper.domainNamespace);
 
     // check datasource configuration is deleted using REST api
-    adminServiceNodePort
-        = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
-        "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
+    if (OKE_CLUSTER) {
+      assertTrue(checkSystemResourceConfigInPod(helper.domainNamespace, helper.adminServerPodName,
+          helper.adminServerPodName + ":7001",
+          "JDBCSystemResources",
+          "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
+          "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
+    }
     logger.info("JDBCSystemResource Datasource is deleted");
 
     // check that the domain status condition contains the correct type and expected status
     logger.info("verifying the domain status condition contains the correct type and expected status");
     helper.verifyDomainStatusConditionNoErrorMsg("Completed", "True");
-
   }
 
   private void verifyIntrospectorFailsWithExpectedErrorMsg(String expectedErrorMsg) {
