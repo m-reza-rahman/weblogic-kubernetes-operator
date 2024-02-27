@@ -242,6 +242,16 @@ class ItIstioDBOperator {
     assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX,
         dbUrl, dbNamespace));
 
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
     // create testwebapp.war
     testWebAppWarLoc = createTestWebAppWarFile(wlsDomainNamespace);
 
@@ -334,6 +344,16 @@ class ItIstioDBOperator {
     domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
     
     createDomainAndVerify(domain, fmwDomainNamespace);
+
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
 
     verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
 
