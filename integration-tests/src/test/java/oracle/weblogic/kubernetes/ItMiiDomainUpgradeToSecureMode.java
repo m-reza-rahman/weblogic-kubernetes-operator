@@ -252,16 +252,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -270,16 +270,16 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
   }
   
   /**
@@ -335,16 +335,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);    
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -352,16 +352,16 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
   }
 
   /**
@@ -418,16 +418,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        adminAppUri, adminAppText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in secure port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address secure port 8500
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -438,16 +438,16 @@ class ItMiiDomainUpgradeToSecureMode {
     
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        adminAppUri, adminAppMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, true, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in secure port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address secure port 8500
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
   }
 
   /**
@@ -506,16 +506,16 @@ class ItMiiDomainUpgradeToSecureMode {
     
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        adminAppUri, adminAppText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -530,13 +530,13 @@ class ItMiiDomainUpgradeToSecureMode {
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        adminAppUri, adminAppMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, true, ingressIP);
   }
 
   /**
@@ -592,16 +592,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
 
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -611,16 +611,16 @@ class ItMiiDomainUpgradeToSecureMode {
     
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
   }
 
   /**
@@ -680,16 +680,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        adminAppUri, adminAppText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in port 7001    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
 
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -704,13 +704,13 @@ class ItMiiDomainUpgradeToSecureMode {
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        adminAppUri, adminAppMoved, false, ingressIP);
+        adminAppUri, adminAppMoved, true, ingressIP);
   }
 
   /**
