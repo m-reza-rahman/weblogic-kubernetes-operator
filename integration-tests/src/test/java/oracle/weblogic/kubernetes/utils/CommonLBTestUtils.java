@@ -852,8 +852,8 @@ public class CommonLBTestUtils {
     readyAppUrl.append("/management/tenant-monitoring/servers/");
     String curlCmd;
     if (isHostRouting) {
-      curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'host: %s' %s",
-          ingressHostName, readyAppUrl.toString());
+      curlCmd = String.format("curl -g --user %s:%s -ks --show-error --noproxy '*' -H 'host: %s' %s",
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, ingressHostName, readyAppUrl.toString());
     } else {
       if (isTLS) {
         curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
