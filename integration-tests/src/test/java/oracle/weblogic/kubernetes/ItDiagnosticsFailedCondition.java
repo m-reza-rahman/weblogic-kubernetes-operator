@@ -777,7 +777,7 @@ class ItDiagnosticsFailedCondition {
           replicaCount,
           fmwMiiImage,
           5L,
-          "-Dcoherence.wka=" + domainUid + "-" + adminServerName
+          "-Dcoherence.wka=" + domainName + "-" + adminServerName
       );
 
       getLogger().info("Creating cluster {0} in namespace {1}", clusterResName, domainNamespace);
