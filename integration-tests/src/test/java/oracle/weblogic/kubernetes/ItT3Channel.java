@@ -65,6 +65,8 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
+import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRestInPod;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
@@ -77,7 +79,7 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsern
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+//import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -286,13 +288,30 @@ class ItT3Channel {
       ex.printStackTrace();
     }
 
+    /*
+        String target = "{identity: [clusters,'" + clusterName + "']}";
+    ExecResult result = OKE_CLUSTER
+        ? deployUsingRest(hostAndPort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+            target, archivePath, domainNamespace + ".org", "testwebapp")
+        : deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
+            ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+            clusterName, archivePath, domainNamespace + ".org", "testwebapp");
+     */
+
     if (OKE_CLUSTER) {
+      String target = "{identity: [clusters,'" + clusterName + "']}";
+      deployUsingRestInPod(domainNamespace, adminServerPodName, adminServerPodName + ":7001",
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          target, clusterViewAppPath, domainNamespace + ".org", "testwebapp");
+
+      /*
       int newT3ChannelPort = assertDoesNotThrow(()
           -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "t3"),
           "Getting admin server ext port failed");
       logger.info("newT3ChannelPort channel port: {0}", newT3ChannelPort);
       assertNotEquals(-1, newT3ChannelPort, "admin server ext Port is not valid");
 
+      // use default to see if it works
       int defaultChannelPort = assertDoesNotThrow(()
           -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
           "Getting admin server ext port failed");
@@ -301,7 +320,7 @@ class ItT3Channel {
 
       deployUsingWlst(adminServerPodName, Integer.toString(defaultChannelPort),
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminServerName + "," + clusterName,
-          clusterViewAppPath, domainNamespace);
+          clusterViewAppPath, domainNamespace);*/
     } else {
       // deploy application and verify all servers functions normally
       //deploy clusterview application

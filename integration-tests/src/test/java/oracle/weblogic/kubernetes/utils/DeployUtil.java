@@ -5,6 +5,7 @@ package oracle.weblogic.kubernetes.utils;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,9 +32,11 @@ import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createConfigMap;
@@ -340,6 +343,82 @@ public class DeployUtil {
       logger.info("deployUsingRest: caught unexpected exception {0}", ex);
       return null;
     }
+    return result;
+  }
+
+  /**
+   * Deploy an application to a set of target using REST API with curl utility.
+   * Note the targets parameter should be a string with following format
+   *  {identity: [clusters,'cluster-1']}   for cluster target
+   *  {identity: [servers, 'admin-server']} for server target
+   *  OR a combination for multiple targets, for example
+   *  {identity: [clusters,'mycluster']}, {identity: [servers,'admin-server']}
+   * @param namespace server pod namespace
+   * @param serverPodName WebLogic server pod name
+   * @param hostAndPort server hostname and port
+   * @param userName admin server user name
+   * @param password admin server password
+   * @param targets  the target string to deploy application
+   * @param archivePath local path of the application archive
+   * @param hostHeader Host header for the curl command
+   * @param appName name of the application
+   * @return ExecResult
+   */
+  public static ExecResult deployUsingRestInPod(String namespace,
+                                                String serverPodName,
+                                                String hostAndPort,
+                                                String userName,
+                                                String password,
+                                                String targets,
+                                                Path archivePath,
+                                                String hostHeader,
+                                                String appName) {
+    final LoggingFacade logger = getLogger();
+    ExecResult result = null;
+    StringBuffer headerString = null;
+    if (hostHeader != null) {
+      headerString = new StringBuffer("-H 'host: ");
+      headerString.append(hostHeader).append(" ' ");
+    } else {
+      headerString = new StringBuffer("");
+    }
+    StringBuffer curlString = new StringBuffer("curl -g --noproxy '*' ");
+    curlString.append(" --user " + userName + ":" + password);
+    curlString.append(" -w %{http_code} --show-error -o /dev/null ")
+        .append(headerString.toString())
+        .append("-H X-Requested-By:MyClient ")
+        .append("-H Accept:application/json  ")
+        .append("-H Content-Type:multipart/form-data ")
+        .append("-H Prefer:respond-async ")
+        .append("-F \"model={ name: '")
+        .append(appName)
+        .append("', targets: [ ")
+        .append(targets)
+        .append(" ] }\" ")
+        .append(" -F \"sourcePath=@")
+        .append(archivePath.toString() + "\" ")
+        .append("-X POST http://" + hostAndPort)
+        .append("/management/weblogic/latest/edit/appDeployments; ");
+
+    String commandToRun = KUBERNETES_CLI + " exec -n "
+        + namespace + "  " + serverPodName + " -- " + curlString;
+    logger.info("curl command to run in admin pod {0} is: {1}", serverPodName, commandToRun);
+
+    try {
+      result = ExecCommand.exec(commandToRun, true);
+      logger.info("result is: {0}", result.toString());
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+
+    /*
+    logger.info("deployUsingRest: curl command {0}", new String(curlString));
+    try {
+      result = exec(new String(curlString), true);
+    } catch (Exception ex) {
+      logger.info("deployUsingRest: caught unexpected exception {0}", ex);
+      return null;
+    }*/
     return result;
   }
 }
