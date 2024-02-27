@@ -69,7 +69,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test dynamic updates to a model in image domain, part3")
 @IntegrationTest
 @Tag("olcne-mrg")
-@Tag("oke-sequential")
+//@Tag("oke-sequential")
+@Tag("oke-sequential1")
 @Tag("kind-parallel")
 @Tag("toolkits-srg")
 @Tag("okd-wls-mrg")
