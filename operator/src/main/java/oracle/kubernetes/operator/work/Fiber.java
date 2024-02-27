@@ -99,7 +99,7 @@ public final class Fiber implements AsyncFiber {
       try {
         this.packet = packet;
         try {
-          if (Step.END.equals(stepline.apply(packet))
+          if ((stepline == null || Step.END.equals(stepline.apply(packet)))
                   && status.compareAndSet(NOT_COMPLETE, DONE)
                   && completionCallback != null) {
             Throwable t = (Throwable) packet.get(THROWABLE);
