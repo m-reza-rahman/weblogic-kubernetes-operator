@@ -392,7 +392,8 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    protected StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
+    protected StepAction onFailureNoRetry(Packet packet,
+                                          KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
       return isNotAuthorizedOrForbidden(callResponse)
           ? doNext(RequestBuilder.DOMAIN.list(getOperatorNamespace(), new CrdPresenceResponseStep(getNext())), packet)
           : super.onFailureNoRetry(packet, callResponse);

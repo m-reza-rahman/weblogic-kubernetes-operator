@@ -140,7 +140,8 @@ public class PersistentVolumeClaimHelper {
         }
       }
 
-      private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      private StepAction updateDomainStatus(Packet packet,
+                                            KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse), packet);
       }
 

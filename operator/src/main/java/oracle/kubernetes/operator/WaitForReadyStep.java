@@ -3,9 +3,6 @@
 
 package oracle.kubernetes.operator;
 
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -32,8 +29,6 @@ import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLab
  * @param <T> the type of resource handled by this step
  */
 abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
-  private static final String TIMEOUT = "wfrTimeout";
-
   static NextStepFactory nextStepFactory = WaitForReadyStep::createMakeDomainRightStep;
 
   protected static Step createMakeDomainRightStep(WaitForReadyStep<?>.Callback callback,
@@ -180,25 +175,13 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
     }
 
     logWaiting(getResourceName());
-    final Semaphore resumeSignal = new Semaphore(0);
-    resumeWhenReady(packet, resumeSignal);
-    try {
-      while (!resumeSignal.tryAcquire(5, TimeUnit.SECONDS)) {
-        if (packet.get(TIMEOUT) != null) {
-          return doEnd(packet);
-        }
-        // TODO: if this fiber is cancelled then return
-      }
-    } catch (InterruptedException ie) {
-      return doTerminate(ie, packet);
-    }
-    return doNext(packet);
+    return doSuspend(packet, (resumable) -> resumeWhenReady(packet, resumable));
   }
 
   // Registers a callback for updates to the specified resource and
   // verifies that we haven't already missed the update.
-  private void resumeWhenReady(Packet packet, Semaphore resumeSignal) {
-    Callback callback = new Callback(resumeSignal, packet);
+  private void resumeWhenReady(Packet packet, Resumable resumable) {
+    Callback callback = new Callback(resumable);
     addCallback(getResourceName(), callback);
     checkUpdatedResource(packet, packet.getFiber(), callback);
   }
@@ -281,14 +264,11 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
   }
 
   class Callback implements Consumer<T> {
-    private final Semaphore resumeSignal;
-    private final Packet packet;
-    private final AtomicBoolean didResume = new AtomicBoolean(false);
+    private final Resumable resumable;
     private final AtomicInteger recheckCount = new AtomicInteger(0);
 
-    Callback(Semaphore resumeSignal, Packet packet) {
-      this.resumeSignal = resumeSignal;
-      this.packet = packet;
+    Callback(Resumable resumable) {
+      this.resumable = resumable;
     }
 
     @Override
@@ -309,28 +289,16 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
     // The resource has now either completed or failed, so we can continue processing.
     void proceedFromWait(T resource) {
       removeCallback(getResourceName(), this);
-      if (mayResumeFiber()) {
-        handleResourceReady(packet, resource);
-        resumeSignal.release();
-      }
+      resumable.resume(packet -> handleResourceReady(packet, resource));
     }
 
     protected void onTimeout() {
       removeCallback(getResourceName(), this);
-      if (mayResumeFiber()) {
-        packet.put(TIMEOUT, Boolean.TRUE);
-        resumeSignal.release();
-      }
-    }
-
-    // Returns true if it is now time to resume the fiber.
-    // This method will return true only the first time it is called.
-    private boolean mayResumeFiber() {
-      return didResume.compareAndSet(false, true);
+      resumable.cancel();
     }
 
     boolean didResumeFiber() {
-      return didResume.get();
+      return resumable.hasResumed();
     }
 
     int incrementAndGetRecheckCount() {

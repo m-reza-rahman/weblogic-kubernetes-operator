@@ -346,7 +346,8 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
   }
 
   @Test
-  void whenJobInProcessOnFirstRead_dontPerformNextStep() {    startWaitForReadyThenReadJob(this::dontChangeJob);
+  void whenJobInProcessOnFirstRead_dontPerformNextStep() {
+    startWaitForReadyThenReadJob(this::dontChangeJob);
 
     assertThat(terminalStep.wasRun(), is(false));
   }

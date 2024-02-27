@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -187,7 +188,7 @@ public abstract class Step {
    *
    * @param packet Packet to provide when invoking the next step
    */
-  protected StepAction doNext(Packet packet) {
+  protected final StepAction doNext(Packet packet) {
     return doNext(next, packet);
   }
 
@@ -197,14 +198,14 @@ public abstract class Step {
    * @param step The step
    * @param packet Packet to provide when invoking the next step
    */
-  protected StepAction doNext(Step step, Packet packet) {
+  protected final StepAction doNext(Step step, Packet packet) {
     if (isCancelled(packet)) {
       return END;
     }
     return Optional.ofNullable(step).map(s -> s.apply(packet)).orElse(END);
   }
 
-  protected boolean isCancelled(Packet packet) {
+  protected final boolean isCancelled(Packet packet) {
     return Optional.ofNullable(packet.getFiber()).map(Fiber::isCancelled).orElse(false);
   }
 
@@ -237,7 +238,7 @@ public abstract class Step {
    * @param unit Delay time unit
    */
   @SuppressWarnings("SameParameterValue")
-  protected StepAction doRetry(Packet packet, long delay, TimeUnit unit) {
+  protected final StepAction doRetry(Packet packet, long delay, TimeUnit unit) {
     return doDelay(this, packet, delay, unit);
   }
 
@@ -249,12 +250,22 @@ public abstract class Step {
    * @param delay Delay time
    * @param unit Delay time unit
    */
-  protected StepAction doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
+  protected final StepAction doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
     packet.getFiber().delay(step, packet, delay, unit);
     return SUSPEND;
   }
 
-  public Step getNext() {
+  /**
+   * Suspend and then invoke the indicated step after a resumption.
+   *
+   * @param packet Packet to provide when the step is resumed
+   */
+  protected final StepAction doSuspend(Packet packet, SuspendAction suspendAction) {
+    packet.getFiber().suspend(next, packet, suspendAction);
+    return SUSPEND;
+  }
+
+  public final Step getNext() {
     return next;
   }
 
@@ -265,7 +276,7 @@ public abstract class Step {
    * @param packet Resume packet
    * @param startDetails Pairs of step and packet to use when starting child fibers
    */
-  protected StepAction doForkJoin(
+  protected final StepAction doForkJoin(
       Step step, Packet packet, Collection<Fiber.StepAndPacket> startDetails) {
     packet.getFiber().forkJoin(step, packet, startDetails);
     return SUSPEND;
@@ -280,5 +291,19 @@ public abstract class Step {
     private StepAction() {
       // no-op to make constructor private
     }
+  }
+
+  public interface Resumable {
+    boolean hasResumed();
+
+    void resume(Consumer<Packet> onResume);
+
+    void terminate(Throwable t);
+
+    void cancel();
+  }
+
+  public interface SuspendAction {
+    void onSuspend(Resumable resumable);
   }
 }

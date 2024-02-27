@@ -9,10 +9,13 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
+import org.jetbrains.annotations.NotNull;
 
 import static oracle.kubernetes.operator.work.Step.THROWABLE;
 
@@ -125,6 +128,49 @@ public final class Fiber implements AsyncFiber {
   void delay(Step stepline, Packet packet, long delay, TimeUnit unit) {
     if (status.get() == NOT_COMPLETE) {
       owner.getExecutor().schedule(() -> doRun(stepline, packet), delay, unit);
+    }
+  }
+
+  void suspend(Step stepline, Packet packet, Step.SuspendAction suspendAction) {
+    if (status.get() == NOT_COMPLETE) {
+      suspendAction.onSuspend(new Step.Resumable() {
+        private final AtomicBoolean didResume = new AtomicBoolean(false);
+
+        private boolean mayResume() {
+          return didResume.compareAndSet(false, true);
+        }
+
+        @Override
+        public boolean hasResumed() {
+          return didResume.get();
+        }
+
+        @Override
+        public void resume(Consumer<Packet> onResume) {
+          if (status.get() == NOT_COMPLETE && mayResume()) {
+            Optional.ofNullable(onResume).ifPresent(o -> o.accept(packet));
+            owner.getExecutor().execute(() -> doRun(stepline, packet));
+          }
+        }
+
+        @Override
+        public void terminate(Throwable t) {
+          if (status.get() == NOT_COMPLETE && mayResume()) {
+            owner.getExecutor().execute(() -> doRun(new Step() {
+              @NotNull
+              @Override
+              public StepAction apply(Packet packet) {
+                return doTerminate(t, packet);
+              }
+            }, packet));
+          }
+        }
+
+        @Override
+        public void cancel() {
+          Fiber.this.cancel();
+        }
+      });
     }
   }
 
