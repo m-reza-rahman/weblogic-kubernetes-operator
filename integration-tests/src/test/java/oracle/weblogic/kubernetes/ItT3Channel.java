@@ -300,7 +300,7 @@ class ItT3Channel {
       assertNotEquals(-1, defaultChannelPort, "admin server ext Port is not valid");
 
       deployUsingWlst(adminServerPodName, Integer.toString(defaultChannelPort),
-          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, clusterName + "," + ADMIN_SERVER_NAME_BASE,
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminServerName + "," + clusterName,
           clusterViewAppPath, domainNamespace);
     } else {
       // deploy application and verify all servers functions normally
