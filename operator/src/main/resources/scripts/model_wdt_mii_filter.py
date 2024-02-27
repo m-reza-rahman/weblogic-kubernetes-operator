@@ -414,7 +414,7 @@ def upgradeServerIfNeeded(model):
         # regardless of others
         # if the model disabled `ProductionModeEnabled`  specifically now, do nothing
 
-        if 'ServerStartMode' in model['domainInfo']:
+        if 'domainInfo' in model and 'ServerStartMode' in model['domainInfo']:
           return
 
         if 'topology' in model:
