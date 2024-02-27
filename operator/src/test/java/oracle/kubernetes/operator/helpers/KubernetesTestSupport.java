@@ -271,6 +271,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
   @SuppressWarnings("unchecked")
   private <T extends KubernetesType> DataRepository<T> selectRepository(String resourceType) {
+    if (resourceType == null) {
+      return null;
+    }
     String key = resourceType;
     for (String suffix : SUB_RESOURCE_SUFFIXES) {
       if (key.endsWith(suffix)) {
