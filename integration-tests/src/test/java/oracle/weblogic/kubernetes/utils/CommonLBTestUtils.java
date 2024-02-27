@@ -856,10 +856,11 @@ public class CommonLBTestUtils {
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, ingressHostName, readyAppUrl.toString());
     } else {
       if (isTLS) {
-        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
-            + "-H 'WL-Proxy-SSL: false' %s", readyAppUrl.toString());
+        curlCmd = String.format("curl -g --user %s:%s -ks --show-error --noproxy '*' -H 'WL-Proxy-Client-IP: 1.2.3.4' "
+            + "-H 'WL-Proxy-SSL: false' %s", ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, readyAppUrl.toString());
       } else {
-        curlCmd = String.format("curl -g -ks --show-error --noproxy '*' %s", readyAppUrl.toString());
+        curlCmd = String.format("curl -g --user %s:%s -ks --show-error --noproxy '*' %s",
+            ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, readyAppUrl.toString());
       }
     }
 
