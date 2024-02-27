@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,8 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -210,8 +213,34 @@ class ItDedicatedMode {
       externalRestHttpshost = null;
     }
 
+    try {
+      Thread.sleep(60000);
+    } catch (Exception ex) {
+      ///
+    }
+
     logger.info("scaling the cluster from {0} servers to {1} servers", replicaCount, replicaCount + 1);
     if (OKE_CLUSTER) {
+      String command = KUBERNETES_CLI + " get all --all-namespaces";
+      logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+      try {
+        ExecResult result0 = ExecCommand.exec(command, true);
+        logger.info("result is: {0}", result0.toString());
+      } catch (IOException | InterruptedException ex) {
+        ex.printStackTrace();
+      }
+
+      command = KUBERNETES_CLI + " get clusters --all-namespaces";
+      logger.info("curl command to get clusters --all-namespaces is: {0}", command);
+
+      try {
+        ExecResult result0 = ExecCommand.exec(command, true);
+        logger.info("result is: {0}", result0.toString());
+      } catch (IOException | InterruptedException ex) {
+        ex.printStackTrace();
+      }
+
       scaleAndVerifyCluster(clusterName, domainUid, domain1Namespace, managedServerPodPrefix,
           replicaCount, replicaCount + 1, null, null);
     } else {
