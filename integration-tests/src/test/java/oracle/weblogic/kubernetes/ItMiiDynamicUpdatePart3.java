@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.MII_DYNAMIC_UPDATE_EXPECTED_ERROR_MSG;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_VERSION;
@@ -320,10 +321,12 @@ class ItMiiDynamicUpdatePart3 {
     verifyPodIntrospectVersionUpdated(pods.keySet(), introspectVersion, helper.domainNamespace);
 
     // check datasource configuration using REST api
-    int adminServiceNodePort
-        = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
+    int adminServiceNodePort = OKE_CLUSTER ? 7001 :
+        getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+    String adminHost = OKE_CLUSTER ? helper.adminServerPodName : helper.adminSvcExtHost;
+
+    assertTrue(checkSystemResourceConfig(adminHost, adminServiceNodePort,
         "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
         "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
     logger.info("JDBCSystemResource configuration found");
