@@ -288,12 +288,18 @@ class ItT3Channel {
 
     if (OKE_CLUSTER) {
       int newT3ChannelPort = assertDoesNotThrow(()
-          -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+          -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "t3"),
           "Getting admin server ext port failed");
-      logger.info("default channel port: {0}", newT3ChannelPort);
+      logger.info("newT3ChannelPort channel port: {0}", newT3ChannelPort);
       assertNotEquals(-1, newT3ChannelPort, "admin server ext Port is not valid");
 
-      deployUsingWlst(adminServerPodName, Integer.toString(t3ChannelPort),
+      int defaultChannelPort = assertDoesNotThrow(()
+          -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+          "Getting admin server ext port failed");
+      logger.info("default channel port: {0}", defaultChannelPort);
+      assertNotEquals(-1, defaultChannelPort, "admin server ext Port is not valid");
+
+      deployUsingWlst(adminServerPodName, Integer.toString(defaultChannelPort),
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, clusterName + "," + ADMIN_SERVER_NAME_BASE,
           clusterViewAppPath, domainNamespace);
     } else {
