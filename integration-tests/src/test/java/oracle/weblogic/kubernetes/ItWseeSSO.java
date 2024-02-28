@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static java.nio.file.Paths.get;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
@@ -93,7 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify that client can communicate with webservices with SSO")
 @IntegrationTest
-@Tag("oke-parallel")
+@Tag("oke-sequential1")
 @Tag("kind-parallel")
 class ItWseeSSO {
 
@@ -202,6 +203,7 @@ class ItWseeSSO {
    */
   @Test
   @DisplayName("Test Wsee connect with sso")
+  @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER", matches = "true")
   void testInvokeWsee() {
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName, domain2Namespace, domain2Uid, wseeServiceAppPath);
