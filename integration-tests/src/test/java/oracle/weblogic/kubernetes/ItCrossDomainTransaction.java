@@ -492,6 +492,10 @@ class ItCrossDomainTransaction {
 
     logger.info("curl command {0}", curlString);
 
+    ExecResult result = assertDoesNotThrow(() -> exec(new String(curlString), true));
+    logger.info("\n HTTP response is \n " + result.stdout());
+    logger.info("curl command returned {0}", result.toString());
+
     testUntil(
         () -> exec(new String(curlString), true).stdout().contains("Messages are distributed"),
         logger,
