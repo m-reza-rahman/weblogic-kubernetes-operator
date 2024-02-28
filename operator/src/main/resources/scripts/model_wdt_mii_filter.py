@@ -423,13 +423,7 @@ def upgradeServerIfNeeded(model):
             if 'ProductionModeEnabled' not in topology:
               return
 
-            if 'ProductionModeEnabled' in topology:
-              value = topology['ProductionModeEnabled']
-              if isinstance(value, str) or isinstance(value, unicode):
-                prod_enabled = Boolean.valueOf(value)
-              else:
-                prod_enabled = value
-              if not prod_enabled:
+            if 'ProductionModeEnabled' in topology and topology['ProductionModeEnabled'] == False:
                 return
 
             if 'SecurityConfiguration' in topology:
