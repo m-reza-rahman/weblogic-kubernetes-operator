@@ -241,7 +241,7 @@ class ItDedicatedMode {
         ex.printStackTrace();
       }
 
-      scaleAndVerifyCluster(clusterName, domainUid, domain1Namespace, managedServerPodPrefix,
+      scaleAndVerifyCluster(clusterResName, domainUid, domain1Namespace, managedServerPodPrefix,
           replicaCount, replicaCount + 1, null, null);
     } else {
       scaleClusterWithRestApi(domainUid, clusterName, replicaCount + 1,
