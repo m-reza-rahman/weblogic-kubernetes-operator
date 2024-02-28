@@ -395,13 +395,13 @@ createWLDomain() {
   # something changed in the wdt artifacts or wls version changed
   # create domain again
 
-  DISABLE_SM_FOR_12214_NONSM_UPG=0
+  SECUREMODE_INJECTED=0
   if [  -f ${PRIMORDIAL_DOMAIN_ZIPPED} ] ; then
     checkSecureModeForUpgrade
   fi
 
   if  [ ${WDT_ARTIFACTS_CHANGED} -ne 0 ] || [ ${jdk_changed} -eq 1 ] \
-    || [ ${SECRETS_AND_ENV_CHANGED} -ne 0 ] || [ ${DISABLE_SM_FOR_12214_NONSM_UPG} -eq 1 ] ; then
+    || [ ${SECRETS_AND_ENV_CHANGED} -ne 0 ] || [ ${SECUREMODE_INJECTED} -eq 1 ] ; then
 
     trace "Need to create domain ${WDT_DOMAIN_TYPE}"
     createModelDomain
@@ -816,16 +816,12 @@ checkSecureModeForUpgrade() {
       local MII_PASSPHRASE=$(cat ${RUNTIME_ENCRYPTION_SECRET_PASSWORD})
       encrypt_decrypt_domain_secret "decrypt" /tmp/miiupgdomain${DOMAIN_HOME} ${MII_PASSPHRASE}
       cd /tmp/miiupgdomain && base64 -d ${WLSDOMAIN_CONFIG_ZIPPED} > ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp && tar -pxzf ${LOCAL_WLSDOMAIN_CONFIG_ZIP}.tmp
-      # reading existing domain to determine what the secure mode should be whether it is set or by default.
       # a file is written to a /tmp/mii_domain_upgrade.txt containing the status of SecureModeEnabled.
       ${SCRIPTPATH}/wlst.sh ${SCRIPTPATH}/mii-domain-upgrade.py /tmp/miiupgdomain$DOMAIN_HOME || exitOrLoop
       # cd to an existing dir since we are deleting the /tmp/miiupgdomain
       cd /
       if [ -f /tmp/mii_domain_upgrade.txt ] && [ $(grep -i False /tmp/mii_domain_upgrade.txt | wc -l ) -gt 0 ] ; then
-        if [ -f /tmp/mii_domain_before14120.txt ] && [ $(grep -i True /tmp/mii_domain_before14120.txt | wc -l ) -gt 0 ] ; then
-          # Set this so that the upgrade image only scenario 12.2.1.4 to 14.1.2 will recreate the domain
-          DISABLE_SM_FOR_12214_NONSM_UPG=1
-        fi
+        SECUREMODE_INJECTED=1
       fi
       rm -fr /tmp/miiupgdomain
     fi
