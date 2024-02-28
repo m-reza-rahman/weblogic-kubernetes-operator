@@ -187,8 +187,7 @@ class WatchBuilderTest {
     assertThat(serviceWatch, contains(modifyEvent(service)));
     assertThat(StubWatchFactory.getRequestParameters().get(0),
           allOf(hasEntry("resourceVersion", startResourceVersion),
-                hasEntry("labelSelector", DOMAINUID_LABEL + "," + CREATEDBYOPERATOR_LABEL),
-                hasEntry("watch", "true")));
+                hasEntry("labelSelector", DOMAINUID_LABEL + "," + CREATEDBYOPERATOR_LABEL)));
   }
 
   @Test

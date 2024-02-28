@@ -83,7 +83,6 @@ public final class Fiber implements AsyncFiber {
    */
   public void start(Step stepline, Packet packet) {
     if (status.get() == NOT_COMPLETE) {
-      packet.setFiber(this);
       LOGGER.finer("{0} started", getName());
 
       owner.addRunnable(() -> doRun(stepline, packet));
@@ -287,7 +286,7 @@ public final class Fiber implements AsyncFiber {
    */
   public void cancel() {
     // Mark fiber as cancelled, if not already done
-    status.compareAndSet(NOT_COMPLETE, DONE);
+    status.compareAndSet(NOT_COMPLETE, CANCELLED);
 
     if (LOGGER.isFinerEnabled()) {
       LOGGER.finer("{0} cancelled", getName());

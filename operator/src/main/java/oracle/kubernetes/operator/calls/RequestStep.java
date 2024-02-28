@@ -69,7 +69,7 @@ public abstract class RequestStep<
     this.apiTypeClass = apiTypeClass;
     this.apiListTypeClass = apiListTypeClass;
 
-    next.setPrevious(this);
+    Optional.ofNullable(next).ifPresent(n -> n.setPrevious(this));
   }
 
   abstract KubernetesApiResponse<R> execute(
