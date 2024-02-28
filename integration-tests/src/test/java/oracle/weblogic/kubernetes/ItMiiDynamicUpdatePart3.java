@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.MII_DYNAMIC_UPDATE_EXPECTED_ERROR_MSG;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_VERSION;
@@ -45,6 +46,8 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfig;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfigInPod;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfigViaAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
@@ -69,7 +72,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test dynamic updates to a model in image domain, part3")
 @IntegrationTest
 @Tag("olcne-mrg")
-@Tag("oke-sequential")
+@Tag("oke-sequential1")
 @Tag("kind-parallel")
 @Tag("toolkits-srg")
 @Tag("okd-wls-mrg")
@@ -319,12 +322,18 @@ class ItMiiDynamicUpdatePart3 {
     verifyPodIntrospectVersionUpdated(pods.keySet(), introspectVersion, helper.domainNamespace);
 
     // check datasource configuration using REST api
-    int adminServiceNodePort
-        = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
-        "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
-        "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+    if (OKE_CLUSTER) {
+      assertTrue(checkSystemResourceConfigViaAdminPod(helper.adminServerPodName, helper.domainNamespace,
+          "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
+          "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+          "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
+          "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+    }
     logger.info("JDBCSystemResource configuration found");
 
     // check that the domain status condition contains the correct type and expected reason
@@ -363,17 +372,22 @@ class ItMiiDynamicUpdatePart3 {
     verifyPodIntrospectVersionUpdated(pods.keySet(), introspectVersion, helper.domainNamespace);
 
     // check datasource configuration is deleted using REST api
-    adminServiceNodePort
-        = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
-    assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
-        "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
+    if (OKE_CLUSTER) {
+      assertFalse(checkSystemResourceConfigViaAdminPod(helper.adminServerPodName, helper.domainNamespace,
+          "JDBCSystemResources",
+          "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
+      assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+      assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
+          "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
+    }
     logger.info("JDBCSystemResource Datasource is deleted");
 
     // check that the domain status condition contains the correct type and expected status
     logger.info("verifying the domain status condition contains the correct type and expected status");
     helper.verifyDomainStatusConditionNoErrorMsg("Completed", "True");
-
   }
 
   private void verifyIntrospectorFailsWithExpectedErrorMsg(String expectedErrorMsg) {
