@@ -653,7 +653,7 @@ class ItDBOperator {
     logger.info("checkJtaRecoveryServiceRuntime: curl command {0}", new String(curlString));
     testUntil(
         assertDoesNotThrow(() -> () -> exec(curlString.toString(), true)
-        .stdout().contains("{\"active\": " + active + "}")),
+        .stdout().contains("\"active\": " + active)),
         logger,
         "JTA Recovery Service to migrate");
     return true;
