@@ -94,9 +94,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   public static final String CUSTOM_RESOURCE_DEFINITION = "CRD";
   public static final String NAMESPACE = "Namespace";
   public static final String CLUSTER = "Cluster";
-  public static final String CLUSTER_STATUS = "ClusterStatus";
   public static final String DOMAIN = "Domain";
-  public static final String DOMAIN_STATUS = "DomainStatus";
   public static final String EVENT = "Event";
   public static final String JOB = "Job";
   public static final String PV = "PersistentVolume";

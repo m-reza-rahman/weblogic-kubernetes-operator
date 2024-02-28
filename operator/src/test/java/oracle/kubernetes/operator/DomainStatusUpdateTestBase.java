@@ -97,7 +97,6 @@ import static oracle.kubernetes.operator.WebLogicConstants.STANDBY_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.STARTING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.UNKNOWN_STATE;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.DOMAIN;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.DOMAIN_STATUS;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.EVENT;
 import static oracle.kubernetes.weblogic.domain.model.DomainCondition.FALSE;
 import static oracle.kubernetes.weblogic.domain.model.DomainCondition.TRUE;
@@ -1851,7 +1850,7 @@ abstract class DomainStatusUpdateTestBase {
     testSupport.getPacket().put(MAKE_RIGHT_DOMAIN_OPERATION, createDummyMakeRightOperation());
 
     info.getDomain().getMetadata().setGeneration(2L);
-    testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_UNAVAILABLE);
+    testSupport.failOnReplaceStatus(DOMAIN, info.getDomainUid(), info.getNamespace(), HTTP_UNAVAILABLE);
     testSupport.returnEmptyResultOnRead(DOMAIN, info.getDomainUid(), info.getNamespace());
     updateDomainStatusInEndOfProcessing();
 
@@ -1863,7 +1862,7 @@ abstract class DomainStatusUpdateTestBase {
     testSupport.getPacket().put(MAKE_RIGHT_DOMAIN_OPERATION, createDummyMakeRightOperation());
 
     info.getDomain().getMetadata().setGeneration(2L);
-    testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_UNAVAILABLE);
+    testSupport.failOnReplaceStatus(DOMAIN, info.getDomainUid(), info.getNamespace(), HTTP_UNAVAILABLE);
     updateDomainStatusInEndOfProcessing();
 
     assertThat(getRecordedDomain().getStatus().getObservedGeneration(), equalTo(2L));
@@ -1874,7 +1873,7 @@ abstract class DomainStatusUpdateTestBase {
     testSupport.getPacket().put(MAKE_RIGHT_DOMAIN_OPERATION, createDummyMakeRightOperation());
 
     info.getDomain().getMetadata().setGeneration(2L);
-    testSupport.failOnReplaceStatus(DOMAIN_STATUS, info.getDomainUid(), info.getNamespace(), HTTP_NOT_FOUND);
+    testSupport.failOnReplaceStatus(DOMAIN, info.getDomainUid(), info.getNamespace(), HTTP_NOT_FOUND);
     updateDomainStatusInEndOfProcessing();
 
     assertThat(getRecordedDomain().getStatus().getObservedGeneration(), not(equalTo(2L)));

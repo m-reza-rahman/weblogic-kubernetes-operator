@@ -34,7 +34,6 @@ import static oracle.kubernetes.operator.EventConstants.CLUSTER_UNAVAILABLE_EVEN
 import static oracle.kubernetes.operator.EventMatcher.hasEvent;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAVAILABLE;
-import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CLUSTER_STATUS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
@@ -161,7 +160,7 @@ class ClusterResourceStatusUpdaterTest {
         .withClusterName(CLUSTER).withReplicas(2).withReadyReplicas(1).withReplicasGoal(2));
     info.addClusterResource(cluster);
     domain.getStatus().addCluster(new ClusterStatus());
-    testSupport.failOnReplaceStatus(CLUSTER_STATUS, NAME + '-' + CLUSTER, NS, HTTP_INTERNAL_ERROR);
+    testSupport.failOnReplaceStatus(CLUSTER, NAME + '-' + CLUSTER, NS, HTTP_INTERNAL_ERROR);
 
     updateClusterResourceStatus();
 
@@ -175,7 +174,7 @@ class ClusterResourceStatusUpdaterTest {
     domain.getStatus().addCluster(newStatus);
     cluster.withStatus(null);
     info.addClusterResource(cluster);
-    testSupport.failOnReplaceStatus(CLUSTER_STATUS, NAME + '-' + CLUSTER, NS, HTTP_UNAVAILABLE);
+    testSupport.failOnReplaceStatus(CLUSTER, NAME + '-' + CLUSTER, NS, HTTP_UNAVAILABLE);
 
     updateClusterResourceStatus();
 
