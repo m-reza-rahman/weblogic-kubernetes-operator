@@ -66,7 +66,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
 //import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRest;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRestInPod;
+//import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingRestInPod;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
@@ -299,12 +299,20 @@ class ItT3Channel {
      */
 
     if (OKE_CLUSTER) {
+      int adminPort = 7001;
+      assertDoesNotThrow(() -> deployUsingWlst(adminServerPodName,
+          String.valueOf(adminPort),
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
+          clusterName + "," + adminServerName,
+          clusterViewAppPath,
+          domainNamespace),"Deploying the application");
+
+      /*
       String target = "{identity: [clusters,'" + clusterName + "']}";
       deployUsingRestInPod(domainNamespace, adminServerPodName, adminServerPodName + ":7001",
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
           target, clusterViewAppPath, domainNamespace + ".org", "testwebapp");
 
-      /*
       int newT3ChannelPort = assertDoesNotThrow(()
           -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "t3"),
           "Getting admin server ext port failed");
