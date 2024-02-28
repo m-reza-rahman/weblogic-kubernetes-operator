@@ -374,7 +374,7 @@ class ItMiiDynamicUpdatePart3 {
 
     // check datasource configuration is deleted using REST api
     if (OKE_CLUSTER) {
-      assertTrue(checkSystemResourceConfigInPod(helper.domainNamespace, helper.adminServerPodName,
+      assertFalse(checkSystemResourceConfigInPod(helper.domainNamespace, helper.adminServerPodName,
           helper.adminServerPodName + ":7001",
           "JDBCSystemResources",
           "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
