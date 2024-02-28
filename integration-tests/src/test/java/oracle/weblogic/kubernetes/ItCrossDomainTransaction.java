@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -39,7 +39,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.assertions.TestAssertions;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +54,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -400,23 +398,10 @@ class ItCrossDomainTransaction {
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
 
     if (OKE_CLUSTER) {
-      logger.info("====== Use OKE_CLUSTER");
       createNginxIngressPathRoutingRules();
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-
-      String command = KUBERNETES_CLI + " get all --all-namespaces";
-      logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-      try {
-        ExecResult result0 = ExecCommand.exec(command, true);
-        logger.info("==== result is: {0}", result0.toString());
-      } catch (IOException | InterruptedException ex) {
-        ex.printStackTrace();
-      }
-
       hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
     } else {
-      logger.info("====== Use getHostAndPort");
       hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     }
   }
@@ -713,24 +698,7 @@ class ItCrossDomainTransaction {
 
     ingressRules.add(ingressRule);
 
-    String command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-    try {
-      ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("==== result is 1: {0}", result0.toString());
-    } catch (IOException | InterruptedException ex) {
-      ex.printStackTrace();
-    }
-
     createIngressAndRetryIfFail(60, false, ingressName, domain1Namespace, null, ingressClassName, ingressRules, null);
-
-    try {
-      ExecResult result1 = ExecCommand.exec(command, true);
-      logger.info("==== result is 2: {0}", result1.toString());
-    } catch (IOException | InterruptedException ex) {
-      ex.printStackTrace();
-    }
 
     // check the ingress was found in the domain namespace
     assertThat(assertDoesNotThrow(() -> listIngresses(domain1Namespace)))
