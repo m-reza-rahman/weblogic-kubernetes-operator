@@ -15,6 +15,7 @@ import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
+import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
@@ -48,6 +49,17 @@ import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERN
  */
 public abstract class ResponseStep<T extends KubernetesType> extends Step {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
+  private static final RetryStrategyFactory DEFAULT_RETRY_STRATEGY_FACTORY = new RetryStrategyFactory() {
+    @Override
+    public RetryStrategy create(int maxRetryCount, Step retryStep) {
+      return new DefaultRetryStrategy(maxRetryCount, retryStep);
+    }
+  };
+
+  @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
+  private static RetryStrategyFactory retryStrategyFactory = DEFAULT_RETRY_STRATEGY_FACTORY;
+
   public static final String RETRY = "retry";
   private static final Random R = new Random();
   private static final int HIGH = 200;
@@ -195,7 +207,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    */
   private StepAction resetRetryStrategyAndReinvokeRequest(Packet packet) {
     @SuppressWarnings("unchecked")
-    DefaultRetryStrategy retryStrategy = (DefaultRetryStrategy) packet.get(RETRY);
+    RetryStrategy retryStrategy = (RetryStrategy) packet.get(RETRY);
     if (retryStrategy != null) {
       retryStrategy.reset();
     }
@@ -227,14 +239,16 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @return Next action for fiber processing, which may be a retry
    */
   public StepAction onFailure(Step conflictStep, Packet packet, KubernetesApiResponse<T> callResponse) {
-    return Optional.ofNullable(packet.get(RETRY))
-        .map(DefaultRetryStrategy.class::cast)
-        .map(rs -> rs.doPotentialRetry(conflictStep, packet, callResponse, this::onFailureNoRetry))
+    return Optional.ofNullable(getOrCreateRetryStrategy(packet))
+        .map(rs -> Optional.ofNullable(rs.doPotentialRetry(conflictStep, packet, callResponse))
+                .orElse(onFailureNoRetry(packet, callResponse)))
         .orElse(onFailureNoRetry(packet, callResponse));
   }
 
-  interface FailureStrategy<T extends KubernetesType> {
-    public StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<T> callResponse);
+  private RetryStrategy getOrCreateRetryStrategy(Packet packet) {
+    return (RetryStrategy) packet.computeIfAbsent(
+            RETRY, s -> retryStrategyFactory.create(
+                    TuningParameters.getInstance().getCallBuilderTuning().getCallMaxRetryCount(), previousStep));
   }
 
   protected StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<T> callResponse) {
@@ -253,7 +267,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     throw new IllegalStateException("Must be overridden, if called");
   }
 
-  private final class DefaultRetryStrategy {
+  private static final class DefaultRetryStrategy implements RetryStrategy {
     private long retryCount = 0;
     private final int maxRetryCount;
     private final Step retryStep;
@@ -263,17 +277,15 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
       this.retryStep = retryStep;
     }
 
-    public StepAction doPotentialRetry(Step conflictStep, Packet packet,
-                                 KubernetesApiResponse<T> callResponse, FailureStrategy<T> failureStrategy) {
+    public StepAction doPotentialRetry(Step conflictStep, Packet packet, KubernetesApiResponse<?> callResponse) {
       int statusCode = Optional.ofNullable(callResponse)
           .map(KubernetesApiResponse::getHttpStatusCode).orElse(FIBER_TIMEOUT);
       if (mayRetryOnStatusValue(statusCode)) {
         return retriesLeft() ? backOffAndRetry(packet, retryStep) : null;
       } else if (isRestartableConflict(conflictStep, statusCode)) {
         return backOffAndRetry(packet, conflictStep);
-      } else {
-        return failureStrategy.onFailureNoRetry(packet, callResponse);
       }
+      return null;
     }
 
     public void reset() {

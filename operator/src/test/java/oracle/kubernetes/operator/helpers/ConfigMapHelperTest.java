@@ -14,6 +14,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.LabelConstants;
+import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
@@ -72,6 +73,7 @@ class ConfigMapHelperTest {
         TestUtils.silenceOperatorLogger()
             .collectLogMessages(logRecords, CM_CREATED, CM_EXISTS, CM_REPLACED)
             .withLogLevel(Level.FINE));
+    mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
   }
 

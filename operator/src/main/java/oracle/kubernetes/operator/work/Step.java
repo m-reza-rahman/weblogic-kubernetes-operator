@@ -198,14 +198,14 @@ public abstract class Step {
    * @param step The step
    * @param packet Packet to provide when invoking the next step
    */
-  protected final StepAction doNext(Step step, Packet packet) {
+  protected static final StepAction doNext(Step step, Packet packet) {
     if (isCancelled(packet)) {
       return END;
     }
     return Optional.ofNullable(step).map(s -> s.apply(packet)).orElse(END);
   }
 
-  protected final boolean isCancelled(Packet packet) {
+  protected static final boolean isCancelled(Packet packet) {
     return Optional.ofNullable(packet.getFiber()).map(Fiber::isCancelled).orElse(false);
   }
 
@@ -214,7 +214,7 @@ public abstract class Step {
    *
    * @param packet Packet
    */
-  protected final StepAction doEnd(Packet packet) {
+  protected static final StepAction doEnd(Packet packet) {
     return END;
   }
 
@@ -225,7 +225,7 @@ public abstract class Step {
    * @param packet Packet
    * @return Next action that will end processing with a throwable
    */
-  protected final StepAction doTerminate(Throwable throwable, Packet packet) {
+  protected static final StepAction doTerminate(Throwable throwable, Packet packet) {
     packet.put(THROWABLE, throwable);
     return doEnd(packet);
   }
@@ -250,7 +250,7 @@ public abstract class Step {
    * @param delay Delay time
    * @param unit Delay time unit
    */
-  protected final StepAction doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
+  protected static final StepAction doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
     packet.getFiber().delay(step, packet, delay, unit);
     return SUSPEND;
   }

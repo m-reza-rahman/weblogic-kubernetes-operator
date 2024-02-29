@@ -13,6 +13,7 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import oracle.kubernetes.operator.PodAwaiterStepFactory;
+import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
@@ -54,6 +55,7 @@ class PodHelperTest {
   @BeforeEach
   public void setUp() throws NoSuchFieldException {
     mementos.add(TestUtils.silenceOperatorLogger());
+    mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
   }

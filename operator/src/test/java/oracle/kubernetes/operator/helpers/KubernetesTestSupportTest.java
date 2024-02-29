@@ -41,6 +41,7 @@ import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
+import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
@@ -86,6 +87,7 @@ class KubernetesTestSupportTest {
   @BeforeEach
   public void setUp() throws Exception {
     mementos.add(TestUtils.silenceOperatorLogger());
+    mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
   }
 
