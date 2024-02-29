@@ -337,6 +337,98 @@ class ItMultiDomainModelsScale {
     String clusterName = domain.getSpec().getClusters().get(0).getName();
     String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
     int numberOfServers = 3;
+    //String hostname = null;
+
+    if (OKE_CLUSTER) {
+      //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      //hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+
+      if (domainType.contains("domainInImage") || domainType.contains("domainOnPV")) {
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
+            managedServerPodNamePrefix, replicaCount, numberOfServers, null, null);
+
+        // then scale cluster back to 2 servers
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
+            managedServerPodNamePrefix, numberOfServers, replicaCount, null, null);
+      } else {
+        // get operator pod name
+        String operatorPodName = assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
+        assertNotNull(operatorPodName, "Operator pod name returned is null");
+        logger.info("Operator pod name {0}", operatorPodName);
+
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
+        curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+        List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+            false, "", "", 0, "", "",
+            curlCmd, managedServersBeforeScale, operatorPodName);
+
+        // then scale cluster back to 2 servers
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+        managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+            false, "", "", 0, "", "",
+            curlCmd, managedServersBeforeScale, operatorPodName);
+      }
+    } else {
+      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+          clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
+      curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+      List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+          false, "", "", 0, "", "", curlCmd, managedServersBeforeScale);
+
+      // then scale cluster back to 2 servers
+      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+          clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+      managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+          false, "", "", 0, "", "", curlCmd, managedServersBeforeScale);
+    }
+
+    // verify admin console login
+    if (OKE_CLUSTER) {
+      String resourcePath = "/console/login/LoginForm.jsp";
+      final String adminServerPodName = domainUid + "-admin-server";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    }
+
+    // shutdown domain and verify the domain is shutdown
+    shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
+  }
+
+  /*
+  void testScaleClustersWithRestApi(String domainType) {
+
+    DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
+
+    // get domain properties
+    String domainUid = domain.getSpec().getDomainUid();
+    String domainNamespace = domain.getMetadata().getNamespace();
+    int numClusters = domain.getSpec().getClusters().size();
+    String clusterName = domain.getSpec().getClusters().get(0).getName();
+    String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
+    int numberOfServers = 3;
 
     if (OKE_CLUSTER) {
       if (domainType.contains("domainInImage") || domainType.contains("domainOnPV")) {
@@ -411,7 +503,7 @@ class ItMultiDomainModelsScale {
 
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
-  }
+  }*/
 
   /**
    * Scale cluster using WLDF policy for three different type of domains.
