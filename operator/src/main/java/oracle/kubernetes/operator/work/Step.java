@@ -8,12 +8,18 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /** Individual step in a processing flow. */
 public abstract class Step {
+  private static final BiFunction<Step, Packet, Step> DEFAULT_ADAPTER = (step, packet) -> step;
+
+  @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
+  private static BiFunction<Step, Packet, Step> adapter = DEFAULT_ADAPTER;
+
   public static final String THROWABLE = "throwable";
 
   static final StepAction SUSPEND = new StepAction();
@@ -183,6 +189,19 @@ public abstract class Step {
    */
   public abstract @Nonnull StepAction apply(Packet packet);
 
+  static final Step adapt(Step step, Packet packet) {
+    return adapter.apply(step, packet);
+  }
+
+  /**
+   * Invokes this step.
+   *
+   * @param packet Packet to provide when invoking the step
+   */
+  public final StepAction doStepNext(Packet packet) {
+    return doNext(this, packet);
+  }
+
   /**
    * Invokes the next step, if set.
    *
@@ -202,7 +221,7 @@ public abstract class Step {
     if (isCancelled(packet)) {
       return END;
     }
-    return Optional.ofNullable(step).map(s -> s.apply(packet)).orElse(END);
+    return Optional.ofNullable(step).map(s -> adapt(s, packet).apply(packet)).orElse(END);
   }
 
   protected static final boolean isCancelled(Packet packet) {

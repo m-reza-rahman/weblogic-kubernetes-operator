@@ -11,6 +11,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
+import oracle.kubernetes.operator.helpers.RetryStrategyStub;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.EventConstants.CLUSTER_AVAILABLE_EVENT;
@@ -49,6 +51,7 @@ class ClusterResourceStatusUpdaterTest {
   private final ClusterResource cluster = createClusterResource(CLUSTER);
   private final DomainResource domain = DomainProcessorTestSetup.createTestDomain();
   private final DomainPresenceInfo info = new DomainPresenceInfo(domain);
+  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
 
   @BeforeEach
   void setUp() throws NoSuchFieldException {
@@ -174,6 +177,8 @@ class ClusterResourceStatusUpdaterTest {
     domain.getStatus().addCluster(newStatus);
     cluster.withStatus(null);
     info.addClusterResource(cluster);
+    retryStrategy.setNumRetriesLeft(1);
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnReplaceStatus(CLUSTER, NAME + '-' + CLUSTER, NS, HTTP_UNAVAILABLE);
 
     updateClusterResourceStatus();

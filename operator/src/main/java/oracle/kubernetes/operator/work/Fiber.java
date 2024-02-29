@@ -18,6 +18,7 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import org.jetbrains.annotations.NotNull;
 
 import static oracle.kubernetes.operator.work.Step.THROWABLE;
+import static oracle.kubernetes.operator.work.Step.adapt;
 
 /**
  * Represents the execution of one processing flow.
@@ -98,7 +99,7 @@ public final class Fiber implements AsyncFiber {
       try {
         this.packet = packet;
         try {
-          if ((stepline == null || Step.END.equals(stepline.apply(packet)))
+          if ((stepline == null || Step.END.equals(adapt(stepline, packet).apply(packet)))
                   && status.compareAndSet(NOT_COMPLETE, DONE)
                   && completionCallback != null) {
             Throwable t = (Throwable) packet.get(THROWABLE);

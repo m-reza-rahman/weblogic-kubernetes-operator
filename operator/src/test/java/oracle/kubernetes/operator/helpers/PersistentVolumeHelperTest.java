@@ -38,6 +38,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.common.logging.MessageKeys.KUBERNETES_EVENT_ERROR;
 import static oracle.kubernetes.common.logging.MessageKeys.PV_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.PV_EXISTS;
@@ -77,6 +78,7 @@ class PersistentVolumeHelperTest {
 
   private static final TerminalStep terminalStep = new TerminalStep();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
+  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
 
@@ -181,6 +183,7 @@ class PersistentVolumeHelperTest {
 
   @Test
   void onFailedRun_reportFailure() {
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PV, null, HTTP_INTERNAL_ERROR);
 
     runPersistentVolumeHelper();
@@ -192,6 +195,8 @@ class PersistentVolumeHelperTest {
   void onFailedRunWithConflictAndNoExistingPv_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPvCreateLogMessage());
     consoleHandlerMemento.ignoreMessage(getPvExistsLogMessage());
+    retryStrategy.setNumRetriesLeft(1);
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PV, null, HTTP_CONFLICT);
 
     runPersistentVolumeHelper();
@@ -205,6 +210,8 @@ class PersistentVolumeHelperTest {
   void onFailedRunWithConflictAndExistingPv_retryAndLogMessage() {
     consoleHandlerMemento.ignoreMessage(getPvExistsLogMessage());
     V1PersistentVolume existingPv = createPvModel(testSupport.getPacket());
+    retryStrategy.setNumRetriesLeft(1);
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PV, null, HTTP_CONFLICT);
     testSupport.defineResources(existingPv);
 

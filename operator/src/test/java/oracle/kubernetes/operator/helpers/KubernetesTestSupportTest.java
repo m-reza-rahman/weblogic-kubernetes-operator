@@ -43,6 +43,7 @@ import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.work.Packet;
+import oracle.kubernetes.utils.SystemClockTestSupport;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -73,9 +74,11 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KubernetesTestSupportTest {
 
@@ -89,6 +92,7 @@ class KubernetesTestSupportTest {
     mementos.add(TestUtils.silenceOperatorLogger());
     mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
+    mementos.add(SystemClockTestSupport.installClock());
   }
 
   @AfterEach
@@ -172,6 +176,33 @@ class KubernetesTestSupportTest {
   }
 
   @Test
+  void afterReplaceDomainWithTimeStampEnabled_timeStampIsChanged() {
+    DomainResource originalDomain = createDomain(NS, "domain1");
+    testSupport.defineResources(originalDomain);
+    testSupport.setAddCreationTimestamp(true);
+
+    SystemClockTestSupport.increment();
+    testSupport.runSteps(RequestBuilder.DOMAIN.update(
+            createDomain(NS, "domain1"), (ResponseStep<DomainResource>) null));
+
+    DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
+    assertThat(getCreationTimestamp(updatedDomain), not(equalTo(getCreationTimestamp(originalDomain))));
+  }
+
+  @Test
+  void afterReplaceDomainWithTimeStampDisabled_timeStampIsNotChanged() {
+    DomainResource originalDomain = createDomain(NS, "domain1");
+    testSupport.defineResources(originalDomain);
+
+    SystemClockTestSupport.increment();
+    testSupport.runSteps(RequestBuilder.DOMAIN.update(
+            createDomain(NS, "domain1"), (ResponseStep<DomainResource>) null));
+
+    DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
+    assertThat(getCreationTimestamp(updatedDomain), equalTo(getCreationTimestamp(originalDomain)));
+  }
+
+  @Test
   void afterClusterStatusReplaced_resourceVersionIsIncremented() {
     ClusterResource originalCluster = createCluster(NS, "cluster1");
     testSupport.defineResources(originalCluster);
@@ -197,6 +228,22 @@ class KubernetesTestSupportTest {
 
     DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
     assertThat(updatedDomain.getMetadata().getResourceVersion(), equalTo("124"));
+  }
+
+  @Test
+  void afterPatchDomainWithTimeStampEnabled_timeStampIsNotChanged() {
+    DomainResource originalDomain = createDomain(NS, "domain1");
+    testSupport.defineResources(originalDomain);
+    testSupport.setAddCreationTimestamp(true);
+    SystemClockTestSupport.increment();
+
+    JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
+    patchBuilder.add("/spec/replicas", 5);
+    testSupport.runSteps(RequestBuilder.DOMAIN.patch(NS, "domain1", V1Patch.PATCH_FORMAT_JSON_PATCH,
+            new V1Patch(patchBuilder.build().toString()), (ResponseStep<DomainResource>) null));
+
+    DomainResource updatedDomain = testSupport.getResourceWithName(DOMAIN, "domain1");
+    assertThat(getCreationTimestamp(updatedDomain), equalTo(getCreationTimestamp(originalDomain)));
   }
 
   @Test
@@ -552,6 +599,19 @@ class KubernetesTestSupportTest {
 
     assertThat(getResourcesInNamespace("ns1"), empty());
     assertThat(getResourcesInNamespace("ns2"), hasSize(3));
+  }
+
+  @Test
+  void canPerformActionAfterCallIsCompleted() {
+    testSupport.setAddCreationTimestamp(true);
+    definePodResource();
+    final OffsetDateTime initialCreationTime = getPodCreationTime();
+
+    SystemClockTestSupport.increment();
+    testSupport.doAfterCall(POD, "deletePod", this::definePodResource);
+    testSupport.runSteps(RequestBuilder.POD.delete("ns", "pod", new DefaultResponseStep<>()));
+
+    assertTrue(getPodCreationTime().isAfter(initialCreationTime));
   }
 
   private void definePodResource() {

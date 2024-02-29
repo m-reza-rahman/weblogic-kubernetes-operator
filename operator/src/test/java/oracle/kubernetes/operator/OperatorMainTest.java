@@ -1346,6 +1346,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     mementos.add(StaticStubSupport.install(
             BaseMain.class, "executor", testSupport.getScheduledExecutorService()));
     inMemoryFileSystem.defineFile(delegate.getShutdownMarker(), "shutdown");
+    testSupport.presetFixedDelay();
 
     operatorMain.doMain();
 

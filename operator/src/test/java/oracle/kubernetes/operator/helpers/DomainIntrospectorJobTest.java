@@ -88,6 +88,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
+import static com.meterware.simplestub.Stub.createStrictStub;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_DEFAULT_INIT_CONTAINER_COMMAND;
 import static oracle.kubernetes.common.AuxiliaryImageConstants.AUXILIARY_IMAGE_INIT_CONTAINER_NAME_PREFIX;
@@ -196,6 +197,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
   private final List<Memento> mementos = new ArrayList<>();
   private final List<LogRecord> logRecords = new ArrayList<>();
   private final DomainConfigurator configurator = DomainConfiguratorFactory.forDomain(domain);
+  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final String jobPodName = LegalNames.toJobIntrospectorName(UID);
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
   private final SchemaConversionUtils schemaConversionUtils = new SchemaConversionUtils();
@@ -366,6 +368,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenNoJob_onInternalError() {
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_INTERNAL_ERROR);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
@@ -376,6 +379,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenNoJob_generateFailedEvent() {
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_INTERNAL_ERROR);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
@@ -1557,6 +1561,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
 
   @Test
   void whenJobCreateFailsWith409Error_JobIsCreated() {
+    testSupport.addRetryStrategy(createStrictStub(OnConflictRetryStrategyStub.class));
     testSupport.failOnCreate(KubernetesTestSupport.JOB, NS, HTTP_CONFLICT);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());

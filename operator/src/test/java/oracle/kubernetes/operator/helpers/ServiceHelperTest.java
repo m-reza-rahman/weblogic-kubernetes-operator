@@ -47,6 +47,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.common.logging.MessageKeys.ADMIN_SERVICE_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.ADMIN_SERVICE_EXISTS;
 import static oracle.kubernetes.common.logging.MessageKeys.ADMIN_SERVICE_REPLACED;
@@ -130,6 +131,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
   private final TerminalStep terminalStep = new TerminalStep();
   public TestFacade testFacade;
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
+  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private WlsServerConfig serverConfig;
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
@@ -443,6 +445,7 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
 
   @Test
   void onFailedRun_reportFailure() {
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(SERVICE, NS, HTTP_INTERNAL_ERROR);
 
     runServiceHelper();

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static com.meterware.simplestub.Stub.createStrictStub;
 import static oracle.kubernetes.common.logging.MessageKeys.CLUSTER_PDB_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.CLUSTER_PDB_EXISTS;
 import static oracle.kubernetes.common.logging.MessageKeys.KUBERNETES_EVENT_ERROR;
@@ -77,6 +78,7 @@ class PodDisruptionBudgetHelperTest {
   };
   private static final TerminalStep terminalStep = new TerminalStep();
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
+  private final RetryStrategyStub retryStrategy = createStrictStub(RetryStrategyStub.class);
   private final List<LogRecord> logRecords = new ArrayList<>();
   private TestUtils.ConsoleHandlerMemento consoleHandlerMemento;
 
@@ -200,6 +202,7 @@ class PodDisruptionBudgetHelperTest {
 
   @Test
   void onFailedRun_reportFailure() {
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_INTERNAL_ERROR);
 
     runPodDisruptionBudgetHelper();
@@ -210,6 +213,8 @@ class PodDisruptionBudgetHelperTest {
   @Test
   void onFailedRunWithConflictAndNoExistingPDB_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPdbCreateLogMessage());
+    retryStrategy.setNumRetriesLeft(1);
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
 
     runPodDisruptionBudgetHelper();
@@ -224,6 +229,8 @@ class PodDisruptionBudgetHelperTest {
     consoleHandlerMemento.ignoreMessage(getPdbExistsLogMessage());
     V1PodDisruptionBudget existingPdb = createPDBModel(testSupport.getPacket());
     existingPdb.getMetadata().setNamespace(NS);
+    retryStrategy.setNumRetriesLeft(1);
+    testSupport.addRetryStrategy(retryStrategy);
     testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_CONFLICT);
     testSupport.defineResources(existingPdb);
 

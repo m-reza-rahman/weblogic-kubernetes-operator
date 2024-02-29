@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -50,6 +51,7 @@ import static oracle.kubernetes.operator.EventMatcher.hasEvent;
 import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAUTHORIZED;
 import static oracle.kubernetes.operator.helpers.DomainIntrospectorJobTest.TEST_VOLUME_NAME;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_FAILED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.POD_CYCLE_STARTING;
@@ -243,7 +245,21 @@ class AdminPodHelperTest extends PodHelperTestBase {
   }
 
   @Test
+  void whenAdminPodDeletionFails_unrecoverableFailureOnUnauthorized() {
+    testSupport.addRetryStrategy(retryStrategy);
+    initializeExistingPod(getIncompatiblePod());
+    testSupport.failOnDelete(KubernetesTestSupport.POD, getPodName(), NS, HTTP_UNAUTHORIZED);
+
+    FiberTestSupport.StepFactory stepFactory = getStepFactory();
+    Step initialStep = stepFactory.createStepList(terminalStep);
+    testSupport.runSteps(initialStep);
+
+    testSupport.verifyCompletionThrowable(ApiException.class);
+  }
+
+  @Test
   void whenAdminPodReplacementFails() {
+    testSupport.addRetryStrategy(retryStrategy);
     initializeExistingPod(getIncompatiblePod());
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 
@@ -257,6 +273,7 @@ class AdminPodHelperTest extends PodHelperTestBase {
 
   @Test
   void whenAdminPodReplacementFails_generateFailedEvent() {
+    testSupport.addRetryStrategy(retryStrategy);
     initializeExistingPod(getIncompatiblePod());
     testSupport.failOnCreate(KubernetesTestSupport.POD, NS, HTTP_INTERNAL_ERROR);
 

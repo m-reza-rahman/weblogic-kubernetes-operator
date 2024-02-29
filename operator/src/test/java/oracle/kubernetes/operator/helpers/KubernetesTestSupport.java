@@ -129,6 +129,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   private int numCalls;
   private boolean addCreationTimestamp;
   private EmptyResponse emptyResponse;
+  private VersionInfo versionInfo = TEST_VERSION_INFO;
 
   /**
    * Installs a factory into CallBuilder to use canned responses.
@@ -330,6 +331,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
   public void definePodLog(String name, String namespace, Object contents) {
     repositories.get(PODLOG).createResourceInNamespace(name, namespace,
             new RequestBuilder.StringObject(contents.toString()));
+  }
+
+  public void setVersionInfo(VersionInfo versionInfo) {
+    this.versionInfo = versionInfo;
   }
 
   /**
@@ -590,7 +595,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       <T extends KubernetesType> KubernetesApiResponse<T> execute(CallContext<T> callContext,
                                                                   DataRepository<T> dataRepository) {
         return (KubernetesApiResponse<T>) new KubernetesApiResponse<>(
-            new RequestBuilder.VersionInfoObject(TEST_VERSION_INFO));
+            new RequestBuilder.VersionInfoObject(callContext.getVersionInfo()));
       }
     },
     deleteCollection {
@@ -1334,6 +1339,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     private boolean isDeleteCollection() {
       return resourceType.endsWith("Collection");
+    }
+
+    private VersionInfo getVersionInfo() {
+      return versionInfo;
     }
 
     private void selectDeleteCollectionOperation() {
