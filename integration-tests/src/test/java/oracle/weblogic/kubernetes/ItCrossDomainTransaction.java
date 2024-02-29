@@ -37,7 +37,7 @@ import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.Service;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
-import oracle.weblogic.kubernetes.assertions.TestAssertions;
+//import oracle.weblogic.kubernetes.assertions.TestAssertions;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
@@ -600,6 +600,12 @@ class ItCrossDomainTransaction {
 
     if (!WEBLOGIC_SLIM) {
       logger.info("Validating WebLogic admin console");
+      String resourcePath = "/console/login/LoginForm.jsp";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      /*
       if (OKE_CLUSTER) {
         String resourcePath = "/console/login/LoginForm.jsp";
         ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7001, resourcePath);
@@ -613,7 +619,7 @@ class ItCrossDomainTransaction {
             }, "Access to admin server node port failed"),
             logger,
             "Console login validation");
-      }
+      }*/
     } else {
       logger.info("Skipping WebLogic Console check for Weblogic slim images");
     }
