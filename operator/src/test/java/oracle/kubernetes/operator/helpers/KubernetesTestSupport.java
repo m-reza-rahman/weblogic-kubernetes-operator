@@ -619,7 +619,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     private Operation operation;
 
     public Failure(String resourceType, String name, String namespace, int httpCode) {
-      this(resourceType, name, namespace, new V1Status().reason("failure reported in test"), httpCode);
+      this(resourceType, name, namespace, new V1Status().message("failure reported in test"), httpCode);
     }
 
     Failure(@Nonnull String resourceType, String name, String namespace, V1Status status, int httpCode) {
