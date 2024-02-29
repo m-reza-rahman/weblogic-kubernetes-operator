@@ -583,7 +583,7 @@ class ItMaxConcurOptions {
   private void verifyServersStartedSequentially(String managedServerPodNamePrefix,
                                                 int startPodNum,
                                                 int endPodNum) {
-    final int deltaValue = 15; // TODO seconds
+    final int deltaValue = 15; // seconds
     // get managed server pod creation time
     ArrayList<Long> podCreationTimestampList = new ArrayList<Long>();
     for (int i = startPodNum; i <= endPodNum; i++) {
@@ -601,7 +601,6 @@ class ItMaxConcurOptions {
 
       logger.info("Managed servers {0} started at: {1}",
           managedServerPodNamePrefix + (i + 1), podCreationTimestampList.get(i - 1));
-
       logger.info("Managed servers {0} started at: {1}",
           managedServerPodNamePrefix + (i + 2), podCreationTimestampList.get(i));
       assertTrue(Math.abs(podCreationTimestampList.get(i)
@@ -609,11 +608,6 @@ class ItMaxConcurOptions {
               String.format("Two managed servers %s and %s failed to start sequentially",
                   managedServerPodNamePrefix + (i + 1), managedServerPodNamePrefix + (i + 2)));
 
-      logger.info("Managed servers {0} started at: {1}",
-          managedServerPodNamePrefix + (i + 1), podCreationTimestampList.get(i - 1));
-
-      logger.info("Managed servers {0} started at: {1}",
-          managedServerPodNamePrefix + (i + 2), podCreationTimestampList.get(i));
     }
   }
 

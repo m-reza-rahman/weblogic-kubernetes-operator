@@ -207,7 +207,7 @@ class ItDBOperator {
    * Create a basic FMW model in image domain using the database created by DB Operator. Verify Pod is ready and service
    * exists for both admin server and managed servers. Verify EM console is accessible.
    */
-  //@Test
+  //@Test - FMW mii domain has been deprecated since WKO 4.1
   @DisplayName("Create FMW Domain model in image")
   void  testFmwModelInImageWithDbOperator() {
 
