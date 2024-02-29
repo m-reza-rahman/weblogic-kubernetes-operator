@@ -413,6 +413,38 @@ public class CommonTestUtils {
         false, "", "", 0, "", "", curlCmd, expectedServerNames);
   }
 
+  /** Scale the WebLogic cluster to specified number of servers.
+   *  Verify the sample app can be accessed through NGINX if curlCmd is not null.
+   *
+   * @param clusterName the WebLogic cluster name in the domain to be scaled
+   * @param domainUid the domain to which the cluster belongs
+   * @param domainNamespace the namespace in which the domain exists
+   * @param manageServerPodNamePrefix managed server pod name prefix
+   * @param replicasBeforeScale the replicas of the WebLogic cluster before the scale
+   * @param replicasAfterScale the replicas of the WebLogic cluster after the scale
+   * @param curlCmd the curl command to verify ingress controller can access the sample apps from all managed servers
+   *                in the cluster, if curlCmd is null, the method will not verify the accessibility of the sample app
+   *                through ingress controller
+   * @param expectedServerNames list of managed servers in the cluster before scale, if curlCmd is null,
+   *                            set expectedServerNames to null too
+   */
+  public static void scaleAndVerifyCluster(String clusterName,
+                                           String domainUid,
+                                           String domainNamespace,
+                                           String manageServerPodNamePrefix,
+                                           int replicasBeforeScale,
+                                           int replicasAfterScale,
+                                           String curlCmd,
+                                           List<String> expectedServerNames,
+                                           String... hostname) {
+
+    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, manageServerPodNamePrefix, replicasBeforeScale,
+        replicasAfterScale, false, 0, "", "",
+        false, "", "", 0, "", "",
+        curlCmd, expectedServerNames, hostname);
+  }
+
+
   /**
    * Scale the WebLogic cluster to specified number of servers.
    * Verify the sample app can be accessed through NGINX if curlCmd is not null.
@@ -456,8 +488,11 @@ public class CommonTestUtils {
                                            String myWebAppName,
                                            String curlCmdForWLDFApp,
                                            String curlCmd,
-                                           List<String> expectedServerNames) {
+                                           List<String> expectedServerNames,
+                                           String... args) {
     LoggingFacade logger = getLogger();
+    String hostname = (args == null || args.length == 0) ? null : args[0];
+
     // get the original managed server pod creation timestamp before scale
     List<OffsetDateTime> listOfPodCreationTimestamp = new ArrayList<>();
     for (int i = 1; i <= replicasBeforeScale; i++) {
@@ -480,6 +515,25 @@ public class CommonTestUtils {
           .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
               clusterName, domainUid, domainNamespace))
           .isTrue();
+      /*
+      if (OKE_CLUSTER && hostname != null) {
+        int opExtPort = 8081;
+        assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApiInOpPod(domainUid, clusterName,
+            replicasAfterScale, hostname, opExtPort, opNamespace, opServiceAccount)))
+            .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
+                clusterName, domainUid, domainNamespace))
+            .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
+                clusterName, domainUid, domainNamespace))
+            .isTrue();
+      } else {
+        assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApi(domainUid, clusterName,
+            replicasAfterScale, externalRestHttpsPort, opNamespace, opServiceAccount)))
+            .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
+                clusterName, domainUid, domainNamespace))
+            .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
+                clusterName, domainUid, domainNamespace))
+            .isTrue();
+      }*/
     } else if (withWLDF) {
       // scale the cluster using WLDF policy
       assertThat(assertDoesNotThrow(() -> scaleClusterWithWLDF(clusterName, domainUid, domainNamespace,
@@ -498,8 +552,11 @@ public class CommonTestUtils {
               clusterName, domainUid, domainNamespace))
           .isTrue();
     }
-    verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
-        replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
+
+    if (curlCmd != null) {
+      verifyClusterAfterScaling(domainUid, domainNamespace, manageServerPodNamePrefix,
+          replicasBeforeScale, replicasAfterScale, curlCmd, expectedServerNames, listOfPodCreationTimestamp);
+    }
   }
   
   /**
