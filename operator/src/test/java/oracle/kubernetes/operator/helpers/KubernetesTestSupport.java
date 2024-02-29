@@ -751,7 +751,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
         public KubernetesApiResponse<A> create(A object, CreateOptions createOptions) {
           V1ObjectMeta meta = object.getMetadata();
           return new CallContext<>(
-              Operation.create, getResourceName(apiTypeClass), meta.getNamespace(), meta.getName(), object)
+              Operation.create, getResourceName(apiTypeClass),
+                  Optional.ofNullable(meta).map(V1ObjectMeta::getNamespace).orElse(null),
+                  Optional.ofNullable(meta).map(V1ObjectMeta::getName).orElse(null), object)
               .execute();
         }
 
@@ -767,7 +769,9 @@ public class KubernetesTestSupport extends FiberTestSupport {
         public KubernetesApiResponse<A> update(A object, UpdateOptions updateOptions) {
           V1ObjectMeta meta = object.getMetadata();
           return new CallContext<>(
-              Operation.replace, getResourceName(apiTypeClass), meta.getNamespace(), meta.getName(), object)
+              Operation.replace, getResourceName(apiTypeClass),
+                  Optional.ofNullable(meta).map(V1ObjectMeta::getNamespace).orElse(null),
+                  Optional.ofNullable(meta).map(V1ObjectMeta::getName).orElse(null), object)
               .execute();
         }
 
