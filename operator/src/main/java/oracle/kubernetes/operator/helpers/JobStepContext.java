@@ -1058,7 +1058,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
-      return doNext(createKubernetesFailureSteps(callResponse), packet);
+      return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
     }
 
     private void logJobCreated() {

@@ -701,7 +701,7 @@ public class ServiceHelper {
       }
 
       private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
-        return doNext(createKubernetesFailureSteps(callResponse), packet);
+        return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
       }
 
       @Override

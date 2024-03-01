@@ -1462,7 +1462,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
-      return doNext(createKubernetesFailureSteps(callResponse), packet);
+      return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
     }
   }
 

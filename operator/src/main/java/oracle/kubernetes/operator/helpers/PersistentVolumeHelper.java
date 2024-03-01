@@ -128,7 +128,7 @@ public class PersistentVolumeHelper {
       }
 
       private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
-        return doNext(createKubernetesFailureSteps(callResponse), packet);
+        return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
       }
 
       @Override

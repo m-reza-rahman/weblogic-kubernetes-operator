@@ -15,10 +15,7 @@ import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1ListMeta;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.openapi.models.V1Status;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -44,6 +41,8 @@ public abstract class RequestStep<
   private final String apiGroup;
   private final String apiVersion;
   private final String resourcePlural;
+  private final String resourceSingular;
+  private final String operationName;
 
   /**
    * Construct request step.
@@ -54,6 +53,7 @@ public abstract class RequestStep<
    * @param apiGroup API group
    * @param apiVersion API version
    * @param resourcePlural Resource plural
+   * @param resourceSingular Resource singular
    */
   protected RequestStep(
           ResponseStep<R> next,
@@ -61,11 +61,15 @@ public abstract class RequestStep<
           Class<L> apiListTypeClass,
           String apiGroup,
           String apiVersion,
-          String resourcePlural) {
+          String resourcePlural,
+          String resourceSingular,
+          String operationName) {
     super(next);
     this.apiGroup = apiGroup;
     this.apiVersion = apiVersion;
     this.resourcePlural = resourcePlural;
+    this.resourceSingular = resourceSingular;
+    this.operationName = operationName;
     this.apiTypeClass = apiTypeClass;
     this.apiListTypeClass = apiListTypeClass;
 
@@ -102,6 +106,22 @@ public abstract class RequestStep<
     return doNext(packet);
   }
 
+  String getResourceSingular() {
+    return resourceSingular;
+  }
+
+  String getOperationName() {
+    return operationName;
+  }
+
+  String getName() {
+    return null;
+  }
+
+  String getNamespace() {
+    return null;
+  }
+
   public static class ClusterGetRequestStep<A extends KubernetesObject, L extends KubernetesListObject>
       extends RequestStep<A, L, A> {
     private final String name;
@@ -116,6 +136,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param name Name
      * @param getOptions Get options
      */
@@ -126,11 +147,16 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String name,
         GetOptions getOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "get");
       this.name = name;
       this.getOptions = getOptions;
+    }
+
+    String getName() {
+      return name;
     }
 
     KubernetesApiResponse<A> execute(
@@ -154,6 +180,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param namespace Namespace
      * @param name Name
      * @param getOptions Get options
@@ -165,13 +192,18 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String namespace,
         String name,
         GetOptions getOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "get");
       this.namespace = namespace;
       this.name = name;
       this.getOptions = getOptions;
+    }
+
+    String getName() {
+      return name;
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
@@ -193,6 +225,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param object Object
      * @param updateOptions Update options
      */
@@ -203,11 +236,22 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         A object,
         UpdateOptions updateOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "update");
       this.object = object;
       this.updateOptions = updateOptions;
+    }
+
+    String getName() {
+      return Optional.ofNullable(object)
+              .map(KubernetesObject::getMetadata).map(V1ObjectMeta::getName).orElse(super.getName());
+    }
+
+    String getNamespace() {
+      return Optional.ofNullable(object)
+              .map(KubernetesObject::getMetadata).map(V1ObjectMeta::getNamespace).orElse(super.getNamespace());
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
@@ -232,6 +276,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param name Name
      * @param patchType Patch type
      * @param patch Patch
@@ -244,15 +289,20 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String name,
         String patchType,
         V1Patch patch,
         PatchOptions patchOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "patch");
       this.name = name;
       this.patchType = patchType;
       this.patch = patch;
       this.patchOptions = patchOptions;
+    }
+
+    String getName() {
+      return name;
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
@@ -277,6 +327,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param namespace Namespace
      * @param name Name
      * @param patchType Patch type
@@ -290,17 +341,26 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String namespace,
         String name,
         String patchType,
         V1Patch patch,
         PatchOptions patchOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "patch");
       this.namespace = namespace;
       this.name = name;
       this.patchType = patchType;
       this.patch = patch;
       this.patchOptions = patchOptions;
+    }
+
+    String getName() {
+      return name;
+    }
+
+    String getNamespace() {
+      return namespace;
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
@@ -322,6 +382,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param name Name
      * @param deleteOptions Delete options
      */
@@ -332,11 +393,16 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String name,
         DeleteOptions deleteOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "delete");
       this.name = name;
       this.deleteOptions = deleteOptions;
+    }
+
+    String getName() {
+      return name;
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
@@ -359,6 +425,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param namespace Namespace
      * @param name Name
      * @param deleteOptions Delete options
@@ -370,13 +437,22 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String namespace,
         String name,
         DeleteOptions deleteOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "delete");
       this.namespace = namespace;
       this.name = name;
       this.deleteOptions = deleteOptions;
+    }
+
+    String getName() {
+      return name;
+    }
+
+    String getNamespace() {
+      return namespace;
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
@@ -397,6 +473,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param listOptions List options
      */
     public ClusterListRequestStep(
@@ -406,8 +483,9 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         ListOptions listOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "list");
       this.listOptions = listOptions;
     }
 
@@ -431,6 +509,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param namespace Namespace
      * @param listOptions List options
      */
@@ -441,11 +520,16 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String namespace,
         ListOptions listOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "list");
       this.namespace = namespace;
       this.listOptions = listOptions;
+    }
+
+    String getNamespace() {
+      return namespace;
     }
 
     KubernetesApiResponse<L> execute(
@@ -472,6 +556,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param object Object
      * @param createOptions Create options
      */
@@ -482,11 +567,22 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         A object,
         CreateOptions createOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "create");
       this.object = object;
       this.createOptions = createOptions;
+    }
+
+    String getName() {
+      return Optional.ofNullable(object)
+              .map(KubernetesObject::getMetadata).map(V1ObjectMeta::getName).orElse(super.getName());
+    }
+
+    String getNamespace() {
+      return Optional.ofNullable(object)
+              .map(KubernetesObject::getMetadata).map(V1ObjectMeta::getNamespace).orElse(super.getNamespace());
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
@@ -509,6 +605,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param object Object
      * @param status Function to generate status from object
      * @param updateOptions Update options
@@ -520,13 +617,24 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         A object,
         Function<A, Object> status,
         UpdateOptions updateOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "updateStatus");
       this.object = object;
       this.status = status;
       this.updateOptions = updateOptions;
+    }
+
+    String getName() {
+      return Optional.ofNullable(object)
+              .map(KubernetesObject::getMetadata).map(V1ObjectMeta::getName).orElse(super.getName());
+    }
+
+    String getNamespace() {
+      return Optional.ofNullable(object)
+              .map(KubernetesObject::getMetadata).map(V1ObjectMeta::getNamespace).orElse(super.getNamespace());
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
@@ -570,6 +678,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param namespace Namespace
      * @param name Name
      * @param container Container
@@ -581,13 +690,22 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String namespace,
         String name,
         String container) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "logs");
       this.namespace = namespace;
       this.name = name;
       this.container = container;
+    }
+
+    String getName() {
+      return name;
+    }
+
+    String getNamespace() {
+      return namespace;
     }
 
     KubernetesApiResponse<RequestBuilder.StringObject> execute(
@@ -610,6 +728,7 @@ public abstract class RequestStep<
      * @param apiGroup API group
      * @param apiVersion API version
      * @param resourcePlural Resource plural
+     * @param resourceSingular Resource singular
      * @param namespace Namespace
      * @param listOptions List options
      * @param deleteOptions Delete options
@@ -621,13 +740,18 @@ public abstract class RequestStep<
         String apiGroup,
         String apiVersion,
         String resourcePlural,
+        String resourceSingular,
         String namespace,
         ListOptions listOptions,
         DeleteOptions deleteOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "deleteCollection");
       this.namespace = namespace;
       this.listOptions = listOptions;
       this.deleteOptions = deleteOptions;
+    }
+
+    String getNamespace() {
+      return namespace;
     }
 
     KubernetesApiResponse<RequestBuilder.V1StatusObject> execute(
@@ -645,7 +769,7 @@ public abstract class RequestStep<
      */
     public VersionCodeRequestStep(
         ResponseStep<RequestBuilder.VersionInfoObject> next) {
-      super(next, KubernetesObject.class, KubernetesListObject.class, "", "", "");
+      super(next, KubernetesObject.class, KubernetesListObject.class, "", "", "", "", "getVersion");
     }
 
     KubernetesApiResponse<RequestBuilder.VersionInfoObject> execute(

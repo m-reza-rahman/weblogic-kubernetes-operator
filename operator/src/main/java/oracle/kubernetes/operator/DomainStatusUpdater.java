@@ -233,11 +233,12 @@ public class DomainStatusUpdater {
    * and to generate DOMAIN_FAILED event.
    *
    * @param callResponse the response from an unrecoverable call
+   * @param failureMessage failure message
    */
-  public static Step createKubernetesFailureSteps(KubernetesApiResponse<?> callResponse) {
+  public static Step createKubernetesFailureSteps(KubernetesApiResponse<?> callResponse, String failureMessage) {
     LOGGER.severe(MessageKeys.CALL_FAILED, callResponse.getStatus());
 
-    return new FailureStep(KUBERNETES, callResponse.getStatus().toString());
+    return new FailureStep(KUBERNETES, failureMessage);
   }
 
   /**

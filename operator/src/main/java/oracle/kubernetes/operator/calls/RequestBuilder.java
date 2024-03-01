@@ -99,65 +99,68 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public static final VersionCodeRequestBuilder VERSION = new VersionCodeRequestBuilder();
 
   public static final RequestBuilder<DomainResource, DomainList> DOMAIN =
-      new RequestBuilder<>(DomainResource.class, DomainList.class, "weblogic.oracle", "v9", "domains");
+      new RequestBuilder<>(DomainResource.class, DomainList.class, "weblogic.oracle", "v9", "domains", "domain");
   public static final RequestBuilder<ClusterResource, ClusterList> CLUSTER =
-      new RequestBuilder<>(ClusterResource.class, ClusterList.class, "weblogic.oracle", "v1", "clusters");
+      new RequestBuilder<>(ClusterResource.class, ClusterList.class, "weblogic.oracle", "v1", "clusters", "cluster");
 
   public static final RequestBuilder<V1Namespace, V1NamespaceList> NAMESPACE =
-      new RequestBuilder<>(V1Namespace.class, V1NamespaceList.class, "", "v1", "namespaces");
+      new RequestBuilder<>(V1Namespace.class, V1NamespaceList.class, "", "v1", "namespaces", "namespace");
   public static final PodRequestBuilder POD = new PodRequestBuilder();
   public static final RequestBuilder<V1Service, V1ServiceList> SERVICE =
-      new RequestBuilder<>(V1Service.class, V1ServiceList.class, "", "v1", "services");
+      new RequestBuilder<>(V1Service.class, V1ServiceList.class, "", "v1", "services", "service");
   public static final RequestBuilder<V1ConfigMap, V1ConfigMapList> CM =
-      new RequestBuilder<>(V1ConfigMap.class, V1ConfigMapList.class, "", "v1", "configmaps");
+      new RequestBuilder<>(V1ConfigMap.class, V1ConfigMapList.class, "", "v1", "configmaps", "configmap");
   public static final RequestBuilder<V1Secret, V1SecretList> SECRET =
-      new RequestBuilder<>(V1Secret.class, V1SecretList.class, "", "v1", "secrets");
+      new RequestBuilder<>(V1Secret.class, V1SecretList.class, "", "v1", "secrets", "secret");
   public static final RequestBuilder<CoreV1Event, CoreV1EventList> EVENT =
-      new RequestBuilder<>(CoreV1Event.class, CoreV1EventList.class, "", "v1", "events");
+      new RequestBuilder<>(CoreV1Event.class, CoreV1EventList.class, "", "v1", "events", "event");
   public static final RequestBuilder<V1PersistentVolume, V1PersistentVolumeList> PV =
       new RequestBuilder<>(V1PersistentVolume.class, V1PersistentVolumeList.class,
-          "", "v1", "persistentvolumes");
+          "", "v1", "persistentvolumes", "persistentvolume");
   public static final RequestBuilder<V1PersistentVolumeClaim, V1PersistentVolumeClaimList> PVC =
       new RequestBuilder<>(V1PersistentVolumeClaim.class, V1PersistentVolumeClaimList.class,
-          "", "v1", "persistentvolumeclaims");
+          "", "v1", "persistentvolumeclaims", "persistentvolumeclaim");
 
   public static final RequestBuilder<V1CustomResourceDefinition, V1CustomResourceDefinitionList> CRD =
       new RequestBuilder<>(V1CustomResourceDefinition.class, V1CustomResourceDefinitionList.class,
-          "apiextensions.k8s.io", "v1", "customresourcedefinitions");
+          "apiextensions.k8s.io", "v1", "customresourcedefinitions", "customresourcedefinition");
   public static final RequestBuilder<V1ValidatingWebhookConfiguration, V1ValidatingWebhookConfigurationList> VWC =
       new RequestBuilder<>(V1ValidatingWebhookConfiguration.class, V1ValidatingWebhookConfigurationList.class,
-          "admissionregistration.k8s.io", "v1", "validatingwebhookconfigurations");
+          "admissionregistration.k8s.io", "v1", "validatingwebhookconfigurations", "validatingwebhookconfiguration");
 
   public static final RequestBuilder<V1Job, V1JobList> JOB =
-      new RequestBuilder<>(V1Job.class, V1JobList.class, "batch", "v1", "jobs");
+      new RequestBuilder<>(V1Job.class, V1JobList.class, "batch", "v1", "jobs", "job");
   public static final RequestBuilder<V1PodDisruptionBudget, V1PodDisruptionBudgetList> PDB =
       new RequestBuilder<>(V1PodDisruptionBudget.class, V1PodDisruptionBudgetList.class,
-          "policy", "v1", "poddisruptionbudgets");
+          "policy", "v1", "poddisruptionbudgets", "poddisruptionbudget");
   public static final RequestBuilder<V1TokenReview, KubernetesListObject> TR =
       new RequestBuilder<>(V1TokenReview.class, KubernetesListObject.class,
-          "authentication.k8s.io", "v1", "tokenreviews");
+          "authentication.k8s.io", "v1", "tokenreviews", "tokenreview");
   public static final RequestBuilder<V1SelfSubjectRulesReview, KubernetesListObject> SSRR =
       new RequestBuilder<>(V1SelfSubjectRulesReview.class, KubernetesListObject.class,
-          "authorization.k8s.io", "v1", "selfsubjectrulesreviews");
+          "authorization.k8s.io", "v1", "selfsubjectrulesreviews", "selfsubjectrulesreview");
   public static final RequestBuilder<V1SubjectAccessReview, KubernetesListObject> SAR =
       new RequestBuilder<>(V1SubjectAccessReview.class, KubernetesListObject.class,
-          "authorization.k8s.io", "v1", "selfsubjectaccessreviews");
+          "authorization.k8s.io", "v1", "selfsubjectaccessreviews", "selfsubjectaccessreview");
 
   protected final Class<A> apiTypeClass;
   protected final Class<L> apiListTypeClass;
   protected final String apiGroup;
   protected final String apiVersion;
   protected final String resourcePlural;
+  protected final String resourceSingular;
 
   RequestBuilder(
       Class<A> apiTypeClass,
       Class<L> apiListTypeClass,
       String apiGroup,
       String apiVersion,
-      String resourcePlural) {
+      String resourcePlural,
+      String resourceSingular) {
     this.apiGroup = apiGroup;
     this.apiVersion = apiVersion;
     this.resourcePlural = resourcePlural;
+    this.resourceSingular = resourceSingular;
     this.apiTypeClass = apiTypeClass;
     this.apiListTypeClass = apiListTypeClass;
 
@@ -177,6 +180,10 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
 
   String getResourcePlural() {
     return resourcePlural;
+  }
+
+  String getResourceSingular() {
+    return resourceSingular;
   }
 
   /**
@@ -199,7 +206,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> create(
       A object, CreateOptions createOptions, ResponseStep<A> responseStep) {
     return new RequestStep.CreateRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         object, createOptions);
   }
 
@@ -247,7 +254,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> delete(
       String name, DeleteOptions deleteOptions, ResponseStep<A> responseStep) {
     return new RequestStep.ClusterDeleteRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         name, deleteOptions);
   }
 
@@ -274,7 +281,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> delete(
       String namespace, String name, DeleteOptions deleteOptions, ResponseStep<A> responseStep) {
     return new RequestStep.DeleteRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         namespace, name, deleteOptions);
   }
 
@@ -348,7 +355,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> get(
       String name, GetOptions getOptions, ResponseStep<A> responseStep) {
     return new RequestStep.ClusterGetRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         name, getOptions);
   }
 
@@ -375,7 +382,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> get(
       String namespace, String name, GetOptions getOptions, ResponseStep<A> responseStep) {
     return new RequestStep.GetRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         namespace, name, getOptions);
   }
 
@@ -447,7 +454,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, L> list(
       ListOptions listOptions, ResponseStep<L> responseStep) {
     return new RequestStep.ClusterListRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         listOptions);
   }
 
@@ -472,7 +479,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, L> list(
       String namespace, ListOptions listOptions, ResponseStep<L> responseStep) {
     return new RequestStep.ListRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         namespace, listOptions);
   }
 
@@ -542,7 +549,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> update(
       A object, UpdateOptions updateOptions, ResponseStep<A> responseStep) {
     return new RequestStep.UpdateRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         object, updateOptions);
   }
 
@@ -595,7 +602,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> patch(
       String name, String patchType, V1Patch patch, PatchOptions patchOptions, ResponseStep<A> responseStep) {
     return new RequestStep.ClusterPatchRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         name, patchType, patch, patchOptions);
   }
 
@@ -627,7 +634,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
       String namespace, String name, String patchType, V1Patch patch,
       PatchOptions patchOptions, ResponseStep<A> responseStep) {
     return new RequestStep.PatchRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         namespace, name, patchType, patch, patchOptions);
   }
 
@@ -714,7 +721,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
       A object, Function<A, Object> status,
       UpdateOptions updateOptions, ResponseStep<A> responseStep) {
     return new RequestStep.UpdateStatusRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
         object, status, updateOptions);
   }
 
@@ -851,7 +858,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public static class PodRequestBuilder extends RequestBuilder<V1Pod, V1PodList> {
 
     public PodRequestBuilder() {
-      super(V1Pod.class, V1PodList.class, "", "v1", "pods");
+      super(V1Pod.class, V1PodList.class, "", "v1", "pods", "pod");
     }
 
     /**
@@ -865,7 +872,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
     public RequestStep<V1Pod, V1PodList, StringObject> logs(
         String namespace, String name, String container, ResponseStep<StringObject> responseStep) {
       return new RequestStep.LogsRequestStep(
-          responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+          responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
           namespace, name, container);
     }
 
@@ -881,7 +888,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
         String namespace, ListOptions listOptions, DeleteOptions deleteOptions,
         ResponseStep<V1StatusObject> responseStep) {
       return new RequestStep.DeleteCollectionRequestStep(
-          responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+          responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
           namespace, listOptions, deleteOptions);
     }
   }
@@ -889,7 +896,7 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public static class VersionCodeRequestBuilder extends RequestBuilder<KubernetesObject, KubernetesListObject> {
 
     public VersionCodeRequestBuilder() {
-      super(KubernetesObject.class, KubernetesListObject.class, "", "", "");
+      super(KubernetesObject.class, KubernetesListObject.class, "", "", "", "");
     }
 
     /**

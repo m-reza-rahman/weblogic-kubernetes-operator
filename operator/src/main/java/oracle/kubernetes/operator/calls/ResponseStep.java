@@ -12,6 +12,7 @@ import javax.annotation.Nonnull;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
@@ -20,6 +21,7 @@ import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainCondition;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
+import org.apache.commons.lang3.StringUtils;
 
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_METHOD;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_REQUEST;
@@ -93,7 +95,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
   }
 
   private final Step conflictStep;
-  private Step previousStep = null;
+  private RequestStep previousStep = null;
 
   /** Constructor specifying no next step. */
   protected ResponseStep() {
@@ -135,7 +137,7 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     }
   }
 
-  public final void setPrevious(Step previousStep) {
+  public final void setPrevious(RequestStep previousStep) {
     this.previousStep = previousStep;
   }
 
@@ -249,6 +251,25 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
     return (RetryStrategy) packet.computeIfAbsent(
             RETRY, s -> retryStrategyFactory.create(
                     TuningParameters.getInstance().getCallBuilderTuning().getCallMaxRetryCount(), previousStep));
+  }
+
+  /**
+   * Creates a message to describe a Kubernetes-reported failure.
+   * @param callResponse the call response
+   */
+  protected String createFailureMessage(KubernetesApiResponse<T> callResponse) {
+    String message = StringUtils.trimToEmpty(
+            Optional.ofNullable(callResponse.getStatus()).map(V1Status::getMessage).orElse(null));
+    if (previousStep == null) {
+      return message;
+    }
+    return LOGGER.formatMessage(
+            MessageKeys.K8S_REQUEST_FAILURE,
+            previousStep.getOperationName(),
+            previousStep.getResourceSingular(),
+            StringUtils.trimToEmpty(previousStep.getName()),
+            StringUtils.trimToEmpty(previousStep.getNamespace()),
+            message);
   }
 
   protected StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<T> callResponse) {
