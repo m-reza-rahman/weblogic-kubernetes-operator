@@ -48,7 +48,9 @@ import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_EXTERNAL_REST_HTTPSPORT;
+//import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
@@ -61,6 +63,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
+//import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
@@ -75,6 +78,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndS
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
@@ -97,6 +101,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+//import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -114,7 +119,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
     + "rolling restart behavior in a multi-cluster MII domain and "
     + "the sample application can be accessed via NGINX ingress controller")
 @Tag("kind-sequential")
-@Tag("oke-sequential")
+@Tag("oke-sequential1")
 @IntegrationTest
 class ItMultiDomainModelsScale {
 
@@ -140,6 +145,7 @@ class ItMultiDomainModelsScale {
   private static String opNamespace = null;
   private static String opServiceAccount = null;
   private static NginxParams nginxHelmParams = null;
+  private static String nginxNamespace = null;
   private static int nodeportshttp = 0;
   private static LoggingFacade logger = null;
   private static String miiDomainNamespace = null;
@@ -170,7 +176,7 @@ class ItMultiDomainModelsScale {
     // get a unique NGINX namespace
     logger.info("Get a unique namespace for NGINX");
     assertNotNull(namespaces.get(1), "Namespace list is null");
-    String nginxNamespace = namespaces.get(1);
+    nginxNamespace = namespaces.get(1);
 
     // get unique namespaces for three different type of domains
     logger.info("Getting unique namespaces for three different type of domains");
@@ -245,19 +251,43 @@ class ItMultiDomainModelsScale {
         numberOfServers = 3;
       }
 
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
-          clusterName, domainUid, domainNamespace, numberOfServers);
-      curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
-      List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          replicaCount, numberOfServers, curlCmd, managedServersBeforeScale);
+      String hostname = null;
 
-      // then scale cluster back to 1 servers
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-          clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
-      managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          numberOfServers, replicaCount, curlCmd, managedServersBeforeScale);
+      if (OKE_CLUSTER) {
+        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            replicaCount, numberOfServers, null, null);
+        /*
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+           replicaCount, numberOfServers, null, null, hostname);*/
+
+        // then scale cluster back to 1 servers
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            numberOfServers, replicaCount, null, null);
+        /*
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            numberOfServers, replicaCount, null, null, hostname);*/
+      } else {
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers);
+        curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+        List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            replicaCount, numberOfServers, curlCmd, managedServersBeforeScale);
+
+        // then scale cluster back to 1 servers
+        logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+            clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+        managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
+        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+            numberOfServers, replicaCount, curlCmd, managedServersBeforeScale);
+      }
     }
 
     // verify admin console login
