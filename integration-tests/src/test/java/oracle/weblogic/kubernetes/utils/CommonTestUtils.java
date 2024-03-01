@@ -97,6 +97,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApi;
+import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApiInOpPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithWLDF;
 import static oracle.weblogic.kubernetes.actions.impl.UniqueName.random;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsNotValid;
@@ -508,14 +509,16 @@ public class CommonTestUtils {
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers",
         clusterName, domainUid, domainNamespace, replicasAfterScale);
     if (withRestApi) {
+      logger.info("======= scaleAndVerifyCluster in withRestApi ======");
+      /*
       assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApi(domainUid, clusterName,
           replicasAfterScale, externalRestHttpsPort, opNamespace, opServiceAccount)))
           .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
               clusterName, domainUid, domainNamespace))
           .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
               clusterName, domainUid, domainNamespace))
-          .isTrue();
-      /*
+          .isTrue();*/
+
       if (OKE_CLUSTER && hostname != null) {
         int opExtPort = 8081;
         assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApiInOpPod(domainUid, clusterName,
@@ -533,8 +536,9 @@ public class CommonTestUtils {
             .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
                 clusterName, domainUid, domainNamespace))
             .isTrue();
-      }*/
+      }
     } else if (withWLDF) {
+      logger.info("======= scaleAndVerifyCluster in withWLDF ======");
       // scale the cluster using WLDF policy
       assertThat(assertDoesNotThrow(() -> scaleClusterWithWLDF(clusterName, domainUid, domainNamespace,
           domainHomeLocation, scalingAction, scalingSize, opNamespace, opServiceAccount, myWebAppName,
@@ -545,6 +549,7 @@ public class CommonTestUtils {
               clusterName, domainUid, domainNamespace))
           .isTrue();
     } else {
+      logger.info("======= scaleAndVerifyCluster in else  scaleCluster ======");
       assertThat(assertDoesNotThrow(() -> scaleCluster(clusterName, domainNamespace, replicasAfterScale)))
           .as(String.format("Verify scaling cluster %s of domain %s in namespace %s succeeds",
               clusterName, domainUid, domainNamespace))

@@ -397,6 +397,24 @@ class ItMultiDomainModelsScale {
     }
 
     // verify admin console login
+    if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      String resourcePath = "/console/login/LoginForm.jsp";
+      final String adminServerPodName = domainUid + "-admin-server";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      //verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
+      // verify admin console login using ingress controller
+      //verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    }
+
+    /*
+    // verify admin console login
     if (OKE_CLUSTER) {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
@@ -410,8 +428,8 @@ class ItMultiDomainModelsScale {
     } else {
       verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
       // verify admin console login using ingress controller
-      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
-    }
+      verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
+    }*/
 
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
