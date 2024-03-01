@@ -1075,6 +1075,7 @@ public class CommonMiiTestUtils {
   private static String readRuntimeResource(String adminSvcExtHost, String domainNamespace,
       String adminServerPodName, String resourcePath, String callerName) {
     LoggingFacade logger = getLogger();
+    String returnString = null;
 
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
@@ -1102,52 +1103,52 @@ public class CommonMiiTestUtils {
       try {
         response = OracleHttpClient.get(url, headers, true);
         assertEquals(200, response.statusCode());
-        return response.body();
+        returnString = response.body();
+        //return response.body();
       } catch (Exception ex) {
-        return null;
+        //return null;
       }
-    }
-
-    String curlString = null;
-    if (OKE_CLUSTER_PRIVATEIP) {
-      String protocol = "http";
-      String port = "7001";
-
-      curlString = String.format(
-        KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -g -k %s://"
-          + ADMIN_USERNAME_DEFAULT
-          + ":"
-          + ADMIN_PASSWORD_DEFAULT
-          + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
-      curlString = curlString + " --silent --show-error ";
     } else {
-      int adminServiceNodePort
-          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
+      String curlString = null;
+      if (OKE_CLUSTER_PRIVATEIP) {
+        String protocol = "http";
+        String port = "7001";
+
+        curlString = String.format(
+          KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -g -k %s://"
+              + ADMIN_USERNAME_DEFAULT
+              + ":"
+              + ADMIN_PASSWORD_DEFAULT
+              + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
+        curlString = curlString + " --silent --show-error ";
+      } else {
+        int adminServiceNodePort
+            = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+        String host = K8S_NODEPORT_HOST;
+        if (host.contains(":")) {
+          host = "[" + host + "]";
+        }
+        String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
+        logger.info("hostAndPort = {0} ", hostAndPort);
+
+        curlString = String.format("curl -g --user "
+            + ADMIN_USERNAME_DEFAULT
+            + ":"
+            + ADMIN_PASSWORD_DEFAULT
+            + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
       }
-      String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
-      logger.info("hostAndPort = {0} ", hostAndPort);
+      logger.info(callerName + ": curl command {0}", curlString);
 
-      curlString = String.format(
-        "curl -g --user "
-          + ADMIN_USERNAME_DEFAULT
-          + ":"
-          + ADMIN_PASSWORD_DEFAULT
-          + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
+      try {
+        String result = exec(curlString, true).stdout();
+        logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
+        returnString = result;
+      } catch (Exception ex) {
+        logger.info(callerName + ": caught unexpected exception {0}", ex);
+      }
     }
-    logger.info(callerName + ": curl command {0}", curlString);
 
-    String result = null;
-    try {
-      result = exec(curlString, true).stdout();
-      logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
-    } catch (Exception ex) {
-      logger.info(callerName + ": caught unexpected exception {0}", ex);
-      return null;
-    }
-    return result;
+    return returnString;
   }
 
   /**
