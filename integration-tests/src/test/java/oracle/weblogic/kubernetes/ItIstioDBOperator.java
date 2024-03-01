@@ -50,7 +50,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.ISTIO_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
@@ -81,7 +80,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
-import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
 import static oracle.weblogic.kubernetes.utils.DbUtils.deleteOracleDB;
 import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.uninstallDBOperator;
@@ -115,30 +113,16 @@ class ItIstioDBOperator {
 
   private static String dbNamespace = null;
   private static String opNamespace = null;
-  private static String fmwDomainNamespace = null;
   private static String wlsDomainNamespace = null;
-  private static String fmwMiiImage = null;
 
-  private static final String RCUSCHEMAPREFIX = "FMWDOMAINMII";
   private static final String RCUSYSPASSWORD = "Oradoc_db1";
-  private static final String RCUSCHEMAPASSWORD = "Oradoc_db1";
-  private static final String modelFile = "model-singleclusterdomain-sampleapp-jrf.yaml";
 
   private static String dbUrl = null;
   private static String dbName = "istio-oracle-sidb";
   private static LoggingFacade logger = null;
 
-  private String fmwDomainUid = "jrf-istio-db";
-  private String fmwAdminServerPodName = fmwDomainUid + "-admin-server";
-  private String fmwManagedServerPrefix = fmwDomainUid + "-managed-server";
-  private String clusterName = "cluster-1";  
+  private String clusterName = "cluster-1";
   private int replicaCount = 2;
-  private String fmwAminSecretName = fmwDomainUid + "-weblogic-credentials";
-  private String fmwEncryptionSecretName = fmwDomainUid + "-encryptionsecret";
-  private String rcuaccessSecretName = fmwDomainUid + "-rcu-access";
-  private String opsswalletpassSecretName = fmwDomainUid + "-opss-wallet-password-secret";
-  private String opsswalletfileSecretName = fmwDomainUid + "opss-wallet-file-secret";
-  private String adminSvcExtHost = null;
 
   private static final String wlsDomainUid = "mii-jms-istio-db";
   private static final String pvName = getUniqueName(wlsDomainUid + "-pv-");
@@ -146,7 +130,7 @@ class ItIstioDBOperator {
   private static final String wlsAdminServerPodName = wlsDomainUid + "-admin-server";
   private static final String wlsManagedServerPrefix = wlsDomainUid + "-managed-server";
   private static int wlDomainIstioIngressPort;
-  private String configMapName = "dynamicupdate-istio-configmap";
+  //TODO private String configMapName = "dynamicupdate-istio-configmap";
   private static String cpUrl;
   private static String adminSvcExtRouteHost = null;
 
@@ -177,17 +161,12 @@ class ItIstioDBOperator {
     assertNotNull(namespaces.get(1), "Namespace is null");
     opNamespace = namespaces.get(1);
 
-    logger.info("Assign a unique namespace for FMW domain");
-    assertNotNull(namespaces.get(2), "Namespace is null");
-    fmwDomainNamespace = namespaces.get(2);
-
     logger.info("Assign a unique namespace for WLS domain");
-    assertNotNull(namespaces.get(3), "Namespace is null");
-    wlsDomainNamespace = namespaces.get(3);
+    assertNotNull(namespaces.get(2), "Namespace is null");
+    wlsDomainNamespace = namespaces.get(2);
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
-    createBaseRepoSecret(fmwDomainNamespace);
     createBaseRepoSecret(wlsDomainNamespace);
     createTestRepoSecret(wlsDomainNamespace);
     // create PV, PVC for logs/data
@@ -200,7 +179,6 @@ class ItIstioDBOperator {
     // Label the domain/operator namespace with istio-injection=enabled
     Map<String, String> labelMap = new HashMap<>();
     labelMap.put("istio-injection", "enabled");
-    assertDoesNotThrow(() -> addLabelsToNamespace(fmwDomainNamespace, labelMap));
     assertDoesNotThrow(() -> addLabelsToNamespace(wlsDomainNamespace, labelMap));
     assertDoesNotThrow(() -> addLabelsToNamespace(opNamespace, labelMap));
 
@@ -210,16 +188,16 @@ class ItIstioDBOperator {
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
 
-    logger.info("Create RCU schema with fmwImage: {0}, rcuSchemaPrefix: {1}, dbUrl: {2}, "
+    /*logger.info("Create RCU schema with fmwImage: {0}, rcuSchemaPrefix: {1}, dbUrl: {2}, "
         + " dbNamespace: {3}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX, dbUrl, dbNamespace);
     assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX,
-        dbUrl, dbNamespace));
+        dbUrl, dbNamespace));*/
 
     // create testwebapp.war
     testWebAppWarLoc = createTestWebAppWarFile(wlsDomainNamespace);
 
     // install operator and verify its running in ready state
-    installAndVerifyOperator(opNamespace, fmwDomainNamespace, wlsDomainNamespace);
+    installAndVerifyOperator(opNamespace, wlsDomainNamespace);
   }
 
   /**
