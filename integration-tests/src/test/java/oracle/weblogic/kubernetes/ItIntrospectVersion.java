@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 
 import io.kubernetes.client.custom.V1Patch;
@@ -101,6 +100,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.patchClusterCustomR
 import static oracle.weblogic.kubernetes.actions.TestActions.patchDomainResourceWithNewIntrospectVersion;
 import static oracle.weblogic.kubernetes.actions.impl.Cluster.scaleCluster;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.impl.Ingress.updateIngress;
 import static oracle.weblogic.kubernetes.actions.impl.Pod.getPod;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podStateNotChanged;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
@@ -158,6 +158,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests related to introspectVersion attribute.
@@ -503,7 +504,7 @@ class ItIntrospectVersion {
     
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      updateIngress(newAdminPort);
+      updateIngressBackendServicePort(newAdminPort);
     }
 
     //verify admin server accessibility and the health of cluster members
@@ -1564,13 +1565,18 @@ class ItIntrospectVersion {
     return domain;
   }
   
-  private void updateIngress(int newAdminPort) throws ApiException {
+  private void updateIngressBackendServicePort(int newAdminPort) throws ApiException {
     String ingressName = introDomainNamespace + "-" + domainUid + "-" + adminServerName;
-    Optional<V1Ingress> ingress = Ingress.getIngress(introDomainNamespace, ingressName);
-    ingress.get().getSpec().getRules().getFirst().getHttp()
-        .getPaths().getFirst().getBackend().getService()
-        .setPort(new V1ServiceBackendPort().number(newAdminPort));
-
+    V1Ingress ingress = Ingress.getIngress(introDomainNamespace, ingressName).orElse(null);
+    if (ingress != null) {
+      logger.info("Updating ingress {0} with new admin port {1}", ingressName, newAdminPort);
+      ingress.getSpec().getRules().getFirst().getHttp()
+          .getPaths().getFirst().getBackend().getService()
+          .setPort(new V1ServiceBackendPort().number(newAdminPort));
+      updateIngress(introDomainNamespace, ingress);
+    } else {
+      fail("Failed to update ingress");
+    }
   }
   
 }
