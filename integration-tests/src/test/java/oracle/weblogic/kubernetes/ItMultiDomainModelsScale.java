@@ -293,12 +293,15 @@ class ItMultiDomainModelsScale {
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
     } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
-      verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+      verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
       // verify admin console login using ingress controller
       verifyReadyAppUsingIngressController(domainUid, domainNamespace);
     }
@@ -397,39 +400,24 @@ class ItMultiDomainModelsScale {
     }
 
     // verify admin console login
-    if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
-      assertDoesNotThrow(()
-          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
-    } else {
-      String resourcePath = "/console/login/LoginForm.jsp";
-      final String adminServerPodName = domainUid + "-admin-server";
-      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
-      logger.info("result in OKE_CLUSTER is {0}", result.toString());
-      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
-
-      //verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
-      // verify admin console login using ingress controller
-      //verifyReadyAppUsingIngressController(domainUid, domainNamespace);
-    }
-
-    /*
-    // verify admin console login
     if (OKE_CLUSTER) {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
     } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
-      verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+      verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
       // verify admin console login using ingress controller
-      verifyAdminConsoleLoginUsingIngressController(domainUid, domainNamespace);
-    }*/
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    }
 
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
@@ -598,12 +586,15 @@ class ItMultiDomainModelsScale {
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
     } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
       assertDoesNotThrow(()
           -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     } else {
-      verifyAdminConsoleLoginUsingAdminNodePort(domainUid, domainNamespace);
+      verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
       // verify admin console login using ingress controller
       verifyReadyAppUsingIngressController(domainUid, domainNamespace);
     }
@@ -1015,7 +1006,7 @@ class ItMultiDomainModelsScale {
   }
 
   // verify the admin console login using admin node port
-  private void verifyAdminConsoleLoginUsingAdminNodePort(String domainUid, String domainNamespace) {
+  private void verifyReadyAppUsingAdminNodePort(String domainUid, String domainNamespace) {
 
     String adminServerPodName = domainUid + "-" + ADMIN_SERVER_NAME_BASE;
     logger.info("Getting node port for default channel");
@@ -1026,13 +1017,13 @@ class ItMultiDomainModelsScale {
     // In OKD cluster, we need to get the routeHost for the external admin service
     String routeHost = getRouteHost(domainNamespace, getExternalServicePodName(adminServerPodName));
 
-    logger.info("Validating WebLogic admin server access by login to console");
+    logger.info("Validating WebLogic readyapp");
     testUntil(
         assertDoesNotThrow(() -> {
           return adminNodePortAccessible(serviceNodePort, ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, routeHost);
         }, "Access to admin server node port failed"),
         logger,
-        "Console login validation");
+        "readyapp validation");
   }
 
   // Verify admin console login using ingress controller
