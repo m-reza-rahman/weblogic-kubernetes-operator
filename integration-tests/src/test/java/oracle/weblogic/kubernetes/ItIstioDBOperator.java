@@ -130,7 +130,6 @@ class ItIstioDBOperator {
   private static final String wlsAdminServerPodName = wlsDomainUid + "-admin-server";
   private static final String wlsManagedServerPrefix = wlsDomainUid + "-managed-server";
   private static int wlDomainIstioIngressPort;
-  //TODO private String configMapName = "dynamicupdate-istio-configmap";
   private static String cpUrl;
   private static String adminSvcExtRouteHost = null;
 
@@ -187,12 +186,7 @@ class ItIstioDBOperator {
 
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
-
-    /*logger.info("Create RCU schema with fmwImage: {0}, rcuSchemaPrefix: {1}, dbUrl: {2}, "
-        + " dbNamespace: {3}", FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX, dbUrl, dbNamespace);
-    assertDoesNotThrow(() -> createRcuSchema(FMWINFRA_IMAGE_TO_USE_IN_SPEC, RCUSCHEMAPREFIX,
-        dbUrl, dbNamespace));*/
-
+    
     // create testwebapp.war
     testWebAppWarLoc = createTestWebAppWarFile(wlsDomainNamespace);
 
