@@ -105,8 +105,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("olcne-mrg")
-@Tag("oke-sequential1")
 @Tag("oke-arm")
+@Tag("oke-parallelnew")
 class ItIstioDomainInPV  {
 
   private static String opNamespace = null;
@@ -166,8 +166,8 @@ class ItIstioDomainInPV  {
    * Deploy istio gateways and virtual service.
    * Verify domain pods runs in ready state and services are created.
    * Check WebLogic Server log for few Japanese characters.
-   * Verify WebLogic console is accessible thru istio ingress http port
-   * Verify WebLogic console is accessible thru kubectl forwarded port
+   * Verify ready app is accessible thru istio ingress http port
+   * Verify ready app is accessible thru kubectl forwarded port
    * Additionally, the test verifies that WebLogic cluster can be scaled down
    * and scaled up in the absence of Administration server.
    */
@@ -343,7 +343,7 @@ class ItIstioDomainInPV  {
     String consoleUrl = "http://" + hostAndPort + "/weblogic/ready";
     boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
     assertTrue(checkConsole, "Failed to access WebLogic readyapp ");
-    logger.info("WebLogic console is accessible");
+    logger.info("WebLogic server is accessible");
     if (!(TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
       String localhost = "localhost";
@@ -352,7 +352,7 @@ class ItIstioDomainInPV  {
       logger.info("Forwarded local port is {0}", forwardPort);
       consoleUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
       checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-      assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
+      assertTrue(checkConsole, "Failed to access WebLogic server thru port-forwarded port");
       logger.info("WebLogic readyapp is accessible thru port forwarding");
       stopPortForwardProcess(domainNamespace);
     }

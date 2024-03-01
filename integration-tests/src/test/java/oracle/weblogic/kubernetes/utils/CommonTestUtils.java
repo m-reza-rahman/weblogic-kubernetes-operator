@@ -101,6 +101,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithWLD
 import static oracle.weblogic.kubernetes.actions.impl.UniqueName.random;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsNotValid;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsValid;
+import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podStateNotChanged;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.serviceExists;
@@ -759,18 +760,32 @@ public class CommonTestUtils {
 
   /**
    * verify the system resource configuration using REST API.
-   * @param adminRouteHost only required for OKD env. null otherwise
-   * @param nodePort admin node port
-   * @param resourcesType type of the resource
-   * @param resourcesName name of the resource
+   *
+   * @param adminRouteHost     only required for OKD env. null otherwise
+   * @param nodePort           admin node port
+   * @param resourcesType      type of the resource
+   * @param resourcesName      name of the resource
    * @param expectedStatusCode expected status code
+   * @param hostHeader         ingress host name to pass as header, only for kind cluster
    */
   public static void verifySystemResourceConfiguration(String adminRouteHost, int nodePort, String resourcesType,
-                                                       String resourcesName, String expectedStatusCode) {
+                                      String resourcesName, String expectedStatusCode, String hostHeader) {
     final LoggingFacade logger = getLogger();
+
+    String hostAndPort = getHostAndPort(adminRouteHost, nodePort);
+    
+    // use traefik LB for kind cluster with ingress host header in url
+    String headers = "";
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      headers = " -H 'host: " + hostHeader + "' ";
+    }
     StringBuffer curlString = new StringBuffer("status=$(curl --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" http://" + getHostAndPort(adminRouteHost, nodePort))
+        .append(" ")
+        .append(headers)
+        .append(" http://" + hostAndPort)
         .append("/management/weblogic/latest/domainConfig")
         .append("/")
         .append(resourcesType)
@@ -1500,6 +1515,53 @@ public class CommonTestUtils {
   }
 
   /**
+   * Start a port-forward process with a given set of attributes.
+   * @param hostName host information to used against address param
+   * @param namespace  namespace
+   * @param port the remote port
+   * @param podName name of the pod
+   * @return generated local forward port
+   */
+  public static String startPortForwardProcess(String hostName,
+                                               String namespace,
+                                               int port,
+                                               String podName) {
+    LoggingFacade logger = getLogger();
+    // Create a unique stdout file for kubectl port-forward command
+    String pfFileName = RESULTS_ROOT + "/pf-" + namespace
+        + "-" + port + ".out";
+    testUntil(
+        assertDoesNotThrow(() -> isPodReady(namespace, null, podName),
+            "podIsReady failed with ApiException"),
+        logger,
+        "pod {0} to be running in namespace {1}", podName,
+        namespace);
+
+    logger.info("Start port forward process");
+
+    // Let kubectl choose and allocate a local port number that is not in use
+    StringBuffer cmd = new StringBuffer(KUBERNETES_CLI + " port-forward --address ")
+        .append(hostName)
+        .append(" pod/")
+        .append(podName)
+        .append(" -n ")
+        .append(namespace)
+        .append(" :")
+        .append(String.valueOf(port))
+        .append(" > ")
+        .append(pfFileName)
+        .append(" 2>&1 &");
+    logger.info("Command to forward port {0} ", cmd.toString());
+    ExecResult result = assertDoesNotThrow(() -> ExecCommand.exec(cmd.toString(), true),
+        String.format("Failed to forward port by running command %s", cmd));
+    assertEquals(0, result.exitValue(),
+        String.format("Failed to forward a local port to admin port. Error is %s ", result.stderr()));
+    assertNotNull(getForwardedPort(pfFileName),
+        "port-forward command fails to assign a local port");
+    return getForwardedPort(pfFileName);
+  }
+
+  /**
    * Stop port-forward process(es) started through startPortForwardProcess.
    * @param domainNamespace namespace where port-forward procees were started
    */
@@ -1532,9 +1594,11 @@ public class CommonTestUtils {
             isFileExistAndNotEmpty(portForwardFileName),
             logger,
             "forwarded port number is written to the file " + portForwardFileName));
+
+    String forwardedPortNo = null;
     String portFile = assertDoesNotThrow(() -> Files.readAllLines(Paths.get(portForwardFileName)).get(0));
     logger.info("Port forward info:\n {0}", portFile);
-    String forwardedPortNo = null;
+
     String regex = ".*Forwarding.*:(\\d+).*";
     Pattern pattern = Pattern.compile(regex, Pattern.DOTALL | Pattern.MULTILINE);
     Matcher matcher = pattern.matcher(portFile);
@@ -1560,12 +1624,12 @@ public class CommonTestUtils {
 
     String hostAndPort = getHostAndPort(null, istioIngressPort);
 
-    // verify WebLogic console is accessible before port forwarding using ingress port
-    String consoleUrl = "http://" + hostAndPort + "/console/login/LoginForm.jsp";
+    // verify ready app is accessible before port forwarding using ingress port
+    String readyAppUrl = "http://" + hostAndPort + "/weblogic/ready";
 
-    boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic console");
-    logger.info("WebLogic console is accessible");
+    boolean checlReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+    assertTrue(checlReadyApp, "Failed to access ready app");
+    logger.info("ready app is accessible");
 
     // forwarding admin port to a local port
     String localhost = "localhost";
@@ -1573,11 +1637,11 @@ public class CommonTestUtils {
     assertNotNull(forwardedPort, "port-forward command fails to assign local port");
     logger.info("Forwarded local port is {0}", forwardedPort);
 
-    // verify WebLogic console is accessible after port forwarding using the forwarded port
-    consoleUrl = "http://" + localhost + ":" + forwardedPort + "/console/login/LoginForm.jsp";
-    checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
-    logger.info("WebLogic console is accessible thru port forwarding");
+    // verify ready app is accessible after port forwarding using the forwarded port
+    readyAppUrl = "http://" + localhost + ":" + forwardedPort + "/weblogic/ready";
+    checlReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+    assertTrue(checlReadyApp, "Failed to access ready app thru port-forwarded port");
+    logger.info("ready app is accessible thru port forwarding");
 
     // test accessing WLS vis WLST using the forwarded port.
     ExecResult result = accesseWLSViaWLSTUsingForwardedPort(domainUid, domainNamespace, forwardedPort);

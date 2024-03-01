@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -36,13 +36,13 @@ import static oracle.weblogic.kubernetes.TestConstants.ISTIO_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CONFIG_MAP_RELOAD_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CONFIG_MAP_RELOAD_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_TENANCY;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.listPods;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Command.defaultCommandParams;
@@ -291,11 +291,12 @@ public class IstioUtils {
       String domainNamespace, String domainUid, String prometheusPort) {
     LoggingFacade logger = getLogger();
     final String prometheusRegexValue = String.format("regex: %s;%s", domainNamespace, domainUid);
-    Path fileTemp = Paths.get(RESULTS_ROOT, "createTempValueFile");
+    Path fileTemp = Paths.get(RESULTS_ROOT, "istioPrometheus");
     assertDoesNotThrow(() -> deleteDirectory(fileTemp.toFile()));
     assertDoesNotThrow(() -> Files.createDirectories(fileTemp));
     logger.info("copy the promvalue.yaml to staging location");
-    Path srcPromFile = Paths.get(RESOURCE_DIR, "exporter", "istioprometheus.yaml");
+    String fileName = OKE_CLUSTER_PRIVATEIP ? "istioprometheusoke.yaml" : "istioprometheus.yaml";
+    Path srcPromFile = Paths.get(RESOURCE_DIR, "exporter", fileName);
     Path targetPromFile = Paths.get(fileTemp.toString(), "istioprometheus.yaml");
     assertDoesNotThrow(() -> Files.copy(srcPromFile, targetPromFile, StandardCopyOption.REPLACE_EXISTING));
     String oldValue = "regex: default;domain1";
@@ -494,19 +495,16 @@ public class IstioUtils {
     // in istio, as we can not enable Administration NodePort
     LoggingFacade logger = getLogger();
     logger.info("Verifying Istio Service @IngressPort [{0}]", istioIngressPort);
-    if (!WEBLOGIC_SLIM) {
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-      String consoleUrl = "http://" + host + ":" + istioIngressPort + "/console/login/LoginForm.jsp";
-      boolean checkConsole =
-          checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-      assertTrue(checkConsole, "Failed to access WebLogic console");
-      logger.info("WebLogic console is accessible");
-    } else {
-      logger.info("Skipping WebLogic console in WebLogic slim image");
+    String host = K8S_NODEPORT_HOST;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
     }
+    String readyAppUrl = "http://" + host + ":" + istioIngressPort + "/weblogic/ready";
+    boolean checlReadyApp =
+        checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+    assertTrue(checlReadyApp, "Failed to access ready app");
+    logger.info("ready app is accessible");
+
   }
 
   /**

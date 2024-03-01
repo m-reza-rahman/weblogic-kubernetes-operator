@@ -74,8 +74,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify istio enabled WebLogic domain in domainhome-in-image model")
 @IntegrationTest
 @Tag("kind-parallel")
-@Tag("oke-sequential1")
 @Tag("oke-arm")
+@Tag("oke-parallelnew")
 class ItIstioDomainInImage {
 
   private static String opNamespace = null;
@@ -129,8 +129,8 @@ class ItIstioDomainInImage {
    * Do not add any AdminService under AdminServer configuration
    * Deploy istio gateways and virtual service
    * Verify server pods are in ready state and services are created.
-   * Verify WebLogic console is accessible thru istio ingress http port
-   * Verify WebLogic console is accessible thru kubectl forwarded port(s)
+   * Verify ready app is accessible thru istio ingress http port
+   * Verify ready app is accessible thru kubectl forwarded port(s)
    * Deploy a web application thru istio http ingress port using REST api
    * Access web application thru istio http ingress port using curl
    * Verify Security Warning Tool does not detect any security warning message
@@ -216,28 +216,28 @@ class ItIstioDomainInImage {
     // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
-
-    String consoleUrl = "http://" + hostAndPort + "/weblogic/ready";
-    boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic readyapp");
-    logger.info("WebLogic readyapp is accessible");
+    
+    String readyAppUrl = "http://" + hostAndPort + "/weblogic/ready";
+    boolean checkReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+    assertTrue(checkReadyApp, "Failed to access ready app");
+    logger.info("ready app is accessible");
     String localhost = "localhost";
     // Forward the non-ssl port 7001
     String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
     assertNotNull(forwardPort, "port-forward fails to assign local port");
     logger.info("Forwarded local port is {0}", forwardPort);
-    consoleUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
-    checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
-    logger.info("WebLogic console is accessible thru non-ssl port forwarding");
+    readyAppUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
+    checkReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+    assertTrue(checkReadyApp, "Failed to access ready app thru port-forwarded port");
+    logger.info("ready app is accessible thru non-ssl port forwarding");
     // Forward the ssl port 7002
     forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7002);
     assertNotNull(forwardPort, "(ssl) port-forward fails to assign local port");
     logger.info("Forwarded local port is {0}", forwardPort);
-    consoleUrl = "https://" + localhost + ":" + forwardPort + "/weblogic/ready";
-    checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic console thru port-forwarded port");
-    logger.info("WebLogic console is accessible thru ssl port forwarding");
+    readyAppUrl = "https://" + localhost + ":" + forwardPort + "/weblogic/ready";
+    checkReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+    assertTrue(checkReadyApp, "Failed to access ready app thru port-forwarded port");
+    logger.info("ready app is accessible thru ssl port forwarding");
 
     stopPortForwardProcess(domainNamespace);
 

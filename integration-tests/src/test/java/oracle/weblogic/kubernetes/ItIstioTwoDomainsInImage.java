@@ -69,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to create two WebLogic domains in domainhome-in-image model with istio configuration")
 @IntegrationTest
 @Tag("kind-parallel")
-@Tag("oke-sequential1")
+@Tag("oke-parallelnew")
 class ItIstioTwoDomainsInImage {
 
   private static String opNamespace = null;
@@ -285,9 +285,9 @@ class ItIstioTwoDomainsInImage {
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
 
     String readyAppUrl = "http://" + hostAndPort + "/weblogic/ready";
-    boolean checkConsole = checkAppUsingHostHeader(readyAppUrl, domainNamespace1 + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic admin server on domain1");
-    logger.info("WebLogic admin server on domain1 is accessible");
+    boolean checlReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace1 + ".org");
+    assertTrue(checlReadyApp, "Failed to access ready app on domain1");
+    logger.info("WebLogic server on domain1 is accessible");
 
     Path archivePath = Paths.get(testWebAppWarLoc);
     String resourcePath = "/testwebapp/index.jsp";
@@ -324,9 +324,9 @@ class ItIstioTwoDomainsInImage {
     logger.info("Application {0} is accessble to {1}", resourcePath, domainUid1);
 
     readyAppUrl = "http://" + hostAndPort + "/weblogic/ready";
-    checkConsole = checkAppUsingHostHeader(readyAppUrl, domainNamespace2 + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic admin server on domain2");
-    logger.info("WebLogic admin server on domain2 is accessible");
+    checlReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace2 + ".org");
+    assertTrue(checlReadyApp, "Failed to access domain2 ready app");
+    logger.info("ready app on domain2 is accessible");
 
     // In internal OKE env, deploy App in domain pods using WLST
     createBaseRepoSecret(domainNamespace2);

@@ -62,8 +62,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("olcne-mrg")
-@Tag("oke-sequential1")
 @Tag("oke-arm")
+@Tag("oke-parallelnew")
 class ItIstioGatewaySessionMigration {
 
   private static String opNamespace = null;
@@ -287,8 +287,8 @@ class ItIstioGatewaySessionMigration {
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
 
     String restUrl = "http://" + hostAndPort + "/management/tenant-monitoring/servers/";
-    boolean checkConsole = checkAppUsingHostHeader(restUrl, domainNamespace + ".org");
-    assertTrue(checkConsole, "Failed to access WebLogic REST interface");
+    boolean checlReadyApp = checkAppUsingHostHeader(restUrl, domainNamespace + ".org");
+    assertTrue(checlReadyApp, "Failed to access WebLogic REST interface");
 
     Path archivePath = Paths.get(testWebAppWarLoc);
     String target = "{identity: [clusters,'" + clusterName + "']}";

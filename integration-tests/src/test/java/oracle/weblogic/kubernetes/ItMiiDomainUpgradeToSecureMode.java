@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
@@ -55,7 +56,7 @@ import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
@@ -124,9 +125,9 @@ class ItMiiDomainUpgradeToSecureMode {
   private final String imageTag12214 = "12.2.1.4";
   private final String image1412 = "wls-docker-dev-local.dockerhub-phx.oci.oraclecorp.com/weblogic:14.1.2.0.0";
   private final String sampleAppUri = "/sample-war/index.jsp";
-  private final String legacyConsoleUri = "/console/login/LoginForm.jsp";
-  private final String wlsConsoleText = "WebLogic Administration Console";
-  private final String wlsConsoleMoved = "This document you requested has moved";
+  private final String adminAppUri = "/management/tenant-monitoring/servers";
+  private final String adminAppText = "RUNNING";
+  private final String adminAppMoved = "This document you requested has moved";
   private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"
       + "/serverRuntimes/adminserver/applicationRuntimes";
   
@@ -232,7 +233,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag1411;
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1411;
     //name of channel available in domain configuration
     String channelName = "default";
     //create a MII domain resource with the auxiliary image
@@ -252,16 +253,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -270,16 +271,16 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
   }
   
   /**
@@ -315,7 +316,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag1411;
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1411;
     //name of channel available in domain configuration
     String channelName = "default";
     // create auxiliary domain creation image
@@ -335,16 +336,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);    
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -352,16 +353,16 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
   }
 
   /**
@@ -398,7 +399,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag1411;
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1411;
     //name of channel available in domain configuration
     String channelName = "internal-admin";
     //create a MII domain resource with the auxiliary image
@@ -418,16 +419,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in secure port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address secure port 8500
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -438,16 +439,16 @@ class ItMiiDomainUpgradeToSecureMode {
     
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in secure port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address secure port 8500
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
   }
 
   /**
@@ -483,7 +484,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag1411;
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1411;
     //name of channel available in domain configuration
     String channelName = "internal-admin";
     //create a MII domain resource with the auxiliary image
@@ -506,16 +507,16 @@ class ItMiiDomainUpgradeToSecureMode {
     
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -530,13 +531,13 @@ class ItMiiDomainUpgradeToSecureMode {
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);   
+        adminAppUri, adminAppText, true, ingressIP);
   }
 
   /**
@@ -566,13 +567,13 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
     });
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prod1411off";
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prod12214off";
     String auxImageTag = getDateAndTimeStamp();
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag12214;
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag12214;
     //name of channel available in domain configuration
     String channelName = "default";
     //create a MII domain resource with the auxiliary image
@@ -592,16 +593,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
 
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -611,16 +612,16 @@ class ItMiiDomainUpgradeToSecureMode {
     
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify admin console is available in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
   }
 
   /**
@@ -657,7 +658,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = WEBLOGIC_IMAGE_NAME + ":" + imageTag12214;
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag12214;
     //name of channel available in domain configuration
     String channelName = "internal-admin";
     //create a MII domain resource with the auxiliary image
@@ -680,16 +681,16 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        legacyConsoleUri, wlsConsoleText, false, ingressIP);
+        adminAppUri, adminAppText, true, ingressIP);
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in port 7001    
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
 
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
@@ -704,13 +705,13 @@ class ItMiiDomainUpgradeToSecureMode {
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, false, ingressIP);
+        sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, false, ingressIP);
+        sampleAppUri, msName, true, ingressIP);
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        legacyConsoleUri, wlsConsoleMoved, false, ingressIP);    
+        adminAppUri, adminAppText, true, ingressIP);
   }
 
   /**
