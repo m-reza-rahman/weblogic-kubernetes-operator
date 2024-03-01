@@ -68,8 +68,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
-//import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
@@ -1076,20 +1075,8 @@ public class CommonMiiTestUtils {
   private static String readRuntimeResource(String adminSvcExtHost, String domainNamespace,
       String adminServerPodName, String resourcePath, String callerName) {
     LoggingFacade logger = getLogger();
-    String result = null;
-    String curlString = null;
-    if (OKE_CLUSTER) {
-      String protocol = "http";
-      String port = "7001";
 
-      curlString = String.format(
-          KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -g -k %s://"
-          + ADMIN_USERNAME_DEFAULT
-          + ":"
-          + ADMIN_PASSWORD_DEFAULT
-          + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
-      curlString = curlString + " --silent --show-error ";
-    } else if (TestConstants.KIND_CLUSTER
+    if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       int port = getServicePort(domainNamespace, adminServerPodName, "internal-t3");
       String domainName = adminServerPodName.split("-" + ADMIN_SERVER_NAME_BASE)[0];
@@ -1120,23 +1107,39 @@ public class CommonMiiTestUtils {
         return null;
       }
     }
-    int adminServiceNodePort
-        = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
-    String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
-    logger.info("hostAndPort = {0} ", hostAndPort);
 
-    curlString = String.format(
+    String curlString = null;
+    if (OKE_CLUSTER_PRIVATEIP) {
+      String protocol = "http";
+      String port = "7001";
+
+      curlString = String.format(
+        KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + " -- curl -g -k %s://"
+          + ADMIN_USERNAME_DEFAULT
+          + ":"
+          + ADMIN_PASSWORD_DEFAULT
+          + "@" + adminServerPodName + ":%s/%s", protocol, port, resourcePath);
+      curlString = curlString + " --silent --show-error ";
+    } else {
+      int adminServiceNodePort
+          = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
+      String host = K8S_NODEPORT_HOST;
+      if (host.contains(":")) {
+        host = "[" + host + "]";
+      }
+      String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
+      logger.info("hostAndPort = {0} ", hostAndPort);
+
+      curlString = String.format(
         "curl -g --user "
-        + ADMIN_USERNAME_DEFAULT
-        + ":"
-        + ADMIN_PASSWORD_DEFAULT
-        + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
-
+          + ADMIN_USERNAME_DEFAULT
+          + ":"
+          + ADMIN_PASSWORD_DEFAULT
+          + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
+    }
     logger.info(callerName + ": curl command {0}", curlString);
+
+    String result = null;
     try {
       result = exec(curlString, true).stdout();
       logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
@@ -1218,7 +1221,7 @@ public class CommonMiiTestUtils {
                                            boolean isSecureMode,
                                            String sslChannelName) {
     LoggingFacade logger = getLogger();
-    if (OKE_CLUSTER) {
+    if (OKE_CLUSTER_PRIVATEIP) {
       return checkWeblogicMBeanInAdminPod(domainNamespace,
           adminServerPodName,
           resourcePath,
