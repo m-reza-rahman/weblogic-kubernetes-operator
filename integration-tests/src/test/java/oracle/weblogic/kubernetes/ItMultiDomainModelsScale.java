@@ -906,9 +906,15 @@ class ItMultiDomainModelsScale {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
+
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host + ":" + nodeportshttp;
+
+
       String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
           + domainUid + "." + domainNamespace + ".adminserver.test"
-          + "' http://" + host + ":" + nodeportshttp
+          + "' http://" + hostAndPort
           + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
       logger.info("Executing curl command {0}", curlCmd);
