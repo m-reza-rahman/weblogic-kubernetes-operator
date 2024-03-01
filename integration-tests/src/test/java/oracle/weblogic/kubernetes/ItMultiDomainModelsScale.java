@@ -296,7 +296,8 @@ class ItMultiDomainModelsScale {
     if (OKE_CLUSTER) {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
-      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      //ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
 
@@ -367,7 +368,8 @@ class ItMultiDomainModelsScale {
     if (OKE_CLUSTER) {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
-      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      //ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
 
@@ -459,7 +461,8 @@ class ItMultiDomainModelsScale {
     if (OKE_CLUSTER) {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
-      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      //ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
 
