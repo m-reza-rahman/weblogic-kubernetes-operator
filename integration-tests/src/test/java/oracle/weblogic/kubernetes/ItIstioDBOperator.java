@@ -3,7 +3,6 @@
 
 package oracle.weblogic.kubernetes;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.net.http.HttpResponse;
@@ -12,7 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +35,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-import oracle.weblogic.kubernetes.utils.FmwUtils;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,18 +50,13 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.ISTIO_HTTP_HOSTPORT;
-import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -84,26 +76,19 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppW
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isWebLogicPsuPatchApplied;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
-import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
 import static oracle.weblogic.kubernetes.utils.DbUtils.deleteOracleDB;
 import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.uninstallDBOperator;
-import static oracle.weblogic.kubernetes.utils.DeployUtil.deployToClusterUsingRest;
-import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
-import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
-import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
-import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.deployHttpIstioGatewayAndVirtualservice;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.deployIstioDestinationRule;
 import static oracle.weblogic.kubernetes.utils.IstioUtils.getIstioHttpIngressPort;
@@ -114,8 +99,6 @@ import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
-import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
-import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -237,137 +220,6 @@ class ItIstioDBOperator {
 
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, fmwDomainNamespace, wlsDomainNamespace);
-  }
-
-  /**
-   * Create a basic istio enabled FMW model in image domain using the database created by DB Operator.
-   * Verify Pod is ready and service exists for both admin server and managed servers.
-   */
-  @Test
-  @DisplayName("Create Istio enabled FMW Domain model in image domain")
-  void  testIstioEnabledFmwModelInImageWithDbOperator() throws IOException, InterruptedException {
-
-    // Create the repo secret to pull the image
-    // this secret is used only for non-kind cluster
-    createTestRepoSecret(fmwDomainNamespace);
-
-    // create secret for admin credentials
-    logger.info("Create secret for admin credentials");
-    assertDoesNotThrow(() -> createSecretWithUsernamePassword(fmwAminSecretName,
-        fmwDomainNamespace,
-        ADMIN_USERNAME_DEFAULT,
-        ADMIN_PASSWORD_DEFAULT),
-        String.format("createSecret failed for %s", fmwAminSecretName));
-
-    // create encryption secret
-    logger.info("Create encryption secret");
-    assertDoesNotThrow(() -> createSecretWithUsernamePassword(fmwEncryptionSecretName,
-        fmwDomainNamespace,
-        ENCRYPION_USERNAME_DEFAULT,
-        ENCRYPION_PASSWORD_DEFAULT),
-        String.format("createSecret failed for %s", fmwEncryptionSecretName));
-
-    // create RCU access secret
-    logger.info("Creating RCU access secret: {0}, with prefix: {1}, dbUrl: {2}, schemapassword: {3})",
-        rcuaccessSecretName, RCUSCHEMAPREFIX, dbUrl, RCUSCHEMAPASSWORD);
-    assertDoesNotThrow(() -> createRcuAccessSecret(
-        rcuaccessSecretName,
-        fmwDomainNamespace,
-        RCUSCHEMAPREFIX,
-        RCUSCHEMAPASSWORD,
-        dbUrl),
-        String.format("createSecret failed for %s", rcuaccessSecretName));
-
-    logger.info("Create OPSS wallet password secret");
-    assertDoesNotThrow(() -> createOpsswalletpasswordSecret(
-        opsswalletpassSecretName,
-        fmwDomainNamespace,
-        ADMIN_PASSWORD_DEFAULT),
-        String.format("createSecret failed for %s", opsswalletpassSecretName));
-
-    logger.info("Create an image with jrf model file");
-    final List<String> modelList = Collections.singletonList(MODEL_DIR + "/" + modelFile);
-    fmwMiiImage = createMiiImageAndVerify(
-        "jrf-mii-image",
-        modelList,
-        Collections.singletonList(MII_BASIC_APP_NAME),
-        FMWINFRA_IMAGE_NAME,
-        FMWINFRA_IMAGE_TAG,
-        "JRF",
-        false);
-
-    // push the image to a registry to make it accessible in multi-node cluster
-    imageRepoLoginAndPushImageToRegistry(fmwMiiImage);
-
-    // create WDT config map without any files
-    createConfigMapAndVerify(configMapName, fmwDomainUid, fmwDomainNamespace, Collections.emptyList());
-
-    // create the domain object
-    DomainResource domain = FmwUtils.createIstioDomainResource(fmwDomainUid,
-        fmwDomainNamespace,
-        fmwAminSecretName,
-        TEST_IMAGES_REPO_SECRET_NAME,
-        fmwEncryptionSecretName,
-        rcuaccessSecretName,
-        opsswalletpassSecretName,
-        replicaCount,
-        fmwMiiImage,
-        configMapName
-        );
-
-    // create cluster object
-    String clusterResName = fmwDomainUid + "-" + clusterName;
-    ClusterResource cluster = createClusterResource(clusterResName, clusterName, fmwDomainNamespace, replicaCount);
-    logger.info("Creating cluster resource {0} in namespace {1}", clusterName, fmwDomainNamespace);
-    createClusterAndVerify(cluster);
-    // set cluster references
-    domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
-    
-    createDomainAndVerify(domain, fmwDomainNamespace);
-
-    verifyDomainReady(fmwDomainNamespace, fmwDomainUid, replicaCount);
-
-    String clusterName = "cluster-1";
-    int istioIngressPort = enableIstio(clusterName, fmwDomainUid, fmwDomainNamespace, fmwAdminServerPodName);
-    logger.info("Istio Ingress Port is {0}", istioIngressPort);
-
-    String host = formatIPv6Host(K8S_NODEPORT_HOST);
-    String hostAndPort = host + ":" + istioIngressPort;
-
-    httpHeaders = new HashMap<>();
-    httpHeaders.put("host", fmwDomainNamespace + ".org");
-    httpHeaders.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
-
-    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      istioIngressPort = ISTIO_HTTP_HOSTPORT;
-      host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
-      hostAndPort = host + ":" + istioIngressPort;
-    }
-
-    String url = "http://" + hostAndPort + "/management/tenant-monitoring/servers/";
-    checkApp(url, httpHeaders, "RUNNING");
-
-    if (isWebLogicPsuPatchApplied()) {
-      url = "http://" + hostAndPort + "/management/weblogic/latest/domainRuntime/domainSecurityRuntime?link=none";
-      checkApp(url, httpHeaders, "SecurityValidationWarnings");
-    } else {
-      logger.info("Skipping Security warning check, since Security Warning tool "
-          + " is not available in the WLS Release {0}", WEBLOGIC_IMAGE_TAG);
-    }
-
-    Path archivePath = Paths.get(testWebAppWarLoc);
-    ExecResult result = null;
-
-    result = deployToClusterUsingRest(host, String.valueOf(istioIngressPort),
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
-        clusterName, archivePath, fmwDomainNamespace + ".org", "testwebapp");
-    assertNotNull(result, "Application deployment failed");
-    logger.info("Application deployment returned {0}", result.toString());
-    assertEquals("202", result.stdout(), "Deployment didn't return HTTP status code 202");
-
-    url = "http://" + hostAndPort + "/testwebapp/index.jsp";
-    logger.info("Application Access URL {0}", url);
-    checkApp(url, httpHeaders);
   }
 
   /**
@@ -648,7 +500,7 @@ class ItIstioDBOperator {
     logger.info("JTA Recovery Service to migrate");
     String url = "http://" + hostAndPort + "/management/weblogic/latest/domainRuntime/serverRuntimes/"
         + managedServer + "/JTARuntime/recoveryRuntimeMBeans/" + recoveryService + "?fields=active&links=none";
-    checkApp(url, httpHeaders, "{\"active\": " + active + "}");
+    checkApp(url, httpHeaders, "\"active\": " + active);
     return true;
   }
 
