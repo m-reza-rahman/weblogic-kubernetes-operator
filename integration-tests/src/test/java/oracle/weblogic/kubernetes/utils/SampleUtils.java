@@ -40,7 +40,7 @@ public class SampleUtils {
 
   private static boolean pathExistsInKindCluster(String hostPath, Map<String, String> envMap) {
     String command = WLSIMG_BUILDER + " exec kind-worker sh -c \"ls / \" ";
-    ExecResult result =Command.withParams(
+    ExecResult result = Command.withParams(
         new CommandParams()
             .command(command)
             .env(envMap)
