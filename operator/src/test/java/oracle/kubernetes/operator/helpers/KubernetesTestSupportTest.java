@@ -608,7 +608,7 @@ class KubernetesTestSupportTest {
     final OffsetDateTime initialCreationTime = getPodCreationTime();
 
     SystemClockTestSupport.increment();
-    testSupport.doAfterCall(POD, "deletePod", this::definePodResource);
+    testSupport.doAfterCall(POD, "delete", this::definePodResource);
     testSupport.runSteps(RequestBuilder.POD.delete("ns", "pod", new DefaultResponseStep<>()));
 
     assertTrue(getPodCreationTime().isAfter(initialCreationTime));

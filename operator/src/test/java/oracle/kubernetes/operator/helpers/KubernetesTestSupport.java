@@ -119,8 +119,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
   private static final Pattern FIELD_PATTERN
         = Pattern.compile("(" + PATH_PATTERN + ")(" + OP_PATTERN + ")(" + VALUE_PATTERN + ")");
 
-  public static final String DELETE_POD = "deletePod";
-
   private final Map<String, DataRepository<? extends KubernetesType>> repositories = new HashMap<>();
   private final Map<Class<?>, String> dataTypes = new HashMap<>();
   private Failure failure;
@@ -361,7 +359,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     selectRepository(resourceType).addUpdateAction(consumer);
   }
 
-  public void doOnDelete(String resourceType, Consumer<Integer> consumer) {
+  public void doOnDelete(String resourceType, Consumer<Long> consumer) {
     selectRepository(resourceType).addDeleteAction(consumer);
   }
 
@@ -803,23 +801,26 @@ public class KubernetesTestSupport extends FiberTestSupport {
         @Override
         public KubernetesApiResponse<A> delete(String name, DeleteOptions deleteOptions) {
           return new CallContext<A>(
-              Operation.delete, getResourceName(apiTypeClass), null, name)
-              .execute();
+                  Operation.delete, getResourceName(apiTypeClass), null, name, null, null,
+                  null, null, deleteOptions.getGracePeriodSeconds())
+                  .execute();
         }
 
         @Override
         public KubernetesApiResponse<A> delete(String namespace, String name, DeleteOptions deleteOptions) {
           return new CallContext<A>(
-              Operation.delete, getResourceName(apiTypeClass), namespace, name)
-              .execute();
+                  Operation.delete, getResourceName(apiTypeClass), namespace, name, null, null,
+                  null, null, deleteOptions.getGracePeriodSeconds())
+                  .execute();
         }
 
         @Override
         public KubernetesApiResponse<RequestBuilder.V1StatusObject> deleteCollection(
                 String namespace, ListOptions listOptions, DeleteOptions deleteOptions) {
           return new CallContext<RequestBuilder.V1StatusObject>(
-              Operation.deleteCollection, getResourceName(apiTypeClass), namespace, null)
-              .execute();
+                  Operation.deleteCollection, getResourceName(apiTypeClass), null, null, null, null,
+                  listOptions.getFieldSelector(), listOptions.getLabelSelector(), deleteOptions.getGracePeriodSeconds())
+                  .execute();
         }
 
         @Override
@@ -851,7 +852,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     private final Map<String, List<T>> continuations = new HashMap<>();
     private List<Consumer<T>> onCreateActions = new ArrayList<>();
     private List<Consumer<T>> onUpdateActions = new ArrayList<>();
-    private List<Consumer<Integer>> onDeleteActions = new ArrayList<>();
+    private List<Consumer<Long>> onDeleteActions = new ArrayList<>();
     private Method getStatusMethod;
     private Method setStatusMethod;
 
@@ -932,12 +933,12 @@ public class KubernetesTestSupport extends FiberTestSupport {
       }
     }
 
-    T deleteResource(String name, String namespace, String call) {
+    T deleteResource(String name, String namespace) {
       if (!hasElementWithName(name)) {
         throw new NotFoundException(getResourceName(), name, namespace);
       }
       data.remove(name);
-      return getDeleteResult(name, namespace, call);
+      return getDeleteResult(name, namespace, getResourceName());
     }
 
     @SuppressWarnings("unchecked")
@@ -1077,8 +1078,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     @SuppressWarnings("unchecked")
-    private T getDeleteResult(String name, String namespace, String call) {
-      if (DELETE_POD.equals(call)) {
+    private T getDeleteResult(String name, String namespace, String resource) {
+      if (POD.equals(resource)) {
         return (T) new V1Pod().metadata(new V1ObjectMeta().name(name).namespace(namespace));
       } else {
         return (T) new RequestBuilder.V1StatusObject(new V1Status().code(200));
@@ -1159,11 +1160,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
       onUpdateActions.add((Consumer<T>) consumer);
     }
 
-    void addDeleteAction(Consumer<Integer> consumer) {
+    void addDeleteAction(Consumer<Long> consumer) {
       onDeleteActions.add(consumer);
     }
 
-    public void sendDeleteCallback(Integer gracePeriodSeconds) {
+    public void sendDeleteCallback(Long gracePeriodSeconds) {
       onDeleteActions.forEach(a -> a.accept(gracePeriodSeconds));
     }
 
@@ -1242,8 +1243,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     @Override
-    T deleteResource(String name, String namespace, String call) {
-      return inNamespace(namespace).deleteResource(name, namespace, call);
+    T deleteResource(String name, String namespace) {
+      return inNamespace(namespace).deleteResource(name, namespace);
     }
 
     private DataRepository<T> inNamespace(String namespace) {
@@ -1293,11 +1294,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
   private class CallContext<D extends KubernetesType> {
     private final String fieldSelector;
     private final String[] labelSelector;
-    private final Integer gracePeriodSeconds;
+    private final Long gracePeriodSeconds;
     private String resourceType;
     private String requestNamespace;
     private String requestName;
-    private String requstCall;
     private D requestBody;
     private Operation operation;
     private V1Patch patch;
@@ -1317,7 +1317,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     CallContext(Operation operation, String resourceType,
                 String namespace, String name, D body, V1Patch patch,
-                String fieldSelector, String labelSelector, Integer gracePeriodSeconds) {
+                String fieldSelector, String labelSelector, Long gracePeriodSeconds) {
       this.operation = operation;
       this.resourceType = resourceType;
       this.requestNamespace = namespace;
@@ -1364,9 +1364,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
           }
         }
 
+        numCalls++;
         return operation.execute(this, selectRepository(resourceType));
       } finally {
-        if (afterCallAction != null && afterCallAction.matches(resourceType, requstCall)) {
+        if (afterCallAction != null && afterCallAction.matches(resourceType, operation.name())) {
           afterCallAction.doAction();
           afterCallAction = null;
         }
@@ -1391,7 +1392,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     private <T extends KubernetesType> KubernetesApiResponse<T> deleteResource(DataRepository<T> dataRepository) {
       dataRepository.sendDeleteCallback(gracePeriodSeconds);
-      return new KubernetesApiResponse<>(dataRepository.deleteResource(requestName, requestNamespace, requstCall));
+      try {
+        return new KubernetesApiResponse<>(dataRepository.deleteResource(requestName, requestNamespace));
+      } catch (NotFoundException nfe) {
+        return new KubernetesApiResponse<>(new V1Status().message(nfe.getMessage()), HttpURLConnection.HTTP_NOT_FOUND);
+      }
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> patchResource(DataRepository<T> dataRepository) {

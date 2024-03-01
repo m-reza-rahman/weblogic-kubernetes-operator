@@ -15,7 +15,11 @@ import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.*;
+import io.kubernetes.client.openapi.models.V1ListMeta;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodList;
+import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.CreateOptions;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -150,7 +154,8 @@ public abstract class RequestStep<
         String resourceSingular,
         String name,
         GetOptions getOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "get");
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+              resourceSingular, "get");
       this.name = name;
       this.getOptions = getOptions;
     }
@@ -196,7 +201,8 @@ public abstract class RequestStep<
         String namespace,
         String name,
         GetOptions getOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "get");
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+              resourceSingular, "get");
       this.namespace = namespace;
       this.name = name;
       this.getOptions = getOptions;
@@ -621,7 +627,8 @@ public abstract class RequestStep<
         A object,
         Function<A, Object> status,
         UpdateOptions updateOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "updateStatus");
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+              resourceSingular, "updateStatus");
       this.object = object;
       this.status = status;
       this.updateOptions = updateOptions;
@@ -694,7 +701,8 @@ public abstract class RequestStep<
         String namespace,
         String name,
         String container) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "logs");
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+              resourceSingular, "logs");
       this.namespace = namespace;
       this.name = name;
       this.container = container;
@@ -744,7 +752,8 @@ public abstract class RequestStep<
         String namespace,
         ListOptions listOptions,
         DeleteOptions deleteOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "deleteCollection");
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+              resourceSingular, "deleteCollection");
       this.namespace = namespace;
       this.listOptions = listOptions;
       this.deleteOptions = deleteOptions;

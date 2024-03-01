@@ -56,7 +56,7 @@ class StuckPodTest {
   private final V1Pod managedPod1 = defineManagedPod(SERVER_POD_1);
   private final V1Pod managedPod2 = defineManagedPod(SERVER_POD_2);
   private final V1Pod foreignPod = defineForeignPod(FOREIGN_POD);
-  private Integer gracePeriodSeconds;
+  private Long gracePeriodSeconds;
   private TestUtils.ConsoleHandlerMemento consoleMemento;
 
   @BeforeEach
@@ -126,10 +126,10 @@ class StuckPodTest {
 
     processing.checkStuckPods(NS);
 
-    assertThat(gracePeriodSeconds, equalTo(0));
+    assertThat(gracePeriodSeconds, equalTo(0L));
   }
 
-  private void recordGracePeriodSeconds(Integer gracePeriodSeconds) {
+  private void recordGracePeriodSeconds(Long gracePeriodSeconds) {
     this.gracePeriodSeconds = gracePeriodSeconds;
   }
 

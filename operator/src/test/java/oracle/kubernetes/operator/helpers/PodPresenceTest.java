@@ -580,7 +580,7 @@ class PodPresenceTest {
         .map(createdPodNames::add);
   }
 
-  private void recordPodDeletion(Integer value) {
+  private void recordPodDeletion(Long value) {
     numPodsDeleted++;
   }
 

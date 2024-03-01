@@ -961,7 +961,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     ignoreIntrospectorFailureLogs();
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
     definePreviousFailedIntrospectionWithoutPodLog();
-    testSupport.doAfterCall(JOB, "deleteJob", this::defineNewIntrospectionResult);
+    testSupport.doAfterCall(JOB, "delete", this::defineNewIntrospectionResult);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1033,7 +1033,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     ignoreIntrospectorFailureLogs();
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
     definePreviousFailedIntrospection();
-    testSupport.doAfterCall(JOB, "deleteJob", this::recordJobDeleted);
+    testSupport.doAfterCall(JOB, "delete", this::recordJobDeleted);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1064,7 +1064,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
     defineFailedIntrospectionWithImagePullError("ErrImagePull");
     testSupport.doOnCreate(JOB, this::recordJob);
-    testSupport.doAfterCall(JOB, "deleteJob", this::replaceFailedJobPodWithSuccess);
+    testSupport.doAfterCall(JOB, "delete", this::replaceFailedJobPodWithSuccess);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1358,7 +1358,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
     defineFailedIntrospectionWithImagePullError("ImagePullBackOff");
     testSupport.doOnCreate(JOB, this::recordJob);
-    testSupport.doAfterCall(JOB, "deleteJob", this::replaceFailedJobPodWithSuccess);
+    testSupport.doAfterCall(JOB, "delete", this::replaceFailedJobPodWithSuccess);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 
@@ -1372,7 +1372,7 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.addToPacket(DOMAIN_TOPOLOGY, createDomainConfig("cluster-1"));
     defineFailedIntrospectionWithDeadlineExceeded();
     testSupport.doOnCreate(JOB, this::recordJob);
-    testSupport.doAfterCall(JOB, "deleteJob", this::replaceFailedJobPodWithSuccess);
+    testSupport.doAfterCall(JOB, "delete", this::replaceFailedJobPodWithSuccess);
 
     testSupport.runSteps(JobHelper.createIntrospectionStartStep());
 

@@ -219,9 +219,9 @@ public abstract class Step {
    */
   protected static final StepAction doNext(Step step, Packet packet) {
     if (isCancelled(packet)) {
-      return END;
+      return doEnd(packet);
     }
-    return Optional.ofNullable(step).map(s -> adapt(s, packet).apply(packet)).orElse(END);
+    return Optional.ofNullable(step).map(s -> adapt(s, packet).apply(packet)).orElse(doEnd(packet));
   }
 
   protected static final boolean isCancelled(Packet packet) {
