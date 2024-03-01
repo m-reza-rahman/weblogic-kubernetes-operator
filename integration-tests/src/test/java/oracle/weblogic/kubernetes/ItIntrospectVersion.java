@@ -17,15 +17,19 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1Ingress;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.AdminServer;
@@ -39,6 +43,7 @@ import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.domain.ServerService;
+import oracle.weblogic.kubernetes.actions.impl.Ingress;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -402,7 +407,7 @@ class ItIntrospectVersion {
    */
   @Test
   @DisplayName("Test introspectVersion rolling server pods when admin server port is changed")
-  void testDomainIntrospectVersionRolling() {
+  void testDomainIntrospectVersionRolling() throws ApiException {
 
     final int newAdminPort = 7005;
 
@@ -494,6 +499,11 @@ class ItIntrospectVersion {
     List<String> managedServerNames = new ArrayList<>();
     for (int i = 1; i <= cluster1ReplicaCount; i++) {
       managedServerNames.add(cluster1ManagedServerNameBase + i);
+    }
+    
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      updateIngress(newAdminPort);
     }
 
     //verify admin server accessibility and the health of cluster members
@@ -1552,6 +1562,15 @@ class ItIntrospectVersion {
     domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
     
     return domain;
+  }
+  
+  private void updateIngress(int newAdminPort) throws ApiException {
+    String ingressName = introDomainNamespace + "-" + domainUid + "-" + adminServerName;
+    Optional<V1Ingress> ingress = Ingress.getIngress(introDomainNamespace, ingressName);
+    ingress.get().getSpec().getRules().getFirst().getHttp()
+        .getPaths().getFirst().getBackend().getService()
+        .setPort(new V1ServiceBackendPort().number(newAdminPort));
+
   }
   
 }

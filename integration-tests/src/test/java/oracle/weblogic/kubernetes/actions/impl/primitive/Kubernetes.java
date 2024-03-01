@@ -3318,7 +3318,7 @@ public class Kubernetes {
   public static V1IngressList listNamespacedIngresses(String namespace) throws ApiException {
     V1IngressList ingressList;
     try {
-      NetworkingV1Api apiInstance = new NetworkingV1Api(apiClient);
+      NetworkingV1Api apiInstance = new NetworkingV1Api(apiClient);      
       ingressList = apiInstance.listNamespacedIngress(
           namespace, // namespace
           PRETTY, // String | If 'true', then the output is pretty printed.
@@ -3338,6 +3338,31 @@ public class Kubernetes {
       throw apex;
     }
     return ingressList;
+  }
+  
+  /**
+   * Update Ingress in the given namespace.
+   *
+   * @param namespace name of the namespace
+   * @param ingress V1Ingress body
+   * @throws ApiException when listing fails
+   */
+  public static void updateNamespacedIngresses(String namespace, V1Ingress ingress) throws ApiException {
+    try {
+      NetworkingV1Api apiInstance = new NetworkingV1Api(apiClient);
+      apiInstance.replaceNamespacedIngress(
+          ingress.getMetadata().getName(), // ingress name
+          namespace, //namespace
+          ingress, //ingress body
+          PRETTY, //pretty print output
+          null, // dryRun
+          null, // field manager
+          null // filed validation
+      );
+    } catch (ApiException apex) {
+      getLogger().warning(apex.getResponseBody());
+      throw apex;
+    }
   }
 
   /**
