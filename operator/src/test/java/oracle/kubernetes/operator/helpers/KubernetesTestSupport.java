@@ -1045,7 +1045,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
       T current = data.get(name);
       if (current == null) {
-        throw new IllegalStateException();
+        throw new NotFoundException(getResourceName(), name, null);
       }
       copyResourceStatus(resource, current);
       incrementResourceVersion(getMetadata(current));
@@ -1387,7 +1387,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
     @SuppressWarnings("unchecked")
     private <T extends KubernetesType> KubernetesApiResponse<T> replaceResourceStatus(
         DataRepository<T> dataRepository) {
-      return new KubernetesApiResponse<>(dataRepository.replaceResourceStatus(requestName, (T) requestBody));
+      try {
+        return new KubernetesApiResponse<>(dataRepository.replaceResourceStatus(requestName, (T) requestBody));
+      } catch (NotFoundException nfe) {
+        return new KubernetesApiResponse<>(new V1Status().message(nfe.getMessage()), HttpURLConnection.HTTP_NOT_FOUND);
+      }
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> deleteResource(DataRepository<T> dataRepository) {

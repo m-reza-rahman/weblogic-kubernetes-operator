@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.common.KubernetesType;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Status;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
@@ -274,6 +275,11 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
 
   protected StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<T> callResponse) {
     addDomainFailureStatus(packet, callResponse.getStatus());
+    try {
+      callResponse.throwsApiException();
+    } catch (ApiException ae) {
+      return doTerminate(ae, packet);
+    }
     return doEnd(packet);
   }
 
