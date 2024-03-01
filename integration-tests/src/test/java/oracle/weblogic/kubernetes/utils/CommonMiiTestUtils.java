@@ -68,7 +68,8 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+//import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
@@ -1077,7 +1078,7 @@ public class CommonMiiTestUtils {
     LoggingFacade logger = getLogger();
     String result = null;
     String curlString = null;
-    if (OKE_CLUSTER_PRIVATEIP) {
+    if (OKE_CLUSTER) {
       String protocol = "http";
       String port = "7001";
 
@@ -1217,7 +1218,7 @@ public class CommonMiiTestUtils {
                                            boolean isSecureMode,
                                            String sslChannelName) {
     LoggingFacade logger = getLogger();
-    if (OKE_CLUSTER_PRIVATEIP) {
+    if (OKE_CLUSTER) {
       return checkWeblogicMBeanInAdminPod(domainNamespace,
           adminServerPodName,
           resourcePath,
