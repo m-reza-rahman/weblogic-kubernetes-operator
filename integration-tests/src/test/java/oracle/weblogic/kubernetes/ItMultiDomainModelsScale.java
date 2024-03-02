@@ -821,7 +821,10 @@ class ItMultiDomainModelsScale {
 
     if (!OKD) {
       logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-      if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      if (OKE_CLUSTER) {
+        createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
+            false, nginxHelmParams.getIngressClassName(), false, 0);
+      } else if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
         createIngressForDomainAndVerify(domainUid, domainNamespace, nodeportshttp, clusterNameMsPortMap,
             true, nginxHelmParams.getIngressClassName(), true, ADMIN_SERVER_PORT);
       } else {
@@ -901,7 +904,6 @@ class ItMultiDomainModelsScale {
   private void verifyReadyAppUsingIngressController(String domainUid, String domainNamespace) {
 
     if (!OKD) {
-
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
         host = "[" + host + "]";
@@ -910,7 +912,6 @@ class ItMultiDomainModelsScale {
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host + ":" + nodeportshttp;
-
 
       String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
           + domainUid + "." + domainNamespace + ".adminserver.test"
