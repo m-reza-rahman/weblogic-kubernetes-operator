@@ -297,7 +297,7 @@ class ItMultiDomainModelsScale {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
       //ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
-      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, ADMIN_SERVER_PORT, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
 
@@ -712,9 +712,13 @@ class ItMultiDomainModelsScale {
       if (host.contains(":")) {
         host = "[" + host + "]";
       }
+
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : getHostAndPort(host, nodeportshttp);
+
       return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s/%s/index.jsp",
-          domainUid + "." + domainNamespace + "." + clusterName + ".test",
-          getHostAndPort(host, nodeportshttp), appContextRoot);
+          domainUid + "." + domainNamespace + "." + clusterName + ".test", hostAndPort, appContextRoot);
     }
   }
 
@@ -947,6 +951,40 @@ class ItMultiDomainModelsScale {
   private void verifyReadyAppUsingIngressController(String domainUid, String domainNamespace) {
 
     if (!OKD) {
+      if (OKE_CLUSTER) {
+        final String adminServerPodName = domainUid + "-admin-server";
+        String resourcePath = "/weblogic/ready";
+        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
+        logger.info("result in OKE_CLUSTER is {0}", result.toString());
+        assertEquals(0, result.exitValue(), "Failed to access WebLogic ready app");
+      } else {
+        String host = K8S_NODEPORT_HOST;
+        if (host.contains(":")) {
+          host = "[" + host + "]";
+        }
+        String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
+            + domainUid + "." + domainNamespace + ".adminserver.test"
+            + "' http://" + host + ":" + nodeportshttp
+            + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+
+        logger.info("Executing curl command {0}", curlCmd);
+        testUntil(() -> callWebAppAndWaitTillReady(curlCmd, 5),
+            logger,
+            "Ready app on domain {0} in namespace {1} is accessible",
+            domainUid,
+            domainNamespace);
+      }
+      logger.info("Ready app on domain1 is accessible");
+    } else {
+      logger.info("Skipping the admin console login test using ingress controller in OKD environment");
+    }
+  }
+
+  /*
+  // Verify admin console login using ingress controller
+  private void verifyReadyAppUsingIngressController(String domainUid, String domainNamespace) {
+
+    if (!OKD) {
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
         host = "[" + host + "]";
@@ -972,7 +1010,7 @@ class ItMultiDomainModelsScale {
     } else {
       logger.info("Skipping the admin console login test using ingress controller in OKD environment");
     }
-  }
+  }*/
 
   private String  createIngressHostRoutingIfNotExists(String domainNamespace,
                                                       String domainUid) {
