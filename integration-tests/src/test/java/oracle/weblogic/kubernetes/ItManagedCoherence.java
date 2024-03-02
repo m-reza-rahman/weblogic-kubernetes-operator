@@ -28,6 +28,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.BuildApplication;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -39,6 +40,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -211,6 +213,16 @@ class ItManagedCoherence {
             -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
             "Getting Ingress Service node port failed");
         logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
+
+        String command = KUBERNETES_CLI + " get all --all-namespaces";
+        logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+        try {
+          ExecResult result0 = ExecCommand.exec(command, true);
+          logger.info("result is: {0}", result0.toString());
+        } catch (IOException | InterruptedException ex) {
+          ex.printStackTrace();
+        }
 
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
             ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
