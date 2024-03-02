@@ -190,12 +190,19 @@ class ItManagedCoherence {
             clusterNameMsPortMap, true, null, ingressClass);
         hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         ingressServiceNodePort = TRAEFIK_INGRESS_HTTP_HOSTPORT;
+
+        assertTrue(checkCoheranceApp(hostAndPort, hostHeader), "Failed to access Coherance Application");
+        // test adding data to the cache and retrieving them from the cache
+        boolean testCompletedSuccessfully = assertDoesNotThrow(()
+            -> coherenceCacheTest(hostHeader, ingressServiceNodePort), "Test Coherence cache failed");
+        assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
       } else {
         // clusterNameMsPortMap.put(clusterName, managedServerPort);
         logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
         createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-            traefikParams.getIngressClassName());
+            traefikHelmParams.getReleaseName());
 
+        String clusterHostname = domainUid + "." + domainNamespace + ".cluster-1.test";
         // get ingress service Name and Nodeport
         String ingressServiceName = traefikHelmParams.getReleaseName();
         String traefikNamespace = traefikHelmParams.getNamespace();
@@ -207,14 +214,14 @@ class ItManagedCoherence {
 
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
             ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-            : getHostAndPort(hostHeader, ingressServiceNodePort);
-      }
+            : getHostAndPort(clusterHostname, ingressServiceNodePort);
 
-      assertTrue(checkCoheranceApp(hostAndPort, hostHeader), "Failed to access Coherance Application");
-      // test adding data to the cache and retrieving them from the cache
-      boolean testCompletedSuccessfully = assertDoesNotThrow(()
-          -> coherenceCacheTest(hostHeader, ingressServiceNodePort), "Test Coherence cache failed");
-      assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
+        assertTrue(checkCoheranceApp(clusterHostname, hostAndPort), "Failed to access Coherance App cation");
+        // test adding data to the cache and retrieving them from the cache
+        boolean testCompletedSuccessfully = assertDoesNotThrow(()
+            -> coherenceCacheTest(clusterHostname, ingressServiceNodePort), "Test Coherence cache failed");
+        assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
+      }
     }
   }
 
