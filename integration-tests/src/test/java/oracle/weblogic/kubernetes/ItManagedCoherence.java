@@ -28,7 +28,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.BuildApplication;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -40,7 +39,6 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -135,9 +133,9 @@ class ItManagedCoherence {
     // install and verify Traefik if not running on OKD
     if (!OKD) {
       if (OKE_CLUSTER) {
-        traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();;
+        traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
       } else if (TestConstants.KIND_CLUSTER
-          && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+            && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
         traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
         traefikHelmParams = traefikParams.getHelmParams();
       }
@@ -197,19 +195,12 @@ class ItManagedCoherence {
             clusterNameMsPortMap, true, null, ingressClass);
         hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         ingressServiceNodePort = TRAEFIK_INGRESS_HTTP_HOSTPORT;
-
-        assertTrue(checkCoheranceApp(hostAndPort, hostHeader), "Failed to access Coherance Application");
-        // test adding data to the cache and retrieving them from the cache
-        boolean testCompletedSuccessfully = assertDoesNotThrow(()
-            -> coherenceCacheTest(hostHeader, ingressServiceNodePort), "Test Coherence cache failed");
-        assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
       } else {
         // clusterNameMsPortMap.put(clusterName, managedServerPort);
         logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
         createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-            traefikHelmParams.getReleaseName());
+            traefikParams.getIngressClassName());
 
-        String clusterHostname = domainUid + "." + domainNamespace + ".cluster-1.test";
         // get ingress service Name and Nodeport
         String ingressServiceName = traefikHelmParams.getReleaseName();
         String traefikNamespace = traefikHelmParams.getNamespace();
@@ -219,26 +210,16 @@ class ItManagedCoherence {
             "Getting Ingress Service node port failed");
         logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
 
-        String command = KUBERNETES_CLI + " get all --all-namespaces";
-        logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-        try {
-          ExecResult result0 = ExecCommand.exec(command, true);
-          logger.info("result is: {0}", result0.toString());
-        } catch (IOException | InterruptedException ex) {
-          ex.printStackTrace();
-        }
-
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
             ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-            : getHostAndPort(clusterHostname, ingressServiceNodePort);
-
-        assertTrue(checkCoheranceApp(hostAndPort, clusterHostname), "Failed to access Coherance App cation");
-        // test adding data to the cache and retrieving them from the cache
-        boolean testCompletedSuccessfully = assertDoesNotThrow(()
-            -> coherenceCacheTest(clusterHostname, ingressServiceNodePort), "Test Coherence cache failed");
-        assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
+            : getHostAndPort(hostHeader, ingressServiceNodePort);
       }
+
+      assertTrue(checkCoheranceApp(hostAndPort, hostHeader), "Failed to access Coherance Application");
+      // test adding data to the cache and retrieving them from the cache
+      boolean testCompletedSuccessfully = assertDoesNotThrow(()
+          -> coherenceCacheTest(hostHeader, ingressServiceNodePort), "Test Coherence cache failed");
+      assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
     }
   }
 
