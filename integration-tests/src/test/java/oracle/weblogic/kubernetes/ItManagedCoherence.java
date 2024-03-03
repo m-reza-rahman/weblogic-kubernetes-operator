@@ -233,7 +233,7 @@ class ItManagedCoherence {
             ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
             : getHostAndPort(clusterHostname, ingressServiceNodePort);
 
-        assertTrue(checkCoheranceApp(clusterHostname, hostAndPort), "Failed to access Coherance App cation");
+        assertTrue(checkCoheranceApp(hostAndPort, clusterHostname), "Failed to access Coherance App cation");
         // test adding data to the cache and retrieving them from the cache
         boolean testCompletedSuccessfully = assertDoesNotThrow(()
             -> coherenceCacheTest(clusterHostname, ingressServiceNodePort), "Test Coherence cache failed");
