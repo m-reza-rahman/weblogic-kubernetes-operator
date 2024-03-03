@@ -455,29 +455,6 @@ public class TestActions {
   }
 
   /**
-   * Scale the cluster of the domain in the specified namespace using REST API.
-   *
-   * @param domainUid domainUid of the domain to be scaled
-   * @param clusterName name of the WebLogic cluster to be scaled in the domain
-   * @param numOfServers number of servers to be scaled to
-   * @param opPodName operator pod name
-   * @param opPort operator port
-   * @param opNamespace namespace of WebLogic operator
-   * @param opServiceAccount the service account for operator
-   * @return true if REST call succeeds, false otherwise
-   */
-  public static boolean scaleClusterWithRestApiInOpPod(String domainUid,
-                                                       String clusterName,
-                                                       int numOfServers,
-                                                       String opPodName,
-                                                       int opPort,
-                                                       String opNamespace,
-                                                       String opServiceAccount) {
-    return Domain.scaleClusterWithRestApiInOpPod(domainUid, clusterName, numOfServers,
-      opPodName, opPort, opNamespace, opServiceAccount);
-  }
-
-  /**
    * Scale the cluster of the domain in the specified namespace with REST API.
    *
    * @param domainUid domainUid of the domain to be scaled
