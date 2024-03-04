@@ -6,6 +6,7 @@ package oracle.kubernetes.operator.http.rest;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,15 +14,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.apis.CustomObjectsApi;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1OwnerReference;
@@ -30,7 +32,11 @@ import io.kubernetes.client.openapi.models.V1TokenReviewStatus;
 import io.kubernetes.client.openapi.models.V1UserInfo;
 import io.kubernetes.client.util.ClientBuilder;
 import io.kubernetes.client.util.credentials.AccessTokenAuthentication;
-import io.kubernetes.client.util.generic.GenericKubernetesApi;
+import io.kubernetes.client.util.generic.options.CreateOptions;
+import io.kubernetes.client.util.generic.options.GetOptions;
+import io.kubernetes.client.util.generic.options.ListOptions;
+import io.kubernetes.client.util.generic.options.PatchOptions;
+import io.kubernetes.client.util.generic.options.UpdateOptions;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import jakarta.ws.rs.WebApplicationException;
@@ -39,6 +45,7 @@ import jakarta.ws.rs.core.Response.Status;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.OperatorMain;
+import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.AuthenticationProxy;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy;
 import oracle.kubernetes.operator.helpers.AuthorizationProxy.Operation;
@@ -54,7 +61,6 @@ import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
-import oracle.kubernetes.weblogic.domain.model.DomainList;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainSpec;
 
@@ -86,10 +92,8 @@ public class RestBackendImpl implements RestBackend {
   private final String principal;
   private final Supplier<Collection<String>> domainNamespaces;
   private V1UserInfo userInfo;
-  private ApiClient client;
-  private GenericKubernetesApi<DomainResource, DomainList> domainApi;
-  private GenericKubernetesApi<ClusterResource, ClusterList> clusterApi;
-  private CustomObjectsApi clusterApiUntyped;
+  private Gson gson;
+  private UnaryOperator<ApiClient> clientSupplier;
 
   /**
    * Construct a RestBackendImpl that is used to handle one WebLogic operator REST request.
@@ -108,15 +112,12 @@ public class RestBackendImpl implements RestBackend {
       if (userInfo != null) {
         builder.setAuthentication(new AccessTokenAuthentication(accessToken));
       }
-      client = builder.build();
+      ApiClient client = builder.build();
+      gson = client.getJSON().getGson();
+      clientSupplier = (c) -> client;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    domainApi = new GenericKubernetesApi<>(
-        DomainResource.class, DomainList.class, "weblogic.oracle", "v9", "domains", client);
-    clusterApi = new GenericKubernetesApi<>(
-        ClusterResource.class, ClusterList.class, "weblogic.oracle", "v1", "clusters", client);
-    clusterApiUntyped = new CustomObjectsApi(client);
   }
 
   private void authorize(String domainUid, Operation operation) {
@@ -206,7 +207,7 @@ public class RestBackendImpl implements RestBackend {
 
   private List<DomainResource> getDomains(String ns) {
     try {
-      return domainApi.list(ns).throwsApiException().getObject().getItems();
+      return RequestBuilder.DOMAIN.list(ns, new ListOptions(), clientSupplier).getItems();
     } catch (ApiException e) {
       throw handleApiException(e);
     }
@@ -214,7 +215,7 @@ public class RestBackendImpl implements RestBackend {
 
   private List<ClusterResource> getClusterResources(String ns) {
     try {
-      return clusterApi.list(ns).throwsApiException().getObject().getItems();
+      return RequestBuilder.CLUSTER.list(ns, new ListOptions(), clientSupplier).getItems();
     } catch (ApiException e) {
       throw handleApiException(e);
     }
@@ -390,8 +391,9 @@ public class RestBackendImpl implements RestBackend {
 
   private void patchCluster(ClusterResource cluster, JsonPatchBuilder patchBuilder) {
     try {
-      clusterApi.patch(cluster.getMetadata().getNamespace(), cluster.getMetadata().getName(),
-          V1Patch.PATCH_FORMAT_JSON_PATCH, new V1Patch(patchBuilder.build().toString())).throwsApiException();
+      RequestBuilder.CLUSTER.patch(cluster.getMetadata().getNamespace(), cluster.getMetadata().getName(),
+              V1Patch.PATCH_FORMAT_JSON_PATCH, new V1Patch(patchBuilder.build().toString()),
+              new PatchOptions(), clientSupplier);
     } catch (ApiException e) {
       throw handleApiException(e);
     }
@@ -413,10 +415,22 @@ public class RestBackendImpl implements RestBackend {
                 .controller(true)))
         .withReplicas(replicas);
     try {
-      clusterApi.create(cluster).throwsApiException();
+      RequestBuilder.CLUSTER.create(cluster, new CreateOptions(), clientSupplier);
     } catch (ApiException e) {
       throw handleApiException(e);
     }
+  }
+
+  private Map<String, Object> toMap(ClusterResource cr) {
+    return gson.fromJson(gson.toJson(cr), new TypeToken<HashMap<String, Object>>() {}.getType());
+  }
+
+  private Map<String, Object> toMap(ClusterList list) {
+    return gson.fromJson(gson.toJson(list), new TypeToken<HashMap<String, Object>>() {}.getType());
+  }
+
+  private ClusterResource toResource(Map<String, Object> map) {
+    return gson.fromJson(gson.toJson(map), new TypeToken<ClusterResource>() {}.getType());
   }
 
   @Override
@@ -428,8 +442,10 @@ public class RestBackendImpl implements RestBackend {
     String name = (String) metadata.get("name");
     Object currentCluster = null;
     try {
-      currentCluster = clusterApiUntyped.getNamespacedCustomObject(
-          "weblogic.oracle", "v1", namespace, "clusters", name);
+      ClusterResource cr = RequestBuilder.CLUSTER.get(namespace, name, new GetOptions(), clientSupplier);
+      if (cr != null) {
+        currentCluster = toMap(cr);
+      }
     } catch (ApiException apiException) {
       if (apiException.getCode() != KubernetesConstants.HTTP_NOT_FOUND) {
         throw handleApiException(apiException);
@@ -438,8 +454,9 @@ public class RestBackendImpl implements RestBackend {
 
     if (currentCluster == null) {
       try {
-        Object result = clusterApiUntyped.createNamespacedCustomObject(
-            "weblogic.oracle", "v1", namespace, "clusters", cluster, null, null, null);
+        ClusterResource cr = RequestBuilder.CLUSTER.create(toResource((Map<String, Object>)currentCluster),
+                new CreateOptions(), clientSupplier);
+        Object result = cr != null ? toMap(cr) : null;
         if (LOGGER.isFineEnabled()) {
           LOGGER.fine("Created Cluster: " + result);
         }
@@ -452,8 +469,8 @@ public class RestBackendImpl implements RestBackend {
     metadata.put("resourceVersion", Optional.ofNullable((Map<String, Object>) ((Map<String, Object>) currentCluster)
         .get("metadata")).map(m -> m.get("resourceVersion")).orElse(null));
     try {
-      Object result = clusterApiUntyped.replaceNamespacedCustomObject(
-          "weblogic.oracle", "v1", namespace, "clusters", name, cluster, null, null);
+      ClusterResource cr = RequestBuilder.CLUSTER.update(toResource(cluster), new UpdateOptions(), clientSupplier);
+      Object result = cr != null ? toMap(cr) : null;
       if (LOGGER.isFineEnabled()) {
         LOGGER.fine("Replaced Cluster: " + result);
       }
@@ -467,9 +484,8 @@ public class RestBackendImpl implements RestBackend {
   @SuppressWarnings("unchecked")
   public List<Map<String, Object>> listClusters(String namespace) {
     try {
-      Map<String, Object> clusterList = (Map<String, Object>) clusterApiUntyped.listNamespacedCustomObject(
-          "weblogic.oracle", "v1", namespace, "clusters", null, null, null, null,
-          null, null, null, null, null, null);
+      ClusterList l = RequestBuilder.CLUSTER.list(namespace, new ListOptions(), clientSupplier);
+      Map<String, Object> clusterList = l != null ? toMap(l) : null;
       return Optional.of(clusterList).map(cl -> (List<Map<String, Object>>) cl.get("items"))
           .orElse(Collections.emptyList());
     } catch (ApiException e) {
@@ -480,8 +496,9 @@ public class RestBackendImpl implements RestBackend {
 
   private void patchDomain(DomainResource domain, JsonPatchBuilder patchBuilder) {
     try {
-      domainApi.patch(domain.getMetadata().getNamespace(), domain.getMetadata().getName(),
-          V1Patch.PATCH_FORMAT_JSON_PATCH, new V1Patch(patchBuilder.build().toString())).throwsApiException();
+      RequestBuilder.DOMAIN.patch(domain.getMetadata().getNamespace(), domain.getMetadata().getName(),
+              V1Patch.PATCH_FORMAT_JSON_PATCH, new V1Patch(patchBuilder.build().toString()),
+              new PatchOptions(), clientSupplier);
     } catch (ApiException e) {
       throw handleApiException(e);
     }

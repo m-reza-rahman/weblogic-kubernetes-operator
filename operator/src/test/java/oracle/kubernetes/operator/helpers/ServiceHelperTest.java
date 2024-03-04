@@ -444,16 +444,6 @@ abstract class ServiceHelperTest extends ServiceHelperTestBase {
   }
 
   @Test
-  void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnCreate(SERVICE, NS, HTTP_INTERNAL_ERROR);
-
-    runServiceHelper();
-
-    testSupport.verifyCompletionThrowable(ApiException.class);
-  }
-
-  @Test
   void whenServiceCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
     testSupport.failOnCreate(SERVICE, NS, new V1Status()

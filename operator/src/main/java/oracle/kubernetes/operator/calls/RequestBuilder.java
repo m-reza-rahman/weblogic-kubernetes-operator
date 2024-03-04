@@ -6,11 +6,13 @@ package oracle.kubernetes.operator.calls;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
@@ -62,8 +64,10 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
 
   public static <X extends KubernetesObject, Y extends KubernetesListObject>
       KubernetesApi<X, Y> createKubernetesApi(Class<X> apiTypeClass, Class<Y> apiListTypeClass,
-                                              String apiGroup, String apiVersion, String resourcePlural) {
-    return kubernetesApiFactory.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+                                              String apiGroup, String apiVersion, String resourcePlural,
+                                              UnaryOperator<ApiClient> clientSelector) {
+    return kubernetesApiFactory.create(apiTypeClass, apiListTypeClass, apiGroup, apiVersion,
+            resourcePlural, clientSelector);
   }
 
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
@@ -71,6 +75,8 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
 
   private static final WatchApiFactory DEFAULT_WATCH_API_FACTORY = new WatchApiFactory() {
   };
+
+  protected static final UnaryOperator<ApiClient> CLIENT_SELECTOR = (client) -> client;
 
   public static <X extends KubernetesObject, Y extends KubernetesListObject>
       WatchApi<X> createWatchApi(Class<X> apiTypeClass, Class<Y> apiListTypeClass,
@@ -205,9 +211,23 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, A> create(
       A object, CreateOptions createOptions, ResponseStep<A> responseStep) {
+    return create(object, createOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Step to create resource.
+   * @param object Resource
+   * @param createOptions Create options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> create(
+          A object, CreateOptions createOptions, ResponseStep<A> responseStep,
+          UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.CreateRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        object, createOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            object, createOptions, clientSelector);
   }
 
   /**
@@ -228,8 +248,20 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public A create(A object, CreateOptions createOptions) throws ApiException {
+    return create(object, createOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Create resource.
+   * @param object Resource
+   * @param createOptions Create options
+   * @param clientSelector Client selector
+   * @return Created resource
+   * @throws ApiException On failure
+   */
+  public A create(A object, CreateOptions createOptions, UnaryOperator<ApiClient> clientSelector) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = create(object, createOptions, response);
+    RequestStep<A, L, A> step = create(object, createOptions, response, clientSelector);
     step.apply(new Packet());
     return response.get();
   }
@@ -253,9 +285,23 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, A> delete(
       String name, DeleteOptions deleteOptions, ResponseStep<A> responseStep) {
+    return delete(name, deleteOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Step to delete resource.
+   * @param name Name
+   * @param deleteOptions Delete options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> delete(
+          String name, DeleteOptions deleteOptions, ResponseStep<A> responseStep,
+          UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.ClusterDeleteRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        name, deleteOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            name, deleteOptions, clientSelector);
   }
 
   /**
@@ -280,9 +326,24 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, A> delete(
       String namespace, String name, DeleteOptions deleteOptions, ResponseStep<A> responseStep) {
+    return delete(namespace, name, deleteOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Step to delete resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param deleteOptions Delete options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> delete(
+          String namespace, String name, DeleteOptions deleteOptions, ResponseStep<A> responseStep,
+          UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.DeleteRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        namespace, name, deleteOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            namespace, name, deleteOptions, clientSelector);
   }
 
   /**
@@ -303,8 +364,21 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public A delete(String name, DeleteOptions deleteOptions) throws ApiException {
+    return delete(name, deleteOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Delete resource.
+   * @param name Name
+   * @param deleteOptions Delete options
+   * @param clientSelector Client selector
+   * @return Deleted resource
+   * @throws ApiException On failure
+   */
+  public A delete(String name, DeleteOptions deleteOptions,
+                  UnaryOperator<ApiClient> clientSelector) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = delete(name, deleteOptions, response);
+    RequestStep<A, L, A> step = delete(name, deleteOptions, response, clientSelector);
     step.apply(new Packet());
     return response.get();
   }
@@ -329,8 +403,22 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public A delete(String namespace, String name, DeleteOptions deleteOptions) throws ApiException {
+    return delete(namespace, name, deleteOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Delete resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param deleteOptions Delete options
+   * @param clientSelector Client selector
+   * @return Deleted resource
+   * @throws ApiException On failure
+   */
+  public A delete(String namespace, String name, DeleteOptions deleteOptions,
+                  UnaryOperator<ApiClient> clientSelector) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = delete(namespace, name, deleteOptions, response);
+    RequestStep<A, L, A> step = delete(namespace, name, deleteOptions, response, clientSelector);
     step.apply(new Packet());
     return response.get();
   }
@@ -354,9 +442,22 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, A> get(
       String name, GetOptions getOptions, ResponseStep<A> responseStep) {
+    return get(name, getOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Get resource.
+   * @param name Name
+   * @param getOptions Get options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> get(
+          String name, GetOptions getOptions, ResponseStep<A> responseStep, UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.ClusterGetRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        name, getOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            name, getOptions, clientSelector);
   }
 
   /**
@@ -381,9 +482,24 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, A> get(
       String namespace, String name, GetOptions getOptions, ResponseStep<A> responseStep) {
+    return get(namespace, name, getOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Get resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param getOptions Get options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> get(
+          String namespace, String name, GetOptions getOptions, ResponseStep<A> responseStep,
+          UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.GetRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        namespace, name, getOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            namespace, name, getOptions, clientSelector);
   }
 
   /**
@@ -404,8 +520,20 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public A get(String name, GetOptions getOptions) throws ApiException {
+    return get(name, getOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Get resource.
+   * @param name Name
+   * @param getOptions Get options
+   * @param clientSelector Client selector
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A get(String name, GetOptions getOptions, UnaryOperator<ApiClient> clientSelector) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = get(name, getOptions, response);
+    RequestStep<A, L, A> step = get(name, getOptions, response, clientSelector);
     step.apply(new Packet());
     return response.get();
   }
@@ -430,8 +558,22 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public A get(String namespace, String name, GetOptions getOptions) throws ApiException {
+    return get(namespace, name, getOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Get resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param getOptions Get options
+   * @param clientSelector Client selector
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A get(String namespace, String name, GetOptions getOptions,
+               UnaryOperator<ApiClient> clientSelector) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = get(namespace, name, getOptions, response);
+    RequestStep<A, L, A> step = get(namespace, name, getOptions, response, clientSelector);
     step.apply(new Packet());
     return response.get();
   }
@@ -453,9 +595,21 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, L> list(
       ListOptions listOptions, ResponseStep<L> responseStep) {
+    return list(listOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * List resources.
+   * @param listOptions List options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, L> list(
+          ListOptions listOptions, ResponseStep<L> responseStep, UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.ClusterListRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        listOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            listOptions, clientSelector);
   }
 
   /**
@@ -478,9 +632,23 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, L> list(
       String namespace, ListOptions listOptions, ResponseStep<L> responseStep) {
+    return list(namespace, listOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * List resources.
+   * @param namespace Namespace
+   * @param listOptions List options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, L> list(
+          String namespace, ListOptions listOptions, ResponseStep<L> responseStep,
+          UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.ListRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        namespace, listOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            namespace, listOptions, clientSelector);
   }
 
   /**
@@ -499,8 +667,19 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public L list(ListOptions listOptions) throws ApiException {
+    return list(listOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * List resources.
+   * @param listOptions List options
+   * @param clientSelector Client selector
+   * @return List of resources
+   * @throws ApiException On failure
+   */
+  public L list(ListOptions listOptions, UnaryOperator<ApiClient> clientSelector) throws ApiException {
     DirectResponseStep<L> response = new DirectResponseStep<>();
-    RequestStep<A, L, L> step = list(listOptions, response);
+    RequestStep<A, L, L> step = list(listOptions, response, clientSelector);
     step.apply(new Packet());
     return response.get();
   }
@@ -523,8 +702,21 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public L list(String namespace, ListOptions listOptions) throws ApiException {
+    return list(namespace, listOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * List resources.
+   * @param namespace Namespace
+   * @param listOptions List options
+   * @param clientSupplier Client supplier
+   * @return List of resources
+   * @throws ApiException On failure
+   */
+  public L list(String namespace, ListOptions listOptions,
+                UnaryOperator<ApiClient> clientSupplier) throws ApiException {
     DirectResponseStep<L> response = new DirectResponseStep<>();
-    RequestStep<A, L, L> step = list(namespace, listOptions, response);
+    RequestStep<A, L, L> step = list(namespace, listOptions, response, clientSupplier);
     step.apply(new Packet());
     return response.get();
   }
@@ -548,9 +740,23 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, A> update(
       A object, UpdateOptions updateOptions, ResponseStep<A> responseStep) {
+    return update(object, updateOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Update resource.
+   * @param object Resource
+   * @param updateOptions Update options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> update(
+          A object, UpdateOptions updateOptions, ResponseStep<A> responseStep,
+          UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.UpdateRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        object, updateOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            object, updateOptions, clientSelector);
   }
 
   /**
@@ -571,8 +777,20 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public A update(A object, UpdateOptions updateOptions) throws ApiException {
+    return update(object, updateOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Update resource.
+   * @param object Resource
+   * @param updateOptions Update options
+   * @param clientSupplier Client supplier
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A update(A object, UpdateOptions updateOptions, UnaryOperator<ApiClient> clientSupplier) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = update(object, updateOptions, response);
+    RequestStep<A, L, A> step = update(object, updateOptions, response, clientSupplier);
     step.apply(new Packet());
     return response.get();
   }
@@ -601,9 +819,25 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public RequestStep<A, L, A> patch(
       String name, String patchType, V1Patch patch, PatchOptions patchOptions, ResponseStep<A> responseStep) {
+    return patch(name, patchType, patch, patchOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Patch resource.
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param patchOptions Patch options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> patch(
+          String name, String patchType, V1Patch patch, PatchOptions patchOptions, ResponseStep<A> responseStep,
+          UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.ClusterPatchRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        name, patchType, patch, patchOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            name, patchType, patch, patchOptions, clientSelector);
   }
 
   /**
@@ -633,9 +867,26 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> patch(
       String namespace, String name, String patchType, V1Patch patch,
       PatchOptions patchOptions, ResponseStep<A> responseStep) {
+    return patch(namespace, name, patchType, patch, patchOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Patch resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param patchOptions Patch options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> patch(
+          String namespace, String name, String patchType, V1Patch patch,
+          PatchOptions patchOptions, ResponseStep<A> responseStep, UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.PatchRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        namespace, name, patchType, patch, patchOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            namespace, name, patchType, patch, patchOptions, clientSelector);
   }
 
   /**
@@ -660,8 +911,23 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    * @throws ApiException On failure
    */
   public A patch(String name, String patchType, V1Patch patch, PatchOptions patchOptions) throws ApiException {
+    return patch(name, patchType, patch, patchOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Patch resource.
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param patchOptions Patch options
+   * @param clientSupplier Client supplier
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A patch(String name, String patchType, V1Patch patch, PatchOptions patchOptions,
+                 UnaryOperator<ApiClient> clientSupplier) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = patch(name, patchType, patch, patchOptions, response);
+    RequestStep<A, L, A> step = patch(name, patchType, patch, patchOptions, response, clientSupplier);
     step.apply(new Packet());
     return response.get();
   }
@@ -691,8 +957,24 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public A patch(String namespace, String name, String patchType, V1Patch patch,
                  PatchOptions patchOptions) throws ApiException {
+    return patch(namespace, name, patchType, patch, patchOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Patch resource.
+   * @param namespace Namespace
+   * @param name Name
+   * @param patchType Patch type
+   * @param patch Patch
+   * @param patchOptions Patch options
+   * @param clientSupplier Client supplier
+   * @return Resource
+   * @throws ApiException On failure
+   */
+  public A patch(String namespace, String name, String patchType, V1Patch patch,
+                 PatchOptions patchOptions, UnaryOperator<ApiClient> clientSupplier) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = patch(namespace, name, patchType, patch, patchOptions, response);
+    RequestStep<A, L, A> step = patch(namespace, name, patchType, patch, patchOptions, response, clientSupplier);
     step.apply(new Packet());
     return response.get();
   }
@@ -720,9 +1002,24 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   public RequestStep<A, L, A> updateStatus(
       A object, Function<A, Object> status,
       UpdateOptions updateOptions, ResponseStep<A> responseStep) {
+    return updateStatus(object, status, updateOptions, responseStep, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Update status.
+   * @param object Resource object
+   * @param status Function to get status from resource
+   * @param updateOptions Update options
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+  public RequestStep<A, L, A> updateStatus(
+          A object, Function<A, Object> status,
+          UpdateOptions updateOptions, ResponseStep<A> responseStep, UnaryOperator<ApiClient> clientSelector) {
     return new RequestStep.UpdateStatusRequestStep<>(
-        responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-        object, status, updateOptions);
+            responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+            object, status, updateOptions, clientSelector);
   }
 
   /**
@@ -746,8 +1043,22 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
    */
   public A updateStatus(A object, Function<A, Object> status,
                         UpdateOptions updateOptions) throws ApiException {
+    return updateStatus(object, status, updateOptions, CLIENT_SELECTOR);
+  }
+
+  /**
+   * Update status.
+   * @param object Data object
+   * @param status Function to get status from data object
+   * @param updateOptions Update options
+   * @param clientSupplier Client supplier
+   * @return Data object
+   * @throws ApiException On failure
+   */
+  public A updateStatus(A object, Function<A, Object> status,
+                        UpdateOptions updateOptions, UnaryOperator<ApiClient> clientSupplier) throws ApiException {
     DirectResponseStep<A> response = new DirectResponseStep<>();
-    RequestStep<A, L, A> step = updateStatus(object, status, updateOptions, response);
+    RequestStep<A, L, A> step = updateStatus(object, status, updateOptions, response, clientSupplier);
     step.apply(new Packet());
     return response.get();
   }
@@ -871,9 +1182,24 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
      */
     public RequestStep<V1Pod, V1PodList, StringObject> logs(
         String namespace, String name, String container, ResponseStep<StringObject> responseStep) {
+      return logs(namespace, name, container, responseStep, CLIENT_SELECTOR);
+    }
+
+    /**
+     * Step to return pod logs.
+     * @param namespace Namespace
+     * @param name Name
+     * @param container Container name
+     * @param responseStep Response step
+     * @param clientSelector Client selector
+     * @return Request step
+     */
+    public RequestStep<V1Pod, V1PodList, StringObject> logs(
+            String namespace, String name, String container, ResponseStep<StringObject> responseStep,
+            UnaryOperator<ApiClient> clientSelector) {
       return new RequestStep.LogsRequestStep(
-          responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-          namespace, name, container);
+              responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              namespace, name, container, clientSelector);
     }
 
     /**
@@ -887,9 +1213,24 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
     public RequestStep<V1Pod, V1PodList, V1StatusObject> deleteCollection(
         String namespace, ListOptions listOptions, DeleteOptions deleteOptions,
         ResponseStep<V1StatusObject> responseStep) {
+      return deleteCollection(namespace, listOptions, deleteOptions, responseStep, CLIENT_SELECTOR);
+    }
+
+    /**
+     * Step to delete collection of pods.
+     * @param namespace Namespace
+     * @param listOptions List options
+     * @param deleteOptions Delete options
+     * @param responseStep Response step
+     * @param clientSelector Client selector
+     * @return Request step
+     */
+    public RequestStep<V1Pod, V1PodList, V1StatusObject> deleteCollection(
+            String namespace, ListOptions listOptions, DeleteOptions deleteOptions,
+            ResponseStep<V1StatusObject> responseStep, UnaryOperator<ApiClient> clientSelector) {
       return new RequestStep.DeleteCollectionRequestStep(
-          responseStep, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
-          namespace, listOptions, deleteOptions);
+              responseStep, V1Pod.class, V1PodList.class, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              namespace, listOptions, deleteOptions, clientSelector);
     }
   }
 
@@ -906,7 +1247,18 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
      */
     public RequestStep<KubernetesObject, KubernetesListObject, VersionInfoObject> versionCode(
         ResponseStep<VersionInfoObject> responseStep) {
-      return new RequestStep.VersionCodeRequestStep(responseStep);
+      return versionCode(responseStep, CLIENT_SELECTOR);
+    }
+
+  /**
+   * Step to return version info.
+   * @param responseStep Response step
+   * @param clientSelector Client selector
+   * @return Request step
+   */
+    public RequestStep<KubernetesObject, KubernetesListObject, VersionInfoObject> versionCode(
+            ResponseStep<VersionInfoObject> responseStep, UnaryOperator<ApiClient> clientSelector) {
+      return new RequestStep.VersionCodeRequestStep(responseStep, clientSelector);
     }
 
     /**

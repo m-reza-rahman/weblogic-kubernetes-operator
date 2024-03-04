@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 import com.google.gson.JsonSyntaxException;
 import io.kubernetes.client.common.KubernetesListObject;
@@ -47,6 +48,7 @@ public abstract class RequestStep<
   private final String resourcePlural;
   private final String resourceSingular;
   private final String operationName;
+  private final UnaryOperator<ApiClient> clientSelector;
 
   /**
    * Construct request step.
@@ -58,6 +60,7 @@ public abstract class RequestStep<
    * @param apiVersion API version
    * @param resourcePlural Resource plural
    * @param resourceSingular Resource singular
+   * @param clientSelector Client selector
    */
   protected RequestStep(
           ResponseStep<R> next,
@@ -67,7 +70,8 @@ public abstract class RequestStep<
           String apiVersion,
           String resourcePlural,
           String resourceSingular,
-          String operationName) {
+          String operationName,
+          UnaryOperator<ApiClient> clientSelector) {
     super(next);
     this.apiGroup = apiGroup;
     this.apiVersion = apiVersion;
@@ -76,6 +80,7 @@ public abstract class RequestStep<
     this.operationName = operationName;
     this.apiTypeClass = apiTypeClass;
     this.apiListTypeClass = apiListTypeClass;
+    this.clientSelector = clientSelector;
 
     Optional.ofNullable(next).ifPresent(n -> n.setPrevious(this));
   }
@@ -101,7 +106,8 @@ public abstract class RequestStep<
   @Override
   public StepAction apply(Packet packet) {
     KubernetesApi<A, L> client
-            = RequestBuilder.createKubernetesApi(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+            = RequestBuilder.createKubernetesApi(apiTypeClass, apiListTypeClass, apiGroup, apiVersion,
+            resourcePlural, clientSelector);
     KubernetesApiResponse<R> result = execute(client, packet);
 
     // update packet
@@ -143,6 +149,7 @@ public abstract class RequestStep<
      * @param resourceSingular Resource singular
      * @param name Name
      * @param getOptions Get options
+     * @param clientSelector Client selector
      */
     public ClusterGetRequestStep(
         ResponseStep<A> next,
@@ -153,9 +160,10 @@ public abstract class RequestStep<
         String resourcePlural,
         String resourceSingular,
         String name,
-        GetOptions getOptions) {
+        GetOptions getOptions,
+        UnaryOperator<ApiClient> clientSelector) {
       super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-              resourceSingular, "get");
+              resourceSingular, "get", clientSelector);
       this.name = name;
       this.getOptions = getOptions;
     }
@@ -189,6 +197,7 @@ public abstract class RequestStep<
      * @param namespace Namespace
      * @param name Name
      * @param getOptions Get options
+     * @param clientSelector Client selector
      */
     public GetRequestStep(
         ResponseStep<A> next,
@@ -200,9 +209,10 @@ public abstract class RequestStep<
         String resourceSingular,
         String namespace,
         String name,
-        GetOptions getOptions) {
+        GetOptions getOptions,
+        UnaryOperator<ApiClient> clientSelector) {
       super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-              resourceSingular, "get");
+              resourceSingular, "get", clientSelector);
       this.namespace = namespace;
       this.name = name;
       this.getOptions = getOptions;
@@ -234,6 +244,7 @@ public abstract class RequestStep<
      * @param resourceSingular Resource singular
      * @param object Object
      * @param updateOptions Update options
+     * @param clientSelector Client selector
      */
     public UpdateRequestStep(
         ResponseStep<A> next,
@@ -244,8 +255,10 @@ public abstract class RequestStep<
         String resourcePlural,
         String resourceSingular,
         A object,
-        UpdateOptions updateOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "update");
+        UpdateOptions updateOptions,
+        UnaryOperator<ApiClient> clientSelector) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+              resourceSingular, "update", clientSelector);
       this.object = object;
       this.updateOptions = updateOptions;
     }
@@ -287,6 +300,7 @@ public abstract class RequestStep<
      * @param patchType Patch type
      * @param patch Patch
      * @param patchOptions Patch options
+     * @param clientSelector Client selector
      */
     public ClusterPatchRequestStep(
         ResponseStep<A> next,
@@ -299,8 +313,10 @@ public abstract class RequestStep<
         String name,
         String patchType,
         V1Patch patch,
-        PatchOptions patchOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "patch");
+        PatchOptions patchOptions,
+        UnaryOperator<ApiClient> clientSelector) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              "patch", clientSelector);
       this.name = name;
       this.patchType = patchType;
       this.patch = patch;
@@ -339,6 +355,7 @@ public abstract class RequestStep<
      * @param patchType Patch type
      * @param patch Patch
      * @param patchOptions Patch options
+     * @param clientSelector Client selector
      */
     public PatchRequestStep(
         ResponseStep<A> next,
@@ -352,8 +369,10 @@ public abstract class RequestStep<
         String name,
         String patchType,
         V1Patch patch,
-        PatchOptions patchOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "patch");
+        PatchOptions patchOptions,
+        UnaryOperator<ApiClient> clientSelector) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              "patch", clientSelector);
       this.namespace = namespace;
       this.name = name;
       this.patchType = patchType;
@@ -391,6 +410,7 @@ public abstract class RequestStep<
      * @param resourceSingular Resource singular
      * @param name Name
      * @param deleteOptions Delete options
+     * @param clientSelector Client selector
      */
     public ClusterDeleteRequestStep(
         ResponseStep<A> next,
@@ -401,8 +421,10 @@ public abstract class RequestStep<
         String resourcePlural,
         String resourceSingular,
         String name,
-        DeleteOptions deleteOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "delete");
+        DeleteOptions deleteOptions,
+        UnaryOperator<ApiClient> clientSelector) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              "delete", clientSelector);
       this.name = name;
       this.deleteOptions = deleteOptions;
     }
@@ -435,6 +457,7 @@ public abstract class RequestStep<
      * @param namespace Namespace
      * @param name Name
      * @param deleteOptions Delete options
+     * @param clientSelector Client selector
      */
     public DeleteRequestStep(
         ResponseStep<A> next,
@@ -446,8 +469,10 @@ public abstract class RequestStep<
         String resourceSingular,
         String namespace,
         String name,
-        DeleteOptions deleteOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "delete");
+        DeleteOptions deleteOptions,
+        UnaryOperator<ApiClient> clientSelector) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              "delete", clientSelector);
       this.namespace = namespace;
       this.name = name;
       this.deleteOptions = deleteOptions;
@@ -481,6 +506,7 @@ public abstract class RequestStep<
      * @param resourcePlural Resource plural
      * @param resourceSingular Resource singular
      * @param listOptions List options
+     * @param clientSelector Client selector
      */
     public ClusterListRequestStep(
         ResponseStep<L> next,
@@ -490,8 +516,10 @@ public abstract class RequestStep<
         String apiVersion,
         String resourcePlural,
         String resourceSingular,
-        ListOptions listOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "list");
+        ListOptions listOptions,
+        UnaryOperator<ApiClient> clientSelector) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              "list", clientSelector);
       this.listOptions = listOptions;
     }
 
@@ -518,6 +546,7 @@ public abstract class RequestStep<
      * @param resourceSingular Resource singular
      * @param namespace Namespace
      * @param listOptions List options
+     * @param clientSelector Client selector
      */
     public ListRequestStep(
         ResponseStep<L> next,
@@ -528,8 +557,10 @@ public abstract class RequestStep<
         String resourcePlural,
         String resourceSingular,
         String namespace,
-        ListOptions listOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "list");
+        ListOptions listOptions,
+        UnaryOperator<ApiClient> clientSelector) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              "list", clientSelector);
       this.namespace = namespace;
       this.listOptions = listOptions;
     }
@@ -565,6 +596,7 @@ public abstract class RequestStep<
      * @param resourceSingular Resource singular
      * @param object Object
      * @param createOptions Create options
+     * @param clientSelector Client selector
      */
     public CreateRequestStep(
         ResponseStep<A> next,
@@ -575,8 +607,10 @@ public abstract class RequestStep<
         String resourcePlural,
         String resourceSingular,
         A object,
-        CreateOptions createOptions) {
-      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular, "create");
+        CreateOptions createOptions,
+        UnaryOperator<ApiClient> clientSelector) {
+      super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, resourceSingular,
+              "create", clientSelector);
       this.object = object;
       this.createOptions = createOptions;
     }
@@ -615,6 +649,7 @@ public abstract class RequestStep<
      * @param object Object
      * @param status Function to generate status from object
      * @param updateOptions Update options
+     * @param clientSelector Client selector
      */
     public UpdateStatusRequestStep(
         ResponseStep<A> next,
@@ -626,9 +661,10 @@ public abstract class RequestStep<
         String resourceSingular,
         A object,
         Function<A, Object> status,
-        UpdateOptions updateOptions) {
+        UpdateOptions updateOptions,
+        UnaryOperator<ApiClient> clientSelector) {
       super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-              resourceSingular, "updateStatus");
+              resourceSingular, "updateStatus", clientSelector);
       this.object = object;
       this.status = status;
       this.updateOptions = updateOptions;
@@ -689,6 +725,7 @@ public abstract class RequestStep<
      * @param namespace Namespace
      * @param name Name
      * @param container Container
+     * @param clientSelector Client selector
      */
     public LogsRequestStep(
         ResponseStep<RequestBuilder.StringObject> next,
@@ -700,9 +737,10 @@ public abstract class RequestStep<
         String resourceSingular,
         String namespace,
         String name,
-        String container) {
+        String container,
+        UnaryOperator<ApiClient> clientSelector) {
       super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-              resourceSingular, "logs");
+              resourceSingular, "logs", clientSelector);
       this.namespace = namespace;
       this.name = name;
       this.container = container;
@@ -740,6 +778,7 @@ public abstract class RequestStep<
      * @param namespace Namespace
      * @param listOptions List options
      * @param deleteOptions Delete options
+     * @param clientSelector Client selector
      */
     public DeleteCollectionRequestStep(
         ResponseStep<RequestBuilder.V1StatusObject> next,
@@ -751,9 +790,10 @@ public abstract class RequestStep<
         String resourceSingular,
         String namespace,
         ListOptions listOptions,
-        DeleteOptions deleteOptions) {
+        DeleteOptions deleteOptions,
+        UnaryOperator<ApiClient> clientSelector) {
       super(next, apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
-              resourceSingular, "deleteCollection");
+              resourceSingular, "deleteCollection", clientSelector);
       this.namespace = namespace;
       this.listOptions = listOptions;
       this.deleteOptions = deleteOptions;
@@ -775,10 +815,12 @@ public abstract class RequestStep<
      * Construct logs request step.
      *
      * @param next Response step
+     * @param clientSelector Client selector
      */
     public VersionCodeRequestStep(
-        ResponseStep<RequestBuilder.VersionInfoObject> next) {
-      super(next, KubernetesObject.class, KubernetesListObject.class, "", "", "", "", "getVersion");
+        ResponseStep<RequestBuilder.VersionInfoObject> next, UnaryOperator<ApiClient> clientSelector) {
+      super(next, KubernetesObject.class, KubernetesListObject.class, "", "", "", "",
+              "getVersion", clientSelector);
     }
 
     KubernetesApiResponse<RequestBuilder.VersionInfoObject> execute(

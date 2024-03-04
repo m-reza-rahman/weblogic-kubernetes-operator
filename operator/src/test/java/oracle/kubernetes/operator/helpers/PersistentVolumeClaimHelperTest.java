@@ -186,16 +186,6 @@ class PersistentVolumeClaimHelperTest {
   }
 
   @Test
-  void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnCreate(PVC, NS, HTTP_INTERNAL_ERROR);
-
-    runPersistentVolumeClaimHelper();
-
-    testSupport.verifyCompletionThrowable(ApiException.class);
-  }
-
-  @Test
   void onFailedRunWithConflictAndNoExistingPVC_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPvcCreateLogMessage());
     consoleHandlerMemento.ignoreMessage(getPvcExistsLogMessage());

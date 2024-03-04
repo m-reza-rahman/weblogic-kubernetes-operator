@@ -109,7 +109,7 @@ public class KubernetesUtils {
    */
   static V1ObjectMeta getResourceMetadata(Object resource) {
     if (resource instanceof KubernetesObject kubernetesObject) {
-      return kubernetesObject.getMetadata();
+      return Optional.ofNullable(kubernetesObject.getMetadata()).orElse(new V1ObjectMeta());
     } else {
       return new V1ObjectMeta();
     }

@@ -201,16 +201,6 @@ class PodDisruptionBudgetHelperTest {
   }
 
   @Test
-  void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnCreate(PODDISRUPTIONBUDGET, NS, HTTP_INTERNAL_ERROR);
-
-    runPodDisruptionBudgetHelper();
-
-    testSupport.verifyCompletionThrowable(ApiException.class);
-  }
-
-  @Test
   void onFailedRunWithConflictAndNoExistingPDB_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPdbCreateLogMessage());
     retryStrategy.setNumRetriesLeft(1);

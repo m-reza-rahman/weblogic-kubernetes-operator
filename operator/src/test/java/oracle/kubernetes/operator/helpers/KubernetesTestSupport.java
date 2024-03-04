@@ -20,6 +20,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.JSON;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
@@ -711,9 +713,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   private class KubernetesApiFactoryImpl implements KubernetesApiFactory {
+    @Override
     public <A extends KubernetesObject, L extends KubernetesListObject> KubernetesApi<A, L>
         create(Class<A> apiTypeClass, Class<L> apiListTypeClass,
-               String apiGroup, String apiVersion, String resourcePlural) {
+               String apiGroup, String apiVersion, String resourcePlural, UnaryOperator<ApiClient> clientSelector) {
       return new KubernetesApi<>() {
         @Override
         public KubernetesApiResponse<A> get(String name, GetOptions getOptions) {

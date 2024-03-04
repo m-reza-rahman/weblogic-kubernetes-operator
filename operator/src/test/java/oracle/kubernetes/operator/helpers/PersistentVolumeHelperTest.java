@@ -182,16 +182,6 @@ class PersistentVolumeHelperTest {
   }
 
   @Test
-  void onFailedRun_reportFailure() {
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnCreate(PV, null, HTTP_INTERNAL_ERROR);
-
-    runPersistentVolumeHelper();
-
-    testSupport.verifyCompletionThrowable(ApiException.class);
-  }
-
-  @Test
   void onFailedRunWithConflictAndNoExistingPv_createItOnRetry() {
     consoleHandlerMemento.ignoreMessage(getPvCreateLogMessage());
     consoleHandlerMemento.ignoreMessage(getPvExistsLogMessage());

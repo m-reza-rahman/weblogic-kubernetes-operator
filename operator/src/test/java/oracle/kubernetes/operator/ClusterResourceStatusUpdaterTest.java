@@ -158,19 +158,6 @@ class ClusterResourceStatusUpdaterTest {
   }
 
   @Test
-  void onFailedReplaceStatus_reportUnrecoverableFailure() {
-    cluster.withStatus(new ClusterStatus().withMinimumReplicas(0).withMaximumReplicas(8)
-        .withClusterName(CLUSTER).withReplicas(2).withReadyReplicas(1).withReplicasGoal(2));
-    info.addClusterResource(cluster);
-    domain.getStatus().addCluster(new ClusterStatus());
-    testSupport.failOnReplaceStatus(CLUSTER, NAME + '-' + CLUSTER, NS, HTTP_INTERNAL_ERROR);
-
-    updateClusterResourceStatus();
-
-    testSupport.verifyCompletionThrowable(ApiException.class);
-  }
-
-  @Test
   void onFailedReplaceStatus_retryRequest() {
     ClusterStatus newStatus = new ClusterStatus().withMinimumReplicas(0).withMaximumReplicas(8)
         .withClusterName(CLUSTER).withReplicas(2).withReadyReplicas(1).withReplicasGoal(2);

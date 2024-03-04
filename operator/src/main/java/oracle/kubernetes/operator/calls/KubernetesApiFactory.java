@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.calls;
 
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
+import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
 import io.kubernetes.client.openapi.apis.VersionApi;
@@ -13,18 +14,24 @@ import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 
+import java.util.function.UnaryOperator;
+
 public interface KubernetesApiFactory {
   default <A extends KubernetesObject, L extends KubernetesListObject>
       KubernetesApi<A, L> create(Class<A> apiTypeClass, Class<L> apiListTypeClass,
-                                 String apiGroup, String apiVersion, String resourcePlural) {
-    return new KubernetesApiImpl<>(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural);
+                                 String apiGroup, String apiVersion, String resourcePlural,
+                                 UnaryOperator<ApiClient> clientSelector) {
+    return new KubernetesApiImpl<>(apiTypeClass, apiListTypeClass, apiGroup, apiVersion,
+            resourcePlural, clientSelector);
   }
 
   class KubernetesApiImpl<A extends KubernetesObject, L extends KubernetesListObject>
       extends GenericKubernetesApi<A, L> implements KubernetesApi<A, L> {
     public KubernetesApiImpl(Class<A> apiTypeClass, Class<L> apiListTypeClass,
-                             String apiGroup, String apiVersion, String resourcePlural) {
-      super(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural, Client.getInstance());
+                             String apiGroup, String apiVersion, String resourcePlural,
+                             UnaryOperator<ApiClient> clientSelector) {
+      super(apiTypeClass, apiListTypeClass, apiGroup, apiVersion, resourcePlural,
+              clientSelector.apply(Client.getInstance()));
     }
 
     @Override
