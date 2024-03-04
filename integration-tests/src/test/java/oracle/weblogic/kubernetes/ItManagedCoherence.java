@@ -184,7 +184,8 @@ class ItManagedCoherence {
       for (int i = 1; i <= NUMBER_OF_CLUSTERS; i++) {
         clusterNameMsPortMap.put(CLUSTER_NAME_PREFIX + i, MANAGED_SERVER_PORT);
       }
-      String hostHeader = domainUid + "." + domainNamespace + ".cluster-1.test";
+
+      String clusterHostname = domainUid + "." + domainNamespace + ".cluster-1.test";
       String hostAndPort;
       int ingressServiceNodePort;
       if (TestConstants.KIND_CLUSTER
@@ -198,11 +199,12 @@ class ItManagedCoherence {
       } else {
         // clusterNameMsPortMap.put(clusterName, managedServerPort);
         logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-            traefikHelmParams.getReleaseName());
         /*
         createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-            traefikParams.getIngressClassName());*/
+            traefikHelmParams.getReleaseName());
+        */
+        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
+            traefikParams.getIngressClassName());
 
         // get ingress service Name and Nodeport
         String ingressServiceName = traefikHelmParams.getReleaseName();
@@ -215,13 +217,13 @@ class ItManagedCoherence {
 
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
             ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-            : getHostAndPort(hostHeader, ingressServiceNodePort);
+            : getHostAndPort(clusterHostname, ingressServiceNodePort);
       }
 
-      assertTrue(checkCoheranceApp(hostAndPort, hostHeader), "Failed to access Coherance Application");
+      assertTrue(checkCoheranceApp(hostAndPort, clusterHostname), "Failed to access Coherance Application");
       // test adding data to the cache and retrieving them from the cache
       boolean testCompletedSuccessfully = assertDoesNotThrow(()
-          -> coherenceCacheTest(hostHeader, ingressServiceNodePort), "Test Coherence cache failed");
+          -> coherenceCacheTest(clusterHostname, ingressServiceNodePort), "Test Coherence cache failed");
       assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
     }
   }
@@ -357,7 +359,7 @@ class ItManagedCoherence {
     } else {
       hostAndPort = getHostAndPort(hostName, ingressServiceNodePort);
     }
-    logger.info("hostAndPort is: {0} ", hostAndPort);
+    logger.info("=== hostAndPort is: {0} ", hostAndPort);
 
     // add the data to cache
     String[] firstNameList = {"Frodo", "Samwise", "Bilbo", "peregrin", "Meriadoc", "Gandalf"};
@@ -366,7 +368,7 @@ class ItManagedCoherence {
     for (int i = 0; i < firstNameList.length; i++) {
       result = addDataToCache(firstNameList[i], secondNameList[i], hostName, hostAndPort);
       assertTrue(result.stdout().contains(firstNameList[i]), "Did not add the expected record");
-      logger.info("Data added to the cache " + result.stdout());
+      logger.info("=== Data added to the cache " + result.stdout());
     }
 
     // check if cache size is 6
