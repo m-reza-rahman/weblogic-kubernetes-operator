@@ -150,7 +150,7 @@ class ItMultiDomainModelsScale {
   private static String opServiceAccount = null;
   private static NginxParams nginxHelmParams = null;
   private static String nginxNamespace = null;
-  private static String nginxServiceName = null;
+  //private static String nginxServiceName = null;
   private static int nodeportshttp = 0;
   private static LoggingFacade logger = null;
   private static String miiDomainNamespace = null;
@@ -216,8 +216,8 @@ class ItMultiDomainModelsScale {
       if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
         // install and verify NGINX
         nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-        //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-        nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        //nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
         logger.info("NGINX service name: {0}", nginxServiceName);
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
         logger.info("NGINX http node port: {0}", nodeportshttp);
