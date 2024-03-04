@@ -133,7 +133,8 @@ class ItManagedCoherence {
     // install and verify Traefik if not running on OKD
     if (!OKD) {
       if (OKE_CLUSTER) {
-        traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
+        traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+        traefikHelmParams = traefikParams.getHelmParams();
       } else if (TestConstants.KIND_CLUSTER
             && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
         traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
