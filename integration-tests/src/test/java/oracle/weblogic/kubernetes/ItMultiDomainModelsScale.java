@@ -705,7 +705,9 @@ class ItMultiDomainModelsScale {
    * @param appContextRoot the context root of the application
    * @return curl command string
    */
-  private static String generateCurlCmd(String domainUid, String domainNamespace, String clusterName,
+  private static String generateCurlCmd(String domainUid,
+                                        String domainNamespace,
+                                        String clusterName,
                                         String appContextRoot) {
     if (OKD) {
       String routeHost = getRouteHost(domainNamespace, domainUid + "-cluster-" + clusterName);
@@ -729,13 +731,17 @@ class ItMultiDomainModelsScale {
         ex.printStackTrace();
       }
 
+      if (OKE_CLUSTER) {
+        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
 
-      //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : getHostAndPort(host, nodeportshttp);
-
-      return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s/%s/index.jsp",
-          domainUid + "." + domainNamespace + "." + clusterName + ".test", hostAndPort, appContextRoot);
+        return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s/%s/index.jsp",
+            domainUid + "." + domainNamespace + "." + clusterName + ".test",
+            getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace), appContextRoot);
+      } else {
+        return String.format("curl -g -v --show-error --noproxy '*' -H 'host: %s' http://%s/%s/index.jsp",
+            domainUid + "." + domainNamespace + "." + clusterName + ".test",
+            getHostAndPort(host, nodeportshttp), appContextRoot);
+      }
     }
   }
 
