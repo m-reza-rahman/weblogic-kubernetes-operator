@@ -30,6 +30,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -46,6 +47,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -148,6 +150,7 @@ class ItMultiDomainModelsScale {
   private static String opServiceAccount = null;
   private static NginxParams nginxHelmParams = null;
   private static String nginxNamespace = null;
+  private static String nginxServiceName = null;
   private static int nodeportshttp = 0;
   private static LoggingFacade logger = null;
   private static String miiDomainNamespace = null;
@@ -208,10 +211,13 @@ class ItMultiDomainModelsScale {
     setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
 
     if (!OKD) {
+      logger.info("======== WLSIMG_BUILDERt: {0}", WLSIMG_BUILDER);
+      logger.info("======== WLSIMG_BUILDER_DEFAULT: {0}", WLSIMG_BUILDER_DEFAULT);
       if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
         // install and verify NGINX
         nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
         logger.info("NGINX service name: {0}", nginxServiceName);
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
         logger.info("NGINX http node port: {0}", nodeportshttp);
@@ -253,11 +259,11 @@ class ItMultiDomainModelsScale {
         numberOfServers = 3;
       }
 
-      String hostname = null;
+      //String hostname = null;
 
       if (OKE_CLUSTER) {
-        String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-        hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
+        //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+        //hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
 
         logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
             clusterName, domainUid, domainNamespace, numberOfServers);
@@ -713,7 +719,18 @@ class ItMultiDomainModelsScale {
         host = "[" + host + "]";
       }
 
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      String command = KUBERNETES_CLI + " get all --all-namespaces";
+      logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+      try {
+        ExecResult result0 = ExecCommand.exec(command, true);
+        logger.info("result is: {0}", result0.toString());
+      } catch (java.io.IOException | InterruptedException ex) {
+        ex.printStackTrace();
+      }
+
+
+      //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : getHostAndPort(host, nodeportshttp);
 
