@@ -242,10 +242,14 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * @return Next action for fiber processing, which may be a retry
    */
   public StepAction onFailure(Step conflictStep, Packet packet, KubernetesApiResponse<T> callResponse) {
-    return Optional.ofNullable(getOrCreateRetryStrategy(packet))
-        .map(rs -> Optional.ofNullable(rs.doPotentialRetry(conflictStep, packet, callResponse))
-                .orElse(onFailureNoRetry(packet, callResponse)))
-        .orElse(onFailureNoRetry(packet, callResponse));
+    RetryStrategy retryStrategy = getOrCreateRetryStrategy(packet);
+    if (retryStrategy != null) {
+      StepAction result = retryStrategy.doPotentialRetry(conflictStep, packet, callResponse);
+      if (result != null) {
+        return result;
+      }
+    }
+    return onFailureNoRetry(packet, callResponse);
   }
 
   private RetryStrategy getOrCreateRetryStrategy(Packet packet) {

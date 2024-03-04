@@ -121,7 +121,7 @@ public class PersistentVolumeHelper {
       @Override
       public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolume> callResponse) {
         if (isUnrecoverable(callResponse)) {
-          return updateDomainStatus(packet, callResponse);
+          return updateDomainStatus(packet, callResponse); // FIXME -- expectation is to end with exception after updating status
         } else {
           return onFailure(getConflictStep(), packet, callResponse);
         }

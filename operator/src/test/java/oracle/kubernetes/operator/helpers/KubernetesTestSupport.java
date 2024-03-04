@@ -910,7 +910,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       String name = getName(resource);
       if (name != null) {
         if (hasElementWithName(name)) {
-          throw new RuntimeException("element exists");
+          throw new AlreadyExistsException(getResourceName(), name, namespace);
         }
         data.put(name, resource);
       }
@@ -927,7 +927,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       String name = getName(resource);
       if (name != null) {
         if (!hasElementWithName(getName(resource))) {
-          throw new RuntimeException("element doesn't exist");
+          throw new NotFoundException(getResourceName(), name, namespace);
         }
         data.remove(name);
       }
@@ -1376,7 +1376,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     @SuppressWarnings("unchecked")
     <T extends KubernetesType> KubernetesApiResponse<T> createResource(DataRepository<T> dataRepository) {
-      return new KubernetesApiResponse<>(dataRepository.createResource(requestNamespace, (T) requestBody));
+      try {
+        return new KubernetesApiResponse<>(dataRepository.createResource(requestNamespace, (T) requestBody));
+      } catch (AlreadyExistsException aee) {
+        return new KubernetesApiResponse<>(new V1Status().message(aee.getMessage()), HttpURLConnection.HTTP_CONFLICT);
+      }
     }
 
     @SuppressWarnings("unchecked")
@@ -1437,6 +1441,15 @@ public class KubernetesTestSupport extends FiberTestSupport {
     public <T extends KubernetesType> KubernetesApiResponse<T> deleteCollection(DataRepository<T> dataRepository) {
       return new KubernetesApiResponse<>(
           dataRepository.deleteResourceCollection(requestNamespace), HttpURLConnection.HTTP_OK);
+    }
+  }
+
+  static class AlreadyExistsException extends RuntimeException {
+    @Serial
+    private static final long serialVersionUID  = 1L;
+
+    public AlreadyExistsException(String resourceType, String name, String namespace) {
+      super(String.format("%s named %s already exists in namespace %s", resourceType, name, namespace));
     }
   }
 

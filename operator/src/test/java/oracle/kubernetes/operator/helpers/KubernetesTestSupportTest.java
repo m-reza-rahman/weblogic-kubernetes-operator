@@ -154,7 +154,7 @@ class KubernetesTestSupportTest {
     V1CustomResourceDefinition oldCrd = createCrd("mycrd");
     testSupport.defineResources(oldCrd);
 
-    V1CustomResourceDefinition crd = createCrd("");
+    V1CustomResourceDefinition crd = createCrd("mycrd");
     Objects.requireNonNull(crd.getMetadata()).putLabelsItem("be", "different");
 
     TestResponseStep<V1CustomResourceDefinition> responseStep = new TestResponseStep<>();
