@@ -199,7 +199,10 @@ class ItManagedCoherence {
         // clusterNameMsPortMap.put(clusterName, managedServerPort);
         logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
         createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-            traefikParams.getIngressClassName());
+            traefikHelmParams.getReleaseName());
+        /*
+        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
+            traefikParams.getIngressClassName());*/
 
         // get ingress service Name and Nodeport
         String ingressServiceName = traefikHelmParams.getReleaseName();
