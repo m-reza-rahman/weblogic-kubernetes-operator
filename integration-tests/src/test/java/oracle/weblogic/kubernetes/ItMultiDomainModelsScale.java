@@ -30,7 +30,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -47,7 +46,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -150,7 +148,6 @@ class ItMultiDomainModelsScale {
   private static String opServiceAccount = null;
   private static NginxParams nginxHelmParams = null;
   private static String nginxNamespace = null;
-  //private static String nginxServiceName = null;
   private static int nodeportshttp = 0;
   private static LoggingFacade logger = null;
   private static String miiDomainNamespace = null;
@@ -211,13 +208,10 @@ class ItMultiDomainModelsScale {
     setTlsTerminationForRoute("external-weblogic-operator-svc", opNamespace);
 
     if (!OKD) {
-      logger.info("======== WLSIMG_BUILDERt: {0}", WLSIMG_BUILDER);
-      logger.info("======== WLSIMG_BUILDER_DEFAULT: {0}", WLSIMG_BUILDER_DEFAULT);
       if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
         // install and verify NGINX
         nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
         String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-        //nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
         logger.info("NGINX service name: {0}", nginxServiceName);
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
         logger.info("NGINX http node port: {0}", nodeportshttp);
@@ -259,28 +253,17 @@ class ItMultiDomainModelsScale {
         numberOfServers = 3;
       }
 
-      //String hostname = null;
-
       if (OKE_CLUSTER) {
-        //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-        //hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-
         logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
             clusterName, domainUid, domainNamespace, numberOfServers);
         scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
             replicaCount, numberOfServers, null, null);
-        /*
-        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-           replicaCount, numberOfServers, null, null, hostname);*/
 
         // then scale cluster back to 1 servers
         logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
             clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
         scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
             numberOfServers, replicaCount, null, null);
-        /*
-        scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-            numberOfServers, replicaCount, null, null, hostname);*/
       } else {
         logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers.",
             clusterName, domainUid, domainNamespace, numberOfServers);
@@ -302,7 +285,6 @@ class ItMultiDomainModelsScale {
     if (OKE_CLUSTER) {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
-      //ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, ADMIN_SERVER_PORT, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
@@ -355,9 +337,6 @@ class ItMultiDomainModelsScale {
     int numberOfServers = 3;
 
     if (OKE_CLUSTER) {
-      //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      //hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-
       if (domainType.contains("domainInImage") || domainType.contains("domainOnPV")) {
         logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
             clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
@@ -417,7 +396,6 @@ class ItMultiDomainModelsScale {
     if (OKE_CLUSTER) {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
-      //ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
@@ -474,11 +452,6 @@ class ItMultiDomainModelsScale {
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
           managedServerPodNamePrefix, replicaCount + 1, replicaCount, null, null);
     } else {
-      if (OKE_CLUSTER) {
-        //String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-        //hostname = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-      }
-
       curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
       logger.info("BR: curlCmd = {0}", curlCmd);
 
@@ -510,7 +483,6 @@ class ItMultiDomainModelsScale {
     if (OKE_CLUSTER) {
       String resourcePath = "/console/login/LoginForm.jsp";
       final String adminServerPodName = domainUid + "-admin-server";
-      //ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,7002, resourcePath);
       ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
       logger.info("result in OKE_CLUSTER is {0}", result.toString());
       assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
@@ -719,16 +691,6 @@ class ItMultiDomainModelsScale {
       String host = K8S_NODEPORT_HOST;
       if (host.contains(":")) {
         host = "[" + host + "]";
-      }
-
-      String command = KUBERNETES_CLI + " get all --all-namespaces";
-      logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-      try {
-        ExecResult result0 = ExecCommand.exec(command, true);
-        logger.info("result is: {0}", result0.toString());
-      } catch (java.io.IOException | InterruptedException ex) {
-        ex.printStackTrace();
       }
 
       if (OKE_CLUSTER) {
@@ -1002,38 +964,6 @@ class ItMultiDomainModelsScale {
       logger.info("Skipping the admin console login test using ingress controller in OKD environment");
     }
   }
-
-  /*
-  // Verify admin console login using ingress controller
-  private void verifyReadyAppUsingIngressController(String domainUid, String domainNamespace) {
-
-    if (!OKD) {
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host + ":" + nodeportshttp;
-
-      String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
-          + domainUid + "." + domainNamespace + ".adminserver.test"
-          + "' http://" + hostAndPort
-          + "/weblogic/ready --write-out %{http_code} -o /dev/null";
-
-      logger.info("Executing curl command {0}", curlCmd);
-      testUntil(() -> callWebAppAndWaitTillReady(curlCmd, 5),
-          logger,
-          "Ready app on domain {0} in namespace {1} is accessible",
-          domainUid,
-          domainNamespace);
-
-      logger.info("Ready app on domain1 is accessible");
-    } else {
-      logger.info("Skipping the admin console login test using ingress controller in OKD environment");
-    }
-  }*/
 
   private String  createIngressHostRoutingIfNotExists(String domainNamespace,
                                                       String domainUid) {
