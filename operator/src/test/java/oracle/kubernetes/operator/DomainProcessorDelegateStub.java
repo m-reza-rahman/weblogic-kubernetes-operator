@@ -156,16 +156,15 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
 
   private static class DelayStep extends Step {
     private final int delay;
-    private final Step next;
 
     DelayStep(Step next, int delay) {
+      super(next);
       this.delay = delay;
-      this.next = next;
     }
 
     @Override
     public StepAction apply(Packet packet) {
-      return doDelay(next, packet, delay, TimeUnit.SECONDS);
+      return doDelay(getNext(), packet, delay, TimeUnit.SECONDS);
     }
   }
 

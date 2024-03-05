@@ -221,7 +221,13 @@ public abstract class Step {
     if (isCancelled(packet)) {
       return doEnd(packet);
     }
-    return Optional.ofNullable(step).map(s -> adapt(s, packet).apply(packet)).orElse(doEnd(packet));
+    if (step != null) {
+      Step s = adapt(step, packet);
+      if (s != null) {
+        return s.apply(packet);
+      }
+    }
+    return doEnd(packet);
   }
 
   protected static final boolean isCancelled(Packet packet) {
