@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -20,7 +20,6 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -70,7 +69,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
-@Tag("oke-sequential1")
+@Tag("oke-gate")
 class ItManagedCoherence {
 
   // constants for Coherence
@@ -93,7 +92,6 @@ class ItManagedCoherence {
   private static String domainNamespace = null;
 
   private static HelmParams traefikHelmParams = null;
-  private static TraefikParams traefikParams = null;
   private static LoggingFacade logger = null;
 
   /**
@@ -127,8 +125,7 @@ class ItManagedCoherence {
 
     // install and verify Traefik if not running on OKD
     if (!OKD) {
-      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
-      traefikHelmParams = traefikParams.getHelmParams();
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
     }
 
     // install and verify operator
@@ -178,7 +175,7 @@ class ItManagedCoherence {
       // clusterNameMsPortMap.put(clusterName, managedServerPort);
       logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
       createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-          traefikParams.getIngressClassName());
+          traefikHelmParams.getReleaseName());
 
       String clusterHostname = domainUid + "." + domainNamespace + ".cluster-1.test";
       // get ingress service Name and Nodeport
