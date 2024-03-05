@@ -284,11 +284,11 @@ class ItExternalLbTunneling {
 
     // Get the ingress service nodeport corresponding to non-tls service
     // Get the Traefik Service Name traefik-release-{ns}
-    String service =
-         TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3);
+    String service
+        = TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3);
     logger.info("TRAEFIK_SERVICE {0} in {1}", service, traefikNamespace);
     int httpTunnelingPort = IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT;
-        getServiceNodePort(traefikNamespace, service, "web");
+    getServiceNodePort(traefikNamespace, service, "web");
     assertNotEquals(-1, httpTunnelingPort,
         "Could not get the Traefik HttpTunnelingPort service node port");
     logger.info("HttpTunnelingPort for Traefik {0}", httpTunnelingPort);
