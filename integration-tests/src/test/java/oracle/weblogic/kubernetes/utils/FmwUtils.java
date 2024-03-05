@@ -304,6 +304,88 @@ public class FmwUtils {
   }
 
   /**
+   * Construct a domain object with the given parameters that can be used to create a domain resource.
+   * @param domainUid unique Uid of the domain
+   * @param domNamespace  namespace where the domain exists
+   * @param adminSecretName  name of admin secret
+   * @param clusterName name of the WebLogic cluster to be created in the domain
+   * @param pvName name of the persistent volume to create
+   * @param pvcName name of the persistent volume claim to create
+   * @param domainInHomePrefix prefix of path of domain in home
+   * @param rcuAccessSecretName name of RCU access secret
+   * @param opssWalletPasswordSecretName name of opss wallet password secret
+   * @param replicaCount count of replicas
+   * @param t3ChannelPort port number of t3 channel
+   * @return Domain WebLogic domain
+   */
+  public static DomainResource createDomainResourceOnPvWithOpss(String domainUid,
+                                                        String domNamespace,
+                                                        String adminSecretName,
+                                                        String clusterName,
+                                                        String pvName,
+                                                        String pvcName,
+                                                        String domainInHomePrefix,
+                                                        String rcuAccessSecretName,
+                                                        String opssWalletPasswordSecretName,
+                                                        int replicaCount,
+                                                        int t3ChannelPort) {
+
+    // create a domain custom resource configuration object
+    DomainResource domain = new DomainResource()
+        .apiVersion(DOMAIN_API_VERSION)
+        .kind("Domain")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid)
+            .namespace(domNamespace))
+        .spec(new DomainSpec()
+            .domainUid(domainUid)
+            .domainHome(domainInHomePrefix + domainUid)
+            .domainHomeSourceType("PersistentVolume")
+            .image(FMWINFRA_IMAGE_TO_USE_IN_SPEC)
+            .imagePullPolicy(IMAGE_PULL_POLICY)
+            .imagePullSecrets(Arrays.asList(
+                new V1LocalObjectReference()
+                    .name(BASE_IMAGES_REPO_SECRET_NAME)))
+            .webLogicCredentialsSecret(new V1LocalObjectReference()
+                .name(adminSecretName))
+            .includeServerOutInPodLog(true)
+            .logHomeEnabled(Boolean.TRUE)
+            .logHome("/shared/" + domNamespace + "/logs/" + domainUid)
+            .dataHome("")
+            .serverStartPolicy("IfNeeded")
+            .failureRetryIntervalSeconds(FAILURE_RETRY_INTERVAL_SECONDS)
+            .failureRetryLimitMinutes(FAILURE_RETRY_LIMIT_MINUTES)
+            .serverPod(new ServerPod() //serverpod
+                .addEnvItem(new V1EnvVar()
+                    .name("JAVA_OPTIONS")
+                    .value("-Dweblogic.StdoutDebugEnabled=false"))
+                .addEnvItem(new V1EnvVar()
+                    .name("USER_MEM_ARGS")
+                    .value("-Djava.security.egd=file:/dev/./urandom"))
+                .addVolumesItem(new V1Volume()
+                    .name(pvName)
+                    .persistentVolumeClaim(new V1PersistentVolumeClaimVolumeSource()
+                        .claimName(pvcName)))
+                .addVolumeMountsItem(new V1VolumeMount()
+                    .mountPath("/shared")
+                    .name(pvName)))
+            .adminServer(new AdminServer() //admin server
+                .adminService(new AdminService()
+                    .addChannelsItem(new Channel()
+                        .channelName("default")
+                        .nodePort(0))
+                    .addChannelsItem(new Channel()
+                        .channelName("T3Channel")
+                        .nodePort(t3ChannelPort))))
+            .configuration(new Configuration()
+                .opss(new Opss()
+                    .walletPasswordSecret(opssWalletPasswordSecretName))
+                .addSecretsItem(rcuAccessSecretName)));
+
+    return domain;
+  }
+
+  /**
    * Verify Pod is ready and service exists for both admin server and managed servers.
    * Verify EM console is accessible.
    * @param domainUid unique Uid of the domain

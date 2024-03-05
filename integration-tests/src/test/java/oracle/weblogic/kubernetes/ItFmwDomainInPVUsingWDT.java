@@ -37,11 +37,13 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
+import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
-import static oracle.weblogic.kubernetes.utils.FmwUtils.createDomainResourceOnPv;
+//import static oracle.weblogic.kubernetes.utils.FmwUtils.createDomainResourceOnPv;
+import static oracle.weblogic.kubernetes.utils.FmwUtils.createDomainResourceOnPvWithOpss;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.verifyDomainReady;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.JobUtils.createDomainJob;
@@ -49,6 +51,7 @@ import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOpe
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPVC;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
+import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -91,6 +94,9 @@ class ItFmwDomainInPVUsingWDT {
   private static final int managedServerPort = 8001;
   private final String wlSecretName = domainUid + "-weblogic-credentials";
   private final String rcuSecretName = domainUid + "-rcu-credentials";
+  private final String rcuaccessSecretName = domainUid + "-rcu-access";
+  private final String opsswalletpassSecretName = domainUid + "-opss-wallet-password-secret";
+  private final String opsswalletfileSecretName = domainUid + "opss-wallet-file-secret";
   private static final int replicaCount = 1;
 
   private final String wdtCreateDomainScript = "setup_wdt.sh";
@@ -162,6 +168,24 @@ class ItFmwDomainInPVUsingWDT {
     createRcuSecretWithUsernamePassword(rcuSecretName, domainNamespace,
         RCUSCHEMAUSERNAME, RCUSCHEMAPASSWORD, RCUSYSUSERNAME, RCUSYSPASSWORD);
 
+    // TODO create RCU access secret
+    logger.info("Creating RCU access secret: {0}, with prefix: {1}, dbUrl: {2}, schemapassword: {3})",
+        rcuaccessSecretName, RCUSCHEMAPREFIX, dbUrl, RCUSCHEMAPASSWORD);
+    assertDoesNotThrow(() -> createRcuAccessSecret(
+        rcuaccessSecretName,
+        domainNamespace,
+        RCUSCHEMAPREFIX,
+        RCUSCHEMAPASSWORD,
+        dbUrl),
+        String.format("createSecret failed for %s", rcuaccessSecretName));
+
+    logger.info("Create OPSS wallet password secret");
+    assertDoesNotThrow(() -> createOpsswalletpasswordSecret(
+        opsswalletpassSecretName,
+        domainNamespace,
+        ADMIN_PASSWORD_DEFAULT),
+        String.format("createSecret failed for %s", opsswalletpassSecretName)); //end TODO
+
     // create persistent volume and persistent volume claim for domain
     createPV(pvName, domainUid, this.getClass().getSimpleName());
     createPVC(pvName, pvcName, domainUid, domainNamespace);
@@ -179,13 +203,25 @@ class ItFmwDomainInPVUsingWDT {
 
     // create a domain custom resource configuration object
     logger.info("Creating domain custom resource");
-    DomainResource domain = createDomainResourceOnPv(domainUid,
+    //TODO
+    /*DomainResource domain = createDomainResourceOnPv(domainUid,
                                              domainNamespace,
                                              wlSecretName,
                                              clusterName,
                                              pvName,
                                              pvcName,
                                              DOMAINHOMEPREFIX,
+                                             replicaCount,
+                                             t3ChannelPort);*/
+    DomainResource domain = createDomainResourceOnPvWithOpss(domainUid,
+                                             domainNamespace,
+                                             wlSecretName,
+                                             clusterName,
+                                             pvName,
+                                             pvcName,
+                                             DOMAINHOMEPREFIX,
+                                             rcuaccessSecretName,
+                                             opsswalletpassSecretName,
                                              replicaCount,
                                              t3ChannelPort);
 
