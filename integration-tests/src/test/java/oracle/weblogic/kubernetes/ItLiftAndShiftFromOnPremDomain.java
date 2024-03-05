@@ -337,7 +337,7 @@ class ItLiftAndShiftFromOnPremDomain {
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
         hostHeader = createIngressHostRouting(domainNamespace, domainUid, "cluster-cluster-1", 8001);
-        hostHeader = " --header 'Host: + " + hostHeader + "'";
+        hostHeader = " --header 'Host: " + hostHeader + "'";
       } else {
         createTraefikIngressRoutingRules(domainNamespace);
         traefikNodePort = getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), "web");

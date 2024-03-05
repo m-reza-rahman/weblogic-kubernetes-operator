@@ -45,6 +45,8 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.IT_EXTERNALLB_TUNNELING_HTTPS_CONAINERPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOSTNAME;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
@@ -207,7 +209,8 @@ class ItExternalLbTunneling {
 
     if (!OKD) {
       logger.info("Installing Traefik controller using helm");
-      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 
+          IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT, IT_EXTERNALLB_TUNNELING_HTTPS_CONAINERPORT).getHelmParams();
     }
 
     // Create SSL certificate and key using openSSL with SAN extension
@@ -284,7 +287,7 @@ class ItExternalLbTunneling {
     String service =
          TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3);
     logger.info("TRAEFIK_SERVICE {0} in {1}", service, traefikNamespace);
-    int httpTunnelingPort =
+    int httpTunnelingPort = IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT;
         getServiceNodePort(traefikNamespace, service, "web");
     assertNotEquals(-1, httpTunnelingPort,
         "Could not get the Traefik HttpTunnelingPort service node port");
