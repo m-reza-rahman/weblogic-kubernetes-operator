@@ -46,7 +46,9 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.IT_EXTERNALLB_TUNNELING_HTTPS_CONAINERPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_EXTERNALLB_TUNNELING_HTTPS_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_EXTERNALLB_TUNNELING_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOSTNAME;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
@@ -59,7 +61,6 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
@@ -288,7 +289,10 @@ class ItExternalLbTunneling {
         = TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3);
     logger.info("TRAEFIK_SERVICE {0} in {1}", service, traefikNamespace);
     int httpTunnelingPort = IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT;
-    getServiceNodePort(traefikNamespace, service, "web");
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      httpTunnelingPort = IT_EXTERNALLB_TUNNELING_HTTP_HOSTPORT;
+    }
     assertNotEquals(-1, httpTunnelingPort,
         "Could not get the Traefik HttpTunnelingPort service node port");
     logger.info("HttpTunnelingPort for Traefik {0}", httpTunnelingPort);
@@ -342,11 +346,14 @@ class ItExternalLbTunneling {
 
     // Get the ingress service nodeport corresponding to tls service
     // Get the Traefik Service Name traefik-release-{ns}
-    String service =
-         TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3);
+    String service
+        = TRAEFIK_RELEASE_NAME + "-" + traefikNamespace.substring(3);
     logger.info("TRAEFIK_SERVICE {0} in {1}", service, traefikNamespace);
-    int httpsTunnelingPort =
-        getServiceNodePort(traefikNamespace, service, "websecure");
+    int httpsTunnelingPort = IT_EXTERNALLB_TUNNELING_HTTPS_CONAINERPORT;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      httpsTunnelingPort = IT_EXTERNALLB_TUNNELING_HTTPS_HOSTPORT;
+    }
     assertNotEquals(-1, httpsTunnelingPort,
         "Could not get the Traefik HttpsTunnelingPort service node port");
     logger.info("HttpsTunnelingPort for Traefik {0}", httpsTunnelingPort);
