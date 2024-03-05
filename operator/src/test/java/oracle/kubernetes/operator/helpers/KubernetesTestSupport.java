@@ -821,7 +821,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
         public KubernetesApiResponse<RequestBuilder.V1StatusObject> deleteCollection(
                 String namespace, ListOptions listOptions, DeleteOptions deleteOptions) {
           return new CallContext<RequestBuilder.V1StatusObject>(
-                  Operation.deleteCollection, getResourceName(apiTypeClass), null, null, null, null,
+                  Operation.deleteCollection, getResourceName(apiTypeClass), namespace, null, null, null,
                   listOptions.getFieldSelector(), listOptions.getLabelSelector(), deleteOptions.getGracePeriodSeconds())
                   .execute();
         }
