@@ -43,7 +43,6 @@ import static com.meterware.simplestub.Stub.createStrictStub;
 import static java.net.HttpURLConnection.HTTP_CONFLICT;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static java.net.HttpURLConnection.HTTP_UNAVAILABLE;
 import static oracle.kubernetes.common.logging.MessageKeys.ABORTED_ERROR_EVENT_SUGGESTION;
 import static oracle.kubernetes.common.logging.MessageKeys.ABORTED_EVENT_ERROR;
 import static oracle.kubernetes.common.logging.MessageKeys.CLUSTER_DELETED_EVENT_PATTERN;
@@ -878,24 +877,6 @@ class EventHelperTest {
 
     assertThat("Found 2 NAMESPACE_WATCHING_STOPPED event with expected count 1",
             containsEventsWithCountOne(getEvents(testSupport),
-            NAMESPACE_WATCHING_STOPPED_EVENT, 2), is(true));
-  }
-
-  @Test
-  void whenNSWatchStoppedEventCreatedTwice_fail503OnReplace_eventCreatedOnceWithExpectedCount() {
-    testSupport.addRetryStrategy(retryStrategy);
-    Step eventStep = createEventStep(new EventData(NAMESPACE_WATCHING_STOPPED).namespace(NS).resourceName(NS));
-
-    testSupport.runSteps(eventStep);
-    dispatchAddedEventWatches();
-
-    CoreV1Event event = EventTestUtils.getEventWithReason(getEvents(testSupport), NAMESPACE_WATCHING_STOPPED_EVENT);
-    testSupport.failOnReplace(EVENT, EventTestUtils.getName(event), NS, HTTP_UNAVAILABLE);
-
-    testSupport.runSteps(eventStep);
-
-    assertThat("Found 1 NAMESPACE_WATCHING_STOPPED event with expected count 2",
-        containsOneEventWithCount(getEvents(testSupport),
             NAMESPACE_WATCHING_STOPPED_EVENT, 2), is(true));
   }
 

@@ -1250,12 +1250,12 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
       return versionCode(responseStep, CLIENT_SELECTOR);
     }
 
-  /**
-   * Step to return version info.
-   * @param responseStep Response step
-   * @param clientSelector Client selector
-   * @return Request step
-   */
+    /**
+     * Step to return version info.
+     * @param responseStep Response step
+     * @param clientSelector Client selector
+     * @return Request step
+     */
     public RequestStep<KubernetesObject, KubernetesListObject, VersionInfoObject> versionCode(
             ResponseStep<VersionInfoObject> responseStep, UnaryOperator<ApiClient> clientSelector) {
       return new RequestStep.VersionCodeRequestStep(responseStep, clientSelector);

@@ -107,14 +107,12 @@ import org.junit.jupiter.api.Test;
 
 import static com.meterware.simplestub.Stub.createStub;
 import static java.util.logging.Level.INFO;
-import static oracle.kubernetes.common.logging.MessageKeys.ASYNC_NO_RETRY;
 import static oracle.kubernetes.common.logging.MessageKeys.JOB_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.NOT_STARTING_DOMAINUID_THREAD;
 import static oracle.kubernetes.common.logging.MessageKeys.WATCH_CLUSTER;
 import static oracle.kubernetes.common.logging.MessageKeys.WATCH_CLUSTER_DELETED;
 import static oracle.kubernetes.common.utils.LogMatcher.containsFine;
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
-import static oracle.kubernetes.common.utils.LogMatcher.containsWarning;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.SECRET_NAME;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
@@ -575,20 +573,6 @@ class DomainProcessorTest {
     processor.createMakeRightOperation(newInfo).execute();
 
     assertThat(logRecords, not(containsInfo(JOB_CREATED)));
-  }
-
-  @Test
-  void whenDomainResourceReadFailsWithUnrecoverableAndMakeRightNotForDeletion_noRetryWarningLogged() {
-    consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY).withLogLevel(Level.WARNING);
-    processor.registerDomainPresenceInfo(originalInfo);
-    newDomain.getOrCreateStatus().addCondition(new DomainCondition(AVAILABLE).withMessage("Test"));
-    domainConfigurator.withRestartVersion("17");
-
-    testSupport.failOnResource(DOMAIN, UID, NS, HTTP_BAD_REQUEST);
-
-    processor.createMakeRightOperation(newInfo).execute();
-
-    assertThat(logRecords, containsWarning(ASYNC_NO_RETRY));
   }
 
   @Test

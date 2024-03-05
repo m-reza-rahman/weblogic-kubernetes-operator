@@ -34,7 +34,6 @@ import static oracle.kubernetes.operator.EventConstants.CLUSTER_COMPLETED_EVENT;
 import static oracle.kubernetes.operator.EventConstants.CLUSTER_INCOMPLETE_EVENT;
 import static oracle.kubernetes.operator.EventConstants.CLUSTER_UNAVAILABLE_EVENT;
 import static oracle.kubernetes.operator.EventMatcher.hasEvent;
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAVAILABLE;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;

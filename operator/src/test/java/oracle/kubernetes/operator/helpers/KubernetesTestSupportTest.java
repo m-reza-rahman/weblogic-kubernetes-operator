@@ -475,7 +475,8 @@ class KubernetesTestSupportTest {
     testSupport.defineResources(originalCluster);
 
     ClusterResource newCluster = createCluster(NS, "cluster1");
-    testSupport.runSteps(RequestBuilder.CLUSTER.update(newCluster, (ResponseStep<ClusterResource>) null));
+    testSupport.runSteps(RequestBuilder.CLUSTER.updateStatus(
+            newCluster, ClusterResource::getStatus, (ResponseStep<ClusterResource>) null));
 
     ClusterResource updatedCluster = testSupport.getResourceWithName(CLUSTER, "cluster1");
     assertThat(updatedCluster.getSpec().getReplicas(), equalTo(5));

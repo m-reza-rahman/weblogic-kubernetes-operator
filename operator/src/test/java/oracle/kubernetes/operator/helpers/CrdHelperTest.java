@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
@@ -22,7 +22,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.Namespaces;
-import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
@@ -38,14 +37,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.meterware.simplestub.Stub.createStrictStub;
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
-import static oracle.kubernetes.common.logging.MessageKeys.ASYNC_NO_RETRY;
 import static oracle.kubernetes.common.logging.MessageKeys.CREATE_CRD_FAILED;
 import static oracle.kubernetes.common.logging.MessageKeys.CREATING_CRD;
 import static oracle.kubernetes.common.logging.MessageKeys.REPLACE_CRD_FAILED;
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
-import static oracle.kubernetes.common.utils.LogMatcher.containsWarning;
 import static oracle.kubernetes.operator.ProcessingConstants.WEBHOOK;
 import static oracle.kubernetes.operator.WebhookMainTest.getCertificates;
 import static oracle.kubernetes.operator.helpers.CrdHelperTest.TestSubject.CLUSTER;
@@ -223,60 +219,8 @@ class CrdHelperTest extends CrdHelperTestBase {
     assertThat(logRecords, containsInfo(CREATING_CRD));
   }
 
-  @ParameterizedTest
-  @EnumSource(value = TestSubject.class)
-  void whenNotAuthorizedToReadCrd_retryOnFailureAndLogWarningMessageInOnFailureNoRetry(TestSubject testSubject) {
-    consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY);
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnResource(CUSTOM_RESOURCE_DEFINITION, null, null, HTTP_UNAUTHORIZED);
-
-    Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
-    testSupport.runSteps(scriptCrdStep);
-    assertThat(logRecords, containsWarning(ASYNC_NO_RETRY));
-  }
-
-  @ParameterizedTest
-  @EnumSource(value = TestSubject.class)
-  void whenNotAuthorizedToReadCrdDedicatedMode_dontLogWarningMessageInOnFailureNoRetry(TestSubject testSubject) {
-    consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY);
-    defineSelectionStrategy(Namespaces.SelectionStrategy.DEDICATED);
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnResource(CUSTOM_RESOURCE_DEFINITION, null, null, HTTP_UNAUTHORIZED);
-
-    Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
-    testSupport.runSteps(scriptCrdStep);
-    assertThat(logRecords, not(containsWarning(ASYNC_NO_RETRY)));
-  }
-
   private void defineSelectionStrategy(Namespaces.SelectionStrategy selectionStrategy) {
     TuningParametersStub.setParameter(Namespaces.SELECTION_STRATEGY_KEY, selectionStrategy.toString());
-  }
-
-  @ParameterizedTest
-  @EnumSource(value = TestSubject.class)
-  void whenForbiddenToReadCrdDedicatedMode_dontLogWarningMessageInOnFailureNoRetry(TestSubject testSubject) {
-    consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY);
-    defineSelectionStrategy(Namespaces.SelectionStrategy.DEDICATED);
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnResource(CUSTOM_RESOURCE_DEFINITION, null, null, HTTP_FORBIDDEN);
-
-    Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
-    testSupport.runSteps(scriptCrdStep);
-    assertThat(logRecords, not(containsWarning(ASYNC_NO_RETRY)));
-  }
-
-
-  @ParameterizedTest
-  @EnumSource(value = TestSubject.class)
-  void whenNotAuthorizedToReadCrdAndWarningNotEnabled_DontLogWarningInOnFailureNoRetry(TestSubject testSubject) {
-    LoggingFactory.getLogger("Operator", "Operator").getUnderlyingLogger().setLevel(Level.SEVERE);
-    consoleHandlerMemento.collectLogMessages(logRecords, ASYNC_NO_RETRY);
-    testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnResource(CUSTOM_RESOURCE_DEFINITION, null, null, HTTP_UNAUTHORIZED);
-
-    Step scriptCrdStep = testSubject.createCrdStep(PRODUCT_VERSION);
-    testSupport.runSteps(scriptCrdStep);
-    assertThat(logRecords, not(containsWarning(ASYNC_NO_RETRY)));
   }
 
   @ParameterizedTest

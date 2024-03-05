@@ -3,6 +3,8 @@
 
 package oracle.kubernetes.operator.calls;
 
+import java.util.function.UnaryOperator;
+
 import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.ApiClient;
@@ -13,8 +15,6 @@ import io.kubernetes.client.util.generic.GenericKubernetesApi;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
-
-import java.util.function.UnaryOperator;
 
 public interface KubernetesApiFactory {
   default <A extends KubernetesObject, L extends KubernetesListObject>
