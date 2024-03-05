@@ -734,7 +734,6 @@ class ItCrossDomainTransaction {
 
   String execCurl(String curlString) {
     ExecResult result = assertDoesNotThrow(() -> exec(new String(curlString), true));
-    logger.info("\n HTTP response is \n " + result.stdout());
     logger.info("curl command returned {0}", result.toString());
     return result.stdout();
   }
