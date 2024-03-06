@@ -199,6 +199,7 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
     packet.put(ProcessingConstants.DOMAIN_COMPONENT_NAME, delegate.getKubernetesVersion());
     packet.put(ProcessingConstants.PODWATCHER_COMPONENT_NAME, delegate.getPodAwaiterStepFactory(getNamespace()));
     packet.put(ProcessingConstants.JOBWATCHER_COMPONENT_NAME, delegate.getJobAwaiterStepFactory(getNamespace()));
+    packet.put(ProcessingConstants.PVCWATCHER_COMPONENT_NAME, delegate.getPvcAwaiterStepFactory());
     return packet;
   }
 

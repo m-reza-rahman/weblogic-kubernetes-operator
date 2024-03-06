@@ -13,7 +13,6 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
-import oracle.kubernetes.operator.DomainProcessorDelegate;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.PvcAwaiterStepFactory;
 import oracle.kubernetes.operator.calls.RequestBuilder;
@@ -35,6 +34,7 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.PV_PVC_API_VERSION;
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
+import static oracle.kubernetes.operator.ProcessingConstants.PVCWATCHER_COMPONENT_NAME;
 
 /**
  * Operations for dealing with persistent volume claims.
@@ -276,9 +276,7 @@ public class PersistentVolumeClaimHelper {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       V1PersistentVolumeClaim domainPvc = info.getPersistentVolumeClaim(pvcName);
 
-      DomainProcessorDelegate delegate =
-          (DomainProcessorDelegate) packet.get(ProcessingConstants.DELEGATE_COMPONENT_NAME);
-      PvcAwaiterStepFactory pw = delegate.getPvcAwaiterStepFactory();
+      PvcAwaiterStepFactory pw = (PvcAwaiterStepFactory) packet.get(PVCWATCHER_COMPONENT_NAME);
       return doNext(pw.waitForReady(domainPvc, getNext()), packet);
     }
   }

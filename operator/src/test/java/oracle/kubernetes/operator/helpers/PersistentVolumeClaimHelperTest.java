@@ -20,6 +20,7 @@ import oracle.kubernetes.operator.DomainProcessorDelegateStub;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
+import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Packet;
@@ -92,6 +93,7 @@ class PersistentVolumeClaimHelperTest {
                 .collectLogMessages(logRecords, MESSAGE_KEYS)
                 .withLogLevel(Level.FINE)
                 .ignoringLoggedExceptions(ApiException.class));
+    mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
 
     WlsDomainConfigSupport configSupport = new WlsDomainConfigSupport(DOMAIN_NAME);
@@ -190,7 +192,7 @@ class PersistentVolumeClaimHelperTest {
     consoleHandlerMemento.ignoreMessage(getPvcExistsLogMessage());
     retryStrategy.setNumRetriesLeft(1);
     testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnCreate(PVC, NS, HTTP_CONFLICT);
+    testSupport.failOnCreate(PVC, null, HTTP_CONFLICT);
 
     runPersistentVolumeClaimHelper();
 
@@ -223,7 +225,7 @@ class PersistentVolumeClaimHelperTest {
     existingPvc.getMetadata().setNamespace(NS);
     retryStrategy.setNumRetriesLeft(1);
     testSupport.addRetryStrategy(retryStrategy);
-    testSupport.failOnCreate(PVC, NS, HTTP_CONFLICT);
+    testSupport.failOnCreate(PVC, null, HTTP_CONFLICT);
     testSupport.defineResources(existingPvc);
 
     runPersistentVolumeClaimHelper();
@@ -236,7 +238,7 @@ class PersistentVolumeClaimHelperTest {
   @Test
   void whenPersistentVolumeClaimCreationFailsDueToUnprocessableEntityFailure_reportInDomainStatus() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PVC, NS, new V1Status()
+    testSupport.failOnCreate(PVC, null, new V1Status()
             .reason("FieldValueNotFound")
             .message("Test this failure"), HTTP_BAD_REQUEST);
 
@@ -249,7 +251,7 @@ class PersistentVolumeClaimHelperTest {
   @Test
   void whenPersistentVolumeClaimCreationFailsDueToUnprocessableEntityFailure_generateFailedEvent() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PVC, NS, new V1Status()
+    testSupport.failOnCreate(PVC, null, new V1Status()
         .reason("FieldValueNotFound")
         .message("Test this failure"), HTTP_BAD_REQUEST);
 
@@ -265,7 +267,7 @@ class PersistentVolumeClaimHelperTest {
   @Test
   void whenPersistentVolumeClaimCreationFailsDueToUnprocessableEntityFailure_abortFiber() {
     testSupport.defineResources(domainPresenceInfo.getDomain());
-    testSupport.failOnCreate(PVC, NS, new V1Status()
+    testSupport.failOnCreate(PVC, null, new V1Status()
             .reason("FieldValueNotFound")
             .message("Test this failure"), HTTP_BAD_REQUEST);
 
