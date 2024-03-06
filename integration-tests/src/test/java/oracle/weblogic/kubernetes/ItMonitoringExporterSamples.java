@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -43,6 +44,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.assertions.impl.Deployment;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -64,6 +66,7 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
@@ -85,6 +88,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAd
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
+import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndPushToRepo;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
@@ -265,6 +269,7 @@ class ItMonitoringExporterSamples {
     }
     //start  MySQL database instance
     assertDoesNotThrow(() -> {
+
       String dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
       assertNotNull(dbService, "Failed to create database");
       V1Pod pod = getPod(domain2Namespace, null, "mysql");
@@ -484,9 +489,9 @@ class ItMonitoringExporterSamples {
             + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
             + "SELECT host, user FROM mysql.user;");
     Path source1File = Files.writeString(Paths.get(WORK_DIR, "create.sql"),
-        "CREATE DATABASE " + domain2Uid + ";\n"
+        "CREATE DATABASE domain2;\n"
             + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
-            + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';");
+            + "GRANT ALL ON domain2.* TO 'wluser1';");
     StringBuffer mysqlCmd1 = new StringBuffer("cat " + source1File.toString() + " | ");
     mysqlCmd1.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd1.append(namespace);
@@ -845,7 +850,23 @@ class ItMonitoringExporterSamples {
     final List<String> propertyList = Collections.singletonList(domainPropertiesFile.getPath());
 
     // build the model file list
-    final List<String> modelList = Collections.singletonList(monitoringExporterEndToEndDir
+    logger.info("create a staging location for d scripts");
+    Path fileTemp = Paths.get("sampleTopologyTemp");
+    assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for topology");
+
+    assertDoesNotThrow(() -> Files.createDirectories(fileTemp), "Failed to create temp dir for topology");
+    logger.info("copy the " + MONEXP_WDT_FILE + "  to staging location");
+    Path srcPromFile = Paths.get(monitoringExporterEndToEndDir, MONEXP_WDT_FILE);
+    Path targetPromFile = Paths.get(fileTemp.toString(), MONEXP_WDT_FILE);
+    assertDoesNotThrow(() -> Files.copy(srcPromFile, targetPromFile,
+        StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
+    assertDoesNotThrow(() -> {
+          replaceStringInFile(targetPromFile.toString(),
+              "default",
+              domain2Namespace);
+        });
+    
+    final List<String> modelList = Collections.singletonList(targetPromFile.toString()
         + MONEXP_WDT_FILE);
 
     wdtImage =
