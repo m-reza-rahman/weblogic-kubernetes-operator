@@ -105,7 +105,7 @@ class ItTest {
 
 
   private static final String TEST_MODEL_FILE = "model.sessmigr.2clusters.yaml";
-  private static final String TEST_WDT_FILE = "/simple-topology.yaml";
+  private static final String TEST_WDT_FILE = "/sample-topology.yaml";
   private static final String TEST_IMAGE_NAME = "monexp-image";
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
 
