@@ -49,7 +49,6 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
@@ -75,8 +74,8 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.DbUtils.getDBNodePort;
-import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
+import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
+import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
@@ -132,6 +131,8 @@ class ItCrossDomainTransaction {
   private final String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
   private static String domain2AdminServerPodName = domainUid2 + "-admin-server";
   private final String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
+  private static final String SYSPASSWORD = "Oradoc_db1";
+  private static String dbName = "my-oraclecxt-sidb";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
   private static String ORACLEDBSUFFIX = null;
   private static LoggingFacade logger = null;
@@ -179,18 +180,15 @@ class ItCrossDomainTransaction {
     ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
     dbUrl = ORACLEDBURLPREFIX + domain2Namespace + ORACLEDBSUFFIX;
     createBaseRepoSecret(domain2Namespace);
+    
+    //install Oracle Database Operator
+    assertDoesNotThrow(() -> installDBOperator(domain2Namespace), "Failed to install database operator");
 
-    //Start oracleDB
-    logger.info("Start Oracle DB with namespace: {0}, dbListenerPort:{1}",
-        domain2Namespace, dbListenerPort);
-    assertDoesNotThrow(
-        () -> startOracleDB(DB_IMAGE_TO_USE_IN_SPEC, getNextFreePort(), domain2Namespace, dbListenerPort),
-        "Failed to start Oracle DB");
-    dbNodePort = getDBNodePort(domain2Namespace, "oracledb");
-    logger.info("DB Node Port = {0}", dbNodePort);
+    logger.info("Create Oracle DB in namespace: {0} ", domain2Namespace);
+    dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, SYSPASSWORD, domain2Namespace));    
 
     dbPodIP = assertDoesNotThrow(
-        () -> getPodIP(domain2Namespace, "", "oracledb"),
+        () -> getPodIP(domain2Namespace, "", dbName),
         String.format("Get pod IP address failed with ApiException for oracledb in namespace %s",
             domain2Namespace));
     logger.info("db Pod IP {0} ", dbPodIP);
