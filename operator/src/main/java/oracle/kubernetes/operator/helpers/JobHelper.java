@@ -788,12 +788,16 @@ public class JobHelper {
         } else if (isJobPodTimedOut(jobPod)) {
           // process job pod timed out same way as job timed out, which is to
           // terminate current fiber
-          return onFailureNoRetry(packet, callResponse);
+          return doTerminate(createTerminationException(packet), packet);
         } else {
           addContainerTerminatedMarkerToPacket(jobPod, getJobName(), packet);
           recordJobPod(packet, jobPod);
           return doNext(processIntrospectorPodLog(getNext()), packet);
         }
+      }
+
+      protected Throwable createTerminationException(Packet packet) {
+        return new JobWatcher.DeadlineExceededException((V1Job) packet.get(DOMAIN_INTROSPECTOR_JOB));
       }
 
       private boolean isJobPodTimedOut(V1Pod jobPod) {

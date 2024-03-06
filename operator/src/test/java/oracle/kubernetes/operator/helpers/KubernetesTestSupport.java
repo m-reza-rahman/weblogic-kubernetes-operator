@@ -143,10 +143,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
    */
   public Memento install() throws NoSuchFieldException {
     support(CUSTOM_RESOURCE_DEFINITION, V1CustomResourceDefinition.class);
-    support(SELF_SUBJECT_ACCESS_REVIEW, V1SelfSubjectAccessReview.class);
-    support(SELF_SUBJECT_RULES_REVIEW, V1SelfSubjectRulesReview.class);
-    support(SUBJECT_ACCESS_REVIEW, V1SubjectAccessReview.class);
-    support(TOKEN_REVIEW, V1TokenReview.class);
+    supportCreateOnlyNoMetadata(SELF_SUBJECT_ACCESS_REVIEW, V1SelfSubjectAccessReview.class);
+    supportCreateOnlyNoMetadata(SELF_SUBJECT_RULES_REVIEW, V1SelfSubjectRulesReview.class);
+    supportCreateOnlyNoMetadata(SUBJECT_ACCESS_REVIEW, V1SubjectAccessReview.class);
+    supportCreateOnlyNoMetadata(TOKEN_REVIEW, V1TokenReview.class);
     support(PV, V1PersistentVolume.class, this::createPvList);
     support(NAMESPACE, V1Namespace.class, this::createNamespaceList);
     support(VALIDATING_WEBHOOK_CONFIGURATION,
@@ -266,6 +266,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
       String resourceName, Class<T> resourceClass, Function<List<T>, KubernetesListObject> toList) {
     dataTypes.put(resourceClass, resourceName);
     repositories.put(resourceName, new DataRepository<>(resourceClass, toList));
+  }
+
+  private <T extends KubernetesType> void supportCreateOnlyNoMetadata(String resourceName, Class<T> resourceClass) {
+    dataTypes.put(resourceClass, resourceName);
+    repositories.put(resourceName, new CreateOnlyNoMetadataDataRepository<>(resourceClass));
   }
 
   @SuppressWarnings({"SameParameterValue", "UnusedReturnValue"})
@@ -885,11 +890,11 @@ public class KubernetesTestSupport extends FiberTestSupport {
   }
 
   private class DataRepository<T extends KubernetesType> {
-    private final Map<String, T> data = new HashMap<>();
+    protected final Map<String, T> data = new HashMap<>();
     private final Class<T> resourceType;
     private Function<List<T>, KubernetesListObject> listFactory;
     private final Map<String, List<T>> continuations = new HashMap<>();
-    private List<Consumer<T>> onCreateActions = new ArrayList<>();
+    protected List<Consumer<T>> onCreateActions = new ArrayList<>();
     private List<Consumer<T>> onUpdateActions = new ArrayList<>();
     private List<Consumer<Long>> onDeleteActions = new ArrayList<>();
     private Method getStatusMethod;
@@ -1250,6 +1255,24 @@ public class KubernetesTestSupport extends FiberTestSupport {
           return "";
         }
       }
+    }
+  }
+
+  private class CreateOnlyNoMetadataDataRepository<T extends KubernetesType> extends DataRepository<T> {
+    private static final String NAME = "unnamed";
+
+    public CreateOnlyNoMetadataDataRepository(Class<T> resourceType) {
+      super(resourceType);
+    }
+
+    T createResource(String namespace, T resource) {
+      T existing = data.putIfAbsent(NAME, resource);
+      if (existing != null) {
+        return existing;
+      }
+
+      onCreateActions.forEach(a -> a.accept(resource));
+      return resource;
     }
   }
 
