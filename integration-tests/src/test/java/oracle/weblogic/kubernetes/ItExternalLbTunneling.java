@@ -3,6 +3,8 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -136,6 +138,7 @@ class ItExternalLbTunneling {
   private static String tlsSecretName = domainUid + "-test-tls-secret";
   private String clusterSvcRouteHost = null;
   ConditionFactory withLongRetryPolicy = createStandardRetryPolicyWithAtMost(15);
+  private static String hostAddress = K8S_NODEPORT_HOST;
 
   /**
    * Install Operator.
@@ -144,9 +147,13 @@ class ItExternalLbTunneling {
    JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(3) List<String> namespaces) {
+  public static void initAll(@Namespaces(3) List<String> namespaces) throws UnknownHostException {
     logger = getLogger();
     logger.info("K8S_NODEPORT_HOSTNAME {0} K8S_NODEPORT_HOST {1}", K8S_NODEPORT_HOSTNAME, K8S_NODEPORT_HOST);
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAddress = InetAddress.getLocalHost().getHostAddress();
+    }
 
     // get a new unique opNamespace
     logger.info("Assigning unique namespace for Operator");
@@ -183,7 +190,7 @@ class ItExternalLbTunneling {
     // Prepare the config map sparse model file from the template by replacing
     // Public Address of the custom channel with K8S_NODEPORT_HOST
     Map<String, String> configTemplateMap  = new HashMap<>();
-    configTemplateMap.put("INGRESS_HOST", K8S_NODEPORT_HOST);
+    configTemplateMap.put("INGRESS_HOST", hostAddress);
 
     Path srcFile = Paths.get(RESOURCE_DIR,
         "wdt-models", "tunneling.model.template.yaml");
@@ -218,7 +225,7 @@ class ItExternalLbTunneling {
     }
 
     // Create SSL certificate and key using openSSL with SAN extension
-    createCertKeyFiles(K8S_NODEPORT_HOST);
+    createCertKeyFiles(hostAddress);
     // Create kubernates secret using genereated certificate and key
     createSecretWithTLSCertKey(tlsSecretName);
     // Import the tls certificate into a JKS truststote to be used while
@@ -269,7 +276,7 @@ class ItExternalLbTunneling {
     templateMap.put("DOMAIN_NS", domainNamespace);
     templateMap.put("DOMAIN_UID", domainUid);
     templateMap.put("CLUSTER", clusterName);
-    templateMap.put("INGRESS_HOST", K8S_NODEPORT_HOST);
+    templateMap.put("INGRESS_HOST", hostAddress);
 
     Path srcTraefikHttpFile = Paths.get(RESOURCE_DIR,
         "tunneling", "traefik.tunneling.template.yaml");
@@ -330,7 +337,7 @@ class ItExternalLbTunneling {
     templateMap.put("DOMAIN_UID", domainUid);
     templateMap.put("CLUSTER", clusterName);
     templateMap.put("TLS_CERT", tlsSecretName);
-    templateMap.put("INGRESS_HOST", K8S_NODEPORT_HOST);
+    templateMap.put("INGRESS_HOST", hostAddress);
 
     Path srcTraefikHttpsFile  = Paths.get(RESOURCE_DIR,
         "tunneling", "traefik.tls.tunneling.template.yaml");
@@ -618,7 +625,7 @@ class ItExternalLbTunneling {
   private static void createCertKeyFiles(String cn) {
 
     Map<String, String> sanConfigTemplateMap  = new HashMap<>();
-    sanConfigTemplateMap.put("INGRESS_HOST", K8S_NODEPORT_HOST);
+    sanConfigTemplateMap.put("INGRESS_HOST", hostAddress);
 
     Path srcFile = Paths.get(RESOURCE_DIR,
         "tunneling", "san.config.template.txt");
