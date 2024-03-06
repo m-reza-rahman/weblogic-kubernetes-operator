@@ -104,7 +104,8 @@ public interface ActionConstants {
   public static final String RBAC_API_GROUP = "rbac.authorization.k8s.io";
 
   public static final String MONITORING_EXPORTER_DOWNLOAD_URL 
-      = "https://github.com/oracle/weblogic-monitoring-exporter.git";
+      = "https://orahub.oci.oraclecorp.com/weblogic-cloud/weblogic-monitoring-exporter.git";
+
 
   // ------------ Ingress constants----------------------------
   public static final String INGRESS_API_VERSION = "networking.k8s.io/v1";
