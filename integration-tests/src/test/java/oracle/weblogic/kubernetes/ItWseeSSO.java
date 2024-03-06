@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -27,6 +29,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,6 +48,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -60,7 +64,9 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePodVerifyResult;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
@@ -72,6 +78,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -93,7 +100,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify that client can communicate with webservices with SSO")
 @IntegrationTest
-@Tag("oke-parallel")
+@Tag("oke-gate")
 @Tag("kind-parallel")
 class ItWseeSSO {
 
@@ -105,6 +112,8 @@ class ItWseeSSO {
   private static int nodeportshttp = 0;
   private static String WDT_MODEL_FILE_SENDER = "model.wsee1.yaml";
   private static String WDT_MODEL_FILE_RECEIVER = "model.wsee2.yaml";
+  private static List<String> ingressHostList1 = null;
+  private static List<String> ingressHostList2 = null;
   private String receiverURI = null;
   private String senderURI = null;
   final String domain1Uid = "mywseedomain1";
@@ -127,6 +136,7 @@ class ItWseeSSO {
   static Path wseeServiceAppPath;
   static Path wseeServiceRefAppPath;
   static Path wseeServiceRefStubsPath;
+  private String ingressIP;
 
   private static LoggingFacade logger = null;
 
@@ -166,6 +176,9 @@ class ItWseeSSO {
 
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
+
+      ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("NGINX http node port: {0}", nodeportshttp);
 
@@ -182,6 +195,17 @@ class ItWseeSSO {
     }
     if (adminSvcExtHost2 == null) {
       adminSvcExtHost2 = createRouteForOKD(getExternalServicePodName(adminServerPodName1), domain2Namespace);
+    }
+    Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
+
+    clusterNameMsPortMap.put(clusterName, managedServerPort);
+    if (!OKD) {
+      ingressHostList1
+          = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
+          false, nginxHelmParams.getIngressClassName(), true, 7001);
+      ingressHostList2
+          = createIngressForDomainAndVerify(domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
+          false, nginxHelmParams.getIngressClassName(), true, 7001);
     }
     // build the wsee application
     Path distDir = buildApplication(Paths.get(APP_DIR, "wsee"),
@@ -207,8 +231,10 @@ class ItWseeSSO {
     deployApplication(clusterName + "," + adminServerName, domain2Namespace, domain2Uid, wseeServiceAppPath);
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName, domain1Namespace, domain1Uid, wseeServiceRefAppPath);
-    receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2, "/samlSenderVouches/EchoService");
-    senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1, "/EchoServiceRef/Echo");
+    receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2,
+        "/samlSenderVouches/EchoService", ingressHostList2.get(0));
+    senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1,
+        "/EchoServiceRef/Echo", ingressHostList1.get(0));
     assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
             "addSAMLRelyingPartySenderConfig.py", receiverURI),
         "Failed to run python script addSAMLRelyingPartySenderConfig.py");
@@ -216,31 +242,57 @@ class ItWseeSSO {
             -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
             "default"),
         "Getting admin server node port failed");
+    String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP + " 80" : K8S_NODEPORT_HOST + " " + serviceNodePort;
+
     assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
-            "setupPKI.py", K8S_NODEPORT_HOST + " " + serviceNodePort),
-        "Failed to run python script setupPKI.py");
+              "setupPKI.py", hostPort),
+          "Failed to run python script setupPKI.py");
 
     buildRunClientOnPod();
   }
 
   private String checkWSDLAccess(String domainNamespace, String domainUid,
                                  String adminSvcExtHost,
-                                 String appURI) {
+                                 String appURI, String ingressHost) {
 
     String adminServerPodName = domainUid + "-" + adminServerName;
-    int serviceNodePort = assertDoesNotThrow(()
-            -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
-            "default"),
-        "Getting admin server node port failed");
+    HttpResponse<String> response;
+    String url;
+    int serviceNodePort = 0;
+    if (!OKE_CLUSTER_PRIVATEIP) {
+      int serviceTestNodePort = assertDoesNotThrow(()
+              -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
+              "default"),
+          "Getting admin server node port failed");
 
+      serviceNodePort = serviceTestNodePort;
+      logger.info("admin svc host = {0}", adminSvcExtHost);
+      String hostAndPort = getHostAndPort(adminSvcExtHost, serviceTestNodePort);
+      String urlTest = "http://" + hostAndPort + appURI;
 
-    logger.info("admin svc host = {0}", adminSvcExtHost);
-    String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
-    String url = "http://" + hostAndPort + appURI;
+      response = assertDoesNotThrow(() -> OracleHttpClient.get(urlTest, true));
+    }
 
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
-    assertTrue(response.statusCode() == 200);
-    logger.info(response.body());
+    String host = formatIPv6Host(K8S_NODEPORT_HOST);
+    String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP : host + ":" + serviceNodePort;
+    String curlCmd =
+        String.format("curl --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s" + appURI,
+            ingressHost,
+            ADMIN_USERNAME_DEFAULT,
+            ADMIN_PASSWORD_DEFAULT,
+            hostPort);
+
+    logger.info("Executing curl command " + curlCmd);
+    for (int i = 0; i < 10; i++) {
+      assertDoesNotThrow(
+          () -> {
+            ExecResult result = ExecCommand.exec(curlCmd);
+            logger.info(result.stdout());
+            logger.info(result.stderr());
+          }
+      );
+    }
+    url = "http://" + hostPort + appURI;
     return url;
   }
 
