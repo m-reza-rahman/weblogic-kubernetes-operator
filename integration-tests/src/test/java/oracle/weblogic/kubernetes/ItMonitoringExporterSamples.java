@@ -865,7 +865,7 @@ class ItMonitoringExporterSamples {
               "default",
               domain2Namespace);
         });
-    
+
     final List<String> modelList = Collections.singletonList(targetPromFile.toString()
         + MONEXP_WDT_FILE);
 
