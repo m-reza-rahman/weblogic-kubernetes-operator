@@ -374,13 +374,13 @@ class ItTest {
    */
   private static String createAndVerifyDomainInImage() {
     // create image with model files
-    logger.info("Create image with model file with monitoring exporter app and verify");
-    String app1Path = String.format("%s/wls-exporter.war", monitoringExporterAppDir);
-    String app2Path = testWebAppWarLoc;
+    logger.info("Create image with model file with  app and verify");
+
+
 
     List<String> appList = new ArrayList<>();
-    appList.add(app1Path);
-    appList.add(app2Path);
+    appList.add(SESSMIGR_APP_NAME);
+
 
     int t3ChannelPort = getNextFreePort();
 
@@ -425,7 +425,7 @@ class ItTest {
             WEBLOGIC_IMAGE_TAG,
             WLS,
             false,
-            domain2Uid, true);
+            domain2Uid, false);
 
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(wdtImage);
