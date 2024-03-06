@@ -640,8 +640,7 @@ class ItIstioCrossDomainTransaction {
                         + "-Dweblogic.kernel.debug=true -Dweblogic.log.LoggerSeverity=Debug "
                         + "-Dweblogic.log.LogSeverity=Debug -Dweblogic.StdoutDebugEnabled=true "
                         + "-Dweblogic.log.StdoutSeverity=Debug "
-                        + "-Dweblogic.security.remoteAnonymousRMIT3Enabled=true "
-                        + "-Dweblogic.jdbc.remoteEnabled=true"))
+                        + "-Dweblogic.security.remoteAnonymousRMIT3Enabled=true "))
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
