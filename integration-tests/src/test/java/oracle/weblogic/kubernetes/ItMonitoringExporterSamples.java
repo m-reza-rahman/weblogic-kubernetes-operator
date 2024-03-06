@@ -856,7 +856,7 @@ class ItMonitoringExporterSamples {
     assertDoesNotThrow(() -> Files.createDirectories(fileTemp), "Failed to create temp dir for topology");
     logger.info("copy the " + MONEXP_WDT_FILE + "  to staging location");
     Path srcPromFile = Paths.get(monitoringExporterEndToEndDir, MONEXP_WDT_FILE);
-    Path targetPromFile = Paths.get(fileTemp.toString(), MONEXP_WDT_FILE);
+    Path targetPromFile = Paths.get(fileTemp.toString(), "simple-topology.yaml");
     assertDoesNotThrow(() -> Files.copy(srcPromFile, targetPromFile,
         StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
     assertDoesNotThrow(() -> {
@@ -865,8 +865,7 @@ class ItMonitoringExporterSamples {
           domain2Namespace);
     });
 
-    final List<String> modelList = Collections.singletonList(targetPromFile.toString()
-        + MONEXP_WDT_FILE);
+    final List<String> modelList = Collections.singletonList(targetPromFile.toString());
 
     wdtImage =
         createImageAndVerify(MONEXP_IMAGE_NAME,
