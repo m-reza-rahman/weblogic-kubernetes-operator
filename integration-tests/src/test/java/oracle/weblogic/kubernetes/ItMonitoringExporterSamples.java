@@ -266,6 +266,7 @@ class ItMonitoringExporterSamples {
     //start  MySQL database instance
     assertDoesNotThrow(() -> {
       String dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
+      assertNotNull(dbService, "Failed to create database");
       V1Pod pod = getPod(domain2Namespace, null, "mysql");
       createFileInPod(pod.getMetadata().getName(), domain2Namespace, "root123");
       runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/grant.sql");
