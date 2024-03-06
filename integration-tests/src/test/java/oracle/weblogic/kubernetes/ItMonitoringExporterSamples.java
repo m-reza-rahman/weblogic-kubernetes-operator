@@ -850,7 +850,7 @@ class ItMonitoringExporterSamples {
 
     // build the model file list
     logger.info("create a staging location for d scripts");
-    Path fileTemp = Paths.get("sampleTopologyTemp");
+    Path fileTemp = Paths.get(RESULTS_ROOT, "ItMonitoringExporterSamples", "temp","sampleTopologyTemp");
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for topology");
 
     assertDoesNotThrow(() -> Files.createDirectories(fileTemp), "Failed to create temp dir for topology");
