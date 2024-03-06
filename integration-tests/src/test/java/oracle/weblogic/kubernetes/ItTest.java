@@ -224,7 +224,8 @@ class ItTest {
         if (OKE_CLUSTER_PRIVATEIP) {
           verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, ingressIP);
         } else {
-          verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, nodeportshttp);
+          verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount,
+              K8S_NODEPORT_HOST + ":" + nodeportshttp);
         }
       } else {
         String clusterService = domain2Uid + "-cluster-cluster-1";
