@@ -32,15 +32,19 @@ public abstract class HttpResponseStep extends Step {
 
   @Override
   public StepAction apply(Packet packet) {
-    return Optional.ofNullable(getResponse(packet))
-        .map(r -> doApply(packet, r))
-        .orElse(handlePossibleThrowableOrContinue(packet));
+    HttpResponse<String> response = getResponse(packet);
+    if (response != null) {
+      return doApply(packet, response);
+    }
+    return handlePossibleThrowableOrContinue(packet);
   }
 
   private StepAction handlePossibleThrowableOrContinue(Packet packet) {
-    return Optional.ofNullable(getThrowableResponse(packet))
-        .map(t -> wrapOnFailure(packet, null))
-        .orElse(doNext(packet));
+    Throwable t = getThrowableResponse(packet);
+    if (t != null) {
+      return wrapOnFailure(packet, null); // FIXME?
+    }
+    return doNext(packet);
   }
 
   protected Throwable getThrowableResponse(Packet packet) {
@@ -49,7 +53,10 @@ public abstract class HttpResponseStep extends Step {
 
   private StepAction doApply(Packet packet, HttpResponse<String> response) {
     Optional.ofNullable(callback).ifPresent(c -> c.accept(response));
-    return isSuccess(response) ? onSuccess(packet, response) : wrapOnFailure(packet, response);
+    if (isSuccess(response)) {
+      return onSuccess(packet, response);
+    }
+    return wrapOnFailure(packet, response);
   }
 
   private StepAction wrapOnFailure(Packet packet, HttpResponse<String> response) {
