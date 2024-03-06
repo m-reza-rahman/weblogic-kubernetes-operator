@@ -71,7 +71,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVol
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
+//import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodReady;
@@ -265,10 +265,11 @@ class ItMonitoringExporterSamples {
     }
     //start  MySQL database instance
     assertDoesNotThrow(() -> {
-      String dbService = createMySQLDB("mysql", "root", "123456", domain2Namespace, null);
+      String dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
       V1Pod pod = getPod(domain2Namespace, null, "mysql");
-      createFileInPod(pod.getMetadata().getName(), domain2Namespace, "123456");
-      runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "123456");
+      createFileInPod(pod.getMetadata().getName(), domain2Namespace, "root123");
+      runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/grant.sql");
+      runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/create.sql");
     });
   }
 
@@ -339,8 +340,8 @@ class ItMonitoringExporterSamples {
         checkMetricsViaPrometheus(sessionAppPrometheusSearchKey, "sessmigr", hostPortPrometheus);
       }
     } finally {
-      shutdownDomain(domain1Uid, domain1Namespace);
-      shutdownDomain(domain2Uid, domain2Namespace);
+      //shutdownDomain(domain1Uid, domain1Namespace);
+      //shutdownDomain(domain2Uid, domain2Namespace);
     }
   }
 
@@ -480,10 +481,18 @@ class ItMonitoringExporterSamples {
             + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
             + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
             + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
-            + "SELECT host, user FROM mysql.user;\n"
-            + "CREATE DATABASE " + domain2Uid + ";\n"
+            + "SELECT host, user FROM mysql.user;");
+    Path source1File = Files.writeString(Paths.get(WORK_DIR, "create.sql"),
+        "CREATE DATABASE " + domain2Uid + ";\n"
             + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
             + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';");
+    StringBuffer mysqlCmd1 = new StringBuffer("cat " + source1File.toString() + " | ");
+    mysqlCmd1.append(KUBERNETES_CLI + " exec -i -n ");
+    mysqlCmd1.append(namespace);
+    mysqlCmd1.append(" ");
+    mysqlCmd1.append(podName);
+    mysqlCmd1.append(" -- /bin/bash -c \"");
+    mysqlCmd1.append("cat > /tmp/create.sql\"");
     StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
     mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd.append(namespace);
@@ -496,6 +505,12 @@ class ItMonitoringExporterSamples {
     logger.info("mysql returned {0}", result.toString());
     logger.info("mysql returned EXIT value {0}", result.exitValue());
     assertEquals(0, result.exitValue(), "mysql execution fails");
+    logger.info("mysql command {0}", mysqlCmd1.toString());
+    result = assertDoesNotThrow(() -> exec(new String(mysqlCmd1), false));
+    logger.info("mysql returned {0}", result.toString());
+    logger.info("mysql returned EXIT value {0}", result.exitValue());
+    assertEquals(0, result.exitValue(), "mysql execution fails");
+
   }
 
   @AfterAll
@@ -849,7 +864,7 @@ class ItMonitoringExporterSamples {
     return wdtImage;
   }
 
-  private static void runMysqlInsidePod(String podName, String namespace, String password) {
+  private static void runMysqlInsidePod(String podName, String namespace, String password, String sqlFilePath) {
     final LoggingFacade logger = getLogger();
 
     logger.info("Sleeping for 1 minute before connecting to mysql db");
@@ -861,7 +876,8 @@ class ItMonitoringExporterSamples {
     mysqlCmd.append(" -- /bin/bash -c \"");
     mysqlCmd.append("mysql --force ");
     mysqlCmd.append("-u root -p" + password);
-    mysqlCmd.append(" < /tmp/grant.sql ");
+    mysqlCmd.append(" < ");
+    mysqlCmd.append(sqlFilePath);
     mysqlCmd.append(" \"");
     logger.info("mysql command {0}", mysqlCmd.toString());
     ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), true));
