@@ -655,7 +655,7 @@ class ItCrossDomainTransaction {
                         + "-Dweblogic.debug.DebugJTAXA=true "
                         + "-Dweblogic.debug.DebugJTA2PC=true "
                         + "-Dweblogic.security.remoteAnonymousRMIT3Enabled=true "
-                        + "-Dweblogic.debug.DebugJMSBackEnd=true -Dweblogic.jdbc.remoteEnabled=true"))
+                        + "-Dweblogic.jdbc.remoteEnabled=true"))
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
