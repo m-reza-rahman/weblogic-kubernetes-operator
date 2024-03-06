@@ -53,12 +53,8 @@ import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.KUBERN
 public abstract class ResponseStep<T extends KubernetesType> extends Step {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
-  private static final RetryStrategyFactory DEFAULT_RETRY_STRATEGY_FACTORY = new RetryStrategyFactory() {
-    @Override
-    public RetryStrategy create(int maxRetryCount, Step retryStep) {
-      return new DefaultRetryStrategy(maxRetryCount, retryStep);
-    }
-  };
+  private static final RetryStrategyFactory DEFAULT_RETRY_STRATEGY_FACTORY =
+          (maxRetryCount, retryStep) -> new DefaultRetryStrategy(maxRetryCount, retryStep);
 
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
   private static RetryStrategyFactory retryStrategyFactory = DEFAULT_RETRY_STRATEGY_FACTORY;
@@ -236,15 +232,15 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
    * <p>The default implementation tests if the request could be retried and, if not, ends fiber
    * processing.
    *
-   * @param conflictStep Conflict step
+   * @param conflict Conflict step
    * @param packet Packet
    * @param callResponse the result of the call
    * @return Next action for fiber processing, which may be a retry
    */
-  public StepAction onFailure(Step conflictStep, Packet packet, KubernetesApiResponse<T> callResponse) {
+  public StepAction onFailure(Step conflict, Packet packet, KubernetesApiResponse<T> callResponse) {
     RetryStrategy retryStrategy = getOrCreateRetryStrategy(packet);
     if (retryStrategy != null) {
-      StepAction result = retryStrategy.doPotentialRetry(conflictStep, packet, callResponse);
+      StepAction result = retryStrategy.doPotentialRetry(conflict, packet, callResponse);
       if (result != null) {
         return result;
       }
@@ -254,8 +250,16 @@ public abstract class ResponseStep<T extends KubernetesType> extends Step {
 
   private RetryStrategy getOrCreateRetryStrategy(Packet packet) {
     return (RetryStrategy) packet.computeIfAbsent(
-            RETRY, s -> retryStrategyFactory.create(
+            RETRY, s -> create(retryStrategyFactory,
                     TuningParameters.getInstance().getCallBuilderTuning().getCallMaxRetryCount(), previousStep));
+  }
+
+  private RetryStrategy create(RetryStrategyFactory factory, int maxRetryCount, Step retry) {
+    RetryStrategy strategy = factory.create(maxRetryCount, retry);
+    if (strategy == null) {
+      strategy = new DefaultRetryStrategy(maxRetryCount, retry);
+    }
+    return strategy;
   }
 
   /**

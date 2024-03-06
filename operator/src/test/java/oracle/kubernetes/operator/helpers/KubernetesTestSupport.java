@@ -80,7 +80,11 @@ import jakarta.json.JsonStructure;
 import oracle.kubernetes.operator.calls.KubernetesApi;
 import oracle.kubernetes.operator.calls.KubernetesApiFactory;
 import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
+import oracle.kubernetes.operator.calls.RetryStrategy;
+import oracle.kubernetes.operator.calls.RetryStrategyFactory;
 import oracle.kubernetes.operator.work.FiberTestSupport;
+import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -130,6 +134,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
   private boolean addCreationTimestamp;
   private EmptyResponse emptyResponse;
   private VersionInfo versionInfo = TEST_VERSION_INFO;
+  private RetryStrategy retryStrategy;
 
   /**
    * Installs a factory into CallBuilder to use canned responses.
@@ -160,7 +165,38 @@ public class KubernetesTestSupport extends FiberTestSupport {
     supportNamespaced(SERVICE, V1Service.class, this::createServiceList);
     supportNamespaced(SCALE, V1Scale.class);
 
-    return StaticStubSupport.install(RequestBuilder.class, "kubernetesApiFactory", new KubernetesApiFactoryImpl());
+    return new Memento() {
+      private final List<Memento> mementos = new ArrayList<>();
+
+      {
+        mementos.add(StaticStubSupport.install(
+                RequestBuilder.class, "kubernetesApiFactory", new KubernetesApiFactoryImpl()));
+        mementos.add(StaticStubSupport.install(
+                ResponseStep.class, "retryStrategyFactory", new RetryStrategyFactoryImpl()));
+      }
+
+      @Override
+      public void revert() {
+        mementos.forEach(Memento::revert);
+      }
+
+      @Override
+      public <T> T getOriginalValue() {
+        return null;
+      }
+    };
+  }
+
+  private class RetryStrategyFactoryImpl implements RetryStrategyFactory {
+    @Override
+    public RetryStrategy create(int maxRetryCount, Step retryStep) {
+      return retryStrategy;
+    }
+  }
+
+  public KubernetesTestSupport addRetryStrategy(RetryStrategy retryStrategy) {
+    this.retryStrategy = retryStrategy;
+    return this;
   }
 
   private ClusterList createClusterList(List<ClusterResource> items) {

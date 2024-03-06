@@ -102,7 +102,7 @@ public class JobStepContext extends BasePodStepContext {
   private final WlsDomainConfig domainTopology;
   private static final CommonUtils.CheckedFunction<String, String> getMD5Hash = CommonUtils::getMD5Hash;
   private V1Job jobModel;
-  private Step conflictStep;
+  private Step conflict;
   private Packet packet;
 
   JobStepContext(Packet packet) {
@@ -283,8 +283,8 @@ public class JobStepContext extends BasePodStepContext {
    * @return a step to be scheduled.
    */
   Step createJob() {
-    conflictStep = RequestBuilder.JOB.create(getJobModel(), newCreateResponse());
-    return conflictStep;
+    conflict = RequestBuilder.JOB.create(getJobModel(), newCreateResponse());
+    return conflict;
   }
 
   String getJobCreatedMessageKey() {
@@ -1053,7 +1053,7 @@ public class JobStepContext extends BasePodStepContext {
       if (isUnrecoverable(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
-        return onFailure(conflictStep, packet, callResponse);
+        return onFailure(conflict, packet, callResponse);
       }
     }
 

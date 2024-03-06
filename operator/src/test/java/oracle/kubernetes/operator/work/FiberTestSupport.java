@@ -18,8 +18,6 @@ import javax.annotation.Nullable;
 
 import oracle.kubernetes.operator.MainDelegate;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.calls.ResponseStep;
-import oracle.kubernetes.operator.calls.RetryStrategy;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.logging.LoggingContext;
 import oracle.kubernetes.utils.SystemClockTestSupport;
@@ -153,11 +151,6 @@ public class FiberTestSupport {
 
   public FiberTestSupport addLoggingContext(LoggingContext loggingContext) {
     packet.put(LOGGING_CONTEXT_KEY, loggingContext);
-    return this;
-  }
-
-  public FiberTestSupport addRetryStrategy(RetryStrategy retryStrategy) {
-    packet.put(ResponseStep.RETRY, retryStrategy);
     return this;
   }
 
