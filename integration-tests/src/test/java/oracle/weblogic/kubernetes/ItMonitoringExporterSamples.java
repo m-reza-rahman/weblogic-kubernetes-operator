@@ -66,7 +66,6 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
@@ -861,10 +860,10 @@ class ItMonitoringExporterSamples {
     assertDoesNotThrow(() -> Files.copy(srcPromFile, targetPromFile,
         StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
     assertDoesNotThrow(() -> {
-          replaceStringInFile(targetPromFile.toString(),
-              "default",
-              domain2Namespace);
-        });
+      replaceStringInFile(targetPromFile.toString(),
+          "default",
+          domain2Namespace);
+    });
 
     final List<String> modelList = Collections.singletonList(targetPromFile.toString()
         + MONEXP_WDT_FILE);

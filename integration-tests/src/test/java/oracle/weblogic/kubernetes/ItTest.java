@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -52,11 +51,8 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
-import static oracle.weblogic.kubernetes.assertions.TestAssertions.callTestWebAppAndCheckForServerNameInResponse;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
@@ -65,7 +61,6 @@ import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerif
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccess;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccessThroughNginx;
 import static oracle.weblogic.kubernetes.utils.MySQLDBUtils.createMySQLDB;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -227,9 +222,9 @@ class ItTest {
             true, nginxHelmParams.getIngressClassName(), false, 0);
         logger.info("verify access to Monitoring Exporter");
         if (OKE_CLUSTER_PRIVATEIP) {
-          verifyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, ingressIP);
+          verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, ingressIP);
         } else {
-          verifyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, nodeportshttp);
+          verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, nodeportshttp);
         }
       } else {
         String clusterService = domain2Uid + "-cluster-cluster-1";
@@ -243,7 +238,7 @@ class ItTest {
     }
   }
 
-  public static void verifyAppAccessThroughNginx(String nginxHost, int replicaCount, String hostPort) {
+  public static void verifyMyAppAccessThroughNginx(String nginxHost, int replicaCount, String hostPort) {
 
     List<String> managedServerNames = new ArrayList<>();
     for (int i = 1; i <= replicaCount; i++) {
@@ -252,12 +247,13 @@ class ItTest {
 
     // check that NGINX can access the sample apps from all managed servers in the domain
     String curlCmd =
-        String.format("curl -g --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s/" +SESSMIGR_APP_WAR_NAME + "/?getCounter",
+        String.format("curl -g --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s/"
+                + SESSMIGR_APP_WAR_NAME + "/?getCounter",
             nginxHost,
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT,
             hostPort);
-    ExecResult result = assertDoesNotThrow( () ->ExecCommand.exec(curlCmd, true));
+    ExecResult result = assertDoesNotThrow(() -> ExecCommand.exec(curlCmd, true));
 
     String response = result.stdout().trim();
     logger.info("Response : exitValue {0}, stdout {1}, stderr {2}", result.exitValue(), response, result.stderr());
