@@ -481,7 +481,7 @@ class ItMonitoringExporterSamples {
             + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
             + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
             + "SELECT host, user FROM mysql.user;\n"
-            + "CREATE DATABASE domain1;\n"
+            + "CREATE DATABASE " + domain2Uid + ";\n"
             + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
             + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';");
     StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
@@ -491,9 +491,9 @@ class ItMonitoringExporterSamples {
     mysqlCmd.append(podName);
     mysqlCmd.append(" -- /bin/bash -c \"");
     mysqlCmd.append("cat > /tmp/grant.sql\"");
-    //logger.info("mysql command {0}", mysqlCmd.toString());
+    logger.info("mysql command {0}", mysqlCmd.toString());
     result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
-    //logger.info("mysql returned {0}", result.toString());
+    logger.info("mysql returned {0}", result.toString());
     logger.info("mysql returned EXIT value {0}", result.exitValue());
     assertEquals(0, result.exitValue(), "mysql execution fails");
   }
