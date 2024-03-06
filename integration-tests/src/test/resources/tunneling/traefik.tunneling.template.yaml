@@ -12,7 +12,7 @@ spec:
   entryPoints: [] 
   routes:
   - kind: Rule
-    match: Host(`INGRESS_HOST`)
+    match: PathPrefix(`/`)
     services:
     - kind: Service
       name: DOMAIN_UID-cluster-CLUSTER

@@ -149,7 +149,13 @@ public class CommonTestUtils {
         .atMost(seconds, SECONDS).await();
   }
 
-  private static ConditionFactory createStandardRetryPolicyWithAtMost(long minutes) {
+  /**
+   * Create retry policy with parameters.
+   *
+   * @param minutes max wait in minutes
+   * @return conditionFactory object of retry policy
+   */
+  public static ConditionFactory createStandardRetryPolicyWithAtMost(long minutes) {
     return with().pollDelay(2, SECONDS)
         .and().with().pollInterval(10, SECONDS)
         .atMost(minutes, MINUTES).await();
