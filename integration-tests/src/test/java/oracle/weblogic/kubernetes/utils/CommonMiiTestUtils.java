@@ -1104,9 +1104,8 @@ public class CommonMiiTestUtils {
         response = OracleHttpClient.get(url, headers, true);
         assertEquals(200, response.statusCode());
         returnString = response.body();
-        //return response.body();
       } catch (Exception ex) {
-        //return null;
+        ex.printStackTrace();
       }
     } else {
       String curlString = null;
