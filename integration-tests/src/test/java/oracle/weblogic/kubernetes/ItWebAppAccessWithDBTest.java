@@ -161,7 +161,8 @@ class ItWebAppAccessWithDBTest {
 
 
     //start  MySQL database instance
-    if (!WEBLOGIC_IMAGE_TAG.equals("12.2.1.4")) {
+    if (!WEBLOGIC_IMAGE_TAG.contains("12.2.1.4")) {
+      logger.info("Installing database for wls" + WEBLOGIC_IMAGE_TAG);
       assertDoesNotThrow(() -> {
         String dbService = createMySQLDB("mysql", "root", "root123", dominNamespace, null);
         assertNotNull(dbService, "Failed to create database");
