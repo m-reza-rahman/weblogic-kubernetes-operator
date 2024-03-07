@@ -134,8 +134,8 @@ class ItMonitoringExporterSamples {
   private static int managedServersCount = 2;
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
-  private static String domain1Uid = "monexp-domain-1";
-  private static String domain2Uid = "monexp-domain-2";
+  private static String domain1Uid = "monexpdomain1";
+  private static String domain2Uid = "monexpdomain2";
 
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
@@ -489,9 +489,9 @@ class ItMonitoringExporterSamples {
             + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
             + "SELECT host, user FROM mysql.user;");
     Path source1File = Files.writeString(Paths.get(WORK_DIR, "create.sql"),
-        "CREATE DATABASE domain2;\n"
+        "CREATE DATABASE " + domain2Uid + ";\n"
             + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
-            + "GRANT ALL ON domain2.* TO 'wluser1';");
+            + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';");
     StringBuffer mysqlCmd1 = new StringBuffer("cat " + source1File.toString() + " | ");
     mysqlCmd1.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd1.append(namespace);
