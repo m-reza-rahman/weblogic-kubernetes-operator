@@ -68,7 +68,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
-import static oracle.weblogic.kubernetes.actions.TestActions.getPodIP;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
@@ -145,16 +144,14 @@ class ItCrossDomainTransaction {
   private static final String ORACLEDBURLPREFIX = "oracledb.";
   private static String ORACLEDBSUFFIX = null;
   private static LoggingFacade logger = null;
-  static String dbUrl;
+  private static String dbUrl;
   private static String hostHeader;
   private static Map<String, String> headers = null;
   private static String domain1AdminExtSvcRouteHost = null;
   private static String domain2AdminExtSvcRouteHost = null;
   private static String adminExtSvcRouteHost = null;
   private static String hostAndPort = null;
-  private static String dbPodIP = null;
-  private static int dbPort = 1521;
-
+  
   private static String nginxNamespace = null;
   private static NginxParams nginxHelmParams = null;
   private static int nginxNodePort;
@@ -197,11 +194,6 @@ class ItCrossDomainTransaction {
     logger.info("Create Oracle DB in namespace: {0} ", domain2Namespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, SYSPASSWORD, domain2Namespace));    
 
-    dbPodIP = assertDoesNotThrow(
-        () -> getPodIP(domain2Namespace, "", dbName),
-        String.format("Get pod IP address failed with ApiException for oracledb in namespace %s",
-            domain2Namespace));
-    logger.info("db Pod IP {0} ", dbPodIP);
     // Now that we got the namespaces for both the domains, we need to update the model properties
     // file with the namespaces. For a cross-domain transaction to work, we need to have the externalDNSName
     // set in the config file. Cannot set this after the domain is up since a server restart is
@@ -267,10 +259,7 @@ class ItCrossDomainTransaction {
 
     FileOutputStream out = new FileOutputStream(PROPS_TEMP_DIR + "/" + propFileName);
     props.setProperty("NAMESPACE", domainNamespace);
-    //props.setProperty("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
-    //props.setProperty("DBPORT", Integer.toString(dbNodePort));
-    props.setProperty("K8S_NODEPORT_HOST", dbPodIP);
-    props.setProperty("DBPORT", Integer.toString(dbPort));
+    props.setProperty("PDBCONNECTSTRING", dbUrl);
     props.store(out, null);
     out.close();
   }
