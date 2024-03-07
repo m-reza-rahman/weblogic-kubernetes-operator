@@ -293,7 +293,7 @@ public class WebhookHelper {
 
       @Override
       public StepAction onFailure(Packet packet, KubernetesApiResponse<V1ValidatingWebhookConfiguration> callResponse) {
-        if (isUnrecoverable(callResponse)) {
+        if (isNotFound(callResponse)) {
           return super.onFailure(getConflictStep(), packet, callResponse);
         } else {
           return super.onFailure(packet, callResponse);

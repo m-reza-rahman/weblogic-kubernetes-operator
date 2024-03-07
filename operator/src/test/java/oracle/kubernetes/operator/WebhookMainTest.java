@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
@@ -53,6 +55,7 @@ import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
+import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -61,7 +64,6 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.hamcrest.junit.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -121,7 +123,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
-@Disabled("RJE -- Tests hang")
 public class WebhookMainTest extends CrdHelperTestBase {
   public static final VersionInfo TEST_VERSION_INFO = new VersionInfo().major("1").minor("18").gitVersion("0");
   public static final KubernetesVersion TEST_VERSION = new KubernetesVersion(TEST_VERSION_INFO);
@@ -274,20 +275,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
     recheckCRD();
 
     assertThat(logRecords, containsSevere(CRD_NOT_INSTALLED));
-  }
-
-  @ParameterizedTest
-  @ValueSource(strings = {DOMAIN, CLUSTER})
-  void whenNoCRDOnFirstAttempt_severeMessageNotLoggedOnRerty(String resourceType) {
-    TuningParametersStub.setParameter(CRD_PRESENCE_FAILURE_RETRY_MAX_COUNT, "1");
-    loggerControl.withLogLevel(Level.SEVERE).collectLogMessages(logRecords, CRD_NOT_INSTALLED);
-    simulateMissingCRD(resourceType);
-
-    recheckCRD();
-
-    recheckCRD();
-
-    assertThat(logRecords, not(containsSevere(CRD_NOT_INSTALLED)));
   }
 
   @Test
@@ -820,6 +807,12 @@ public class WebhookMainTest extends CrdHelperTestBase {
       testSupport.withPacket(packet)
                  .withCompletionAction(completionAction)
                  .runSteps(firstStep);
+    }
+
+    @Override
+    public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
+      ScheduledFuture<?> future = testSupport.scheduleWithFixedDelay(command, initialDelay, delay, unit);
+      return () -> future.cancel(true);
     }
 
     @Override

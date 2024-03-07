@@ -1062,7 +1062,7 @@ class ManagedPodHelperTest extends PodHelperTestBase {
   }
 
   @Test
-  @Disabled("FIXME: Test requires webhook v8 domain to Cluster resource conversion")
+  @Disabled("Test requires webhook v8 domain to Cluster resource conversion")
   void whenDomainAndClusterHaveLegacyAuxImages_createManagedPodsWithInitContainersInCorrectOrderAndVolumeMounts() {
     Map<String, Object> auxiliaryImageVolume = createAuxiliaryImageVolume(DEFAULT_LEGACY_AUXILIARY_IMAGE_MOUNT_PATH);
     Map<String, Object> auxiliaryImage =
