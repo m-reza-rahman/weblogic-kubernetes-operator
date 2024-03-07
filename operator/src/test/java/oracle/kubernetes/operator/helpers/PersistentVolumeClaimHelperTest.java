@@ -118,7 +118,7 @@ class PersistentVolumeClaimHelperTest {
 
   private PersistentVolumeClaim createPvc() {
     return new PersistentVolumeClaim().spec(new PersistentVolumeClaimSpec().storageClassName("SC")
-        .resources(createResources())).metadata(new V1ObjectMeta().name("Test"));
+        .resources(createResources())).metadata(new V1ObjectMeta().name("Test").namespace(NS));
   }
 
   @AfterEach
