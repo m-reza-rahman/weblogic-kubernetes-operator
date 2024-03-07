@@ -79,7 +79,7 @@ class ItWebAppAccessWithDBTest {
 
   private static String dominNamespace = null;
 
-  private static String dominUid = "dbtest-domain-2";
+  private static String dominUid = "dbtestdomain";
 
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
