@@ -82,7 +82,7 @@ public class FiberGate {
    */
   public void startNewFiberIfCurrentFiberMatches(
       String domainUid, Step strategy, Packet packet, CompletionCallback callback) {
-    requestNewFiberStart(domainUid, packet.getFiber(), strategy, packet, callback);
+    requestNewFiberStart(domainUid, Fiber.getCurrentIfSet(), strategy, packet, callback);
   }
 
   /**
@@ -158,19 +158,21 @@ public class FiberGate {
 
     @Override
     public void onCompletion(Packet packet) {
+      Fiber fiber = packet.getFiber();
       try {
         callback.onCompletion(packet);
       } finally {
-        gateMap.remove(domainUid, packet.getFiber());
+        gateMap.remove(domainUid, fiber);
       }
     }
 
     @Override
     public void onThrowable(Packet packet, Throwable throwable) {
+      Fiber fiber = packet.getFiber();
       try {
         callback.onThrowable(packet, throwable);
       } finally {
-        gateMap.remove(domainUid, packet.getFiber());
+        gateMap.remove(domainUid, fiber);
       }
     }
   }
