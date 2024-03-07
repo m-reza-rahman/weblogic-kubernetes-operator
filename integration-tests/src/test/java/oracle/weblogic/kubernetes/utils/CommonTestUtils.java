@@ -2276,18 +2276,7 @@ public class CommonTestUtils {
                                              String serverPodName,
                                              int serverPort,
                                              String resourcePath) {
-    LoggingFacade logger = getLogger();;
-
-    String command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-    try {
-      ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("result is: {0}", result0.toString());
-    } catch (IOException | InterruptedException ex) {
-      ex.printStackTrace();
-    }
-
+    LoggingFacade logger = getLogger();
     String commandToRun = KUBERNETES_CLI + " exec -n "
         + domainNamespace + "  " + serverPodName + " -- curl --user "
         + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
@@ -2301,7 +2290,6 @@ public class CommonTestUtils {
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
-
     return result;
   }
 
