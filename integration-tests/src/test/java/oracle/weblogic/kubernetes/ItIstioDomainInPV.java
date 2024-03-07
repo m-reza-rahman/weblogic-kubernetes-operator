@@ -233,7 +233,7 @@ class ItIstioDomainInPV  {
     // imageLocation = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
     String imageLocation = null;
     if (KIND_REPO != null) {
-      imageLocation = KIND_REPO + "test-images/weblogic:" + WEBLOGIC_IMAGE_TAG;
+      imageLocation = KIND_REPO + WEBLOGIC_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG;
     } else {
       imageLocation = WEBLOGIC_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG;
     }
