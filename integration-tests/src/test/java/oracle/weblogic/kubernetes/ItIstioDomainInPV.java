@@ -22,6 +22,8 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
 import oracle.weblogic.domain.Configuration;
@@ -173,7 +175,7 @@ class ItIstioDomainInPV  {
    */
   @Test
   @DisplayName("Create WebLogic domain in PV with Istio")
-  void testIstioDomainHomeInPv() {
+  void testIstioDomainHomeInPv() throws UnknownHostException {
 
     final String managedServerNameBase = "managed-";
     String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
@@ -326,7 +328,7 @@ class ItIstioDomainInPV  {
     int istioIngressPort;
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      host = "localhost";
+      host = InetAddress.getLocalHost().getHostAddress();
       istioIngressPort = ISTIO_HTTP_HOSTPORT;
     } else {
       istioIngressPort = getIstioHttpIngressPort();
@@ -341,8 +343,8 @@ class ItIstioDomainInPV  {
       hostAndPort = host + ":" + istioIngressPort;
     }
 
-    String consoleUrl = "http://" + hostAndPort + "/weblogic/ready";
-    boolean checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
+    String readyAppUrl = "http://" + hostAndPort + "/weblogic/ready";
+    boolean checkConsole = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
     assertTrue(checkConsole, "Failed to access WebLogic readyapp ");
     logger.info("WebLogic server is accessible");
     if (!(TestConstants.KIND_CLUSTER
@@ -351,8 +353,8 @@ class ItIstioDomainInPV  {
       String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
       assertNotNull(forwardPort, "port-forward fails to assign local port");
       logger.info("Forwarded local port is {0}", forwardPort);
-      consoleUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
-      checkConsole = checkAppUsingHostHeader(consoleUrl, domainNamespace + ".org");
+      readyAppUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
+      checkConsole = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
       assertTrue(checkConsole, "Failed to access WebLogic server thru port-forwarded port");
       logger.info("WebLogic readyapp is accessible thru port forwarding");
       stopPortForwardProcess(domainNamespace);

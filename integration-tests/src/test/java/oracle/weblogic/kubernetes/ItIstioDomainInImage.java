@@ -3,6 +3,8 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -138,7 +140,7 @@ class ItIstioDomainInImage {
    */
   @Test
   @DisplayName("Create WebLogic domainhome-in-image with istio")
-  void testIstioDomainHomeInImage() {
+  void testIstioDomainHomeInImage() throws UnknownHostException {
     final String managedServerPrefix = domainUid + "-managed-server";
     final int replicaCount = 1;
 
@@ -204,7 +206,7 @@ class ItIstioDomainInImage {
     int istioIngressPort;
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      host = "localhost";
+      host = InetAddress.getLocalHost().getHostAddress();
       istioIngressPort = ISTIO_HTTP_HOSTPORT;
     } else {
       istioIngressPort = getIstioHttpIngressPort();
