@@ -860,10 +860,11 @@ class ItMonitoringExporterSamples {
     Path targetPromFile = Paths.get(fileTemp.toString(), "simple-topology.yaml");
     assertDoesNotThrow(() -> Files.copy(srcPromFile, targetPromFile,
         StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
+    String dbURL = dbService + "." + domain2Namespace + ".svc";
     assertDoesNotThrow(() -> {
       replaceStringInFile(targetPromFile.toString(),
           "mysql.default.svc.cluster.local",
-          dbService);
+          dbURL);
     });
 
     final List<String> modelList = Collections.singletonList(targetPromFile.toString());
