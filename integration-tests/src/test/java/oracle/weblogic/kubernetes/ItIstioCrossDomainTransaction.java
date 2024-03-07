@@ -6,6 +6,8 @@ package oracle.weblogic.kubernetes;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,10 +40,10 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.ISTIO_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
@@ -58,11 +60,12 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHos
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.DbUtils.getDBNodePort;
-import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
+import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
+import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
@@ -106,15 +109,18 @@ class ItIstioCrossDomainTransaction {
   private static String domain2Namespace = null;
   private static String domainUid1 = "domain1";
   private static String domainUid2 = "domain2";
-  private static String domain1AdminServerPodName = domainUid1 + "-admin-server";
+  private static String adminServerName = "admin-server";  
+  private static String domain1AdminServerPodName = domainUid1 + "-" + adminServerName;
   private final String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
-  private static String domain2AdminServerPodName = domainUid2 + "-admin-server";
+  private static String domain2AdminServerPodName = domainUid2 + "-" + adminServerName;
   private final String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
   private static String clusterName = "cluster-1";
+  private static final String SYSPASSWORD = "Oradoc_db1";
+  private static String dbName = "my-oraclecxt-sidb";  
   private static final String ORACLEDBURLPREFIX = "oracledb.";
   private static String ORACLEDBSUFFIX = null;
   private static LoggingFacade logger = null;
-  static String dbUrl;
+  private static String dbUrl;
   static int dbNodePort;
   static int istioIngressPort;
 
@@ -126,7 +132,7 @@ class ItIstioCrossDomainTransaction {
    * @param namespaces injected by JUnit
    */
   @BeforeAll
-  public static void initAll(@Namespaces(3) List<String> namespaces) {
+  public static void initAll(@Namespaces(3) List<String> namespaces) throws UnknownHostException {
     logger = getLogger();
 
     // get a new unique opNamespace
@@ -147,13 +153,11 @@ class ItIstioCrossDomainTransaction {
     dbUrl = ORACLEDBURLPREFIX + domain2Namespace + ORACLEDBSUFFIX;
     createBaseRepoSecret(domain2Namespace);
 
-    //Start oracleDB
-    assertDoesNotThrow(
-        () -> startOracleDB(DB_IMAGE_TO_USE_IN_SPEC, getNextFreePort(), domain2Namespace, dbListenerPort),
-        "Failed to start Oracle DB");
+    //install Oracle Database Operator
+    assertDoesNotThrow(() -> installDBOperator(domain2Namespace), "Failed to install database operator");
 
-    dbNodePort = getDBNodePort(domain2Namespace, "oracledb");
-    logger.info("DB Node Port = {0}", dbNodePort);
+    logger.info("Create Oracle DB in namespace: {0} ", domain2Namespace);
+    dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, SYSPASSWORD, domain2Namespace));
 
     // Now that we got the namespaces for both the domains, we need to update the model properties
     // file with the namespaces. for cross domain transaction to work, we need to have the externalDNSName
@@ -221,13 +225,12 @@ class ItIstioCrossDomainTransaction {
 
     FileOutputStream out = new FileOutputStream(PROPS_TEMP_DIR + "/" + propFileName);
     props.setProperty("NAMESPACE", domainNamespace);
-    props.setProperty("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
-    props.setProperty("DBPORT", Integer.toString(dbNodePort));
+    props.setProperty("PDBCONNECTSTRING", dbUrl);
     props.store(out, null);
     out.close();
   }
 
-  private static void buildApplicationsAndDomains() {
+  private static void buildApplicationsAndDomains() throws UnknownHostException {
 
     //build application archive
     Path targetDir = Paths.get(WORK_DIR,
@@ -362,15 +365,14 @@ class ItIstioCrossDomainTransaction {
     istioIngressPort = getIstioHttpIngressPort();
     logger.info("Istio Ingress Port is {0}", istioIngressPort);
 
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      // use IPV6
-      host = "[" + host + "]";
-    }
+    String host = formatIPv6Host(K8S_NODEPORT_HOST);
 
     // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + ISTIO_HTTP_HOSTPORT;
+    }  
 
     String readyAppUrl = "http://" + hostAndPort + "/weblogic/ready";
 
@@ -399,11 +401,15 @@ class ItIstioCrossDomainTransaction {
    */
   @Test
   @DisplayName("Check cross domain transaction with istio works")
-  void testIstioCrossDomainTransaction() {
+  void testIstioCrossDomainTransaction() throws UnknownHostException {
     // In internal OKE env, use Istio EXTERNAL-IP;
     // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String istioIngressIP = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      istioIngressIP = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+    }
 
     String curlRequest = OKE_CLUSTER ? String.format("curl -v --show-error --noproxy '*' "
           + "-H 'host:domain1-" + domain1Namespace + ".org' "
@@ -444,11 +450,16 @@ class ItIstioCrossDomainTransaction {
   @Test
   @DisplayName("Check cross domain transaction with istio and with TMAfterTLogBeforeCommitExit property commits")
   @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER", matches = "true")
-  void testIstioCrossDomainTransactionWithFailInjection() {
+  void testIstioCrossDomainTransactionWithFailInjection() throws UnknownHostException {
+    String host = K8S_NODEPORT_HOST;
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+    }    
     String curlRequest = String.format("curl -g -v --show-error --noproxy '*' "
         + "-H 'host:domain1-" + domain1Namespace + ".org' "
         + "http://%s:%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
-            K8S_NODEPORT_HOST, istioIngressPort, domain1Namespace, domain2Namespace);
+            host, istioIngressPort, domain1Namespace, domain2Namespace);
 
     ExecResult result = null;
     logger.info("curl command {0}", curlRequest);
@@ -479,17 +490,17 @@ class ItIstioCrossDomainTransaction {
    */
   @Test
   @DisplayName("Check cross domain transcated MDB communication with istio")
-  void testIstioCrossDomainTranscatedMDB() {
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      // use IPV6
-      host = "[" + host + "]";
-    }
+  void testIstioCrossDomainTranscatedMDB() throws UnknownHostException {
+    String host = formatIPv6Host(K8S_NODEPORT_HOST);
 
     // In internal OKE env, use Istio EXTERNAL-IP;
     // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + istioIngressPort;
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+    }    
 
     assertTrue(checkAppIsActive(hostAndPort, "-H 'host: " + "domain1-" + domain1Namespace + ".org '",
         "mdbtopic","cluster-1", ADMIN_USERNAME_DEFAULT,ADMIN_PASSWORD_DEFAULT),
@@ -527,17 +538,18 @@ class ItIstioCrossDomainTransaction {
     assertTrue(checkLocalQueue(), "Expected number of message not found in Accounting Queue");
   }
 
-  private boolean checkLocalQueue() {
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      // use IPV6
-      host = "[" + host + "]";
-    }
+  private boolean checkLocalQueue() throws UnknownHostException {
+    String host = formatIPv6Host(K8S_NODEPORT_HOST);
+    
     // In internal OKE env, use Istio EXTERNAL-IP;
     // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
     String hostAndPort = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace)
         : host + ":" + istioIngressPort;
+    if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+    }     
 
     String curlString = OKE_CLUSTER
         ? String.format("curl -g -v --show-error --noproxy '*' "

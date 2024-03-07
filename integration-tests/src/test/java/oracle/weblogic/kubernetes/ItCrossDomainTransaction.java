@@ -42,7 +42,6 @@ import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.Service;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
-//import oracle.weblogic.kubernetes.assertions.TestAssertions;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
@@ -628,8 +627,7 @@ class ItCrossDomainTransaction {
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
-                        .channelName("default")
-                        .nodePort(getNextFreePort()))))
+                        .channelName("default"))))
             .configuration(new Configuration()
                 .model(new Model()
                     .domainType("WLS"))
