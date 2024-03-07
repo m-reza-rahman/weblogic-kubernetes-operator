@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -33,31 +34,39 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import org.awaitility.core.ConditionFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_PREFIX_LENGTH;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_TENANCY;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
-// import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
-// import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
-// import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
-// import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.addLabelsToNamespace;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
+import static oracle.weblogic.kubernetes.actions.TestActions.imagePull;
+import static oracle.weblogic.kubernetes.actions.TestActions.imagePush;
+import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleAllClustersInDomain;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvExists;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.pvcExists;
@@ -65,6 +74,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHos
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getKindRepoImageForSpec;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -93,6 +103,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static org.awaitility.Awaitility.with;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -125,6 +136,10 @@ class ItIstioDomainInPV  {
 
   private static final String istioNamespace = "istio-system";
   private static final String istioIngressServiceName = "istio-ingressgateway";
+  ConditionFactory withVeryLongRetryPolicy
+      = with().pollDelay(0, SECONDS)
+          .and().with().pollInterval(10, SECONDS)
+          .atMost(30, MINUTES).await();
 
   /**
    * Assigns unique namespaces for operator and domains.
@@ -231,8 +246,25 @@ class ItIstioDomainInPV  {
     // Currently LOCALE testing is disabled till we have 1412 image with 
     // Japanease Locale 
     // imageLocation = KIND_REPO + "test-images/weblogic:" + LOCALE_IMAGE_TAG;
-    // imageLocation = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
-    String imageLocation = LOCALE_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG;
+    // String imageLocation = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
+    logger.info("LOCALE_IMAGE_NAME {0}", LOCALE_IMAGE_NAME);
+    logger.info("LOCALE_IMAGE_TAG {0}", LOCALE_IMAGE_TAG);
+    // once 14.1.2.0 japanese locale image is available uncomment the 
+    // pullImageFromBaseRepoAndPushToKind and comment the getKindRepoImageForSpec
+    String baseLocalImage = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
+    /*
+    if (KIND_REPO != null) {
+      testUntil(
+          withVeryLongRetryPolicy,
+          pullImageFromBaseRepoAndPushToKind(baseLocalImage),
+          logger,
+          "pullImageFromBaseRepoAndPushToKind for image {0} to be successful",
+          baseLocalImage);
+    }
+    */
+    baseLocalImage = getKindRepoImageForSpec(KIND_REPO, WEBLOGIC_IMAGE_NAME,
+        WEBLOGIC_IMAGE_TAG, BASE_IMAGES_REPO_PREFIX_LENGTH);
+    logger.info(baseLocalImage);
 
     // Enable istio in domain custom resource configuration object.
     // Add T3Channel Service with port assigned to Istio TCP ingress port.
@@ -515,4 +547,11 @@ class ItIstioDomainInPV  {
     createDomainJob(WEBLOGIC_IMAGE_TO_USE_IN_SPEC, pvName, pvcName, domainScriptConfigMapName,
         namespace, jobCreationContainer, annotMap);
   }
+  
+  private Callable<Boolean> pullImageFromBaseRepoAndPushToKind(String image) {
+    return (() -> {
+      String kindRepoImage = KIND_REPO + image.substring(BASE_IMAGES_REPO.length() + BASE_IMAGES_TENANCY.length() + 2);
+      return imagePull(image) && imageTag(image, kindRepoImage) && imagePush(kindRepoImage);
+    });
+  } 
 }
