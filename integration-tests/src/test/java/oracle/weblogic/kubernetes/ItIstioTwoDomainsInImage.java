@@ -3,6 +3,8 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -147,7 +149,7 @@ class ItIstioTwoDomainsInImage {
    */
   @Test
   @DisplayName("Two WebLogic domainhome-in-image with single istio ingress")
-  void testIstioTwoDomainsWithSingleIngress() {
+  void testIstioTwoDomainsWithSingleIngress() throws UnknownHostException {
     final String managedServerPrefix1 = domainUid1 + "-managed-server";
     final String managedServerPrefix2 = domainUid2 + "-managed-server";
     final int replicaCount = 1;
@@ -273,7 +275,7 @@ class ItIstioTwoDomainsInImage {
     int istioIngressPort;
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      host = "localhost";
+      host = InetAddress.getLocalHost().getHostAddress();
       istioIngressPort = ISTIO_HTTP_HOSTPORT;
     } else {
       istioIngressPort = getIstioHttpIngressPort();
