@@ -4,6 +4,8 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,6 +63,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsRunnin
 import static oracle.weblogic.kubernetes.utils.BuildApplication.setupWebLogicPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getActualLocationIfNeeded;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -173,7 +176,7 @@ class ItLiftAndShiftFromOnPremDomain {
    */
   @Test
   @DisplayName("Create model in image domain and verify external admin services")
-  void testCreateMiiDomainWithClusterFromOnPremDomain() {
+  void testCreateMiiDomainWithClusterFromOnPremDomain() throws UnknownHostException {
     // admin/managed server name here should match with model yaml in MII_BASIC_WDT_MODEL_FILE
     final String adminServerPodName = domainUid + "-" + adminServerName;
     final String managedServerPrefix = domainUid + "-managed-server";
@@ -354,7 +357,7 @@ class ItLiftAndShiftFromOnPremDomain {
     } else {
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+        hostAndPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
       } else {
         final String ingressServiceName = traefikHelmParams.getReleaseName();
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null

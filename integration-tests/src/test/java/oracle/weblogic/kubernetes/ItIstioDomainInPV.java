@@ -328,7 +328,7 @@ class ItIstioDomainInPV  {
     int istioIngressPort;
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      host = InetAddress.getLocalHost().getHostAddress();
+      host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
       istioIngressPort = ISTIO_HTTP_HOSTPORT;
     } else {
       istioIngressPort = getIstioHttpIngressPort();
@@ -338,7 +338,6 @@ class ItIstioDomainInPV  {
     String hostAndPort = hostName.contains(K8S_NODEPORT_HOST) ? host + ":" + istioIngressPort : hostName;
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-
       istioIngressPort = ISTIO_HTTP_HOSTPORT;
       hostAndPort = host + ":" + istioIngressPort;
     }

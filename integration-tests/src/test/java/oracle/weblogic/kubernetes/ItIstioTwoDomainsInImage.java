@@ -275,7 +275,7 @@ class ItIstioTwoDomainsInImage {
     int istioIngressPort;
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      host = InetAddress.getLocalHost().getHostAddress();
+      host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
       istioIngressPort = ISTIO_HTTP_HOSTPORT;
     } else {
       istioIngressPort = getIstioHttpIngressPort();

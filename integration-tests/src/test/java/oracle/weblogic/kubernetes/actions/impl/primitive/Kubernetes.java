@@ -3318,7 +3318,7 @@ public class Kubernetes {
   public static V1IngressList listNamespacedIngresses(String namespace) throws ApiException {
     V1IngressList ingressList;
     try {
-      NetworkingV1Api apiInstance = new NetworkingV1Api(apiClient);      
+      NetworkingV1Api apiInstance = new NetworkingV1Api(apiClient);
       ingressList = apiInstance.listNamespacedIngress(
           namespace, // namespace
           PRETTY, // String | If 'true', then the output is pretty printed.
