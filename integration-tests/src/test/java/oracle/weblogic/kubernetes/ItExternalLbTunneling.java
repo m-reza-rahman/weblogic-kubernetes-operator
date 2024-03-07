@@ -32,7 +32,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-import org.awaitility.core.ConditionFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +67,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallTraefik;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createStandardRetryPolicyWithAtMost;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -137,7 +135,6 @@ class ItExternalLbTunneling {
   private static Path jksTrustFile;
   private static String tlsSecretName = domainUid + "-test-tls-secret";
   private String clusterSvcRouteHost = null;
-  ConditionFactory withLongRetryPolicy = createStandardRetryPolicyWithAtMost(15);
   private static String hostAddress = K8S_NODEPORT_HOST;
 
   /**
@@ -461,8 +458,7 @@ class ItExternalLbTunneling {
     logger.info("java command to be run {0}", javasCmd.toString());
 
     // Note it takes a couples of iterations before the client success
-    testUntil(withLongRetryPolicy,
-        runJmsClient(new String(javasCmd)),
+    testUntil(runJmsClient(new String(javasCmd)),
         logger,
         "Wait for Https JMS Client to access WLS");
   }
@@ -493,8 +489,7 @@ class ItExternalLbTunneling {
     javapCmd.append(" \"");
     logger.info("java command to be run {0}", javapCmd.toString());
 
-    testUntil(withLongRetryPolicy, 
-        runJmsClient(new String(javapCmd)), logger, "Wait for t3 JMS Client to access WLS");
+    testUntil(runJmsClient(new String(javapCmd)), logger, "Wait for t3 JMS Client to access WLS");
   }
 
   private void runExtClient(int httpTunnelingPort, int serverCount, boolean checkConnection) {
@@ -525,7 +520,7 @@ class ItExternalLbTunneling {
     logger.info("java command to be run {0}", javaCmd.toString());
 
     // Note it takes a couples of iterations before the client success    
-    testUntil(withLongRetryPolicy, runJmsClient(new String(javaCmd)), logger, "Wait for Http JMS Client to access WLS");
+    testUntil(runJmsClient(new String(javaCmd)), logger, "Wait for Http JMS Client to access WLS");
   }
 
   // Download the wlthint3client.jar from Adminserver pod to local filesystem.
