@@ -43,6 +43,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
+import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
@@ -232,11 +233,7 @@ class ItIstioDomainInPV  {
     // imageLocation = KIND_REPO + "test-images/weblogic:" + LOCALE_IMAGE_TAG;
     // imageLocation = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
     String imageLocation = null;
-    if (KIND_REPO != null) {
-      imageLocation = KIND_REPO + WEBLOGIC_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG;
-    } else {
-      imageLocation = WEBLOGIC_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG;
-    }
+    String imageLocation = DOMAIN_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + WEBLOGIC_IMAGE_TAG;
 
     // Enable istio in domain custom resource configuration object.
     // Add T3Channel Service with port assigned to Istio TCP ingress port.
