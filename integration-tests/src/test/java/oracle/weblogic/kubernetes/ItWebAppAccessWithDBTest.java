@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -17,15 +17,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import io.kubernetes.client.openapi.models.V1Deployment;
 import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1Service;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,8 +45,11 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
+import static oracle.weblogic.kubernetes.assertions.TestAssertions.callTestWebAppAndCheckForServerNameInResponse;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
@@ -71,23 +70,22 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DisplayName("Verify WebApp can be accessed via NGINX ingress controller if db is installed")
 @Tag("oke-gate")
 @Tag("kind-parallel")
-@Tag("okd-wls-mrg")
 @IntegrationTest
-class ItTest {
+class ItWebAppAccessWithDBTest {
 
   // domain constants
   private static final int replicaCount = 2;
   private static int managedServersCount = 2;
 
-  private static String domain2Namespace = null;
+  private static String dominNamespace = null;
 
-  private static String domain2Uid = "dbtest-domain-2";
+  private static String dominUid = "dbtest-domain-2";
 
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
   private static int nodeportshttps = 0;
 
-  private static List<String> ingressHost2List = null;
+  private static List<String> ingressHostList = null;
 
 
 
@@ -105,7 +103,6 @@ class ItTest {
 
 
   private static int managedServerPort = 8001;
-  private static int nodeportPrometheus;
 
   private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
@@ -131,9 +128,9 @@ class ItTest {
     final String opNamespace = namespaces.get(0);
 
 
-    logger.info("Get a unique namespace for WebLogic domain2");
+    logger.info("Get a unique namespace for WebLogic domin");
     assertNotNull(namespaces.get(1), "Namespace list is null");
-    domain2Namespace = namespaces.get(1);
+    dominNamespace = namespaces.get(1);
 
 
     logger.info("Get a unique namespace for NGINX");
@@ -142,7 +139,7 @@ class ItTest {
 
 
     logger.info("install and verify operator");
-    installAndVerifyOperator(opNamespace, domain2Namespace);
+    installAndVerifyOperator(opNamespace, dominNamespace);
 
     if (!OKD) {
       // install and verify NGINX
@@ -166,13 +163,13 @@ class ItTest {
     //start  MySQL database instance
     if (!WEBLOGIC_IMAGE_TAG.equals("12.2.1.4")) {
       assertDoesNotThrow(() -> {
-        String dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
+        String dbService = createMySQLDB("mysql", "root", "root123", dominNamespace, null);
         assertNotNull(dbService, "Failed to create database");
-        V1Pod pod = getPod(domain2Namespace, null, "mysql");
-        createFileInPod(pod.getMetadata().getName(), domain2Namespace, "root123");
-        runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/grant.sql");
-        runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/create.sql");
-        dbUrl = "jdbc:mysql://" + dbService + "." + domain2Namespace + ".svc:3306";
+        V1Pod pod = getPod(dominNamespace, null, "mysql");
+        createFileInPod(pod.getMetadata().getName(), dominNamespace, "root123");
+        runMysqlInsidePod(pod.getMetadata().getName(), dominNamespace, "root123", "/tmp/grant.sql");
+        runMysqlInsidePod(pod.getMetadata().getName(), dominNamespace, "root123", "/tmp/create.sql");
+        dbUrl = "jdbc:mysql://" + dbService + "." + dominNamespace + ".svc:3306";
       });
     }
   }
@@ -180,7 +177,7 @@ class ItTest {
   /**
    * Test that if db is not started, access to app fails in Weblogic versions above 12.2.1.4.
    * Create domain in Image with app.
-   * Verify access to app via nginx..
+   * Verify access to app via nginx.
    */
   @Test
   @DisplayName("Test Test that if db is not started, access to app fails.")
@@ -188,18 +185,18 @@ class ItTest {
 
     wdtImage = createAndVerifyDomainInImage();
     logger.info("Create wdt domain and verify that it's running");
-    createAndVerifyDomain(wdtImage, domain2Uid, domain2Namespace, "Image", replicaCount,
+    createAndVerifyDomain(wdtImage, dominUid, dominNamespace, "Image", replicaCount,
         false, null, null);
 
     if (!OKD) {
-      ingressHost2List
-          = createIngressForDomainAndVerify(domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
+      ingressHostList
+          = createIngressForDomainAndVerify(dominUid, dominNamespace, 0, clusterNameMsPortMap,
           true, nginxHelmParams.getIngressClassName(), false, 0);
       logger.info("verify access to Monitoring Exporter");
       if (OKE_CLUSTER_PRIVATEIP) {
-        verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, ingressIP);
+        verifyMyAppAccessThroughNginx(ingressHostList.get(0), managedServersCount, ingressIP);
       } else {
-        verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount,
+        verifyMyAppAccessThroughNginx(ingressHostList.get(0), managedServersCount,
             K8S_NODEPORT_HOST + ":" + nodeportshttp);
       }
     }
@@ -220,10 +217,11 @@ class ItTest {
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT,
             hostPort);
-    ExecResult result = assertDoesNotThrow(() -> ExecCommand.exec(curlCmd, true));
-
-    String response = result.stdout().trim();
-    logger.info("Response : exitValue {0}, stdout {1}, stderr {2}", result.exitValue(), response, result.stderr());
+    testUntil(withLongRetryPolicy,
+        callTestWebAppAndCheckForServerNameInResponse(curlCmd, managedServerNames, 10),
+        logger,
+        "Verify NGINX can access the webapp \n"
+            + "from all managed servers in the domain via http");
   }
 
 
@@ -242,9 +240,9 @@ class ItTest {
             + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
             + "SELECT host, user FROM mysql.user;");
     Path source1File = Files.writeString(Paths.get(WORK_DIR, "create.sql"),
-        "CREATE DATABASE " + domain2Uid + ";\n"
+        "CREATE DATABASE " + dominUid + ";\n"
             + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
-            + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';");
+            + "GRANT ALL ON " + dominUid + ".* TO 'wluser1';");
     StringBuffer mysqlCmd1 = new StringBuffer("cat " + source1File.toString() + " | ");
     mysqlCmd1.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd1.append(namespace);
@@ -309,7 +307,7 @@ class ItTest {
     Properties p = new Properties();
     p.setProperty("ADMIN_USER", ADMIN_USERNAME_DEFAULT);
     p.setProperty("ADMIN_PWD", ADMIN_PASSWORD_DEFAULT);
-    p.setProperty("DOMAIN_NAME", domain2Uid);
+    p.setProperty("DOMAIN_NAME", dominUid);
     p.setProperty("DBURL", dbUrl);
     p.setProperty("ADMIN_NAME", "admin-server");
     p.setProperty("PRODUCTION_MODE_ENABLED", "true");
@@ -347,7 +345,7 @@ class ItTest {
             WEBLOGIC_IMAGE_TAG,
             WLS,
             false,
-            domain2Uid, false);
+            dominUid, false);
 
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(wdtImage);
