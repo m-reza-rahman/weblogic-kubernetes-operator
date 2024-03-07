@@ -234,7 +234,7 @@ public class Ingress {
   /**
    * Get ingress object in the specified namespace.
    *
-   * @param namespace the namespace to which the ingresses exists
+   * @param namespace the namespace in which the ingress exists
    * @param ingressName name of the ingress object
    * @return an Optional ingress name in the namespace
    * @throws ApiException if Kubernetes client API call fails
@@ -251,9 +251,9 @@ public class Ingress {
   /**
    * Update Ingress in the given namespace.
    *
-   * @param namespace name of the namespace
+   * @param namespace namespace name
    * @param ingress V1Ingress body
-   * @throws ApiException when listing fails
+   * @throws ApiException when update fails
    */
   public static void updateIngress(String namespace, V1Ingress ingress) throws ApiException {
     Kubernetes.updateNamespacedIngresses(namespace, ingress);

@@ -3343,9 +3343,9 @@ public class Kubernetes {
   /**
    * Update Ingress in the given namespace.
    *
-   * @param namespace name of the namespace
+   * @param namespace namespace name
    * @param ingress V1Ingress body
-   * @throws ApiException when listing fails
+   * @throws ApiException when update fails
    */
   public static void updateNamespacedIngresses(String namespace, V1Ingress ingress) throws ApiException {
     try {
