@@ -500,6 +500,7 @@ class ItIstioCrossDomainTransaction {
     if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
       istioIngressPort = ISTIO_HTTP_HOSTPORT;
+      hostAndPort = host + ":" + istioIngressPort;
     }    
 
     assertTrue(checkAppIsActive(hostAndPort, "-H 'host: " + "domain1-" + domain1Namespace + ".org '",
