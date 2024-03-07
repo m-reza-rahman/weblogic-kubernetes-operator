@@ -155,7 +155,6 @@ class ItIstioMiiDomain {
   @Test
   @DisplayName("Create WebLogic Domain with mii model with istio")
   @Tag("gate")
-  @Tag("crio")
   void testIstioModelInImageDomain() throws UnknownHostException, IOException, InterruptedException {
 
     // Create the repo secret to pull the image
