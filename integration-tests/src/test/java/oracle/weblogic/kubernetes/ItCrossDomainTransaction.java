@@ -618,10 +618,10 @@ class ItCrossDomainTransaction {
             .serverPod(new ServerPod()
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
-                    .value("-Dweblogic.transaction.EnableInstrumentedTM=true -Dweblogic.StdoutDebugEnabled=false"
+                    .value("-Dweblogic.transaction.EnableInstrumentedTM=true -Dweblogic.StdoutDebugEnabled=false "
                         + "-Dweblogic.debug.DebugJTAXA=true "
                         + "-Dweblogic.debug.DebugJTA2PC=true "
-                        + "-Dweblogic.security.remoteAnonymousRMIT3Enabled=true"))
+                        + "-Dweblogic.security.remoteAnonymousRMIT3Enabled=true "))
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
