@@ -587,8 +587,7 @@ class ItCrossDomainTransaction {
     logger.info("Validating WebLogic admin server access");
     String resourcePath = "/weblogic/ready";
     ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-    logger.info("result in OKE_CLUSTER is {0}", result.toString());
-    assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+    assertEquals(0, result.exitValue(), "Failed to access WebLogic admin server");
   }
 
   private static void createDomainResource(String domainUid, String domNamespace, String adminSecretName,
