@@ -251,20 +251,20 @@ class ItIstioDomainInPV  {
     logger.info("LOCALE_IMAGE_TAG {0}", LOCALE_IMAGE_TAG);
     // once 14.1.2.0 japanese locale image is available uncomment the 
     // pullImageFromBaseRepoAndPushToKind and comment the getKindRepoImageForSpec
-    String baseLocalImage = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
+    String baseLocaleImage = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
     /*
     if (KIND_REPO != null) {
       testUntil(
           withVeryLongRetryPolicy,
-          pullImageFromBaseRepoAndPushToKind(baseLocalImage),
+          pullImageFromBaseRepoAndPushToKind(baseLocaleImage),
           logger,
           "pullImageFromBaseRepoAndPushToKind for image {0} to be successful",
-          baseLocalImage);
+          baseLocaleImage);
     }
     */
-    baseLocalImage = getKindRepoImageForSpec(KIND_REPO, WEBLOGIC_IMAGE_NAME,
+    baseLocaleImage = getKindRepoImageForSpec(KIND_REPO, WEBLOGIC_IMAGE_NAME,
         WEBLOGIC_IMAGE_TAG, BASE_IMAGES_REPO_PREFIX_LENGTH);
-    logger.info(baseLocalImage);
+    logger.info(baseLocaleImage);
 
     // Enable istio in domain custom resource configuration object.
     // Add T3Channel Service with port assigned to Istio TCP ingress port.
@@ -279,7 +279,7 @@ class ItIstioDomainInPV  {
             .domainUid(domainUid)
             .domainHome("/shared/" + domainNamespace + "/domains/" + domainUid)
             .domainHomeSourceType("PersistentVolume")
-            .image(baseLocalImage)
+            .image(baseLocaleImage)
             .imagePullPolicy(IMAGE_PULL_POLICY)
             .replicas(replicaCount)
             .imagePullSecrets(Arrays.asList(
