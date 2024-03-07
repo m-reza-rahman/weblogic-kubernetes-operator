@@ -40,7 +40,6 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
-import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
@@ -50,7 +49,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
-import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -59,10 +57,7 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushI
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDomain;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.deleteMonitoringExporterTempDir;
-import static oracle.weblogic.kubernetes.utils.MonitoringUtils.verifyMonExpAppAccess;
 import static oracle.weblogic.kubernetes.utils.MySQLDBUtils.createMySQLDB;
-import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -71,12 +66,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
- * Verify Prometheus, Grafana, Webhook, Coordinator are installed and running
- * Verify the monitoring exporter installed in model in image domain can generate the WebLogic metrics.
- * Verify WebLogic metrics can be accessed via NGINX ingress controller.
- * Verify WebLogic metrics can be accessed via Prometheus
+ * Verify WebApp can be accessed via NGINX ingress controller if db is installed.
  */
-@DisplayName("Verify end to end sample, provided in the Monitoring Exporter github project")
+@DisplayName("Verify WebApp can be accessed via NGINX ingress controller if db is installed")
 @Tag("oke-gate")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
@@ -89,7 +81,7 @@ class ItTest {
 
   private static String domain2Namespace = null;
 
-  private static String domain2Uid = "monexp-domain-2";
+  private static String domain2Uid = "dbtest-domain-2";
 
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
@@ -101,12 +93,8 @@ class ItTest {
 
   private static String ingressIP = null;
 
-
-
-
-  private static final String TEST_MODEL_FILE = "model.sessmigr.2clusters.yaml";
   private static final String TEST_WDT_FILE = "/sample-topology.yaml";
-  private static final String TEST_IMAGE_NAME = "monexp-image";
+  private static final String TEST_IMAGE_NAME = "dbtest-image";
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
 
   private static String cluster1Name = "cluster-1";
@@ -122,15 +110,8 @@ class ItTest {
   private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
   private static List<String> clusterNames = new ArrayList<>();
-  private static String releaseSuffix = "testsamples";
 
-  private static  String monitoringExporterDir;
-  private static  String monitoringExporterSrcDir;
-  private static  String monitoringExporterEndToEndDir;
-  private static  String monitoringExporterAppDir;
-  private static String hostPortPrometheus;
-
-  private static String testWebAppWarLoc = null;
+  private static String dbUrl;
 
   /**
    * Install operator and NGINX. Create model in image domain with multiple clusters.
@@ -144,11 +125,6 @@ class ItTest {
   public static void initAll(@Namespaces(4) List<String> namespaces) {
 
     logger = getLogger();
-    monitoringExporterDir = Paths.get(RESULTS_ROOT,
-        "ItMonitoringExporterSamples", "monitoringexp").toString();
-    monitoringExporterSrcDir = Paths.get(monitoringExporterDir, "srcdir").toString();
-    monitoringExporterEndToEndDir = Paths.get(monitoringExporterSrcDir, "samples", "kubernetes", "end2end/").toString();
-    monitoringExporterAppDir = Paths.get(monitoringExporterDir, "apps").toString();
 
     logger.info("Get a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
@@ -188,54 +164,44 @@ class ItTest {
 
 
     //start  MySQL database instance
-    assertDoesNotThrow(() -> {
-      String dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
-      assertNotNull(dbService, "Failed to create database");
-      V1Pod pod = getPod(domain2Namespace, null, "mysql");
-      createFileInPod(pod.getMetadata().getName(), domain2Namespace, "root123");
-      runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/grant.sql");
-      runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/create.sql");
-    });
+    if (!WEBLOGIC_IMAGE_TAG.equals("12.2.1.4")) {
+      assertDoesNotThrow(() -> {
+        String dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
+        assertNotNull(dbService, "Failed to create database");
+        V1Pod pod = getPod(domain2Namespace, null, "mysql");
+        createFileInPod(pod.getMetadata().getName(), domain2Namespace, "root123");
+        runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/grant.sql");
+        runMysqlInsidePod(pod.getMetadata().getName(), domain2Namespace, "root123", "/tmp/create.sql");
+        dbUrl = "jdbc:mysql://" + dbService + "." + domain2Namespace + ".svc:3306";
+      });
+    }
   }
 
   /**
-   * Test covers end to end sample, provided in the Monitoring Exporter github project.
-   * Create Prometheus, Grafana, Webhook, Coordinator.
-   * Create domain in Image with monitoring exporter.
-   * Verify access to monitoring exporter WebLogic metrics via nginx.
-   * Check generated by monitoring exporter WebLogic metrics via Prometheus, Grafana.
-   * Fire Alert using Webhook.
-   * Change prometheus to add different domain to monitor.
+   * Test that if db is not started, access to app fails in Weblogic versions above 12.2.1.4.
+   * Create domain in Image with app.
+   * Verify access to app via nginx..
    */
   @Test
-  @DisplayName("Test End to End example from MonitoringExporter github project.")
-  void testEndToEndViaChart() throws Exception {
-    try {
-      wdtImage = createAndVerifyDomainInImage();
-      logger.info("Create wdt domain and verify that it's running");
-      createAndVerifyDomain(wdtImage, domain2Uid, domain2Namespace, "Image", replicaCount,
-          false, null, null);
+  @DisplayName("Test Test that if db is not started, access to app fails.")
+  void testAccesToWebApp() throws Exception {
 
-      if (!OKD) {
-        ingressHost2List
-            = createIngressForDomainAndVerify(domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
-            true, nginxHelmParams.getIngressClassName(), false, 0);
-        logger.info("verify access to Monitoring Exporter");
-        if (OKE_CLUSTER_PRIVATEIP) {
-          verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, ingressIP);
-        } else {
-          verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount,
-              K8S_NODEPORT_HOST + ":" + nodeportshttp);
-        }
+    wdtImage = createAndVerifyDomainInImage();
+    logger.info("Create wdt domain and verify that it's running");
+    createAndVerifyDomain(wdtImage, domain2Uid, domain2Namespace, "Image", replicaCount,
+        false, null, null);
+
+    if (!OKD) {
+      ingressHost2List
+          = createIngressForDomainAndVerify(domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
+          true, nginxHelmParams.getIngressClassName(), false, 0);
+      logger.info("verify access to Monitoring Exporter");
+      if (OKE_CLUSTER_PRIVATEIP) {
+        verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount, ingressIP);
       } else {
-        String clusterService = domain2Uid + "-cluster-cluster-1";
-        String hostName = createRouteForOKD(clusterService, domain2Namespace);
-        logger.info("hostName = {0} ", hostName);
-        verifyMonExpAppAccess(managedServersCount,hostName);
+        verifyMyAppAccessThroughNginx(ingressHost2List.get(0), managedServersCount,
+            K8S_NODEPORT_HOST + ":" + nodeportshttp);
       }
-    } finally {
-      //shutdownDomain(domain1Uid, domain1Namespace);
-      //shutdownDomain(domain2Uid, domain2Namespace);
     }
   }
 
@@ -319,57 +285,13 @@ class ItTest {
     }
 
     // delete mii domain images created for parameterized test
-    if (miiImage != null) {
-      deleteImage(miiImage);
-    }
     if (wdtImage != null) {
       deleteImage(miiImage);
     }
-
-
-    deleteMonitoringExporterTempDir(monitoringExporterDir);
   }
 
-
-
   /**
-   * Uninstall provided deployment and service.
-   */
-  private static void uninstallDeploymentService(V1Deployment deployment, V1Service service) {
-    String namespace = null;
-    String serviceName = null;
-    String deploymentName = null;
-    try {
-      if (service != null) {
-        serviceName = service.getMetadata().getName();
-        namespace = service.getMetadata().getNamespace();
-        Kubernetes.deleteService(serviceName, namespace);
-      }
-    } catch (Exception ex) {
-      logger.warning(ex.getMessage());
-      logger.warning("Failed to delete service {0} in namespace {1} ",
-          serviceName, namespace);
-    }
-    try {
-      if (deployment != null) {
-        deploymentName = deployment.getMetadata().getName();
-        namespace = deployment.getMetadata().getNamespace();
-        Kubernetes.deleteDeployment(namespace, deploymentName);
-      }
-    } catch (Exception ex) {
-      logger.warning(ex.getMessage());
-      logger.warning("Failed to delete deployment {0} in namespace {1}",
-          deploymentName, namespace);
-    }
-    if (namespace != null) {
-      deleteNamespace(namespace);
-    }
-  }
-
-
-
-  /**
-   * Create and verify domain in image from endtoend sample topology with monitoring exporter.
+   * Create and verify domain in image from endtoend sample topology with webapp.
    * @return image name
    */
   private static String createAndVerifyDomainInImage() {
@@ -388,7 +310,7 @@ class ItTest {
     p.setProperty("ADMIN_USER", ADMIN_USERNAME_DEFAULT);
     p.setProperty("ADMIN_PWD", ADMIN_PASSWORD_DEFAULT);
     p.setProperty("DOMAIN_NAME", domain2Uid);
-    p.setProperty("DBNAMESPACE", domain2Namespace);
+    p.setProperty("DBURL", dbUrl);
     p.setProperty("ADMIN_NAME", "admin-server");
     p.setProperty("PRODUCTION_MODE_ENABLED", "true");
     p.setProperty("CLUSTER_NAME", cluster1Name);
@@ -402,7 +324,7 @@ class ItTest {
     p.setProperty("ADMIN_PORT", "7001");
     p.setProperty("MYSQL_USER", "wluser1");
     p.setProperty("MYSQL_PWD", "wlpwd123");
-    // create a temporary WebLogic domain property file as a input for WDT model file
+    // create a temporary WebLogic domain property file as an input for WDT model file
     File domainPropertiesFile = assertDoesNotThrow(() ->
             File.createTempFile("domain", "properties"),
         "Failed to create domain properties file");

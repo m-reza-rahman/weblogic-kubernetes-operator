@@ -40,7 +40,7 @@ resources:
           GlobalTransactionsProtocol: OnePhaseCommit
         JDBCDriverParams:
           DriverName: com.mysql.cj.jdbc.Driver
-          URL: 'jdbc:mysql://mysql.@@PROP:DBNAMESPACE@@.svc.cluster.local:3306/@@PROP:DOMAIN_NAME@@'
+          URL: '@@PROP:DBURL@@/@@PROP:DOMAIN_NAME@@'
           PasswordEncrypted: '@@PROP:MYSQL_PWD@@'
           Properties:
             user:

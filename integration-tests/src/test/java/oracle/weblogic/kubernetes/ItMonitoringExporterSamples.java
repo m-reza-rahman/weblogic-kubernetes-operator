@@ -142,6 +142,7 @@ class ItMonitoringExporterSamples {
   private static int nodeportshttps = 0;
   private static List<String> ingressHost1List = null;
   private static List<String> ingressHost2List = null;
+  private static String dbService = null;
 
   private static String monitoringNS = null;
   private static String webhookNS = null;
@@ -269,7 +270,7 @@ class ItMonitoringExporterSamples {
     //start  MySQL database instance
     assertDoesNotThrow(() -> {
 
-      String dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
+      dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
       assertNotNull(dbService, "Failed to create database");
       V1Pod pod = getPod(domain2Namespace, null, "mysql");
       createFileInPod(pod.getMetadata().getName(), domain2Namespace, "root123");
@@ -861,8 +862,8 @@ class ItMonitoringExporterSamples {
         StandardCopyOption.REPLACE_EXISTING)," Failed to copy files");
     assertDoesNotThrow(() -> {
       replaceStringInFile(targetPromFile.toString(),
-          "default",
-          domain2Namespace);
+          "mysql.default.svc.cluster.local",
+          dbService);
     });
 
     final List<String> modelList = Collections.singletonList(targetPromFile.toString());
