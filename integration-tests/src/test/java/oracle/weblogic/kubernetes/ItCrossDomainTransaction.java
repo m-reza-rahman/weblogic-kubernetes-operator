@@ -76,6 +76,7 @@ import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -402,7 +403,8 @@ class ItCrossDomainTransaction {
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
         hostHeader = createIngressHostRouting(domain1Namespace, domainUid1, adminServerName, 7001);
-        hostAndPort = InetAddress.getLocalHost().getHostAddress() + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+        hostAndPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
+            + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         headers = new HashMap<>();
         headers.put("host", hostHeader);
       }

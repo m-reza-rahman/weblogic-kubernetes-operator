@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -111,6 +112,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotR
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.generateNewModelFileWithUpdatedDomainUid;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -1273,7 +1275,7 @@ class ItIntrospectVersion {
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(introDomainNamespace, domainUid, adminServerName, adminPort);
-      assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", 
+      assertDoesNotThrow(() -> verifyAdminServerRESTAccess(formatIPv6Host(InetAddress.getLocalHost().getHostAddress()), 
           TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     }    
 
@@ -1381,7 +1383,8 @@ class ItIntrospectVersion {
         Map<String, String> headers = null;
         if (TestConstants.KIND_CLUSTER
             && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-          hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+          hostAndPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) 
+              + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
           headers = new HashMap<>();
           headers.put("host", hostHeader);
         }
