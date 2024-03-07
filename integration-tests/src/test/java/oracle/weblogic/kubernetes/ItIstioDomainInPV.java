@@ -279,7 +279,7 @@ class ItIstioDomainInPV  {
             .domainUid(domainUid)
             .domainHome("/shared/" + domainNamespace + "/domains/" + domainUid)
             .domainHomeSourceType("PersistentVolume")
-            .image(imageLocation)
+            .image(baseLocalImage)
             .imagePullPolicy(IMAGE_PULL_POLICY)
             .replicas(replicaCount)
             .imagePullSecrets(Arrays.asList(
