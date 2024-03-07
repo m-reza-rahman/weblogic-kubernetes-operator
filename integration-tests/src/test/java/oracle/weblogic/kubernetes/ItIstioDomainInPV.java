@@ -43,16 +43,15 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
-import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
 // import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 // import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
 // import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 // import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -233,7 +232,7 @@ class ItIstioDomainInPV  {
     // Japanease Locale 
     // imageLocation = KIND_REPO + "test-images/weblogic:" + LOCALE_IMAGE_TAG;
     // imageLocation = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
-    String imageLocation = DOMAIN_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + WEBLOGIC_IMAGE_TAG;
+    String imageLocation = LOCALE_IMAGE_NAME + ":" + WEBLOGIC_IMAGE_TAG;
 
     // Enable istio in domain custom resource configuration object.
     // Add T3Channel Service with port assigned to Istio TCP ingress port.
