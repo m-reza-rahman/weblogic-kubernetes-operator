@@ -766,7 +766,7 @@ public abstract class RequestStep<
     private final DeleteOptions deleteOptions;
 
     /**
-     * Construct logs request step.
+     * Construct delete collection request step.
      *
      * @param next Response step
      * @param apiTypeClass API type class

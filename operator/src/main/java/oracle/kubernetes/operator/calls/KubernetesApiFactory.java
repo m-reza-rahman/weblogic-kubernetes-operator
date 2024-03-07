@@ -39,9 +39,25 @@ public interface KubernetesApiFactory {
         String namespace, ListOptions listOptions, DeleteOptions deleteOptions) {
       CoreV1Api c = new CoreV1Api(Client.getInstance());
       try {
+        CoreV1Api.APIdeleteCollectionNamespacedPodRequest request =
+                c.deleteCollectionNamespacedPod(namespace)
+                        .fieldSelector(listOptions.getFieldSelector()).labelSelector(listOptions.getLabelSelector());
+        if (deleteOptions != null) {
+          Long gracePeriodSeconds = deleteOptions.getGracePeriodSeconds();
+          if (gracePeriodSeconds != null) {
+            request = request.gracePeriodSeconds(gracePeriodSeconds.intValue());
+          }
+          Boolean orphanDependents = deleteOptions.getOrphanDependents();
+          if (orphanDependents != null) {
+            request = request.orphanDependents(orphanDependents);
+          }
+          String propagationPolicy = deleteOptions.getPropagationPolicy();
+          if (propagationPolicy != null) {
+            request = request.propagationPolicy(propagationPolicy);
+          }
+        }
         return new KubernetesApiResponse<>(new RequestBuilder.V1StatusObject(
-            c.deleteCollectionNamespacedPod(namespace, null, null, null, listOptions.getFieldSelector(), null,
-                listOptions.getLabelSelector(), null, null, null, null, null, null, null, deleteOptions)));
+            request.execute()));
       } catch (ApiException e) {
         return RequestStep.responseFromApiException(c.getApiClient(), e);
       }
@@ -52,8 +68,7 @@ public interface KubernetesApiFactory {
       CoreV1Api c = new CoreV1Api(Client.getInstance());
       try {
         return new KubernetesApiResponse<>(new RequestBuilder.StringObject(
-            c.readNamespacedPodLog(name, namespace, container,
-                null, null, null, null, null, null, null, null)));
+            c.readNamespacedPodLog(name, namespace).container(container).execute()));
       } catch (ApiException e) {
         return RequestStep.responseFromApiException(c.getApiClient(), e);
       }
@@ -63,7 +78,7 @@ public interface KubernetesApiFactory {
     public KubernetesApiResponse<RequestBuilder.VersionInfoObject> getVersionCode() {
       VersionApi c = new VersionApi(Client.getInstance());
       try {
-        return new KubernetesApiResponse<>(new RequestBuilder.VersionInfoObject(c.getCode()));
+        return new KubernetesApiResponse<>(new RequestBuilder.VersionInfoObject(c.getCode().execute()));
       } catch (ApiException e) {
         return RequestStep.responseFromApiException(c.getApiClient(), e);
       }
