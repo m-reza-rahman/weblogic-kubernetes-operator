@@ -4,12 +4,16 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -22,7 +26,6 @@ import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
-import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -47,6 +50,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
@@ -60,6 +64,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePodVerifyResult;
@@ -72,7 +77,6 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPV;
@@ -100,9 +104,6 @@ class ItWseeSSO {
   private static String opNamespace = null;
   private static String domain1Namespace = null;
   private static String domain2Namespace = null;
-  private static String nginxNamespace = null;
-  private static NginxParams nginxHelmParams = null;
-  private static int nodeportshttp = 0;
   private static String WDT_MODEL_FILE_SENDER = "model.wsee1.yaml";
   private static String WDT_MODEL_FILE_RECEIVER = "model.wsee2.yaml";
   private String receiverURI = null;
@@ -116,8 +117,8 @@ class ItWseeSSO {
   final String adminServerPodName2 = domain2Uid + "-" + adminServerName;
   final String managedServerNameBase = "managed-server";
   Path keyStoresPath;
-  final int managedServerPort = 8001;
-  int t3ChannelPort;
+  final int adminPort = 7001;
+  private static String hostHeader;
 
   final String wlSecretName = "weblogic-credentials";
 
@@ -140,7 +141,7 @@ class ItWseeSSO {
    * @param namespaces injected by JUnit
    */
   @BeforeAll
-  public void initAll(@Namespaces(4) List<String> namespaces) {
+  public void initAll(@Namespaces(3) List<String> namespaces) {
     logger = getLogger();
 
     logger.info("Assign a unique namespace for operator");
@@ -154,22 +155,9 @@ class ItWseeSSO {
     assertNotNull(namespaces.get(2), "Namespace is null");
     domain2Namespace = namespaces.get(2);
 
-    logger.info("Assign a unique namespace for nginx namespace");
-    assertNotNull(namespaces.get(3), "Namespace is null");
-    nginxNamespace = namespaces.get(3);
-
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
-    if (!OKD) {
-      // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
 
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      logger.info("NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      logger.info("NGINX http node port: {0}", nodeportshttp);
-
-    }
     keyStoresPath = Paths.get(RESULTS_ROOT, "mydomainwsee", "keystores");
     assertDoesNotThrow(() -> deleteDirectory(keyStoresPath.toFile()));
     assertDoesNotThrow(() -> Files.createDirectories(keyStoresPath));
@@ -207,8 +195,10 @@ class ItWseeSSO {
     deployApplication(clusterName + "," + adminServerName, domain2Namespace, domain2Uid, wseeServiceAppPath);
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName, domain1Namespace, domain1Uid, wseeServiceRefAppPath);
-    receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2, "/samlSenderVouches/EchoService");
-    senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1, "/EchoServiceRef/Echo");
+    receiverURI = assertDoesNotThrow(()
+        -> checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2, "/samlSenderVouches/EchoService"));
+    senderURI = assertDoesNotThrow(()
+        -> checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1, "/EchoServiceRef/Echo"));
     assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
             "addSAMLRelyingPartySenderConfig.py", receiverURI),
         "Failed to run python script addSAMLRelyingPartySenderConfig.py");
@@ -224,21 +214,25 @@ class ItWseeSSO {
   }
 
   private String checkWSDLAccess(String domainNamespace, String domainUid,
-                                 String adminSvcExtHost,
-                                 String appURI) {
+      String adminSvcExtHost,
+      String appURI) throws UnknownHostException, IOException, InterruptedException {
 
     String adminServerPodName = domainUid + "-" + adminServerName;
     int serviceNodePort = assertDoesNotThrow(()
-            -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
-            "default"),
-        "Getting admin server node port failed");
-
-
+        -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
+            "default"), "Getting admin server node port failed");
     logger.info("admin svc host = {0}", adminSvcExtHost);
     String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+    Map<String, String> headers = null;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = InetAddress.getLocalHost().getHostAddress() + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      headers = new HashMap<>();
+      headers.put("host", hostHeader);
+    }
     String url = "http://" + hostAndPort + appURI;
 
-    HttpResponse<String> response = assertDoesNotThrow(() -> OracleHttpClient.get(url, true));
+    HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
     assertTrue(response.statusCode() == 200);
     logger.info(response.body());
     return url;
@@ -360,6 +354,10 @@ class ItWseeSSO {
       logger.info("Wait for managed server services and pods are created in namespace {0}",
           domainNamespace);
       checkPodReadyAndServiceExists(managedServerPodNamePrefix + i, domainUid, domainNamespace);
+    }
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, ADMIN_SERVER_NAME_BASE, adminPort);
     }
   }
 
