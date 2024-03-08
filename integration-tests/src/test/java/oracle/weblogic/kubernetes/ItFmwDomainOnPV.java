@@ -152,7 +152,7 @@ class ItFmwDomainOnPV {
             dbNamespace, dbUrl, dbListenerPort));*/
 
     //install Oracle Database Operator
-    String dbName = "fmwdomainonpv" + "my-oracle-db";
+    String dbName = "fmwdomainonpv1" + "my-oracle-db";
     assertDoesNotThrow(() -> installDBOperator(dbNamespace), "Failed to install database operator");
 
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
