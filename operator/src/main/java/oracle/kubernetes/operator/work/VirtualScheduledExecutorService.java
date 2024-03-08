@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -33,13 +34,22 @@ public class VirtualScheduledExecutorService implements ScheduledExecutorService
 
   private final ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
 
+  private record Result<V>(V result, Throwable throwable) {
+
+    V get() throws ExecutionException {
+      if (throwable != null) {
+        throw new ExecutionException(throwable);
+      }
+      return result;
+    }
+  }
+
   private static class MyScheduledFuture<V> implements ScheduledFuture<V> {
     private final AtomicLong time;
     private final AtomicInteger status = new AtomicInteger(NEW);
     private final CountDownLatch latch = new CountDownLatch(1);
 
-    private V result;
-    private Throwable throwable;
+    private final AtomicReference<Result<V>> result = new AtomicReference<>(new Result<>(null, null));
 
     MyScheduledFuture(long triggerTime) {
       time = new AtomicLong(triggerTime);
@@ -151,12 +161,12 @@ public class VirtualScheduledExecutorService implements ScheduledExecutorService
     }
 
     void setResult(V result) {
-      this.result = result;
+      this.result.set(new Result<>(result, null));
       signalDone();
     }
 
     void setThrowable(Throwable throwable) {
-      this.throwable = throwable;
+      this.result.set(new Result<>(null, throwable));
       signalDone();
     }
 
@@ -208,10 +218,7 @@ public class VirtualScheduledExecutorService implements ScheduledExecutorService
       if (isCancelled()) {
         throw new CancellationException();
       }
-      if (throwable != null) {
-        throw new ExecutionException(throwable);
-      }
-      return result;
+      return result.get().get();
     }
 
     /**
@@ -235,10 +242,7 @@ public class VirtualScheduledExecutorService implements ScheduledExecutorService
         if (isCancelled()) {
           throw new CancellationException();
         }
-        if (throwable != null) {
-          throw new ExecutionException(throwable);
-        }
-        return result;
+        return result.get().get();
       } else {
         throw new TimeoutException();
       }
