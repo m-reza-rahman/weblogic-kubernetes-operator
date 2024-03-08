@@ -19,7 +19,6 @@ import java.security.spec.InvalidKeySpecException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadFactory;
@@ -39,6 +38,7 @@ import oracle.kubernetes.operator.utils.PathSupport;
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+import oracle.kubernetes.operator.work.VirtualScheduledExecutorService;
 import oracle.kubernetes.utils.SystemClock;
 
 /** An abstract base main class for the operator and the webhook. */
@@ -51,7 +51,7 @@ public abstract class BaseMain {
   static final String GIT_BUILD_TIME_KEY = "git.build.time";
 
   static final ThreadFactory threadFactory = Thread.ofVirtual().factory();
-  static final ScheduledExecutorService executor = Executors.newScheduledThreadPool(0, Thread.ofVirtual().factory());
+  static final ScheduledExecutorService executor = new VirtualScheduledExecutorService();
   static final AtomicReference<OffsetDateTime> lastFullRecheck =
       new AtomicReference<>(SystemClock.now());
   static final Semaphore shutdownSignal = new Semaphore(0);
