@@ -88,6 +88,7 @@ import static oracle.weblogic.kubernetes.utils.SslUtils.generateJksStores;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -231,10 +232,8 @@ class ItWseeSSO {
       headers.put("host", hostHeader);
     }
     String url = "http://" + hostAndPort + appURI;
-
     HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
-    assertTrue(response.statusCode() == 200);
-    logger.info(response.body());
+    assertEquals(200, response.statusCode());
     return url;
   }
 
@@ -451,7 +450,7 @@ class ItWseeSSO {
     logger.info("default channel port: {0}", defaultChannelPort);
     assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
     //deploy application
-    logger.info("Deploying webapp {0} to domain", appPath);
+    logger.info("Deploying webapp {0} to domain {1}", appPath, domainUid);
     deployUsingWlst(adminServerPodName, Integer.toString(defaultChannelPort),
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, targets, appPath,
         domainNamespace);

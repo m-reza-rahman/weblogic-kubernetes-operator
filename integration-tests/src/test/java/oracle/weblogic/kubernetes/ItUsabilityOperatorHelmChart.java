@@ -1042,7 +1042,7 @@ class ItUsabilityOperatorHelmChart {
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostHeader = createIngressHostRouting(domainNamespace, domainUid, ADMIN_SERVER_NAME_BASE, adminPort);
-      assertDoesNotThrow(() -> verifyAdminServerRESTAccess("localhost", 
+      assertDoesNotThrow(() -> verifyAdminServerRESTAccess(InetAddress.getLocalHost().getHostAddress(), 
           TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
     }     
     //check the access to managed server mbean via rest api
@@ -1284,10 +1284,10 @@ class ItUsabilityOperatorHelmChart {
       hostAndPort = InetAddress.getLocalHost().getHostAddress() + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
     }
     httpHeaders.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
-    String url = "http://" + hostAndPort + "/management/tenant-monitoring/servers/managedServer";
+    String url = "http://" + hostAndPort + "/management/tenant-monitoring/servers/" + managedServer;
     testUntil(() -> {
       HttpResponse<String> response = OracleHttpClient.get(url, httpHeaders, true);
-      return (response.statusCode() == 200 && response.body().contains("RUNNING"));
+      return (response.statusCode() == 200 && response.body().toLowerCase().contains("health"));
     }, logger, "WebLogic managed server to be running {0}", managedServer);
     return true;
   }
