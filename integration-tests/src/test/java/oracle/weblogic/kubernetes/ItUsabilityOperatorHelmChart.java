@@ -1287,7 +1287,7 @@ class ItUsabilityOperatorHelmChart {
     String url = "http://" + hostAndPort + "/management/tenant-monitoring/servers/" + managedServer;
     testUntil(() -> {
       HttpResponse<String> response = OracleHttpClient.get(url, httpHeaders, true);
-      return (response.statusCode() == 200 && response.body().toLowerCase().contains("health"));
+      return (response.statusCode() == 200 && response.body().contains("HEALTH_OK"));
     }, logger, "WebLogic managed server to be running {0}", managedServer);
     return true;
   }

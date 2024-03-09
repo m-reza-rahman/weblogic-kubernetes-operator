@@ -218,7 +218,7 @@ class ItWseeSSO {
       String adminSvcExtHost,
       String appURI) throws UnknownHostException, IOException, InterruptedException {
 
-    String adminServerPodName = domainUid + "-" + adminServerName;
+    String adminServerPodName = domainUid + "-" + adminServerName;    
     int serviceNodePort = assertDoesNotThrow(()
         -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
             "default"), "Getting admin server node port failed");
@@ -229,7 +229,7 @@ class ItWseeSSO {
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostAndPort = InetAddress.getLocalHost().getHostAddress() + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
       headers = new HashMap<>();
-      headers.put("host", hostHeader);
+      headers.put("host", domainNamespace + "." + domainUid + "." + ADMIN_SERVER_NAME_BASE);
     }
     String url = "http://" + hostAndPort + appURI;
     HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
