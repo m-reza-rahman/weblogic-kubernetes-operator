@@ -113,15 +113,11 @@ class ItWseeSSO {
   final String domain2Uid = "mywseedomain2";
   final String clusterName = "cluster-1";
   final String adminServerName = "admin-server";
-  private static List<String> ingressHost1List = null;
   final String adminServerPodName1 = domain1Uid + "-" + adminServerName;
   final String adminServerPodName2 = domain2Uid + "-" + adminServerName;
   final String managedServerNameBase = "managed-server";
   Path keyStoresPath;
   final int adminPort = 7001;
-  private static String hostHeader;
-
-  final String wlSecretName = "weblogic-credentials";
 
   int replicaCount = 2;
   String adminSvcExtHost1 = null;
@@ -232,7 +228,7 @@ class ItWseeSSO {
       headers.put("host", domainNamespace + "." + domainUid + "." + ADMIN_SERVER_NAME_BASE);
     }
     String url = "http://" + hostAndPort + appURI;
-    HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
+    HttpResponse<String> response = OracleHttpClient.get(url, headers, true);    
     assertEquals(200, response.statusCode());
     return "http://" + (OKD ? adminSvcExtHost : K8S_NODEPORT_HOST + ":" + serviceNodePort) + appURI;
   }
@@ -356,7 +352,7 @@ class ItWseeSSO {
     }
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createIngressHostRouting(domainNamespace, domainUid, ADMIN_SERVER_NAME_BASE, adminPort);
+      createIngressHostRouting(domainNamespace, domainUid, ADMIN_SERVER_NAME_BASE, adminPort);
     }
   }
 
