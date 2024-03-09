@@ -234,7 +234,7 @@ class ItWseeSSO {
     String url = "http://" + hostAndPort + appURI;
     HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
     assertEquals(200, response.statusCode());
-    return url;
+    return "http://" + getHostAndPort(adminSvcExtHost, serviceNodePort) + appURI;
   }
 
   private void createDomain(String domainNamespace, String domainUid, String modelFileName) {
