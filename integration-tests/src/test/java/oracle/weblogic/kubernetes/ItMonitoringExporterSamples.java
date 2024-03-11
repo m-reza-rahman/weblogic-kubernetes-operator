@@ -86,6 +86,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndPushToRepo;
@@ -374,7 +375,7 @@ class ItMonitoringExporterSamples {
     assertNotNull(pod, "Can't find running webhook pod");
     logger.info("Wait for the webhook to fire alert and check webhook log file in {0} namespace ", webhookNS);
 
-    testUntil(
+    testUntil(withLongRetryPolicy,
         assertDoesNotThrow(() -> searchPodLogForKey(pod,
             "Some WLS cluster has only one running server for more than 1 minutes"),
             "webhook failed to fire alert"),
