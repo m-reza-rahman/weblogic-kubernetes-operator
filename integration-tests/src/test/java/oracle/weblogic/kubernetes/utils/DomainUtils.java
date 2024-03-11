@@ -986,7 +986,7 @@ public class DomainUtils {
                                                   String pvName,
                                                   String pvcName,
                                                   String[] repoSecretName,
-                                                  //String domainInHomePrefix,
+                                                  String domainInHomePrefix,
                                                   int replicaCount,
                                                   int t3ChannelPort,
                                                   Configuration configuration) {
@@ -1006,7 +1006,7 @@ public class DomainUtils {
             .namespace(domNamespace))
         .spec(new DomainSpec()
             .domainUid(domainUid)
-            //.domainHome(domainInHomePrefix + domainUid)
+            .domainHome(domainInHomePrefix + domainUid)
             .domainHomeSourceType("PersistentVolume")
             .image(FMWINFRA_IMAGE_TO_USE_IN_SPEC)
             .imagePullPolicy(IMAGE_PULL_POLICY)

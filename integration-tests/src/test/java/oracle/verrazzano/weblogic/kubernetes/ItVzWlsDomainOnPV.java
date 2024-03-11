@@ -169,7 +169,7 @@ class ItVzWlsDomainOnPV {
         pvName,
         pvcName,
         new String[]{TEST_IMAGES_REPO_SECRET_NAME},
-        //DOMAINHOMEPREFIX,
+        DOMAINHOMEPREFIX,
         replicaCount,
         t3ChannelPort,
         configuration);
