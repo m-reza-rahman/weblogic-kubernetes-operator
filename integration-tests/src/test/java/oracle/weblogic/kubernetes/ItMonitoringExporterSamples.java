@@ -73,7 +73,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVol
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-//import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
+import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodReady;
@@ -347,8 +347,8 @@ class ItMonitoringExporterSamples {
         checkMetricsViaPrometheus(sessionAppPrometheusSearchKey, "sessmigr", hostPortPrometheus);
       }
     } finally {
-      //shutdownDomain(domain1Uid, domain1Namespace);
-      //shutdownDomain(domain2Uid, domain2Namespace);
+      shutdownDomain(domain1Uid, domain1Namespace);
+      shutdownDomain(domain2Uid, domain2Namespace);
     }
   }
 

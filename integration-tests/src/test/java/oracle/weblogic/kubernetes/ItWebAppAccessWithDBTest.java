@@ -77,9 +77,9 @@ class ItWebAppAccessWithDBTest {
   private static final int replicaCount = 2;
   private static int managedServersCount = 2;
 
-  private static String dominNamespace = null;
+  private static String domainNamespace = null;
 
-  private static String dominUid = "dbtestdomain";
+  private static String domainUid = "dbtestdomain";
 
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
@@ -128,9 +128,9 @@ class ItWebAppAccessWithDBTest {
     final String opNamespace = namespaces.get(0);
 
 
-    logger.info("Get a unique namespace for WebLogic domin");
+    logger.info("Get a unique namespace for WebLogic domain");
     assertNotNull(namespaces.get(1), "Namespace list is null");
-    dominNamespace = namespaces.get(1);
+    domainNamespace = namespaces.get(1);
 
 
     logger.info("Get a unique namespace for NGINX");
@@ -139,7 +139,7 @@ class ItWebAppAccessWithDBTest {
 
 
     logger.info("install and verify operator");
-    installAndVerifyOperator(opNamespace, dominNamespace);
+    installAndVerifyOperator(opNamespace, domainNamespace);
 
     if (!OKD) {
       // install and verify NGINX
@@ -164,13 +164,13 @@ class ItWebAppAccessWithDBTest {
     if (!WEBLOGIC_IMAGE_TAG.contains("12.2.1.4")) {
       logger.info("Installing database for wls" + WEBLOGIC_IMAGE_TAG);
       assertDoesNotThrow(() -> {
-        String dbService = createMySQLDB("mysql", "root", "root123", dominNamespace, null);
+        String dbService = createMySQLDB("mysql", "root", "root123", domainNamespace, null);
         assertNotNull(dbService, "Failed to create database");
-        V1Pod pod = getPod(dominNamespace, null, "mysql");
-        createFileInPod(pod.getMetadata().getName(), dominNamespace, "root123");
-        runMysqlInsidePod(pod.getMetadata().getName(), dominNamespace, "root123", "/tmp/grant.sql");
-        runMysqlInsidePod(pod.getMetadata().getName(), dominNamespace, "root123", "/tmp/create.sql");
-        dbUrl = "jdbc:mysql://" + dbService + "." + dominNamespace + ".svc:3306";
+        V1Pod pod = getPod(domainNamespace, null, "mysql");
+        createFileInPod(pod.getMetadata().getName(), domainNamespace, "root123");
+        runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123", "/tmp/grant.sql");
+        runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root123", "/tmp/create.sql");
+        dbUrl = "jdbc:mysql://" + dbService + "." + domainNamespace + ".svc:3306";
       });
     }
   }
@@ -186,12 +186,12 @@ class ItWebAppAccessWithDBTest {
 
     wdtImage = createAndVerifyDomainInImage();
     logger.info("Create wdt domain and verify that it's running");
-    createAndVerifyDomain(wdtImage, dominUid, dominNamespace, "Image", replicaCount,
+    createAndVerifyDomain(wdtImage, domainUid, domainNamespace, "Image", replicaCount,
         false, null, null);
 
     if (!OKD) {
       ingressHostList
-          = createIngressForDomainAndVerify(dominUid, dominNamespace, 0, clusterNameMsPortMap,
+          = createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
           true, nginxHelmParams.getIngressClassName(), false, 0);
       logger.info("verify access to Monitoring Exporter");
       if (OKE_CLUSTER_PRIVATEIP) {
@@ -231,8 +231,8 @@ class ItWebAppAccessWithDBTest {
 
     ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
     String ip = result.stdout();
-
-    Path sourceFile = Files.writeString(Paths.get(WORK_DIR, "grant.sql"),
+    String fileName = "grant.sql";
+    Path sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName),
         "select user();\n"
             + "SELECT host, user FROM mysql.user;\n"
             + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
@@ -240,35 +240,29 @@ class ItWebAppAccessWithDBTest {
             + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
             + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
             + "SELECT host, user FROM mysql.user;");
-    Path source1File = Files.writeString(Paths.get(WORK_DIR, "create.sql"),
-        "CREATE DATABASE " + dominUid + ";\n"
+    executeSqlFile(podName, namespace, sourceFile, fileName);
+    fileName = "create.sql";
+    sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName),
+        "CREATE DATABASE " + domainUid + ";\n"
             + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
-            + "GRANT ALL ON " + dominUid + ".* TO 'wluser1';");
-    StringBuffer mysqlCmd1 = new StringBuffer("cat " + source1File.toString() + " | ");
-    mysqlCmd1.append(KUBERNETES_CLI + " exec -i -n ");
-    mysqlCmd1.append(namespace);
-    mysqlCmd1.append(" ");
-    mysqlCmd1.append(podName);
-    mysqlCmd1.append(" -- /bin/bash -c \"");
-    mysqlCmd1.append("cat > /tmp/create.sql\"");
+            + "GRANT ALL ON " + domainUid + ".* TO 'wluser1';");
+    executeSqlFile(podName, namespace, sourceFile, fileName);
+  }
+
+  private static void executeSqlFile(String podName, String namespace,
+                                     Path sourceFile, String fileName) {
     StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
     mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd.append(namespace);
     mysqlCmd.append(" ");
     mysqlCmd.append(podName);
     mysqlCmd.append(" -- /bin/bash -c \"");
-    mysqlCmd.append("cat > /tmp/grant.sql\"");
+    mysqlCmd.append("cat > /tmp/" + fileName + "\"");
     logger.info("mysql command {0}", mysqlCmd.toString());
-    result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
+    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
     logger.info("mysql returned {0}", result.toString());
     logger.info("mysql returned EXIT value {0}", result.exitValue());
     assertEquals(0, result.exitValue(), "mysql execution fails");
-    logger.info("mysql command {0}", mysqlCmd1.toString());
-    result = assertDoesNotThrow(() -> exec(new String(mysqlCmd1), false));
-    logger.info("mysql returned {0}", result.toString());
-    logger.info("mysql returned EXIT value {0}", result.exitValue());
-    assertEquals(0, result.exitValue(), "mysql execution fails");
-
   }
 
   @AfterAll
@@ -308,7 +302,7 @@ class ItWebAppAccessWithDBTest {
     Properties p = new Properties();
     p.setProperty("ADMIN_USER", ADMIN_USERNAME_DEFAULT);
     p.setProperty("ADMIN_PWD", ADMIN_PASSWORD_DEFAULT);
-    p.setProperty("DOMAIN_NAME", dominUid);
+    p.setProperty("DOMAIN_NAME", domainUid);
     p.setProperty("DBURL", dbUrl);
     p.setProperty("ADMIN_NAME", "admin-server");
     p.setProperty("PRODUCTION_MODE_ENABLED", "true");
@@ -346,7 +340,7 @@ class ItWebAppAccessWithDBTest {
             WEBLOGIC_IMAGE_TAG,
             WLS,
             false,
-            dominUid, false);
+            domainUid, false);
 
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(wdtImage);
