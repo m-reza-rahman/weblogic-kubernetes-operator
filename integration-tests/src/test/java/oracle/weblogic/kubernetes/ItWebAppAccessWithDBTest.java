@@ -176,12 +176,13 @@ class ItWebAppAccessWithDBTest {
   }
 
   /**
-   * Test that if db is not started, access to app fails in Weblogic versions above 12.2.1.4.
+   * Test that if db is started, access to app passes in Weblogic versions
+   * Test that if WLS is 12.4.1.2 test passes without db is started.
    * Create domain in Image with app.
    * Verify access to app via nginx.
    */
   @Test
-  @DisplayName("Test Test that if db is not started, access to app fails.")
+  @DisplayName("Test that if db is  started, access to app successful.")
   void testAccesToWebApp() throws Exception {
 
     wdtImage = createAndVerifyDomainInImage();
