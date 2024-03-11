@@ -60,6 +60,7 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
@@ -67,10 +68,13 @@ import static oracle.weblogic.kubernetes.TestConstants.PV_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminServerRESTAccess;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
@@ -594,6 +598,18 @@ public class CommonLBTestUtils {
           "cluster-1",
           clusterViewAppPath,
           namespace),"Deploying the application");
+      return true;
+    } else if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      int defaultChannelPort = assertDoesNotThrow(()
+              -> getServicePort(namespace, getExternalServicePodName(adminServerPodName), "default"),
+          "Getting admin server default port failed");
+      getLogger().info("default channel port: {0}", defaultChannelPort);
+      assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
+
+      getLogger().info("Deploying webapp {0} to domain {1}", clusterViewAppPath, domainUid);
+      deployUsingWlst(adminServerPodName, Integer.toString(defaultChannelPort),
+          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, "cluster-1",
+          clusterViewAppPath, namespace);
       return true;
     } else {
       int serviceNodePort = assertDoesNotThrow(() ->
