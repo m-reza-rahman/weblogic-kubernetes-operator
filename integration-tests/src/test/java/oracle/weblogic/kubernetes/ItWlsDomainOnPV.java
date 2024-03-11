@@ -171,7 +171,7 @@ class ItWlsDomainOnPV {
           pvName,
           pvcName,
           new String[]{BASE_IMAGES_REPO_SECRET_NAME},
-          DOMAINHOMEPREFIX,
+          //DOMAINHOMEPREFIX,
           replicaCount,
           t3ChannelPort,
           configuration);
