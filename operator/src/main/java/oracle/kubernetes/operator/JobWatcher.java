@@ -24,6 +24,7 @@ import io.kubernetes.client.openapi.models.V1ContainerState;
 import io.kubernetes.client.openapi.models.V1ContainerStatus;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobCondition;
+import io.kubernetes.client.openapi.models.V1JobSpec;
 import io.kubernetes.client.openapi.models.V1JobStatus;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -437,8 +438,9 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
     public String toString() {
       return LOGGER.formatMessage(
           MessageKeys.JOB_DEADLINE_EXCEEDED_MESSAGE,
-          job.getMetadata().getName(),
-          job.getSpec().getActiveDeadlineSeconds(),
+          Optional.ofNullable(job).map(V1Job::getMetadata).map(V1ObjectMeta::getName).orElse(""),
+          Optional.ofNullable(job).map(V1Job::getSpec)
+                  .map(V1JobSpec::getActiveDeadlineSeconds).map(l -> l.toString()).orElse(""),
           getJobStartedSeconds());
     }
 
