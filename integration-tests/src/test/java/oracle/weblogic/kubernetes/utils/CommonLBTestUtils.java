@@ -83,6 +83,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.END_PORT;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.START_PORT;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -790,12 +791,12 @@ public class CommonLBTestUtils {
       curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl -g --show-error -ks --noproxy '*' "
           + "-H 'host: %s' %s://%s/" + uri, ingressHostName, protocol, host)
         : String.format("curl -g --show-error -ks --noproxy '*' "
-          + "-H 'host: %s' %s://%s:%s/" + uri, ingressHostName, protocol, host, lbPort);
+          + "-H 'host: %s' %s://%s/" + uri, ingressHostName, protocol, getHostAndPort(host, lbPort));
     } else {
       curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl -g --show-error -ks --noproxy '*' "
           + "%s://%s" + locationString + "/" + uri, protocol, host)
         : String.format("curl -g --show-error -ks --noproxy '*' "
-          + "%s://%s:%s" + locationString + "/" + uri, protocol, host, lbPort);
+          + "%s://%s" + locationString + "/" + uri, protocol, getHostAndPort(host, lbPort));
     }
 
     List<String> managedServers = new ArrayList<>();
@@ -842,18 +843,19 @@ public class CommonLBTestUtils {
                                              boolean isHostRouting,
                                              String ingressHostName,
                                              String pathLocation,
-                                             String... hostName) {
+                                             String hostName) {
     StringBuffer readyAppUrl = new StringBuffer();
-    String hostAndPort;
-    if (hostName != null && hostName.length > 0) {
-      hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;
-    } else {
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
-      hostAndPort = host + ":" + lbNodePort;
-    }
+    String hostAndPort = getHostAndPort(hostName, lbNodePort);
+
+    //if (hostName != null && hostName.length > 0) {
+    //  hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;
+    //} else {
+    //  String host = K8S_NODEPORT_HOST;
+    //  if (host.contains(":")) {
+    //    host = "[" + host + "]";
+    //  }
+    //  hostAndPort = host + ":" + lbNodePort;
+    //}
 
     if (isTLS) {
       readyAppUrl.append("https://");
