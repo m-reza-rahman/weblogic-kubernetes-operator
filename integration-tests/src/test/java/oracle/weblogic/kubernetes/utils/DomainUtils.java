@@ -973,7 +973,7 @@ public class DomainUtils {
    * @param pvName PV name
    * @param pvcName PVC name
    * @param repoSecretName name of the secret for pulling the WebLogic image
-   //* @param domainInHomePrefix domain in home prefix
+   * @param domainInHomePrefix domain in home prefix
    * @param replicaCount repica count of the clsuter
    * @param t3ChannelPort t3 chanel
    * @param configuration domain configuratioin object
