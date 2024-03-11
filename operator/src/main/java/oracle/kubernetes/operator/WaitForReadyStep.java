@@ -12,6 +12,8 @@ import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.AsyncFiber;
@@ -29,6 +31,8 @@ import static oracle.kubernetes.operator.helpers.KubernetesUtils.getDomainUidLab
  * @param <T> the type of resource handled by this step
  */
 abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
   static NextStepFactory nextStepFactory = WaitForReadyStep::createMakeDomainRightStep;
 
   protected static Step createMakeDomainRightStep(WaitForReadyStep<?>.Callback callback,
@@ -288,11 +292,19 @@ abstract class WaitForReadyStep<T extends KubernetesObject> extends Step {
 
     // The resource has now either completed or failed, so we can continue processing.
     void proceedFromWait(T resource) {
+
+      // TEST
+      LOGGER.info("TEST!!! proceedFromWait for resource: " + resource);
+
       removeCallback(getResourceName(), this);
       resumable.resume(packet -> handleResourceReady(packet, resource));
     }
 
     protected void onTimeout() {
+
+      // TEST
+      LOGGER.info("TEST!!! onTimeout for resource: " + getResourceName());
+
       removeCallback(getResourceName(), this);
       resumable.cancel();
     }
