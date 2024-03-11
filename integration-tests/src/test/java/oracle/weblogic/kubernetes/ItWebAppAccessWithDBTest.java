@@ -108,7 +108,7 @@ class ItWebAppAccessWithDBTest {
   private static LoggingFacade logger = null;
   private static List<String> clusterNames = new ArrayList<>();
 
-  private static String dbUrl;
+  private static String dbUrl = "";
 
   /**
    * Install operator and NGINX. Create model in image domain with multiple clusters.
