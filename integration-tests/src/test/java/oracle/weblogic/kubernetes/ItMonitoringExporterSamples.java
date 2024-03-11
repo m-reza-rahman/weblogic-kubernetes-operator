@@ -480,8 +480,8 @@ class ItMonitoringExporterSamples {
 
     ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
     String ip = result.stdout();
-
-    Path sourceFile = Files.writeString(Paths.get(WORK_DIR, "grant.sql"),
+    String fileName = "grant.sql";
+    Path sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName),
         "select user();\n"
             + "SELECT host, user FROM mysql.user;\n"
             + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
@@ -489,35 +489,29 @@ class ItMonitoringExporterSamples {
             + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
             + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
             + "SELECT host, user FROM mysql.user;");
-    Path source1File = Files.writeString(Paths.get(WORK_DIR, "create.sql"),
+    executeSqlFile(podName, namespace, sourceFile, fileName);
+    fileName = "create.sql";
+    sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName),
         "CREATE DATABASE " + domain2Uid + ";\n"
             + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
             + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';");
-    StringBuffer mysqlCmd1 = new StringBuffer("cat " + source1File.toString() + " | ");
-    mysqlCmd1.append(KUBERNETES_CLI + " exec -i -n ");
-    mysqlCmd1.append(namespace);
-    mysqlCmd1.append(" ");
-    mysqlCmd1.append(podName);
-    mysqlCmd1.append(" -- /bin/bash -c \"");
-    mysqlCmd1.append("cat > /tmp/create.sql\"");
+    executeSqlFile(podName, namespace, sourceFile, fileName);
+  }
+
+  private static void executeSqlFile(String podName, String namespace,
+                                     Path sourceFile, String fileName) {
     StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
     mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd.append(namespace);
     mysqlCmd.append(" ");
     mysqlCmd.append(podName);
     mysqlCmd.append(" -- /bin/bash -c \"");
-    mysqlCmd.append("cat > /tmp/grant.sql\"");
+    mysqlCmd.append("cat > /tmp/" + fileName + "\"");
     logger.info("mysql command {0}", mysqlCmd.toString());
-    result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
+    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
     logger.info("mysql returned {0}", result.toString());
     logger.info("mysql returned EXIT value {0}", result.exitValue());
     assertEquals(0, result.exitValue(), "mysql execution fails");
-    logger.info("mysql command {0}", mysqlCmd1.toString());
-    result = assertDoesNotThrow(() -> exec(new String(mysqlCmd1), false));
-    logger.info("mysql returned {0}", result.toString());
-    logger.info("mysql returned EXIT value {0}", result.exitValue());
-    assertEquals(0, result.exitValue(), "mysql execution fails");
-
   }
 
   @AfterAll
