@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -20,6 +20,7 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -67,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // Test to associate a Coherence Cluster with multiple WebLogic server clusters.
 @DisplayName("Test to associate a Coherence Cluster with multiple WebLogic server clusters")
 @IntegrationTest
+@Tag("olcne")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
 @Tag("oke-gate")
@@ -93,6 +95,8 @@ class ItManagedCoherence {
 
   private static HelmParams traefikHelmParams = null;
   private static LoggingFacade logger = null;
+
+  private static TraefikParams traefikParams = null;
 
   /**
    * Install Traefik and operator, build two Coherence applications
@@ -125,7 +129,10 @@ class ItManagedCoherence {
 
     // install and verify Traefik if not running on OKD
     if (!OKD) {
-      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
+      //traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+
+      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+      traefikHelmParams = traefikParams.getHelmParams();
     }
 
     // install and verify operator
@@ -318,18 +325,13 @@ class ItManagedCoherence {
 
   private boolean coherenceCacheTest(String hostName, int ingressServiceNodePort) {
     logger.info("Starting to test the cache");
+    // get ingress service Name and Nodeport
+    String ingressServiceName = traefikHelmParams.getReleaseName();
+    String traefikNamespace = traefikHelmParams.getNamespace();
 
-    String hostAndPort = null;
-    if (!OKD) {
-      // get ingress service Name and Nodeport
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      String traefikNamespace = traefikHelmParams.getNamespace();
-      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-          : getHostAndPort(hostName, ingressServiceNodePort);
-    } else {
-      hostAndPort = getHostAndPort(hostName, ingressServiceNodePort);
-    }
+    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+            : getHostAndPort(hostName, ingressServiceNodePort);;
     logger.info("hostAndPort is: {0} ", hostAndPort);
 
     // add the data to cache
@@ -370,7 +372,7 @@ class ItManagedCoherence {
                                     String hostName,
                                     String hostAndPort) {
     logger.info("Add initial data to cache");
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=add&first=")
         .append(firstName)
@@ -397,7 +399,7 @@ class ItManagedCoherence {
   private ExecResult getCacheSize(String hostName, String hostAndPort) {
     logger.info("Get the number of records in cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=size' ")
         .append("-H 'host: ")
@@ -421,7 +423,7 @@ class ItManagedCoherence {
   private ExecResult getCacheContents(String hostName, String hostAndPort) {
     logger.info("Get the records from cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=get' ")
         .append("-H 'host: ")
@@ -445,7 +447,7 @@ class ItManagedCoherence {
   private ExecResult clearCache(String hostName, String hostAndPort) {
     logger.info("Clean the cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-H 'host: ")
@@ -468,7 +470,7 @@ class ItManagedCoherence {
 
   private boolean checkCoheranceApp(String hostName, String hostAndPort) {
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-X POST -H 'host: ")
