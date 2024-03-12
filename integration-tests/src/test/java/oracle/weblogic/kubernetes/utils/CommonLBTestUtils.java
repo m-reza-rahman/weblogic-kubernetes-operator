@@ -847,16 +847,6 @@ public class CommonLBTestUtils {
     StringBuffer readyAppUrl = new StringBuffer();
     String hostAndPort = getHostAndPort(hostName, lbNodePort);
 
-    //if (hostName != null && hostName.length > 0) {
-    //  hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;
-    //} else {
-    //  String host = K8S_NODEPORT_HOST;
-    //  if (host.contains(":")) {
-    //    host = "[" + host + "]";
-    //  }
-    //  hostAndPort = host + ":" + lbNodePort;
-    //}
-
     if (isTLS) {
       readyAppUrl.append("https://");
     } else {
