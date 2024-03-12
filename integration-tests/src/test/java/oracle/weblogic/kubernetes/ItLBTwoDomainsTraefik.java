@@ -132,9 +132,13 @@ class ItLBTwoDomainsTraefik {
     // install Traefik ingress controller for all test cases using Traefik
     installTraefikIngressController();
 
-    String ingressServiceName = traefikHelmParams.getReleaseName();
-    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
+    if (traefikHelmParams != null) {
+      String ingressServiceName = traefikHelmParams.getReleaseName();
+      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
+    } else {
+      logger.info("traefikHelmParams is null");
+    }
   }
 
   /**
@@ -226,7 +230,9 @@ class ItLBTwoDomainsTraefik {
   private static void installTraefikIngressController() {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
-    traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
+    if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
+    }
 
     // create TLS secret for Traefik HTTPS traffic
     for (String domainUid : domainUids) {
@@ -268,11 +274,14 @@ class ItLBTwoDomainsTraefik {
   private int getTraefikLbNodePort(boolean isHttps) {
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       return isHttps ? TRAEFIK_INGRESS_HTTPS_HOSTPORT : TRAEFIK_INGRESS_HTTP_HOSTPORT;
-    } else {
+    } else if (traefikHelmParams != null) {
       logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
       return assertDoesNotThrow(() ->
               getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
           "Getting web node port for Traefik loadbalancer failed");
+    } else {
+      logger.info("failed to get Traefik Nodeport");
+      return -1;
     }
   }
 }

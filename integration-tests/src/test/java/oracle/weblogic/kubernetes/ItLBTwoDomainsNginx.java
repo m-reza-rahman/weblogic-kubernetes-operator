@@ -496,7 +496,6 @@ class ItLBTwoDomainsNginx {
   private static void installNginxIngressController() {
     // install and verify Nginx
     logger.info("Installing Nginx controller using helm");
-    //nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
     nginxHelmParams = installNginxLB();
 
     // create ingress rules with non-tls host routing for NGINX
