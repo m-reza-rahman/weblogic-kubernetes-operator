@@ -421,7 +421,8 @@ class ItRestart {
 
     logger.info("Creating a config map to hold domain creation scripts");
     String domainScriptConfigMapName = "create-domain-scripts-cm";
-    assertDoesNotThrow(() -> createConfigMapForDomainCreation(domainScriptConfigMapName, domainScriptFiles, namespace, ItRestart.class.getSimpleName()),
+    assertDoesNotThrow(() -> createConfigMapForDomainCreation(domainScriptConfigMapName, 
+        domainScriptFiles, namespace, ItRestart.class.getSimpleName()),
         "Create configmap for domain creation failed");
 
     // create a V1Container with specific scripts and properties for creating domain
