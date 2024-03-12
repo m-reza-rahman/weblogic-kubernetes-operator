@@ -179,10 +179,6 @@ abstract class Watcher<T> {
                 .timeoutSeconds(getWatchLifetime()))) {
       while (hasNext(watch)) {
         Watch.Response<T> item = watch.next();
-
-        // TEST
-        LOGGER.info("TEST!!! watch event: " + item);
-
         setIsDraining(isStopping());
         if (isDraining()) {
           continue;
@@ -197,10 +193,6 @@ abstract class Watcher<T> {
           }
         }
       }
-
-      // TEST
-      LOGGER.info("TEST!!! no more watch events type: " + getClass().getName() + ", namespace: " + getNamespace());
-
     } catch (Throwable ex) {
       LOGGER.warning(MessageKeys.EXCEPTION, ex);
     }

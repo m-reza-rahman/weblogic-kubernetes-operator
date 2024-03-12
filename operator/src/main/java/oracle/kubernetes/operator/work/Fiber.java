@@ -24,8 +24,6 @@ import static oracle.kubernetes.operator.work.Step.adapt;
  * Represents the execution of one processing flow.
  */
 public final class Fiber implements AsyncFiber {
-  private static final boolean IS_DEBUG = false;
-
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private static final int NOT_COMPLETE = 0;
   private static final int DONE = 1;
@@ -84,12 +82,6 @@ public final class Fiber implements AsyncFiber {
    * @param packet The packet to be passed to {@code Step#apply(Packet)}.
    */
   public void start(Step stepline, Packet packet) {
-
-    // TEST
-    if (IS_DEBUG) {
-      LOGGER.info("TEST!!! start called for fiber " + getName() + ", status: " + status.get());
-    }
-
     if (status.get() == NOT_COMPLETE) {
       LOGGER.finer("{0} started", getName());
 
@@ -98,12 +90,6 @@ public final class Fiber implements AsyncFiber {
   }
 
   private void doRun(Step stepline, Packet packet) {
-
-    // TEST
-    if (IS_DEBUG) {
-      LOGGER.info("TEST!!! doRun() called for fiber " + getName() + ", status: " + status.get());
-    }
-
     if (status.get() == NOT_COMPLETE) {
       clearThreadInterruptedStatus();
 
@@ -117,20 +103,8 @@ public final class Fiber implements AsyncFiber {
                   && completionCallback != null) {
             Throwable t = (Throwable) packet.remove(THROWABLE);
             if (t != null) {
-
-              // TEST
-              if (IS_DEBUG) {
-                LOGGER.info("TEST!!! onThrowable for fiber " + getName() + ", throwable" + t);
-              }
-
               completionCallback.onThrowable(packet, t);
             } else {
-
-              // TEST
-              if (IS_DEBUG) {
-                LOGGER.info("TEST!!! onCompletion for fiber " + getName());
-              }
-
               completionCallback.onCompletion(packet);
             }
           }
@@ -146,34 +120,17 @@ public final class Fiber implements AsyncFiber {
         } else {
           CURRENT_FIBER.set(oldFiber);
         }
-
-        // TEST
-        if (IS_DEBUG) {
-          LOGGER.info("TEST!!! end of doRun() for fiber " + getName() + ", status: " + status.get());
-        }
-
       }
     }
   }
 
   void delay(Step stepline, Packet packet, long delay, TimeUnit unit) {
-
-    // TEST
-    if (IS_DEBUG) {
-      LOGGER.info("TEST!!! delay " + TimeUnit.MILLISECONDS.convert(delay, unit) + "(ms) for fiber "
-              + getName() + ", status: " + status.get());
-    }
-
     if (status.get() == NOT_COMPLETE) {
       owner.getExecutor().schedule(() -> doRun(stepline, packet), delay, unit);
     }
   }
 
   void suspend(Step stepline, Packet packet, Step.SuspendAction suspendAction) {
-
-    // TEST
-    LOGGER.info("TEST!!! suspend for fiber " + getName() + ", status: " + status.get());
-
     if (status.get() == NOT_COMPLETE) {
       suspendAction.onSuspend(new Step.Resumable() {
         private final AtomicBoolean didResume = new AtomicBoolean(false);
@@ -189,10 +146,6 @@ public final class Fiber implements AsyncFiber {
 
         @Override
         public void resume(Consumer<Packet> onResume) {
-
-          // TEST
-          LOGGER.info("TEST!!! resume for fiber " + getName() + ", status: " + status.get());
-
           if (status.get() == NOT_COMPLETE && mayResume()) {
             Optional.ofNullable(onResume).ifPresent(o -> o.accept(packet));
             owner.getExecutor().execute(() -> doRun(stepline, packet));
@@ -201,11 +154,6 @@ public final class Fiber implements AsyncFiber {
 
         @Override
         public void terminate(Throwable t) {
-
-          // TEST
-          LOGGER.info("TEST!!! resume with terminate for fiber " + getName() + ", throwable: " + t
-                  + ", status: " + status.get());
-
           if (status.get() == NOT_COMPLETE && mayResume()) {
             owner.getExecutor().execute(() -> doRun(new Step() {
               @NotNull
@@ -219,10 +167,6 @@ public final class Fiber implements AsyncFiber {
 
         @Override
         public void cancel() {
-
-          // TEST
-          LOGGER.info("TEST!!! resume with cancel for fiber " + getName() + ", status: " + status.get());
-
           Fiber.this.cancel();
         }
       });
@@ -230,12 +174,6 @@ public final class Fiber implements AsyncFiber {
   }
 
   void forkJoin(Step step, Packet packet, Collection<StepAndPacket> startDetails) {
-    // TEST
-    if (IS_DEBUG) {
-      LOGGER.info("TEST!!! forkJoin() for fiber " + getName() + ", startDetails size: " + startDetails.size()
-              + ", status: " + status.get());
-    }
-
     final AtomicInteger count = new AtomicInteger(startDetails.size());
     final List<Throwable> throwables = new ArrayList<>();
     CompletionCallback callback = new CompletionCallback() {
@@ -253,30 +191,12 @@ public final class Fiber implements AsyncFiber {
       }
 
       public void mark() {
-        // TEST
-        if (IS_DEBUG) {
-          LOGGER.info("TEST!!! mark() for fiber " + getName() + ", status: " + status.get());
-        }
-
         int current = count.decrementAndGet();
         if (current <= 0) {
           if (status.get() == NOT_COMPLETE) {
             if (throwables.isEmpty()) {
-
-              // TEST
-              if (IS_DEBUG) {
-                LOGGER.info("TEST!!! end of forkJoin for fiber " + getName() + ", status: " + status.get());
-              }
-
               doRun(step, packet);
             } else {
-
-              // TEST
-              if (IS_DEBUG) {
-                LOGGER.info("TEST!!! end of forkJoin for fiber " + getName() + ", with throwable: " + throwables
-                        + ", status: " + status.get());
-              }
-
               if (completionCallback != null) {
                 Throwable t = (throwables.size() == 1) ? throwables.get(0) : new MultiThrowable(throwables);
                 completionCallback.onThrowable(packet, t);
@@ -365,12 +285,6 @@ public final class Fiber implements AsyncFiber {
    * Cancels this fiber.
    */
   public void cancel() {
-    // TEST
-    if (IS_DEBUG) {
-      LOGGER.info("TEST!!! cancel for fiber " + getName() + ", status: " + status.get()
-              + ", status: " + status.get());
-    }
-
     // Mark fiber as cancelled, if not already done
     status.compareAndSet(NOT_COMPLETE, CANCELLED);
 
