@@ -783,7 +783,8 @@ public class CommonLBTestUtils {
     getLogger().info("Accessing the clusterview app through load balancer to verify all servers in cluster");
     String curlRequest;
     String uri = "clusterview/ClusterViewServlet" + "\"?user=" + ADMIN_USERNAME_DEFAULT
-        + "&password=" + ADMIN_PASSWORD_DEFAULT + (host.contains(":") ? "&ipv6=true" : "&ipv6=false") + "\"";
+        + "&password=" + ADMIN_PASSWORD_DEFAULT
+        + ((host != null) && host.contains(":") ? "&ipv6=true" : "&ipv6=false") + "\"";
     if (hostRouting) {
       curlRequest = OKE_CLUSTER_PRIVATEIP ? String.format("curl -g --show-error -ks --noproxy '*' "
           + "-H 'host: %s' %s://%s/" + uri, ingressHostName, protocol, host)

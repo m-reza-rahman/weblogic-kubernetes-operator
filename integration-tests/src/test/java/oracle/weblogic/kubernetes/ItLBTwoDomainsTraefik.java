@@ -138,6 +138,7 @@ class ItLBTwoDomainsTraefik {
           ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
     } else {
       logger.info("traefikHelmParams is null");
+      ingressIP = K8S_NODEPORT_HOST;
     }
   }
 
