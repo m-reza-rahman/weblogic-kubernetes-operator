@@ -205,10 +205,10 @@ public interface TestConstants {
   public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/ingress-nginx/controller";
   public static final String NGINX_INGRESS_IMAGE_TAG = "v1.2.0";
   public static final String NGINX_NAMESPACE = "ns-nginx";
-  public static final int NGINX_INGRESS_HTTP_NODEPORT = 30880;
-  public static final int NGINX_INGRESS_HTTPS_NODEPORT = 30443;
-  public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2080;
-  public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2443;
+  public static final int NGINX_INGRESS_HTTP_NODEPORT = 30881;
+  public static final int NGINX_INGRESS_HTTPS_NODEPORT = 30444;
+  public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2081;
+  public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2444;
   
   public static final Path INGRESS_CLASS_FILE_NAME = assertDoesNotThrow(()
       -> Files.createTempFile("ingressclass", ".name"));  
