@@ -24,6 +24,8 @@ import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -1153,7 +1155,8 @@ public class MonitoringUtils {
    * @param replicaCount number of managed servers
    * @param nodeport  nginx nodeport
    */
-  public static void verifyMonExpAppAccessThroughNginx(String nginxHost, int replicaCount, int nodeport) {
+  public static void verifyMonExpAppAccessThroughNginx(String nginxHost, int replicaCount, 
+      int nodeport) throws UnknownHostException {
 
     List<String> managedServerNames = new ArrayList<>();
     for (int i = 1; i <= replicaCount; i++) {
@@ -1162,6 +1165,10 @@ public class MonitoringUtils {
 
     // check that NGINX can access the sample apps from all managed servers in the domain
     String host = formatIPv6Host(K8S_NODEPORT_HOST);
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = InetAddress.getLocalHost().getHostAddress();
+    }
     String curlCmd =
         String.format("curl -g --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s:%s/wls-exporter/metrics",
             nginxHost,

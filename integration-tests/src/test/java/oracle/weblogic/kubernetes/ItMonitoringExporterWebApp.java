@@ -23,6 +23,8 @@ import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import com.google.gson.Gson;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Pod;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
@@ -44,6 +46,10 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
@@ -151,7 +157,7 @@ class ItMonitoringExporterWebApp {
    */
   @BeforeAll
 
-  public static void initAll(@Namespaces(6) List<String> namespaces) {
+  public static void initAll(@Namespaces(6) List<String> namespaces) throws UnknownHostException {
 
     logger = getLogger();
     monitoringExporterDir = Paths.get(RESULTS_ROOT,
@@ -193,16 +199,25 @@ class ItMonitoringExporterWebApp {
     logger.info("create and verify WebLogic domain image using model in image with model files");
     miiImage = MonitoringUtils.createAndVerifyMiiImage(monitoringExporterAppDir, MODEL_DIR + "/" + MONEXP_MODEL_FILE,
         SESSMIGR_APP_NAME, MONEXP_IMAGE_NAME);
+    String host = formatIPv6Host(K8S_NODEPORT_HOST);
     if (!OKD) {
       // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 
+          NGINX_INGRESS_HTTP_NODEPORT, NGINX_INGRESS_HTTPS_NODEPORT);
 
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       logger.info("NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        nodeportshttp = NGINX_INGRESS_HTTP_HOSTPORT;
+        nodeportshttps = NGINX_INGRESS_HTTPS_HOSTPORT;
+        host = InetAddress.getLocalHost().getHostAddress();
+      } else {
+        nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+        nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+      }
     }
     logger.info("NGINX http node port: {0}", nodeportshttp);
     logger.info("NGINX https node port: {0}", nodeportshttps);
@@ -211,8 +226,6 @@ class ItMonitoringExporterWebApp {
     clusterNameMsPortMap.put(cluster2Name, managedServerPort);
     clusterNames.add(cluster1Name);
     clusterNames.add(cluster2Name);
-
-    String host = formatIPv6Host(K8S_NODEPORT_HOST);
 
     exporterUrl = String.format("http://%s:%s/wls-exporter/", host, nodeportshttp);
     if (OKE_CLUSTER_PRIVATEIP) {
