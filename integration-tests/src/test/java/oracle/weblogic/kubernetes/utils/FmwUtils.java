@@ -705,7 +705,7 @@ public class FmwUtils {
     configuration
         .introspectorJobActiveDeadlineSeconds(3000L)
         .initializeDomainOnPV(new InitializeDomainOnPV()
-            .runInitContainerAsRoot(true)
+            //TODO .runInitContainerAsRoot(true)
             .persistentVolume(pv)
             .persistentVolumeClaim(new PersistentVolumeClaim()
                 .metadata(new V1ObjectMeta()
@@ -733,7 +733,7 @@ public class FmwUtils {
     Configuration configuration = new Configuration()
         .introspectorJobActiveDeadlineSeconds(3000L)
         .initializeDomainOnPV(new InitializeDomainOnPV()
-            .runInitContainerAsRoot(true)
+            //TODO .runInitContainerAsRoot(true)
             .persistentVolumeClaim(new PersistentVolumeClaim()
                 .metadata(new V1ObjectMeta()
                     .name(pvcName))
