@@ -689,15 +689,12 @@ public class CommonLBTestUtils {
   public static void checkIngressReady(boolean isHostRouting, String ingressHost, boolean isTLS,
                                         int httpNodeport, int httpsNodeport, String pathString,
                                        String... ingressExtIP) {
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
+    String host = ingressExtIP.length != 0 ? ingressExtIP[0] : K8S_NODEPORT_HOST;
     String hostAndPort;
     if (isTLS) {
-      hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : host + ":" + httpsNodeport;
+      hostAndPort = getHostAndPort(host, httpsNodeport);
     } else {
-      hostAndPort = ingressExtIP.length != 0 ? ingressExtIP[0] : host + ":" + httpNodeport;
+      hostAndPort = getHostAndPort(host, httpNodeport);
     }
     getLogger().info("hostAndPort to check ingress ready is: {0}", hostAndPort);
 
