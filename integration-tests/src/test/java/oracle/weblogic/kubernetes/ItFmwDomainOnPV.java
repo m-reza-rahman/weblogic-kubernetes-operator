@@ -129,8 +129,6 @@ class ItFmwDomainOnPV {
     logger.info("Assign a unique namespace for DB");
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
-    /* TODO final int dbListenerPort = getNextFreePort();
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";*/
 
     // get a new unique opNamespace
     logger.info("Assign a unique namespace for operator");
@@ -143,13 +141,6 @@ class ItFmwDomainOnPV {
     domainNamespace = namespaces.get(2);
 
     DOMAINHOMEPREFIX = "/shared/" + domainNamespace + "/domains/";
-
-    // TODO start DB
-    /*logger.info("Start DB in namespace: {0}, dbListenerPort: {1}, dbUrl: {2}, dbImage: {3}",
-        dbNamespace, dbListenerPort, dbUrl, DB_IMAGE_TO_USE_IN_SPEC);
-    assertDoesNotThrow(() -> startOracleDB(DB_IMAGE_TO_USE_IN_SPEC, getNextFreePort(), dbNamespace, dbListenerPort),
-        String.format("Failed to start Oracle DB in the namespace %s with dbUrl %s, dbListenerPost %s",
-            dbNamespace, dbUrl, dbListenerPort));*/
 
     //install Oracle Database Operator
     String dbName = "fmwdomainonpv1" + "my-oracle-db";

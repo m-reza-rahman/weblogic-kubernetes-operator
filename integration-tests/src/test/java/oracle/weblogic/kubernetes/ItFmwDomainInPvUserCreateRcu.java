@@ -153,9 +153,6 @@ public class ItFmwDomainInPvUserCreateRcu {
     logger.info("Assign a unique namespace for DB and RCU");
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
-    /*TODO final int dbListenerPort = getNextFreePort();
-    ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ORACLEDBSUFFIX;*/
 
     // get a new unique opNamespace
     logger.info("Assign a unique namespace for operator1");
@@ -166,13 +163,7 @@ public class ItFmwDomainInPvUserCreateRcu {
     logger.info("Assign a unique namespace for FMW domain");
     assertNotNull(namespaces.get(2), "Namespace is null");
     domainNamespace = namespaces.get(2);
-
-    //TODO  start DB
-    /*logger.info("Start DB in namespace: {0}, dbListenerPort: {1}, dbUrl: {2}, dbImage: {3}",
-        dbNamespace, dbListenerPort, dbUrl, DB_IMAGE_TO_USE_IN_SPEC);
-    assertDoesNotThrow(() -> setupDB(DB_IMAGE_TO_USE_IN_SPEC, dbNamespace, getNextFreePort(), dbListenerPort),
-        String.format("Failed to setup DB in the namespace %s with dbUrl %s, dbListenerPost %s",
-            dbNamespace, dbUrl, dbListenerPort));*/
+    
     //install Oracle Database Operator
     String dbName = "fmwdomainonpv2" + "my-oracle-db";
     assertDoesNotThrow(() -> installDBOperator(dbNamespace), "Failed to install database operator");
