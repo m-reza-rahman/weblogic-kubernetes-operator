@@ -38,7 +38,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.callTestWebAppAndCheckForServerNameInResponse;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -55,7 +54,6 @@ import static oracle.weblogic.kubernetes.utils.MonitoringUtils.createAndVerifyDo
 import static oracle.weblogic.kubernetes.utils.MySQLDBUtils.createMySQLDB;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -232,14 +230,6 @@ class ItWebAppAccessWithDBTest {
   @AfterAll
   public void tearDownAll() {
 
-    // uninstall NGINX release
-    logger.info("Uninstalling NGINX");
-    if (nginxHelmParams != null) {
-      assertThat(uninstallNginx(nginxHelmParams.getHelmParams()))
-          .as("Test uninstallNginx1 returns true")
-          .withFailMessage("uninstallNginx() did not return true")
-          .isTrue();
-    }
     // delete mii domain images created for parameterized test
     if (wdtImage != null) {
       deleteImage(miiImage);

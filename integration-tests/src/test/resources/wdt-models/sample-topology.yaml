@@ -1,13 +1,16 @@
-# Copyright 024, Oracle and/or its affiliates.
+# Copyright 2024, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 domainInfo:
   AdminUserName: '@@PROP:ADMIN_USER@@'
   AdminPassword: '@@PROP:ADMIN_PWD@@'
-  ServerStartMode: '@@PROP:SERVER_START_MODE@@'
 topology:
   Name: '@@PROP:DOMAIN_NAME@@'
   AdminServerName: '@@PROP:ADMIN_NAME@@'
   ProductionModeEnabled: '@@PROP:PRODUCTION_MODE_ENABLED@@'
+  SecurityConfiguration:
+    SecureMode:
+      SecureModeEnabled: false
+
   Cluster:
     '@@PROP:CLUSTER_NAME@@':
       ClientCertProxyEnabled: true

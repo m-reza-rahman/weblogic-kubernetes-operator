@@ -17,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.openapi.ApiException;
@@ -56,7 +55,6 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
@@ -73,7 +71,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVol
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
-import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.deleteNamespace;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.searchPodLogForKey;
@@ -87,6 +84,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyClu
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createSqlFileInPod;
+import static oracle.weblogic.kubernetes.utils.DbUtils.runMysqlInsidePod;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndPushToRepo;
@@ -111,9 +109,7 @@ import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PersistentVolumeUtils.createPvAndPvc;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -498,15 +494,6 @@ class ItMonitoringExporterSamples {
   @AfterAll
   public void tearDownAll() {
 
-    // uninstall NGINX release
-    logger.info("Uninstalling NGINX");
-    if (nginxHelmParams != null) {
-      assertThat(uninstallNginx(nginxHelmParams.getHelmParams()))
-          .as("Test uninstallNginx1 returns true")
-          .withFailMessage("uninstallNginx() did not return true")
-          .isTrue();
-    }
-
     // delete mii domain images created for parameterized test
     if (miiImage != null) {
       deleteImage(miiImage);
@@ -860,27 +847,5 @@ class ItMonitoringExporterSamples {
     imageRepoLoginAndPushImageToRegistry(wdtImage);
 
     return wdtImage;
-  }
-
-  private static void runMysqlInsidePod(String podName, String namespace, String password, String sqlFilePath) {
-    final LoggingFacade logger = getLogger();
-
-    logger.info("Sleeping for 1 minute before connecting to mysql db");
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(1));
-    StringBuffer mysqlCmd = new StringBuffer(KUBERNETES_CLI + " exec -i -n ");
-    mysqlCmd.append(namespace);
-    mysqlCmd.append(" ");
-    mysqlCmd.append(podName);
-    mysqlCmd.append(" -- /bin/bash -c \"");
-    mysqlCmd.append("mysql --force ");
-    mysqlCmd.append("-u root -p" + password);
-    mysqlCmd.append(" < ");
-    mysqlCmd.append(sqlFilePath);
-    mysqlCmd.append(" \"");
-    logger.info("mysql command {0}", mysqlCmd.toString());
-    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), true));
-    logger.info("mysql returned {0}", result.toString());
-    logger.info("mysql returned EXIT value {0}", result.exitValue());
-    assertEquals(0, result.exitValue(), "mysql execution fails");
   }
 }
