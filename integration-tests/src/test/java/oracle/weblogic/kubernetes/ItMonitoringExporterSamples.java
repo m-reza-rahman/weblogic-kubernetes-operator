@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -87,6 +87,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAd
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
+import static oracle.weblogic.kubernetes.utils.DbUtils.createSqlFileInPod;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndPushToRepo;
@@ -270,7 +271,6 @@ class ItMonitoringExporterSamples {
     }
     //start  MySQL database instance
     assertDoesNotThrow(() -> {
-
       dbService = createMySQLDB("mysql", "root", "root123", domain2Namespace, null);
       assertNotNull(dbService, "Failed to create database");
       V1Pod pod = getPod(domain2Namespace, null, "mysql");
@@ -476,42 +476,24 @@ class ItMonitoringExporterSamples {
   }
 
   private static void createFileInPod(String podName, String namespace, String password) throws IOException {
-    final LoggingFacade logger = getLogger();
 
-    ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
-    String ip = result.stdout();
-    String fileName = "grant.sql";
-    Path sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName),
-        "select user();\n"
-            + "SELECT host, user FROM mysql.user;\n"
-            + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
-            + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
-            + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
-            + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
-            + "SELECT host, user FROM mysql.user;");
-    executeSqlFile(podName, namespace, sourceFile, fileName);
-    fileName = "create.sql";
-    sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName),
-        "CREATE DATABASE " + domain2Uid + ";\n"
-            + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
-            + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';");
-    executeSqlFile(podName, namespace, sourceFile, fileName);
-  }
-
-  private static void executeSqlFile(String podName, String namespace,
-                                     Path sourceFile, String fileName) {
-    StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
-    mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
-    mysqlCmd.append(namespace);
-    mysqlCmd.append(" ");
-    mysqlCmd.append(podName);
-    mysqlCmd.append(" -- /bin/bash -c \"");
-    mysqlCmd.append("cat > /tmp/" + fileName + "\"");
-    logger.info("mysql command {0}", mysqlCmd.toString());
-    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
-    logger.info("mysql returned {0}", result.toString());
-    logger.info("mysql returned EXIT value {0}", result.exitValue());
-    assertEquals(0, result.exitValue(), "mysql execution fails");
+      ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
+      String ip = result.stdout();
+      String sqlCommand = "select user();\n"
+          + "SELECT host, user FROM mysql.user;\n"
+          + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
+          + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
+          + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
+          + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
+          + "SELECT host, user FROM mysql.user;";
+      String fileName = "grant.sql";
+      createSqlFileInPod(podName, namespace, sqlCommand, fileName);
+      fileName = "create.sql";
+      sqlCommand =
+          "CREATE DATABASE " + domain2Uid + ";\n"
+              + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
+              + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';";
+      createSqlFileInPod(podName, namespace, sqlCommand, fileName);
   }
 
   @AfterAll
@@ -845,7 +827,7 @@ class ItMonitoringExporterSamples {
     final List<String> propertyList = Collections.singletonList(domainPropertiesFile.getPath());
 
     // build the model file list
-    logger.info("create a staging location for d scripts");
+    logger.info("create a staging location for the scripts");
     Path fileTemp = Paths.get(RESULTS_ROOT, "ItMonitoringExporterSamples", "temp","sampleTopologyTemp");
     assertDoesNotThrow(() -> FileUtils.deleteDirectory(fileTemp.toFile()),"Failed to delete temp dir for topology");
 

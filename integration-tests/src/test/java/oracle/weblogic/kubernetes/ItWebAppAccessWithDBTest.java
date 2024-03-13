@@ -6,16 +6,12 @@ package oracle.weblogic.kubernetes;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
@@ -32,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
@@ -40,7 +35,6 @@ import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -50,6 +44,8 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
+import static oracle.weblogic.kubernetes.utils.DbUtils.createSqlFileInPod;
+import static oracle.weblogic.kubernetes.utils.DbUtils.runMysqlInsidePod;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
@@ -61,7 +57,6 @@ import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOpe
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
@@ -76,38 +71,25 @@ class ItWebAppAccessWithDBTest {
   // domain constants
   private static final int replicaCount = 2;
   private static int managedServersCount = 2;
-
   private static String domainNamespace = null;
-
   private static String domainUid = "dbtestdomain";
-
   private static NginxParams nginxHelmParams = null;
   private static int nodeportshttp = 0;
   private static int nodeportshttps = 0;
-
   private static List<String> ingressHostList = null;
-
-
-
   private static String ingressIP = null;
-
   private static final String TEST_WDT_FILE = "/sample-topology.yaml";
   private static final String TEST_IMAGE_NAME = "dbtest-image";
   private static final String SESSMIGR_APP_NAME = "sessmigr-app";
-
   private static String cluster1Name = "cluster-1";
   private static String cluster2Name = "cluster-2";
   private static String miiImage = null;
   private static String wdtImage = null;
   private static final String SESSMIGR_APP_WAR_NAME = "sessmigr-war";
-
-
   private static int managedServerPort = 8001;
-
   private static Map<String, Integer> clusterNameMsPortMap;
   private static LoggingFacade logger = null;
   private static List<String> clusterNames = new ArrayList<>();
-
   private static String dbUrl = "";
 
   /**
@@ -177,7 +159,7 @@ class ItWebAppAccessWithDBTest {
 
   /**
    * Test that if db is started, access to app passes in Weblogic versions
-   * Test that if WLS is 12.4.1.2 test passes without db is started.
+   * Test that if WLS is 12.2.1.4 test passes without db is started.
    * Create domain in Image with app.
    * Verify access to app via nginx.
    */
@@ -228,42 +210,24 @@ class ItWebAppAccessWithDBTest {
 
 
   private static void createFileInPod(String podName, String namespace, String password) throws IOException {
-    final LoggingFacade logger = getLogger();
 
     ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
     String ip = result.stdout();
+    String sqlCommand = "select user();\n"
+        + "SELECT host, user FROM mysql.user;\n"
+        + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
+        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
+        + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
+        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
+        + "SELECT host, user FROM mysql.user;";
     String fileName = "grant.sql";
-    Path sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName),
-        "select user();\n"
-            + "SELECT host, user FROM mysql.user;\n"
-            + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
-            + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
-            + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
-            + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
-            + "SELECT host, user FROM mysql.user;");
-    executeSqlFile(podName, namespace, sourceFile, fileName);
+    createSqlFileInPod(podName, namespace, sqlCommand, fileName);
     fileName = "create.sql";
-    sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName),
+    sqlCommand =
         "CREATE DATABASE " + domainUid + ";\n"
             + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
-            + "GRANT ALL ON " + domainUid + ".* TO 'wluser1';");
-    executeSqlFile(podName, namespace, sourceFile, fileName);
-  }
-
-  private static void executeSqlFile(String podName, String namespace,
-                                     Path sourceFile, String fileName) {
-    StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
-    mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
-    mysqlCmd.append(namespace);
-    mysqlCmd.append(" ");
-    mysqlCmd.append(podName);
-    mysqlCmd.append(" -- /bin/bash -c \"");
-    mysqlCmd.append("cat > /tmp/" + fileName + "\"");
-    logger.info("mysql command {0}", mysqlCmd.toString());
-    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
-    logger.info("mysql returned {0}", result.toString());
-    logger.info("mysql returned EXIT value {0}", result.exitValue());
-    assertEquals(0, result.exitValue(), "mysql execution fails");
+            + "GRANT ALL ON " + domainUid + ".* TO 'wluser1';";
+    createSqlFileInPod(podName, namespace, sqlCommand, fileName);
   }
 
   @AfterAll
@@ -277,7 +241,6 @@ class ItWebAppAccessWithDBTest {
           .withFailMessage("uninstallNginx() did not return true")
           .isTrue();
     }
-
     // delete mii domain images created for parameterized test
     if (wdtImage != null) {
       deleteImage(miiImage);
@@ -291,13 +254,8 @@ class ItWebAppAccessWithDBTest {
   private static String createAndVerifyDomainInImage() {
     // create image with model files
     logger.info("Create image with model file with  app and verify");
-
-
-
     List<String> appList = new ArrayList<>();
     appList.add(SESSMIGR_APP_NAME);
-
-
     int t3ChannelPort = getNextFreePort();
 
     Properties p = new Properties();
@@ -327,11 +285,9 @@ class ItWebAppAccessWithDBTest {
         "Failed to write domain properties file");
 
     final List<String> propertyList = Collections.singletonList(domainPropertiesFile.getPath());
-
     // build the model file list
     final List<String> modelList = Collections.singletonList(MODEL_DIR
         + TEST_WDT_FILE);
-
     wdtImage =
         createImageAndVerify(TEST_IMAGE_NAME,
             modelList,
@@ -345,29 +301,6 @@ class ItWebAppAccessWithDBTest {
 
     // repo login and push image to registry if necessary
     imageRepoLoginAndPushImageToRegistry(wdtImage);
-
     return wdtImage;
-  }
-
-  private static void runMysqlInsidePod(String podName, String namespace, String password, String sqlFilePath) {
-    final LoggingFacade logger = getLogger();
-
-    logger.info("Sleeping for 1 minute before connecting to mysql db");
-    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(1));
-    StringBuffer mysqlCmd = new StringBuffer(KUBERNETES_CLI + " exec -i -n ");
-    mysqlCmd.append(namespace);
-    mysqlCmd.append(" ");
-    mysqlCmd.append(podName);
-    mysqlCmd.append(" -- /bin/bash -c \"");
-    mysqlCmd.append("mysql --force ");
-    mysqlCmd.append("-u root -p" + password);
-    mysqlCmd.append(" < ");
-    mysqlCmd.append(sqlFilePath);
-    mysqlCmd.append(" \"");
-    logger.info("mysql command {0}", mysqlCmd.toString());
-    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), true));
-    logger.info("mysql returned {0}", result.toString());
-    logger.info("mysql returned EXIT value {0}", result.exitValue());
-    assertEquals(0, result.exitValue(), "mysql execution fails");
   }
 }
