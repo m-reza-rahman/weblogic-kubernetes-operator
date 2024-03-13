@@ -67,7 +67,6 @@ import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
@@ -477,23 +476,23 @@ class ItMonitoringExporterSamples {
 
   private static void createFileInPod(String podName, String namespace, String password) throws IOException {
 
-      ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
-      String ip = result.stdout();
-      String sqlCommand = "select user();\n"
-          + "SELECT host, user FROM mysql.user;\n"
-          + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
-          + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
-          + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
-          + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
-          + "SELECT host, user FROM mysql.user;";
-      String fileName = "grant.sql";
-      createSqlFileInPod(podName, namespace, sqlCommand, fileName);
-      fileName = "create.sql";
-      sqlCommand =
-          "CREATE DATABASE " + domain2Uid + ";\n"
-              + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
-              + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';";
-      createSqlFileInPod(podName, namespace, sqlCommand, fileName);
+    ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
+    String ip = result.stdout();
+    String sqlCommand = "select user();\n"
+        + "SELECT host, user FROM mysql.user;\n"
+        + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
+        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
+        + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
+        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
+        + "SELECT host, user FROM mysql.user;";
+    String fileName = "grant.sql";
+    createSqlFileInPod(podName, namespace, sqlCommand, fileName);
+    fileName = "create.sql";
+    sqlCommand =
+        "CREATE DATABASE " + domain2Uid + ";\n"
+            + "CREATE USER 'wluser1' IDENTIFIED BY 'wlpwd123';\n"
+            + "GRANT ALL ON " + domain2Uid + ".* TO 'wluser1';";
+    createSqlFileInPod(podName, namespace, sqlCommand, fileName);
   }
 
   @AfterAll

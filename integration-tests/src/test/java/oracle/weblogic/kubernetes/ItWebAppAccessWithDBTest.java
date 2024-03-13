@@ -208,7 +208,6 @@ class ItWebAppAccessWithDBTest {
             + "from all managed servers in the domain via http");
   }
 
-
   private static void createFileInPod(String podName, String namespace, String password) throws IOException {
 
     ExecResult result = assertDoesNotThrow(() -> exec(new String("hostname -i"), true));
@@ -249,6 +248,7 @@ class ItWebAppAccessWithDBTest {
 
   /**
    * Create and verify domain in image from endtoend sample topology with webapp.
+   *
    * @return image name
    */
   private static String createAndVerifyDomainInImage() {
