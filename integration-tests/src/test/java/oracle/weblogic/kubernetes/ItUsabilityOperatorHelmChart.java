@@ -870,7 +870,7 @@ class ItUsabilityOperatorHelmChart {
               checkPodExists(managedServerPodName2, domain5Uid, domain4Namespace),
           "operator failed to manage domain2, scaling was not succeeded");
 
-      logger.info("Domain4 scaled to 3 servers");
+      logger.info("Domain5 scaled to 3 servers");
 
       assertDoesNotThrow(() ->
               TestActions.scaleClusterWithScalingActionScript(clusterName, domain4Uid, domain4Namespace,
