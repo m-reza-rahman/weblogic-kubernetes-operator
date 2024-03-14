@@ -12,6 +12,7 @@ import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
@@ -1089,12 +1090,12 @@ public class RequestBuilder<A extends KubernetesObject, L extends KubernetesList
   private static class DirectResponseStep<R extends KubernetesType> extends ResponseStep<R> {
     private KubernetesApiResponse<R> callResponse;
 
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<R> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<R> callResponse) {
       this.callResponse = callResponse;
       return doEnd(packet);
     }
 
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<R> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<R> callResponse) {
       this.callResponse = callResponse;
       return doEnd(packet);
     }

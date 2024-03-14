@@ -1,7 +1,7 @@
 // Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
@@ -9,16 +9,15 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.meterware.simplestub.Memento;
-import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import oracle.kubernetes.common.utils.BaseTestUtils;
+import oracle.kubernetes.operator.ThreadFactoryTestBase;
+import oracle.kubernetes.operator.WatchTuning;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
 import oracle.kubernetes.operator.builders.WatchEvent;
-import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.tuning.FakeWatchTuning;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
-import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -79,7 +78,6 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
     mementos.add(configureOperatorLogger());
     mementos.add(StubWatchFactory.install());
     mementos.add(TuningParametersStub.install());
-    mementos.add(TestStepFactory.install());
 
     TuningParametersStub.setParameter(WATCH_BACKSTOP_RECHECK_COUNT, "1");
     StubWatchFactory.setListener(this);
@@ -278,20 +276,5 @@ public abstract class WatcherTestBase extends ThreadFactoryTestBase implements A
   }
 
   protected abstract Watcher<?> createWatcher(String ns, AtomicBoolean stopping, BigInteger rv);
-
-  static class TestStepFactory implements WaitForReadyStep.NextStepFactory {
-
-    private static final TestStepFactory factory = new TestStepFactory();
-
-    private static Memento install() throws NoSuchFieldException {
-      return StaticStubSupport.install(WaitForReadyStep.class, "nextStepFactory", factory);
-    }
-
-    @Override
-    public Step createMakeDomainRightStep(WaitForReadyStep<?>.Callback callback,
-                                                  DomainPresenceInfo info, Step next) {
-      return next;
-    }
-  }
 
 }

@@ -12,6 +12,7 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.common.KubernetesListObject;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
 import io.kubernetes.client.openapi.models.V1JobList;
@@ -22,6 +23,7 @@ import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
+import oracle.kubernetes.operator.watcher.*;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
@@ -216,7 +218,7 @@ class NamespacedResources {
 
   class CompletionStep extends Step {
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       processors.forEach(p -> p.completeProcessing(packet));
       return doNext(packet);
     }
@@ -230,7 +232,7 @@ class NamespacedResources {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       Optional.ofNullable(watcher).ifPresent(Watcher::pause);
       return doNext(packet);
     }
@@ -244,7 +246,7 @@ class NamespacedResources {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
       processors.forEach(p -> p.accept(callResponse.getObject()));
       return doContinueListOrNext(callResponse, packet);
     }

@@ -15,6 +15,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1NamespaceList;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -89,7 +90,7 @@ class DomainRecheck {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       NamespaceStatus nss = domainNamespaces.getNamespaceStatus(ns);
 
       // we don't have the domain presence information, yet
@@ -154,7 +155,7 @@ class DomainRecheck {
     // If unable to list the namespaces, we may still be able to start them if we are using
     // a strategy that specifies them explicitly.
     @Override
-    protected StepAction onFailureNoRetry(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
+    protected Result onFailureNoRetry(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
       return useBackupStrategy(callResponse)
             ? doNext(createStartNamespacesStep(Namespaces.getConfiguredDomainNamespaces()), packet)
             : super.onFailureNoRetry(packet, callResponse);
@@ -166,7 +167,7 @@ class DomainRecheck {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
       final Set<String> namespacesToStart = getNamespacesToStart(callResponse.getObject());
       Namespaces.getFoundDomainNamespaces(packet).addAll(namespacesToStart);
 
@@ -233,7 +234,7 @@ class DomainRecheck {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (domainNamespaces.shouldStartNamespace(ns)) {
         return doNext(addNSWatchingStartingEventsStep(), packet);
       }
@@ -281,7 +282,7 @@ class DomainRecheck {
 
     @Override
     @SuppressWarnings("try")
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (domainNamespaces == null) {
         return doNext(packet);
       } else {

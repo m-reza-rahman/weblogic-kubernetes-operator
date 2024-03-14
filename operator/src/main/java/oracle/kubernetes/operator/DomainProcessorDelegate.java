@@ -16,29 +16,6 @@ import oracle.kubernetes.operator.work.FiberGate;
 public interface DomainProcessorDelegate extends CoreDelegate {
 
   /**
-   * Returns a factory that creates a step to wait for a pod in the specified namespace to be ready.
-   *
-   * @param namespace the namespace for the pod
-   * @return a step-creating factory
-   */
-  PodAwaiterStepFactory getPodAwaiterStepFactory(String namespace);
-
-  /**
-   * Returns a factory that creates a step to wait for a pod in the specified namespace to be ready.
-   *
-   * @param namespace the namespace for the pod
-   * @return a step-creating factory
-   */
-  JobAwaiterStepFactory getJobAwaiterStepFactory(String namespace);
-
-  /**
-   * Returns a factory that creates a step to wait for a pvc in the specified namespace to be bound.
-   *
-   * @return a step-creating factory
-   */
-  PvcAwaiterStepFactory getPvcAwaiterStepFactory();
-
-  /**
    * Returns true if the namespace is running.
    *
    * @param namespace the namespace to check

@@ -1,29 +1,29 @@
-// Copyright (c) 2019, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.kubernetes.client.openapi.models.V1Namespace;
+import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
+import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
-import oracle.kubernetes.operator.watcher.WatchListener;
 import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
-/** This test class verifies the behavior of the NamespaceWatcher. */
-class NamespaceWatcherTest extends WatcherTestBase
-    implements WatchListener<V1Namespace> {
+/** This test class verifies the behavior of the ConfigMapWatcher. */
+class ConfigMapWatcherTest extends WatcherTestBase implements WatchListener<V1ConfigMap> {
 
   private static final BigInteger INITIAL_RESOURCE_VERSION = new BigInteger("456");
 
   @Override
-  public void receivedResponse(Watch.Response<V1Namespace> response) {
+  public void receivedResponse(Watch.Response<V1ConfigMap> response) {
     recordCallBack(response);
   }
 
@@ -33,17 +33,18 @@ class NamespaceWatcherTest extends WatcherTestBase
 
     assertThat(
         StubWatchFactory.getRequestParameters().get(0),
-        hasEntry("resourceVersion", INITIAL_RESOURCE_VERSION.toString()));
+        both(hasEntry("resourceVersion", INITIAL_RESOURCE_VERSION.toString()))
+            .and(hasEntry("labelSelector", LabelConstants.CREATEDBYOPERATOR_LABEL)));
   }
 
   @SuppressWarnings("unchecked")
   @Override
   protected <T> T createObjectWithMetaData(V1ObjectMeta metaData) {
-    return (T) new V1Namespace().metadata(metaData);
+    return (T) new V1ConfigMap().metadata(metaData);
   }
 
   @Override
-  protected NamespaceWatcher createWatcher(String ns, AtomicBoolean stopping, BigInteger rv) {
-    return NamespaceWatcher.create(this, rv.toString(), tuning, this, stopping);
+  protected ConfigMapWatcher createWatcher(String ns, AtomicBoolean stopping, BigInteger rv) {
+    return ConfigMapWatcher.create(this, ns, rv.toString(), tuning, this, stopping);
   }
 }

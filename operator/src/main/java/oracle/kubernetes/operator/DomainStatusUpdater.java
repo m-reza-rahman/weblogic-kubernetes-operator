@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -42,6 +43,7 @@ import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
+import oracle.kubernetes.operator.watcher.PodWatcher;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
@@ -347,7 +349,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(createContext(packet).createUpdateSteps(getNext()), packet);
     }
 
@@ -369,7 +371,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getObject() != null) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.setDomain(callResponse.getObject());
@@ -378,7 +380,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (isUnrecoverable(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
@@ -397,7 +399,7 @@ public class DomainStatusUpdater {
 
   static class DomainUpdateStep extends ResponseStep<DomainResource> {
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       if (callResponse.getObject() != null) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.setDomain(callResponse.getObject());
@@ -406,7 +408,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<DomainResource> callResponse) {
       return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
           ? doNext(null, packet)
           : super.onFailure(packet, callResponse);
@@ -636,7 +638,7 @@ public class DomainStatusUpdater {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (isDomainNotPresent(packet)) {
         return doNext(packet);
       }

@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.calls.RetryStrategy;
 import oracle.kubernetes.operator.work.Packet;
@@ -22,7 +23,7 @@ public abstract class RetryStrategyStub implements RetryStrategy {
   }
 
   @Override
-  public Step.StepAction doPotentialRetry(Step conflictStep, Packet packet, KubernetesApiResponse<?> callResponse) {
+  public Result doPotentialRetry(Step conflictStep, Packet packet, KubernetesApiResponse<?> callResponse) {
     this.conflictStep = conflictStep;
     if (conflictStep == null || numRetriesLeft-- <= 0) {
       return null;

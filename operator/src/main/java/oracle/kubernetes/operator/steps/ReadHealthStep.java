@@ -20,6 +20,7 @@ import javax.annotation.Nonnull;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1Service;
@@ -74,7 +75,7 @@ public class ReadHealthStep extends Step {
   // overallHealthState, healthState
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     String serverName = (String) packet.get(ProcessingConstants.SERVER_NAME);
     DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     V1Service service = info.getServerService(serverName);
@@ -188,7 +189,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       ReadHealthProcessing processing = new ReadHealthProcessing(packet, service, pod);
       if (processing.getWlsServerConfig() == null) {
         return doNext(packet);
@@ -214,7 +215,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, HttpResponse<String> response) {
+    public Result onSuccess(Packet packet, HttpResponse<String> response) {
       try {
         HealthResponseProcessing responseProcessing = new HealthResponseProcessing(packet, response);
         responseProcessing.recordStateAndHealth();
@@ -242,7 +243,7 @@ public class ReadHealthStep extends Step {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, HttpResponse<String> response) {
+    public Result onFailure(Packet packet, HttpResponse<String> response) {
       new HealthResponseProcessing(packet, response).recordFailedStateAndHealth();
       return doNext(packet);
     }

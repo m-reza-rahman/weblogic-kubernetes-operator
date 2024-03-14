@@ -10,6 +10,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Optional;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.ProcessingConstants;
@@ -20,6 +21,8 @@ import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
 import static oracle.kubernetes.operator.http.client.TrustAllX509ExtendedTrustManager.getTrustingSSLContext;
@@ -88,7 +91,7 @@ public class HttpRequestStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     HttpResponseStep.removeResponse(packet);
     DomainPresenceInfo info = getDomainPresenceInfo(packet);
     try (ThreadLoggingContext ignored =

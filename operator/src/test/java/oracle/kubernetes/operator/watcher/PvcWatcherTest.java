@@ -1,17 +1,17 @@
 // Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimStatus;
+import oracle.kubernetes.operator.*;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
@@ -117,20 +117,6 @@ class PvcWatcherTest {
     assertThat(PvcWatcher.isBound(cachedPvc), is(false));
   }
 
-  @Test
-  void waitForReady_returnsAStep() {
-    PvcWatcher watcher = createWatcher();
-
-    assertThat(watcher.waitForReady(cachedPvc, null), instanceOf(Step.class));
-  }
-
-  @Test
-  void whenWaitForReadyAppliedToBoundPvc_performNextStep() {
-    startWaitForReady(this::markPvcBound);
-
-    assertThat(terminalStep.wasRun(), is(true));
-  }
-
   private V1PersistentVolumeClaim markPvcBound(V1PersistentVolumeClaim pvc) {
     return pvc.status(new V1PersistentVolumeClaimStatus().phase(BOUND));
   }
@@ -139,83 +125,12 @@ class PvcWatcherTest {
     return pvc;
   }
 
-  @Test
-  void whenWaitForReadyAppliedToUnboundPvc_dontPerformNextStep() {
-    startWaitForReady(this::dontChangePvc);
-
-    assertThat(terminalStep.wasRun(), is(false));
-  }
-
-  @Test
-  void whenWaitForReadyAppliedToPendingPvc_performNextStep() {
-    startWaitForReady(this::markPvcPending);
-
-    assertThat(terminalStep.wasRun(), is(false));
-  }
-
   private V1PersistentVolumeClaim markPvcPending(V1PersistentVolumeClaim pvc) {
     return pvc.status(new V1PersistentVolumeClaimStatus().phase(PENDING));
-  }
-
-  // Starts the waitForReady step with pvc modified as needed
-  private void startWaitForReady(Function<V1PersistentVolumeClaim,V1PersistentVolumeClaim> pvcFunction) {
-    PvcWatcher watcher = createWatcher();
-    V1PersistentVolumeClaim cachedPvc = pvcFunction.apply(createPvc());
-
-    testSupport.runSteps(watcher.waitForReady(cachedPvc, terminalStep));
-  }
-
-  @Test
-  void whenPvcBoundOnFirstRead_performNextStep() {
-    testSupport.defineResources(createDomain());
-    startWaitForReadyThenReadPvc(this::markPvcBound);
-
-    assertThat(terminalStep.wasRun(), is(true));
-  }
-
-  @Test
-  void whenPvcBoundErrorResolved_performNextStep() {
-    DomainResource failedDomain = createFailedDomain();
-    testSupport.defineResources(failedDomain);
-    domainPresenceInfo.setDomain(failedDomain);
-    startWaitForReadyThenReadPvc(this::markPvcBound);
-
-    assertThat(terminalStep.wasRun(), is(true));
   }
 
   private DomainResource createFailedDomain() {
     return createDomain().withStatus(new DomainStatus().addCondition(new DomainCondition(
         DomainConditionType.FAILED).withReason(PERSISTENT_VOLUME_CLAIM)));
-  }
-
-  @Test
-  void whenPvcUnboundOnFirstRead_dontPerformNextStep() {
-    testSupport.defineResources(createDomain());
-    startWaitForReadyThenReadPvc(this::dontChangePvc);
-
-    assertThat(terminalStep.wasRun(), is(false));
-  }
-
-  @Test
-  void whenPvcPendingOnFirstRead_dontPerformNextStep() {
-    testSupport.defineResources(createDomain());
-    startWaitForReadyThenReadPvc(this::markPvcPending);
-
-    assertThat(terminalStep.wasRun(), is(false));
-  }
-
-  // Starts the waitForReady step with an incomplete pvc cached, but a modified one in kubernetes
-  private void startWaitForReadyThenReadPvc(Function<V1PersistentVolumeClaim,V1PersistentVolumeClaim> pvcFunction) {
-    startWaitForReadyThenReadPvc(pvcFunction, terminalStep);
-  }
-
-  private void startWaitForReadyThenReadPvc(Function<V1PersistentVolumeClaim,V1PersistentVolumeClaim> pvcFunction,
-                                            Step nextStep) {
-    PvcWatcher watcher = createWatcher();
-
-    V1PersistentVolumeClaim persistedPvc = pvcFunction.apply(createPvc());
-    testSupport.defineResources(persistedPvc);
-
-    testSupport.runSteps(watcher.waitForReady(cachedPvc, nextStep));
   }
 }

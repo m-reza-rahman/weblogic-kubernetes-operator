@@ -27,7 +27,7 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Watch;
 import oracle.kubernetes.operator.KubernetesConstants;
-import oracle.kubernetes.operator.PodWatcher;
+import oracle.kubernetes.operator.watcher.PodWatcher;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ThreadFactoryTestBase;
 import oracle.kubernetes.operator.WatchTuning;

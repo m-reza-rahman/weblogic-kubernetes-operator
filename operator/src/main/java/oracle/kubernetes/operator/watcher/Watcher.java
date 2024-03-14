@@ -1,7 +1,7 @@
 // Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.lang.reflect.Method;
 import java.util.Optional;
@@ -17,10 +17,10 @@ import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.WatchTuning;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
-import oracle.kubernetes.operator.watcher.WatchListener;
 
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_GONE;
 
@@ -30,7 +30,7 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_GONE;
  *
  * @param <T> The type of the object to be watched.
  */
-abstract class Watcher<T> {
+public abstract class Watcher<T> {
   static final String HAS_NEXT_EXCEPTION_MESSAGE = "IO Exception during hasNext method.";
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private static final String IGNORED = "0";
@@ -70,11 +70,11 @@ abstract class Watcher<T> {
    * @param stopping an atomic boolean to watch to determine when to stop the watcher
    * @param listener a listener to which to dispatch watch events
    */
-  Watcher(
-      String resourceVersion,
-      WatchTuning tuning,
-      AtomicBoolean stopping,
-      WatchListener<T> listener) {
+  protected Watcher(
+          String resourceVersion,
+          WatchTuning tuning,
+          AtomicBoolean stopping,
+          WatchListener<T> listener) {
     this(resourceVersion, tuning, stopping);
     this.listener = listener;
   }
@@ -95,7 +95,7 @@ abstract class Watcher<T> {
     return resourceVersion;
   }
 
-  Watcher<T> withResourceVersion(String resourceVersion) {
+  public Watcher<T> withResourceVersion(String resourceVersion) {
     this.resourceVersion = resourceVersion;
     return this;
   }
@@ -110,7 +110,7 @@ abstract class Watcher<T> {
   }
 
   /** Kick off the watcher processing that runs in a separate thread. */
-  void start(ThreadFactory factory) {
+  protected void start(ThreadFactory factory) {
     thread = starter.startWatcher(factory, this::doWatch);
   }
 
@@ -148,12 +148,12 @@ abstract class Watcher<T> {
   }
 
   // Set the stopping state to true to pause watches.
-  protected void pause() {
+  public void pause() {
     this.stopping.set(true);
   }
 
   // Set the stopping state to false to resume watches.
-  protected void resume() {
+  public void resume() {
     this.stopping.set(false);
   }
 

@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
@@ -31,6 +32,8 @@ import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.apache.commons.io.FileUtils;
 import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.common.logging.MessageKeys.INTERNAL_IDENTITY_INITIALIZATION_FAILED;
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
@@ -66,7 +69,7 @@ public class InitializeInternalIdentityStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     try {
       if (configInternalCertFile.exists() && secretsInternalKeyFile.exists()) {
         // The operator's internal ssl identity has already been created.
@@ -89,7 +92,7 @@ public class InitializeInternalIdentityStep extends Step {
     FileUtils.copyFile(secretsInternalKeyFile, internalKeyFile);
   }
 
-  private StepAction createInternalIdentity(Packet packet) throws Exception {
+  private Result createInternalIdentity(Packet packet) throws Exception {
     KeyPair keyPair = createKeyPair();
     String key = convertToPEM(keyPair.getPrivate());
     writeToFile(key, internalKeyFile);
@@ -158,7 +161,7 @@ public class InitializeInternalIdentityStep extends Step {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
       V1Secret existingSecret = callResponse.getObject();
       if (existingSecret == null) {
         return doNext(createSecret(getNext(), internalOperatorKey), packet);

@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.helpers;
 
 import java.util.Optional;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.LoggingFilter;
@@ -16,6 +17,8 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.common.logging.MessageKeys.SECRET_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
@@ -58,7 +61,7 @@ public class SecretHelper {
     private String namespace;
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       DomainPresenceInfo dpi = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       V1Secret secret = dpi.getWebLogicCredentialsSecret();
       if (secret != null) {
@@ -91,7 +94,7 @@ public class SecretHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
         if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
           LoggingFilter loggingFilter = packet.getValue(LoggingFilter.LOGGING_FILTER_PACKET_KEY);
           LOGGER.warning(loggingFilter, SECRET_NOT_FOUND, secretName, namespace, WEBLOGIC_CREDENTIALS);
@@ -101,7 +104,7 @@ public class SecretHelper {
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
         V1Secret secret = callResponse.getObject();
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.setWebLogicCredentialsSecret(secret);

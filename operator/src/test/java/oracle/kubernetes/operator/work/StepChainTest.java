@@ -7,10 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.meterware.simplestub.Memento;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import javax.annotation.Nonnull;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -133,7 +136,7 @@ class StepChainTest {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       getStepNames(packet).add(name);
       return doNext(packet);
     }

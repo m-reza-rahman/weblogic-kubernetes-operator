@@ -5,14 +5,16 @@ package oracle.kubernetes.operator.steps;
 
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Pod;
-import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import java.time.Duration;
 
 public class ServerDownStep extends Step {
   private final String serverName;
@@ -29,7 +31,7 @@ public class ServerDownStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     V1Pod oldPod = info.getServerPod(serverName);
 
@@ -38,11 +40,6 @@ public class ServerDownStep extends Step {
       next = getNext();
     } else {
       next = ServiceHelper.deleteServicesStep(serverName, getNext());
-    }
-
-    if (oldPod != null) {
-      PodAwaiterStepFactory pw = (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
-      next = pw.waitForDelete(oldPod, new DomainPresenceInfoUpdateStep(serverName, next));
     }
 
     return doNext(oldPod != null ? createShutdownManagedServerStep(oldPod, next) : next, packet);

@@ -7,10 +7,13 @@ import java.net.http.HttpResponse;
 import java.util.Optional;
 import java.util.function.Consumer;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.helpers.AuthorizationSource;
 import oracle.kubernetes.operator.helpers.SecretHelper;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_FORBIDDEN;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_OK;
@@ -31,7 +34,7 @@ public abstract class HttpResponseStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     HttpResponse<String> response = getResponse(packet);
     if (response != null) {
       return doApply(packet, response);
@@ -39,7 +42,7 @@ public abstract class HttpResponseStep extends Step {
     return handlePossibleThrowableOrContinue(packet);
   }
 
-  private StepAction handlePossibleThrowableOrContinue(Packet packet) {
+  private Result handlePossibleThrowableOrContinue(Packet packet) {
     Throwable t = getThrowableResponse(packet);
     if (t != null) {
       return wrapOnFailure(packet, null); // FIXME?
@@ -51,7 +54,7 @@ public abstract class HttpResponseStep extends Step {
     return (Throwable) packet.get(THROWABLE);
   }
 
-  private StepAction doApply(Packet packet, HttpResponse<String> response) {
+  private Result doApply(Packet packet, HttpResponse<String> response) {
     Optional.ofNullable(callback).ifPresent(c -> c.accept(response));
     if (isSuccess(response)) {
       return onSuccess(packet, response);
@@ -59,7 +62,7 @@ public abstract class HttpResponseStep extends Step {
     return wrapOnFailure(packet, response);
   }
 
-  private StepAction wrapOnFailure(Packet packet, HttpResponse<String> response) {
+  private Result wrapOnFailure(Packet packet, HttpResponse<String> response) {
     if (response != null && (response.statusCode() == HTTP_FORBIDDEN || response.statusCode() == HTTP_UNAUTHORIZED)) {
       Optional.ofNullable(SecretHelper.getAuthorizationSource(packet)).ifPresent(AuthorizationSource::onFailure);
     }
@@ -104,17 +107,19 @@ public abstract class HttpResponseStep extends Step {
 
   /**
    * Processes a successful response.
-   * @param packet the packet from the fiber
+   *
+   * @param packet   the packet from the fiber
    * @param response the response from the server
    * @return the next action for the fiber to take
    */
-  public abstract StepAction onSuccess(Packet packet, HttpResponse<String> response);
+  public abstract Result onSuccess(Packet packet, HttpResponse<String> response);
 
   /**
    * Processes a failure response.
-   * @param packet the packet from the fiber
+   *
+   * @param packet   the packet from the fiber
    * @param response the response from the server
    * @return the next action for the fiber to take
    */
-  public abstract StepAction onFailure(Packet packet, HttpResponse<String> response);
+  public abstract Result onFailure(Packet packet, HttpResponse<String> response);
 }

@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.DomainProcessorDelegate;
 import oracle.kubernetes.operator.MakeRightClusterOperation;
 import oracle.kubernetes.operator.MakeRightExecutor;
@@ -135,7 +136,7 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (deleting) {
         executor.unregisterClusterPresenceInfo(info);
       } else {

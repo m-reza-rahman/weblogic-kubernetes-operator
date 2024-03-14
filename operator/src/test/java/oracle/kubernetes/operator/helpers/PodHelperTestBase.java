@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.custom.Quantity;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1Affinity;
@@ -2972,7 +2973,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doDelay(next, packet, delay, TimeUnit.SECONDS);
     }
   }

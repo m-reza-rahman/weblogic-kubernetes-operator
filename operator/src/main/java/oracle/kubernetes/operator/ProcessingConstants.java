@@ -10,9 +10,6 @@ public interface ProcessingConstants {
   String DELEGATE_COMPONENT_NAME = "delegate";
   String DOMAIN_COMPONENT_NAME = "domain";
   String DOMAIN_PROCESSOR = "domainProcessor";
-  String PODWATCHER_COMPONENT_NAME = "podWatcher";
-  String JOBWATCHER_COMPONENT_NAME = "jobWatcher";
-  String PVCWATCHER_COMPONENT_NAME = "pvcWatcher";
 
   /** key to an object of type WlsServerConfig. */
   String SERVER_SCAN = "serverScan";
@@ -47,8 +44,6 @@ public interface ProcessingConstants {
   String DOMAIN_VALIDATION_ERRORS = "domainValidationErrors";
   String INTROSPECTOR_JOB_FAILURE_LOGGED = "introspectorJobFailureLogged";
   String INTROSPECTOR_JOB_FAILURE_THROWABLE = "introspectorJobFailureThrowable";
-
-  String WAIT_FOR_POD_READY = "waitForPodReady";
 
   /** Key to an object of type MakeRightDomainOperation. */
   String MAKE_RIGHT_DOMAIN_OPERATION = "makeRightOp";

@@ -1,7 +1,7 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import oracle.kubernetes.operator.builders.StubWatchFactory;
-import oracle.kubernetes.operator.watcher.WatchListener;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
 import oracle.kubernetes.weblogic.domain.model.ClusterSpec;
 import org.junit.jupiter.api.Test;

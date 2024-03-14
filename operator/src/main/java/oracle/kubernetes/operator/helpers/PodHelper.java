@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,6 +13,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1EnvVarBuilder;
@@ -30,7 +32,6 @@ import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.CoreDelegate;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
-import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -39,6 +40,7 @@ import oracle.kubernetes.operator.processing.EffectiveServerSpec;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
+import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -366,12 +368,14 @@ public class PodHelper {
     return new AdminPodStep(next);
   }
 
-  static void addToPacket(Packet packet, PodAwaiterStepFactory pw) {
-    packet.put(ProcessingConstants.PODWATCHER_COMPONENT_NAME, pw);
-  }
-
-  static PodAwaiterStepFactory getPodAwaiterStepFactory(Packet packet) {
-    return (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
+  /**
+   * Factory for {@link Step} that checks that admin server pod is ready.
+   *
+   * @param next Next processing step
+   * @return Step for checking ready status for admin server pod
+   */
+  public static Step createAdminReadyStep(Step next) {
+    return new AdminPodReadyStep(next);
   }
 
   /**
@@ -536,10 +540,33 @@ public class PodHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       PodStepContext context = new AdminPodStepContext(this, packet);
 
       return doNext(context.verifyPod(getNext()), packet);
+    }
+
+  }
+
+  static class AdminPodReadyStep extends Step {
+
+    AdminPodReadyStep(Step next) {
+      super(next);
+    }
+    @Override
+    public @Nonnull Result apply(Packet packet) {
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+      WlsDomainConfig domainTopology =
+              (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
+      V1Pod adminPod = info.getServerPod(domainTopology.getAdminServerName());
+
+      if (adminPod == null || !isReady(adminPod)) {
+        // requeue to wait for admin pod to be ready
+        return new Result(true,
+                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      }
+
+      return doNext(packet);
     }
 
   }
@@ -612,7 +639,7 @@ public class PodHelper {
       }
 
       @Override
-      public StepAction apply(Packet packet) {
+      public @Nonnull Result apply(Packet packet) {
         removeFromServersMarkedForRollMap();
         return doNext(packet);
       }
@@ -740,7 +767,7 @@ public class PodHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       ManagedPodStepContext context = new ManagedPodStepContext(this, packet);
 
       return doNext(context.verifyPod(getNext()), packet);
@@ -756,7 +783,7 @@ public class PodHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       final DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       final V1Pod oldPod = info.getServerPod(serverName);
 
@@ -812,7 +839,7 @@ public class PodHelper {
     private Step deletePod(String name, String namespace, long gracePeriodSeconds, Step next) {
       Step conflictStep = RequestBuilder.POD.get(namespace, name, new DefaultResponseStep<>(next) {
         @Override
-        public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+        public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
           V1Pod pod = callResponse.getObject();
 
           if (pod != null && !PodHelper.isDeleting(pod)) {

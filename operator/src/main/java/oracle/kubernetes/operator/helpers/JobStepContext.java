@@ -14,6 +14,7 @@ import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ConfigMapVolumeSource;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1EnvFromSource;
@@ -1049,7 +1050,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       if (isUnrecoverable(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
@@ -1057,7 +1058,7 @@ public class JobStepContext extends BasePodStepContext {
       }
     }
 
-    private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+    private Result updateDomainStatus(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
     }
 
@@ -1066,7 +1067,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
       logJobCreated();
       V1Job job = callResponse.getObject();
       if (job != null) {

@@ -6,8 +6,11 @@ package oracle.kubernetes.operator.steps;
 import java.util.Collection;
 import java.util.Iterator;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 /**
  * A step which will perform an action on each entry in the specified collection. It does so by chaining back to
@@ -22,7 +25,7 @@ public abstract class AbstractListStep<T> extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     if (it.hasNext()) {
       return doNext(createActionStep(it.next()), packet);
     } else {

@@ -51,7 +51,7 @@ import oracle.kubernetes.common.utils.SchemaConversionUtils;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.FluentdUtils;
 import oracle.kubernetes.operator.JobAwaiterStepFactory;
-import oracle.kubernetes.operator.JobWatcher;
+import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
 import oracle.kubernetes.operator.http.rest.ScanCacheStub;

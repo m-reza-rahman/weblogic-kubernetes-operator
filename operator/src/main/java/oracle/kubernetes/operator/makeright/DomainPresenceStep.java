@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.makeright;
 
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -25,7 +26,7 @@ public class DomainPresenceStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     final Step step = getNextSteps(packet);
     return doNext(step, packet);
   }

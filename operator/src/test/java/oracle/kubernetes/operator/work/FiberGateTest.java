@@ -3,7 +3,10 @@
 
 package oracle.kubernetes.operator.work;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import org.junit.jupiter.api.Test;
+
+import javax.annotation.Nonnull;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -68,7 +71,7 @@ class FiberGateTest {
   private static class NoopStep extends Step {
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(packet);
     }
   }
@@ -81,7 +84,7 @@ class FiberGateTest {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       fiberGate.startFiberIfNoCurrentFiber(subStepUid, terminalStep, packet, completionCallback);
       return doNext(packet);
     }

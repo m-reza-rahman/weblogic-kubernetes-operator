@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import jakarta.validation.constraints.NotNull;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.ProcessingConstants;
@@ -19,6 +20,8 @@ import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
+import javax.annotation.Nonnull;
+
 public class ManagedServerUpAfterStep extends Step {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
@@ -27,7 +30,7 @@ public class ManagedServerUpAfterStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     if (getServersToRoll(packet).isEmpty()) {
       return doNext(packet);
     } else if (MakeRightDomainOperation.isInspectionRequired(packet)) {

@@ -6,6 +6,7 @@ package oracle.kubernetes.operator.steps;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudgetList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
 import io.kubernetes.client.util.generic.options.DeleteOptions;
@@ -24,7 +25,7 @@ public class DeleteDomainStep extends Step {
 
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     return doNext(DomainPresenceInfo.fromPacket(packet).map(this::createNextSteps).orElseThrow(), packet);
   }
 

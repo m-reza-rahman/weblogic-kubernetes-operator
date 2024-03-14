@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -47,7 +48,6 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.logging.ThreadLoggingContext;
 import oracle.kubernetes.operator.steps.BeforeAdminServiceStep;
-import oracle.kubernetes.operator.steps.WatchPodReadyAdminStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.Fiber;
@@ -341,8 +341,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   // pre-conditions: DomainPresenceInfo SPI
   // "principal"
-  public static Step bringAdminServerUp(DomainPresenceInfo info, PodAwaiterStepFactory podAwaiterStepFactory) {
-    return bringAdminServerUpSteps(info, podAwaiterStepFactory);
+  public static Step bringAdminServerUp(DomainPresenceInfo info) {
+    return bringAdminServerUpSteps(info);
   }
 
   @Override
@@ -520,13 +520,13 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
   }
 
-  private static Step bringAdminServerUpSteps(DomainPresenceInfo info, PodAwaiterStepFactory podAwaiterStepFactory) {
+  private static Step bringAdminServerUpSteps(DomainPresenceInfo info) {
     List<Step> steps = new ArrayList<>();
     steps.add(new BeforeAdminServiceStep(null));
     steps.add(PodHelper.createAdminPodStep(null));
     steps.add(ServiceHelper.createForExternalServiceStep(null));
     steps.add(ServiceHelper.createForServerStep(null));
-    steps.add(new WatchPodReadyAdminStep(podAwaiterStepFactory, null));
+    steps.add(PodHelper.createAdminReadyStep(null));
     return Step.chain(steps.toArray(new Step[0]));
   }
 
@@ -560,6 +560,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     if (info == null) {
       return;
     }
+
+    // FIXME, HERE: Make sure that watch event about pods triggers make right (and doesn't get surpressed)
 
     String serverName = getPodLabel(pod, LabelConstants.SERVERNAME_LABEL);
     switch (watchType) {
@@ -948,7 +950,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   public static class PopulatePacketServerMapsStep extends Step {
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       populatePacketServerMapsFromDomain(packet);
       return doNext(packet);
     }
@@ -1095,6 +1097,10 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
   }
 
+  private static class ProcessingGate {
+    // HERE
+  }
+
   @SuppressWarnings("rawtypes")
   private abstract static class Plan<T extends MakeRightOperation> {
 
@@ -1182,7 +1188,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     private class DomainPresenceInfoStep extends Step {
       @Override
-      public StepAction apply(Packet packet) {
+      public @Nonnull Result apply(Packet packet) {
         Optional.ofNullable(domains.get(getNamespace()))
             .map(n -> n.get(getDomainUid()))
             .ifPresent(i -> packet.put(ProcessingConstants.DOMAIN_PRESENCE_INFO, i));

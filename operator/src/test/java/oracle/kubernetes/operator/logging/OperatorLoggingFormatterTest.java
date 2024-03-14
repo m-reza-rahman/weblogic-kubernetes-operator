@@ -10,12 +10,15 @@ import java.util.logging.LogRecord;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiException;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.junit.jupiter.api.Test;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadContext;
 import static org.hamcrest.Matchers.allOf;
@@ -198,7 +201,7 @@ class OperatorLoggingFormatterTest {
   class LoggingStep extends Step {
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       try {
         packet.put("MESSAGE", getFormattedMessage());
         return doNext(packet);

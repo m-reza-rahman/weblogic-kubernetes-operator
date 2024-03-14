@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1Pod;
@@ -15,6 +16,7 @@ import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.PodHelper;
+import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.FiberTestSupport;
@@ -22,9 +24,11 @@ import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
+import javax.annotation.Nonnull;
+
 import static com.meterware.simplestub.Stub.createStrictStub;
-import static oracle.kubernetes.operator.JobWatcher.getFailedReason;
-import static oracle.kubernetes.operator.JobWatcher.isFailed;
+import static oracle.kubernetes.operator.watcher.JobWatcher.getFailedReason;
+import static oracle.kubernetes.operator.watcher.JobWatcher.isFailed;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
 
 /**
@@ -163,7 +167,7 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doDelay(getNext(), packet, delay, TimeUnit.SECONDS);
     }
   }
@@ -174,7 +178,7 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
       if (isFailed(job) && "DeadlineExceeded".equals(getFailedReason(job))) {
         return new Step() {
           @Override
-          public StepAction apply(Packet packet) {
+          public @Nonnull Result apply(Packet packet) {
             return doTerminate(new JobWatcher.DeadlineExceededException(job), packet);
           }
         };

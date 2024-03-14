@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Service;
@@ -56,7 +57,7 @@ public class MonitoringExporterSteps {
   public static Step updateExporterSidecars() {
     return new Step() {
       @Override
-      public StepAction apply(Packet packet) {
+      public @Nonnull Result apply(Packet packet) {
         return doNext(updateExportersWithConfiguration(packet), packet);
       }
 
@@ -143,7 +144,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (PodHelper.isDeleting(getServerPod(packet))) {
         return doNext(packet);
       } else if (PodHelper.isReady(getServerPod(packet))) {
@@ -169,7 +170,7 @@ public class MonitoringExporterSteps {
     // if not match, response should run update step
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       ExporterRequestProcessing processing = new ExporterRequestProcessing(packet);
 
       return doNext(createRequestStep(processing.createConfigurationQueryRequest(),
@@ -184,7 +185,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, HttpResponse<String> response) {
+    public Result onSuccess(Packet packet, HttpResponse<String> response) {
       if (hasUpToDateConfiguration(packet, response)) {
         return doNext(packet);
       } else {
@@ -211,7 +212,7 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, HttpResponse<String> response) {
+    public Result onFailure(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
   }
@@ -229,7 +230,7 @@ public class MonitoringExporterSteps {
   private static class ConfigurationUpdateStep extends Step {
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       ExporterRequestProcessing processing = new ExporterRequestProcessing(packet);
 
       return doNext(createRequestStep(processing.createConfigurationUpdateRequest(packet),
@@ -311,12 +312,12 @@ public class MonitoringExporterSteps {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, HttpResponse<String> response) {
+    public Result onSuccess(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
 
     @Override
-    public StepAction onFailure(Packet packet, HttpResponse<String> response) {
+    public Result onFailure(Packet packet, HttpResponse<String> response) {
       return doNext(packet);
     }
   }
@@ -349,7 +350,7 @@ public class MonitoringExporterSteps {
 
     @Override
     @SuppressWarnings("try")
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (serverNames == null) {
         return doNext(packet);
       } else {

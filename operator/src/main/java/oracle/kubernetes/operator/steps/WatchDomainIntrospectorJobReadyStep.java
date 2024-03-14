@@ -3,19 +3,21 @@
 
 package oracle.kubernetes.operator.steps;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Job;
-import oracle.kubernetes.operator.JobAwaiterStepFactory;
-import oracle.kubernetes.operator.JobWatcher;
+import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveFailuresStep;
 
 public class WatchDomainIntrospectorJobReadyStep extends Step {
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     V1Job domainIntrospectorJob = (V1Job) packet.get(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB);
 
     if (hasNotCompleted(domainIntrospectorJob)) {

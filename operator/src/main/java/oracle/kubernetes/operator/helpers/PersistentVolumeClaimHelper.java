@@ -9,12 +9,12 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimSpec;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.PvcAwaiterStepFactory;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -34,7 +34,6 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.PV_PVC_API_VERSION;
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAINUID_LABEL;
-import static oracle.kubernetes.operator.ProcessingConstants.PVCWATCHER_COMPONENT_NAME;
 
 /**
  * Operations for dealing with persistent volume claims.
@@ -64,7 +63,7 @@ public class PersistentVolumeClaimHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       if (info.getDomain().getInitPvDomainPersistentVolumeClaim() != null) {
         return doNext(createContext(packet).readAndCreatePersistentVolumeClaimStep(getNext()), packet);
@@ -132,7 +131,7 @@ public class PersistentVolumeClaimHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -140,13 +139,13 @@ public class PersistentVolumeClaimHelper {
         }
       }
 
-      private StepAction updateDomainStatus(Packet packet,
+      private Result updateDomainStatus(Packet packet,
                                             KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         logPersistentVolumeClaimCreated(messageKey);
         addPersistentVolumeClaimToRecord(callResponse.getObject());
         return doNext(packet);
@@ -159,14 +158,14 @@ public class PersistentVolumeClaimHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : super.onFailure(packet, callResponse);
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1PersistentVolumeClaim> callResponse) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         V1PersistentVolumeClaim persistentVolumeClaim = callResponse.getObject();
 
@@ -197,7 +196,7 @@ public class PersistentVolumeClaimHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public StepAction apply(Packet packet) {
+      public @Nonnull Result apply(Packet packet) {
         return doNext(RequestBuilder.PVC.get(info.getNamespace(), getPersistentVolumeClaimName(),
             new ReadResponseStep(conflictStep)), packet);
       }
@@ -258,26 +257,4 @@ public class PersistentVolumeClaimHelper {
     }
   }
 
-  public static Step waitForPvcToBind(String pvcName, Step next) {
-    return new WaitForPvcToBind(pvcName, next);
-  }
-
-  static class WaitForPvcToBind extends Step {
-
-    private final String pvcName;
-
-    WaitForPvcToBind(String pvcName, Step next) {
-      super(next);
-      this.pvcName = pvcName;
-    }
-
-    @Override
-    public StepAction apply(Packet packet) {
-      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
-      V1PersistentVolumeClaim domainPvc = info.getPersistentVolumeClaim(pvcName);
-
-      PvcAwaiterStepFactory pw = (PvcAwaiterStepFactory) packet.get(PVCWATCHER_COMPONENT_NAME);
-      return doNext(pw.waitForReady(domainPvc, getNext()), packet);
-    }
-  }
 }

@@ -55,6 +55,7 @@ import oracle.kubernetes.operator.http.BaseServer;
 import oracle.kubernetes.operator.http.metrics.MetricsServer;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryFileSystem;
+import oracle.kubernetes.operator.watcher.NoopWatcherStarter;
 import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;

@@ -14,7 +14,7 @@ import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.operator.KubernetesConstants;
-import oracle.kubernetes.operator.NoopWatcherStarter;
+import oracle.kubernetes.operator.watcher.NoopWatcherStarter;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;

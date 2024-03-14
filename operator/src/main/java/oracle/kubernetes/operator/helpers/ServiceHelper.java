@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceList;
@@ -217,11 +218,11 @@ public class ServiceHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doVerifyService(getNext(), packet);
     }
 
-    private StepAction doVerifyService(Step next, Packet packet) {
+    private Result doVerifyService(Step next, Packet packet) {
       return doNext(createContext(packet).verifyService(next), packet);
     }
 
@@ -609,7 +610,7 @@ public class ServiceHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public StepAction apply(Packet packet) {
+      public @Nonnull Result apply(Packet packet) {
         return doNext(
             RequestBuilder.SERVICE.get(getNamespace(), createServiceName(), new ReadServiceResponse(conflictStep)),
             packet);
@@ -647,14 +648,14 @@ public class ServiceHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         V1Service service = callResponse.getObject();
         if (service == null) {
           removeServiceFromRecord();
@@ -671,14 +672,14 @@ public class ServiceHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
             ? onSuccess(packet, callResponse)
             : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return doNext(createReplacementService(getNext()), packet);
       }
     }
@@ -692,7 +693,7 @@ public class ServiceHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -700,12 +701,12 @@ public class ServiceHelper {
         }
       }
 
-      private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      private Result updateDomainStatus(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1Service> callResponse) {
         logServiceCreated(messageKey);
         addServiceToRecord(callResponse.getObject());
         return doNext(packet);
@@ -722,7 +723,7 @@ public class ServiceHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return doNext(createActionStep(info), packet);
     }

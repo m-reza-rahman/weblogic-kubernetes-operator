@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.calls.RequestBuilder;
@@ -73,7 +74,7 @@ public class ClusterResourceStatusUpdater {
      * @return Next action
      */
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
       Step step = Optional.ofNullable(info.getDomain())
           .map(domain -> createUpdateClusterResourceStatusSteps(packet, info.getClusterResources()))
@@ -110,7 +111,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
       if (callResponse.getObject() != null) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.addClusterResource(callResponse.getObject());
@@ -119,7 +120,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
       if (isUnrecoverable(callResponse)) {
         return super.onFailure(packet, callResponse);
       } else {
@@ -147,7 +148,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (statusUpdateSteps.isEmpty()) {
         return doNext(getNext(), packet);
       } else {
@@ -286,7 +287,7 @@ public class ClusterResourceStatusUpdater {
 
   private static class ReadClusterResponseStep extends ResponseStep<ClusterResource> {
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
       if (callResponse.getObject() != null) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
         info.addClusterResource(callResponse.getObject());
@@ -295,7 +296,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<ClusterResource> callResponse) {
       return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
           ? doNext(null, packet)
           : super.onFailure(packet, callResponse);
@@ -310,7 +311,7 @@ public class ClusterResourceStatusUpdater {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       // Get the ClusterResource, that was refreshed, from DomainPresenceInfo.
       DomainPresenceInfo info = DomainPresenceInfo.fromPacket(packet).orElseThrow();
       ClusterResource res = info.getClusterResource(clusterName);

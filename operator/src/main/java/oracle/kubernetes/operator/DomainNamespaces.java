@@ -29,7 +29,7 @@ import io.kubernetes.client.openapi.models.V1ServiceList;
 import oracle.kubernetes.operator.helpers.ConfigMapHelper;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.tuning.TuningParameters;
-import oracle.kubernetes.operator.watcher.WatchListener;
+import oracle.kubernetes.operator.watcher.*;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.ThreadFactorySingleton;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;

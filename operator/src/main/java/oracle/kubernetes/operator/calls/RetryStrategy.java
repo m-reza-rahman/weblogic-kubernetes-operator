@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.calls;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -15,12 +16,12 @@ public interface RetryStrategy {
    * another retry attempt will occur.
    *
    * @param conflictStep Conflict step, or null
-   * @param packet Packet
+   * @param packet       Packet
    * @param callResponse Call response
    * @return Desired next action which should specify retryStep. Return null when call will not be
-   *     retried.
+   * retried.
    */
-  Step.StepAction doPotentialRetry(Step conflictStep, Packet packet, KubernetesApiResponse<?> callResponse);
+  Result doPotentialRetry(Step conflictStep, Packet packet, KubernetesApiResponse<?> callResponse);
 
   /**
    * Called when retry count, or other statistics, should be reset, such as when partial list was

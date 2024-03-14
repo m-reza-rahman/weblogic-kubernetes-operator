@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import com.meterware.simplestub.Memento;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.utils.TestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,7 +30,6 @@ import static org.hamcrest.junit.MatcherAssert.assertThat;
 class FiberTest {
 
   private static final String STEPS = "steps";
-  private static final String FIBERS = "fibers";
 
   private final FiberTestSupport testSupport = new FiberTestSupport();
   private final Packet packet = new Packet();
@@ -38,7 +38,6 @@ class FiberTest {
 
   private final List<Step> stepList = new ArrayList<>();
   private final List<Throwable> throwableList = new ArrayList<>();
-  private final List<AsyncFiber> fiberList = new ArrayList<>();
 
   private final Step step1 = new BasicStep(1);
   private final Step step2 = new BasicStep(2);
@@ -55,7 +54,6 @@ class FiberTest {
           .withLogLevel(Level.INFO));
 
     packet.put(STEPS, stepList);
-    packet.put(FIBERS, fiberList);
   }
 
   @AfterEach
@@ -122,7 +120,7 @@ class FiberTest {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       recordStep(packet);
       return doNext(packet);
     }
@@ -142,7 +140,7 @@ class FiberTest {
     int count = 2;
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       recordStep(packet);
       return count-- > 0 ? doRetry(packet, 50, TimeUnit.MILLISECONDS) : doNext(packet);
     }
@@ -150,7 +148,7 @@ class FiberTest {
 
   static class ThrowableStep extends BasicStep {
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       recordStep(packet);
 
       throw new RuntimeException("in test");
@@ -168,7 +166,7 @@ class FiberTest {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doForkJoin(nextStep, packet, createStepAndPacketList(packet));
     }
 

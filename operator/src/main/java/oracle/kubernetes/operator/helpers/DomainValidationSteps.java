@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -78,7 +79,7 @@ public class DomainValidationSteps {
   static class ListSecretsResponseStep extends DefaultResponseStep<V1SecretList> {
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1SecretList> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1SecretList> callResponse) {
       List<V1Secret> list = getSecrets(packet);
       list.addAll(callResponse.getObject().getItems());
       packet.put(SECRETS, list);
@@ -98,7 +99,7 @@ public class DomainValidationSteps {
   static class ListConfigMapsResponseStep extends DefaultResponseStep<V1ConfigMapList> {
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMapList> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMapList> callResponse) {
       List<V1ConfigMap> list = getConfigMaps(packet);
       list.addAll(callResponse.getObject().getItems());
       packet.put(CONFIGMAPS, list);
@@ -118,7 +119,7 @@ public class DomainValidationSteps {
   static class ListClustersResponseStep extends DefaultResponseStep<ClusterList> {
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<ClusterList> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<ClusterList> callResponse) {
       List<ClusterResource> list = getClusters(packet);
       list.addAll(callResponse.getObject().getItems());
       packet.put(CLUSTERS, list);
@@ -134,7 +135,7 @@ public class DomainValidationSteps {
   static class DomainValidationStep extends Step {
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       DomainResource domain = info.getDomain();
       List<String> fatalValidationFailures = domain.getFatalValidationFailures();
@@ -172,7 +173,7 @@ public class DomainValidationSteps {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       DomainResource domain = info.getDomain();
       List<String> validationFailures = domain.getAdditionalValidationFailures(podSpec);
@@ -199,7 +200,7 @@ public class DomainValidationSteps {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       final WlsConfigValidator validator = new WlsConfigValidator(packet).loggingTo(LOGGER);
       final List<String> failures = validator.getTopologyFailures();
       final List<String> replicasTooHigh = validator.getReplicaTooHighFailures();

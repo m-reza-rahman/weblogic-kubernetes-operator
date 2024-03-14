@@ -10,6 +10,7 @@ import javax.annotation.Nonnull;
 
 import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1LabelSelector;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
@@ -67,7 +68,7 @@ public class PodDisruptionBudgetHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(createContext(packet).verifyPodDisruptionBudget(getNext()), packet);
     }
 
@@ -99,7 +100,7 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         if (isUnrecoverable(callResponse)) {
           return updateDomainStatus(packet, callResponse);
         } else {
@@ -107,12 +108,12 @@ public class PodDisruptionBudgetHelper {
         }
       }
 
-      private StepAction updateDomainStatus(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+      private Result updateDomainStatus(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         logPodDisruptionBudgetCreated(messageKey);
         addPodDisruptionBudgetToRecord(callResponse.getObject());
         return doNext(packet);
@@ -125,14 +126,14 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         V1PodDisruptionBudget podDisruptionBudget = callResponse.getObject();
         if (podDisruptionBudget == null) {
           removePodDisruptionBudgetFromRecord();
@@ -149,14 +150,14 @@ public class PodDisruptionBudgetHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
                 ? onSuccess(packet, callResponse)
                 : onFailure(getConflictStep(), packet, callResponse);
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<V1PodDisruptionBudget> callResponse) {
         logPodDisruptionBudgetPatched();
         return doNext(packet);
       }
@@ -164,7 +165,7 @@ public class PodDisruptionBudgetHelper {
 
     private class ConflictStep extends Step {
       @Override
-      public StepAction apply(Packet packet) {
+      public @Nonnull Result apply(Packet packet) {
         return doNext(
             RequestBuilder.PDB.get(info.getNamespace(), getPDBName(),
                 new PodDisruptionBudgetContext.ReadResponseStep(conflictStep)),

@@ -4,6 +4,7 @@
 package oracle.kubernetes.operator.steps;
 
 import io.kubernetes.client.common.KubernetesType;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.work.Packet;
@@ -28,14 +29,14 @@ public class DefaultResponseStep<T extends KubernetesType> extends ResponseStep<
   }
 
   @Override
-  public StepAction onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
+  public Result onFailure(Packet packet, KubernetesApiResponse<T> callResponse) {
     return callResponse.getHttpStatusCode() == HTTP_NOT_FOUND
         ? onSuccess(packet, callResponse)
         : super.onFailure(packet, callResponse);
   }
 
   @Override
-  public StepAction onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+  public Result onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
     return doNext(packet);
   }
 }

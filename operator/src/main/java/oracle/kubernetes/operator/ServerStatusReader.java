@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -84,7 +85,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       packet.put(SERVER_STATE_MAP, new ConcurrentHashMap<String, String>());
       packet.put(SERVER_HEALTH_MAP, new ConcurrentHashMap<String, ServerHealth>());
 
@@ -135,7 +136,7 @@ public class ServerStatusReader {
 
     @Override
     @SuppressWarnings("try")
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       @SuppressWarnings("unchecked")
       final ConcurrentMap<String, String> serverStateMap =
           (ConcurrentMap<String, String>) packet.get(SERVER_STATE_MAP);
@@ -262,7 +263,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       @SuppressWarnings("unchecked")
       ConcurrentMap<String, String> serverStateMap =
           (ConcurrentMap<String, String>) packet.get(SERVER_STATE_MAP);
@@ -287,7 +288,7 @@ public class ServerStatusReader {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
       return doNext(getNextStep(info), packet);
     }

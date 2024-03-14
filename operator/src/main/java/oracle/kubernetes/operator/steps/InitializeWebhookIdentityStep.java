@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
@@ -74,7 +75,7 @@ public class InitializeWebhookIdentityStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     try {
       if (isWebHoodSslIdentityAlreadyCreated()) {
         reuseIdentity();
@@ -104,7 +105,7 @@ public class InitializeWebhookIdentityStep extends Step {
     FileUtils.copyFile(keyFile, webhookKeyFile);
   }
 
-  private StepAction createIdentity(Packet packet) throws IdentityInitializationException {
+  private Result createIdentity(Packet packet) throws IdentityInitializationException {
     try {
       final KeyPair keyPair = identityFactory.createKeyPair();
       final String key = identityFactory.convertToPEM(keyPair.getPrivate());
@@ -160,7 +161,7 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
       V1Secret existingSecret = callResponse.getObject();
       Map<String, byte[]> data = Optional.ofNullable(existingSecret).map(V1Secret::getData).orElse(new HashMap<>());
       if (existingSecret == null) {
@@ -221,7 +222,7 @@ public class InitializeWebhookIdentityStep extends Step {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<V1Secret> callResponse) {
       if (isUnrecoverable(callResponse)) {
         return doNext(Step.chain(readSecretResponseStep(getNext(), webhookIdentity), getNext()), packet);
       } else {

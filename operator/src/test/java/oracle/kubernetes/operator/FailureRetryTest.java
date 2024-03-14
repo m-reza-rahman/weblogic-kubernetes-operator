@@ -14,6 +14,7 @@ import javax.annotation.Nonnull;
 
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.Stub;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobSpec;
 import io.kubernetes.client.openapi.models.V1JobStatus;
@@ -25,6 +26,7 @@ import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.UnitTestHash;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
+import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -265,7 +267,7 @@ class FailureRetryTest {
     private int numTimesRun = 0;
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       numTimesRun++;
       return doNext(DomainStatusUpdater.createDomainInvalidFailureSteps("in unit test"), packet);
     }
@@ -274,7 +276,7 @@ class FailureRetryTest {
   static class AddFatalIntrospectionFailureStep extends Step {
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(DomainStatusUpdater.createIntrospectionFailureSteps(FATAL_INTROSPECTOR_ERROR), packet);
     }
   }
@@ -299,7 +301,7 @@ class FailureRetryTest {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (exception instanceof RuntimeException) {
         throw (RuntimeException) exception;
       } else {

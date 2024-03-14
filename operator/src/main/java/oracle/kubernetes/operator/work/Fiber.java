@@ -23,7 +23,7 @@ import static oracle.kubernetes.operator.work.Step.adapt;
 /**
  * Represents the execution of one processing flow.
  */
-public final class Fiber implements AsyncFiber {
+public final class Fiber {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private static final int NOT_COMPLETE = 0;
   private static final int DONE = 1;
@@ -124,95 +124,6 @@ public final class Fiber implements AsyncFiber {
     }
   }
 
-  void delay(Step stepline, Packet packet, long delay, TimeUnit unit) {
-    if (status.get() == NOT_COMPLETE) {
-      owner.getExecutor().schedule(() -> doRun(stepline, packet), delay, unit);
-    }
-  }
-
-  void suspend(Step stepline, Packet packet, Step.SuspendAction suspendAction) {
-    if (status.get() == NOT_COMPLETE) {
-      suspendAction.onSuspend(new Step.Resumable() {
-        private final AtomicBoolean didResume = new AtomicBoolean(false);
-
-        private boolean mayResume() {
-          return didResume.compareAndSet(false, true);
-        }
-
-        @Override
-        public boolean hasResumed() {
-          return didResume.get();
-        }
-
-        @Override
-        public void resume(Consumer<Packet> onResume) {
-          if (status.get() == NOT_COMPLETE && mayResume()) {
-            Optional.ofNullable(onResume).ifPresent(o -> o.accept(packet));
-            owner.getExecutor().execute(() -> doRun(stepline, packet));
-          }
-        }
-
-        @Override
-        public void terminate(Throwable t) {
-          if (status.get() == NOT_COMPLETE && mayResume()) {
-            owner.getExecutor().execute(() -> doRun(new Step() {
-              @NotNull
-              @Override
-              public StepAction apply(Packet packet) {
-                return doTerminate(t, packet);
-              }
-            }, packet));
-          }
-        }
-
-        @Override
-        public void cancel() {
-          Fiber.this.cancel();
-        }
-      });
-    }
-  }
-
-  void forkJoin(Step step, Packet packet, Collection<StepAndPacket> startDetails) {
-    final AtomicInteger count = new AtomicInteger(startDetails.size());
-    final List<Throwable> throwables = new ArrayList<>();
-    CompletionCallback callback = new CompletionCallback() {
-      @Override
-      public void onThrowable(Packet p, Throwable throwable) {
-        synchronized (throwables) {
-          throwables.add(throwable);
-        }
-        mark();
-      }
-
-      @Override
-      public void onCompletion(Packet p) {
-        mark();
-      }
-
-      public void mark() {
-        int current = count.decrementAndGet();
-        if (current <= 0) {
-          if (status.get() == NOT_COMPLETE) {
-            if (throwables.isEmpty()) {
-              doRun(step, packet);
-            } else {
-              if (completionCallback != null) {
-                Throwable t = (throwables.size() == 1) ? throwables.get(0) : new MultiThrowable(throwables);
-                completionCallback.onThrowable(packet, t);
-              }
-            }
-          }
-        }
-      }
-    };
-
-    // start forked fibers
-    for (StepAndPacket sp : startDetails) {
-      createChildFiber(callback).start(sp.step, Optional.ofNullable(sp.packet).orElse(packet.copy()));
-    }
-  }
-
   private String getStatus() {
     return switch (status.get()) {
       case NOT_COMPLETE -> "NOT_COMPLETE";
@@ -231,7 +142,6 @@ public final class Fiber implements AsyncFiber {
    *
    * @return Child fiber
    */
-  @Override
   public Fiber createChildFiber(CompletionCallback completionCallback) {
     synchronized (this) {
       if (children == null) {

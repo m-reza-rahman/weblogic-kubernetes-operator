@@ -29,6 +29,7 @@ import com.google.gson.ToNumberPolicy;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.ApiextensionsV1ServiceReference;
 import io.kubernetes.client.openapi.models.ApiextensionsV1WebhookClientConfig;
 import io.kubernetes.client.openapi.models.V1CustomResourceConversion;
@@ -199,7 +200,7 @@ public class CrdHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(context.verifyCrd(getNext()), packet);
     }
   }
@@ -216,7 +217,7 @@ public class CrdHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(context.verifyCrd(getNext()), packet);
     }
   }
@@ -551,7 +552,7 @@ public class CrdHelper {
       }
 
       @Override
-      public StepAction onSuccess(
+      public Result onSuccess(
           Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         V1CustomResourceDefinition existingCrd = callResponse.getObject();
         if (existingCrd == null) {
@@ -568,7 +569,7 @@ public class CrdHelper {
       }
 
       @Override
-      protected StepAction onFailureNoRetry(Packet packet,
+      protected Result onFailureNoRetry(Packet packet,
                                             KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         return isNotAuthorizedOrForbidden(callResponse)
             ? doNext(packet) : super.onFailureNoRetry(packet, callResponse);
@@ -581,20 +582,20 @@ public class CrdHelper {
       }
 
       @Override
-      public StepAction onFailure(
+      public Result onFailure(
           Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         return super.onFailure(conflictStep, packet, callResponse);
       }
 
       @Override
-      public StepAction onSuccess(
+      public Result onSuccess(
           Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.CREATING_CRD, callResponse.getObject().getMetadata().getName());
         return doNext(packet);
       }
 
       @Override
-      protected StepAction onFailureNoRetry(Packet packet,
+      protected Result onFailureNoRetry(Packet packet,
                                             KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.CREATE_CRD_FAILED, callResponse.getStatus());
         return isNotAuthorizedOrForbidden(callResponse)
@@ -608,20 +609,20 @@ public class CrdHelper {
       }
 
       @Override
-      public StepAction onFailure(
+      public Result onFailure(
           Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         return super.onFailure(conflictStep, packet, callResponse);
       }
 
       @Override
-      public StepAction onSuccess(
+      public Result onSuccess(
           Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.CREATING_CRD, callResponse.getObject().getMetadata().getName());
         return doNext(packet);
       }
 
       @Override
-      protected StepAction onFailureNoRetry(Packet packet,
+      protected Result onFailureNoRetry(Packet packet,
                                             KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
         LOGGER.info(MessageKeys.REPLACE_CRD_FAILED, callResponse.getStatus());
         return isNotAuthorizedOrForbidden(callResponse)

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
@@ -16,6 +17,8 @@ import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
+import javax.annotation.Nonnull;
+
 public class ClusterServicesStep extends Step {
 
   public ClusterServicesStep(Step next) {
@@ -23,7 +26,7 @@ public class ClusterServicesStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     Collection<Fiber.StepAndPacket> startDetails = new ArrayList<>();
 
     // Add cluster services

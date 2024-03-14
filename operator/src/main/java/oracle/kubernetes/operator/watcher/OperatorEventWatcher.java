@@ -1,7 +1,7 @@
 // Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
@@ -13,8 +13,9 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.options.ListOptions;
+import oracle.kubernetes.operator.LabelConstants;
+import oracle.kubernetes.operator.WatchTuning;
 import oracle.kubernetes.operator.calls.RequestBuilder;
-import oracle.kubernetes.operator.watcher.WatchListener;
 
 import static oracle.kubernetes.operator.ProcessingConstants.OPERATOR_EVENT_LABEL_FILTER;
 

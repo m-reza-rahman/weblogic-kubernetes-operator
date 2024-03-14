@@ -77,6 +77,8 @@ import oracle.kubernetes.operator.introspection.IntrospectionTestUtils;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
+import oracle.kubernetes.operator.watcher.JobWatcher;
+import oracle.kubernetes.operator.watcher.NoopWatcherStarter;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;

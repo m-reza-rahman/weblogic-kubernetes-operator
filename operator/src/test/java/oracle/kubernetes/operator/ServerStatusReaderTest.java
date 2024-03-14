@@ -16,6 +16,7 @@ import java.util.function.Function;
 import com.meterware.pseudoserver.HttpUserAgentTest;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
@@ -34,6 +35,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;
@@ -237,7 +240,7 @@ class ServerStatusReaderTest extends HttpUserAgentTest {
     public Step apply(Step next) {
       return new Step() {
         @Override
-        public StepAction apply(Packet packet) {
+        public @Nonnull Result apply(Packet packet) {
           serverNames.add((String) packet.get(ProcessingConstants.SERVER_NAME));
           return doNext(packet);
         }

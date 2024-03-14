@@ -3,13 +3,13 @@
 
 package oracle.kubernetes.operator.steps;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
@@ -17,14 +17,16 @@ import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import oracle.kubernetes.operator.PodAwaiterStepFactory;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo.ServerShutdownInfo;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+import org.jetbrains.annotations.NotNull;
 
 public class ServerDownIteratorStep extends Step {
   private final List<ServerShutdownInfo> serverShutdownInfos;
@@ -41,7 +43,7 @@ public class ServerDownIteratorStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     return doNext(new IteratorContext(packet, serverShutdownInfos).createNextSteps(), packet);
   }
 
@@ -132,16 +134,30 @@ public class ServerDownIteratorStep extends Step {
 
     @Nullable
     private Step createWaitSteps(ServerShutdownInfo ssi) {
-      return Optional.ofNullable((PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME))
-          .map(p -> waitForDelete(ssi, p)).orElse(null);
+      return waitForDelete(ssi);
     }
 
-    private Step waitForDelete(ServerShutdownInfo ssi, PodAwaiterStepFactory p) {
-      return p.waitForDelete(info.getServerPod(ssi.getServerName()), clearPodPresence(ssi.getServerName()));
+    private Step waitForDelete(ServerShutdownInfo ssi) {
+      return new PodDownStep(ssi);
     }
 
-    private Step clearPodPresence(String serverName) {
-      return new DomainPresenceInfoUpdateStep(serverName, null);
+    private class PodDownStep extends Step {
+      private final ServerShutdownInfo ssi;
+
+      PodDownStep(ServerShutdownInfo ssi) {
+        this.ssi = ssi;
+      }
+
+      @NotNull
+      @Override
+      public Result apply(Packet packet) {
+        if (info.getServerPod(ssi.getServerName()) != null) {
+          // requeue to wait for pod to be deleted
+          return new Result(true,
+                  Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+        }
+        return doEnd(packet);
+      }
     }
   }
 
@@ -189,7 +205,7 @@ public class ServerDownIteratorStep extends Step {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (shutdownDetails.isEmpty()) {
         return doNext(getNext(), packet);
       } else {
@@ -212,7 +228,7 @@ public class ServerDownIteratorStep extends Step {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
 
       if (serversToShutdown.isEmpty()) {
         return doNext(packet);

@@ -18,6 +18,7 @@ import com.meterware.simplestub.Memento;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
@@ -662,7 +663,7 @@ class KubernetesTestSupportTest {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
       this.callResponse = callResponse;
       responseAvailableSignal.release();
       return super.onSuccess(packet, callResponse);

@@ -30,6 +30,7 @@ import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.OperatorServiceType;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
+import oracle.kubernetes.operator.watcher.NoopWatcherStarter;
 import oracle.kubernetes.operator.work.Engine;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.FiberGate;

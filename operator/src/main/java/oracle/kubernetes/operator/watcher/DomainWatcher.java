@@ -1,64 +1,63 @@
-// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
+// Copyright (c) 2017, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.util.Watch.Response;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.options.ListOptions;
+import oracle.kubernetes.operator.WatchTuning;
 import oracle.kubernetes.operator.calls.RequestBuilder;
-import oracle.kubernetes.operator.helpers.KubernetesUtils;
-import oracle.kubernetes.operator.watcher.WatchListener;
+import oracle.kubernetes.weblogic.domain.model.DomainResource;
 
 /**
- * This class handles ConfigMap watching. It receives config map change events and sends them into
- * the operator for processing.
+ * This class handles Domain watching. It receives domain events and sends them into the operator
+ * for processing.
  */
-public class ConfigMapWatcher extends Watcher<V1ConfigMap> {
+public class DomainWatcher extends Watcher<DomainResource> {
   private final String ns;
 
-  private ConfigMapWatcher(
+  private DomainWatcher(
       String ns,
       String initialResourceVersion,
       WatchTuning tuning,
-      WatchListener<V1ConfigMap> listener,
+      WatchListener<DomainResource> listener,
       AtomicBoolean isStopping) {
     super(initialResourceVersion, tuning, isStopping, listener);
     this.ns = ns;
   }
 
   /**
-   * Create watcher.
+   * Create domain watcher.
    * @param factory thread factory
    * @param ns namespace
    * @param initialResourceVersion initial resource version
-   * @param tuning tuning parameters
+   * @param tuning tuning parameter
    * @param listener listener
    * @param isStopping stopping flag
    * @return watcher
    */
-  public static ConfigMapWatcher create(
+  public static DomainWatcher create(
       ThreadFactory factory,
       String ns,
       String initialResourceVersion,
       WatchTuning tuning,
-      WatchListener<V1ConfigMap> listener,
+      WatchListener<DomainResource> listener,
       AtomicBoolean isStopping) {
-    ConfigMapWatcher watcher =
-        new ConfigMapWatcher(ns, initialResourceVersion, tuning, listener, isStopping);
+    DomainWatcher watcher =
+        new DomainWatcher(ns, initialResourceVersion, tuning, listener, isStopping);
     watcher.start(factory);
     return watcher;
   }
 
   @Override
-  public Watchable<V1ConfigMap> initiateWatch(ListOptions options) throws ApiException {
-    return RequestBuilder.CM.watch(ns, options.labelSelector(LabelConstants.CREATEDBYOPERATOR_LABEL));
+  public Watchable<DomainResource> initiateWatch(ListOptions options) throws ApiException {
+    return RequestBuilder.DOMAIN.watch(ns, options);
   }
 
   @Override
@@ -67,9 +66,7 @@ public class ConfigMapWatcher extends Watcher<V1ConfigMap> {
   }
 
   @Override
-  public String getDomainUid(Response<V1ConfigMap> item) {
-    return KubernetesUtils.getDomainUidLabel(
-          Optional.ofNullable(item.object).map(V1ConfigMap::getMetadata).orElse(null));
+  public String getDomainUid(Response<DomainResource> item) {
+    return Optional.ofNullable(item.object).map(DomainResource::getDomainUid).orElse(null);
   }
-
 }

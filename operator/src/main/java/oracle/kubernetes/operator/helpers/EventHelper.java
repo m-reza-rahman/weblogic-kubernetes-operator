@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.CoreV1Event;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -194,7 +195,7 @@ public class EventHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(createEventAPICall(createEventModel(packet, eventData)), packet);
     }
 
@@ -228,7 +229,7 @@ public class EventHelper {
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         if (NAMESPACE_WATCHING_STARTED == eventData.eventItem) {
           LOGGER.info(BEGIN_MANAGING_NAMESPACE, eventData.getNamespace());
           domainNamespaces.shouldStartNamespace(eventData.getNamespace());
@@ -237,7 +238,7 @@ public class EventHelper {
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         if (hasLoggedForbiddenNSWatchStoppedEvent(this, callResponse)) {
           return doNext(packet);
         }
@@ -278,12 +279,12 @@ public class EventHelper {
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         restoreExistingEvent();
         if (hasLoggedForbiddenNSWatchStoppedEvent(this, callResponse)) {
           return doNext(packet);
@@ -334,7 +335,7 @@ public class EventHelper {
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         DomainProcessorImpl.updateEventK8SObjects(callResponse.getObject());
         return doNext(packet);
       }
@@ -1173,7 +1174,7 @@ public class EventHelper {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(createEventAPICall(createEventModel(eventData)), packet);
     }
 
@@ -1207,7 +1208,7 @@ public class EventHelper {
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
     }
@@ -1224,12 +1225,12 @@ public class EventHelper {
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         return doNext(packet);
       }
 
       @Override
-      public StepAction onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onFailure(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         restoreExistingClusterEvent();
         if (isNotFound(callResponse) || hasConflict(callResponse)) {
           return doNext(Step.chain(createCreateEventCall(createEventModel(eventData)), getNext()), packet);
@@ -1263,7 +1264,7 @@ public class EventHelper {
       }
 
       @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
+      public Result onSuccess(Packet packet, KubernetesApiResponse<CoreV1Event> callResponse) {
         DomainProcessorImpl.updateEventK8SObjects(callResponse.getObject());
         return doNext(packet);
       }

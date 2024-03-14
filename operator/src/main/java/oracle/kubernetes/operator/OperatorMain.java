@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.CoreV1EventList;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionSpec;
@@ -46,6 +47,9 @@ import oracle.kubernetes.operator.steps.DefaultResponseStep;
 import oracle.kubernetes.operator.steps.InitializeInternalIdentityStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
+import oracle.kubernetes.operator.watcher.NamespaceWatcher;
+import oracle.kubernetes.operator.watcher.OperatorEventWatcher;
+import oracle.kubernetes.operator.watcher.PvcWatcher;
 import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -136,21 +140,6 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public PodAwaiterStepFactory getPodAwaiterStepFactory(String namespace) {
-      return domainNamespaces.getPodWatcher(namespace);
-    }
-
-    @Override
-    public JobAwaiterStepFactory getJobAwaiterStepFactory(String namespace) {
-      return domainNamespaces.getJobWatcher(namespace);
-    }
-
-    @Override
-    public PvcAwaiterStepFactory getPvcAwaiterStepFactory() {
-      return new PvcWatcher(domainProcessor);
-    }
-
-    @Override
     public boolean isNamespaceRunning(String namespace) {
       return !domainNamespaces.isStopping(namespace).get();
     }
@@ -224,7 +213,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<CoreV1EventList> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<CoreV1EventList> callResponse) {
       CoreV1EventList list = callResponse.getObject();
       operatorNamespaceEventWatcher = startWatcher(getOperatorNamespace(), KubernetesUtils.getResourceVersion(list));
       list.getItems().forEach(DomainProcessorImpl::updateEventK8SObjects);
@@ -271,7 +260,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1NamespaceList> callResponse) {
       namespaceWatcher = createNamespaceWatcher(KubernetesUtils.getResourceVersion(callResponse.getObject()));
       return doNext(packet);
     }
@@ -352,7 +341,7 @@ public class OperatorMain extends BaseMain {
   class CrdPresenceStep extends Step {
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(
           RequestBuilder.CRD.get(KubernetesConstants.DOMAIN_CRD_NAME, createReadResponseStep(getNext())), packet);
     }
@@ -371,7 +360,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public StepAction onSuccess(
+    public Result onSuccess(
             Packet packet, KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
       V1CustomResourceDefinition existingCrd = callResponse.getObject();
 
@@ -392,7 +381,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    protected StepAction onFailureNoRetry(Packet packet,
+    protected Result onFailureNoRetry(Packet packet,
                                           KubernetesApiResponse<V1CustomResourceDefinition> callResponse) {
       return isNotAuthorizedOrForbidden(callResponse)
           ? doNext(RequestBuilder.DOMAIN.list(getOperatorNamespace(), new CrdPresenceResponseStep(getNext())), packet)
@@ -408,7 +397,7 @@ public class OperatorMain extends BaseMain {
     }
 
     @Override
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<DomainList> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<DomainList> callResponse) {
       LOGGER.info(MessageKeys.WAIT_FOR_CRD_INSTALLATION, CRD_DETECTION_DELAY);
       return doDelay(createCRDPresenceCheck(), packet, CRD_DETECTION_DELAY, TimeUnit.SECONDS);
     }

@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.DomainStatusUpdater.ClearCompletedConditionSteps;
@@ -112,7 +113,7 @@ public class ManagedServersUpStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     LOGGER.entering();
     DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
     WlsDomainConfig config = (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);

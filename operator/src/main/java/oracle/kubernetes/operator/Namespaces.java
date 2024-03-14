@@ -18,6 +18,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.gson.annotations.SerializedName;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import jakarta.validation.constraints.NotNull;
@@ -270,7 +271,7 @@ public class Namespaces {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       NamespaceValidationContext validationContext = new NamespaceValidationContext(packet, domainNamespaces);
       getNonNullConfiguredDomainNamespaces().forEach(validationContext::validateConfiguredNamespace);
       List<Fiber.StepAndPacket> nsStopEventSteps = getCreateNSStopEventSteps(packet, validationContext);
@@ -312,7 +313,7 @@ public class Namespaces {
       }
 
       @Override
-      public StepAction apply(Packet packet) {
+      public @Nonnull Result apply(Packet packet) {
         if (nsStopEventDetails.isEmpty()) {
           return doNext(getNext(), packet);
         } else {

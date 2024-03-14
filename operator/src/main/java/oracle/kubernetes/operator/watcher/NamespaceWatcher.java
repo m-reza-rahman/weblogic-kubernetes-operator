@@ -1,7 +1,7 @@
 // Copyright (c) 2019, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -11,8 +11,8 @@ import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.options.ListOptions;
+import oracle.kubernetes.operator.WatchTuning;
 import oracle.kubernetes.operator.calls.RequestBuilder;
-import oracle.kubernetes.operator.watcher.WatchListener;
 
 /**
  * This class handles Namespace watching. It receives Namespace change events and sends them into

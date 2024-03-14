@@ -1,10 +1,9 @@
 // Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.io.Serial;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
@@ -13,44 +12,31 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1ContainerState;
-import io.kubernetes.client.openapi.models.V1ContainerStatus;
 import io.kubernetes.client.openapi.models.V1Job;
 import io.kubernetes.client.openapi.models.V1JobCondition;
 import io.kubernetes.client.openapi.models.V1JobSpec;
 import io.kubernetes.client.openapi.models.V1JobStatus;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodList;
-import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Watch;
 import io.kubernetes.client.util.Watchable;
-import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import oracle.kubernetes.common.logging.MessageKeys;
+import oracle.kubernetes.operator.IntrospectionJobHolder;
+import oracle.kubernetes.operator.LabelConstants;
+import oracle.kubernetes.operator.WatchTuning;
 import oracle.kubernetes.operator.calls.RequestBuilder;
-import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
-import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.watcher.WatchListener;
-import oracle.kubernetes.operator.work.Packet;
-import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.utils.SystemClock;
 
-import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED;
-import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER;
-
 /** Watches for Jobs to become Ready or leave Ready state. */
-public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, JobAwaiterStepFactory {
+public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job> {
   static final WatchListener<V1Job> NULL_LISTENER = r -> {};
 
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
@@ -220,198 +206,6 @@ public class JobWatcher extends Watcher<V1Job> implements WatchListener<V1Job>, 
 
   private String getJobName(Watch.Response<V1Job> item) {
     return item.object.getMetadata().getName();
-  }
-
-  /**
-   * Waits until the Job is Ready.
-   *
-   * @param job Job to watch
-   * @param next Next processing step once Job is ready
-   * @return Asynchronous step
-   */
-  @Override
-  public Step waitForReady(V1Job job, Step next) {
-    return new WaitForJobReadyStep(job, next);
-  }
-
-  private class WaitForJobReadyStep extends WaitForReadyStep<V1Job> {
-    private final OffsetDateTime jobCreationTime;
-
-    private WaitForJobReadyStep(V1Job job, Step next) {
-      super(job, next);
-      jobCreationTime = getCreationTime(job);
-      V1ObjectMeta metadata = job.getMetadata();
-      LOGGER.info(MessageKeys.JOB_CREATION_TIMESTAMP_MESSAGE, metadata.getName(),
-          metadata.getCreationTimestamp());
-    }
-
-    // A job is considered ready once it has either successfully completed, or been marked as failed.
-    @Override
-    boolean isReady(V1Job job) {
-      return isComplete(job) || isFailed(job);
-    }
-
-    // Ignore modified callbacks from different jobs (identified by having different creation times) or those
-    // where the job is not yet ready.
-    @Override
-    boolean shouldProcessCallback(V1Job job) {
-      return hasExpectedCreationTime(job) && isReady(job);
-    }
-
-    private boolean hasExpectedCreationTime(V1Job job) {
-      return getCreationTime(job).equals(jobCreationTime);
-    }
-
-    private OffsetDateTime getCreationTime(V1Job job) {
-      return job.getMetadata().getCreationTimestamp();
-    }
-
-    @Override
-    V1ObjectMeta getMetadata(V1Job job) {
-      return job.getMetadata();
-    }
-
-    private void addOnModifiedCallback(String jobName, Consumer<V1Job> callback) {
-      completeCallbackRegistrations.put(jobName, callback);
-    }
-
-    @Override
-    void addCallback(String name, Consumer<V1Job> callback) {
-      addOnModifiedCallback(name, callback);
-    }
-
-    private void removeOnModifiedCallback(String jobName, Consumer<V1Job> callback) {
-      completeCallbackRegistrations.remove(jobName, callback);
-    }
-
-    @Override
-    void removeCallback(String name, Consumer<V1Job> callback) {
-      removeOnModifiedCallback(name, callback);
-    }
-
-    @Override
-    Step createReadAsyncStep(String name, String namespace, String domainUid, ResponseStep<V1Job> responseStep) {
-      return setIntrospectorTerminationState(namespace, name,
-          RequestBuilder.JOB.get(namespace, name, responseStep));
-    }
-
-    private Step setIntrospectorTerminationState(String namespace, String jobName, Step next) {
-      return RequestBuilder.POD.list(namespace,
-          new ListOptions().labelSelector(LabelConstants.JOBNAME_LABEL),
-          new TerminationStateResponseStep(jobName, next));
-    }
-
-    private static class TerminationStateResponseStep extends ResponseStep<V1PodList> {
-      private final String jobName;
-
-      TerminationStateResponseStep(String jobName, Step next) {
-        super(next);
-        this.jobName = jobName;
-      }
-
-      @Override
-      public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
-        final IntrospectorTerminationState terminationState = new IntrospectorTerminationState(jobName, packet);
-        final V1Pod jobPod = getJobPod(callResponse.getObject());
-
-        if (jobPod == null) {
-          terminationState.remove(packet);
-          return doContinueListOrNext(callResponse, packet, getNext());
-        } else {
-          terminationState.setFromPod(jobPod);
-          return doNext(getNext(), packet);
-        }
-
-      }
-
-      @Nullable
-      private V1Pod getJobPod(V1PodList podList) {
-        return Optional.ofNullable(podList)
-                .map(V1PodList::getItems).orElseGet(Collections::emptyList).stream()
-                .filter(this::isJobPod)
-                .findFirst()
-                .orElse(null);
-      }
-
-      private String getName(V1Pod pod) {
-        return Optional.of(pod).map(V1Pod::getMetadata).map(V1ObjectMeta::getName).orElse("");
-      }
-
-      private boolean isJobPod(V1Pod pod) {
-        return getName(pod).startsWith(jobName);
-      }
-
-      private record IntrospectorTerminationState(String jobName, Packet packet) {
-
-        private void remove(Packet packet) {
-          packet.remove(JOB_POD_INTROSPECT_CONTAINER_TERMINATED);
-        }
-
-        private void setFromPod(@Nonnull V1Pod jobPod) {
-          if (isJobTerminated(jobPod)) {
-            packet.put(JOB_POD_INTROSPECT_CONTAINER_TERMINATED, JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER);
-          }
-        }
-
-        private boolean isJobTerminated(@Nonnull V1Pod jobPod) {
-          return Optional.of(jobPod)
-              .map(V1Pod::getStatus)
-              .map(V1PodStatus::getContainerStatuses).orElseGet(Collections::emptyList).stream()
-              .anyMatch(this::isJobTerminated);
-        }
-
-        private boolean isJobTerminated(@Nonnull V1ContainerStatus status) {
-          final V1ContainerState state = status.getState();
-          return state != null && state.getTerminated() != null && jobName.equals(status.getName());
-        }
-      }
-    }
-
-    // When we detect a job as ready, we add it to the packet for downstream processing.
-    @Override
-    void updatePacket(Packet packet, V1Job job) {
-      packet.put(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB, job);
-    }
-
-    // Do not proceed to next step such as ReadDomainIntrospectorPodLog if job
-    // failed due to DeadlineExceeded, as the pod container would likely not
-    // be available for reading
-    @Override
-    boolean shouldTerminateFiber(V1Job job) {
-      return isJobTimedOut(job);
-    }
-
-    // create an exception to terminate the fiber
-    @Override
-    Throwable createTerminationException(V1Job job) {
-      return new DeadlineExceededException(job);
-    }
-
-    @Override
-    void logWaiting(String name) {
-      LOGGER.fine(MessageKeys.WAITING_FOR_JOB_READY, name);
-    }
-
-    @Override
-    protected DefaultResponseStep<V1Job> resumeIfReady(Callback callback) {
-      return new DefaultResponseStep<>(null) {
-        @Override
-        public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
-
-          // The introspect container has exited, setting this so that the job will be considered finished
-          // in the WaitDomainIntrospectorJobReadyStep and proceed reading the job pod log and process the result.
-
-          if (isReady(callResponse.getObject()) || callback.didResumeFiber()
-                || JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER
-                  .equals(packet.get(JOB_POD_INTROSPECT_CONTAINER_TERMINATED))) {
-            callback.proceedFromWait(callResponse.getObject());
-            return doNext(packet);
-          }
-          return doDelay(createReadAndIfReadyCheckStep(callback), packet,
-                  getWatchBackstopRecheckDelaySeconds(), TimeUnit.SECONDS);
-        }
-      };
-    }
   }
 
   public static boolean isJobTimedOut(V1Job job) {

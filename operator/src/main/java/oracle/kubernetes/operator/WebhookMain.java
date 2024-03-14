@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.kubernetes.client.common.KubernetesListObject;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -30,6 +31,8 @@ import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.webhooks.WebhookRestServer;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.common.CommonConstants.SECRETS_WEBHOOK_CERT;
 import static oracle.kubernetes.common.CommonConstants.SECRETS_WEBHOOK_KEY;
@@ -217,14 +220,14 @@ public class WebhookMain extends BaseMain {
   private class CrdPresenceResponseStep<L extends KubernetesListObject> extends DefaultResponseStep<L> {
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<L> callResponse) {
       warnedOfCrdAbsence = false;
       crdPresenceCheckCount.set(0);
       return super.onSuccess(packet, callResponse);
     }
 
     @Override
-    public StepAction onFailure(Packet packet, KubernetesApiResponse<L> callResponse) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<L> callResponse) {
       if (crdPresenceCheckCount.getAndIncrement() < getCrdPresenceFailureRetryMaxCount()) {
         return doNext(this, packet);
       }
@@ -257,7 +260,7 @@ public class WebhookMain extends BaseMain {
 
   public static class CheckFailureAndCreateEventStep extends Step {
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       Throwable failure = (Throwable) packet.get(EXCEPTION);
       if (failure != null) {
         return doNext(createEventStep(new EventHelper.EventData(WEBHOOK_STARTUP_FAILED, failure.getMessage())

@@ -3,6 +3,9 @@
 
 package oracle.kubernetes.operator.work;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
+
+import javax.annotation.Nonnull;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /** A do-nothing step that can be used as a base for testing. It has no next step. */
@@ -23,7 +26,7 @@ public class TerminalStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     executed = true;
     executionCount.getAndIncrement();
     return doNext(null, packet);

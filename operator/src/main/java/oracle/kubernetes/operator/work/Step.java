@@ -3,15 +3,17 @@
 
 package oracle.kubernetes.operator.work;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import io.kubernetes.client.extended.controller.reconciler.Result;
 
 /** Individual step in a processing flow. */
 public abstract class Step {
@@ -21,9 +23,6 @@ public abstract class Step {
   private static BiFunction<Step, Packet, Step> adapter = DEFAULT_ADAPTER;
 
   public static final String THROWABLE = "throwable";
-
-  static final StepAction SUSPEND = new StepAction();
-  static final StepAction END = new StepAction();
 
   private Step next;
 
@@ -67,29 +66,6 @@ public abstract class Step {
    */
   public static Step chain(List<Step> stepGroups) {
     return chain(stepGroups.toArray(new Step[0]));
-  }
-
-  /**
-   * Inserts a step into a chain of steps before the first step whose name is specified. The name is given without
-   * its package and/or outer class. If no step with the specified class is found, the step will be inserted at the end.
-   * @param stepToInsert the step to insert
-   * @param stepClassName the name of the class before which to insert the new step
-   */
-  public void insertBefore(Step stepToInsert, @Nullable String stepClassName) {
-    Step step = this;
-    while (step.getNext() != null && !isSpecifiedStep(step.getNext(), stepClassName)) {
-      step = step.getNext();
-    }
-    stepToInsert.next = step.getNext();
-    step.next = stepToInsert;
-  }
-
-  private boolean isSpecifiedStep(Step step, String stepClassName) {
-    return stepClassName != null && hasSpecifiedClassName(step.getClass().getName(), stepClassName);
-  }
-
-  private boolean hasSpecifiedClassName(String name, String stepClassName) {
-    return name.endsWith("." + stepClassName) || name.endsWith("$" + stepClassName);
   }
 
   private static int getFirstNonNullIndex(Step[] stepGroups) {
@@ -170,10 +146,6 @@ public abstract class Step {
   }
 
   // creates a unique ID that allows matching requests to responses
-  public String identityHash() {
-    return Integer.toHexString(System.identityHashCode(this));
-  }
-
   @Override
   public String toString() {
     if (next == null) {
@@ -187,7 +159,7 @@ public abstract class Step {
    *
    * @param packet Packet
    */
-  public abstract @Nonnull StepAction apply(Packet packet);
+  public abstract @Nonnull Result apply(Packet packet);
 
   static final Step adapt(Step step, Packet packet) {
     return adapter.apply(step, packet);
@@ -198,7 +170,7 @@ public abstract class Step {
    *
    * @param packet Packet to provide when invoking the step
    */
-  public final StepAction doStepNext(Packet packet) {
+  public final Result doStepNext(Packet packet) {
     return doNext(this, packet);
   }
 
@@ -207,7 +179,7 @@ public abstract class Step {
    *
    * @param packet Packet to provide when invoking the next step
    */
-  protected final StepAction doNext(Packet packet) {
+  protected final Result doNext(Packet packet) {
     return doNext(next, packet);
   }
 
@@ -217,7 +189,7 @@ public abstract class Step {
    * @param step The step
    * @param packet Packet to provide when invoking the next step
    */
-  protected static final StepAction doNext(Step step, Packet packet) {
+  protected static final Result doNext(Step step, Packet packet) {
     if (isCancelled(packet)) {
       return doEnd(packet);
     }
@@ -239,8 +211,8 @@ public abstract class Step {
    *
    * @param packet Packet
    */
-  protected static final StepAction doEnd(Packet packet) {
-    return END;
+  protected static final Result doEnd(Packet packet) {
+    return new Result(false);
   }
 
   /**
@@ -250,7 +222,7 @@ public abstract class Step {
    * @param packet Packet
    * @return Next action that will end processing with a throwable
    */
-  protected static final StepAction doTerminate(Throwable throwable, Packet packet) {
+  protected static final Result doTerminate(Throwable throwable, Packet packet) {
     packet.put(THROWABLE, throwable);
     return doEnd(packet);
   }
@@ -263,7 +235,7 @@ public abstract class Step {
    * @param unit Delay time unit
    */
   @SuppressWarnings("SameParameterValue")
-  protected final StepAction doRetry(Packet packet, long delay, TimeUnit unit) {
+  protected final Result doRetry(Packet packet, long delay, TimeUnit unit) {
     return doDelay(this, packet, delay, unit);
   }
 
@@ -275,19 +247,13 @@ public abstract class Step {
    * @param delay Delay time
    * @param unit Delay time unit
    */
-  protected static final StepAction doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
-    packet.getFiber().delay(step, packet, delay, unit);
-    return SUSPEND;
-  }
-
-  /**
-   * Suspend and then invoke the indicated step after a resumption.
-   *
-   * @param packet Packet to provide when the step is resumed
-   */
-  protected final StepAction doSuspend(Packet packet, SuspendAction suspendAction) {
-    packet.getFiber().suspend(next, packet, suspendAction);
-    return SUSPEND;
+  protected static final Result doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
+      try {
+          unit.sleep(delay);
+      } catch (InterruptedException e) {
+          return doTerminate(e, packet);
+      }
+      return step.doStepNext(packet);
   }
 
   public final Step getNext() {
@@ -295,40 +261,41 @@ public abstract class Step {
   }
 
   /**
-   * Invokes a set of child fibers in parallel and then continues with the indicated step and packet.
+   * Invokes a set of steps and then conditionally continues to invoke a given step. If any of the steps
+   * return requesting a requeue then the conditional step is not invoked and a requeue result with the
+   * shortest duration. Otherwise, if none of the steps request a requeue then the result of invoking the
+   * conditional step is returned.
    *
-   * @param step Step to invoke next when resumed after child fibers complete
+   * @param step Step to invoke conditionally after the set of steps are invoked
    * @param packet Resume packet
-   * @param startDetails Pairs of step and packet to use when starting child fibers
+   * @param startDetails Pairs of step and packet to use when starting
    */
-  protected final StepAction doForkJoin(
+  protected final Result doForkJoin(
       Step step, Packet packet, Collection<Fiber.StepAndPacket> startDetails) {
-    packet.getFiber().forkJoin(step, packet, startDetails);
-    return SUSPEND;
-  }
-
-  /**
-   * The return type for apply() and the "do" methods. Intentionally making this not an
-   * enum to force derived classes of Step to use the "do" methods as the return
-   * from their implementation of apply().
-   */
-  public static final class StepAction {
-    private StepAction() {
-      // no-op to make constructor private
+    boolean requeue = false;
+    Duration duration = null;
+    for (Fiber.StepAndPacket sap : startDetails) {
+      Result r = sap.step().doStepNext(sap.packet());
+      if (r != null && r.isRequeue()) {
+        requeue = true;
+        duration = minDuration(duration, r.getRequeueAfter());
+      }
     }
+
+    if (requeue) {
+      return new Result(true, duration);
+    }
+
+    return step.doStepNext(packet);
   }
 
-  public interface Resumable {
-    boolean hasResumed();
-
-    void resume(Consumer<Packet> onResume);
-
-    void terminate(Throwable t);
-
-    void cancel();
-  }
-
-  public interface SuspendAction {
-    void onSuspend(Resumable resumable);
+  private Duration minDuration(Duration one, Duration two) {
+    if (one == null) {
+      return two;
+    }
+    if (two == null) {
+      return one;
+    }
+    return one.compareTo(two) <= 0 ? one : two;
   }
 }

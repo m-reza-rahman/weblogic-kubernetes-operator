@@ -17,8 +17,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.DomainStatusUpdater;
-import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo.ServerStartupInfo;
@@ -31,6 +31,8 @@ import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 
@@ -63,7 +65,7 @@ public class ManagedServerUpIteratorStep extends Step {
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     if (startupInfos.isEmpty()) {
       return doNext(packet);
     }
@@ -185,7 +187,7 @@ public class ManagedServerUpIteratorStep extends Step {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
 
       if (startDetailsQueue.isEmpty()) {
         return doNext(packet);

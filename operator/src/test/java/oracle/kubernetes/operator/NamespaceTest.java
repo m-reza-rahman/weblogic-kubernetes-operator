@@ -27,6 +27,8 @@ import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.OnConflictRetryStrategyStub;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
+import oracle.kubernetes.operator.watcher.JobWatcher;
+import oracle.kubernetes.operator.watcher.NoopWatcherStarter;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import org.hamcrest.MatcherAssert;

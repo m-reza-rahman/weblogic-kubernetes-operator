@@ -4,9 +4,12 @@
 package oracle.kubernetes.operator.steps;
 
 import io.kubernetes.client.common.KubernetesType;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 /**
  * A response step which treats a NOT_FOUND status as success with a null result. On success with
@@ -23,7 +26,7 @@ public abstract class ActionResponseStep<T extends KubernetesType> extends Defau
   public abstract Step createSuccessStep(T result, Step next);
 
   @Override
-  public StepAction onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
+  public Result onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
     return callResponse.getObject() == null
         ? doNext(packet)
         : doNext(createSuccessStep(callResponse.getObject(),
@@ -39,7 +42,7 @@ public abstract class ActionResponseStep<T extends KubernetesType> extends Defau
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return ActionResponseStep.this.doContinueListOrNext(callResponse, packet);
     }
   }

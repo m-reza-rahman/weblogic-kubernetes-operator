@@ -11,6 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodList;
@@ -65,7 +66,7 @@ public class StuckPodProcessing {
     }
 
     @Override
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1PodList> callResponse) {
       callResponse.getObject().getItems().stream()
             .filter(pod -> isStuck(pod, now))
             .forEach(pod -> addStuckPodToPacket(packet, pod));
@@ -103,7 +104,7 @@ public class StuckPodProcessing {
     }
 
     @Override
-    public StepAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       final List<V1Pod> stuckPodList = getStuckPodList(packet);
       if (stuckPodList.isEmpty()) {
         return doNext(packet);
@@ -156,7 +157,7 @@ public class StuckPodProcessing {
 
     @Override
     @SuppressWarnings("try")
-    public StepAction onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       try (ThreadLoggingContext ignored =
                ThreadLoggingContext.setThreadContext().namespace(namespace).domainUid(domainUID)) {
         LOGGER.info(POD_FORCE_DELETED, name, namespace);

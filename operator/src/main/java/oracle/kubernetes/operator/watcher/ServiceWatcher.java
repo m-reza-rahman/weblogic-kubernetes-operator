@@ -1,41 +1,41 @@
-// Copyright (c) 2021, 2024, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
-package oracle.kubernetes.operator;
+package oracle.kubernetes.operator.watcher;
 
 import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
+import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Watch.Response;
 import io.kubernetes.client.util.Watchable;
 import io.kubernetes.client.util.generic.options.ListOptions;
+import oracle.kubernetes.operator.LabelConstants;
+import oracle.kubernetes.operator.WatchTuning;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.helpers.KubernetesUtils;
-import oracle.kubernetes.operator.watcher.WatchListener;
-import oracle.kubernetes.operator.watcher.Watcher;
 
 /**
- * This class handles pod disruption budget watching. It receives pod disruption budget change events and sends them
- * into the operator for processing.
+ * This class handles Service watching. It receives service change events and sends them into the
+ * operator for processing.
  */
-public class PodDisruptionBudgetWatcher extends Watcher<V1PodDisruptionBudget> {
+public class ServiceWatcher extends Watcher<V1Service> {
   private final String ns;
 
-  private PodDisruptionBudgetWatcher(
+  private ServiceWatcher(
       String ns,
       String initialResourceVersion,
       WatchTuning tuning,
-      WatchListener<V1PodDisruptionBudget> listener,
+      WatchListener<V1Service> listener,
       AtomicBoolean isStopping) {
     super(initialResourceVersion, tuning, isStopping, listener);
     this.ns = ns;
   }
 
   /**
-   * Create pod disruption budget watcher.
+   * Create service watcher.
    * @param factory thread factory
    * @param ns namespace
    * @param initialResourceVersion initial resource version
@@ -44,22 +44,22 @@ public class PodDisruptionBudgetWatcher extends Watcher<V1PodDisruptionBudget> {
    * @param isStopping stopping flag
    * @return watcher
    */
-  public static PodDisruptionBudgetWatcher create(
+  public static ServiceWatcher create(
       ThreadFactory factory,
       String ns,
       String initialResourceVersion,
       WatchTuning tuning,
-      WatchListener<V1PodDisruptionBudget> listener,
+      WatchListener<V1Service> listener,
       AtomicBoolean isStopping) {
-    PodDisruptionBudgetWatcher watcher =
-        new PodDisruptionBudgetWatcher(ns, initialResourceVersion, tuning, listener, isStopping);
+    ServiceWatcher watcher =
+        new ServiceWatcher(ns, initialResourceVersion, tuning, listener, isStopping);
     watcher.start(factory);
     return watcher;
   }
 
   @Override
-  public Watchable<V1PodDisruptionBudget> initiateWatch(ListOptions options) throws ApiException {
-    return RequestBuilder.PDB.watch(ns,
+  public Watchable<V1Service> initiateWatch(ListOptions options) throws ApiException {
+    return RequestBuilder.SERVICE.watch(ns,
             options.labelSelector(LabelConstants.DOMAINUID_LABEL + "," + LabelConstants.CREATEDBYOPERATOR_LABEL));
   }
 
@@ -69,8 +69,8 @@ public class PodDisruptionBudgetWatcher extends Watcher<V1PodDisruptionBudget> {
   }
 
   @Override
-  public String getDomainUid(Response<V1PodDisruptionBudget> item) {
+  public String getDomainUid(Response<V1Service> item) {
     return KubernetesUtils.getDomainUidLabel(
-        Optional.ofNullable(item.object).map(V1PodDisruptionBudget::getMetadata).orElse(null));
+        Optional.ofNullable(item.object).map(V1Service::getMetadata).orElse(null));
   }
 }

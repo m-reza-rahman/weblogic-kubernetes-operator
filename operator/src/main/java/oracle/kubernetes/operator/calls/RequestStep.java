@@ -14,6 +14,7 @@ import io.kubernetes.client.common.KubernetesListObject;
 import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ListMeta;
@@ -30,6 +31,8 @@ import io.kubernetes.client.util.generic.options.PatchOptions;
 import io.kubernetes.client.util.generic.options.UpdateOptions;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
+
+import javax.annotation.Nonnull;
 
 /**
  * A Step driven by a call to the Kubernetes API.
@@ -104,7 +107,7 @@ public abstract class RequestStep<
   }
 
   @Override
-  public StepAction apply(Packet packet) {
+  public @Nonnull Result apply(Packet packet) {
     KubernetesApi<A, L> client
             = RequestBuilder.createKubernetesApi(apiTypeClass, apiListTypeClass, apiGroup, apiVersion,
             resourcePlural, clientSelector);
