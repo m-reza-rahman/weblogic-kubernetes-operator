@@ -214,7 +214,7 @@ class ItMonitoringExporterWebApp {
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
         nodeportshttp = NGINX_INGRESS_HTTP_HOSTPORT;
         nodeportshttps = NGINX_INGRESS_HTTPS_HOSTPORT;
-        host = InetAddress.getLocalHost().getHostAddress();
+        host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
       } else {
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
         nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");

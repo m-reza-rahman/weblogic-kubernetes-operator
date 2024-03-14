@@ -4,6 +4,7 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -481,8 +482,12 @@ class ItMonitoringExporterSideCar {
       if (!OKE_CLUSTER_PRIVATEIP) {
         nodeportPrometheus = promHelmParams.getNodePortServer();
         String host = formatIPv6Host(K8S_NODEPORT_HOST);
+        if (TestConstants.KIND_CLUSTER
+            && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+          hostPortPrometheus = formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
+              + ":" + promHelmParams.getNodePortServer();
+        }
         hostPortPrometheus = host + ":" + nodeportPrometheus;
-
       }
       prometheusDomainRegexValue = prometheusRegexValue;
     }
