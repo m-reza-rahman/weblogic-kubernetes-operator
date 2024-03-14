@@ -5,6 +5,8 @@ package oracle.weblogic.kubernetes;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,8 +50,13 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
@@ -225,13 +232,20 @@ class ItMonitoringExporterSamples {
         SESSMIGR_APP_NAME, MONEXP_IMAGE_NAME);
     if (!OKD) {
       // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 
+          NGINX_INGRESS_HTTP_NODEPORT, NGINX_INGRESS_HTTPS_NODEPORT);
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       logger.info("NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        nodeportshttp = NGINX_INGRESS_HTTP_HOSTPORT;
+        nodeportshttps = NGINX_INGRESS_HTTPS_HOSTPORT;
+      } else {
+        nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+        nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+      }
       logger.info("NGINX http node port: {0}", nodeportshttp);
       logger.info("NGINX https node port: {0}", nodeportshttps);
     }
@@ -365,7 +379,7 @@ class ItMonitoringExporterSamples {
                                         String grafanaChartVersion,
                                         String domainNS,
                                         String domainUid
-  ) throws ApiException {
+  ) throws ApiException, UnknownHostException {
     final String prometheusRegexValue = String.format("regex: %s;%s", domainNS, domainUid);
     if (promHelmParams == null) {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName,grafanaReleaseName);
@@ -379,8 +393,13 @@ class ItMonitoringExporterSamples {
           webhookNS);
       assertNotNull(promHelmParams, " Failed to install prometheus");
       nodeportPrometheus = promHelmParams.getNodePortServer();
-      prometheusDomainRegexValue = prometheusRegexValue;
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        nodeportPrometheus = IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+        host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+      }      
+      prometheusDomainRegexValue = prometheusRegexValue;
 
       hostPortPrometheus = host + ":" + nodeportPrometheus;
       if (OKE_CLUSTER_PRIVATEIP) {
