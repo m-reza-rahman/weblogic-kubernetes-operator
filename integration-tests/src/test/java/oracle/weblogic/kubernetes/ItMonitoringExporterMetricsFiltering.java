@@ -180,6 +180,10 @@ class ItMonitoringExporterMetricsFiltering {
     miiImage = MonitoringUtils.createAndVerifyMiiImage(monitoringExporterAppDir, modelList,
         STICKYSESS_APP_NAME, SESSMIGR_APP_NAME, MONEXP_IMAGE_NAME);
     host = formatIPv6Host(K8S_NODEPORT_HOST);
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+    }
 
     if (!OKD) {
       // install and verify Traefik
