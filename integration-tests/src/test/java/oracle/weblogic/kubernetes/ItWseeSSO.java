@@ -1,4 +1,4 @@
-// Copyright (c) 2023, Oracle and/or its affiliates.
+// Copyright (c) 2023, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -9,9 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
@@ -38,6 +36,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static java.nio.file.Paths.get;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
@@ -64,6 +63,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainRe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainSecret;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createJobToChangePermissionsOnPvHostPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPathRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -78,7 +78,6 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -196,17 +195,7 @@ class ItWseeSSO {
     if (adminSvcExtHost2 == null) {
       adminSvcExtHost2 = createRouteForOKD(getExternalServicePodName(adminServerPodName1), domain2Namespace);
     }
-    Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
 
-    clusterNameMsPortMap.put(clusterName, managedServerPort);
-    if (!OKD) {
-      ingressHostList1
-          = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
-          false, nginxHelmParams.getIngressClassName(), true, 7001);
-      ingressHostList2
-          = createIngressForDomainAndVerify(domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
-          false, nginxHelmParams.getIngressClassName(), true, 7001);
-    }
     // build the wsee application
     Path distDir = buildApplication(Paths.get(APP_DIR, "wsee"),
         null, null, "dist", domain1Namespace);
@@ -232,9 +221,9 @@ class ItWseeSSO {
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName, domain1Namespace, domain1Uid, wseeServiceRefAppPath);
     receiverURI = checkWSDLAccess(domain2Namespace, domain2Uid, adminSvcExtHost2,
-        "/samlSenderVouches/EchoService", ingressHostList2.get(0));
+        "/samlSenderVouches/EchoService");
     senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1,
-        "/EchoServiceRef/Echo", ingressHostList1.get(0));
+        "/EchoServiceRef/Echo");
     assertDoesNotThrow(() -> callPythonScript(domain1Uid, domain1Namespace,
             "addSAMLRelyingPartySenderConfig.py", receiverURI),
         "Failed to run python script addSAMLRelyingPartySenderConfig.py");
@@ -253,7 +242,7 @@ class ItWseeSSO {
 
   private String checkWSDLAccess(String domainNamespace, String domainUid,
                                  String adminSvcExtHost,
-                                 String appURI, String ingressHost) {
+                                 String appURI) {
 
     String adminServerPodName = domainUid + "-" + adminServerName;
     HttpResponse<String> response;
@@ -274,10 +263,9 @@ class ItWseeSSO {
     }
 
     String host = formatIPv6Host(K8S_NODEPORT_HOST);
-    String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP : host + ":" + serviceNodePort;
+    String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP + ":80" : host + ":" + serviceNodePort;
     String curlCmd =
-        String.format("curl --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s" + appURI,
-            ingressHost,
+        String.format("curl --silent --show-error --noproxy '*'  http://%s:%s@%s" + appURI,
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT,
             hostPort);
@@ -322,21 +310,15 @@ class ItWseeSSO {
         String.format("createSecret failed for %s", encryptionSecretName));
 
     String configMapName = "mii-ssl-configmap";
-    // Copy the model file to RESULTS_ROOT
-    assertDoesNotThrow(() -> java.nio.file.Files.copy(
-            Paths.get(MODEL_DIR, modelFileName),
-            Paths.get(RESULTS_ROOT, modelFileName),
-            java.nio.file.StandardCopyOption.REPLACE_EXISTING),
-        "Copy mii.ssl.yaml to RESULTS_ROOT failed");
 
     String jksMountPath = "/shared/" + domainNamespace + "/" + domainUid + "/keystores";
     assertDoesNotThrow(() ->
-        replaceStringInFile(get(RESULTS_ROOT, modelFileName).toString(),
+        replaceStringInFile(get(modelFileName).toString(),
             "/shared/", jksMountPath + "/"));
 
     createConfigMapAndVerify(
         configMapName, domainUid, domainNamespace,
-        Arrays.asList(RESULTS_ROOT + "/" + modelFileName));
+        Arrays.asList(modelFileName));
 
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(domainNamespace);
@@ -471,8 +453,34 @@ class ItWseeSSO {
 
   //create a standard WebLogic domain.
   private void createDomains() {
-    createDomain(domain1Namespace, domain1Uid, WDT_MODEL_FILE_SENDER);
-    createDomain(domain2Namespace, domain2Uid, WDT_MODEL_FILE_RECEIVER);
+    // Generate the model.sessmigr.yaml file at RESULTS_ROOT
+    String destYamlFile1 =
+        generateNewModelFileWithUpdatedProps(domain1Namespace,domain1Uid, "ItWseeSSO",
+             WDT_MODEL_FILE_SENDER);
+    String destYamlFile2 =
+        generateNewModelFileWithUpdatedProps(domain2Namespace,domain2Uid, "ItWseeSSO",
+            WDT_MODEL_FILE_RECEIVER);
+    createDomain(domain1Namespace, domain1Uid, destYamlFile1);
+    createDomain(domain2Namespace, domain2Uid, destYamlFile2);
+    if (!OKD) {
+      String ingressClassName = nginxHelmParams.getIngressClassName();
+      createIngressPathRouting(domain1Namespace, "/EchoServiceRef",
+          domain1Uid + "-admin-server", 7001, ingressClassName);
+      createIngressPathRouting(domain2Namespace, "/samlSenderVouches",
+          domain2Uid + "-admin-server", 7001, ingressClassName);
+      /*
+      Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
+      clusterNameMsPortMap.put(clusterName, managedServerPort);
+      ingressHostList1
+          = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
+          true, nginxHelmParams.getIngressClassName(), false, 0);
+
+      ingressHostList2
+          = createIngressForDomainAndVerify(domain2Uid, domain2Namespace, 0, clusterNameMsPortMap,
+          false, nginxHelmParams.getIngressClassName(), false, 0);
+
+       */
+    }
     if (adminSvcExtHost1 == null) {
       adminSvcExtHost1 = createRouteForOKD(getExternalServicePodName(adminServerPodName1), domain1Namespace);
     }
@@ -645,5 +653,36 @@ class ItWseeSSO {
         namespace);
 
     return wlsPod;
+  }
+
+  public static String generateNewModelFileWithUpdatedProps(String domainUid,
+                                                                String namespace,
+                                                                String className,
+                                                                String origModelFile) {
+    final String srcModelYamlFile =  MODEL_DIR + "/" + origModelFile;
+    final String destModelYamlFile = RESULTS_ROOT + "/" + domainUid + "/" + className + "/" + origModelFile;
+    Path srcModelYamlPath = Paths.get(srcModelYamlFile);
+    Path destModelYamlPath = Paths.get(destModelYamlFile);
+
+    // create dest dir
+    assertDoesNotThrow(() -> Files.createDirectories(
+            Paths.get(RESULTS_ROOT + "/" + domainUid, className)),
+        String.format("Could not create directory under %s", RESULTS_ROOT + "/"
+            + domainUid +  className + ""));
+
+    // copy model.yaml to results dir
+    assertDoesNotThrow(() -> Files.copy(srcModelYamlPath, destModelYamlPath, REPLACE_EXISTING),
+        "Failed to copy " + srcModelYamlFile + " to " + destModelYamlFile);
+
+    // DOMAIN_NAME in model.yaml
+    assertDoesNotThrow(() -> replaceStringInFile(
+            destModelYamlFile.toString(), "DOMAIN_NAME", domainUid),
+        "Could not modify DOMAIN_NAME in " + destModelYamlFile);
+    // NAMESPACE in model.yaml
+    assertDoesNotThrow(() -> replaceStringInFile(
+            destModelYamlFile.toString(), "NAMESPACE", namespace),
+        "Could not modify NAMESPACE in " + destModelYamlFile);
+
+    return destModelYamlFile;
   }
 }
