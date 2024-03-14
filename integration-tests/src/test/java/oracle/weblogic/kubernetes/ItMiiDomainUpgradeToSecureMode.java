@@ -38,7 +38,6 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
-import oracle.weblogic.kubernetes.utils.CommonTestUtils;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
@@ -1130,13 +1129,12 @@ class ItMiiDomainUpgradeToSecureMode {
     if (hostName != null && hostName.length > 0) {
       hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;
     } else {
-      String host = CommonTestUtils.formatIPv6Host(K8S_NODEPORT_HOST);
+      String host = formatIPv6Host(K8S_NODEPORT_HOST);
       hostAndPort = host + ":" + lbNodePort;
     }
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostAndPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
-          + ":" + IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_HOSTPORT;
+      hostAndPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + lbNodePort;
     }
 
     if (isTLS) {
