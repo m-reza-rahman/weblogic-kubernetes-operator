@@ -56,6 +56,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_CONAINERPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_CONAINERPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
@@ -1104,6 +1105,14 @@ class ItMiiDomainUpgradeToSecureMode {
 
   private static int getNginxLbNodePort(String channelName) {
     String nginxServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      if (channelName.equals("https")) {
+        return IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_HOSTPORT;
+      } else {
+        return IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_HOSTPORT;
+      }
+    }
     return getServiceNodePort(ingressNamespace, nginxServiceName, channelName);
   }
 
@@ -1122,9 +1131,6 @@ class ItMiiDomainUpgradeToSecureMode {
       hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName[0] : hostName[0] + ":" + lbNodePort;
     } else {
       String host = CommonTestUtils.formatIPv6Host(K8S_NODEPORT_HOST);
-      if (host.contains(":")) {
-        host = "[" + host + "]";
-      }
       hostAndPort = host + ":" + lbNodePort;
     }
     if (TestConstants.KIND_CLUSTER
