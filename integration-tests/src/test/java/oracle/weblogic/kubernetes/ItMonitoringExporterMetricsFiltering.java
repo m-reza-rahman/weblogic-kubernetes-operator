@@ -45,8 +45,8 @@ import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
-import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_NODEPORT;
-import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
@@ -760,7 +760,7 @@ class ItMonitoringExporterMetricsFiltering {
   private int getTraefikLbNodePort(boolean isHttps) {
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      return isHttps ? TRAEFIK_INGRESS_HTTPS_NODEPORT : TRAEFIK_INGRESS_HTTP_NODEPORT;
+      return isHttps ? TRAEFIK_INGRESS_HTTPS_HOSTPORT : TRAEFIK_INGRESS_HTTP_HOSTPORT;
     }
     logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
     return assertDoesNotThrow(()
