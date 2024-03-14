@@ -53,6 +53,7 @@ import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Paths.get;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_PORT_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
@@ -601,14 +602,8 @@ public class CommonLBTestUtils {
           namespace),"Deploying the application");
       return true;
     } else if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-      int defaultChannelPort = assertDoesNotThrow(()
-              -> getServicePort(namespace, getExternalServicePodName(adminServerPodName), "default"),
-          "Getting admin server default port failed");
-      getLogger().info("default channel port: {0}", defaultChannelPort);
-      assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
-
       getLogger().info("Deploying webapp {0} to domain {1}", clusterViewAppPath, domainUid);
-      deployUsingWlst(adminServerPodName, Integer.toString(defaultChannelPort),
+      deployUsingWlst(adminServerPodName, Integer.toString(ADMIN_SERVER_PORT_DEFAULT),
           ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, "cluster-1",
           clusterViewAppPath, namespace);
       return true;

@@ -3,7 +3,6 @@
 
 package oracle.weblogic.kubernetes;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -33,15 +32,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
-import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTPS_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
-import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_HOSTPORT;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
@@ -486,7 +483,8 @@ class ItLBTwoDomainsNginx {
    */
   private static int getNginxLbNodePort(String channelName) {
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-      return channelName.equals("https") ? NGINX_INGRESS_HTTPS_HOSTPORT : NGINX_INGRESS_HTTP_HOSTPORT;
+      return channelName.equals("https")
+          ? ITLBTWODOMAINSNGINX_INGRESS_HTTPS_HOSTPORT : ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT;
     } else {
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       return getServiceNodePort(nginxNamespace, nginxServiceName, channelName);
@@ -514,19 +512,8 @@ class ItLBTwoDomainsNginx {
   private static NginxParams installNginxLB() {
 
     getLogger().info("Installing NGINX in namespace {0}", nginxNamespace);
-    NginxParams params = installAndVerifyNginx(nginxNamespace, NGINX_INGRESS_HTTP_NODEPORT,
-        NGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, "NodePort");
-    assertDoesNotThrow(() -> Files.writeString(INGRESS_CLASS_FILE_NAME, params.getIngressClassName()));
-    String cmd = KUBERNETES_CLI + " get all -A";
-    try {
-      ExecCommand.exec(cmd, true);
-    } catch (IOException | InterruptedException ex) {
-      getLogger().info("Exception in get all {0}", ex);
-    }
-    //TO-DO for OKD to use NGINX for all service access
-    //expose NGINX node port service and get route host
-    //oc -n ns-abcdef expose service nginx-release-nginx-ingress-nginx-controller
-    //oc -n ns-abcdef get routes nginx-release-nginx-ingress-nginx-controller '-o=jsonpath={.spec.host}'
+    NginxParams params = installAndVerifyNginx(nginxNamespace, ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT,
+        ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, "NodePort");
 
     return params;
   }
