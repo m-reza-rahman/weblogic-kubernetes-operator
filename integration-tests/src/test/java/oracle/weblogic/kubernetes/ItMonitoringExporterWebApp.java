@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -45,6 +45,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
@@ -444,8 +445,14 @@ class ItMonitoringExporterWebApp {
               prometheusRegexValue, promHelmValuesFileDir);
       assertNotNull(promHelmParams, " Failed to install prometheus");
       prometheusDomainRegexValue = prometheusRegexValue;
-      nodeportPrometheus = promHelmParams.getNodePortServer();
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
+      nodeportPrometheus = promHelmParams.getNodePortServer();
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        nodeportPrometheus = IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+        host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+      }
+
       hostPortPrometheus = host + ":" + nodeportPrometheus;
       if (OKE_CLUSTER_PRIVATEIP) {
         hostPortPrometheus = ingressIP;

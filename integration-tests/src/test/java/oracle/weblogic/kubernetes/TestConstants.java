@@ -473,8 +473,10 @@ public interface TestConstants {
   //node ports used by the integration tests
   public static final int ITEXTERNALNODEPORTSERVICE_CONAINERPORT = 32156;
   public static final int ITEXTERNALNODEPORTSERVICE_HOSTPORT = 2156;
+  
   public static final int IT_DEDICATED_MODE_CONAINERPORT = 32159;
   public static final int IT_DEDICATED_MODE_HOSTPORT = 2160;
+  
   public static final int IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT = 32169;
   public static final int IT_EXTERNALLB_TUNNELING_HTTP_HOSTPORT = 2172;
   public static final int IT_EXTERNALLB_TUNNELING_HTTPS_CONAINERPORT = 32170;
@@ -484,10 +486,11 @@ public interface TestConstants {
   public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_HOSTPORT = 2182;
   public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_CONAINERPORT = 32185;
   public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_HOSTPORT = 2175;
+  
   public static final int IT_MONITORINGEXPORTER_PROM_HTTP_CONAINERPORT = 32143;
   public static final int IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT = 2143;
-  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_CONAINERPORT = 32143;
-  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_HOSTPORT = 2143;  
+  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_CONAINERPORT = 32343;
+  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_HOSTPORT = 2343;  
   
 
 }
