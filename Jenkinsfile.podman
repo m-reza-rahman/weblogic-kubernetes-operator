@@ -416,6 +416,12 @@ nodes:
       - containerPort: 32170
         hostPort: 2173
         protocol: TCP	
+      - containerPort: 32189
+        hostPort: 2182
+        protocol: TCP
+      - containerPort: 32185
+        hostPort: 2175
+        protocol: TCP	
     extraMounts:
       - hostPath: ${pv_root}
         containerPath: ${pv_root}
