@@ -751,12 +751,11 @@ class ItMonitoringExporterMetricsFiltering {
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {
-    int nodePort;
-    logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       return isHttps ? TRAEFIK_INGRESS_HTTPS_NODEPORT : TRAEFIK_INGRESS_HTTP_NODEPORT;
     }
+    logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
     return assertDoesNotThrow(()
         -> getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
         "Getting web node port for Traefik loadbalancer failed");
