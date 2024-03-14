@@ -4,6 +4,7 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -20,7 +21,6 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.html.HtmlRadioButtonInput;
 import com.gargoylesoftware.htmlunit.html.HtmlSubmitInput;
 import io.kubernetes.client.openapi.ApiException;
-import java.net.InetAddress;
 import oracle.weblogic.kubernetes.actions.impl.GrafanaParams;
 import oracle.weblogic.kubernetes.actions.impl.PrometheusParams;
 import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
