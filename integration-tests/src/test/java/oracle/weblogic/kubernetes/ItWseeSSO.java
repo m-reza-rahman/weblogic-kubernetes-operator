@@ -264,7 +264,7 @@ class ItWseeSSO {
     }
     String urlTest = "http://" + hostAndPort + appURI;
     response = assertDoesNotThrow(() -> OracleHttpClient.get(urlTest, true));
-    assertEquals(response.statusCode(), 200);
+    assertEquals(200, response.statusCode());
     return urlTest;
   }
 
