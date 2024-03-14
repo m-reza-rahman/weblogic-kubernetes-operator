@@ -4,6 +4,7 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -36,11 +37,14 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
+import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
@@ -135,7 +139,7 @@ class ItMonitoringExporterMetricsFiltering {
    */
   @BeforeAll
 
-  public void initAll(@Namespaces(4) List<String> namespaces) {
+  public void initAll(@Namespaces(4) List<String> namespaces) throws IOException {
 
     logger = getLogger();
     monitoringExporterDir = Paths.get(RESULTS_ROOT,
@@ -733,18 +737,28 @@ class ItMonitoringExporterMetricsFiltering {
   }
 
 
-  private static void installTraefikIngressController() {
+  private static void installTraefikIngressController() throws IOException {
     // install and verify Traefik
     logger.info("Installing Traefik controller using helm");
-    traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-    traefikHelmParams = traefikParams.getHelmParams();
-    ingressClassName = traefikParams.getIngressClassName();
+    if (TestConstants.KIND_CLUSTER
+        && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+      traefikHelmParams = traefikParams.getHelmParams();
+      ingressClassName = traefikParams.getIngressClassName();
+    } else {
+      ingressClassName = Files.readString(INGRESS_CLASS_FILE_NAME);
+    }
   }
 
   private int getTraefikLbNodePort(boolean isHttps) {
+    int nodePort;
     logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
-    return assertDoesNotThrow(() ->
-            getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      return isHttps ? TRAEFIK_INGRESS_HTTPS_NODEPORT : TRAEFIK_INGRESS_HTTP_NODEPORT;
+    }
+    return assertDoesNotThrow(()
+        -> getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
         "Getting web node port for Traefik loadbalancer failed");
   }
 }
