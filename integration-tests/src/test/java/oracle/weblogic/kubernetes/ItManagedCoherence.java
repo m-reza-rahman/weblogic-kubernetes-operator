@@ -1,8 +1,10 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -26,6 +28,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.BuildApplication;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -36,9 +39,13 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
@@ -68,10 +75,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // Test to associate a Coherence Cluster with multiple WebLogic server clusters.
 @DisplayName("Test to associate a Coherence Cluster with multiple WebLogic server clusters")
 @IntegrationTest
-@Tag("olcne")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
-@Tag("oke-gate")
+@Tag("oke-sequential1")
 class ItManagedCoherence {
 
   // constants for Coherence
@@ -94,9 +100,8 @@ class ItManagedCoherence {
   private static String domainNamespace = null;
 
   private static HelmParams traefikHelmParams = null;
-  private static LoggingFacade logger = null;
-
   private static TraefikParams traefikParams = null;
+  private static LoggingFacade logger = null;
 
   /**
    * Install Traefik and operator, build two Coherence applications
@@ -129,10 +134,14 @@ class ItManagedCoherence {
 
     // install and verify Traefik if not running on OKD
     if (!OKD) {
-      //traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-
-      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-      traefikHelmParams = traefikParams.getHelmParams();
+      if (OKE_CLUSTER) {
+        traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
+        traefikHelmParams = traefikParams.getHelmParams();
+      } else if (TestConstants.KIND_CLUSTER
+            && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
+        traefikHelmParams = traefikParams.getHelmParams();
+      }
     }
 
     // install and verify operator
@@ -157,48 +166,87 @@ class ItManagedCoherence {
    */
   @Test
   @DisplayName("Two cluster domain with a Coherence cluster and test interaction with cache data")
-  void testMultiClusterCoherenceDomain() {
+  void testMultiClusterCoherenceDomain() throws IOException {
     // create a DomainHomeInImage image using WebLogic Image Tool
     String domImage = createAndVerifyDomainImage();
 
     // create and verify a two-cluster WebLogic domain with a Coherence cluster
     createAndVerifyDomain(domImage);
 
-    if (OKD) {
-      String cluster1HostName = domainUid + "-cluster-cluster-1";
+    String command = KUBERNETES_CLI + " get clusters --all-namespaces";
+    logger.info("=============curl command to get clusters --all-namespaces is: {0}", command);
 
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("=========result is1: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
+    command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("=============curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result0 = ExecCommand.exec(command, true);
+      logger.info("=========result is2: {0}", result0.toString());
+    } catch (IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
+    if (OKD) {
+      logger.info("========= in OKD");
+      String cluster1HostName = domainUid + "-cluster-cluster-1";
       final String cluster1IngressHost = createRouteForOKD(cluster1HostName, domainNamespace);
 
       // test adding data to the cache and retrieving them from the cache
       boolean testCompletedSuccessfully = assertDoesNotThrow(()
-          -> coherenceCacheTest(cluster1IngressHost), "Test Coherence cache failed");
+          -> coherenceCacheTest(cluster1IngressHost, 0), "Test Coherence cache failed");
       assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
     } else {
-
+      logger.info("========= NOT in OKD");
       Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
       for (int i = 1; i <= NUMBER_OF_CLUSTERS; i++) {
         clusterNameMsPortMap.put(CLUSTER_NAME_PREFIX + i, MANAGED_SERVER_PORT);
       }
-      // clusterNameMsPortMap.put(clusterName, managedServerPort);
-      logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-      createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-          traefikHelmParams.getReleaseName());
 
       String clusterHostname = domainUid + "." + domainNamespace + ".cluster-1.test";
-      // get ingress service Name and Nodeport
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      String traefikNamespace = traefikHelmParams.getNamespace();
+      String hostAndPort;
+      int ingressServiceNodePort;
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        logger.info("========= in KIND_CLUSTER");
+        String ingressClass = Files.readString(INGRESS_CLASS_FILE_NAME);
+        logger.info("Creating ingress for cluster {0} in namespace {1}", CLUSTER_NAME_PREFIX, domainNamespace);
+        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, TRAEFIK_INGRESS_HTTP_HOSTPORT,
+            clusterNameMsPortMap, true, null, ingressClass);
+        hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+        ingressServiceNodePort = TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      } else {
+        logger.info("========= NOT in KIND_CLUSTER");
+        // clusterNameMsPortMap.put(clusterName, managedServerPort);
+        logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
+        /*
+        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
+            traefikHelmParams.getReleaseName());
+        */
+        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
+            traefikParams.getIngressClassName());
 
-      int ingressServiceNodePort = assertDoesNotThrow(()
-              -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
-          "Getting Ingress Service node port failed");
-      logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
+        // get ingress service Name and Nodeport
+        String ingressServiceName = traefikHelmParams.getReleaseName();
+        String traefikNamespace = traefikHelmParams.getNamespace();
 
-      String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-              : getHostAndPort(clusterHostname, ingressServiceNodePort);
+        ingressServiceNodePort = assertDoesNotThrow(()
+            -> getServiceNodePort(traefikNamespace, ingressServiceName, "web"),
+            "Getting Ingress Service node port failed");
+        logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
 
-      assertTrue(checkCoheranceApp(clusterHostname, hostAndPort), "Failed to access Coherance App cation");
+        hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+            : getHostAndPort(clusterHostname, ingressServiceNodePort);
+      }
+
+      assertTrue(checkCoheranceApp(hostAndPort, clusterHostname), "Failed to access Coherance Application");
       // test adding data to the cache and retrieving them from the cache
       boolean testCompletedSuccessfully = assertDoesNotThrow(()
           -> coherenceCacheTest(clusterHostname, ingressServiceNodePort), "Test Coherence cache failed");
@@ -319,20 +367,25 @@ class ItManagedCoherence {
         + "for %s in namespace %s", domainUid, domainNamespace));
   }
 
-  private boolean coherenceCacheTest(String hostName) {
-    return coherenceCacheTest(hostName,0); //OKD does not need a port number
-  }
-
   private boolean coherenceCacheTest(String hostName, int ingressServiceNodePort) {
     logger.info("Starting to test the cache");
-    // get ingress service Name and Nodeport
-    String ingressServiceName = traefikHelmParams.getReleaseName();
-    String traefikNamespace = traefikHelmParams.getNamespace();
 
-    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-            : getHostAndPort(hostName, ingressServiceNodePort);;
-    logger.info("hostAndPort is: {0} ", hostAndPort);
+    String hostAndPort = null;
+    if (!OKD) {
+      // get ingress service Name and Nodeport
+      String ingressServiceName = traefikHelmParams.getReleaseName();
+      String traefikNamespace = traefikHelmParams.getNamespace();
+      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+          : getHostAndPort(hostName, ingressServiceNodePort);
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      }
+    } else {
+      hostAndPort = getHostAndPort(hostName, ingressServiceNodePort);
+    }
+    logger.info("=== hostAndPort is: {0} ", hostAndPort);
 
     // add the data to cache
     String[] firstNameList = {"Frodo", "Samwise", "Bilbo", "peregrin", "Meriadoc", "Gandalf"};
@@ -341,7 +394,7 @@ class ItManagedCoherence {
     for (int i = 0; i < firstNameList.length; i++) {
       result = addDataToCache(firstNameList[i], secondNameList[i], hostName, hostAndPort);
       assertTrue(result.stdout().contains(firstNameList[i]), "Did not add the expected record");
-      logger.info("Data added to the cache " + result.stdout());
+      logger.info("=== Data added to the cache " + result.stdout());
     }
 
     // check if cache size is 6
@@ -372,7 +425,7 @@ class ItManagedCoherence {
                                     String hostName,
                                     String hostAndPort) {
     logger.info("Add initial data to cache");
-    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=add&first=")
         .append(firstName)
@@ -399,7 +452,7 @@ class ItManagedCoherence {
   private ExecResult getCacheSize(String hostName, String hostAndPort) {
     logger.info("Get the number of records in cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=size' ")
         .append("-H 'host: ")
@@ -423,7 +476,7 @@ class ItManagedCoherence {
   private ExecResult getCacheContents(String hostName, String hostAndPort) {
     logger.info("Get the records from cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=get' ")
         .append("-H 'host: ")
@@ -447,7 +500,7 @@ class ItManagedCoherence {
   private ExecResult clearCache(String hostName, String hostAndPort) {
     logger.info("Clean the cache");
 
-    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-H 'host: ")
@@ -468,13 +521,13 @@ class ItManagedCoherence {
     return result;
   }
 
-  private boolean checkCoheranceApp(String hostName, String hostAndPort) {
+  private boolean checkCoheranceApp(String hostAndPort, String hostHeader) {
 
-    StringBuffer curlCmd = new StringBuffer("curl --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-X POST -H 'host: ")
-        .append(hostName)
+        .append(hostHeader)
         .append("' http://")
         .append(hostAndPort)
         .append("/")
