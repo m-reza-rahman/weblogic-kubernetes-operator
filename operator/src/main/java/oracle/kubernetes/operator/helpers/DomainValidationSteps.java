@@ -146,7 +146,7 @@ public class DomainValidationSteps {
       } else {
 
         // TEST
-        System.out.println("TEST!!!! The failing domain: " + Yaml.dump(domain));
+        LOGGER.severe("RJE TEST!!!! The failing domain: " + Yaml.dump(domain));
 
         LOGGER.severe(DOMAIN_VALIDATION_FAILED, domain.getDomainUid(), errorMsg);
         return doNext(DomainStatusUpdater.createDomainInvalidFailureSteps(errorMsg), packet);
