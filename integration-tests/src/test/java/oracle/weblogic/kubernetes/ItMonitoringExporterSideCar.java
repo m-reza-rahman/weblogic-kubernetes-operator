@@ -487,8 +487,10 @@ class ItMonitoringExporterSideCar {
             && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
           hostPortPrometheus = formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
               + ":" + IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+          logger.info("Running in podman Debug 1 : {0}", hostPortPrometheus);
         }
         hostPortPrometheus = host + ":" + nodeportPrometheus;
+        logger.info("Running in podman Debug 2 : {0}", hostPortPrometheus);
       }
       prometheusDomainRegexValue = prometheusRegexValue;
     }
@@ -504,6 +506,7 @@ class ItMonitoringExporterSideCar {
     assertDoesNotThrow(() -> ExecCommand.exec(command1,true));
     String command2 = KUBERNETES_CLI + " describe svc -n " + monitoringNS;
     assertDoesNotThrow(() -> ExecCommand.exec(command2,true));
+    logger.info("Running in podman Debug 3 : {0}", hostPortPrometheus);
 
     if (OKD) {
       hostPortPrometheus = createRouteForOKD("prometheus" + releaseSuffix
@@ -516,8 +519,10 @@ class ItMonitoringExporterSideCar {
               monitoringNS,
               grafanaHelmValuesFileDir,
               grafanaChartVersion);
+      logger.info("Running in podman Debug 4 : {0}", hostPortPrometheus);
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
+      logger.info("Running in podman Debug 5 : {0}", hostPortPrometheus);
 
       String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
       if (OKE_CLUSTER_PRIVATEIP) {
@@ -527,6 +532,7 @@ class ItMonitoringExporterSideCar {
         hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
       }
     }
+    logger.info("Running in podman Debug 6 : {0}", hostPortPrometheus);
     logger.info("Grafana is running");
   }
 
