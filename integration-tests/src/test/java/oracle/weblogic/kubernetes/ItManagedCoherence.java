@@ -50,7 +50,7 @@ import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOST
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
+//import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -201,7 +201,6 @@ class ItManagedCoherence {
 
       String clusterHostname = domainUid + "." + domainNamespace + ".cluster-1.test";
       String hostAndPort;
-      String ingressIP;
       int ingressServiceNodePort;
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
@@ -215,7 +214,7 @@ class ItManagedCoherence {
         // Huizhao debug build and deploy app to be used by all test cases
         List<String> domainUids = new ArrayList<>();
         domainUids.add(domainUid);
-        buildAndDeployClusterviewApp(domainNamespace, domainUids);
+        //buildAndDeployClusterviewApp(domainNamespace, domainUids);
 
         // clusterNameMsPortMap.put(clusterName, managedServerPort);
         logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
@@ -232,7 +231,7 @@ class ItManagedCoherence {
         logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
 
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)  + ":80"
             : getHostAndPort(clusterHostname, ingressServiceNodePort);
       }
 
@@ -384,7 +383,7 @@ class ItManagedCoherence {
     for (int i = 0; i < firstNameList.length; i++) {
       result = addDataToCache(firstNameList[i], secondNameList[i], hostName, hostAndPort);
       assertTrue(result.stdout().contains(firstNameList[i]), "Did not add the expected record");
-      logger.info("=== Data added to the cache " + result.stdout());
+      logger.info("Data added to the cache " + result.stdout());
     }
 
     // check if cache size is 6
@@ -519,7 +518,8 @@ class ItManagedCoherence {
         .append("-X POST -H 'host: ")
         .append(hostHeader)
         .append("' http://")
-        .append(hostAndPort + ":80")
+        //.append(hostAndPort + ":80")
+        .append(hostAndPort)
         .append("/")
         .append(COHERENCE_APP_NAME)
         .append("/")
