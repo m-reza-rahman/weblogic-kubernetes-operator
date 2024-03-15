@@ -41,7 +41,6 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
-//import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -52,7 +51,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
-//import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyClusterLoadbalancing;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -177,28 +175,17 @@ class ItManagedCoherence {
     // create and verify a two-cluster WebLogic domain with a Coherence cluster
     createAndVerifyDomain(domImage);
 
-    String command = KUBERNETES_CLI + " get clusters --all-namespaces";
-    logger.info("=============curl command to get clusters --all-namespaces is: {0}", command);
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
 
     try {
       ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("=========result is1: {0}", result0.toString());
-    } catch (IOException | InterruptedException ex) {
-      ex.printStackTrace();
-    }
-
-    command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("=============curl command to get all --all-namespaces is: {0}", command);
-
-    try {
-      ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("=========result is2: {0}", result0.toString());
+      logger.info("result is: {0}", result0.toString());
     } catch (IOException | InterruptedException ex) {
       ex.printStackTrace();
     }
 
     if (OKD) {
-      logger.info("========= in OKD");
       String cluster1HostName = domainUid + "-cluster-cluster-1";
       final String cluster1IngressHost = createRouteForOKD(cluster1HostName, domainNamespace);
 
@@ -207,7 +194,6 @@ class ItManagedCoherence {
           -> coherenceCacheTest(cluster1IngressHost, 0), "Test Coherence cache failed");
       assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
     } else {
-      logger.info("========= NOT in OKD");
       Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
       for (int i = 1; i <= NUMBER_OF_CLUSTERS; i++) {
         clusterNameMsPortMap.put(CLUSTER_NAME_PREFIX + i, MANAGED_SERVER_PORT);
@@ -219,7 +205,6 @@ class ItManagedCoherence {
       int ingressServiceNodePort;
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        logger.info("========= in KIND_CLUSTER");
         String ingressClass = Files.readString(INGRESS_CLASS_FILE_NAME);
         logger.info("Creating ingress for cluster {0} in namespace {1}", CLUSTER_NAME_PREFIX, domainNamespace);
         createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, TRAEFIK_INGRESS_HTTP_HOSTPORT,
@@ -227,7 +212,6 @@ class ItManagedCoherence {
         hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         ingressServiceNodePort = TRAEFIK_INGRESS_HTTP_HOSTPORT;
       } else {
-        logger.info("========= NOT in KIND_CLUSTER");
         // Huizhao debug build and deploy app to be used by all test cases
         List<String> domainUids = new ArrayList<>();
         domainUids.add(domainUid);
@@ -235,10 +219,6 @@ class ItManagedCoherence {
 
         // clusterNameMsPortMap.put(clusterName, managedServerPort);
         logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-        /*
-        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-            traefikHelmParams.getReleaseName());
-        */
         createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
             traefikParams.getIngressClassName());
 
@@ -256,34 +236,12 @@ class ItManagedCoherence {
             : getHostAndPort(clusterHostname, ingressServiceNodePort);
       }
 
-      /*
-      // get ingress service Name and Nodeport
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      String traefikNamespace = traefikHelmParams.getNamespace();
-
-      ingressIP = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : K8S_NODEPORT_HOST;
-
-      verifyClusterLoadbalancing(domainUid, domainUid + "." + domainNamespace + ".cluster-1.test",
-          "http", getTraefikLbNodePort(false), replicaCount, true, "", ingressIP);
-      */
       assertTrue(checkCoheranceApp(hostAndPort, clusterHostname), "Failed to access Coherance Application");
       // test adding data to the cache and retrieving them from the cache
       boolean testCompletedSuccessfully = assertDoesNotThrow(()
           -> coherenceCacheTest(clusterHostname, ingressServiceNodePort), "Test Coherence cache failed");
       assertTrue(testCompletedSuccessfully, "Test Coherence cache failed");
     }
-  }
-
-  // huizhao debug
-  private int getTraefikLbNodePort(boolean isHttps) {
-    logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
-    // get ingress service Name and Nodeport
-    String ingressServiceName = traefikHelmParams.getReleaseName();
-    String traefikNamespace = traefikHelmParams.getNamespace();
-    return assertDoesNotThrow(() ->
-        getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
-        "Getting web node port for Traefik loadbalancer failed");
   }
 
   private static String createAndVerifyDomainImage() {
@@ -417,7 +375,7 @@ class ItManagedCoherence {
     } else {
       hostAndPort = getHostAndPort(hostName, ingressServiceNodePort);
     }
-    logger.info("=== hostAndPort is: {0} ", hostAndPort);
+    logger.info("hostAndPort is: {0} ", hostAndPort);
 
     // add the data to cache
     String[] firstNameList = {"Frodo", "Samwise", "Bilbo", "peregrin", "Meriadoc", "Gandalf"};
@@ -554,11 +512,6 @@ class ItManagedCoherence {
   }
 
   private boolean checkCoheranceApp(String hostAndPort, String hostHeader) {
-
-    /*
-    curl -g --show-error -ks --noproxy '*' -H 'host: coherence-managed-domain.ns-kumpya.cluster-1.test'
-    http://138.3.116.240/clusterview/ClusterViewServlet"?user=weblogic&password=welcome1&ipv6=false
-     */
     //StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
     StringBuffer curlCmd = new StringBuffer("curl -g --show-error -ks --noproxy '*' ");
     curlCmd
@@ -582,5 +535,4 @@ class ItManagedCoherence {
         curlCmd);
     return true;
   }
-
 }
