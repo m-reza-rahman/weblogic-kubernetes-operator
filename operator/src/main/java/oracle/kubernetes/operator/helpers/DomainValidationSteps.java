@@ -17,6 +17,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Secret;
 import io.kubernetes.client.openapi.models.V1SecretList;
+import io.kubernetes.client.util.Yaml;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.DomainStatusUpdater;
 import oracle.kubernetes.operator.calls.CallResponse;
@@ -143,6 +144,10 @@ public class DomainValidationSteps {
         return doNext(createRemoveSelectedFailuresStep(getNext(), DOMAIN_INVALID), packet)
               .withDebugComment(packet, this::domainValidated);
       } else {
+
+        // TEST
+        System.out.println("TEST!!!! The failing domain: " + Yaml.dump(domain));
+
         LOGGER.severe(DOMAIN_VALIDATION_FAILED, domain.getDomainUid(), errorMsg);
         return doNext(DomainStatusUpdater.createDomainInvalidFailureSteps(errorMsg), packet);
       }
