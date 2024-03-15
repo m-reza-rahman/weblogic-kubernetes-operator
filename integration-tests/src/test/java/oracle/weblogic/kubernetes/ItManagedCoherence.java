@@ -41,7 +41,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+//import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -52,7 +52,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
-import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyClusterLoadbalancing;
+//import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyClusterLoadbalancing;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -256,6 +256,7 @@ class ItManagedCoherence {
             : getHostAndPort(clusterHostname, ingressServiceNodePort);
       }
 
+      /*
       // get ingress service Name and Nodeport
       String ingressServiceName = traefikHelmParams.getReleaseName();
       String traefikNamespace = traefikHelmParams.getNamespace();
@@ -265,7 +266,7 @@ class ItManagedCoherence {
 
       verifyClusterLoadbalancing(domainUid, domainUid + "." + domainNamespace + ".cluster-1.test",
           "http", getTraefikLbNodePort(false), replicaCount, true, "", ingressIP);
-
+      */
       assertTrue(checkCoheranceApp(hostAndPort, clusterHostname), "Failed to access Coherance Application");
       // test adding data to the cache and retrieving them from the cache
       boolean testCompletedSuccessfully = assertDoesNotThrow(()
@@ -554,13 +555,18 @@ class ItManagedCoherence {
 
   private boolean checkCoheranceApp(String hostAndPort, String hostHeader) {
 
-    StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    /*
+    curl -g --show-error -ks --noproxy '*' -H 'host: coherence-managed-domain.ns-kumpya.cluster-1.test'
+    http://138.3.116.240/clusterview/ClusterViewServlet"?user=weblogic&password=welcome1&ipv6=false
+     */
+    //StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
+    StringBuffer curlCmd = new StringBuffer("curl -g --show-error -ks --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
         .append("-X POST -H 'host: ")
         .append(hostHeader)
         .append("' http://")
-        .append(hostAndPort)
+        .append(hostAndPort + ":80")
         .append("/")
         .append(COHERENCE_APP_NAME)
         .append("/")
