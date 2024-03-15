@@ -580,14 +580,14 @@ class ItWseeSSO {
         .append(param)
         .toString();
 
-    result = exec(adminPod, null, true, "/bin/sh", "-c", command);
-    if (result.exitValue() != 0) {
-      //retry
-      result = exec(adminPod, null, true, "/bin/sh", "-c", command);
-      if (result.exitValue() != 0) {
+    testUntil(() -> {
+      ExecResult result1 = exec(adminPod, null, true, "/bin/sh", "-c", command);
+      if (result1.exitValue() != 0) {
         return false;
+      } else {
+        return true;
       }
-    }
+    }, logger, " Command returns unexpected exit value");
     return true;
   }
 
