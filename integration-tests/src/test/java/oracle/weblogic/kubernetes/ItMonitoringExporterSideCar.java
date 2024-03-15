@@ -485,8 +485,8 @@ class ItMonitoringExporterSideCar {
         String host = formatIPv6Host(K8S_NODEPORT_HOST);
         if (TestConstants.KIND_CLUSTER
             && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-          hostPortPrometheus = formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
-              + ":" + IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+          host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+          nodeportPrometheus = IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
           logger.info("Running in podman Debug 1 : {0}", hostPortPrometheus);
         }
         hostPortPrometheus = host + ":" + nodeportPrometheus;
