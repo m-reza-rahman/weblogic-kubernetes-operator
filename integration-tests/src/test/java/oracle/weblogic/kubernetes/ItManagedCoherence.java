@@ -133,38 +133,17 @@ class ItManagedCoherence {
     assertNotNull(namespaces.get(2), "Namespace list is null");
     domainNamespace = namespaces.get(2);
 
-    // install and verify Traefik if not running on OKD
     String nodePortValue = null;
     if (!OKE_CLUSTER) {
       nodePortValue = "NodePort";
     }
 
+    // install and verify Traefik if not running on OKD
     if (!OKD || (TestConstants.KIND_CLUSTER
         && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
-      //traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
       traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, nodePortValue);
       traefikHelmParams = traefikParams.getHelmParams();
     }
-
-    /*
-    // install and verify Traefik if not running on OKD
-    if (!OKD) {
-      if (OKE_CLUSTER) {
-        traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-        //traefikHelmParams = traefikParams.getHelmParams();
-      } else if (TestConstants.KIND_CLUSTER
-            && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
-        //traefikHelmParams = traefikParams.getHelmParams();
-      }
-
-      traefikHelmParams = traefikParams.getHelmParams();
-      if (traefikHelmParams != null) {
-        logger.info("======traefikHelmParams is NOT NULL");
-      } else {
-        logger.info("======traefikHelmParams is NULL");
-      }
-    }*/
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domainNamespace);
@@ -247,7 +226,6 @@ class ItManagedCoherence {
             "Getting Ingress Service node port failed");
         logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
 
-        //? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)  + ":80"
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
             ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
             : getHostAndPort(clusterHostname, ingressServiceNodePort);
