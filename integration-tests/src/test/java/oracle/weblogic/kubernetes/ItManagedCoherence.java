@@ -513,7 +513,6 @@ class ItManagedCoherence {
         .append("-X POST -H 'host: ")
         .append(hostHeader)
         .append("' http://")
-        //.append(hostAndPort + ":80")
         .append(hostAndPort)
         .append("/")
         .append(COHERENCE_APP_NAME)
