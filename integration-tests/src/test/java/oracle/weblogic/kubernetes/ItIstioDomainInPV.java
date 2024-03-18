@@ -5,6 +5,8 @@ package oracle.weblogic.kubernetes;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -44,6 +46,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.ISTIO_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.LOCALE_IMAGE_NAME;
@@ -63,6 +66,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppUsingHos
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
@@ -171,13 +175,13 @@ class ItIstioDomainInPV  {
    */
   @Test
   @DisplayName("Create WebLogic domain in PV with Istio")
-  void testIstioDomainHomeInPv() {
+  void testIstioDomainHomeInPv() throws UnknownHostException {
 
     final String managedServerNameBase = "managed-";
     String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
     final int replicaCount = 2;
     final int t3ChannelPort = getNextFreePort();
-
+  
     // In internal OKE env, use Istio EXTERNAL-IP; in non-internal-OKE env, use K8S_NODEPORT_HOST
     String hostName = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
         ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : K8S_NODEPORT_HOST;
@@ -226,12 +230,18 @@ class ItIstioDomainInPV  {
 
     // Use the WebLogic(12.2.1.4) Base Image with Japanese Locale
     // Add the LANG environment variable to ja_JP.utf8
-    String imageLocation = null;
+    // Currently LOCALE testing is disabled till we have 1412 image with 
+    // Japanease Locale 
+    String imageLocation;
     if (KIND_REPO != null) {
       imageLocation = KIND_REPO + "test-images/weblogic:" + LOCALE_IMAGE_TAG;
     } else {
       imageLocation = LOCALE_IMAGE_NAME + ":" + LOCALE_IMAGE_TAG;
     }
+    // remove the below line when 141200 lacale image is available 
+    // and modify serverPod env value("en_US.UTF-8")) to ja_JP.utf8
+    // uncomment assertTrue(matchPodLog(),"LANG is not set to ja_JP.utf8");
+    imageLocation = WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 
     // Enable istio in domain custom resource configuration object.
     // Add T3Channel Service with port assigned to Istio TCP ingress port.
@@ -262,7 +272,7 @@ class ItIstioDomainInPV  {
             .serverPod(new ServerPod() //serverpod
                 .addEnvItem(new V1EnvVar()
                     .name("LANG")
-                    .value("ja_JP.utf8"))
+                    .value("en_US.UTF-8")) // ja_JP.utf8
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
                     .value("-Dweblogic.StdoutDebugEnabled=false "
@@ -298,7 +308,7 @@ class ItIstioDomainInPV  {
       checkPodReadyAndServiceExists(managedServerPodNamePrefix + i, domainUid, domainNamespace);
     }
     // Make sure Japanese character is found in server pod log
-    assertTrue(matchPodLog(),"LANG is not set to ja_JP.utf8");
+    // assertTrue(matchPodLog(),"LANG is not set to ja_JP.utf8");
 
     String clusterService = domainUid + "-cluster-" + clusterName + "." + domainNamespace + ".svc.cluster.local";
 
@@ -317,31 +327,43 @@ class ItIstioDomainInPV  {
         () -> deployHttpIstioGatewayAndVirtualservice(targetHttpFile));
     assertTrue(deployRes, "Failed to deploy Http Istio Gateway/VirtualService");
 
-    int istioIngressPort = getIstioHttpIngressPort();
-    logger.info("Istio http ingress Port is {0}", istioIngressPort);
-
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      // use IPV6
-      host = "[" + host + "]";
-    }
-
     // In internal OKE env, use Istio EXTERNAL-IP;
     // in non-internal-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
-    String hostAndPort = hostName.contains(K8S_NODEPORT_HOST) ? host + ":" + istioIngressPort  : hostName;
+    
+    String host;
+    int istioIngressPort;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+    } else {
+      istioIngressPort = getIstioHttpIngressPort();
+      logger.info("Istio Ingress Port is {0}", istioIngressPort);
+      host = formatIPv6Host(K8S_NODEPORT_HOST);
+    }
+    String hostAndPort = hostName.contains(K8S_NODEPORT_HOST) ? host + ":" + istioIngressPort : hostName;
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      istioIngressPort = ISTIO_HTTP_HOSTPORT;
+      hostAndPort = host + ":" + istioIngressPort;
+    }
+
     String readyAppUrl = "http://" + hostAndPort + "/weblogic/ready";
-    boolean checlReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
-    assertTrue(checlReadyApp, "Failed to access ready app");
-    logger.info("ready app is accessible");
-    String localhost = "localhost";
-    String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
-    assertNotNull(forwardPort, "port-forward fails to assign local port");
-    logger.info("Forwarded local port is {0}", forwardPort);
-    readyAppUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
-    checlReadyApp = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
-    assertTrue(checlReadyApp, "Failed to access ready app thru port-forwarded port");
-    logger.info("ready app is accessible thru port forwarding");
-    stopPortForwardProcess(domainNamespace);
+    boolean checkConsole = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+    assertTrue(checkConsole, "Failed to access WebLogic readyapp ");
+    logger.info("WebLogic server is accessible");
+    if (!(TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
+      String localhost = "localhost";
+      String forwardPort = startPortForwardProcess(localhost, domainNamespace, domainUid, 7001);
+      assertNotNull(forwardPort, "port-forward fails to assign local port");
+      logger.info("Forwarded local port is {0}", forwardPort);
+      readyAppUrl = "http://" + localhost + ":" + forwardPort + "/weblogic/ready";
+      checkConsole = checkAppUsingHostHeader(readyAppUrl, domainNamespace + ".org");
+      assertTrue(checkConsole, "Failed to access WebLogic server thru port-forwarded port");
+      logger.info("WebLogic readyapp is accessible thru port forwarding");
+      stopPortForwardProcess(domainNamespace);
+    }
 
     ExecResult result = null;
     if (isWebLogicPsuPatchApplied()) {
@@ -389,7 +411,7 @@ class ItIstioDomainInPV  {
           target);
     } else {
       for (int i = 1; i <= 10; i++) {
-        result = deployToClusterUsingRest(K8S_NODEPORT_HOST, String.valueOf(istioIngressPort),
+        result = deployToClusterUsingRest(host, String.valueOf(istioIngressPort),
             ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT,
             clusterName, archivePath, domainNamespace + ".org", "testwebapp");
         assertNotNull(result, "Application deployment failed");
