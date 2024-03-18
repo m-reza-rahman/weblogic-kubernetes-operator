@@ -133,15 +133,40 @@ class ItManagedCoherence {
     assertNotNull(namespaces.get(2), "Namespace list is null");
     domainNamespace = namespaces.get(2);
 
+    /*
+    // install and verify Traefik if not running on OKD
+    String nodePortValue = null;
+    if (!OKE_CLUSTER) {
+      nodePortValue = "NodePort";
+    }
+
+    if (!OKD || (TestConstants.KIND_CLUSTER
+      && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
+      //traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
+      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, nodePortValue);
+      traefikHelmParams = traefikParams.getHelmParams();
+    }*/
+
     // install and verify Traefik if not running on OKD
     if (!OKD) {
+      logger.info("====OKE_CLUSTER " + OKE_CLUSTER);
+      logger.info("====TestConstants.KIND_CLUSTER " + TestConstants.KIND_CLUSTER);
+      logger.info("====TestConstants.WLSIMG_BUILDER " + TestConstants.WLSIMG_BUILDER);
+      logger.info("====TestConstants.WLSIMG_BUILDER_DEFAULT " + TestConstants.WLSIMG_BUILDER_DEFAULT);
       if (OKE_CLUSTER) {
         traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
-        traefikHelmParams = traefikParams.getHelmParams();
+        //traefikHelmParams = traefikParams.getHelmParams();
       } else if (TestConstants.KIND_CLUSTER
             && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
         traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
-        traefikHelmParams = traefikParams.getHelmParams();
+        //traefikHelmParams = traefikParams.getHelmParams();
+      }
+
+      traefikHelmParams = traefikParams.getHelmParams();
+      if (traefikHelmParams != null) {
+        logger.info("======traefikHelmParams is NOT NULL");
+      } else {
+        logger.info("======traefikHelmParams is NULL");
       }
     }
 
@@ -210,7 +235,6 @@ class ItManagedCoherence {
         hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         ingressServiceNodePort = TRAEFIK_INGRESS_HTTP_HOSTPORT;
       } else {
-        // Huizhao debug build and deploy app to be used by all test cases
         List<String> domainUids = new ArrayList<>();
         domainUids.add(domainUid);
 
