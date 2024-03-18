@@ -50,7 +50,6 @@ import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOST
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-//import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.buildAndDeployClusterviewApp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -214,12 +213,10 @@ class ItManagedCoherence {
         // Huizhao debug build and deploy app to be used by all test cases
         List<String> domainUids = new ArrayList<>();
         domainUids.add(domainUid);
-        //buildAndDeployClusterviewApp(domainNamespace, domainUids);
 
-        // clusterNameMsPortMap.put(clusterName, managedServerPort);
         logger.info("Creating ingress for domain {0} in namespace {1}", domainUid, domainNamespace);
-        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap, true, null,
-            traefikParams.getIngressClassName());
+        createTraefikIngressForDomainAndVerify(domainUid, domainNamespace, 0,
+            clusterNameMsPortMap, true, null, traefikParams.getIngressClassName());
 
         // get ingress service Name and Nodeport
         String ingressServiceName = traefikHelmParams.getReleaseName();
@@ -230,8 +227,9 @@ class ItManagedCoherence {
             "Getting Ingress Service node port failed");
         logger.info("Node port for {0} is: {1} :", ingressServiceName, ingressServiceNodePort);
 
+        //? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)  + ":80"
         hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)  + ":80"
+            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
             : getHostAndPort(clusterHostname, ingressServiceNodePort);
       }
 
@@ -511,7 +509,6 @@ class ItManagedCoherence {
   }
 
   private boolean checkCoheranceApp(String hostAndPort, String hostHeader) {
-    //StringBuffer curlCmd = new StringBuffer("curl -g --silent --show-error --noproxy '*' ");
     StringBuffer curlCmd = new StringBuffer("curl -g --show-error -ks --noproxy '*' ");
     curlCmd
         .append("-d 'action=clear' ")
