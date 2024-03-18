@@ -133,7 +133,6 @@ class ItManagedCoherence {
     assertNotNull(namespaces.get(2), "Namespace list is null");
     domainNamespace = namespaces.get(2);
 
-    /*
     // install and verify Traefik if not running on OKD
     String nodePortValue = null;
     if (!OKE_CLUSTER) {
@@ -141,18 +140,15 @@ class ItManagedCoherence {
     }
 
     if (!OKD || (TestConstants.KIND_CLUSTER
-      && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
+        && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
       //traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
       traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, nodePortValue);
       traefikHelmParams = traefikParams.getHelmParams();
-    }*/
+    }
 
+    /*
     // install and verify Traefik if not running on OKD
     if (!OKD) {
-      logger.info("====OKE_CLUSTER " + OKE_CLUSTER);
-      logger.info("====TestConstants.KIND_CLUSTER " + TestConstants.KIND_CLUSTER);
-      logger.info("====TestConstants.WLSIMG_BUILDER " + TestConstants.WLSIMG_BUILDER);
-      logger.info("====TestConstants.WLSIMG_BUILDER_DEFAULT " + TestConstants.WLSIMG_BUILDER_DEFAULT);
       if (OKE_CLUSTER) {
         traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0);
         //traefikHelmParams = traefikParams.getHelmParams();
@@ -168,7 +164,7 @@ class ItManagedCoherence {
       } else {
         logger.info("======traefikHelmParams is NULL");
       }
-    }
+    }*/
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domainNamespace);
