@@ -67,6 +67,8 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_PASSWORD;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_USERNAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.TestConstants.WLS_DOMAIN_TYPE;
@@ -100,6 +102,7 @@ import static oracle.weblogic.kubernetes.utils.ApplicationUtils.verifyAdminConso
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkClusterReplicaCountMatches;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.isAppInServerPodReady;
@@ -204,6 +207,7 @@ class ItMiiDomain {
     final String hostName = "localhost";
     final int adminServerPort = 7001;
     final int adminServerSecurePort = 7008;
+    String hostHeader = null;
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
@@ -257,6 +261,7 @@ class ItMiiDomain {
           managedServerPrefix + i, domainNamespace);
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
+
     // Need to expose the admin server external service to access the console in OKD cluster only
     // We will create one route for sslport and another for default port
     String adminSvcSslPortExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName),
@@ -288,6 +293,16 @@ class ItMiiDomain {
     logger.info("Found the administration service nodePort {0}", sslNodePort);
     String hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
 
+    // create ingress for admin service
+    // use traefik LB for kind cluster with ingress host header in url
+    String headers = "";
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, "admin-server", adminServerSecurePort);
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTPS_HOSTPORT;
+      headers = " -H 'host: " + hostHeader + "' ";
+    }
+
     final String resourcePath = "/weblogic/ready";
     if (OKE_CLUSTER) {
       testUntil(
@@ -298,7 +313,7 @@ class ItMiiDomain {
           adminServerPodName);
     } else {
       String curlCmd = "curl -skg --show-error --noproxy '*' "
-          + " https://" + hostAndPort
+          + headers + " https://" + hostAndPort
           + "/weblogic/ready --write-out %{http_code} -o /dev/null";
       logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
       assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
@@ -311,6 +326,12 @@ class ItMiiDomain {
         "Could not get the default external service node port");
     logger.info("Found the default service nodePort {0}", nodePort);
     hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid, "admin-server", adminServerPort);
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      headers = " -H 'host: " + hostHeader + "' ";
+    }
 
     if (!WEBLOGIC_SLIM) {
       if (OKE_CLUSTER) {
@@ -323,7 +344,7 @@ class ItMiiDomain {
       } else {
         String curlCmd2 = "curl -skg --show-error --noproxy '*' "
             + " http://" + hostAndPort
-            + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+            + headers + "/weblogic/ready --write-out %{http_code} -o /dev/null";
         logger.info("Executing default nodeport curl command {0}", curlCmd2);
         assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
       }
