@@ -190,9 +190,6 @@ public abstract class Step {
    * @param packet Packet to provide when invoking the next step
    */
   protected static final Result doNext(Step step, Packet packet) {
-    if (isCancelled(packet)) {
-      return doEnd(packet);
-    }
     if (step != null) {
       Step s = adapt(step, packet);
       if (s != null) {
@@ -200,10 +197,6 @@ public abstract class Step {
       }
     }
     return doEnd(packet);
-  }
-
-  protected static final boolean isCancelled(Packet packet) {
-    return Optional.ofNullable(packet.getFiber()).map(Fiber::isCancelled).orElse(false);
   }
 
   /**

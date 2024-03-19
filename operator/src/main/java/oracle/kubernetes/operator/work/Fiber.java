@@ -4,15 +4,15 @@
 package oracle.kubernetes.operator.work;
 
 import java.io.Serial;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import org.jetbrains.annotations.NotNull;
@@ -25,25 +25,27 @@ import static oracle.kubernetes.operator.work.Step.adapt;
  */
 public final class Fiber {
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
-  private static final int NOT_COMPLETE = 0;
-  private static final int DONE = 1;
-  private static final int CANCELLED = 2;
   private static final ThreadLocal<Fiber> CURRENT_FIBER = new ThreadLocal<>();
   /** Used to allocate unique number for each fiber. */
   private static final AtomicInteger iotaGen = new AtomicInteger();
 
-  public final Engine owner;
-  private final Fiber parent;
   private final int id;
-  private final AtomicInteger status = new AtomicInteger(NOT_COMPLETE);
+  private final FiberExecutor fiberExecutor;
   private final CompletionCallback completionCallback;
   private Packet packet;
   /** The next action for this Fiber. */
-  private Collection<Fiber> children = null;
 
   // for unit test only
-  public Fiber() {
-    this(null);
+  public Fiber(FiberExecutor fiberExecutor) {
+    this(fiberExecutor, null);
+  }
+
+  public Fiber(ScheduledExecutorService scheduledExecutorService) {
+    this(fromScheduled(scheduledExecutorService));
+  }
+
+  public Fiber(ScheduledExecutorService scheduledExecutorService, CompletionCallback completionCallback) {
+    this(fromScheduled(scheduledExecutorService), completionCallback);
   }
 
   /**
@@ -51,19 +53,10 @@ public final class Fiber {
    * @param completionCallback The callback to be invoked when the processing is finished and the
    *     final packet is available.
    */
-  public Fiber(CompletionCallback completionCallback) {
-    this(completionCallback, null);
-  }
-
-  Fiber(CompletionCallback completionCallback, Engine engine) {
-    this(completionCallback, engine, null);
-  }
-
-  Fiber(CompletionCallback completionCallback, Engine engine, Fiber parent) {
+  public Fiber(FiberExecutor fiberExecutor, CompletionCallback completionCallback) {
+    this.fiberExecutor = fiberExecutor;
     this.completionCallback = completionCallback;
-    this.owner = engine;
-    this.parent = parent;
-    id = (parent == null) ? iotaGen.incrementAndGet() : (parent.children.size() + 1);
+    id = iotaGen.incrementAndGet(); // FIXME: rollover
   }
 
   /**
@@ -82,80 +75,47 @@ public final class Fiber {
    * @param packet The packet to be passed to {@code Step#apply(Packet)}.
    */
   public void start(Step stepline, Packet packet) {
-    if (status.get() == NOT_COMPLETE) {
-      LOGGER.finer("{0} started", getName());
+    LOGGER.finer("{0} started", getName());
+    fiberExecutor.execute(() -> doRun(stepline, packet));
+  }
 
-      owner.addRunnable(() -> doRun(stepline, packet));
+  private boolean invokeAndPotentiallyRequeue(Step stepline, Packet packet) {
+    Result result = stepline.apply(packet);
+    if (result == null || result.isRequeue()) {
+      fiberExecutor.schedule(() -> doRun(stepline, packet), result.getRequeueAfter());
+      return false;
     }
+    return true;
   }
 
   private void doRun(Step stepline, Packet packet) {
-    if (status.get() == NOT_COMPLETE) {
-      clearThreadInterruptedStatus();
+    clearThreadInterruptedStatus();
 
-      final Fiber oldFiber = CURRENT_FIBER.get();
-      CURRENT_FIBER.set(this);
+    final Fiber oldFiber = CURRENT_FIBER.get();
+    CURRENT_FIBER.set(this);
+    try {
+      this.packet = packet;
       try {
-        this.packet = packet;
-        try {
-          if ((stepline == null || Step.END.equals(adapt(stepline, packet).apply(packet)))
-                  && status.compareAndSet(NOT_COMPLETE, DONE)
-                  && completionCallback != null) {
-            Throwable t = (Throwable) packet.remove(THROWABLE);
-            if (t != null) {
-              completionCallback.onThrowable(packet, t);
-            } else {
-              completionCallback.onCompletion(packet);
-            }
-          }
-        } catch (Throwable t) {
-          if (status.compareAndSet(NOT_COMPLETE, DONE)
-                  && completionCallback != null) {
+        if ((stepline == null || invokeAndPotentiallyRequeue(adapt(stepline, packet), packet))
+                && completionCallback != null) {
+          Throwable t = (Throwable) packet.remove(THROWABLE);
+          if (t != null) {
             completionCallback.onThrowable(packet, t);
+          } else {
+            completionCallback.onCompletion(packet);
           }
         }
-      } finally {
-        if (oldFiber == null) {
-          CURRENT_FIBER.remove();
-        } else {
-          CURRENT_FIBER.set(oldFiber);
+      } catch (Throwable t) {
+        if (completionCallback != null) {
+          completionCallback.onThrowable(packet, t);
         }
       }
-    }
-  }
-
-  private String getStatus() {
-    return switch (status.get()) {
-      case NOT_COMPLETE -> "NOT_COMPLETE";
-      case DONE -> "DONE";
-      case CANCELLED -> "CANCELLED";
-      default -> "UNKNOWN: " + status.get();
-    };
-  }
-
-  public boolean isCancelled() {
-    return CANCELLED == status.get();
-  }
-
-  /**
-   * Creates a child Fiber. If this Fiber is cancelled, so will all of the children.
-   *
-   * @return Child fiber
-   */
-  public Fiber createChildFiber(CompletionCallback completionCallback) {
-    synchronized (this) {
-      if (children == null) {
-        children = new ArrayList<>();
+    } finally {
+      if (oldFiber == null) {
+        CURRENT_FIBER.remove();
+      } else {
+        CURRENT_FIBER.set(oldFiber);
       }
-      Fiber child = owner.createChildFiber(completionCallback, this);
-
-      children.add(child);
-      if (status.get() != NOT_COMPLETE) {
-        // Race condition where child is created after parent is cancelled or done
-        child.status.set(CANCELLED);
-      }
-
-      return child;
     }
   }
 
@@ -166,19 +126,14 @@ public final class Fiber {
 
   private String getName() {
     StringBuilder sb = new StringBuilder();
-    if (parent != null) {
-      sb.append(parent.getName());
-      sb.append("-child-");
-    } else {
-      sb.append("fiber-");
-    }
+    sb.append("fiber-");
     sb.append(id);
     return sb.toString();
   }
 
   @Override
   public String toString() {
-    return getName() + " " + getStatus();
+    return getName();
   }
 
   /**
@@ -189,22 +144,6 @@ public final class Fiber {
    */
   public Packet getPacket() {
     return packet;
-  }
-
-  /**
-   * Cancels this fiber.
-   */
-  public void cancel() {
-    // Mark fiber as cancelled, if not already done
-    status.compareAndSet(NOT_COMPLETE, CANCELLED);
-
-    if (LOGGER.isFinerEnabled()) {
-      LOGGER.finer("{0} cancelled", getName());
-    }
-
-    if (children != null) {
-      children.forEach(Fiber::cancel);
-    }
   }
 
   /**
@@ -253,5 +192,25 @@ public final class Fiber {
     public List<Throwable> getThrowables() {
       return throwables;
     }
+  }
+
+  interface FiberExecutor extends Executor {
+    Cancellable schedule(Runnable runnable, Duration duration);
+  }
+
+  private static FiberExecutor fromScheduled(ScheduledExecutorService scheduledExecutorService) {
+    return new FiberExecutor() {
+      @Override
+      public Cancellable schedule(Runnable runnable, Duration duration) {
+        ScheduledFuture<?> future = scheduledExecutorService.schedule(runnable,
+                TimeUnit.MILLISECONDS.convert(duration), TimeUnit.MILLISECONDS);
+        return () -> future.cancel(true);
+      }
+
+      @Override
+      public void execute(@NotNull Runnable command) {
+        scheduledExecutorService.execute(command);
+      }
+    };
   }
 }

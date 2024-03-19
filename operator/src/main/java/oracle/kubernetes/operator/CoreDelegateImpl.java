@@ -16,7 +16,6 @@ import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.work.Cancellable;
-import oracle.kubernetes.operator.work.Engine;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -33,7 +32,7 @@ public class CoreDelegateImpl implements CoreDelegate {
   protected final String buildVersion;
   protected final SemanticVersion productVersion;
   protected final KubernetesVersion kubernetesVersion;
-  protected final Engine engine;
+  protected final ScheduledExecutorService scheduledExecutorService;
   protected final String deploymentImpl;
   protected final String deploymentBuildTime;
   protected String domainCrdResourceVersion;
@@ -47,7 +46,7 @@ public class CoreDelegateImpl implements CoreDelegate {
     productVersion = new SemanticVersion(buildVersion);
     kubernetesVersion = HealthCheckHelper.performK8sVersionCheck();
 
-    engine = new Engine(scheduledExecutorService);
+    this.scheduledExecutorService = scheduledExecutorService;
 
     PodHelper.setProductVersion(productVersion.toString());
   }
@@ -115,7 +114,7 @@ public class CoreDelegateImpl implements CoreDelegate {
 
   @Override
   public void runStepsInternal(Packet packet, Step firstStep, Runnable completionAction) {
-    Fiber f = engine.createFiber(andThenDo(completionAction));
+    Fiber f = new Fiber(scheduledExecutorService, andThenDo(completionAction));
     f.start(firstStep, packet);
   }
 
@@ -125,7 +124,7 @@ public class CoreDelegateImpl implements CoreDelegate {
 
   @Override
   public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-    ScheduledFuture<?> future = engine.getExecutor().scheduleWithFixedDelay(command, initialDelay, delay, unit);
+    ScheduledFuture<?> future = scheduledExecutorService.scheduleWithFixedDelay(command, initialDelay, delay, unit);
     return () -> future.cancel(true);
   }
 }

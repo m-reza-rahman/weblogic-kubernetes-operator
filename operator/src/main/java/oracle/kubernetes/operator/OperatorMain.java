@@ -49,7 +49,6 @@ import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.utils.Certificates;
 import oracle.kubernetes.operator.watcher.NamespaceWatcher;
 import oracle.kubernetes.operator.watcher.OperatorEventWatcher;
-import oracle.kubernetes.operator.watcher.PvcWatcher;
 import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -146,7 +145,7 @@ public class OperatorMain extends BaseMain {
 
     @Override
     public FiberGate createFiberGate() {
-      return new FiberGate(engine);
+      return new FiberGate(scheduledExecutorService);
     }
 
     @Override

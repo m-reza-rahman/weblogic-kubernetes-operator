@@ -20,11 +20,6 @@ import oracle.kubernetes.operator.work.Packet;
 /** Custom log formatter to format log messages in JSON format. */
 public class OperatorLoggingFormatter extends BaseLoggingFormatter<Fiber> {
 
-  @Override
-  protected Fiber getCurrentFiberIfSet() {
-    return Fiber.getCurrentIfSet();
-  }
-
   /**
    * Get the domain UID associated with the current log message.
    * Check the fiber that is currently being used to execute the step that initiates the log.
