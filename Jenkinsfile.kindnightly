@@ -76,12 +76,12 @@ pipeline {
         choice(name: 'MAVEN_PROFILE_NAME',
                 description: 'Profile to use in mvn command to run the tests.  Possible values are kind-parallel (the default), kind-sequential, kind-upgrade,toolkits-srg, wls-srg and integration-tests. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                 choices: [
+                        'wls-srg',
                         'kind-parallel',
                         'kind-sequential',
                         'kind-upgrade',
                         'integration-tests',
                         'toolkits-srg',
-                        'wls-srg',
 			'ipv6'
                 ]
         )
