@@ -399,6 +399,11 @@ nodes:
         protocol: TCP
       - containerPort: 31443
         hostPort: 2543
+      - containerPort: 30881
+        hostPort: 2081
+        protocol: TCP
+      - containerPort: 30444
+        hostPort: 2444
         protocol: TCP
       - containerPort: 32480
         hostPort: 2480

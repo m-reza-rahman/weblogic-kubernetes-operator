@@ -47,6 +47,7 @@ public interface TestConstants {
   public static final String WEBLOGIC_IMAGE_TAGS =
       getNonEmptySystemProperty("wko.it.weblogic.image.tags", DEFAULT_WEBLOGIC_IMAGE_TAGS);
   public static final int DEFAULT_MAX_CLUSTER_SIZE = 5;
+  public static final int ADMIN_SERVER_PORT_DEFAULT = 7001;
 
   // cluster constants
   public static final String CLUSTER_VERSION =
@@ -490,7 +491,11 @@ public interface TestConstants {
   public static final int IT_MONITORINGEXPORTER_PROM_HTTP_CONAINERPORT = 32143;
   public static final int IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT = 2143;
   public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_CONAINERPORT = 32343;
-  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_HOSTPORT = 2343;  
-  
+  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_HOSTPORT = 2343; 
+
+  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT = 30881;
+  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT = 30444;
+  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT = 2081;
+  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTPS_HOSTPORT = 2444;
 
 }

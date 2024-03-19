@@ -355,7 +355,8 @@ public class LoggingExporter {
                         .name("set-vm-max-map-count")
                         .image(BUSYBOX_IMAGE + ":" + BUSYBOX_TAG)
                         .imagePullPolicy(IMAGE_PULL_POLICY)
-                        .command(Arrays.asList("sysctl", "-w", "vm.max_map_count=262144"))
+                        .command(Arrays.asList("sh -c sysctl -w vm.max_map_count=262144",
+                            "sh -c echo vm.max_map_count=262144 >> /etc/sysctl.conf", "sh -c sysctl -p"))
                         .securityContext(new V1SecurityContext().privileged(true))))
                     .containers(List.of(new V1Container()
                         .name(elasticsearchName)
