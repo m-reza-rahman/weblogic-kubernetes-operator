@@ -29,7 +29,7 @@ pipeline {
     }
     triggers {
         // timer trigger for "nightly build"
-        parameterizedCron(env.JOB_NAME == 'wko-kind-main-nightly' ?
+        parameterizedCron(env.JOB_NAME == 'wko-kind-release42-nightly' ?
         CRON_SETTINGS : '')
     }
 
