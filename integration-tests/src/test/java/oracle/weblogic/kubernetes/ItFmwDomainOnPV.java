@@ -787,6 +787,14 @@ class ItFmwDomainOnPV {
     });
   }
 
+  private Callable<Boolean> imageCompare(String image1, String image2) {
+    return (() -> {
+      boolean result = true;
+      result = result && image1.equalsIgnoreCase(image2);
+      return result;
+    });
+  }
+
   private void verifyRollingRestartWithImageChg(String domainUid, String domainNamespace) {
     // get the map with server pods and their original creation timestamps
     String adminServerPodName = domainUid + "-admin-server";
@@ -830,6 +838,11 @@ class ItFmwDomainOnPV {
     logger.info("In the new patched domain imageName is: {0}", imageName);
     assertTrue(imageName.equalsIgnoreCase(newImage),
         "Image name was not updated in the new patched domain");
+    testUntil(
+        imageCompare(imageName, newImage),
+          logger,
+          "Image name was updated to {0}",
+          newImage);
 
     // verify the server pods are rolling restarted and back to ready state
     logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
