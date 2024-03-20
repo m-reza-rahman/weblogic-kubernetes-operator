@@ -21,7 +21,7 @@ def create_domain():
   setOption('DomainName', domain_name)
 
   #print('Configuring the Administration Server')
-  #cd('/Servers/AdminServer')
+  cd('/Servers/AdminServer')
   #set('ListenPort', int(admin_server_port))
   #set('Name', admin_server_name)
   #set('WeblogicPluginEnabled', true)
