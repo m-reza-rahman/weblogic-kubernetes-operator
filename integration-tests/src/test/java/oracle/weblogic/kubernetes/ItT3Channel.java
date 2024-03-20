@@ -173,7 +173,7 @@ class ItT3Channel {
     p.setProperty("admin_server_port", "7001");
     p.setProperty("admin_username", ADMIN_USERNAME_DEFAULT);
     p.setProperty("admin_password", ADMIN_PASSWORD_DEFAULT);
-    p.setProperty("admin_t3_public_address", K8S_NODEPORT_HOST);
+    p.setProperty("admin_t3_public_address", "fixpodmanfailures.oraclenl.internal");
     p.setProperty("admin_t3_channel_port", Integer.toString(t3ChannelPort));
     p.setProperty("number_of_ms", "2");
     p.setProperty("managed_server_name_base", MANAGED_SERVER_NAME_BASE);
@@ -322,7 +322,7 @@ class ItT3Channel {
     testUntil(() -> {
       logger.info("Getting node port for default channel");
       int serviceNodePort = assertDoesNotThrow(()
-          -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+          -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "t3channel"),
           "Getting admin server node port failed");
       String host = K8S_NODEPORT_HOST;
       String hostAndPort = host + ":" + serviceNodePort;
