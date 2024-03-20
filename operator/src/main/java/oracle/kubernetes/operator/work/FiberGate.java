@@ -3,12 +3,14 @@
 
 package oracle.kubernetes.operator.work;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
+import oracle.kubernetes.operator.work.Fiber.FiberExecutor;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Allows at most one running Fiber per key value. However, rather than queue later arriving Fibers
@@ -37,10 +39,6 @@ public class FiberGate {
    */
   public Map<String, Fiber> getCurrentFibers() {
     return new HashMap<>(gateMap);
-  }
-
-  public ScheduledExecutorService getExecutor() {
-    return scheduledExecutorService;
   }
 
   /**
@@ -99,40 +97,28 @@ public class FiberGate {
 
     private final String domainUid;
     private final Fiber fiber;
-    private final Step steps;
-    private final Packet packet;
 
     FiberRequest(String domainUid, Step steps, Packet packet, CompletionCallback callback) {
       this.domainUid = domainUid;
-      this.steps = steps;
-      this.packet = packet;
 
-      fiber = new Fiber(scheduledExecutorService, new FiberGateCompletionCallback(callback, domainUid));
+      fiber = new Fiber(new FiberExecutorImpl(), steps, packet, new FiberGateCompletionCallback(callback, domainUid));
     }
 
     void invoke() {
-      if (isAllowed()) {
-        fiber.start(steps, packet);
-      }
+      fiber.start();
     }
 
-    private boolean isAllowed() {
-      Fiber existing = null;
-      try {
-        if (old == null) {
-          existing = gateMap.put(domainUid, fiber); // TODO, FIXME: gateMap -> queue of reconciliation runs
-          return true;
-        } else if (old == placeholder) {
-          existing = gateMap.putIfAbsent(domainUid, fiber);
-          return existing == null;
-        } else {
-          boolean result = gateMap.replace(domainUid, old, fiber);
-          if (result) {
-            existing = old;
-          }
-          return result;
-        }
-      } finally {
+    private class FiberExecutorImpl implements FiberExecutor {
+      @Override
+      public Cancellable schedule(Fiber fiber, Duration duration) {
+        ScheduledFuture<?> future = scheduledExecutorService.schedule(
+                () -> execute(fiber), TimeUnit.MILLISECONDS.convert(duration), TimeUnit.MILLISECONDS);
+        return () -> future.cancel(true);
+      }
+
+      @Override
+      public void execute(@NotNull Fiber fiber) {
+        Fiber existing = gateMap.put(domainUid, fiber);
         if (existing != null) {
           existing.cancel();
         }

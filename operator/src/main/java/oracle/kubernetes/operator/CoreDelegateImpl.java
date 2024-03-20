@@ -114,12 +114,18 @@ public class CoreDelegateImpl implements CoreDelegate {
 
   @Override
   public void runStepsInternal(Packet packet, Step firstStep, Runnable completionAction) {
-    Fiber f = new Fiber(scheduledExecutorService, andThenDo(completionAction));
-    f.start(firstStep, packet);
+    Fiber f = new Fiber(scheduledExecutorService, firstStep, packet, andThenDo(completionAction));
+    f.start();
   }
 
   private static BaseMain.NullCompletionCallback andThenDo(Runnable completionAction) {
     return new BaseMain.NullCompletionCallback(completionAction);
+  }
+
+  @Override
+  public Cancellable schedule(Runnable command, long delay, TimeUnit unit) {
+    ScheduledFuture<?> future = scheduledExecutorService.schedule(command, delay, unit);
+    return () -> future.cancel(true);
   }
 
   @Override

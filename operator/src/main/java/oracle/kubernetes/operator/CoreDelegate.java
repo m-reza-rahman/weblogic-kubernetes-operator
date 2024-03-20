@@ -59,6 +59,8 @@ public interface CoreDelegate {
 
   void runStepsInternal(Packet packet, Step firstStep, Runnable completionAction);
 
+  Cancellable schedule(Runnable command, long delay, TimeUnit unit);
+
   Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit);
 
 }

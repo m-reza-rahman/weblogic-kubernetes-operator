@@ -1057,7 +1057,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     private void scheduleRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
       final MakeRightDomainOperation retry = operation.createRetry(domainPresenceInfo);
-      gate.getExecutor().schedule(retry::execute, delayUntilNextRetry(domainPresenceInfo), TimeUnit.SECONDS);
+      delegate.schedule(retry::execute, delayUntilNextRetry(domainPresenceInfo), TimeUnit.SECONDS);
     }
     
     private long delayUntilNextRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
@@ -1107,6 +1107,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     final T operation;
     protected final ResourcePresenceInfo presenceInfo;
     protected final FiberGate gate;
+    protected final DomainProcessorDelegate delegate;
 
     private final Step firstStep;
     final Packet packet;
@@ -1117,6 +1118,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       this.firstStep = operation.createSteps();
       this.packet = operation.createPacket();
       this.gate = getMakeRightFiberGate(delegate, this.presenceInfo.getNamespace());
+      this.delegate = delegate;
     }
 
     private FiberGate getMakeRightFiberGate(DomainProcessorDelegate delegate, String ns) {
