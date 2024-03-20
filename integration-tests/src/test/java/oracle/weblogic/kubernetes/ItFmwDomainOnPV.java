@@ -52,6 +52,7 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePod;
+import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePull;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
@@ -817,6 +818,18 @@ class ItFmwDomainOnPV {
     V1Patch patch = new V1Patch(patchStr);
     assertTrue(patchDomainCustomResource(domainUid, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
           "Failed to patch domain");
+
+    DomainResource domain = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace),
+        String.format("getDomainCustomResource failed with ApiException when tried to get domain %s in namespace %s",
+            domainUid, domainNamespace));
+    assertNotNull(domain, "Got null domain resource after patching");
+    assertNotNull(domain.getSpec(), domain + "/spec is null");
+
+    //print out image name in the new patched domain
+    String imageName = domain.getSpec().getImage();
+    logger.info("In the new patched domain imageName is: {0}", imageName);
+    assertTrue(imageName.equalsIgnoreCase(newImage),
+        "Image name was not updated in the new patched domain");
 
     // verify the server pods are rolling restarted and back to ready state
     logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
