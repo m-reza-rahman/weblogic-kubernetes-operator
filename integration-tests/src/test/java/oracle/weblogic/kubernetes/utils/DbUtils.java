@@ -911,6 +911,10 @@ public class DbUtils {
       logger.severe(ex.getMessage());
       return null;
     }
+    if (dbUrl.contains(":")) {
+      int lastIndexOf = dbUrl.lastIndexOf(":");
+      dbUrl = "[" + dbUrl.substring(0, lastIndexOf - 1) + "]" + dbUrl.substring(lastIndexOf);
+    }
     return dbUrl;
   }
 
