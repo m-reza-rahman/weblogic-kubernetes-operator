@@ -297,9 +297,9 @@ class ItMiiDomain {
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       httpHostHeader = createIngressHostRouting(domainNamespace, domainUid,
-          "admin-server", adminServerPort);
+          "admin-server-http", adminServerPort);
       httpsHostHeader = createIngressHostRouting(domainNamespace, domainUid,
-          "admin-server", adminServerSecurePort);
+          "admin-server-https", adminServerSecurePort);
     }
 
     final String resourcePath = "/weblogic/ready";
