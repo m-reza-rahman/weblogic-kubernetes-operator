@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.steps;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -18,15 +19,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
+import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.kubernetes.operator.DomainStatusUpdater;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo.ServerStartupInfo;
-import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
+import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
@@ -132,16 +134,36 @@ public class ManagedServerUpIteratorStep extends Step {
   }
 
   private Fiber.StepAndPacket createManagedServerUpWaiters(Packet packet, ServerStartupInfo ssi) {
-    DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
-    String podName = getPodName(info, ssi.getServerName());
-    return new Fiber.StepAndPacket(Optional.ofNullable(
-        (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME))
-            .map(p -> p.waitForReady(podName, null)).orElse(null),
+    return new Fiber.StepAndPacket(new ManagedPodReadyStep(ssi.getServerName(), null),
             createPacketForServer(packet, ssi));
   }
 
-  private String getPodName(DomainPresenceInfo info, String serverName) {
-    return LegalNames.toPodName(info.getDomainUid(), serverName);
+  static class ManagedPodReadyStep extends Step {
+    private final String serverName;
+
+    ManagedPodReadyStep(String serverName, Step next) {
+      super(next);
+      this.serverName = serverName;
+    }
+    @Override
+    public @Nonnull Result apply(Packet packet) {
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+      WlsDomainConfig domainTopology =
+              (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
+      V1Pod managedPod = info.getServerPod(serverName);
+
+      if (managedPod == null || !isPodReady(managedPod)) {
+        // requeue to wait for managed pod to be ready
+        return new Result(true,
+                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      }
+
+      return doNext(packet);
+    }
+
+    protected boolean isPodReady(V1Pod result) {
+      return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
+    }
   }
 
   private Packet createPacketForServer(Packet packet, ServerStartupInfo ssi) {

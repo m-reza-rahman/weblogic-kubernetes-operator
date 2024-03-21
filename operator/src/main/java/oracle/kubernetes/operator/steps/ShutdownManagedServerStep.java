@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.steps;
 
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -35,6 +36,7 @@ import oracle.kubernetes.operator.http.rest.ScanCache;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
+import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.PortDetails;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -343,9 +345,37 @@ public class ShutdownManagedServerStep extends Step {
     public Result onSuccess(Packet packet, HttpResponse<String> response) {
       LOGGER.fine(MessageKeys.SERVER_SHUTDOWN_REST_SUCCESS, serverName);
       removeShutdownRequestRetryCount(packet);
-      PodAwaiterStepFactory pw = (PodAwaiterStepFactory) packet.get(ProcessingConstants.PODWATCHER_COMPONENT_NAME);
-      return doNext(pw.waitForServerShutdown(serverName, getDomainPresenceInfo(packet).getDomain(), getNext()), packet);
+      return doNext(new PodShutdownStep(serverName, getNext()), packet);
     }
+
+    static class PodShutdownStep extends Step {
+      private final String serverName;
+
+      PodShutdownStep(String serverName, Step next) {
+        super(next);
+        this.serverName = serverName;
+      }
+      @Override
+      public @Nonnull Result apply(Packet packet) {
+        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+        WlsDomainConfig domainTopology =
+                (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
+        V1Pod pod = info.getServerPod(serverName);
+
+        if (pod != null) {
+          // requeue to wait for pod to be deleted and gone
+          return new Result(true,
+                  Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+        }
+
+        return doNext(packet);
+      }
+
+      protected boolean isPodReady(V1Pod result) {
+        return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
+      }
+    }
+
 
     @Override
     public Result onFailure(Packet packet, HttpResponse<String> response) {

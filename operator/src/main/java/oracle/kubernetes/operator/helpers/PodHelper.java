@@ -560,7 +560,7 @@ public class PodHelper {
               (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
       V1Pod adminPod = info.getServerPod(domainTopology.getAdminServerName());
 
-      if (adminPod == null || !isReady(adminPod)) {
+      if (adminPod == null || !isPodReady(adminPod)) {
         // requeue to wait for admin pod to be ready
         return new Result(true,
                 Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
@@ -569,6 +569,9 @@ public class PodHelper {
       return doNext(packet);
     }
 
+    protected boolean isPodReady(V1Pod result) {
+      return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
+    }
   }
 
   static class ManagedPodStepContext extends PodStepContext {
