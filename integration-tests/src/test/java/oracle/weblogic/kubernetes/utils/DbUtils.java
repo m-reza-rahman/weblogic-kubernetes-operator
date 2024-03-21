@@ -1067,11 +1067,11 @@ public class DbUtils {
       List<String> mountOptions = Collections.singletonList("vers=3");
       v1pv.getSpec()
           .storageClassName("oci-fss")
-          .mountOptions(mountOptions)
           .nfs(new V1NFSVolumeSource()
               .path(fssDir)
               .server(NFS_SERVER)
-              .readOnly(false));
+              .readOnly(false))
+          .mountOptions(mountOptions);
     } else {
       v1pv.getSpec()
           .storageClassName("weblogic-domain-storage-class")

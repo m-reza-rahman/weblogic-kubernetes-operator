@@ -151,7 +151,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify the overrideDistributionStrategy applies the overrides accordingly to the value set")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
-@Tag("oke-gate")
+@Tag("oke-parallelnew")
 @IntegrationTest
 @Tag("olcne-mrg")
 class ItConfigDistributionStrategy {

@@ -137,11 +137,11 @@ public class PersistentVolumeUtils {
       List<String> mountOptions = Collections.singletonList("vers=3");
       v1pv.getSpec()
           .storageClassName("oci-fss")
-          .mountOptions(mountOptions)
           .nfs(new V1NFSVolumeSource()
               .path(fssDir)
               .server(NFS_SERVER)
-              .readOnly(false));
+              .readOnly(false))
+          .mountOptions(mountOptions);
       v1pvc.getSpec()
           .storageClassName("oci-fss");
     } else if (OKD) {
@@ -224,11 +224,11 @@ public class PersistentVolumeUtils {
       List<String> mountOptions = Collections.singletonList("vers=3");
       v1pv.getSpec()
               .storageClassName("oci-fss")
-              .mountOptions(mountOptions)
               .nfs(new V1NFSVolumeSource()
                       .path(fssDir)
                       .server(NFS_SERVER)
-                      .readOnly(false));
+                      .readOnly(false))
+              .mountOptions(mountOptions);
     } else if (OKD) {
       v1pv.getSpec()
               .storageClassName("okd-nfsmnt")
