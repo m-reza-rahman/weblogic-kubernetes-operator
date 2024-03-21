@@ -1334,7 +1334,14 @@ public class CommonTestUtils {
    * @return formatted for ipv6
    */
   public static String formatIPv6Host(String hostname) {
-    return hostname.contains(":") ? "[" + hostname + "]" : hostname;
+    if (hostname.contains(":")) {
+      if (hostname.contains("[")) {
+        return hostname;
+      } else {
+        return "[" + hostname + "]";
+      }
+    }
+    return hostname;
   }
 
   /**
