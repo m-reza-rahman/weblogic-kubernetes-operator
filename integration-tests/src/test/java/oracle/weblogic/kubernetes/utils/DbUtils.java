@@ -915,6 +915,7 @@ public class DbUtils {
       int lastIndexOf = dbUrl.lastIndexOf(":");
       dbUrl = "[" + dbUrl.substring(0, lastIndexOf - 1) + "]" + dbUrl.substring(lastIndexOf);
     }
+    logger.info("db connect string {0}", dbUrl);
     return dbUrl;
   }
 
