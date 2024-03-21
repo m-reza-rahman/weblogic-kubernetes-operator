@@ -278,6 +278,9 @@ public abstract class Step {
       return new Result(true, duration);
     }
 
+    if (step == null) {
+      return doEnd(packet);
+    }
     return step.doStepNext(packet);
   }
 

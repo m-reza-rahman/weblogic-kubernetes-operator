@@ -76,6 +76,12 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
   }
 
   @Override
+  public Cancellable schedule(Runnable command, long delay, TimeUnit unit) {
+    ScheduledFuture<?> future = testSupport.schedule(command, delay, unit);
+    return () -> future.cancel(true);
+  }
+
+  @Override
   public Cancellable scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
     ScheduledFuture<?> future = testSupport.scheduleWithFixedDelay(command, initialDelay, delay, unit);
     return () -> future.cancel(true);

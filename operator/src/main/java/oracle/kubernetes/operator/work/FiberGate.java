@@ -125,6 +125,7 @@ public class FiberGate {
         if (existing != null) {
           existing.cancel();
         }
+        scheduledExecutorService.execute(fiber);
       }
     }
   }

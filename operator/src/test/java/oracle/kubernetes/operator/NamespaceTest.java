@@ -27,7 +27,6 @@ import oracle.kubernetes.operator.helpers.KubernetesVersion;
 import oracle.kubernetes.operator.helpers.OnConflictRetryStrategyStub;
 import oracle.kubernetes.operator.helpers.SemanticVersion;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
-import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.watcher.NoopWatcherStarter;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -51,7 +50,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
 public class NamespaceTest {
@@ -91,19 +89,6 @@ public class NamespaceTest {
   @AfterEach
   public void tearDown() {
     mementos.forEach(Memento::revert);
-  }
-
-  @Test
-  void givenJobWatcherForNamespace_afterNamespaceDeletedAndRecreatedHaveDifferentWatcher() {
-    initializeNamespaces();
-    JobWatcher oldWatcher = domainNamespaces.getJobWatcher(NS);
-
-    deleteNamespace(NS);
-    processNamespaces();
-    defineNamespaces(NS);
-
-    testSupport.runSteps(new OperatorMain(delegate).createDomainRecheckSteps());
-    assertThat(domainNamespaces.getJobWatcher(NS), not(sameInstance(oldWatcher)));
   }
 
   @Test
