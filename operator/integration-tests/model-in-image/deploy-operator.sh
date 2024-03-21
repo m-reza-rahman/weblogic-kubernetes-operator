@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+# Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 # Helm uninstall/install an operator that monitors DOMAIN_NAMESPACE.
@@ -61,6 +61,7 @@ helm uninstall $OPER_NAME -n $OPER_NAMESPACE
 set -eu
 cd ${SRCDIR}
 
+echo "DEBUG: Operator image to install: ${OPER_IMAGE}"
 helm install $OPER_NAME kubernetes/charts/weblogic-operator \
   --namespace $OPER_NAMESPACE \
   --set       image="$OPER_IMAGE" \
