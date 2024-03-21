@@ -355,6 +355,7 @@ public class ShutdownManagedServerStep extends Step {
         super(next);
         this.serverName = serverName;
       }
+      
       @Override
       public @Nonnull Result apply(Packet packet) {
         DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);

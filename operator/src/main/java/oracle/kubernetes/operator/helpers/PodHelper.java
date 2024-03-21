@@ -553,6 +553,7 @@ public class PodHelper {
     AdminPodReadyStep(Step next) {
       super(next);
     }
+
     @Override
     public @Nonnull Result apply(Packet packet) {
       DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);

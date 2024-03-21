@@ -11,7 +11,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 
@@ -241,12 +240,12 @@ public abstract class Step {
    * @param unit Delay time unit
    */
   protected static final Result doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
-      try {
-          unit.sleep(delay);
-      } catch (InterruptedException e) {
-          return doTerminate(e, packet);
-      }
-      return step.doStepNext(packet);
+    try {
+      unit.sleep(delay);
+    } catch (InterruptedException e) {
+      return doTerminate(e, packet);
+    }
+    return step.doStepNext(packet);
   }
 
   public final Step getNext() {

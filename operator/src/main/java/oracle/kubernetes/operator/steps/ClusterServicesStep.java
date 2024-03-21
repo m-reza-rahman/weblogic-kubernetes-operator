@@ -6,6 +6,7 @@ package oracle.kubernetes.operator.steps;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.ProcessingConstants;
@@ -16,8 +17,6 @@ import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-
-import javax.annotation.Nonnull;
 
 public class ClusterServicesStep extends Step {
 

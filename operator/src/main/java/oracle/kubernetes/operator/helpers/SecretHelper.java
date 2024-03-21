@@ -4,6 +4,7 @@
 package oracle.kubernetes.operator.helpers;
 
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Secret;
@@ -17,8 +18,6 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-
-import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.common.logging.MessageKeys.SECRET_NOT_FOUND;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;

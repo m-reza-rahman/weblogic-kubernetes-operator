@@ -44,7 +44,8 @@ public final class Fiber implements Runnable {
     this(fromScheduled(scheduledExecutorService), stepline, packet);
   }
 
-  public Fiber(ScheduledExecutorService scheduledExecutorService, Step stepline, Packet packet, CompletionCallback completionCallback) {
+  public Fiber(ScheduledExecutorService scheduledExecutorService,
+               Step stepline, Packet packet, CompletionCallback completionCallback) {
     this(fromScheduled(scheduledExecutorService), stepline, packet, completionCallback);
   }
 

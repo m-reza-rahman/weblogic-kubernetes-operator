@@ -3,13 +3,13 @@
 
 package oracle.kubernetes.operator.steps;
 
+import javax.annotation.Nonnull;
+
 import io.kubernetes.client.common.KubernetesType;
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-
-import javax.annotation.Nonnull;
 
 /**
  * A response step which treats a NOT_FOUND status as success with a null result. On success with

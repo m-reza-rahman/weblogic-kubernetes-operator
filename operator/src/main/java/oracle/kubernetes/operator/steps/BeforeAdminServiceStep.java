@@ -3,14 +3,14 @@
 
 package oracle.kubernetes.operator.steps;
 
+import javax.annotation.Nonnull;
+
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-
-import javax.annotation.Nonnull;
 
 public class BeforeAdminServiceStep extends Step {
   public BeforeAdminServiceStep(Step next) {

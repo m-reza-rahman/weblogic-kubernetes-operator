@@ -5,12 +5,11 @@ package oracle.kubernetes.operator.steps;
 
 import java.util.Collection;
 import java.util.Iterator;
+import javax.annotation.Nonnull;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-
-import javax.annotation.Nonnull;
 
 /**
  * A step which will perform an action on each entry in the specified collection. It does so by chaining back to

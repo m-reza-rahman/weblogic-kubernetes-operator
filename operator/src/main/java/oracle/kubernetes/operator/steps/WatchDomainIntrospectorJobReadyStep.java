@@ -3,17 +3,16 @@
 
 package oracle.kubernetes.operator.steps;
 
-import io.kubernetes.client.extended.controller.reconciler.Result;
-import io.kubernetes.client.openapi.models.V1Job;
-import oracle.kubernetes.operator.tuning.TuningParameters;
-import oracle.kubernetes.operator.watcher.JobWatcher;
-import oracle.kubernetes.operator.ProcessingConstants;
-import oracle.kubernetes.operator.work.Packet;
-import oracle.kubernetes.operator.work.Step;
-
+import java.time.Duration;
 import javax.annotation.Nonnull;
 
-import java.time.Duration;
+import io.kubernetes.client.extended.controller.reconciler.Result;
+import io.kubernetes.client.openapi.models.V1Job;
+import oracle.kubernetes.operator.ProcessingConstants;
+import oracle.kubernetes.operator.tuning.TuningParameters;
+import oracle.kubernetes.operator.watcher.JobWatcher;
+import oracle.kubernetes.operator.work.Packet;
+import oracle.kubernetes.operator.work.Step;
 
 import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveFailuresStep;
 

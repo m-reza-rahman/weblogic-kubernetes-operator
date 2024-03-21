@@ -14,8 +14,6 @@ import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
-import java.time.Duration;
-
 public class ServerDownStep extends Step {
   private final String serverName;
   private final boolean isPreserveServices;

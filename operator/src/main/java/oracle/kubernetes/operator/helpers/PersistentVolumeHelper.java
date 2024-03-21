@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -25,8 +26,6 @@ import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.PersistentVolume;
 import oracle.kubernetes.weblogic.domain.model.PersistentVolumeSpec;
-
-import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.common.logging.MessageKeys.PV_CREATED;
 import static oracle.kubernetes.common.logging.MessageKeys.PV_EXISTS;
