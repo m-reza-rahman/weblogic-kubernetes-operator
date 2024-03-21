@@ -1368,7 +1368,9 @@ class ItConfigDistributionStrategy {
             headers = new HashMap<>();
             headers.put("host", hostHeader);
           }
-
+          if (OKE_CLUSTER_PRIVATEIP) {
+            hostAndPort = getHostAndPortOKE();
+          }
           String url = "http://" + hostAndPort
               + "/clusterview/ClusterViewServlet?user=" + ADMIN_USERNAME_DEFAULT
               + "&password=" + ADMIN_PASSWORD_DEFAULT + "&ipv6=" + ipv6;
