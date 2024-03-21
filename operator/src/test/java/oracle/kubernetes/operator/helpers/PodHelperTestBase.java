@@ -73,7 +73,6 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.LogHomeLayoutType;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.OverrideDistributionStrategy;
-import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
@@ -375,9 +374,6 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
         .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainTopology)
         .addToPacket(SERVER_SCAN, domainTopology.getServerConfig(serverName))
         .addDomainPresenceInfo(domainPresenceInfo);
-    testSupport.addToPacket(
-        ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-        new PassthroughPodAwaiterStepFactory());
 
     definePodTuning();
   }
@@ -2911,56 +2907,6 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
 
   interface PodMutator {
     void mutate(V1Pod pod);
-  }
-
-  public static class PassthroughPodAwaiterStepFactory implements PodAwaiterStepFactory {
-    @Override
-    public Step waitForReady(V1Pod pod, Step next) {
-      return next;
-    }
-
-    @Override
-    public Step waitForReady(String podName, Step next) {
-      return next;
-    }
-
-    @Override
-    public Step waitForDelete(V1Pod pod, Step next) {
-      return next;
-    }
-
-    @Override
-    public Step waitForServerShutdown(String serverName, DomainResource domain, Step next) {
-      return next;
-    }
-  }
-
-  public static class DelayedPodAwaiterStepFactory implements PodAwaiterStepFactory {
-    private final int delaySeconds;
-
-    public DelayedPodAwaiterStepFactory(int delaySeconds) {
-      this.delaySeconds = delaySeconds;
-    }
-
-    @Override
-    public Step waitForReady(V1Pod pod, Step next) {
-      return new DelayStep(next, delaySeconds);
-    }
-
-    @Override
-    public Step waitForReady(String podName, Step next) {
-      return new DelayStep(next, delaySeconds);
-    }
-
-    @Override
-    public Step waitForDelete(V1Pod pod, Step next) {
-      return new DelayStep(next, delaySeconds);
-    }
-
-    @Override
-    public Step waitForServerShutdown(String serverName, DomainResource domain, Step next) {
-      return next;
-    }
   }
 
   private static class DelayStep extends Step {

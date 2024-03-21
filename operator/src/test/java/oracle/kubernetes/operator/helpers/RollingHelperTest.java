@@ -28,7 +28,6 @@ import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.PodHelper.ManagedPodStepContext;
-import oracle.kubernetes.operator.helpers.PodHelperTestBase.PassthroughPodAwaiterStepFactory;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -106,9 +105,6 @@ class RollingHelperTest {
 
     testSupport.defineResources(domain);
     domainTopology = configSupport.createDomainConfig();
-    testSupport.addToPacket(
-        ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-        new PassthroughPodAwaiterStepFactory());
 
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domainEventK8SObjects", domainEventObjects));
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "namespaceEventK8SObjects", nsEventObjects));

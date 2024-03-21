@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+import javax.annotation.Nonnull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,8 +18,6 @@ import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.junit.jupiter.api.Test;
-
-import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadContext;
 import static org.hamcrest.Matchers.allOf;

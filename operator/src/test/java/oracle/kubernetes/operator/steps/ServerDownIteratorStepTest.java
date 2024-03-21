@@ -136,9 +136,6 @@ class ServerDownIteratorStepTest {
     testSupport
             .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig)
             .addDomainPresenceInfo(domainPresenceInfo);
-    testSupport.addToPacket(
-            ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-            new PodHelperTestBase.DelayedPodAwaiterStepFactory(1));
   }
 
   @AfterEach

@@ -27,7 +27,6 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodStatus;
 import io.kubernetes.client.util.Watch;
 import oracle.kubernetes.operator.KubernetesConstants;
-import oracle.kubernetes.operator.watcher.PodWatcher;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ThreadFactoryTestBase;
 import oracle.kubernetes.operator.WatchTuning;
@@ -39,6 +38,7 @@ import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.tuning.FakeWatchTuning;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
+import oracle.kubernetes.operator.watcher.PodWatcher;
 import oracle.kubernetes.operator.watcher.WatchListener;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -192,9 +192,6 @@ class ManagedServerUpIteratorStepTest extends ThreadFactoryTestBase implements W
             .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig)
             .addDomainPresenceInfo(info);
     testSupport.doOnCreate(POD, p -> schedulePodUpdates((V1Pod) p));
-    testSupport.addToPacket(
-            ProcessingConstants.PODWATCHER_COMPONENT_NAME,
-            watcher);
   }
 
   // Invoked when a pod is created to simulate the Kubernetes behavior in which a pod is scheduled on a node

@@ -3,10 +3,10 @@
 
 package oracle.kubernetes.operator.work;
 
-import io.kubernetes.client.extended.controller.reconciler.Result;
-
-import javax.annotation.Nonnull;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.annotation.Nonnull;
+
+import io.kubernetes.client.extended.controller.reconciler.Result;
 
 /** A do-nothing step that can be used as a base for testing. It has no next step. */
 public class TerminalStep extends Step {

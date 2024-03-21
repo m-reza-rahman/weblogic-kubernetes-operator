@@ -114,6 +114,12 @@ public abstract class Watcher<T> {
     thread = starter.startWatcher(factory, this::doWatch);
   }
 
+  /**
+   * Start asynchronous watch.
+   * @param factory Thread factory
+   * @param doWatch Watch runnable
+   * @return the thread
+   */
   public static Thread startAsynchronousWatch(ThreadFactory factory, Runnable doWatch) {
     final Thread thread = factory.newThread(doWatch);
     thread.start();

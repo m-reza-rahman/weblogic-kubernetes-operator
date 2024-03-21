@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 
 import com.meterware.pseudoserver.HttpUserAgentTest;
 import com.meterware.simplestub.Memento;
@@ -35,8 +36,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import javax.annotation.Nonnull;
 
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_HEALTH_MAP;

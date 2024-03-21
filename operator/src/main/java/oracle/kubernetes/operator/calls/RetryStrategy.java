@@ -18,8 +18,7 @@ public interface RetryStrategy {
    * @param conflictStep Conflict step, or null
    * @param packet       Packet
    * @param callResponse Call response
-   * @return Desired next action which should specify retryStep. Return null when call will not be
-   * retried.
+   * @return Desired next action which should specify retryStep. Return null when call will not be retried.
    */
   Result doPotentialRetry(Step conflictStep, Packet packet, KubernetesApiResponse<?> callResponse);
 

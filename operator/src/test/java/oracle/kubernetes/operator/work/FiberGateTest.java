@@ -3,10 +3,10 @@
 
 package oracle.kubernetes.operator.work;
 
+import javax.annotation.Nonnull;
+
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import org.junit.jupiter.api.Test;
-
-import javax.annotation.Nonnull;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -18,7 +18,7 @@ class FiberGateTest {
   private static final String UID2 = "uid2";
 
   private final FiberTestSupport testSupport = new FiberTestSupport();
-  private final FiberGate fiberGate = new FiberGate(testSupport.getEngine());
+  private final FiberGate fiberGate = new FiberGate(testSupport.getScheduledExecutorService());
   private final TerminalStep terminalStep = new TerminalStep();
   private final Step noopStep = new NoopStep();
   private final Packet packet = new Packet();

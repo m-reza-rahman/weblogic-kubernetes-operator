@@ -5,12 +5,15 @@ package oracle.kubernetes.operator.steps;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Job;
+import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
 import javax.annotation.Nonnull;
+
+import java.time.Duration;
 
 import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveFailuresStep;
 
@@ -21,8 +24,8 @@ public class WatchDomainIntrospectorJobReadyStep extends Step {
     V1Job domainIntrospectorJob = (V1Job) packet.get(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB);
 
     if (hasNotCompleted(domainIntrospectorJob)) {
-      JobAwaiterStepFactory jw = (JobAwaiterStepFactory) packet.get(ProcessingConstants.JOBWATCHER_COMPONENT_NAME);
-      return doNext(jw.waitForReady(domainIntrospectorJob, createRemoveFailuresStep(getNext())), packet);
+      return new Result(true,
+              Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
     } else {
       return doNext(createRemoveFailuresStep(getNext()), packet);
     }

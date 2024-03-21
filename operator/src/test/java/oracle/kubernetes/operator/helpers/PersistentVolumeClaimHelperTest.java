@@ -16,7 +16,6 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1Status;
-import oracle.kubernetes.operator.DomainProcessorDelegateStub;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
@@ -51,7 +50,6 @@ import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_CONFLICT;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
-import static oracle.kubernetes.operator.ProcessingConstants.PVCWATCHER_COMPONENT_NAME;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_FAILED;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.PODDISRUPTIONBUDGET;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.PVC;
@@ -101,7 +99,6 @@ class PersistentVolumeClaimHelperTest {
     WlsDomainConfig domainConfig = configSupport.createDomainConfig();
     testSupport
         .addToPacket(DOMAIN_TOPOLOGY, domainConfig)
-        .addToPacket(PVCWATCHER_COMPONENT_NAME, new DomainProcessorDelegateStub.TestPvcAwaiterStepFactory())
         .addDomainPresenceInfo(domainPresenceInfo);
     configureDomain();
   }

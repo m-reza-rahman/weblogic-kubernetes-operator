@@ -40,7 +40,6 @@ import static oracle.kubernetes.operator.logging.LoggingContext.LOGGING_CONTEXT_
 public class FiberTestSupport {
   private final CompletionCallbackStub completionCallback = new CompletionCallbackStub();
   private final ScheduledExecutorStub schedule = ScheduledExecutorStub.create();
-  private final Engine engine = new Engine(schedule);
 
   private Packet packet = new Packet();
 
@@ -55,7 +54,7 @@ public class FiberTestSupport {
 
   /** Creates a single-threaded FiberGate instance. */
   public FiberGate createFiberGate() {
-    return new FiberGate(engine);
+    return new FiberGate(schedule);
   }
 
   /**
@@ -108,15 +107,6 @@ public class FiberTestSupport {
    */
   public int getNumItemsRun() {
     return schedule.getNumItemsRun();
-  }
-
-  /**
-   * Returns the engine used by this support object.
-   *
-   * @return the current engine object
-   */
-  public Engine getEngine() {
-    return engine;
   }
 
   /**
@@ -185,8 +175,8 @@ public class FiberTestSupport {
    * @param step the first step to run
    */
   public Packet runSteps(Packet packet, Step step) {
-    Fiber fiber = engine.createFiber(completionCallback);
-    fiber.start(step, packet);
+    Fiber fiber = new Fiber(schedule, step, packet, completionCallback);
+    fiber.start();
 
     return packet;
   }

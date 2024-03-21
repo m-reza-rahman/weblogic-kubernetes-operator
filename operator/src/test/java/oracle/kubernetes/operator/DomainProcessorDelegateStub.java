@@ -4,32 +4,19 @@
 package oracle.kubernetes.operator;
 
 import java.io.File;
-import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import io.kubernetes.client.extended.controller.reconciler.Result;
-import io.kubernetes.client.openapi.models.V1Job;
-import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
-import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.VersionInfo;
 import oracle.kubernetes.operator.helpers.KubernetesTestSupport;
 import oracle.kubernetes.operator.helpers.KubernetesVersion;
-import oracle.kubernetes.operator.helpers.PodHelper;
-import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.work.Cancellable;
 import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-import oracle.kubernetes.weblogic.domain.model.DomainResource;
-
-import javax.annotation.Nonnull;
 
 import static com.meterware.simplestub.Stub.createStrictStub;
-import static oracle.kubernetes.operator.watcher.JobWatcher.getFailedReason;
-import static oracle.kubernetes.operator.watcher.JobWatcher.isFailed;
-import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
 
 /**
  * A test stub for processing domains in unit tests.
@@ -79,21 +66,6 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
   }
 
   @Override
-  public PodAwaiterStepFactory getPodAwaiterStepFactory(String namespace) {
-    return new PassThroughWithServerShutdownAwaiterStepFactory();
-  }
-
-  @Override
-  public JobAwaiterStepFactory getJobAwaiterStepFactory(String namespace) {
-    return new TestJobAwaiterStepFactory();
-  }
-
-  @Override
-  public PvcAwaiterStepFactory getPvcAwaiterStepFactory() {
-    return new TestPvcAwaiterStepFactory();
-  }
-
-  @Override
   public KubernetesVersion getKubernetesVersion() {
     return TEST_VERSION;
   }
@@ -124,75 +96,4 @@ public abstract class DomainProcessorDelegateStub implements DomainProcessorDele
     return new File("/deployment");
   }
 
-  private static class PassthroughPodAwaiterStepFactory implements PodAwaiterStepFactory {
-    @Override
-    public Step waitForReady(V1Pod pod, Step next) {
-      return next;
-    }
-
-    @Override
-    public Step waitForReady(String podName, Step next) {
-      return next;
-    }
-
-    @Override
-    public Step waitForDelete(V1Pod pod, Step next) {
-      return next;
-    }
-
-    @Override
-    public Step waitForServerShutdown(String serverName, DomainResource domain, Step next) {
-      return next;
-    }
-  }
-
-  private static class PassThroughWithServerShutdownAwaiterStepFactory extends PassthroughPodAwaiterStepFactory {
-    @Override
-    public Step waitForServerShutdown(String serverName, DomainResource domain, Step next) {
-      if (Optional.ofNullable(PodHelper.getServerState(domain, serverName))
-          .map(s -> s.equals(SHUTDOWN_STATE)).orElse(false)) {
-        return next;
-      } else {
-        return new DelayStep(next, 1);
-      }
-    }
-  }
-
-  private static class DelayStep extends Step {
-    private final int delay;
-
-    DelayStep(Step next, int delay) {
-      super(next);
-      this.delay = delay;
-    }
-
-    @Override
-    public @Nonnull Result apply(Packet packet) {
-      return doDelay(getNext(), packet, delay, TimeUnit.SECONDS);
-    }
-  }
-
-  private class TestJobAwaiterStepFactory implements JobAwaiterStepFactory {
-    @Override
-    public Step waitForReady(V1Job job, Step next) {
-      if (isFailed(job) && "DeadlineExceeded".equals(getFailedReason(job))) {
-        return new Step() {
-          @Override
-          public @Nonnull Result apply(Packet packet) {
-            return doTerminate(new JobWatcher.DeadlineExceededException(job), packet);
-          }
-        };
-      } else {
-        waitedForIntrospection = true;
-        return null;
-      }
-    }
-  }
-
-  public static class TestPvcAwaiterStepFactory implements PvcAwaiterStepFactory {
-    @Override
-    public Step waitForReady(V1PersistentVolumeClaim job, Step next) {
-      return next;
-    }
-  }
 }

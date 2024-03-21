@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 import java.util.stream.IntStream;
 
@@ -31,7 +32,6 @@ import oracle.kubernetes.operator.helpers.LegalNames;
 import oracle.kubernetes.operator.helpers.OperatorServiceType;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.watcher.NoopWatcherStarter;
-import oracle.kubernetes.operator.work.Engine;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.FiberGate;
 import oracle.kubernetes.operator.work.FiberTestSupport;
@@ -622,7 +622,7 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
     @NotNull
     private Map<String, FiberGate> createMakeRightFiberGateMap() {
       Map<String, FiberGate> map = new ConcurrentHashMap<>();
-      map.put(NS, new TestFiberGate(testSupport.getEngine()));
+      map.put(NS, new TestFiberGate(testSupport.getScheduledExecutorService()));
       return map;
     }
 
@@ -708,7 +708,8 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
     }
 
     public void setBeingProcessed(String namespace, String domainUid) {
-      getMakeRightFiberGateMap().get(namespace).getCurrentFibers().put(domainUid, new Fiber());
+      getMakeRightFiberGateMap().get(namespace).getCurrentFibers().put(domainUid,
+              new Fiber(testSupport.getScheduledExecutorService(), null, null));
     }
 
     public void clearBeingProcessed(String namespace, String domainUid) {
@@ -718,13 +719,8 @@ class DomainPresenceTest extends ThreadFactoryTestBase {
     static class TestFiberGate extends FiberGate {
       private final Map<String, Fiber> myGateMap = new ConcurrentHashMap<>();
 
-      /**
-       * Constructor taking Engine for running Fibers.
-       *
-       * @param engine Engine
-       */
-      public TestFiberGate(Engine engine) {
-        super(engine);
+      public TestFiberGate(ScheduledExecutorService scheduledExecutorService) {
+        super(scheduledExecutorService);
       }
 
       /**

@@ -53,7 +53,7 @@ class TuningParametersTest {
 
   private TuningParameters getTuningParameters() {
     if (TuningParameters.getInstance() == null) {
-      TuningParameters.initializeInstance(testSupport.getEngine().getExecutor(), mountPointDir);
+      TuningParameters.initializeInstance(testSupport.getScheduledExecutorService(), mountPointDir);
     }
     return TuningParameters.getInstance();
   }

@@ -12,9 +12,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodCondition;
 import io.kubernetes.client.openapi.models.V1PodStatus;
-import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
-import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.TestUtils;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -23,13 +21,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createStub;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.POD;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class PodHelperTest {
@@ -65,15 +61,6 @@ class PodHelperTest {
     mementos.forEach(Memento::revert);
 
     testSupport.throwOnCompletionFailure();
-  }
-
-  @Test
-  void afterAddingFactoryToPacket_canRetrieveIt() {
-    Packet packet = new Packet();
-    PodAwaiterStepFactory factory = createStub(PodAwaiterStepFactory.class);
-    PodHelper.addToPacket(packet, factory);
-
-    assertThat(PodHelper.getPodAwaiterStepFactory(packet), sameInstance(factory));
   }
 
   // --- delete pod ---

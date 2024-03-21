@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,13 +14,16 @@ import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimSpec;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimStatus;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
+import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.calls.RequestBuilder;
 import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
+import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.DomainResource;
@@ -255,6 +259,63 @@ public class PersistentVolumeClaimHelper {
     protected void removePersistentVolumeClaimFromRecord() {
       info.removePersistentVolumeClaim(getPersistentVolumeClaimName());
     }
+  }
+
+  public static Step waitForPvcToBind(String pvcName, Step next) {
+    return new WaitForPvcToBind(pvcName, next);
+  }
+
+  static class WaitForPvcToBind extends Step {
+
+    private final String pvcName;
+
+    WaitForPvcToBind(String pvcName, Step next) {
+      super(next);
+      this.pvcName = pvcName;
+    }
+
+    @Override
+    public Result apply(Packet packet) {
+      DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+      V1PersistentVolumeClaim domainPvc = info.getPersistentVolumeClaim(pvcName);
+
+      if (!isBound(domainPvc)) {
+        return new Result(true,
+                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      }
+
+      return doNext(packet);
+    }
+  }
+
+  /**
+   * Test if PersistentVolumeClaim is bound.
+   * @param pvc PersistentVolumeClaim
+   * @return true, if bound
+   */
+  public static boolean isBound(V1PersistentVolumeClaim pvc) {
+    if (pvc == null) {
+      return false;
+    }
+
+    V1PersistentVolumeClaimStatus status = pvc.getStatus();
+    LOGGER.fine("Status phase of pvc " + getName(pvc) + " is : " + getPhase(status));
+    if (status != null) {
+      String phase = getPhase(status);
+      if (ProcessingConstants.BOUND.equals(phase)) {
+        LOGGER.fine(MessageKeys.PVC_IS_BOUND, getName(pvc));
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static String getPhase(V1PersistentVolumeClaimStatus status) {
+    return Optional.ofNullable(status).map(V1PersistentVolumeClaimStatus::getPhase).orElse(null);
+  }
+
+  private static String getName(V1PersistentVolumeClaim pvc) {
+    return Optional.ofNullable(pvc.getMetadata()).map(V1ObjectMeta::getName).orElse(null);
   }
 
 }

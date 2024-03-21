@@ -50,8 +50,6 @@ import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.common.utils.SchemaConversionUtils;
 import oracle.kubernetes.operator.DomainSourceType;
 import oracle.kubernetes.operator.FluentdUtils;
-import oracle.kubernetes.operator.JobAwaiterStepFactory;
-import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
 import oracle.kubernetes.operator.http.rest.ScanCacheStub;
@@ -59,11 +57,11 @@ import oracle.kubernetes.operator.introspection.IntrospectionTestUtils;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
+import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
 import oracle.kubernetes.operator.work.Packet;
-import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
 import oracle.kubernetes.utils.SystemClock;
 import oracle.kubernetes.utils.SystemClockTestSupport;
@@ -114,7 +112,6 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTION_COMPLETE;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTOR_JOB;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
-import static oracle.kubernetes.operator.ProcessingConstants.JOBWATCHER_COMPONENT_NAME;
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD;
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED;
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER;
@@ -228,20 +225,12 @@ class DomainIntrospectorJobTest extends DomainTestUtils {
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
     testSupport.defineResources(domain);
     testSupport.defineResources(cluster);
-    testSupport.addToPacket(JOBWATCHER_COMPONENT_NAME, new JobAwaiterStepFactoryStub());
 
     TuningParametersStub.setParameter(DOMAIN_PRESENCE_RECHECK_INTERVAL_SECONDS, "2");
   }
 
   private V1Pod getIntrospectorJobPod() {
     return new V1Pod().metadata(new V1ObjectMeta().name(jobPodName));
-  }
-
-  private static class JobAwaiterStepFactoryStub implements JobAwaiterStepFactory {
-    @Override
-    public Step waitForReady(V1Job job, Step next) {
-      return next;
-    }
   }
 
   private String[] getMessageKeys() {

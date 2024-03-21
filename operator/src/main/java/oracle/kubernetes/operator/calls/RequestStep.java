@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import javax.annotation.Nonnull;
 
 import com.google.gson.JsonSyntaxException;
 import io.kubernetes.client.common.KubernetesListObject;
@@ -31,8 +32,6 @@ import io.kubernetes.client.util.generic.options.PatchOptions;
 import io.kubernetes.client.util.generic.options.UpdateOptions;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
-
-import javax.annotation.Nonnull;
 
 /**
  * A Step driven by a call to the Kubernetes API.

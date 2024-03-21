@@ -48,7 +48,6 @@ import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.common.utils.CommonUtils;
 import oracle.kubernetes.operator.DomainSourceType;
-import oracle.kubernetes.operator.JobAwaiterStepFactory;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.ServerStartPolicy;
@@ -80,7 +79,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static com.meterware.simplestub.Stub.createNiceStub;
 import static oracle.kubernetes.common.CommonConstants.COMPATIBILITY_MODE;
 import static oracle.kubernetes.common.CommonConstants.SCRIPTS_MOUNTS_PATH;
 import static oracle.kubernetes.common.CommonConstants.WLS_SHARED;
@@ -95,7 +93,6 @@ import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_DOMAIN_SPE
 import static oracle.kubernetes.operator.ProcessingConstants.DEFAULT_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
 import static oracle.kubernetes.operator.ProcessingConstants.DEFAULT_WLS_OR_RESTRICTED_JRF_INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
-import static oracle.kubernetes.operator.ProcessingConstants.JOBWATCHER_COMPONENT_NAME;
 import static oracle.kubernetes.operator.WebLogicConstants.JRF;
 import static oracle.kubernetes.operator.WebLogicConstants.WLS;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CONFIG_MAP;
@@ -223,8 +220,6 @@ class JobHelperTest extends DomainValidationTestBase {
     domain.getSpec().setNodeName(null);
     testSupport.defineResources(domain);
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
-    testSupport.addToPacket(JOBWATCHER_COMPONENT_NAME,
-          createNiceStub(JobAwaiterStepFactory.class));
   }
 
   @AfterEach
