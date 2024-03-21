@@ -211,7 +211,7 @@ class ItIstioDomainInImage {
     } else {
       istioIngressPort = getIstioHttpIngressPort();
       logger.info("Istio Ingress Port is {0}", istioIngressPort);
-      host = formatIPv6Host(K8S_NODEPORT_HOST);
+      host = K8S_NODEPORT_HOST;
     }
 
     // In internal OKE env, use Istio EXTERNAL-IP;
