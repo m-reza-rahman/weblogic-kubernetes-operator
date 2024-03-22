@@ -1486,14 +1486,6 @@ public abstract class PodStepContext extends BasePodStepContext {
         setRecordedPod(pod);
       }
 
-      boolean waitForPodReady =
-          (boolean) Optional.ofNullable(packet.get(ProcessingConstants.WAIT_FOR_POD_READY)).orElse(false);
-
-      if (waitForPodReady && (pod == null || !isPodReady(pod))) {
-        // requeue to wait for the pod to be ready
-        return new Result(true,
-                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
-      }
       return doNext(packet);
     }
 
