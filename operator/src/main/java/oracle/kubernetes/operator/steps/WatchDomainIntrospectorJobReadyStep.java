@@ -31,6 +31,8 @@ public class WatchDomainIntrospectorJobReadyStep extends Step {
   }
 
   private boolean hasNotCompleted(V1Job domainIntrospectorJob) {
-    return domainIntrospectorJob != null && !JobWatcher.isComplete(domainIntrospectorJob);
+    return domainIntrospectorJob != null
+            && !JobWatcher.isComplete(domainIntrospectorJob)
+            && !JobWatcher.isFailed(domainIntrospectorJob);
   }
 }

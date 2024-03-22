@@ -1464,8 +1464,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> deleteResource(DataRepository<T> dataRepository) {
-      dataRepository.sendDeleteCallback(requestName, requestNamespace, gracePeriodSeconds);
       try {
+        dataRepository.sendDeleteCallback(requestName, requestNamespace, gracePeriodSeconds);
         return new KubernetesApiResponse<>(dataRepository.deleteResource(requestName, requestNamespace));
       } catch (NotFoundException nfe) {
         return new KubernetesApiResponse<>(new V1Status().message(nfe.getMessage()), HttpURLConnection.HTTP_NOT_FOUND);
