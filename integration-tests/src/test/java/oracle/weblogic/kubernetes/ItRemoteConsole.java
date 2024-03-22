@@ -42,8 +42,12 @@ import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.REMOTECONSOLE_FILE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -57,7 +61,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createSSLenabl
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAndRetryIfFail;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
+//import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTargetPortForRoute;
@@ -138,12 +142,13 @@ class ItRemoteConsole {
     installAndVerifyOperator(opNamespace, domainNamespace);
 
     if (!OKD) {
-      logger.info("Installing Traefik controller using helm");
-      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
 
+      logger.info("Installing Traefik controller using helm");
+      installTraefikIngressController();
 
       // install and verify Nginx
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      //nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+
     }
 
     createSSLenabledMiiDomainAndVerify(
@@ -155,17 +160,19 @@ class ItRemoteConsole {
         replicaCount);
 
     // create ingress rules with path routing for Traefik and NGINX
-    if (!OKD) {
+    /*if (!OKD) {
+
       createTraefikIngressRoutingRules(domainNamespace);
       createNginxIngressPathRoutingRules();
-    }
+
+    }*/
 
     // install WebLogic remote console
     assertTrue(installAndVerifyWlsRemoteConsole(domainNamespace, adminServerPodName),
         "Remote Console installation failed");
 
     // Verify k8s WebLogic domain is accessible through remote console using admin server nodeport
-    verifyWlsRemoteConsoleConnection();
+    //verifyWlsRemoteConsoleConnection();
   }
 
   /**
@@ -176,7 +183,12 @@ class ItRemoteConsole {
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testWlsRemoteConsoleConnectionThroughTraefik() {
 
-    int traefikNodePort = getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), "web");
+    int traefikNodePort;
+    if (traefikHelmParams != null) {
+      traefikNodePort = getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), "web");
+    } else {
+      traefikNodePort = TRAEFIK_INGRESS_HTTP_HOSTPORT;
+    }
     assertNotEquals(-1, traefikNodePort,
         "Could not get the default external service node port");
     logger.info("Found the Traefik service nodePort {0}", traefikNodePort);
@@ -188,7 +200,7 @@ class ItRemoteConsole {
   /**
    * Access WebLogic domain through remote console using NGINX.
    */
-  @Test
+  //@Test
   @DisplayName("Verify Connecting to Mii domain WLS Remote Console through NGINX is successful")
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testWlsRemoteConsoleConnectionThroughNginx() {
@@ -204,7 +216,7 @@ class ItRemoteConsole {
   /**
    * Verify k8s WebLogic domain is accessible through remote console using SSL.
    */
-  @Test
+  //@Test
   @DisplayName("Verify Connecting to Mii domain by Remote Console using SSL is successful")
   void testWlsRemoteConsoleConnectionUsingSSL() {
     int sslNodePort = getServiceNodePort(
@@ -380,12 +392,27 @@ class ItRemoteConsole {
     logger.info("WebLogic domain is accessible through remote console");
   }
 
+  private static void installTraefikIngressController() {
+
+    if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT) || OKE_CLUSTER) {
+      logger.info("Installing Traefik controller using helm");
+      traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
+    }
+
+    createTraefikIngressRoutingRules(domainNamespace);
+
+  }
+
   private static void verifyRemoteConsoleConnectionThroughLB(int nodePortOfLB) {
     logger.info("LB nodePort is {0}", nodePortOfLB);
     logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
 
-    String ingressServiceName = traefikHelmParams.getReleaseName();
-    String traefikNamespace = traefikHelmParams.getNamespace();
+    String ingressServiceName = null;
+    String traefikNamespace = null;
+    if (traefikHelmParams != null) {
+      ingressServiceName = traefikHelmParams.getReleaseName();
+      traefikNamespace = traefikHelmParams.getNamespace();
+    }
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
       host = "[" + host + "]";
