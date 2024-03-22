@@ -26,43 +26,7 @@ import com.meterware.simplestub.StaticStubSupport;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.CoreV1Event;
-import io.kubernetes.client.openapi.models.V1Affinity;
-import io.kubernetes.client.openapi.models.V1ConfigMapEnvSource;
-import io.kubernetes.client.openapi.models.V1ConfigMapKeySelector;
-import io.kubernetes.client.openapi.models.V1Container;
-import io.kubernetes.client.openapi.models.V1ContainerPort;
-import io.kubernetes.client.openapi.models.V1EmptyDirVolumeSource;
-import io.kubernetes.client.openapi.models.V1EnvFromSource;
-import io.kubernetes.client.openapi.models.V1EnvVar;
-import io.kubernetes.client.openapi.models.V1EnvVarSource;
-import io.kubernetes.client.openapi.models.V1ExecAction;
-import io.kubernetes.client.openapi.models.V1HTTPGetAction;
-import io.kubernetes.client.openapi.models.V1HostAlias;
-import io.kubernetes.client.openapi.models.V1LabelSelector;
-import io.kubernetes.client.openapi.models.V1LabelSelectorRequirement;
-import io.kubernetes.client.openapi.models.V1Lifecycle;
-import io.kubernetes.client.openapi.models.V1LifecycleHandler;
-import io.kubernetes.client.openapi.models.V1LocalObjectReference;
-import io.kubernetes.client.openapi.models.V1ObjectFieldSelector;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.openapi.models.V1OwnerReference;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodAffinity;
-import io.kubernetes.client.openapi.models.V1PodAffinityTerm;
-import io.kubernetes.client.openapi.models.V1PodAntiAffinity;
-import io.kubernetes.client.openapi.models.V1PodSecurityContext;
-import io.kubernetes.client.openapi.models.V1PodSpec;
-import io.kubernetes.client.openapi.models.V1Probe;
-import io.kubernetes.client.openapi.models.V1ResourceRequirements;
-import io.kubernetes.client.openapi.models.V1SecretKeySelector;
-import io.kubernetes.client.openapi.models.V1SecurityContext;
-import io.kubernetes.client.openapi.models.V1Status;
-import io.kubernetes.client.openapi.models.V1Toleration;
-import io.kubernetes.client.openapi.models.V1TopologySpreadConstraint;
-import io.kubernetes.client.openapi.models.V1Volume;
-import io.kubernetes.client.openapi.models.V1VolumeMount;
-import io.kubernetes.client.openapi.models.V1WeightedPodAffinityTerm;
+import io.kubernetes.client.openapi.models.*;
 import io.kubernetes.client.util.Yaml;
 import oracle.kubernetes.common.helpers.AuxiliaryImageEnvVars;
 import oracle.kubernetes.common.utils.SchemaConversionUtils;
@@ -115,6 +79,7 @@ import static oracle.kubernetes.common.helpers.AuxiliaryImageEnvVars.AUXILIARY_I
 import static oracle.kubernetes.common.logging.MessageKeys.KUBERNETES_EVENT_ERROR;
 import static oracle.kubernetes.common.utils.LogMatcher.containsFine;
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
+import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainStatusMatcher.hasStatus;
 import static oracle.kubernetes.operator.EventConstants.DOMAIN_FAILED_EVENT;
 import static oracle.kubernetes.operator.EventTestUtils.containsEventWithNamespace;
@@ -376,6 +341,23 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
         .addDomainPresenceInfo(domainPresenceInfo);
 
     definePodTuning();
+    testSupport.doOnCreate(KubernetesTestSupport.POD, p -> setPodReady((V1Pod) p));
+    testSupport.doOnDelete(KubernetesTestSupport.POD, this::preDelete);
+  }
+
+  private void setPodReady(V1Pod pod) {
+    pod.status(createPodReadyStatus());
+  }
+
+  private V1PodStatus createPodReadyStatus() {
+    return new V1PodStatus()
+            .phase("Running")
+            .addConditionsItem(new V1PodCondition().status("True").type("Ready"));
+  }
+
+  private void preDelete(KubernetesTestSupport.DeletionContext context) {
+    testSupport.deleteResources(
+            new V1Pod().metadata(new V1ObjectMeta().name(context.name()).namespace(context.namespace())));
   }
 
   private Memento setProductVersion(String productVersion) throws NoSuchFieldException {

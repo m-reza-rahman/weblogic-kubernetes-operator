@@ -580,7 +580,7 @@ class PodPresenceTest {
         .map(createdPodNames::add);
   }
 
-  private void recordPodDeletion(Long value) {
+  private void recordPodDeletion(KubernetesTestSupport.DeletionContext context) {
     numPodsDeleted++;
   }
 

@@ -17,6 +17,9 @@ import com.google.gson.Gson;
 import com.meterware.simplestub.Memento;
 import com.meterware.simplestub.StaticStubSupport;
 import com.meterware.simplestub.Stub;
+import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodCondition;
+import io.kubernetes.client.openapi.models.V1PodStatus;
 import oracle.kubernetes.operator.DomainNamespaces;
 import oracle.kubernetes.operator.DomainProcessorDelegateStub;
 import oracle.kubernetes.operator.DomainProcessorTestSetup;
@@ -114,6 +117,17 @@ class FailureReportingTest {
 
     DomainProcessorTestSetup.defineRequiredResources(testSupport);
     steps = makeRight.createSteps();
+    testSupport.doOnCreate(KubernetesTestSupport.POD, p -> setPodReady((V1Pod) p));
+  }
+
+  private void setPodReady(V1Pod pod) {
+    pod.status(createPodReadyStatus());
+  }
+
+  private V1PodStatus createPodReadyStatus() {
+    return new V1PodStatus()
+            .phase("Running")
+            .addConditionsItem(new V1PodCondition().status("True").type("Ready"));
   }
 
   private void defineDomainTopology() {

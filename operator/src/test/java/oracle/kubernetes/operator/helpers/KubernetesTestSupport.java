@@ -402,10 +402,13 @@ public class KubernetesTestSupport extends FiberTestSupport {
     selectRepository(resourceType).addUpdateAction(consumer);
   }
 
-  public void doOnDelete(String resourceType, Consumer<Long> consumer) {
+  public void doOnDelete(String resourceType, Consumer<DeletionContext> consumer) {
     selectRepository(resourceType).addDeleteAction(consumer);
   }
 
+  public record DeletionContext(String name, String namespace, Long gracePeriodSeconds) {
+
+  }
 
   /**
    * Specifies that a read operation should fail if it matches the specified conditions. Applies to
@@ -896,7 +899,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     private final Map<String, List<T>> continuations = new HashMap<>();
     protected List<Consumer<T>> onCreateActions = new ArrayList<>();
     private List<Consumer<T>> onUpdateActions = new ArrayList<>();
-    private List<Consumer<Long>> onDeleteActions = new ArrayList<>();
+    private List<Consumer<DeletionContext>> onDeleteActions = new ArrayList<>();
     private Method getStatusMethod;
     private Method setStatusMethod;
 
@@ -1204,12 +1207,12 @@ public class KubernetesTestSupport extends FiberTestSupport {
       onUpdateActions.add((Consumer<T>) consumer);
     }
 
-    void addDeleteAction(Consumer<Long> consumer) {
+    void addDeleteAction(Consumer<DeletionContext> consumer) {
       onDeleteActions.add(consumer);
     }
 
-    public void sendDeleteCallback(Long gracePeriodSeconds) {
-      onDeleteActions.forEach(a -> a.accept(gracePeriodSeconds));
+    public void sendDeleteCallback(String name, String namespace, Long gracePeriodSeconds) {
+      onDeleteActions.forEach(a -> a.accept(new DeletionContext(name, namespace, gracePeriodSeconds)));
     }
 
     static class FieldMatcher {
@@ -1461,7 +1464,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> deleteResource(DataRepository<T> dataRepository) {
-      dataRepository.sendDeleteCallback(gracePeriodSeconds);
+      dataRepository.sendDeleteCallback(requestName, requestNamespace, gracePeriodSeconds);
       try {
         return new KubernetesApiResponse<>(dataRepository.deleteResource(requestName, requestNamespace));
       } catch (NotFoundException nfe) {

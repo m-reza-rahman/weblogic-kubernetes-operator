@@ -130,8 +130,8 @@ class StuckPodTest {
     assertThat(gracePeriodSeconds, equalTo(0L));
   }
 
-  private void recordGracePeriodSeconds(Long gracePeriodSeconds) {
-    this.gracePeriodSeconds = gracePeriodSeconds;
+  private void recordGracePeriodSeconds(KubernetesTestSupport.DeletionContext context) {
+    this.gracePeriodSeconds = context.gracePeriodSeconds();
   }
 
   @Test

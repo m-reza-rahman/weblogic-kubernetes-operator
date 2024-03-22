@@ -1480,14 +1480,25 @@ public abstract class PodStepContext extends BasePodStepContext {
     @Override
     public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       logPodCreated();
-      if (callResponse.getObject() != null) {
+      V1Pod pod = callResponse.getObject();
+      if (pod != null) {
         info.updateLastKnownServerStatus(getServerName(), WebLogicConstants.STARTING_STATE);
-        setRecordedPod(callResponse.getObject());
+        setRecordedPod(pod);
       }
 
-      // requeue to wait for the pod to be ready
-      return new Result(true,
-              Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      boolean waitForPodReady =
+          (boolean) Optional.ofNullable(packet.get(ProcessingConstants.WAIT_FOR_POD_READY)).orElse(false);
+
+      if (waitForPodReady && (pod == null || !isPodReady(pod))) {
+        // requeue to wait for the pod to be ready
+        return new Result(true,
+                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      }
+      return doNext(packet);
+    }
+
+    protected boolean isPodReady(V1Pod result) {
+      return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
     }
   }
 
@@ -1507,7 +1518,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     @Override
     public Result onFailure(Packet packet, KubernetesApiResponse<V1Pod> callResponses) {
       if (callResponses.getHttpStatusCode() == HTTP_NOT_FOUND) {
-        return doNext(replacePod(getNext()), packet);
+        return onSuccess(packet, callResponses);
       }
       return super.onFailure(getConflictStep(), packet, callResponses);
     }
@@ -1528,6 +1539,10 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     @Override
     public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponses) {
+      if (callResponses.getHttpStatusCode() == HTTP_NOT_FOUND) {
+        return doNext(replacePod(getNext()), packet);
+      }
+
       // requeue to wait for the pod to be deleted
       return new Result(true,
               Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
@@ -1551,9 +1566,18 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     @Override
     public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
-      // requeue to wait for pod ready
-      return new Result(true,
-              Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      V1Pod pod = callResponse.getObject();
+      if (pod == null || !isPodReady(pod)) {
+        // requeue to wait for the pod to be ready
+        return new Result(true,
+                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      }
+      processResponse(callResponse);
+      return doNext(packet);
+    }
+
+    protected boolean isPodReady(V1Pod result) {
+      return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
     }
   }
 
