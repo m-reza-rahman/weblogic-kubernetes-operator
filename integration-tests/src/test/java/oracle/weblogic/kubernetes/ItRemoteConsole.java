@@ -37,6 +37,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
@@ -183,12 +184,16 @@ class ItRemoteConsole {
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testWlsRemoteConsoleConnectionThroughTraefik() {
 
-    int traefikNodePort;
+    int traefikNodePort = -1;
     if (traefikHelmParams != null) {
+      logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
       traefikNodePort = getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), "web");
-    } else {
+    } else if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      logger.info("Getting node port for Traefik loadbalancer from init installation");
       traefikNodePort = TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      logger.info("Got node port {0} for Traefik loadbalancer", TRAEFIK_INGRESS_HTTP_HOSTPORT);
     }
+
     assertNotEquals(-1, traefikNodePort,
         "Could not get the default external service node port");
     logger.info("Found the Traefik service nodePort {0}", traefikNodePort);
@@ -407,18 +412,23 @@ class ItRemoteConsole {
     logger.info("LB nodePort is {0}", nodePortOfLB);
     logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
 
+    String host = K8S_NODEPORT_HOST;
+    String hostAndPort = null;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
     String ingressServiceName = null;
     String traefikNamespace = null;
     if (traefikHelmParams != null) {
       ingressServiceName = traefikHelmParams.getReleaseName();
       traefikNamespace = traefikHelmParams.getNamespace();
+      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : host + ":" + nodePortOfLB;
+    } else {
+      logger.info("traefikHelmParams is null");
+      hostAndPort = host + ":" + nodePortOfLB;
     }
-    String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
-    String hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : host + ":" + nodePortOfLB;
+    logger.info("For Traefik loadbalancer hostAndPort is {0}", hostAndPort);
 
     String curlCmd = "curl -g -v --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " http://localhost:8012/api/providers/AdminServerConnection -H "
