@@ -223,7 +223,15 @@ class ItConfigDistributionStrategy {
 
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domainNamespace);
+    ingressIP = K8S_NODEPORT_HOST;
+    if (OKE_CLUSTER_PRIVATEIP) {
+      // install and verify NGINX
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
 
+    }
     // create pull secrets for WebLogic image when running in non Kind Kubernetes cluster
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(domainNamespace);
@@ -250,15 +258,6 @@ class ItConfigDistributionStrategy {
         null, null, "dist", domainNamespace);
     clusterViewAppPath = Paths.get(distDir.toString(), "clusterview.war");
     assertTrue(clusterViewAppPath.toFile().exists(), "Application archive is not available");
-
-    if (OKE_CLUSTER_PRIVATEIP) {
-      // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
-
-    }
 
     //create and start WebLogic domain
     createDomain();
