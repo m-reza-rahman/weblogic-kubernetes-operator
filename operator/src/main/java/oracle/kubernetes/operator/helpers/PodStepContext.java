@@ -1532,6 +1532,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     @Override
     public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponses) {
       if (callResponses.getHttpStatusCode() == HTTP_NOT_FOUND) {
+        setRecordedPod(null);
         return doNext(replacePod(getNext()), packet);
       }
 

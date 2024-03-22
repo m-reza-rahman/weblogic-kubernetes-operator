@@ -50,6 +50,7 @@ import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
 
 import static oracle.kubernetes.operator.KubernetesConstants.EVICTED_REASON;
+import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.SERVERNAME_LABEL;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVERS_TO_ROLL;
@@ -855,7 +856,17 @@ public class PodHelper {
       });
 
       DeleteOptions deleteOptions = (DeleteOptions) new DeleteOptions().gracePeriodSeconds(gracePeriodSeconds);
-      return RequestBuilder.POD.delete(namespace, name, deleteOptions, new DefaultResponseStep<>(conflictStep, next));
+      return RequestBuilder.POD.delete(
+              namespace, name, deleteOptions, new DefaultResponseStep<V1Pod>(conflictStep, next) {
+        public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+          if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
+            DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+            info.setServerPod(serverName, null);
+          }
+          return doNext(packet);
+        }
+
+      });
     }
   }
 }
