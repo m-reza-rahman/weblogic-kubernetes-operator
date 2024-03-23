@@ -188,6 +188,7 @@ public class K8sEvents {
             && event.getMessage().contains(failureReason)) {
           logger.info(Yaml.dump(event));
           if (!verifyOperatorDetails(event, opNamespace, domainUid)) {
+            logger.info("verifyOperatorDetails failed");
             return false;
           }
           //verify type
@@ -223,6 +224,7 @@ public class K8sEvents {
         if (isDomainEvent(domainUid, event) && reason.equals(event.getReason()) && isEqualOrAfter(timestamp, event)) {
           logger.info(Yaml.dump(event));
           if (!verifyOperatorDetails(event, opNamespace, domainUid)) {
+            logger.info("verifyOperatorDetails failed");
             return false;
           }
           //verify type
@@ -299,6 +301,7 @@ public class K8sEvents {
                   && event.getReason().equals(reason) && (isEqualOrAfter(timestamp, event))) {
             logger.info(Yaml.dump(event));
             if (!verifyOperatorDetails(event, opNamespace, domainUid)) {
+              logger.info("verifyOperatorDetails failed");
               return false;
             }
             //verify type
@@ -529,6 +532,13 @@ public class K8sEvents {
     logger.info("Verifying operator details");
     String operatorPodName = TestActions.getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace);
     //verify DOMAIN_API_VERSION
+    if (domainUid != null && event.getInvolvedObject().getKind().equals("Domain")) {
+      if (!event.getInvolvedObject().getApiVersion().equals(DOMAIN_API_VERSION)) {
+        logger.info("Expected " + DOMAIN_API_VERSION + " , Got " + event.getInvolvedObject().getApiVersion());
+        return false;
+      }
+    }
+
     if (domainUid == null || !event.getInvolvedObject().getKind().equals("Domain")
         || !event.getInvolvedObject().getApiVersion().equals(DOMAIN_API_VERSION)) {
       return false;
@@ -550,9 +560,10 @@ public class K8sEvents {
     }
 
     //verify the domainUID matches
-    if (domainUid == null || !labels.containsKey("weblogic.domainUID")
-        || !labels.get("weblogic.domainUID").equals(domainUid)) {
-      return false;
+    if (domainUid != null) {
+      if (!labels.containsKey("weblogic.domainUID") || !labels.get("weblogic.domainUID").equals(domainUid)) {
+        return false;
+      }
     }
     return true;
   }
