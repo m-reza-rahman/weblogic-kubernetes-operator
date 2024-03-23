@@ -539,29 +539,29 @@ public class K8sEvents {
       }
     }
 
-    if (domainUid == null || !event.getInvolvedObject().getKind().equals("Domain")
-        || !event.getInvolvedObject().getApiVersion().equals(DOMAIN_API_VERSION)) {
-      return false;
-    }
     //verify reporting component to be operator release
     if (!event.getReportingComponent().equals("weblogic.operator")) {
+      logger.info("Expected reporting component as weblogic.operator, Got: " + event.getReportingComponent());
       return false;
     }
 
     //verify reporting instance to be operator instance
     if (!event.getReportingInstance().equals(operatorPodName)) {
+      logger.info("Expect reporting instance as " + operatorPodName + ", Got" + event.getReportingInstance());
       return false;
     }
 
     //verify the event was created by operator
     Map<String, String> labels = event.getMetadata().getLabels();
     if (!labels.containsKey("weblogic.createdByOperator") || !labels.get("weblogic.createdByOperator").equals("true")) {
+      logger.info("labels do not contain key weblogic.createdByOperator or weblogic.createdByOperator is not true");
       return false;
     }
 
     //verify the domainUID matches
     if (domainUid != null) {
       if (!labels.containsKey("weblogic.domainUID") || !labels.get("weblogic.domainUID").equals(domainUid)) {
+        logger.info("labels do not contain key weblogic.domainUID or weblogic.domainUID is not " + domainUid);
         return false;
       }
     }
