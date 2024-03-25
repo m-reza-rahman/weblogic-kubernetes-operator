@@ -20,11 +20,11 @@ def create_domain():
   set('Name', domain_name)
   setOption('DomainName', domain_name)
 
-  #print('Configuring the Administration Server')
+  print('Configuring the Administration Server')
   cd('/Servers/AdminServer')
-  #set('ListenPort', int(admin_server_port))
+  set('ListenPort', int(admin_server_port))
   set('Name', admin_server_name)
-  #set('WeblogicPluginEnabled', true)
+  set('WeblogicPluginEnabled', true)
 
   print('Configuring network access point')
   create('T3Channel', 'NetworkAccessPoint')
@@ -59,12 +59,12 @@ def create_domain():
 
   template_channel_name = "ms-nap"
   print('Creating server template NAP: %s' % cluster_name + "-NAP")
-  #create(template_channel_name, 'NetworkAccessPoint')
-  #cd('NetworkAccessPoints/%s' % template_channel_name)
+  create(template_channel_name, 'NetworkAccessPoint')
+  cd('NetworkAccessPoints/%s' % template_channel_name)
   #set('PublicPort', int(managed_server_port) + 10)
-  #set('ListenPort', int(managed_server_port) + 10)
-  #print('Done creating server template NAP: %s' % cluster_name + "-NAP")
-  #print('Done setting attributes for server template: %s' % template_name);
+  set('ListenPort', int(managed_server_port) + 10)
+  print('Done creating server template NAP: %s' % cluster_name + "-NAP")
+  print('Done setting attributes for server template: %s' % template_name);
 
   cd('/Clusters/%s' % cluster_name)
   set('WeblogicPluginEnabled', true)
