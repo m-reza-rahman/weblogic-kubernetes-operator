@@ -39,7 +39,6 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
@@ -63,9 +62,10 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.deleteClusterCustomR
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
-import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
+import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainResourceOnPv;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.deleteDomainResource;
@@ -95,6 +95,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("kind-parallel")
 @Tag("oke-sequential1")
 @Tag("okd-fmw-cert")
+@Tag("olcne-sequential")
 class ItFmwDomainOnPV {
 
   private static String domainNamespace = null;
@@ -128,8 +129,6 @@ class ItFmwDomainOnPV {
     logger.info("Assign a unique namespace for DB");
     assertNotNull(namespaces.get(0), "Namespace is null");
     dbNamespace = namespaces.get(0);
-    final int dbListenerPort = getNextFreePort();
-    dbUrl = ORACLEDBURLPREFIX + dbNamespace + ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
 
     // get a new unique opNamespace
     logger.info("Assign a unique namespace for operator");
@@ -143,12 +142,12 @@ class ItFmwDomainOnPV {
 
     DOMAINHOMEPREFIX = "/shared/" + domainNamespace + "/domains/";
 
-    // start DB
-    logger.info("Start DB in namespace: {0}, dbListenerPort: {1}, dbUrl: {2}, dbImage: {3}",
-        dbNamespace, dbListenerPort, dbUrl, DB_IMAGE_TO_USE_IN_SPEC);
-    assertDoesNotThrow(() -> startOracleDB(DB_IMAGE_TO_USE_IN_SPEC, getNextFreePort(), dbNamespace, dbListenerPort),
-        String.format("Failed to start Oracle DB in the namespace %s with dbUrl %s, dbListenerPost %s",
-            dbNamespace, dbUrl, dbListenerPort));
+    //install Oracle Database Operator
+    String dbName = "fmwdomainonpv1" + "my-oracle-db";
+    assertDoesNotThrow(() -> installDBOperator(dbNamespace), "Failed to install database operator");
+
+    logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
+    dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
 
     // install operator and verify its running in ready state
     HelmParams opHelmParams =
@@ -168,7 +167,6 @@ class ItFmwDomainOnPV {
    * Create a basic FMW domain on PV.
    * Operator will create PV/PVC/RCU/Domain.
    * Verify Pod is ready and service exists for both admin server and managed servers.
-   * Update the base image in the domain spec, verify the domain is rolling-restarted.
    */
   @Test
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
@@ -254,42 +252,6 @@ class ItFmwDomainOnPV {
       // verify that all servers are ready
       verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
 
-      // get the map with server pods and their original creation timestamps
-      String adminServerPodName = domainUid + "-admin-server";
-      String managedServerPodNamePrefix = domainUid + "-managed-server";
-      Map<String, OffsetDateTime> podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace,
-          adminServerPodName, managedServerPodNamePrefix, replicaCount);
-
-      // update the domain with new base image
-      int index = FMWINFRA_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":");
-      String newImage;
-      if (OCNE) {
-        newImage = BASE_IMAGES_PREFIX + "fmw-infrastructure1:newtag";
-      } else {
-        newImage = FMWINFRA_IMAGE_TO_USE_IN_SPEC.substring(0, index) + ":newtag";
-      }
-      testUntil(
-          tagImageAndPushIfNeeded(FMWINFRA_IMAGE_TO_USE_IN_SPEC, newImage),
-          logger,
-          "tagImageAndPushIfNeeded for image {0} to be successful",
-          newImage);
-
-      logger.info("patch the domain resource with new image {0}", newImage);
-      String patchStr
-          = "["
-          + "{\"op\": \"replace\", \"path\": \"/spec/image\", "
-          + "\"value\": \"" + newImage + "\"}"
-          + "]";
-      logger.info("Updating domain configuration using patch string: {0}\n", patchStr);
-      V1Patch patch = new V1Patch(patchStr);
-      assertTrue(patchDomainCustomResource(domainUid, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
-          "Failed to patch domain");
-
-      // verify the server pods are rolling restarted and back to ready state
-      logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
-          domainUid, domainNamespace);
-      assertTrue(verifyRollingRestartOccurred(podsWithTimeStamps, 1, domainNamespace),
-          String.format("Rolling restart failed for domain %s in namespace %s", domainUid, domainNamespace));
     } finally {
       // delete the domain
       deleteDomainResource(domainNamespace, domainUid);
@@ -304,6 +266,7 @@ class ItFmwDomainOnPV {
    * Create a basic FMW domain on PV.
    * User creates PV/PVC, operator creates RCU and domain.
    * Verify Pod is ready and service exists for both admin server and managed servers.
+   * Update the base image in the domain spec, verify the domain is rolling-restarted.
    */
   @Test
   @DisplayName("Create a FMW domain on PV. User creates PV/PVC and operator creates RCU and domain")
@@ -384,6 +347,8 @@ class ItFmwDomainOnPV {
 
       // verify that all servers are ready
       verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
+
+      verifyRollingRestartWithImageChg(domainUid, domainNamespace);
     } finally {
       // delete the domain
       deleteDomainResource(domainNamespace, domainUid);
@@ -819,5 +784,44 @@ class ItFmwDomainOnPV {
       imageRepoLoginAndPushImageToRegistry(taggedImage);
       return result;
     });
+  }
+
+  private void verifyRollingRestartWithImageChg(String domainUid, String domainNamespace) {
+    // get the map with server pods and their original creation timestamps
+    String adminServerPodName = domainUid + "-admin-server";
+    String managedServerPodNamePrefix = domainUid + "-managed-server";
+    Map<String, OffsetDateTime> podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace,
+        adminServerPodName, managedServerPodNamePrefix, replicaCount);
+
+    // update the domain with new base image
+    int index = FMWINFRA_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":");
+    String newImage;
+    if (OCNE) {
+      newImage = BASE_IMAGES_PREFIX + "fmw-infrastructure1:newtag";
+    } else {
+      newImage = FMWINFRA_IMAGE_TO_USE_IN_SPEC.substring(0, index) + ":newtag";
+    }
+    testUntil(
+        tagImageAndPushIfNeeded(FMWINFRA_IMAGE_TO_USE_IN_SPEC, newImage),
+          logger,
+          "tagImageAndPushIfNeeded for image {0} to be successful",
+          newImage);
+
+    logger.info("patch the domain resource with new image {0}", newImage);
+    String patchStr
+          = "["
+          + "{\"op\": \"replace\", \"path\": \"/spec/image\", "
+          + "\"value\": \"" + newImage + "\"}"
+          + "]";
+    logger.info("Updating domain configuration using patch string: {0}\n", patchStr);
+    V1Patch patch = new V1Patch(patchStr);
+    assertTrue(patchDomainCustomResource(domainUid, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
+          "Failed to patch domain");
+
+    // verify the server pods are rolling restarted and back to ready state
+    logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
+        domainUid, domainNamespace);
+    assertTrue(verifyRollingRestartOccurred(podsWithTimeStamps, 1, domainNamespace),
+        String.format("Rolling restart failed for domain %s in namespace %s", domainUid, domainNamespace));
   }
 }
