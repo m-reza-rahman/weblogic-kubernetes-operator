@@ -13,6 +13,7 @@ import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1Deployment;
 import io.kubernetes.client.openapi.models.V1Ingress;
 import io.kubernetes.client.openapi.models.V1Job;
+import io.kubernetes.client.openapi.models.V1JobList;
 import io.kubernetes.client.openapi.models.V1PersistentVolume;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1ReplicaSet;
@@ -29,6 +30,7 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.listJobs;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 
@@ -210,11 +212,14 @@ public class CleanupUtil {
 
       // check if any jobs exist
       try {
-        if (!Kubernetes.listJobs(namespace).getItems().isEmpty()) {
+        V1JobList jobList = listJobs(namespace);
+        if (jobList != null && jobList.getItems() != null && !jobList.getItems().isEmpty()) {
           logger.info("Jobs still exists!!!");
-          List<V1Job> items = Kubernetes.listJobs(namespace).getItems();
+          List<V1Job> items = jobList.getItems();
           for (var item : items) {
-            logger.info(item.getMetadata().getName());
+            if (item.getMetadata() != null) {
+              logger.info(item.getMetadata().getName());
+            }
           }
           nothingFound = false;
         }
@@ -456,8 +461,13 @@ public class CleanupUtil {
 
     // Delete jobs
     try {
-      for (var item : Kubernetes.listJobs(namespace).getItems()) {
-        Kubernetes.deleteJob(namespace, item.getMetadata().getName());
+      V1JobList jobList = listJobs(namespace);
+      if (jobList != null) {
+        for (var item : jobList.getItems()) {
+          if (item != null && item.getMetadata() != null) {
+            Kubernetes.deleteJob(namespace, item.getMetadata().getName());
+          }
+        }
       }
     } catch (Exception ex) {
       logger.warning(ex.getMessage());
