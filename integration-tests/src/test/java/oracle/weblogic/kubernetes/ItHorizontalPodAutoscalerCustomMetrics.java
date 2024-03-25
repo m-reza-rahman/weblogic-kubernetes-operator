@@ -47,13 +47,18 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_HORPODSCALERMETRICS_ALERT_HTTP_CONAINERPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_HORPODSCALERMETRICS_PROM_HTTP_CONAINERPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
@@ -433,10 +438,17 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, null);
       String promHelmValuesFileDir = Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
           "prometheus" + releaseSuffix).toString();
+      int[] podmanContainerPorts = null;      
+      if (KIND_CLUSTER
+          && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        podmanContainerPorts = new int[]{
+          IT_HORPODSCALERMETRICS_PROM_HTTP_CONAINERPORT,
+          IT_HORPODSCALERMETRICS_ALERT_HTTP_CONAINERPORT};
+      }      
       promHelmParams = installAndVerifyPrometheus(releaseSuffix,
           monitoringNS,
           promChartVersion,
-          prometheusRegexValue, promHelmValuesFileDir);
+          prometheusRegexValue, promHelmValuesFileDir, podmanContainerPorts);
       assertNotNull(promHelmParams, " Failed to install prometheus");
       prometheusDomainRegexValue = prometheusRegexValue;
       nodeportPrometheus = promHelmParams.getNodePortServer();
