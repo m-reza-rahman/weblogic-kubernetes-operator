@@ -8,8 +8,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -131,12 +134,14 @@ public class PersistentVolumeUtils {
     if (OKE_CLUSTER) {
       String fssDir = FSS_DIR[new Random().nextInt(FSS_DIR.length)];
       logger.info("Using FSS PV directory {0}", fssDir);
+      List<String> mountOptions = Collections.singletonList("vers=3");
       v1pv.getSpec()
           .storageClassName("oci-fss")
           .nfs(new V1NFSVolumeSource()
               .path(fssDir)
               .server(NFS_SERVER)
-              .readOnly(false));
+              .readOnly(false))
+          .mountOptions(mountOptions);
       v1pvc.getSpec()
           .storageClassName("oci-fss");
     } else if (OKD) {
@@ -216,12 +221,14 @@ public class PersistentVolumeUtils {
       LoggingFacade logger = getLogger();
       logger.info("Using FSS PV directory {0}", fssDir);
       logger.info("Using NFS_SERVER  {0}", NFS_SERVER);
+      List<String> mountOptions = Collections.singletonList("vers=3");
       v1pv.getSpec()
               .storageClassName("oci-fss")
               .nfs(new V1NFSVolumeSource()
                       .path(fssDir)
                       .server(NFS_SERVER)
-                      .readOnly(false));
+                      .readOnly(false))
+              .mountOptions(mountOptions);
     } else if (OKD) {
       v1pv.getSpec()
               .storageClassName("okd-nfsmnt")
@@ -253,6 +260,17 @@ public class PersistentVolumeUtils {
       logger.info("Creating PV directory host path {0}", pvHostPath);
       deleteDirectory(pvHostPath.toFile());
       createDirectories(pvHostPath);
+      Path p = pvHostPath;
+      while (true) {
+        Files.setPosixFilePermissions(p,PosixFilePermissions.fromString("rwxrwxrwx"));
+        p = p.getParent();
+        if (p == null) {
+          break;
+        }
+        if (p.toAbsolutePath().toString().equals(PV_ROOT)) {
+          break;
+        }
+      }
     } catch (IOException ioex) {
       logger.severe(ioex.getMessage());
       fail("Create persistent volume host path failed");

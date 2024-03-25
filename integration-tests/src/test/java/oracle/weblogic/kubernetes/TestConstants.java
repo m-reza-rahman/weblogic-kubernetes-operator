@@ -47,6 +47,7 @@ public interface TestConstants {
   public static final String WEBLOGIC_IMAGE_TAGS =
       getNonEmptySystemProperty("wko.it.weblogic.image.tags", DEFAULT_WEBLOGIC_IMAGE_TAGS);
   public static final int DEFAULT_MAX_CLUSTER_SIZE = 5;
+  public static final int ADMIN_SERVER_PORT_DEFAULT = 7001;
 
   // cluster constants
   public static final String CLUSTER_VERSION =
@@ -205,10 +206,10 @@ public interface TestConstants {
   public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/ingress-nginx/controller";
   public static final String NGINX_INGRESS_IMAGE_TAG = "v1.2.0";
   public static final String NGINX_NAMESPACE = "ns-nginx";
-  public static final int NGINX_INGRESS_HTTP_NODEPORT = 30880;
-  public static final int NGINX_INGRESS_HTTPS_NODEPORT = 30443;
-  public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2080;
-  public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2443;
+  public static final int NGINX_INGRESS_HTTP_NODEPORT = 31880;
+  public static final int NGINX_INGRESS_HTTPS_NODEPORT = 31443;
+  public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2180;
+  public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2543;
   
   public static final Path INGRESS_CLASS_FILE_NAME = assertDoesNotThrow(()
       -> Files.createTempFile("ingressclass", ".name"));  
@@ -380,6 +381,9 @@ public interface TestConstants {
   // OCNE constants
   public static final boolean OCNE =
       Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.ocne.cluster", "false"));
+  // CRIO_PIPELINE constants
+  public static final boolean CRIO =
+      Boolean.parseBoolean(getNonEmptySystemProperty("wko.it.crio.pipeline", "false"));
 
   // default name suffixes
   public String DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX = "-ext";
@@ -470,8 +474,28 @@ public interface TestConstants {
   //node ports used by the integration tests
   public static final int ITEXTERNALNODEPORTSERVICE_CONAINERPORT = 32156;
   public static final int ITEXTERNALNODEPORTSERVICE_HOSTPORT = 2156;
+  
   public static final int IT_DEDICATED_MODE_CONAINERPORT = 32159;
   public static final int IT_DEDICATED_MODE_HOSTPORT = 2160;
   
+  public static final int IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT = 32169;
+  public static final int IT_EXTERNALLB_TUNNELING_HTTP_HOSTPORT = 2172;
+  public static final int IT_EXTERNALLB_TUNNELING_HTTPS_CONAINERPORT = 32170;
+  public static final int IT_EXTERNALLB_TUNNELING_HTTPS_HOSTPORT = 2173;
+  
+  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_CONAINERPORT = 32189;
+  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_HOSTPORT = 2182;
+  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_CONAINERPORT = 32185;
+  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_HOSTPORT = 2175;
+  
+  public static final int IT_MONITORINGEXPORTER_PROM_HTTP_CONAINERPORT = 32143;
+  public static final int IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT = 2143;
+  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_CONAINERPORT = 32343;
+  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_HOSTPORT = 2343; 
+
+  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT = 30881;
+  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT = 30444;
+  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT = 2081;
+  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTPS_HOSTPORT = 2444;
 
 }

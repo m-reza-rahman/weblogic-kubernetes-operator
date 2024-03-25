@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -8,10 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLProtocolException;
 
 import io.kubernetes.client.custom.IntOrString;
@@ -77,6 +80,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_PREBUILT_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DB_OPERATOR_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.DB_PREBUILT_IMAGE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.FSS_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.NFS_SERVER;
@@ -104,6 +108,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExist
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
+import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
@@ -903,7 +908,7 @@ public class DbUtils {
       ExecResult result = ExecCommand.exec(command, true);
       dbUrl = result.stdout().trim();
       logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-          result.exitValue(), response, result.stderr());
+          result.exitValue(), result.stdout(), result.stderr());
       assertEquals(0, result.exitValue(), "Command didn't succeed");
     } catch (IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
@@ -1056,6 +1061,17 @@ public class DbUtils {
               .path(PV_ROOT)
               .server(NFS_SERVER)
               .readOnly(false));
+    } else if (OKE_CLUSTER) {
+      String fssDir = FSS_DIR[new Random().nextInt(FSS_DIR.length)];
+      logger.info("Using FSS PV directory {0}", fssDir);
+      List<String> mountOptions = Collections.singletonList("vers=3");
+      v1pv.getSpec()
+          .storageClassName("oci-fss")
+          .nfs(new V1NFSVolumeSource()
+              .path(fssDir)
+              .server(NFS_SERVER)
+              .readOnly(false))
+          .mountOptions(mountOptions);
     } else {
       v1pv.getSpec()
           .storageClassName("weblogic-domain-storage-class")
@@ -1092,6 +1108,61 @@ public class DbUtils {
     params.command(KUBERNETES_CLI + " delete -f " + hpYamlFile.toString());
     boolean response = Command.withParams(params).execute();
     assertTrue(response, "Failed to delete hostpath provisioner");
+  }
+
+  /**
+   * Create file with sql command in the pod.
+   * @param namespace pod's namespace
+   * @param podName  name of pod
+   * @param sqlCommand sql command
+   * @param fileName name of file
+   */
+  public static void createSqlFileInPod(String podName, String namespace,
+                                        String sqlCommand, String fileName) throws IOException {
+
+    Path sourceFile = Files.writeString(Paths.get(WORK_DIR, fileName), sqlCommand);
+    LoggingFacade logger = getLogger();
+    StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
+    mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
+    mysqlCmd.append(namespace);
+    mysqlCmd.append(" ");
+    mysqlCmd.append(podName);
+    mysqlCmd.append(" -- /bin/bash -c \"");
+    mysqlCmd.append("cat > /tmp/" + fileName + "\"");
+    logger.info("mysql command {0}", mysqlCmd.toString());
+    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), false));
+    logger.info("mysql returned {0}", result.toString());
+    logger.info("mysql returned EXIT value {0}", result.exitValue());
+    assertEquals(0, result.exitValue(), "mysql execution fails");
+  }
+
+  /**
+   * Run mysql inside the pod.
+   * @param namespace pod's namespace
+   * @param podName  name of pod
+   * @param sqlFilePath name of sql file
+   * @param password name of file
+   */
+  public static void runMysqlInsidePod(String podName, String namespace, String password, String sqlFilePath) {
+    final LoggingFacade logger = getLogger();
+
+    logger.info("Sleeping for 1 minute before connecting to mysql db");
+    assertDoesNotThrow(() -> TimeUnit.MINUTES.sleep(1));
+    StringBuffer mysqlCmd = new StringBuffer(KUBERNETES_CLI + " exec -i -n ");
+    mysqlCmd.append(namespace);
+    mysqlCmd.append(" ");
+    mysqlCmd.append(podName);
+    mysqlCmd.append(" -- /bin/bash -c \"");
+    mysqlCmd.append("mysql --force ");
+    mysqlCmd.append("-u root -p" + password);
+    mysqlCmd.append(" < ");
+    mysqlCmd.append(sqlFilePath);
+    mysqlCmd.append(" \"");
+    logger.info("mysql command {0}", mysqlCmd.toString());
+    ExecResult result = assertDoesNotThrow(() -> exec(new String(mysqlCmd), true));
+    logger.info("mysql returned {0}", result.toString());
+    logger.info("mysql returned EXIT value {0}", result.exitValue());
+    assertEquals(0, result.exitValue(), "mysql execution fails");
   }
 
   // create hostpath provisioner using api.
