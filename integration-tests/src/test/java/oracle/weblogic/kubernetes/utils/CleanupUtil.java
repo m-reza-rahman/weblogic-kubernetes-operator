@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -213,15 +213,17 @@ public class CleanupUtil {
       // check if any jobs exist
       try {
         V1JobList jobList = listJobs(namespace);
-        if (jobList != null && jobList.getItems() != null && !jobList.getItems().isEmpty()) {
-          logger.info("Jobs still exists!!!");
+        if (jobList != null) {
           List<V1Job> items = jobList.getItems();
-          for (var item : items) {
-            if (item.getMetadata() != null) {
-              logger.info(item.getMetadata().getName());
+          if (items != null && !items.isEmpty()) {
+            logger.info("Jobs still exists!!!");
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
             }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());
