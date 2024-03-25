@@ -249,9 +249,9 @@ class ItT3Channel {
                     .name(pvName)))
             .adminServer(new AdminServer() //admin server
                 .adminService(new AdminService()
-                    /* .addChannelsItem(new Channel()
+                    .addChannelsItem(new Channel()
                         .channelName("default")
-                        .nodePort(getNextFreePort())) */
+                        .nodePort(getNextFreePort()))
                     .addChannelsItem(new Channel()
                         .channelName("T3Channel")
                         .nodePort(t3ChannelPort)))));
