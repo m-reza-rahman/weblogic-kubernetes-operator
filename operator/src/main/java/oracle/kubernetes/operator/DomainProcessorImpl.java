@@ -1012,7 +1012,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       }
   
       private void runFailureSteps(Throwable throwable) {
-        gate.startNewFiberIfCurrentFiberMatches(
+        gate.startFiber(
             ((DomainPresenceInfo)presenceInfo).getDomainUid(),
             getFailureSteps(throwable),
             packet,
@@ -1126,11 +1126,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
 
     void execute() {
-      if (operation.isWillInterrupt()) {
-        gate.startFiber(presenceInfo.getResourceName(), firstStep, packet, createCompletionCallback());
-      } else {
-        gate.startFiberIfNoCurrentFiber(presenceInfo.getResourceName(), firstStep, packet, createCompletionCallback());
-      }
+      gate.startFiber(presenceInfo.getResourceName(), firstStep, packet, createCompletionCallback());
     }
 
     abstract CompletionCallback createCompletionCallback();
@@ -1159,7 +1155,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         Step strategy = Step.chain(new DomainPresenceInfoStep(), ServerStatusReader.createStatusStep(timeoutSeconds));
 
         getStatusFiberGate(getNamespace())
-            .startFiberIfNoCurrentFiber(getDomainUid(), strategy, createPacket(), new CompletionCallbackImpl());
+            .startFiber(getDomainUid(), strategy, createPacket(), new CompletionCallbackImpl());
       } catch (Exception t) {
         try (ThreadLoggingContext ignored
                  = setThreadContext().namespace(getNamespace()).domainUid(getDomainUid())) {

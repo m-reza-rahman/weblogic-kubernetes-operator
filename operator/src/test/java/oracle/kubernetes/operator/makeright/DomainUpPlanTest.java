@@ -13,14 +13,7 @@ import java.util.stream.Collectors;
 
 import com.meterware.simplestub.Memento;
 import io.kubernetes.client.openapi.ApiException;
-import io.kubernetes.client.openapi.models.V1Container;
-import io.kubernetes.client.openapi.models.V1ContainerPort;
-import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.openapi.models.V1Pod;
-import io.kubernetes.client.openapi.models.V1PodSpec;
-import io.kubernetes.client.openapi.models.V1Service;
-import io.kubernetes.client.openapi.models.V1ServicePort;
-import io.kubernetes.client.openapi.models.V1ServiceSpec;
+import io.kubernetes.client.openapi.models.*;
 import oracle.kubernetes.operator.DomainProcessorImpl;
 import oracle.kubernetes.operator.DomainProcessorTestSetup;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
@@ -94,6 +87,23 @@ class DomainUpPlanTest {
 
     testSupport.defineResources(domain);
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
+    testSupport.doOnCreate(KubernetesTestSupport.POD, p -> setPodReady((V1Pod) p));
+    testSupport.doOnDelete(KubernetesTestSupport.POD, this::preDelete);
+  }
+
+  private void setPodReady(V1Pod pod) {
+    pod.status(createPodReadyStatus());
+  }
+
+  private V1PodStatus createPodReadyStatus() {
+    return new V1PodStatus()
+            .phase("Running")
+            .addConditionsItem(new V1PodCondition().status("True").type("Ready"));
+  }
+
+  private void preDelete(KubernetesTestSupport.DeletionContext context) {
+    testSupport.deleteResources(
+            new V1Pod().metadata(new V1ObjectMeta().name(context.name()).namespace(context.namespace())));
   }
 
   @AfterEach

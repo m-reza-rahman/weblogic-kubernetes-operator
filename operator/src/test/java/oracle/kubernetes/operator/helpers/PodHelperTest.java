@@ -72,7 +72,7 @@ class PodHelperTest {
     testSupport.defineResources(pod);
     domainPresenceInfo.setServerPod(SERVER_NAME, pod);
 
-    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, terminalStep));
+    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, false, terminalStep));
 
     MatcherAssert.assertThat(
         domainPresenceInfo.isServerPodBeingDeleted(SERVER_NAME), is(Boolean.TRUE));
@@ -83,21 +83,21 @@ class PodHelperTest {
     testSupport.failOnResource(POD, POD_NAME, NS, HTTP_BAD_REQUEST);
     domainPresenceInfo.setServerPod(SERVER_NAME, pod);
 
-    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, terminalStep));
+    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, false, terminalStep));
 
     testSupport.verifyCompletionThrowable(ApiException.class);
   }
 
   @Test
   void whenDeletePodStepRunWithNoPod_doNotSendDeleteCall() {
-    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, terminalStep));
+    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, false, terminalStep));
 
     MatcherAssert.assertThat(domainPresenceInfo.getServerPod(SERVER_NAME), nullValue());
   }
 
   @Test
   void afterDeletePodStepRun_runSpecifiedNextStep() {
-    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, terminalStep));
+    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, false, terminalStep));
 
     MatcherAssert.assertThat(terminalStep.wasRun(), is(true));
   }
@@ -109,7 +109,7 @@ class PodHelperTest {
     testSupport.addDomainPresenceInfo(info);
 
     assertDoesNotThrow(
-        () -> testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, terminalStep)));
+        () -> testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, false, terminalStep)));
 
   }
 

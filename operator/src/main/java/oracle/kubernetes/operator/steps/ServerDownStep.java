@@ -14,6 +14,8 @@ import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
+import java.time.Duration;
+
 public class ServerDownStep extends Step {
   private final String serverName;
   private final boolean isPreserveServices;
@@ -40,12 +42,16 @@ public class ServerDownStep extends Step {
       next = ServiceHelper.deleteServicesStep(serverName, getNext());
     }
 
-    return doNext(oldPod != null ? createShutdownManagedServerStep(oldPod, next) : next, packet);
+    if (oldPod != null) {
+      return doNext(createShutdownManagedServerStep(oldPod, next), packet);
+    }
+
+    return doNext(packet);
   }
 
   @Nonnull
   private Step createShutdownManagedServerStep(V1Pod oldPod, Step next) {
     return ShutdownManagedServerStep
-        .createShutdownManagedServerStep(PodHelper.deletePodStep(serverName, next), serverName, oldPod);
+        .createShutdownManagedServerStep(PodHelper.deletePodStep(serverName, true, next), serverName, oldPod);
   }
 }

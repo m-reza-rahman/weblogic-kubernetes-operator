@@ -393,11 +393,12 @@ public class PodHelper {
    * Factory for {@link Step} that deletes server pod.
    *
    * @param serverName the name of the server whose pod is to be deleted
+   * @param isMustWait if true, then step will not progress until server pod is fully gone
    * @param next Next processing step
    * @return Step for deleting server pod
    */
-  public static Step deletePodStep(String serverName, Step next) {
-    return new DeletePodStep(serverName, next);
+  public static Step deletePodStep(String serverName, boolean isMustWait, Step next) {
+    return new DeletePodStep(serverName, isMustWait, next);
   }
 
   /**
@@ -781,10 +782,12 @@ public class PodHelper {
 
   private static class DeletePodStep extends Step {
     private final String serverName;
+    private final boolean isMustWait;
 
-    DeletePodStep(String serverName, Step next) {
+    DeletePodStep(String serverName, boolean isMustWait, Step next) {
       super(next);
       this.serverName = serverName;
+      this.isMustWait = isMustWait;
     }
 
     @Override
@@ -804,7 +807,7 @@ public class PodHelper {
         }
 
         return doNext(
-            deletePod(name, info.getNamespace(), gracePeriodSeconds, getNext()),
+            deletePod(name, info.getNamespace(), isMustWait, gracePeriodSeconds, getNext()),
             packet);
       }
     }
@@ -841,7 +844,7 @@ public class PodHelper {
       return effectiveServerSpec.getShutdown().getTimeoutSeconds() + DEFAULT_ADDITIONAL_DELETE_TIME;
     }
 
-    private Step deletePod(String name, String namespace, long gracePeriodSeconds, Step next) {
+    private Step deletePod(String name, String namespace, boolean isMustWait, long gracePeriodSeconds, Step next) {
       Step conflictStep = RequestBuilder.POD.get(namespace, name, new DefaultResponseStep<>(next) {
         @Override
         public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
@@ -862,6 +865,10 @@ public class PodHelper {
           if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
             DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
             info.setServerPod(serverName, null);
+          } else if(isMustWait) {
+            // requeue to wait for pod to be deleted and gone
+            return new Result(true,
+                    Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
           }
           return doNext(packet);
         }

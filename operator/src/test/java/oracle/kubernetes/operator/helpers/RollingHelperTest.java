@@ -108,6 +108,23 @@ class RollingHelperTest {
 
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "domainEventK8SObjects", domainEventObjects));
     mementos.add(StaticStubSupport.install(DomainProcessorImpl.class, "namespaceEventK8SObjects", nsEventObjects));
+    testSupport.doOnCreate(KubernetesTestSupport.POD, p -> setPodReady((V1Pod) p));
+    testSupport.doOnDelete(KubernetesTestSupport.POD, this::preDelete);
+  }
+
+  private void setPodReady(V1Pod pod) {
+    pod.status(createPodReadyStatus());
+  }
+
+  private V1PodStatus createPodReadyStatus() {
+    return new V1PodStatus()
+            .phase("Running")
+            .addConditionsItem(new V1PodCondition().status("True").type("Ready"));
+  }
+
+  private void preDelete(KubernetesTestSupport.DeletionContext context) {
+    testSupport.deleteResources(
+            new V1Pod().metadata(new V1ObjectMeta().name(context.name()).namespace(context.namespace())));
   }
 
   @AfterEach

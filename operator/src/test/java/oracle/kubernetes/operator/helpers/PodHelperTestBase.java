@@ -2415,7 +2415,7 @@ public abstract class PodHelperTestBase extends DomainValidationTestBase {
     testSupport.runSteps(getStepFactory(), terminalStep);
 
     assertThat(logRecords, containsFine(getExistsMessageKey()));
-    assertThat(domainPresenceInfo.getServerPod(serverName), equalTo(createPodModel()));
+    assertThat(domainPresenceInfo.getServerPod(serverName).getSpec(), equalTo(createPodModel().getSpec()));
   }
 
   abstract String getExistsMessageKey();

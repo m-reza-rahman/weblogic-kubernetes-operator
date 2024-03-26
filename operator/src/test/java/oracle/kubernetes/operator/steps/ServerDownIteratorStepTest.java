@@ -41,6 +41,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
+import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
@@ -82,6 +84,8 @@ class ServerDownIteratorStepTest {
   private DomainPresenceInfo domainPresenceInfo = createDomainPresenceInfoWithServers();
   private final WlsDomainConfig domainConfig = createDomainConfig();
   private List<ServerShutdownInfo> serverShutdownInfos;
+  private final V1Pod managedPod1 = defineManagedPod(UID + "-" + MS1);
+  private final V1Pod managedPod2 = defineManagedPod(UID + "-" + MS2);
 
   private static WlsDomainConfig createDomainConfig() {
     WlsClusterConfig clusterConfig = new WlsClusterConfig(CLUSTER);
@@ -131,10 +135,45 @@ class ServerDownIteratorStepTest {
     mementos.add(TuningParametersStub.install());
     mementos.add(testSupport.install());
 
-    testSupport.defineResources(domain);
+    testSupport.defineResources(domain, managedPod1, managedPod2);
     testSupport
             .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig)
             .addDomainPresenceInfo(domainPresenceInfo);
+    testSupport.doOnCreate(KubernetesTestSupport.POD, p -> setPodReadyWithDelay((V1Pod) p));
+    testSupport.doOnDelete(KubernetesTestSupport.POD, this::preDeleteWithDelay);
+  }
+
+  private V1Pod defineManagedPod(String name) {
+    return new V1Pod().metadata(createManagedPodMetadata(name));
+  }
+
+  private V1ObjectMeta createManagedPodMetadata(String name) {
+    return createPodMetadata(name)
+            .putLabelsItem(LabelConstants.CREATEDBYOPERATOR_LABEL,"true")
+            .putLabelsItem(LabelConstants.DOMAINNAME_LABEL, UID)
+            .putLabelsItem(LabelConstants.SERVERNAME_LABEL, name);
+  }
+
+  private V1ObjectMeta createPodMetadata(String name) {
+    return new V1ObjectMeta()
+            .name(name)
+            .namespace(NS);
+  }
+
+  private void setPodReadyWithDelay(V1Pod pod) {
+    testSupport.schedule(() -> pod.status(createPodReadyStatus()), 1, TimeUnit.SECONDS);
+  }
+
+  private V1PodStatus createPodReadyStatus() {
+    return new V1PodStatus()
+            .phase("Running")
+            .addConditionsItem(new V1PodCondition().status("True").type("Ready"));
+  }
+
+  private void preDeleteWithDelay(KubernetesTestSupport.DeletionContext context) {
+    testSupport.schedule(() -> testSupport.deleteResources(
+            new V1Pod().metadata(new V1ObjectMeta().name(context.name()).namespace(context.namespace()))),
+            1, TimeUnit.SECONDS);
   }
 
   @AfterEach
@@ -152,7 +191,7 @@ class ServerDownIteratorStepTest {
     testSupport.addDomainPresenceInfo(domainPresenceInfo);
 
     createShutdownInfos()
-            .forClusteredServers(CLUSTER,MS1, MS2)
+            .forClusteredServers(CLUSTER, MS1, MS2)
             .shutdown();
 
     assertThat(serverPodsBeingDeleted(), containsInAnyOrder(MS2));
