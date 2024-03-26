@@ -102,6 +102,7 @@ class ItRemoteConsole {
   private static HelmParams traefikHelmParams = null;
   private static NginxParams nginxHelmParams = null;
   private static int nginxNodePort;
+  private static String nginxHostAndPort;
 
   // domain constants
   private static final String domainUid = "domain1";
@@ -153,8 +154,8 @@ class ItRemoteConsole {
       installTraefikIngressController();
 
       // install and verify Nginx
-      //logger.info("Installing Ngnix controller using helm");
-      //installNgnixIngressController();
+      logger.info("Installing Ngnix controller using helm");
+      installNgnixIngressController();
 
     }
 
@@ -211,7 +212,7 @@ class ItRemoteConsole {
   /**
    * Access WebLogic domain through remote console using NGINX.
    */
-  //@Test
+  @Test
   @DisplayName("Verify Connecting to Mii domain WLS Remote Console through NGINX is successful")
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testWlsRemoteConsoleConnectionThroughNginx() {
@@ -376,10 +377,11 @@ class ItRemoteConsole {
     if (host.contains(":")) {
       host = "[" + host + "]";
     }
-    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+    nginxHostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
         ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host + ":" + nginxNodePort;
+    logger.info("nginxHostAndPort is {0}", nginxHostAndPort);
 
-    String curlCmd = "curl -g --silent --show-error --noproxy '*' http://" + hostAndPort
+    String curlCmd = "curl -g --silent --show-error --noproxy '*' http://" + nginxHostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
     logger.info("Executing curl command {0}", curlCmd);
@@ -480,7 +482,10 @@ class ItRemoteConsole {
         logger.info("traefikHelmParams is null");
         hostAndPort = host + ":" + nodePortOfLB;
       }
+    } else if (type.equalsIgnoreCase("nginx")) {
+      hostAndPort = nginxHostAndPort;
     }
+
     return hostAndPort;
   }
 
