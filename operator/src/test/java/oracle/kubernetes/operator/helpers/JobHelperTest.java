@@ -1707,7 +1707,6 @@ class JobHelperTest extends DomainValidationTestBase {
     assertThat(getNumPodSpecInitContainers(jobSpec), equalTo(0));
   }
 
-  @Test
   void whenAdminServerHasNormalAdditionalVolume_introspectorPodStartupWithoutThem() {
     configureDomain()
           .configureAdminServer()
