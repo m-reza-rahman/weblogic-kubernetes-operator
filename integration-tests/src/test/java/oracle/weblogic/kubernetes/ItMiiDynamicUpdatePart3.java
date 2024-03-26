@@ -49,9 +49,9 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigM
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfig;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifySystemResourceConfiguration;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.DOMAIN_FAILED;
@@ -63,7 +63,6 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodLogContains;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -358,6 +357,7 @@ class ItMiiDynamicUpdatePart3 {
         .executeAndVerify("jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
     logger.info("JDBCSystemResource configuration found");
 
+
     // check that the domain status condition contains the correct type and expected reason
     logger.info("verifying the domain status condition contains the correct type and expected status");
     helper.verifyDomainStatusConditionNoErrorMsg("Completed", "True");
@@ -397,8 +397,11 @@ class ItMiiDynamicUpdatePart3 {
     adminServiceNodePort
         = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
-        "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
+    /*assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
+        "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted"); */
+
+    verifySystemResourceConfiguration(null, adminServiceNodePort,
+        "JDBCSystemResources", "TestDataSource2", "404", httpHostHeader);
     logger.info("JDBCSystemResource Datasource is deleted");
 
     // check that the domain status condition contains the correct type and expected status
