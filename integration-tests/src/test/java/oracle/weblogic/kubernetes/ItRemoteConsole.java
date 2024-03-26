@@ -36,12 +36,15 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
@@ -63,6 +66,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAndRetryIfFail;
 //import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTargetPortForRoute;
@@ -148,7 +152,7 @@ class ItRemoteConsole {
       installTraefikIngressController();
 
       // install and verify Nginx
-      //nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      installNgnixIngressController();
 
     }
 
@@ -198,7 +202,7 @@ class ItRemoteConsole {
         "Could not get the default external service node port");
     logger.info("Found the Traefik service nodePort {0}", traefikNodePort);
     logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
-    verifyRemoteConsoleConnectionThroughLB(traefikNodePort);
+    verifyRemoteConsoleConnectionThroughLB(traefikNodePort, "traefik");
     logger.info("WebLogic domain is accessible through remote console using Traefik");
   }
 
@@ -214,7 +218,7 @@ class ItRemoteConsole {
     logger.info("Found the NGINX service nodePort {0}", nginxNodePort);
     logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
 
-    verifyRemoteConsoleConnectionThroughLB(nginxNodePort);
+    verifyRemoteConsoleConnectionThroughLB(nginxNodePort, "nginx");
     logger.info("WebLogic domain is accessible through remote console using NGINX");
   }
 
@@ -408,27 +412,23 @@ class ItRemoteConsole {
 
   }
 
-  private static void verifyRemoteConsoleConnectionThroughLB(int nodePortOfLB) {
+  private static void installNgnixIngressController() {
+
+    getLogger().info("Installing NGINX in namespace {0}", nginxNamespace);
+    nginxHelmParams = installAndVerifyNginx(nginxNamespace, ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT,
+        ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, "NodePort");
+
+    createNginxIngressPathRoutingRules();
+
+  }
+
+  private static void verifyRemoteConsoleConnectionThroughLB(int nodePortOfLB, String type) {
     logger.info("LB nodePort is {0}", nodePortOfLB);
     logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
 
-    String host = K8S_NODEPORT_HOST;
-    String hostAndPort = null;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
-    String ingressServiceName = null;
-    String traefikNamespace = null;
-    if (traefikHelmParams != null) {
-      ingressServiceName = traefikHelmParams.getReleaseName();
-      traefikNamespace = traefikHelmParams.getNamespace();
-      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : host + ":" + nodePortOfLB;
-    } else {
-      logger.info("traefikHelmParams is null");
-      hostAndPort = host + ":" + nodePortOfLB;
-    }
-    logger.info("For Traefik loadbalancer hostAndPort is {0}", hostAndPort);
+    String hostAndPort = getLBhostAndPort(nodePortOfLB, type);
+
+    logger.info("For loadbalancer {0} hostAndPort is {0}", type, hostAndPort);
 
     String curlCmd = "curl -g -v --user " + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
         + " http://localhost:8012/api/providers/AdminServerConnection -H "
@@ -441,6 +441,29 @@ class ItRemoteConsole {
     logger.info("Executing LB nodeport curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReturnedCode(curlCmd, "201", 10),
         "Calling web app failed");
+  }
+
+  private static String getLBhostAndPort(int nodePortOfLB, String type) {
+    String host = K8S_NODEPORT_HOST;
+    String hostAndPort = null;
+    if (host.contains(":")) {
+      host = "[" + host + "]";
+    }
+    String ingressServiceName = null;
+    String traefikNamespace = null;
+    if (type.equalsIgnoreCase("traefik")) {
+      if (traefikHelmParams != null) {
+        ingressServiceName = traefikHelmParams.getReleaseName();
+        traefikNamespace = traefikHelmParams.getNamespace();
+        hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) : host + ":" + nodePortOfLB;
+      } else {
+        logger.info("traefikHelmParams is null");
+        hostAndPort = host + ":" + nodePortOfLB;
+      }
+
+    }
+    return hostAndPort;
   }
 
   /**
