@@ -1518,7 +1518,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
   }
 
-  static class NotFoundException extends RuntimeException {
+  public static class NotFoundException extends RuntimeException {
     @Serial
     private static final long serialVersionUID  = 1L;
 
