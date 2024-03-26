@@ -37,6 +37,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
@@ -152,7 +153,8 @@ class ItRemoteConsole {
       installTraefikIngressController();
 
       // install and verify Nginx
-      installNgnixIngressController();
+      //logger.info("Installing Ngnix controller using helm");
+      //installNgnixIngressController();
 
     }
 
@@ -356,9 +358,20 @@ class ItRemoteConsole {
     logger.info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
 
     // check the ingress is ready to route the app to the server pod
+    //TODO
     String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
+    logger.info("nginxServiceName is {0}", nginxServiceName);
+
+    /*nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
+        "Getting Nginx loadbalancer service node port failed");*/
+    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      nginxNodePort = ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT;
+    } else if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT) || OKE_CLUSTER) {
+      nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
         "Getting Nginx loadbalancer service node port failed");
+    }
+    logger.info("nginxNodePort is {0}", nginxNodePort);
+
     String host = K8S_NODEPORT_HOST;
     if (host.contains(":")) {
       host = "[" + host + "]";
@@ -414,9 +427,15 @@ class ItRemoteConsole {
 
   private static void installNgnixIngressController() {
 
-    getLogger().info("Installing NGINX in namespace {0}", nginxNamespace);
-    nginxHelmParams = installAndVerifyNginx(nginxNamespace, ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT,
+    if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT) || OKE_CLUSTER) {
+      logger.info("Installing Ngnix controller using 0 as nodeport");
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+    } else if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      logger.info("Installing Ngnix controller using http_nodeport {0}, https_nodeport {1}",
+          ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT, ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT);
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace, ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT,
         ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, "NodePort");
+    }
 
     createNginxIngressPathRoutingRules();
 
@@ -461,7 +480,6 @@ class ItRemoteConsole {
         logger.info("traefikHelmParams is null");
         hostAndPort = host + ":" + nodePortOfLB;
       }
-
     }
     return hostAndPort;
   }
