@@ -47,7 +47,6 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
@@ -148,6 +147,14 @@ class ItRemoteConsole {
     // install and verify operator
     installAndVerifyOperator(opNamespace, domainNamespace);
 
+    createSSLenabledMiiDomainAndVerify(
+        domainNamespace,
+        domainUid,
+        MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
+        adminServerPodName,
+        managedServerPrefix,
+        replicaCount);
+
     if (!OKD) {
 
       logger.info("Installing Traefik controller using helm");
@@ -158,22 +165,6 @@ class ItRemoteConsole {
       installNgnixIngressController();
 
     }
-
-    createSSLenabledMiiDomainAndVerify(
-        domainNamespace,
-        domainUid,
-        MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG,
-        adminServerPodName,
-        managedServerPrefix,
-        replicaCount);
-
-    // create ingress rules with path routing for Traefik and NGINX
-    /*if (!OKD) {
-
-      createTraefikIngressRoutingRules(domainNamespace);
-      createNginxIngressPathRoutingRules();
-
-    }*/
 
     // install WebLogic remote console
     assertTrue(installAndVerifyWlsRemoteConsole(domainNamespace, adminServerPodName),
@@ -367,7 +358,7 @@ class ItRemoteConsole {
         "Getting Nginx loadbalancer service node port failed");*/
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       nginxNodePort = ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT;
-    } else if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT) || OKE_CLUSTER) {
+    } else if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
         "Getting Nginx loadbalancer service node port failed");
     }
@@ -418,7 +409,7 @@ class ItRemoteConsole {
 
   private static void installTraefikIngressController() {
 
-    if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT) || OKE_CLUSTER) {
+    if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       logger.info("Installing Traefik controller using helm");
       traefikHelmParams = installAndVerifyTraefik(traefikNamespace, 0, 0).getHelmParams();
     }
@@ -429,7 +420,7 @@ class ItRemoteConsole {
 
   private static void installNgnixIngressController() {
 
-    if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT) || OKE_CLUSTER) {
+    if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       logger.info("Installing Ngnix controller using 0 as nodeport");
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
     } else if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
