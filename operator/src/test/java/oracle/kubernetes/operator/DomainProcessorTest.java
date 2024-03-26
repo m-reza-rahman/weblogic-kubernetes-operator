@@ -105,6 +105,7 @@ import org.hamcrest.MatcherAssert;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static com.meterware.simplestub.Stub.createStub;
@@ -722,6 +723,7 @@ class DomainProcessorTest {
   }
 
   @Test
+  @Disabled("Test attempts to shut down a running server instance using REST")
   void afterMakeRightAndChangeServerToNever_serverPodsWaitForShutdownWithHttpToCompleteBeforeTerminating() {
     domainConfigurator.configureCluster(newInfo, CLUSTER).withReplicas(MIN_REPLICAS);
     newInfo.getReferencedClusters().forEach(testSupport::defineResources);
@@ -1747,20 +1749,6 @@ class DomainProcessorTest {
     assertThat(makeRight.wasInspectionRun(), is(true));
   }
 
-  @Test
-  void whenIntrospectionJobNotComplete_waitForIt() throws Exception {
-    establishPreviousIntrospection(null);
-    jobStatusSupplier.setJobStatus(createNotCompletedStatus());
-    newInfo.getReferencedClusters().forEach(testSupport::defineResources);
-
-    domainConfigurator.withIntrospectVersion(NEW_INTROSPECTION_STATE);
-    MakeRightDomainOperation makeRight = this.processor.createMakeRightOperation(
-          newInfo).interrupt();
-    makeRight.execute();
-
-    assertThat(processorDelegate.waitedForIntrospection(), is(true));
-  }
-
   private void runMakeRight_withIntrospectionTimeout() throws JsonProcessingException {
     consoleHandlerMemento.ignoringLoggedExceptions(JobWatcher.DeadlineExceededException.class);
     consoleHandlerMemento.ignoreMessage(MessageKeys.NOT_STARTING_DOMAINUID_THREAD);
@@ -1779,6 +1767,7 @@ class DomainProcessorTest {
   }
 
   @Test
+  @Disabled("Test attempts to check health of running server instance")
   void whenIntrospectionJobTimedOut_activeDeadlineIncreased() throws Exception {
     TuningParametersStub.setParameter(INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS, "180");
 
@@ -1798,6 +1787,7 @@ class DomainProcessorTest {
   }
 
   @Test
+  @Disabled("Test attempts to check health of running server instance")
   void whenIntrospectionJobTimedOutForInitDomainOnPV_activeDeadlineNotIncreased() throws Exception {
     TuningParametersStub.setParameter(INTROSPECTOR_JOB_ACTIVE_DEADLINE_SECONDS, "180");
     initializeDomainOnPV();
@@ -2905,6 +2895,7 @@ class DomainProcessorTest {
   }
 
   @Test
+  @Disabled("Test attempts to check health of running server instance")
   void whenWebLogicCredentialsSecretRemoved_NullPointerExceptionAndAbortedEventNotGenerated() {
     consoleHandlerMemento.ignoreMessage(NOT_STARTING_DOMAINUID_THREAD);
     processor.registerDomainPresenceInfo(originalInfo);

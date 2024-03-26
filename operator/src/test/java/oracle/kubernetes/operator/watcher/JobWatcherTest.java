@@ -263,7 +263,6 @@ class JobWatcherTest extends WatcherTestBase implements WatchListener<V1Job> {
     return markJobCompleted(createJob());
   }
 
-  // Starts the waitForReady step with an incomplete job and sends a watch indicating that the job has changed
   public void receivedEvents_areSentToListeners() {
     // Override as JobWatcher doesn't currently implement listener for callback
   }
