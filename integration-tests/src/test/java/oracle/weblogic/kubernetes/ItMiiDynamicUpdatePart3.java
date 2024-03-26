@@ -49,6 +49,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.replaceConfigM
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospectorRuns;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfig;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifySystemResourceConfiguration;
@@ -63,6 +64,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodLogContains;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -337,24 +339,28 @@ class ItMiiDynamicUpdatePart3 {
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       httpHostHeader = createIngressHostRouting(helper.domainNamespace, domainUid,
           helper.adminServerName, 7001);
+      StringBuffer curlString = new StringBuffer("curl -g --user ");
+      curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+          .append(" --noproxy '*' "
+              + " -H 'host: " + httpHostHeader + "' " + " http://" + "localhost:"
+              + TRAEFIK_INGRESS_HTTP_HOSTPORT)
+          .append("/management/weblogic/latest/domainConfig")
+          .append("/")
+          .append("JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams")
+          .append("/");
+
+      logger.info("curl command {0}", new String(curlString));
+
+      assertTrue(Command
+          .withParams(new CommandParams()
+              .command(curlString.toString()))
+          .executeAndVerify("jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+    } else {
+      assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
+          "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
+          "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+
     }
-
-    StringBuffer curlString = new StringBuffer("curl -g --user ");
-    curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
-        .append(" --noproxy '*' "
-            + " -H 'host: " + httpHostHeader + "' " + " http://" + "localhost:"
-            + TRAEFIK_INGRESS_HTTP_HOSTPORT)
-        .append("/management/weblogic/latest/domainConfig")
-        .append("/")
-        .append("JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams")
-        .append("/");
-
-    logger.info("curl command {0}", new String(curlString));
-
-    assertTrue(Command
-        .withParams(new CommandParams()
-            .command(curlString.toString()))
-        .executeAndVerify("jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
     logger.info("JDBCSystemResource configuration found");
 
 
@@ -397,11 +403,15 @@ class ItMiiDynamicUpdatePart3 {
     adminServiceNodePort
         = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    /*assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
-        "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted"); */
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
+          "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
 
-    verifySystemResourceConfiguration(null, adminServiceNodePort,
-        "JDBCSystemResources", "TestDataSource2", "404", httpHostHeader);
+    } else {
+      verifySystemResourceConfiguration(null, adminServiceNodePort,
+          "JDBCSystemResources", "TestDataSource2", "404", httpHostHeader);
+    }
     logger.info("JDBCSystemResource Datasource is deleted");
 
     // check that the domain status condition contains the correct type and expected status
