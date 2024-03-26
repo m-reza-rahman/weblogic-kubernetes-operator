@@ -3,7 +3,6 @@
 
 package oracle.kubernetes.operator.helpers;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +48,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
 
+import static java.time.Duration.ofSeconds;
 import static oracle.kubernetes.operator.KubernetesConstants.EVICTED_REASON;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
@@ -566,7 +566,7 @@ public class PodHelper {
       if (adminPod == null || !isPodReady(adminPod)) {
         // requeue to wait for admin pod to be ready
         return new Result(true,
-                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+                ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
       }
 
       return doNext(packet);
@@ -859,21 +859,20 @@ public class PodHelper {
       });
 
       DeleteOptions deleteOptions = (DeleteOptions) new DeleteOptions().gracePeriodSeconds(gracePeriodSeconds);
-      return RequestBuilder.POD.delete(
-              namespace, name, deleteOptions, new DefaultResponseStep<V1Pod>(conflictStep, next) {
-        public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
-          if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
-            DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
-            info.setServerPod(serverName, null);
-          } else if(isMustWait) {
-            // requeue to wait for pod to be deleted and gone
-            return new Result(true,
-                    Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      return RequestBuilder.POD.delete(namespace, name, deleteOptions,
+              new DefaultResponseStep<V1Pod>(conflictStep, next) {
+          public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+            if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
+              DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+              info.setServerPod(serverName, null);
+            } else if (isMustWait) {
+              // requeue to wait for pod to be deleted and gone
+              return new Result(true,
+                      ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+            }
+            return doNext(packet);
           }
-          return doNext(packet);
-        }
-
-      });
+        });
     }
   }
 }
