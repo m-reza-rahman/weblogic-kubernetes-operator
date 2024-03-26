@@ -112,13 +112,6 @@ class ItMiiDynamicUpdatePart3 {
         assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, helper.opNamespace),
             "Can't get operator's pod name");
 
-    // create ingress for admin service
-    // use traefik LB for kind cluster with ingress host header in url
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      httpHostHeader = createIngressHostRouting(helper.domainNamespace, domainUid,
-          helper.adminServerName, 7001);
-    }
 
   }
 
@@ -338,6 +331,14 @@ class ItMiiDynamicUpdatePart3 {
     int adminServiceNodePort
         = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
+
+    // create ingress for admin service
+    // use traefik LB for kind cluster with ingress host header in url
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      httpHostHeader = createIngressHostRouting(helper.domainNamespace, domainUid,
+          helper.adminServerName, 7001);
+    }
 
     StringBuffer curlString = new StringBuffer("curl -g --user ");
     curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
