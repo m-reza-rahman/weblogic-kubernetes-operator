@@ -82,6 +82,10 @@ public final class Fiber implements Runnable {
   private boolean invokeAndPotentiallyRequeue(Step stepline, Packet packet) {
     Result result = stepline.apply(packet);
     if (result == null || result.isRequeue()) {
+
+      // TEST
+      LOGGER.severe("RJE: in Fiber.invokeAndPotentiallyRequeue() with duration: " + result.getRequeueAfter());
+
       fiberExecutor.schedule(this, result.getRequeueAfter());
       return false;
     }

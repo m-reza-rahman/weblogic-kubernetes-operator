@@ -31,6 +31,8 @@ import oracle.kubernetes.operator.helpers.EventHelper.EventItem;
 import oracle.kubernetes.operator.helpers.PodDisruptionBudgetHelper;
 import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.weblogic.domain.model.ClusterList;
 import oracle.kubernetes.weblogic.domain.model.ClusterResource;
@@ -50,6 +52,8 @@ import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_CR
  * that any domains which are found have the proper pods and services.
  */
 class DomainResourcesValidation {
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
   private final String namespace;
   private final DomainProcessor processor;
   private ClusterList activeClusterResources;
@@ -289,8 +293,18 @@ class DomainResourcesValidation {
     EventItem eventItem = getEventItem(info);
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
     if (eventItem != null) {
+
+      // TEST
+      LOGGER.severe("RJE: in DomainResourceValidation.activateDomain() for domain: "
+              + info.getDomainUid());
+
       makeRight.withEventData(new EventData(eventItem)).interrupt().execute();
     } else if (!info.hasRetryableFailure()) {
+
+      // TEST
+      LOGGER.severe("RJE: in DomainResourceValidation.activateDomain() for domain: "
+              + info.getDomainUid());
+
       makeRight.execute();
     }
   }
