@@ -2365,7 +2365,7 @@ public class CommonTestUtils {
             .paths(Collections.singletonList(httpIngressPath)));
     ingressRules.add(ingressRule);
 
-    String ingressName = domainNamespace + "-" + domainUid + "-" + serviceName + "-" + port;
+    String ingressName = domainNamespace + "-" + domainUid + "-" + serviceName;
     assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
         Files.readString(INGRESS_CLASS_FILE_NAME), ingressRules, null));
 

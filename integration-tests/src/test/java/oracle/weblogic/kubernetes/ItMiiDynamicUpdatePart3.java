@@ -14,6 +14,8 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Pod;
 import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
+import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -24,8 +26,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.MII_DYNAMIC_UPDATE_EXPECTED_ERROR_MSG;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_VERSION;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
@@ -45,6 +50,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfig;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
@@ -80,6 +86,7 @@ class ItMiiDynamicUpdatePart3 {
   public static Path pathToChangReadsYaml = null;
   static LoggingFacade logger = null;
   private static String operatorPodName = null;
+  private static String httpHostHeader = null;
 
   /**
    * Install Operator.
@@ -104,6 +111,15 @@ class ItMiiDynamicUpdatePart3 {
     operatorPodName =
         assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, helper.opNamespace),
             "Can't get operator's pod name");
+
+    // create ingress for admin service
+    // use traefik LB for kind cluster with ingress host header in url
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      httpHostHeader = createIngressHostRouting(helper.domainNamespace, domainUid,
+          helper.adminServerName, 7001);
+    }
+
   }
 
   /**
@@ -322,9 +338,23 @@ class ItMiiDynamicUpdatePart3 {
     int adminServiceNodePort
         = getServiceNodePort(helper.domainNamespace, getExternalServicePodName(helper.adminServerPodName), "default");
     assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
-    assertTrue(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort,
-        "JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams",
-        "jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
+
+    StringBuffer curlString = new StringBuffer("curl -g --user ");
+    curlString.append(ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT)
+        .append(" --noproxy '*' "
+            + " -H 'host: " + httpHostHeader + "' " + " http://" + "localhost:"
+            + TRAEFIK_INGRESS_HTTP_HOSTPORT)
+        .append("/management/weblogic/latest/domainConfig")
+        .append("/")
+        .append("JDBCSystemResources/TestDataSource2/JDBCResource/JDBCDataSourceParams")
+        .append("/");
+
+    logger.info("curl command {0}", new String(curlString));
+
+    assertTrue(Command
+        .withParams(new CommandParams()
+            .command(curlString.toString()))
+        .executeAndVerify("jdbc\\/TestDataSource2-2"), "JDBCSystemResource JNDIName not found");
     logger.info("JDBCSystemResource configuration found");
 
     // check that the domain status condition contains the correct type and expected reason
