@@ -466,7 +466,7 @@ public class CleanupUtil {
       V1JobList jobList = listJobs(namespace);
       if (jobList != null) {
         for (var item : jobList.getItems()) {
-          if (item != null && item.getMetadata() != null) {
+          if (item.getMetadata() != null) {
             Kubernetes.deleteJob(namespace, item.getMetadata().getName());
           }
         }

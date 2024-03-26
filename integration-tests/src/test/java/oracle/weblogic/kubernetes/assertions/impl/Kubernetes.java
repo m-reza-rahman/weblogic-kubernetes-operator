@@ -786,7 +786,8 @@ public class Kubernetes {
     V1JobList jobList = listJobs(namespace, labelSelectors);
     if (jobList != null) {
       for (V1Job job : jobList.getItems()) {
-        if (job != null && job.getMetadata() != null && job.getMetadata().getName().equals(jobName)) {
+        if (job.getMetadata() != null && job.getMetadata().getName() != null
+            && job.getMetadata().getName().equals(jobName)) {
           return job;
         }
       }
