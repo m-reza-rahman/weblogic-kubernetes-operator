@@ -39,6 +39,8 @@ import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_IMAGE_TAG
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WIT_JAVA_HOME;
@@ -133,6 +135,11 @@ class ItWlsMiiSample {
     if (WDT_DOWNLOAD_URL != null) {
       envMap.put("WDT_INSTALLER_URL", WDT_DOWNLOAD_URL);
     }
+
+    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      envMap.put("OPER_IMAGE_NAME", "localhost/weblogic-kubernetes-operator");
+    }
+    
     logger.info("Environment variables to the script {0}", envMap);
 
     logger.info("Setting up image registry secrets");
