@@ -4,6 +4,8 @@
 package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -117,7 +119,7 @@ class ItRemoteConsole {
    *                   JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(4) List<String> namespaces) {
+  public static void initAll(@Namespaces(4) List<String> namespaces) throws Exception {
     logger = getLogger();
     // get a unique operator namespace
     logger.info("Getting a unique namespace for operator");
@@ -308,7 +310,7 @@ class ItRemoteConsole {
     }
   }
 
-  private static void createNginxIngressPathRoutingRules() {
+  private static void createNginxIngressPathRoutingRules() throws UnknownHostException {
 
     // create an ingress in domain namespace
     String ingressName = domainNamespace + "-nginx-path-routing";
@@ -366,6 +368,11 @@ class ItRemoteConsole {
     if (host.contains(":")) {
       host = "[" + host + "]";
     }
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      host = InetAddress.getLocalHost().getHostAddress();
+    }
+
     nginxHostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
         ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : host + ":" + nginxNodePort;
     logger.info("nginxHostAndPort is {0}", nginxHostAndPort);
@@ -416,7 +423,7 @@ class ItRemoteConsole {
 
   }
 
-  private static void installNgnixIngressController() {
+  private static void installNgnixIngressController() throws UnknownHostException {
 
     if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       logger.info("Installing Ngnix controller using 0 as nodeport");
