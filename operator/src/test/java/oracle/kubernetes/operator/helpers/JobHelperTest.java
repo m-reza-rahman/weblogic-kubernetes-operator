@@ -1706,17 +1706,7 @@ class JobHelperTest extends DomainValidationTestBase {
 
     assertThat(getNumPodSpecInitContainers(jobSpec), equalTo(0));
   }
-
-  void whenAdminServerHasNormalAdditionalVolume_introspectorPodStartupWithoutThem() {
-    configureDomain()
-          .configureAdminServer()
-          .withAdditionalVolume("Test", "/test");
-
-    V1JobSpec jobSpec = createJobSpec();
-
-    assertThat(getNumPodSpecVolumes(jobSpec), equalTo(3));
-  }
-
+  
   private int getNumPodSpecVolumes(V1JobSpec jobSpec) {
     return getPodSpecListSize(jobSpec, V1PodSpec::getVolumes);
   }
