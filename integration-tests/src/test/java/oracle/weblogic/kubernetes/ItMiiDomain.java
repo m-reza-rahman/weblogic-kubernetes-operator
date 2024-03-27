@@ -205,8 +205,8 @@ class ItMiiDomain {
     final String hostName = "localhost";
     final int adminServerPort = 7001;
     final int adminServerSecurePort = 7008;
-    String httpHostHeader = null;
-    String httpsHostHeader = null;
+    String httpHostHeader = "";
+    String httpsHostHeader = "";
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
@@ -300,6 +300,7 @@ class ItMiiDomain {
           "admin-server", adminServerPort);
       httpsHostHeader = createIngressHostRouting(domainNamespace, domainUid,
           "admin-server", adminServerSecurePort);
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTPS_HOSTPORT;
     }
 
     final String resourcePath = "/weblogic/ready";
@@ -312,8 +313,7 @@ class ItMiiDomain {
           adminServerPodName);
     } else {
       String curlCmd = "curl -skg --show-error --noproxy '*' "
-          + " -H 'host: " + httpsHostHeader + "' " + " https://" + "localhost:"
-          + TRAEFIK_INGRESS_HTTPS_HOSTPORT
+          + " -H 'host: " + httpsHostHeader + "' " + " https://" + hostAndPort
           + "/weblogic/ready --write-out %{http_code} -o /dev/null";
       logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
       assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
@@ -326,7 +326,10 @@ class ItMiiDomain {
         "Could not get the default external service node port");
     logger.info("Found the default service nodePort {0}", nodePort);
     hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
-
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+    }
     if (OKE_CLUSTER) {
       testUntil(
           isAppInServerPodReady(domainNamespace,
@@ -336,8 +339,7 @@ class ItMiiDomain {
           adminServerPodName);
     } else {
       String curlCmd2 = "curl -skg --show-error --noproxy '*' "
-          + " -H 'host: " + httpHostHeader + "' " + " http://" + "localhost:"
-          + TRAEFIK_INGRESS_HTTP_HOSTPORT
+          + " -H 'host: " + httpHostHeader + "' " + " http://" + hostAndPort
           + "/weblogic/ready --write-out %{http_code} -o /dev/null";
       logger.info("Executing default nodeport curl command {0}", curlCmd2);
       assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
