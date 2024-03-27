@@ -140,7 +140,8 @@ class ItT3Channel {
         "Application archive is not available");
     Path clusterViewAppPath = Paths.get(distDir.toString(), "clusterview.war");
 
-    final int t3ChannelPort = getNextFreePort();
+    //final int t3ChannelPort = getNextFreePort();
+    final int t3ChannelPort = 7999;
 
     final String pvName = getUniqueName(domainUid + "-pv-");
     final String pvcName = getUniqueName(domainUid + "-pvc-");
