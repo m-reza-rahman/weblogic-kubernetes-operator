@@ -294,6 +294,7 @@ class ItMiiDomain {
 
     // create ingress for admin service
     // use traefik LB for kind cluster with ingress host header in url
+    String headers = "";
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       httpHostHeader = createIngressHostRouting(domainNamespace, domainUid,
@@ -301,6 +302,7 @@ class ItMiiDomain {
       httpsHostHeader = createIngressHostRouting(domainNamespace, domainUid,
           "admin-server", adminServerSecurePort);
       hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTPS_HOSTPORT;
+      headers = " -H 'host: " + httpsHostHeader + "' ";
     }
 
     final String resourcePath = "/weblogic/ready";
@@ -313,7 +315,7 @@ class ItMiiDomain {
           adminServerPodName);
     } else {
       String curlCmd = "curl -skg --show-error --noproxy '*' "
-          + " -H 'host: " + httpsHostHeader + "' " + " https://" + hostAndPort
+          + headers + " https://" + hostAndPort
           + "/weblogic/ready --write-out %{http_code} -o /dev/null";
       logger.info("Executing default-admin nodeport curl command {0}", curlCmd);
       assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
@@ -329,6 +331,7 @@ class ItMiiDomain {
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      headers = " -H 'host: " + httpHostHeader + "' ";
     }
     if (OKE_CLUSTER) {
       testUntil(
@@ -339,7 +342,7 @@ class ItMiiDomain {
           adminServerPodName);
     } else {
       String curlCmd2 = "curl -skg --show-error --noproxy '*' "
-          + " -H 'host: " + httpHostHeader + "' " + " http://" + hostAndPort
+          + headers + " http://" + hostAndPort
           + "/weblogic/ready --write-out %{http_code} -o /dev/null";
       logger.info("Executing default nodeport curl command {0}", curlCmd2);
       assertTrue(callWebAppAndWaitTillReady(curlCmd2, 5));
