@@ -601,7 +601,7 @@ public class JobStepContext extends BasePodStepContext {
     }
 
     for (V1Volume additionalVolume : info.getDomain().getAdminServerSpec().getAdditionalVolumes()) {
-     if (podSpec.getVolumes() != null) {
+      if (podSpec.getVolumes() != null) {
         List<V1Volume> volumes = podSpec.getVolumes();
         if (!volumes.contains(additionalVolume) && !additionalVolume.getName().startsWith(COMPATIBILITY_MODE)) {
           volumes.add(additionalVolume);

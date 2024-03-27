@@ -1706,7 +1706,7 @@ class JobHelperTest extends DomainValidationTestBase {
 
     assertThat(getNumPodSpecInitContainers(jobSpec), equalTo(0));
   }
-  
+
   private int getNumPodSpecVolumes(V1JobSpec jobSpec) {
     return getPodSpecListSize(jobSpec, V1PodSpec::getVolumes);
   }
