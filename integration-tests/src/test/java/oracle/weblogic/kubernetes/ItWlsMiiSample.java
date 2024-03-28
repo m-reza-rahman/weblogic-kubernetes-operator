@@ -123,6 +123,7 @@ class ItWlsMiiSample {
     envMap.put("BASE_IMAGE_TAG", WEBLOGIC_IMAGE_TAG);
     envMap.put("IMAGE_PULL_SECRET_NAME", BASE_IMAGES_REPO_SECRET_NAME);
     envMap.put("DOMAIN_IMAGE_PULL_SECRET_NAME", TEST_IMAGES_REPO_SECRET_NAME);
+    envMap.put("WLSIMG_BUILDER_DEFAULT", WLSIMG_BUILDER_DEFAULT);
     envMap.put("OKD", "" +  OKD);
     envMap.put("KIND_CLUSTER", "" + KIND_CLUSTER);
 
@@ -147,7 +148,6 @@ class ItWlsMiiSample {
       envMap.put("K8S_NODEPORT_HOST", assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
       envMap.put("TRAEFIK_INGRESS_HTTP_HOSTPORT", "" + TRAEFIK_INGRESS_HTTP_HOSTPORT);
       envMap.put("TRAEFIK_NAMESPACE", TRAEFIK_NAMESPACE);
-      envMap.put("WLSIMG_BUILDER_DEFAULT", WLSIMG_BUILDER_DEFAULT);
     } else {
       envMap.put("TRAEFIK_NAMESPACE", traefikNamespace);
       envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
