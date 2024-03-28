@@ -66,7 +66,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItWlsMiiSample {
 
   private static final String miiSampleScript = "../operator/integration-tests/model-in-image/run-test.sh";
-  private static final String DOMAIN_CREATION_IMAGE_NAME = "wdt-domain-image";
   private static final String DOMAIN_CREATION_IMAGE_WLS_TAG = "WLS-v1";
   private static final String MODEL_IMAGE_WLS_TAG = "WLS-v2";
   private static String traefikNamespace = null;
@@ -74,6 +73,7 @@ class ItWlsMiiSample {
   private static LoggingFacade logger = null;
 
   private boolean previousTestSuccessful = true;
+  private static String DOMAIN_CREATION_IMAGE_NAME = "wdt-domain-image";
 
   /**
    * Create namespaces and set environment variables for the test.
@@ -137,7 +137,9 @@ class ItWlsMiiSample {
     }
 
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      DOMAIN_CREATION_IMAGE_NAME = "localhost/wdt-domain-image";
       envMap.put("OPER_IMAGE_NAME", "localhost/weblogic-kubernetes-operator");
+      envMap.put("MODEL_IMAGE_NAME", DOMAIN_CREATION_IMAGE_NAME);
     }
     
     logger.info("Environment variables to the script {0}", envMap);
