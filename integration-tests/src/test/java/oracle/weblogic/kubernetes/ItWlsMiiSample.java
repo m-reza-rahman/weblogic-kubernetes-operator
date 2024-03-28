@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -121,7 +123,6 @@ class ItWlsMiiSample {
     envMap.put("BASE_IMAGE_TAG", WEBLOGIC_IMAGE_TAG);
     envMap.put("IMAGE_PULL_SECRET_NAME", BASE_IMAGES_REPO_SECRET_NAME);
     envMap.put("DOMAIN_IMAGE_PULL_SECRET_NAME", TEST_IMAGES_REPO_SECRET_NAME);
-    envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
     envMap.put("OKD", "" +  OKD);
     envMap.put("KIND_CLUSTER", "" + KIND_CLUSTER);
 
@@ -143,11 +144,13 @@ class ItWlsMiiSample {
       envMap.put("OPER_IMAGE_NAME", "localhost/weblogic-kubernetes-operator");
       envMap.put("MODEL_IMAGE_NAME", DOMAIN_CREATION_IMAGE_NAME);
       envMap.put("WLSIMG_BUILDER", WLSIMG_BUILDER);
-      envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
+      envMap.put("K8S_NODEPORT_HOST", assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
       envMap.put("TRAEFIK_INGRESS_HTTP_HOSTPORT", "" + TRAEFIK_INGRESS_HTTP_HOSTPORT);
       envMap.put("TRAEFIK_NAMESPACE", TRAEFIK_NAMESPACE);
+      envMap.put("WLSIMG_BUILDER_DEFAULT", WLSIMG_BUILDER_DEFAULT);
     } else {
       envMap.put("TRAEFIK_NAMESPACE", traefikNamespace);
+      envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
     }
     
     logger.info("Environment variables to the script {0}", envMap);

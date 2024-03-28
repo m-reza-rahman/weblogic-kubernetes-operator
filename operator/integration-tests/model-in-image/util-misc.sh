@@ -137,7 +137,7 @@ EOF
         fi
       fi
       if [ "$KIND_CLUSTER" = "true" ]; then
-        if [ "WLSIMG_BUILDER" = "docker" ]; then
+        if [ "$WLSIMG_BUILDER" = "$WLSIMG_BUILDER_DEFAULT" ]; then
           local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp-$3/myapp_war/index.jsp"
         else
           local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${TRAEFIK_INGRESS_HTTP_HOSTPORT:-2080}/myapp-$3/myapp_war/index.jsp"
