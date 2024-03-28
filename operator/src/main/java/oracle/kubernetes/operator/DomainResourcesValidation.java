@@ -293,18 +293,8 @@ class DomainResourcesValidation {
     EventItem eventItem = getEventItem(info);
     MakeRightDomainOperation makeRight = dp.createMakeRightOperation(info).withExplicitRecheck();
     if (eventItem != null) {
-
-      // TEST
-      LOGGER.severe("RJE: in DomainResourceValidation.activateDomain() for domain: "
-              + info.getDomainUid());
-
       makeRight.withEventData(new EventData(eventItem)).interrupt().execute();
     } else if (!info.hasRetryableFailure()) {
-
-      // TEST
-      LOGGER.severe("RJE: in DomainResourceValidation.activateDomain() for domain: "
-              + info.getDomainUid());
-
       makeRight.execute();
     }
   }

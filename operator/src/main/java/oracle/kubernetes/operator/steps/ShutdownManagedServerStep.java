@@ -358,13 +358,8 @@ public class ShutdownManagedServerStep extends Step {
 
       @Override
       public @Nonnull Result apply(Packet packet) {
-        DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
-        WlsDomainConfig domainTopology =
-                (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
-        V1Pod pod = info.getServerPod(serverName);
-
-        if (pod != null) {
-          // requeue to wait for pod to be deleted and gone
+        if (SHUTDOWN_STATE.equals(PodHelper.getServerState(getDomainPresenceInfo(packet).getDomain(), serverName))) {
+          // requeue to wait for server instance to be shut down.
           return new Result(true,
                   Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
         }

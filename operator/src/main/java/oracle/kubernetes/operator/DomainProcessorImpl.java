@@ -542,11 +542,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
    * @param item watch event
    */
   public void dispatchPodWatch(Watch.Response<V1Pod> item) {
-
-    // TEST
-    LOGGER.severe("RJE: in DomainProcessorImpl.dispatchPodWatch() with watchType: " + item.type
-            + ", name: " + item.object.getMetadata().getName());
-
     if (getPodLabel(item.object, LabelConstants.DOMAINUID_LABEL) == null) {
       return;
     }
@@ -578,11 +573,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         if (PodHelper.isEvicted(pod) && !podPreviouslyEvicted) {
           if (PodHelper.shouldRestartEvictedPod(pod)) {
             LOGGER.info(MessageKeys.POD_EVICTED, getPodName(pod), getPodStatusMessage(pod));
-
-            // TEST
-            LOGGER.severe("RJE: in DomainProcessorImpl.processServerPodWatch() execute for evicted pod: "
-                    + pod.getMetadata().getName());
-
             createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
           } else {
             LOGGER.info(MessageKeys.POD_EVICTED_NO_RESTART, getPodName(pod), getPodStatusMessage(pod));
@@ -593,11 +583,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         boolean removed = info.deleteServerPodFromEvent(serverName, pod);
         if (removed && isNotDeleting(info) && Boolean.FALSE.equals(info.isServerPodBeingDeleted(serverName))) {
           LOGGER.info(MessageKeys.POD_DELETED, domainUid, getPodNamespace(pod), serverName);
-
-          // TEST
-          LOGGER.severe("RJE: in DomainProcessorImpl.processServerPodWatch() execute for deleted pod: "
-                  + pod.getMetadata().getName());
-
           createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
         }
         break;
@@ -792,11 +777,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
    * @param item An item received from a Watch response.
    */
   public void dispatchClusterWatch(Watch.Response<ClusterResource> item) {
-
-    // TEST
-    LOGGER.severe("RJE: in DomainProcessorImpl.dispatchClusterWatch() with watchType: " + item.type
-            + ", name: " + item.object.getMetadata().getName());
-
     switch (item.type) {
       case ADDED:
         handleAddedCluster(item.object);
@@ -818,20 +798,10 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         getExistingDomainPresenceInfoForCluster(cluster.getNamespace(), cluster.getMetadata().getName());
     if (hostingDomains.isEmpty()) {
       LOGGER.info(MessageKeys.WATCH_CLUSTER_WITHOUT_DOMAIN, cluster.getMetadata().getName());
-
-      // TEST
-      LOGGER.severe("RJE: in DomainProcessorImpl.handleAddedCluster() execute for cluster without domain: "
-              + cluster.getMetadata().getName());
-
       createMakeRightOperationForClusterEvent(CLUSTER_CREATED, cluster, null).execute();
     } else {
       hostingDomains.forEach(info -> {
         LOGGER.info(MessageKeys.WATCH_CLUSTER, cluster.getMetadata().getName(), info.getDomainUid());
-
-        // TEST
-        LOGGER.severe("RJE: in DomainProcessorImpl.handleAddedCluster() execute for cluster: "
-                + cluster.getMetadata().getName());
-
         createMakeRightOperationForClusterEvent(CLUSTER_CREATED, cluster, info.getDomainUid()).execute();
         createMakeRightOperation(info)
             .interrupt()
@@ -846,11 +816,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         getExistingDomainPresenceInfoForCluster(cluster.getNamespace(), cluster.getMetadata().getName());
     if (hostingDomains.isEmpty()) {
       LOGGER.info(MessageKeys.WATCH_CLUSTER_WITHOUT_DOMAIN, cluster.getMetadata().getName());
-
-      // TEST
-      LOGGER.severe("RJE: in DomainProcessorImpl.handleModifiedCluster() execute for cluster without domain: "
-              + cluster.getMetadata().getName());
-
       createMakeRightOperationForClusterEvent(CLUSTER_CHANGED, cluster, null).execute();
     } else {
       hostingDomains.forEach(info -> {
@@ -860,11 +825,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         }
 
         LOGGER.fine(MessageKeys.WATCH_CLUSTER, cluster.getMetadata().getName(), info.getDomainUid());
-
-        // TEST
-        LOGGER.severe("RJE: in DomainProcessorImpl.handleModifiedCluster() execute for cluster: "
-                + cluster.getMetadata().getName());
-
         createMakeRightOperationForClusterEvent(CLUSTER_CHANGED, cluster, info.getDomainUid()).execute();
         createMakeRightOperation(info)
             .interrupt()
@@ -879,20 +839,10 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         getExistingDomainPresenceInfoForCluster(cluster.getNamespace(), cluster.getMetadata().getName());
     if (hostingDomains.isEmpty()) {
       LOGGER.info(MessageKeys.WATCH_CLUSTER_WITHOUT_DOMAIN, cluster.getMetadata().getName());
-
-      // TEST
-      LOGGER.severe("RJE: in DomainProcessorImpl.handleDeletedCluster() execute for cluster without domain: "
-              + cluster.getMetadata().getName());
-
       createMakeRightOperationForClusterEvent(EventItem.CLUSTER_DELETED, cluster, null).execute();
     } else {
       hostingDomains.forEach(info -> {
         LOGGER.info(MessageKeys.WATCH_CLUSTER_DELETED, cluster.getMetadata().getName(), info.getDomainUid());
-
-        // TEST
-        LOGGER.severe("RJE: in DomainProcessorImpl.handleDeletedCluster() execute for cluster: "
-                + cluster.getMetadata().getName());
-
         createMakeRightOperationForClusterEvent(EventItem.CLUSTER_DELETED, cluster, info.getDomainUid()).execute();
         info.removeClusterResource(cluster.getClusterName());
         createMakeRightOperation(info)
@@ -928,11 +878,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
    * @param item An item received from a Watch response.
    */
   public void dispatchDomainWatch(Watch.Response<DomainResource> item) {
-
-    // TEST
-    LOGGER.severe("RJE: in DomainProcessorImpl.dispatchClusterWatch() with watchType: " + item.type
-            + ", name: " + item.object.getMetadata().getName());
-
     switch (item.type) {
       case ADDED:
         handleAddedDomain(item.object);
@@ -951,11 +896,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private void handleAddedDomain(DomainResource domain) {
     LOGGER.info(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
-
-    // TEST
-    LOGGER.severe("RJE: in DomainProcessorImpl.handleAddedDomain() for domain: "
-            + domain.getMetadata().getName());
-
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
         .withExplicitRecheck()
@@ -965,11 +905,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private void handleModifiedDomain(DomainResource domain) {
     LOGGER.fine(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
-
-    // TEST
-    LOGGER.severe("RJE: in DomainProcessorImpl.handleModifiedDomain() for domain: "
-            + domain.getMetadata().getName());
-
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
         .withEventData(new EventData(DOMAIN_CHANGED))
@@ -978,11 +913,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private void handleDeletedDomain(DomainResource domain) {
     LOGGER.info(MessageKeys.WATCH_DOMAIN_DELETED, domain.getDomainUid());
-
-    // TEST
-    LOGGER.severe("RJE: in DomainProcessorImpl.handleDeletedDomain() for domain: "
-            + domain.getMetadata().getName());
-
     createMakeRightOperation(new DomainPresenceInfo(domain)).interrupt().forDeletion().withExplicitRecheck()
         .withEventData(new EventData(EventItem.DOMAIN_DELETED))
         .execute();
@@ -1082,10 +1012,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       }
   
       private void runFailureSteps(Throwable throwable) {
-
-        // TEST
-        LOGGER.severe("RJE: in DomainProcessorImpl.runFailureSteps() with throwable: " + throwable.getMessage());
-
         gate.startFiber(
             ((DomainPresenceInfo)presenceInfo).getDomainUid(),
             getFailureSteps(throwable),
@@ -1131,11 +1057,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     private void scheduleRetry(@Nonnull DomainPresenceInfo domainPresenceInfo) {
       final MakeRightDomainOperation retry = operation.createRetry(domainPresenceInfo);
-
-      // TEST
-      LOGGER.severe("RJE: in DomainProcessorImpl.scheduleRetry() with delay: "
-              + delayUntilNextRetry(domainPresenceInfo));
-
       delegate.schedule(retry::execute, delayUntilNextRetry(domainPresenceInfo), TimeUnit.SECONDS);
     }
     
@@ -1205,10 +1126,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
 
     void execute() {
-
-      // TEST
-      LOGGER.severe("RJE: in DomainProcessorImpl.execute() with resource: " + presenceInfo.getResourceName());
-
       gate.startFiber(presenceInfo.getResourceName(), firstStep, packet, createCompletionCallback());
     }
 
@@ -1236,11 +1153,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     private void updateStatus() {
       try {
         Step strategy = Step.chain(new DomainPresenceInfoStep(), ServerStatusReader.createStatusStep(timeoutSeconds));
-
-        // TEST
-        LOGGER.severe("RJE: in DomainProcessorImpl.updateStatus() with domainUID: " + getDomainUid());
-
-
         getStatusFiberGate(getNamespace())
             .startFiber(getDomainUid(), strategy, createPacket(), new CompletionCallbackImpl());
       } catch (Exception t) {
