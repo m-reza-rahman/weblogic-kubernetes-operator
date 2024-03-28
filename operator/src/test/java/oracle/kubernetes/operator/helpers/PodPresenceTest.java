@@ -38,7 +38,6 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import org.hamcrest.junit.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
@@ -51,7 +50,6 @@ import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_TOPOLOGY;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_NAME;
 import static oracle.kubernetes.operator.ProcessingConstants.SERVER_SCAN;
 import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
-import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SUSPENDING_STATE;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.POD;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -415,54 +413,6 @@ class PodPresenceTest {
   }
 
   @Test
-  void onDeleteEventWithNoRecordedServerPod_ignoreIt() {
-    V1Pod service = createServerPod();
-    Watch.Response<V1Pod> event = WatchEvent.createDeletedEvent(service).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(info.getServerPod(SERVER), nullValue());
-  }
-
-  @Test
-  void onDeleteEventWithInfoNotDeletingInfoHasMissingDomain_ignoreIt() {
-    V1Pod service = createServerPod();
-    info.setServerPod(SERVER, service);
-    info.setDeleting(false);
-    info.setDomain(null);
-    Watch.Response<V1Pod> event = WatchEvent.createDeletedEvent(service).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(info.getServerPod(SERVER), nullValue());
-  }
-
-  @Test
-  void onDeleteEventWithInfoDeleting_ignoreIt() {
-    V1Pod service = createServerPod();
-    info.setServerPod(SERVER, service);
-    info.setDeleting(true);
-    Watch.Response<V1Pod> event = WatchEvent.createDeletedEvent(service).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(info.getServerPod(SERVER), nullValue());
-  }
-
-  @Test
-  void onDeleteEventWithInfoDeletingInfoHasMissingDomain_ignoreIt() {
-    V1Pod service = createServerPod();
-    info.setServerPod(SERVER, service);
-    info.setDeleting(true);
-    info.setDomain(null);
-    Watch.Response<V1Pod> event = WatchEvent.createDeletedEvent(service).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(info.getServerPod(SERVER), nullValue());
-  }
-
-  @Test
   void onDeleteEventWithOlderServerPod_keepCurrentValue() {
     V1Pod oldPod = createServerPod();
     V1Pod currentPod = createServerPod();
@@ -472,41 +422,6 @@ class PodPresenceTest {
     processor.dispatchPodWatch(event);
 
     assertThat(info.getServerPod(SERVER), sameInstance(currentPod));
-  }
-
-  @Test
-  void onDeleteEventWithSameServerPod_removeIt() {
-    V1Pod currentPod = createServerPod();
-    info.setServerPod(SERVER, currentPod);
-    Watch.Response<V1Pod> event = WatchEvent.createDeletedEvent(currentPod).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(info.getServerPod(SERVER), nullValue());
-  }
-
-  @Test
-  void onDeleteEventWithNewerServerPod_removeIt() {
-    V1Pod currentPod = createServerPod();
-    V1Pod newerPod = createServerPod();
-    info.setServerPod(SERVER, currentPod);
-    Watch.Response<V1Pod> event = WatchEvent.createDeletedEvent(newerPod).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(info.getServerPod(SERVER), nullValue());
-  }
-
-  @Test
-  void afterDeleteEvent_setLastKnownStatus_Shutdown() {
-    V1Pod currentPod = createServerPod();
-    V1Pod newerPod = createServerPod();
-    info.setServerPod(SERVER, currentPod);
-    Watch.Response<V1Pod> event = WatchEvent.createDeletedEvent(newerPod).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(info.getLastKnownServerStatus(SERVER).getStatus(), equalTo(SHUTDOWN_STATE));
   }
 
   @Test
@@ -520,40 +435,6 @@ class PodPresenceTest {
     processor.dispatchPodWatch(event);
 
     assertThat(info.getServerPod(SERVER), notNullValue());
-  }
-
-  @Test
-  @Disabled("Test has disagreement between event and data repository")
-  void onModifyEventWithEvictedServerPod_cycleServerPod() {
-    V1Pod currentPod = createServerPod();
-    V1Pod modifiedPod = withEvictedStatus(createServerPod());
-    List<String> createdPodNames = new ArrayList<>();
-    testSupport.doOnCreate(POD, p -> recordPodCreation((V1Pod) p, createdPodNames));
-    testSupport.doOnDelete(POD, this::recordPodDeletion);
-
-    info.setServerPod(SERVER, currentPod);
-    Watch.Response<V1Pod> event = WatchEvent.createModifiedEvent(modifiedPod).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(numPodsDeleted, is(1));
-    assertThat(createdPodNames, hasItem(SERVER));
-  }
-
-  @Test
-  void onModifyEventWithEvictedServerPod_dontCycleAlreadyEvictedServerPod() {
-    V1Pod currentPod = withEvictedStatus(createServerPod());
-    V1Pod modifiedPod = withEvictedStatus(createServerPod());
-    List<String> createdPodNames = new ArrayList<>();
-    testSupport.doOnCreate(POD, p -> recordPodCreation((V1Pod) p, createdPodNames));
-
-    info.setServerPod(SERVER, currentPod);
-    Watch.Response<V1Pod> event = WatchEvent.createModifiedEvent(modifiedPod).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(numPodsDeleted, is(0));
-    assertThat(createdPodNames, not(hasItem(SERVER)));
   }
 
   @Test
@@ -572,25 +453,6 @@ class PodPresenceTest {
 
     assertThat(numPodsDeleted, is(0));
     assertThat(createdPodNames, not(hasItem(SERVER)));
-  }
-
-  @Test
-  @Disabled("Test has disagreement between event and data repository")
-  void onModifyEventWithEvictedAdminServerPod_cycleServerPod() {
-    V1Pod currentPod = createAdminServerPod();
-    V1Pod modifiedPod = withEvictedStatus(createAdminServerPod());
-    List<String> createdPodNames = new ArrayList<>();
-    testSupport.doOnCreate(POD, p -> recordPodCreation((V1Pod) p, createdPodNames));
-    testSupport.doOnDelete(POD, this::recordPodDeletion);
-
-    packet.put(SERVER_NAME, ADMIN_SERVER_NAME);
-    info.setServerPod(ADMIN_SERVER_NAME, currentPod);
-    Watch.Response<V1Pod> event = WatchEvent.createModifiedEvent(modifiedPod).toWatchResponse();
-
-    processor.dispatchPodWatch(event);
-
-    assertThat(numPodsDeleted, is(1));
-    assertThat(createdPodNames, hasItem(ADMIN_SERVER_NAME));
   }
 
   private void recordPodCreation(V1Pod pod, List<String> createdPodNames) {

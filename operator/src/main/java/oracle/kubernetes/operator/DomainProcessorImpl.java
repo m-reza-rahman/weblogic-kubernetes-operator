@@ -561,8 +561,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       return;
     }
 
-    // FIXME, HERE: Make sure that watch event about pods triggers make right (and doesn't get surpressed)
-
     String serverName = getPodLabel(pod, LabelConstants.SERVERNAME_LABEL);
     switch (watchType) {
       case ADDED:
@@ -573,18 +571,18 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         if (PodHelper.isEvicted(pod) && !podPreviouslyEvicted) {
           if (PodHelper.shouldRestartEvictedPod(pod)) {
             LOGGER.info(MessageKeys.POD_EVICTED, getPodName(pod), getPodStatusMessage(pod));
-            createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
           } else {
             LOGGER.info(MessageKeys.POD_EVICTED_NO_RESTART, getPodName(pod), getPodStatusMessage(pod));
           }
         }
+        createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
         break;
       case DELETED:
         boolean removed = info.deleteServerPodFromEvent(serverName, pod);
         if (removed && isNotDeleting(info) && Boolean.FALSE.equals(info.isServerPodBeingDeleted(serverName))) {
           LOGGER.info(MessageKeys.POD_DELETED, domainUid, getPodNamespace(pod), serverName);
-          createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
         }
+        createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
         break;
 
       case ERROR:
