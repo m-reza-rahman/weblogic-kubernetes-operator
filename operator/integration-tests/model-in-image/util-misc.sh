@@ -37,8 +37,8 @@ get_service_yaml() {
 get_kube_address() {
   # ${KUBERNETES_CLI:-kubectl} cluster-info | grep KubeDNS | sed 's;^.*//;;' | sed 's;:.*$;;'
   # This is the heuristic used by the integration test framework:
-  if [ "$KIND_CLUSTER" = "true" ]; then
-    echo $(${KUBERNETES_CLI:-kubectl} get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
+  if [ "$KIND_CLUSTER" = "true" ] && [ "$WLSIMG_BUILDER" = "$WLSIMG_BUILDER_DEFAULT" ]; then
+      echo $(${KUBERNETES_CLI:-kubectl} get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
   else
     echo ${K8S_NODEPORT_HOST:-$(hostname)}
   fi
