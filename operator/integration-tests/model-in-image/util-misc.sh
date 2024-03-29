@@ -125,7 +125,9 @@ testapp() {
         local command="${KUBERNETES_CLI:-kubectl} exec -n $ns $admin_service_name -- bash -c \"curl -s -S $(curl_timeout_parms) http://$cluster_service_name:8001/myapp_war/index.jsp\""
       fi
     elif [ "$1" = "traefik" ]; then
-      if [ -z "$traefik_nodeport" ]; then
+      if [ "$KIND_CLUSTER" = "true" ] && [ "$WLSIMG_BUILDER" != "$WLSIMG_BUILDER_DEFAULT" ]; then
+        traefik_nodeport=${TRAEFIK_INGRESS_HTTP_HOSTPORT:-2080}
+      elif [ -z "$traefik_nodeport" ]; then
         echo "@@ Info: Obtaining traefik nodeport by calling:"
         cat<<EOF
           ${KUBERNETES_CLI:-kubectl} get svc $TRAEFIK_NAME --namespace $TRAEFIK_NAMESPACE -o=jsonpath='{.spec.ports[?(@.name=="web")].nodePort}'
@@ -137,11 +139,7 @@ EOF
         fi
       fi
       if [ "$KIND_CLUSTER" = "true" ]; then
-        if [ "$WLSIMG_BUILDER" = "$WLSIMG_BUILDER_DEFAULT" ]; then
-          local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp-$3/myapp_war/index.jsp"
-        else
-          local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${TRAEFIK_INGRESS_HTTP_HOSTPORT:-2080}/myapp-$3/myapp_war/index.jsp"
-        fi
+        local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp-$3/myapp_war/index.jsp"
       else
         local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp_war/index.jsp"
       fi
