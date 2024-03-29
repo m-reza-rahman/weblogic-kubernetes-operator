@@ -151,8 +151,8 @@ class ItLBTwoDomainsNginx {
     logger.info("curl command to get all --all-namespaces is: {0}", command);
 
     try {
-      ExecResult result0 = ExecCommand.exec(command, true);
-      logger.info("========== result is: {0}", result0.toString());
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result.toString());
     } catch (java.io.IOException | InterruptedException ex) {
       ex.printStackTrace();
     }
