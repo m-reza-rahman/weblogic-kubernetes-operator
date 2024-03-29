@@ -867,6 +867,9 @@ public class DbUtils {
     FileUtils.copy(Paths.get(RESOURCE_DIR, "dboperator", "singleinstancedatabase.yaml"), dbYaml);
 
     String storageClass = "weblogic-domain-storage-class";
+    if(OKE_CLUSTER) {
+      storageClass = "oci-fss";
+    }
     
     replaceStringInFile(dbYaml.toString(), "name: sidb-sample", "name: " + dbName);
     replaceStringInFile(dbYaml.toString(), "namespace: default", "namespace: " + namespace);
