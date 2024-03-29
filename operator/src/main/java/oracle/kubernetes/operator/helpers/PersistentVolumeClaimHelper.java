@@ -219,7 +219,7 @@ public class PersistentVolumeClaimHelper {
       labels.put(CREATEDBYOPERATOR_LABEL, "true");
       labels.put(DOMAINUID_LABEL, info.getDomainUid());
       return new V1PersistentVolumeClaim()
-              .metadata(getMetadata().labels(labels))
+              .metadata(getMetadata().namespace(info.getNamespace()).labels(labels))
               .apiVersion(PV_PVC_API_VERSION)
               .spec(createSpec(getSpec()));
     }
