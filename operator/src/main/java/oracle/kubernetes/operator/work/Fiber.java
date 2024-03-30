@@ -6,6 +6,7 @@ package oracle.kubernetes.operator.work;
 import java.io.Serial;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -81,6 +82,12 @@ public final class Fiber implements Runnable {
 
   private boolean invokeAndPotentiallyRequeue(Step stepline, Packet packet) {
     Result result = stepline.apply(packet);
+
+    // TEST
+    LOGGER.severe("RJE: Fiber.iAPR(), fiber: " + getName() + ", requeue: "
+            + Optional.ofNullable(result).map(Result::isRequeue).orElse(false) + ", after: "
+            + Optional.ofNullable(result).map(Result::getRequeueAfter).map(Duration::toString).orElse("none"));
+
     if (result == null || result.isRequeue()) {
       fiberExecutor.schedule(this, result.getRequeueAfter());
       return false;
@@ -90,6 +97,10 @@ public final class Fiber implements Runnable {
 
   @Override
   public void run() {
+
+    // TEST
+    LOGGER.severe("RJE: Fiber.run(), fiber: " + getName() + ", isCancelled: " + isCancelled());
+
     if (!isCancelled()) {
       clearThreadInterruptedStatus();
 
