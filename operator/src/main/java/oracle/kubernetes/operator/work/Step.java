@@ -9,17 +9,26 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 
 /** Individual step in a processing flow. */
 public abstract class Step {
-  private static final BiFunction<Step, Packet, Step> DEFAULT_ADAPTER = (step, packet) -> step;
+
+  public interface StepAdapter {
+    Step adapt(Fiber fiber, Step step, Packet packet);
+  }
+  
+  private static final StepAdapter DEFAULT_ADAPTER = (fiber, step, packet) -> {
+    if (fiber != null) {
+      fiber.addBreadcrumb(step);
+    }
+    return step;
+  };
 
   @SuppressWarnings({"FieldMayBeFinal", "CanBeFinal"})
-  private static BiFunction<Step, Packet, Step> adapter = DEFAULT_ADAPTER;
+  private static StepAdapter adapter = DEFAULT_ADAPTER;
 
   public static final String THROWABLE = "throwable";
 
@@ -161,7 +170,11 @@ public abstract class Step {
   public abstract @Nonnull Result apply(Packet packet);
 
   static final Step adapt(Step step, Packet packet) {
-    return adapter.apply(step, packet);
+    return adapt(Fiber.getCurrentIfSet(), step, packet);
+  }
+
+  static final Step adapt(Fiber fiber, Step step, Packet packet) {
+    return adapter.adapt(fiber, step, packet);
   }
 
   /**

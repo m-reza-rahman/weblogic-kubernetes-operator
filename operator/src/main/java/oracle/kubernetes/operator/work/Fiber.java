@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.work;
 
 import java.io.Serial;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,6 +37,8 @@ public final class Fiber implements Runnable {
   private final Step stepline;
   private final Packet packet;
   private final AtomicBoolean isCancelled = new AtomicBoolean(false);
+  // TEST
+  private final List<String> breadcrumbs = new ArrayList<>();
 
   public Fiber(FiberExecutor fiberExecutor, Step stepline, Packet packet) {
     this(fiberExecutor, stepline, packet, null);
@@ -63,6 +66,10 @@ public final class Fiber implements Runnable {
     id = iotaGen.incrementAndGet();
   }
 
+  private Fiber(Fiber fiber) {
+    this(fiber.fiberExecutor, fiber.stepline, fiber.packet, fiber.completionCallback);
+  }
+
   /**
    * Gets the current fiber that's running, if set.
    *
@@ -70,6 +77,10 @@ public final class Fiber implements Runnable {
    */
   public static Fiber getCurrentIfSet() {
     return CURRENT_FIBER.get();
+  }
+
+  void addBreadcrumb(Step step) {
+    breadcrumbs.add(step.getResourceName());
   }
 
   /**
@@ -89,7 +100,7 @@ public final class Fiber implements Runnable {
             + Optional.ofNullable(result).map(Result::getRequeueAfter).map(Duration::toString).orElse("none"));
 
     if (result == null || result.isRequeue()) {
-      fiberExecutor.schedule(this, result.getRequeueAfter());
+      fiberExecutor.schedule(new Fiber(this), result.getRequeueAfter());
       return false;
     }
     return true;
@@ -108,7 +119,7 @@ public final class Fiber implements Runnable {
       CURRENT_FIBER.set(this);
       try {
         try {
-          if ((stepline == null || invokeAndPotentiallyRequeue(adapt(stepline, packet), packet))
+          if ((stepline == null || invokeAndPotentiallyRequeue(adapt(this, stepline, packet), packet))
                   && !isCancelled()
                   && completionCallback != null) {
             Throwable t = (Throwable) packet.remove(THROWABLE);
@@ -124,6 +135,11 @@ public final class Fiber implements Runnable {
           }
         }
       } finally {
+
+        // TEST
+        LOGGER.severe("RJE: Fiber.run() END, fiber: " + getName() + ", isCancelled: " + isCancelled()
+                + ", breadcrumbs: " + breadcrumbs);
+
         if (oldFiber == null) {
           CURRENT_FIBER.remove();
         } else {

@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
@@ -38,6 +37,7 @@ import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.tuning.TuningParametersStub;
 import oracle.kubernetes.operator.utils.WlsDomainConfigSupport;
+import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.operator.work.TerminalStep;
@@ -448,11 +448,11 @@ class FailureReportingTest {
     }
 
     Memento install() throws NoSuchFieldException {
-      final BiFunction<Step, Packet, Step> detector = this::detectFlicker;
+      final Step.StepAdapter detector = this::detectFlicker;
       return StaticStubSupport.install(Step.class, "adapter", detector);
     }
 
-    Step detectFlicker(Step step, Packet packet) {
+    Step detectFlicker(Fiber fiber, Step step, Packet packet) {
       final Set<DomainCondition> conditions = getMatchingConditions(packet);
       if (flickeredStep != null) { // already found a problem; no need to keep looking
         throw new IllegalStateException();
@@ -496,11 +496,11 @@ class FailureReportingTest {
     }
 
     Memento install() throws NoSuchFieldException {
-      final BiFunction<Step, Packet, Step> detector = this::detectBannedStep;
+      final Step.StepAdapter detector = this::detectBannedStep;
       return StaticStubSupport.install(Step.class, "adapter", detector);
     }
 
-    Step detectBannedStep(Step step, Packet packet) {
+    Step detectBannedStep(Fiber fiber, Step step, Packet packet) {
       if (reachedBannedStep == null && isSpecifiedStep(step)) {
         reachedBannedStep = step;
       }
