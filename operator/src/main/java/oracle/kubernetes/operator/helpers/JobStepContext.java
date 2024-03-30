@@ -1060,6 +1060,10 @@ public class JobStepContext extends BasePodStepContext {
 
     @Override
     public Result onFailure(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+
+      // TEST
+      LOGGER.severe("RJE: CreateResponseStep.onFailure()");
+
       if (isUnrecoverable(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
@@ -1077,6 +1081,10 @@ public class JobStepContext extends BasePodStepContext {
 
     @Override
     public Result onSuccess(Packet packet, KubernetesApiResponse<V1Job> callResponse) {
+
+      // TEST
+      LOGGER.severe("RJE: CreateResponseStep.onSuccess()");
+
       logJobCreated();
       V1Job job = callResponse.getObject();
       if (job != null) {
