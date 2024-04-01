@@ -219,7 +219,7 @@ class ItRemoteConsole {
   /**
    * Verify k8s WebLogic domain is accessible through remote console using SSL.
    */
-  //@Test
+  @Test
   @DisplayName("Verify Connecting to Mii domain by Remote Console using SSL is successful")
   void testWlsRemoteConsoleConnectionUsingSSL() {
     int sslNodePort = getServiceNodePort(
