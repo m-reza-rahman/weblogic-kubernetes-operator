@@ -290,8 +290,8 @@ class ItRemoteConsole {
           + "\"" + "Content-Type:application/json" + "\""
           + " --data "
           + "\"{\\" + "\"name\\" + "\"" + ": " + "\\" + "\"" + "asconn\\" + "\"" + ", "
-          + "\\" + "\"domainUrl\\" + "\"" + ": " + "\\" + "\"" + "https://"
-          + header + hostAndPort + "\\" + "\"}" + "\""
+          + "\\" + "\"domainUrl\\" + "\"" + ": " + "\\" + "\"" + header
+          + "https://" + hostAndPort + "\\" + "\"}" + "\""
           + " --write-out %{http_code} -o /dev/null";
     } else {
       curlCmd = "curl -g -sk -v --show-error --noproxy '*' --user "
