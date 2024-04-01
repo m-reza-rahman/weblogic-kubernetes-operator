@@ -86,8 +86,15 @@ public class FiberGate {
       @Override
       public Cancellable schedule(Fiber fiber, Duration duration) {
         ScheduledFuture<?> future = scheduledExecutorService.schedule(
-                () -> execute(fiber), TimeUnit.MILLISECONDS.convert(duration), TimeUnit.MILLISECONDS);
+                () -> scheduledExecution(fiber), TimeUnit.MILLISECONDS.convert(duration), TimeUnit.MILLISECONDS);
         return () -> future.cancel(true);
+      }
+
+      private void scheduledExecution(Fiber fiber) {
+        Fiber scheduledReplacement = Fiber.copy(fiber);
+        if (gateMap.replace(domainUid, fiber, scheduledReplacement)) {
+          scheduledExecutorService.execute(scheduledReplacement);
+        }
       }
 
       @Override

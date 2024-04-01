@@ -19,7 +19,7 @@ public abstract class Step {
   public interface StepAdapter {
     Step adapt(Fiber fiber, Step step, Packet packet);
   }
-  
+
   private static final StepAdapter DEFAULT_ADAPTER = (fiber, step, packet) -> {
     if (fiber != null) {
       fiber.addBreadcrumb(step);

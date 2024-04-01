@@ -31,7 +31,7 @@ public final class Fiber implements Runnable {
   /** Used to allocate unique number for each fiber. */
   private static final AtomicInteger iotaGen = new AtomicInteger();
 
-  private final int id;
+  private Integer id = null;
   private final FiberExecutor fiberExecutor;
   private final CompletionCallback completionCallback;
   private final Step stepline;
@@ -63,7 +63,6 @@ public final class Fiber implements Runnable {
     this.stepline = stepline;
     this.packet = packet;
     this.completionCallback = completionCallback;
-    id = iotaGen.incrementAndGet();
   }
 
   private Fiber(Fiber fiber) {
@@ -87,7 +86,6 @@ public final class Fiber implements Runnable {
    * Starts the execution of this fiber asynchronously.
    */
   public void start() {
-    LOGGER.finer("{0} started", getName());
     fiberExecutor.execute(this);
   }
 
@@ -100,19 +98,20 @@ public final class Fiber implements Runnable {
             + Optional.ofNullable(result).map(Result::getRequeueAfter).map(Duration::toString).orElse("none"));
 
     if (result == null || result.isRequeue()) {
-      fiberExecutor.schedule(new Fiber(this), result.getRequeueAfter());
+      fiberExecutor.schedule(this, result.getRequeueAfter());
       return false;
     }
     return true;
   }
 
+  static Fiber copy(Fiber fiber) {
+    return new Fiber(fiber);
+  }
+
   @Override
   public void run() {
-
-    // TEST
-    LOGGER.severe("RJE: Fiber.run(), fiber: " + getName() + ", isCancelled: " + isCancelled());
-
     if (!isCancelled()) {
+      LOGGER.finer("{0} running", getName());
       clearThreadInterruptedStatus();
 
       final Fiber oldFiber = CURRENT_FIBER.get();
@@ -161,8 +160,17 @@ public final class Fiber implements Runnable {
   private String getName() {
     StringBuilder sb = new StringBuilder();
     sb.append("fiber-");
-    sb.append(id);
+    sb.append(getId());
     return sb.toString();
+  }
+
+  private String getId() {
+    synchronized (this) {
+      if (id == null) {
+        id = iotaGen.incrementAndGet();
+      }
+    }
+    return id.toString();
   }
 
   @Override
