@@ -50,6 +50,7 @@ import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_NODEPO
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
@@ -63,6 +64,7 @@ import static oracle.weblogic.kubernetes.actions.impl.Service.getServiceNodePort
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReturnedCode;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createSSLenabledMiiDomainAndVerify;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAndRetryIfFail;
@@ -110,6 +112,7 @@ class ItRemoteConsole {
   private static final String managedServerPrefix = domainUid + "-" + MANAGED_SERVER_NAME_BASE;
   private static LoggingFacade logger = null;
   private static final int ADMIN_SERVER_PORT = 7001;
+  private static final int adminServerSecurePort = 7008;
   private static String adminSvcExtHost = null;
 
   /**
@@ -237,11 +240,21 @@ class ItRemoteConsole {
          domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
     setTargetPortForRoute("domain1-admin-server-sslport-ext", domainNamespace, sslPort);
     String hostAndPort = null;
+    String httpsHostHeader = "";
+    String header = "";
     if (!OKD) {
-      String ingressServiceName = traefikHelmParams.getReleaseName();
-      hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
-          ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
-          : getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        httpsHostHeader = createIngressHostRouting(domainNamespace, domainUid,
+          "admin-server", adminServerSecurePort);
+        hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTPS_HOSTPORT;
+        header = " -H 'host: " + httpsHostHeader + "' ";
+      } else {
+        String ingressServiceName = traefikHelmParams.getReleaseName();
+        hostAndPort = getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace) != null
+            ? getServiceExtIPAddrtOke(ingressServiceName, traefikNamespace)
+            : getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
+      }
     } else {
       hostAndPort = getHostAndPort(adminSvcSslPortExtHost, sslNodePort);
     }
@@ -249,9 +262,17 @@ class ItRemoteConsole {
     logger.info("The hostAndPort is {0}", hostAndPort);
 
     //verify ready app is accessible through default-secure nodeport
-    String curlCmd = "curl -g -sk --show-error --noproxy '*' "
+    String curlCmd = "";
+    if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      curlCmd = "curl -g -sk --show-error --noproxy '*' "
+          + header + " https://" + hostAndPort
+          + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+    } else {
+      curlCmd = "curl -g -sk --show-error --noproxy '*' "
           + " https://" + hostAndPort
           + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+    }
     logger.info("Executing WebLogic console default-secure nodeport curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 10));
     logger.info("ready app is accessible thru default-secure service");
@@ -261,15 +282,28 @@ class ItRemoteConsole {
     //curl -sk -v --show-error --user username:password http://localhost:8012/api/providers/AdminServerConnection -H
     //"Content-Type:application/json" --data "{ \"name\": \"asconn\", \"domainUrl\": \"https://myhost://nodeport\"}"
     //--write-out %{http_code} -o /dev/null
-    curlCmd = "curl -g -sk -v --show-error --noproxy '*' --user "
-        + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
-        + " http://localhost:8012/api/providers/AdminServerConnection -H  "
-        + "\"" + "Content-Type:application/json" + "\""
-        + " --data "
-        + "\"{\\" + "\"name\\" + "\"" + ": " + "\\" + "\"" + "asconn\\" + "\"" + ", "
-        + "\\" + "\"domainUrl\\" + "\"" + ": " + "\\" + "\"" + "https://"
-        + hostAndPort + "\\" + "\"}" + "\""
-        + " --write-out %{http_code} -o /dev/null";
+    if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      curlCmd = "curl -g -sk -v --show-error --noproxy '*' --user "
+          + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
+          + " http://localhost:8012/api/providers/AdminServerConnection -H  "
+          + "\"" + "Content-Type:application/json" + "\""
+          + " --data "
+          + "\"{\\" + "\"name\\" + "\"" + ": " + "\\" + "\"" + "asconn\\" + "\"" + ", "
+          + "\\" + "\"domainUrl\\" + "\"" + ": " + "\\" + "\"" + "https://"
+          + header + hostAndPort + "\\" + "\"}" + "\""
+          + " --write-out %{http_code} -o /dev/null";
+    } else {
+      curlCmd = "curl -g -sk -v --show-error --noproxy '*' --user "
+          + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
+          + " http://localhost:8012/api/providers/AdminServerConnection -H  "
+          + "\"" + "Content-Type:application/json" + "\""
+          + " --data "
+          + "\"{\\" + "\"name\\" + "\"" + ": " + "\\" + "\"" + "asconn\\" + "\"" + ", "
+          + "\\" + "\"domainUrl\\" + "\"" + ": " + "\\" + "\"" + "https://"
+          + hostAndPort + "\\" + "\"}" + "\""
+          + " --write-out %{http_code} -o /dev/null";
+    }
     logger.info("Executing remote console default-secure nodeport curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReturnedCode(curlCmd, "201", 10), "Calling web app failed");
     logger.info("Remote console is accessible through default-secure service");
