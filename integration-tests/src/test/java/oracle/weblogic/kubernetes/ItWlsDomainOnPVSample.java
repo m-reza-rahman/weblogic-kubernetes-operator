@@ -155,7 +155,7 @@ class ItWlsDomainOnPVSample {
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       DOMAIN_CREATION_IMAGE_NAME = "localhost/wdt-domain-image";
       envMap.put("OPER_IMAGE_NAME", "localhost/weblogic-kubernetes-operator");
-      envMap.put("MODEL_IMAGE_NAME", DOMAIN_CREATION_IMAGE_NAME);
+      envMap.put("DOMAIN_CREATION_IMAGE_NAME", DOMAIN_CREATION_IMAGE_NAME);
       envMap.put("K8S_NODEPORT_HOST", assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
       envMap.put("TRAEFIK_INGRESS_HTTP_HOSTPORT", "" + TRAEFIK_INGRESS_HTTP_HOSTPORT);
       envMap.put("TRAEFIK_NAMESPACE", TRAEFIK_NAMESPACE);
