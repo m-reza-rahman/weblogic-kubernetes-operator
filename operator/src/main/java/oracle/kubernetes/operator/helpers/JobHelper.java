@@ -238,7 +238,7 @@ public class JobHelper {
         LOGGER.severe("RJE: VerifyIntrospectorJobResponseStep.onSuccess(), job: "
                 + Optional.ofNullable(job).map(V1Job::getMetadata).map(V1ObjectMeta::getName).orElse(""));
 
-        if ((job != null) && (packet.get(DOMAIN_INTROSPECTOR_JOB) == null)) {
+        if (job != null) {
           packet.put(DOMAIN_INTROSPECTOR_JOB, job);
         }
 
