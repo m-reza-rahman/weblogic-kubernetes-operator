@@ -934,22 +934,29 @@ class ItMultiDomainModelsScale {
   private void verifyReadyAppUsingIngressController(String domainUid, String domainNamespace) {
 
     if (!OKD) {
+      if (OKE_CLUSTER) {
+        final String adminServerPodName = domainUid + "-admin-server";
+        String resourcePath = "/weblogic/ready";
+        ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7002, resourcePath);
+        logger.info("result in OKE_CLUSTER is {0}", result.toString());
+        assertEquals(0, result.exitValue(), "Failed to access WebLogic ready app");
+      } else {
+        String host = K8S_NODEPORT_HOST;
+        if (host.contains(":")) {
+          host = "[" + host + "]";
+        }
+        String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
+            + domainUid + "." + domainNamespace + ".adminserver.test"
+            + "' http://" + host + ":" + nodeportshttp
+            + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
-      String host = K8S_NODEPORT_HOST;
-      if (host.contains(":")) {
-        host = "[" + host + "]";
+        logger.info("Executing curl command {0}", curlCmd);
+        testUntil(() -> callWebAppAndWaitTillReady(curlCmd, 5),
+            logger,
+            "Ready app on domain {0} in namespace {1} is accessible",
+            domainUid,
+            domainNamespace);
       }
-      String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: "
-          + domainUid + "." + domainNamespace + ".adminserver.test"
-          + "' http://" + host + ":" + nodeportshttp
-          + "/weblogic/ready --write-out %{http_code} -o /dev/null";
-
-      logger.info("Executing curl command {0}", curlCmd);
-      testUntil(() -> callWebAppAndWaitTillReady(curlCmd, 5),
-          logger,
-          "Ready app on domain {0} in namespace {1} is accessible",
-          domainUid,
-          domainNamespace);
 
       logger.info("Ready app on domain1 is accessible");
     } else {
