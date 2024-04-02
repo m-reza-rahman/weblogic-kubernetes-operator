@@ -172,9 +172,6 @@ class ItRemoteConsole {
     // install WebLogic remote console
     assertTrue(installAndVerifyWlsRemoteConsole(domainNamespace, adminServerPodName),
         "Remote Console installation failed");
-
-    // Verify k8s WebLogic domain is accessible through remote console using admin server nodeport
-    //verifyWlsRemoteConsoleConnection();
   }
 
   /**
@@ -384,12 +381,10 @@ class ItRemoteConsole {
     logger.info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
 
     // check the ingress is ready to route the app to the server pod
-    //TODO
+
     String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     logger.info("nginxServiceName is {0}", nginxServiceName);
 
-    /*nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
-        "Getting Nginx loadbalancer service node port failed");*/
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       nginxNodePort = NGINX_INGRESS_HTTP_HOSTPORT;
     } else if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
@@ -417,35 +412,7 @@ class ItRemoteConsole {
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
   }
-
-  private static void verifyWlsRemoteConsoleConnection() {
-    int nodePort = getServiceNodePort(
-        domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-    assertNotEquals(-1, nodePort,
-        "Could not get the default external service node port");
-    logger.info("Found the default service nodePort {0}", nodePort);
-    logger.info("The K8S_NODEPORT_HOST is {0}", K8S_NODEPORT_HOST);
-
-    if (adminSvcExtHost == null) {
-      adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
-    }
-    logger.info("admin svc host = {0}", adminSvcExtHost);
-    String hostAndPort = getHostAndPort(adminSvcExtHost, nodePort);
-
-    String curlCmd = "curl -g -v --show-error --noproxy '*' --user "
-        + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
-        + " http://localhost:8012/api/providers/AdminServerConnection -H "
-        + "\"" + "Content-Type:application/json" + "\""
-        + " --data "
-        + "\"{\\" + "\"name\\" + "\"" + ": " + "\\" + "\"" + "asconn\\" + "\"" + ", "
-        + "\\" + "\"domainUrl\\" + "\"" + ": " + "\\" + "\"" + "http://"
-        + hostAndPort + "\\" + "\"}" + "\""
-        + " --write-out %{http_code} -o /dev/null";
-    logger.info("Executing default nodeport curl command {0}", curlCmd);
-    assertTrue(callWebAppAndWaitTillReturnedCode(curlCmd, "201", 10), "Calling web app failed");
-    logger.info("WebLogic domain is accessible through remote console");
-  }
-
+  
   private static void installTraefikIngressController() {
 
     if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
