@@ -51,6 +51,7 @@ import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.WebLogicConstants.ADMIN_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
+import static oracle.kubernetes.operator.WebLogicConstants.UNKNOWN_STATE;
 
 public class ShutdownManagedServerStep extends Step {
 
@@ -358,7 +359,8 @@ public class ShutdownManagedServerStep extends Step {
 
       @Override
       public @Nonnull Result apply(Packet packet) {
-        if (SHUTDOWN_STATE.equals(PodHelper.getServerState(getDomainPresenceInfo(packet).getDomain(), serverName))) {
+        DomainPresenceInfo info = getDomainPresenceInfo(packet);
+        if (!isShutdown(info.getDomain()) && !isShutdownState(info)) {
           // requeue to wait for server instance to be shut down.
           return new Result(true,
                   Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
@@ -367,8 +369,14 @@ public class ShutdownManagedServerStep extends Step {
         return doNext(packet);
       }
 
-      protected boolean isPodReady(V1Pod result) {
-        return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
+      protected boolean isShutdown(DomainResource resource) {
+        return Optional.ofNullable(PodHelper.getServerState(resource, serverName)).map(s -> s.equals(SHUTDOWN_STATE))
+                .orElse(false);
+      }
+
+      private boolean isShutdownState(DomainPresenceInfo info) {
+        return Optional.ofNullable(info).map(i -> i.getLastKnownServerStatus(serverName))
+                .map(s -> SHUTDOWN_STATE.equals(s.getStatus()) || UNKNOWN_STATE.equals(s.getStatus())).orElse(false);
       }
     }
 
