@@ -721,6 +721,7 @@ class ItMultiDomainModelsScale1 {
         host = "[" + host + "]";
       }
 
+      logger.info("==========OKE_CLUSTER = {0}", OKE_CLUSTER);
       if (OKE_CLUSTER) {
         String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
 
