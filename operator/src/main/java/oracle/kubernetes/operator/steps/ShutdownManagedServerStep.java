@@ -399,8 +399,9 @@ public class ShutdownManagedServerStep extends Step {
       }
 
       removeShutdownRequestRetryCount(packet);
-      return doNext(Step.chain(createDomainRefreshStep(getDomainPresenceInfo(packet).getDomainName(),
-          getDomainPresenceInfo(packet).getNamespace()), getNext()), packet);
+      return doNext(PodHelper.deletePodStep(serverName, true,
+              Step.chain(createDomainRefreshStep(getDomainPresenceInfo(packet).getDomainName(),
+          getDomainPresenceInfo(packet).getNamespace()), getNext())), packet);
     }
 
     private Step createDomainRefreshStep(String domainName, String namespace) {
