@@ -7,6 +7,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -121,13 +122,11 @@ class FailureReportingTest {
   }
 
   private void setPodReady(V1Pod pod) {
-    pod.status(createPodReadyStatus());
+    pod.status(updatePodReadyStatus(Optional.of(pod).map(V1Pod::getStatus).orElse(new V1PodStatus())));
   }
 
-  private V1PodStatus createPodReadyStatus() {
-    return new V1PodStatus()
-            .phase("Running")
-            .addConditionsItem(new V1PodCondition().status("True").type("Ready"));
+  private V1PodStatus updatePodReadyStatus(V1PodStatus status) {
+    return status.phase("Running").addConditionsItem(new V1PodCondition().status("True").type("Ready"));
   }
 
   private void defineDomainTopology() {

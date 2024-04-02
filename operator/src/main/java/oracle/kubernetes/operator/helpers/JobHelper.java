@@ -3,6 +3,7 @@
 
 package oracle.kubernetes.operator.helpers;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -45,7 +46,6 @@ import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.steps.DefaultResponseStep;
-import oracle.kubernetes.operator.steps.WatchDomainIntrospectorJobReadyStep;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.watcher.JobWatcher;
 import oracle.kubernetes.operator.work.Packet;
@@ -63,6 +63,7 @@ import static oracle.kubernetes.common.logging.MessageKeys.INTROSPECTOR_JOB_FAIL
 import static oracle.kubernetes.common.logging.MessageKeys.INTROSPECTOR_JOB_FAILED_DETAIL;
 import static oracle.kubernetes.operator.DomainSourceType.FROM_MODEL;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createIntrospectionFailureSteps;
+import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveFailuresStep;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveSelectedFailuresStep;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_DOMAIN_SPEC_GENERATION;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
@@ -242,8 +243,8 @@ public class JobHelper {
           packet.put(DOMAIN_INTROSPECTOR_JOB, job);
         }
 
-        // HERE: These checks must not be sufficient to catch failed jobs :(
-        if (isKnownFailedJob(job) || JobWatcher.isJobTimedOut(job) || isInProgressJobOutdated(job)) {
+        if (JobWatcher.isFailed(job) || isKnownFailedJob(job)
+                || JobWatcher.isJobTimedOut(job) || isInProgressJobOutdated(job)) {
 
           // TEST
           LOGGER.severe("RJE: cleanUpAndReintrospect path, job: " + job.getMetadata().getName());
@@ -447,15 +448,66 @@ public class JobHelper {
 
     // Returns a chain of steps which read the job pod and decide how to handle it.
     private Step processExistingIntrospectorJob(Step next) {
-      return Step.chain(waitForIntrospectionToComplete(), readIntrospectorResults(), next);
+      return Step.chain(checkForFailedIntrospectionJob(), readIntrospectorResults(), next);
     }
 
-    private Step waitForIntrospectionToComplete() {
-      return new WatchDomainIntrospectorJobReadyStep();
+    private Step checkForFailedIntrospectionJob() {
+      return new CheckForFailedIntrospectorStep();
+    }
+
+    private static class CheckForFailedIntrospectorStep extends Step {
+
+      @Override
+      public @Nonnull Result apply(Packet packet) {
+        V1Job domainIntrospectorJob = (V1Job) packet.get(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB);
+
+        if (JobWatcher.isComplete(domainIntrospectorJob)) {
+          return doNext(createRemoveFailuresStep(getNext()), packet);
+        }
+        return doNext(packet);
+      }
     }
 
     private Step readIntrospectorResults() {
       return new ReadDomainIntrospectorPodStep();
+    }
+
+    private Step waitForJobPod() {
+      return new WaitForJobPodStep();
+    }
+
+    private static class WaitForJobPodStep extends Step {
+
+      @Override
+      public @Nonnull Result apply(Packet packet) {
+        V1Pod jobPod = (V1Pod) packet.get(ProcessingConstants.JOB_POD);
+        if (!anyTerminatedContainers(jobPod)) {
+          // requeue to wait for the job pod
+          return new Result(true,
+                  Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+        }
+        return doNext(packet);
+      }
+
+      private boolean anyTerminatedContainers(V1Pod jobPod) {
+        return Optional.ofNullable(jobPod)
+                .map(V1Pod::getStatus)
+                .map(V1PodStatus::getContainerStatuses).orElseGet(Collections::emptyList).stream()
+                .anyMatch(this::isTerminatedJobContainerStatus);
+      }
+
+      private boolean isTerminatedJobContainerStatus(V1ContainerStatus status) {
+        return getTerminatedExitCode(status) >= 0;
+      }
+
+      @Nonnull
+      private Integer getTerminatedExitCode(V1ContainerStatus status) {
+        return Optional.ofNullable(status.getState())
+                .map(V1ContainerState::getTerminated)
+                .map(V1ContainerStateTerminated::getExitCode)
+                .orElse(-1);
+      }
+
     }
 
     private Step readNamedPodLog() {
@@ -702,12 +754,15 @@ public class JobHelper {
 
           return doTerminate(t, packet);
         }
-        return doNext(listPodsInNamespace(getNamespace(), getNext()), packet);
+        return doNext(listPodsInNamespace(packet, getNamespace(), getNext()), packet);
       }
 
-      private Step listPodsInNamespace(String namespace, Step next) {
-        return RequestBuilder.POD.list(
-            namespace, new ListOptions().labelSelector(LabelConstants.JOBNAME_LABEL), new PodListResponseStep(next));
+      private Step listPodsInNamespace(Packet packet, String namespace, Step next) {
+        V1Job domainIntrospectorJob = (V1Job) packet.get(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB);
+
+        return RequestBuilder.POD.list(namespace, new ListOptions()
+                .labelSelector(LabelConstants.JOBNAME_LABEL + "=" + domainIntrospectorJob.getMetadata().getName()),
+                new PodListResponseStep(next));
       }
     }
 
@@ -858,7 +913,8 @@ public class JobHelper {
 
       // Returns a chain of steps which read the pod log and create a config map.
       private Step processIntrospectorPodLog(Step next) {
-        return Step.chain(readNamedPodLog(), deleteIntrospectorJob(), createIntrospectorConfigMap(), next);
+        return Step.chain(waitForJobPod(), readNamedPodLog(), deleteIntrospectorJob(),
+                createIntrospectorConfigMap(), next);
       }
 
       private String getName(V1Pod pod) {
