@@ -877,7 +877,7 @@ checkPodState() {
   rcode=`${KUBERNETES_CLI:-kubectl} get po/$pod -n ${ns} | grep -v NAME | awk '{print $2}'`
   [[ ${rcode} -eq "1/1"  ]] && status="Ready"
   describepod=`${KUBERNETES_CLI:-kubectl} describe po/$pod -n ${ns}`
-  echo "DEBUG: describepod"
+  echo "DEBUG: ${describepod}"
   echo "Pod [$1] Status is ${status} Iter [$count/$max]"
   count=`expr $count + 1`
  done
