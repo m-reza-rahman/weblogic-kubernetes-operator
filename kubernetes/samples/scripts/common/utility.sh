@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 #
@@ -855,7 +855,7 @@ checkPodDelete() {
 checkPodState() {
 
  status="NotReady"
- max=120
+ max=240
  count=1
 
  pod=$1
@@ -876,6 +876,8 @@ checkPodState() {
   sleep 5 
   rcode=`${KUBERNETES_CLI:-kubectl} get po/$pod -n ${ns} | grep -v NAME | awk '{print $2}'`
   [[ ${rcode} -eq "1/1"  ]] && status="Ready"
+  describepod=`${KUBERNETES_CLI:-kubectl} describe po/$pod -n ${ns}`
+  echo "DEBUG: describepod"
   echo "Pod [$1] Status is ${status} Iter [$count/$max]"
   count=`expr $count + 1`
  done
