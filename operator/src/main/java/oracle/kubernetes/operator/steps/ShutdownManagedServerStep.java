@@ -5,7 +5,6 @@ package oracle.kubernetes.operator.steps;
 
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -36,7 +35,6 @@ import oracle.kubernetes.operator.http.rest.ScanCache;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
-import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.PortDetails;
 import oracle.kubernetes.operator.wlsconfig.WlsClusterConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
@@ -51,7 +49,6 @@ import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
 import static oracle.kubernetes.operator.WebLogicConstants.ADMIN_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
-import static oracle.kubernetes.operator.WebLogicConstants.UNKNOWN_STATE;
 
 public class ShutdownManagedServerStep extends Step {
 
@@ -352,43 +349,12 @@ public class ShutdownManagedServerStep extends Step {
       LOGGER.fine(MessageKeys.SERVER_SHUTDOWN_REST_SUCCESS, serverName);
 
       // TEST
-      LOGGER.severe("RJE: Shutting down pod with REST SUCCESS, serverName: " + serverName);
+      LOGGER.severe("RJE: Shutting down pod with REST SUCCESS, serverName: " + serverName
+              + ", body: " + response.body());
 
       removeShutdownRequestRetryCount(packet);
-      return doNext(new PodShutdownStep(serverName, getNext()), packet);
+      return doNext(packet);
     }
-
-    static class PodShutdownStep extends Step {
-      private final String serverName;
-
-      PodShutdownStep(String serverName, Step next) {
-        super(next);
-        this.serverName = serverName;
-      }
-
-      @Override
-      public @Nonnull Result apply(Packet packet) {
-        DomainPresenceInfo info = getDomainPresenceInfo(packet);
-        if (!isShutdown(info.getDomain()) && !isShutdownState(info)) {
-          // requeue to wait for server instance to be shut down.
-          return new Result(true,
-                  Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
-        }
-
-        return doNext(packet);
-      }
-
-      protected boolean isShutdown(DomainResource resource) {
-        return Optional.ofNullable(PodHelper.getServerState(resource, serverName)).map(s -> s.equals(SHUTDOWN_STATE))
-                .orElse(false);
-      }
-
-      private boolean isShutdownState(DomainPresenceInfo info) {
-        return Optional.ofNullable(info).map(i -> i.getLastKnownServerStatus(serverName))
-                .map(s -> SHUTDOWN_STATE.equals(s.getStatus()) || UNKNOWN_STATE.equals(s.getStatus())).orElse(false);
-      }
-    }
-
 
     @Override
     public Result onFailure(Packet packet, HttpResponse<String> response) {
@@ -420,9 +386,8 @@ public class ShutdownManagedServerStep extends Step {
       LOGGER.severe("RJE: deletion path, serverName: " + serverName);
 
       removeShutdownRequestRetryCount(packet);
-      return doNext(PodHelper.deletePodStep(serverName, true,
-              Step.chain(createDomainRefreshStep(getDomainPresenceInfo(packet).getDomainName(),
-          getDomainPresenceInfo(packet).getNamespace()), getNext())), packet);
+      return doNext(Step.chain(createDomainRefreshStep(getDomainPresenceInfo(packet).getDomainName(),
+          getDomainPresenceInfo(packet).getNamespace()), getNext()), packet);
     }
 
     private Step createDomainRefreshStep(String domainName, String namespace) {
