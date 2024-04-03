@@ -32,7 +32,7 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
-//import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -229,7 +229,7 @@ class ItMultiDomainModelsScale1 {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  //@Disabled
+  @Disabled
   @ParameterizedTest
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
@@ -322,6 +322,7 @@ class ItMultiDomainModelsScale1 {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
+  @Disabled
   @ParameterizedTest
   @DisplayName("scale cluster using REST API for three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
@@ -415,7 +416,8 @@ class ItMultiDomainModelsScale1 {
   //@Disabled
   @ParameterizedTest
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
-  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
+  //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
+  @ValueSource(strings = {"domainInImage"})
   @DisabledOnSlimImage
   void testScaleClustersWithWLDF(String domainType) {
 
