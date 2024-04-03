@@ -30,6 +30,8 @@ import io.kubernetes.client.util.generic.options.GetOptions;
 import io.kubernetes.client.util.generic.options.ListOptions;
 import io.kubernetes.client.util.generic.options.PatchOptions;
 import io.kubernetes.client.util.generic.options.UpdateOptions;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 
@@ -39,6 +41,8 @@ import oracle.kubernetes.operator.work.Step;
 public abstract class RequestStep<
     A extends KubernetesObject, L extends KubernetesListObject, R extends KubernetesType>
     extends Step {
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
+
   public static final String RESPONSE_COMPONENT_NAME = "response";
   public static final String CONTINUE = "continue";
   public static final int FIBER_TIMEOUT = 0;
@@ -489,6 +493,10 @@ public abstract class RequestStep<
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
+
+      // TEST
+      LOGGER.severe("RJE: Deleting name: " + name + " in namespace: " + namespace);
+
       return client.delete(namespace, name, deleteOptions);
     }
   }
@@ -628,6 +636,12 @@ public abstract class RequestStep<
     }
 
     KubernetesApiResponse<A> execute(KubernetesApi<A, L> client, Packet packet) {
+
+      // TEST
+      LOGGER.severe("RJE: Creating name: "
+              + Optional.ofNullable(object.getMetadata()).map(V1ObjectMeta::getName).orElse("")
+              + " in namespace: " + Optional.ofNullable(object.getMetadata()).map(V1ObjectMeta::getName).orElse(""));
+
       return client.create(object, createOptions);
     }
   }

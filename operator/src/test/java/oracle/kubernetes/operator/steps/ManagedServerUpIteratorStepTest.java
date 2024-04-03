@@ -73,7 +73,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
-@Disabled("RJE -- Temporary, test is hanging")
+@Disabled("Temporary, test is hanging")
 class ManagedServerUpIteratorStepTest extends ThreadFactoryTestBase implements WatchListener<V1Pod>,
         StubWatchFactory.AllWatchesClosedListener {
 

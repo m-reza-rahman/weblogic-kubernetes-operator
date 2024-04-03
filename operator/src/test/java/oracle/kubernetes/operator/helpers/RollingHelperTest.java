@@ -233,7 +233,7 @@ class RollingHelperTest {
   }
 
   @Test
-  @Disabled("RJE -- temporarily disable to test if this is affecting later tests")
+  @Disabled("Temporarily disable to test if this is affecting later tests")
   void whenClusterSizeSet_onlyOnePodImmediatelyReplaced() {
     consoleHandlerMemento.trackMessage(MANAGED_POD_REPLACED);
     initializeExistingPods();

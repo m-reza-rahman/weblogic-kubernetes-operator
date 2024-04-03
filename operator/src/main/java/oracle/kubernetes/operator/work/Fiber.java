@@ -139,7 +139,7 @@ public final class Fiber implements Runnable {
       } finally {
 
         if (LOGGER.isFinerEnabled()) {
-          LOGGER.finer("RJE: Fiber.run() END, fiber: " + getName() + ", isCancelled: " + isCancelled()
+          LOGGER.finer("Fiber.run() END, fiber: " + getName() + ", isCancelled: " + isCancelled()
                   + ", breadcrumbs: " + breadcrumbs.get());
         }
 

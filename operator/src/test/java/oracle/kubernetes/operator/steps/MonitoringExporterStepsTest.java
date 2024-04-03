@@ -57,7 +57,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 
-@Disabled("RJE -- Temporary, test is hanging")
+@Disabled("Temporary, test is hanging")
 class MonitoringExporterStepsTest {
 
   private static final int EXPORTER_PORT = 8000;
