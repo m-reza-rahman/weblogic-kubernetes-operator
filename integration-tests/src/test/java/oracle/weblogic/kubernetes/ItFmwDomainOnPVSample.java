@@ -239,11 +239,11 @@ class ItFmwDomainOnPVSample {
   @Order(4)
   public void testCreatedb() {
     logger.info("test case for creating a db");
-    if (KIND_REPO != null) {
-      String dbimage = DB_IMAGE_NAME + ":" + DB_IMAGE_TAG;
-      logger.info("loading image {0} to kind", dbimage);
-      imagePush(dbimage);
-    }
+    //if (KIND_REPO != null) {
+    //  String dbimage = DB_IMAGE_NAME + ":" + DB_IMAGE_TAG;
+    //  logger.info("loading image {0} to kind", dbimage);
+    //  imagePush(dbimage);
+    //}
     execTestScriptAndAssertSuccess("-db", "Failed to run -db");
   }
 
