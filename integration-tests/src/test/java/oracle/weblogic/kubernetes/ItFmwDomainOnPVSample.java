@@ -26,7 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_TENANCY;
 import static oracle.weblogic.kubernetes.TestConstants.BUSYBOX_IMAGE;
 import static oracle.weblogic.kubernetes.TestConstants.BUSYBOX_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_NAME;
@@ -133,7 +135,6 @@ class ItFmwDomainOnPVSample {
     envMap.put("BASE_IMAGE_NAME", FMWINFRA_IMAGE_TO_USE_IN_SPEC
         .substring(0, FMWINFRA_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":")));
     envMap.put("BASE_IMAGE_TAG", FMWINFRA_IMAGE_TAG);
-    envMap.put("DB_IMAGE_NAME", DB_IMAGE_NAME);
     envMap.put("DB_IMAGE_TAG", DB_IMAGE_TAG);
     envMap.put("IMAGE_PULL_SECRET_NAME", BASE_IMAGES_REPO_SECRET_NAME);
     envMap.put("DOMAIN_IMAGE_PULL_SECRET_NAME", TEST_IMAGES_REPO_SECRET_NAME);
@@ -169,9 +170,12 @@ class ItFmwDomainOnPVSample {
       envMap.put("K8S_NODEPORT_HOST", assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
       envMap.put("TRAEFIK_INGRESS_HTTP_HOSTPORT", "" + TRAEFIK_INGRESS_HTTP_HOSTPORT);
       envMap.put("TRAEFIK_NAMESPACE", TRAEFIK_NAMESPACE);
+      envMap.put("DB_IMAGE_NAME",
+          KIND_REPO + DB_IMAGE_NAME.substring(BASE_IMAGES_REPO.length() + BASE_IMAGES_TENANCY.length() + 2));
     } else {
       envMap.put("TRAEFIK_NAMESPACE", traefikNamespace);
       envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
+      envMap.put("DB_IMAGE_NAME", DB_IMAGE_NAME);
     }
 
     logger.info("Environment variables to the script {0}", envMap);
