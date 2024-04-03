@@ -571,6 +571,12 @@ public class CommonTestUtils {
         podStateNotChanged(manageServerPodName, domainUid, domainNamespace, listOfPodCreationTimestamp.get(i - 1));
       }
 
+      try {
+        Thread.sleep(60000);
+      } catch (Exception ex) {
+        //
+      }
+
       if (curlCmd != null && expectedServerNames != null) {
         // check that NGINX can access the sample apps from the original managed servers in the domain
         logger.info("Checking that NGINX can access the sample app from the original managed servers in the domain "
