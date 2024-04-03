@@ -328,7 +328,7 @@ class ItMultiDomainModelsScale1 {
   @ValueSource(strings = {"domainInImage", "domainOnPV"})
   //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
-  void testScaleClustersWithRestApi_domainInImage(String domainType) {
+  void testScaleClustersWithRestApi(String domainType) {
 
     DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
 
@@ -349,6 +349,9 @@ class ItMultiDomainModelsScale1 {
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
       curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+      if (domainType.contains("domainOnPV")) {
+        curlCmd = null;
+      }
       List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
       scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
           replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
