@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -37,8 +38,7 @@ public final class Fiber implements Runnable {
   private final Step stepline;
   private final Packet packet;
   private final AtomicBoolean isCancelled = new AtomicBoolean(false);
-  // TEST
-  private final List<String> breadcrumbs = new ArrayList<>();
+  private final AtomicReference<List<String>> breadcrumbs = new AtomicReference<>();
 
   public Fiber(FiberExecutor fiberExecutor, Step stepline, Packet packet) {
     this(fiberExecutor, stepline, packet, null);
@@ -79,7 +79,9 @@ public final class Fiber implements Runnable {
   }
 
   void addBreadcrumb(Step step) {
-    breadcrumbs.add(step.getResourceName());
+    if (LOGGER.isFinerEnabled()) {
+      breadcrumbs.getAndUpdate(v -> v != null ? v : new ArrayList<>()).add(step.getResourceName());
+    }
   }
 
   /**
@@ -92,10 +94,11 @@ public final class Fiber implements Runnable {
   private boolean invokeAndPotentiallyRequeue(Step stepline, Packet packet) {
     Result result = stepline.apply(packet);
 
-    // TEST
-    LOGGER.severe("RJE: Fiber.iAPR(), fiber: " + getName() + ", requeue: "
-            + Optional.ofNullable(result).map(Result::isRequeue).orElse(false) + ", after: "
-            + Optional.ofNullable(result).map(Result::getRequeueAfter).map(Duration::toString).orElse("none"));
+    if (LOGGER.isFinerEnabled()) {
+      LOGGER.finer("Fiber.iAPR(), fiber: " + getName() + ", requeue: "
+              + Optional.ofNullable(result).map(Result::isRequeue).orElse(false) + ", after: "
+              + Optional.ofNullable(result).map(Result::getRequeueAfter).map(Duration::toString).orElse("none"));
+    }
 
     if (result == null || result.isRequeue()) {
       fiberExecutor.schedule(this, result.getRequeueAfter());
@@ -135,9 +138,10 @@ public final class Fiber implements Runnable {
         }
       } finally {
 
-        // TEST
-        LOGGER.severe("RJE: Fiber.run() END, fiber: " + getName() + ", isCancelled: " + isCancelled()
-                + ", breadcrumbs: " + breadcrumbs);
+        if (LOGGER.isFinerEnabled()) {
+          LOGGER.finer("RJE: Fiber.run() END, fiber: " + getName() + ", isCancelled: " + isCancelled()
+                  + ", breadcrumbs: " + breadcrumbs.get());
+        }
 
         if (oldFiber == null) {
           CURRENT_FIBER.remove();

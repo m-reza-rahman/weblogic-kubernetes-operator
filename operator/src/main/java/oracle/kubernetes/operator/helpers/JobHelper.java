@@ -234,41 +234,18 @@ public class JobHelper {
       @Override
       public Result onSuccess(Packet packet, KubernetesApiResponse<T> callResponse) {
         V1Job job = (V1Job) callResponse.getObject();
-
-        // TEST
-        LOGGER.severe("RJE: VerifyIntrospectorJobResponseStep.onSuccess(), job: "
-                + Optional.ofNullable(job).map(V1Job::getMetadata).map(V1ObjectMeta::getName).orElse(""));
-
         if (job != null) {
           packet.put(DOMAIN_INTROSPECTOR_JOB, job);
         }
 
         if (JobWatcher.isFailed(job) || isKnownFailedJob(job)
                 || JobWatcher.isJobTimedOut(job) || isInProgressJobOutdated(job)) {
-
-          // TEST
-          LOGGER.severe("RJE: cleanUpAndReintrospect path, job: " + job.getMetadata().getName());
-
           return doNext(cleanUpAndReintrospect(getNext()), packet);
         } else if (job != null) {
-
-          // TEST
-          LOGGER.severe("RJE: processExistingIntrospectorJob path, job: " + job.getMetadata().getName());
-
           return doNext(processExistingIntrospectorJob(getNext()), packet);
         } else if (isIntrospectionNeeded(packet)) {
-
-          // TEST
-          LOGGER.severe("RJE: createIntrospectionSteps path, job: "
-                  + Optional.ofNullable(job).map(V1Job::getMetadata).map(V1ObjectMeta::getName).orElse(""));
-
           return doNext(createIntrospectionSteps(getNext()), packet);
         } else {
-
-          // TEST
-          LOGGER.severe("RJE: doNext path, job: "
-                  + Optional.ofNullable(job).map(V1Job::getMetadata).map(V1ObjectMeta::getName).orElse(""));
-
           return doNext(packet);
         }
       }
@@ -520,10 +497,6 @@ public class JobHelper {
       public @Nonnull Result apply(Packet packet) {
         String containerName;
         V1Pod jobPod = (V1Pod) packet.get(ProcessingConstants.JOB_POD);
-
-        // TEST
-        LOGGER.severe("RJE: ReadPodLogStep.apply(), pod: " + jobPod);
-
         V1ContainerStatus status = getJobPodContainerStatus(jobPod);
         if (status != null && Boolean.TRUE == status.getStarted() && Boolean.TRUE == status.getReady()) {
           containerName = getContainerName();
@@ -580,10 +553,6 @@ public class JobHelper {
         logJobDeleted(getDomainUid(), getNamespace(), getJobName(), packet);
         DeleteOptions deleteOptions = (DeleteOptions) new DeleteOptions()
             .gracePeriodSeconds((long) JOB_DELETE_TIMEOUT_SECONDS).propagationPolicy("Foreground");
-
-        // TEST
-        LOGGER.severe("RJE: DeleteDomainIntrospectorJobStep.apply()");
-
         return doNext(
             RequestBuilder.JOB.delete(getNamespace(), getJobName(), deleteOptions,
                 new DefaultResponseStep<>(getNext())), packet);
@@ -748,10 +717,6 @@ public class JobHelper {
       public @Nonnull Result apply(Packet packet) {
         Throwable t = (Throwable) packet.remove(INTROSPECTOR_JOB_FAILURE_THROWABLE);
         if (t != null) {
-
-          // TEST
-          LOGGER.severe("RJE: ReadDomainIntrospectorPodStep.apply(), throwable: " + t);
-
           return doTerminate(t, packet);
         }
         return doNext(listPodsInNamespace(packet, getNamespace(), getNext()), packet);
@@ -875,16 +840,8 @@ public class JobHelper {
         if (jobPod == null) {
           return doContinueListOrNext(callResponse, packet, processIntrospectorPodLog(getNext()));
         } else if (hasImagePullError(jobPod) || initContainersHaveImagePullError(jobPod)) {
-
-          // TEST
-          LOGGER.severe("RJE: PodListResponseStep.onSuccess(), pod error: " + jobPod);
-
           return doNext(cleanUpAndReintrospect(getNext()), packet);
         } else if (isJobPodTimedOut(jobPod)) {
-
-          // TEST
-          LOGGER.severe("RJE: PodListResponseStep.onSuccess(), timed out: " + jobPod);
-
           // process job pod timed out same way as job timed out, which is to
           // terminate current fiber
           return doTerminate(createTerminationException(packet), packet);
