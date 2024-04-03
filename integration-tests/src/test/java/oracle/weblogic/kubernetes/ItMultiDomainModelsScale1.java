@@ -325,7 +325,7 @@ class ItMultiDomainModelsScale1 {
    */
   @ParameterizedTest
   @DisplayName("scale cluster using REST API for three different type of domains")
-  @ValueSource(strings = {"domainOnPV"})
+  @ValueSource(strings = {"domainInImage", "domainOnPV"})
   //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithRestApi(String domainType) {
