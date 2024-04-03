@@ -325,10 +325,10 @@ class ItMultiDomainModelsScale1 {
    */
   @ParameterizedTest
   @DisplayName("scale cluster using REST API for three different type of domains")
-  @ValueSource(strings = {"domainInImage", "domainOnPV"})
+  @ValueSource(strings = {"domainInImage"})
   //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
-  void testScaleClustersWithRestApi(String domainType) {
+  void testScaleClustersWithRestApi_domainInImage(String domainType) {
 
     DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
 
@@ -399,6 +399,96 @@ class ItMultiDomainModelsScale1 {
             false, "", "", 0, "", "",
             curlCmd, managedServersBeforeScale, operatorPodName);
       }*/
+    } else {
+      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+          clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
+      curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+      List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+          false, "", "", 0, "", "",
+          curlCmd, managedServersBeforeScale);
+
+      // then scale cluster back to 2 servers
+      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+          clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+      managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+          false, "", "", 0, "", "",
+          curlCmd, managedServersBeforeScale);
+    }
+
+    // verify admin console login
+    if (OKE_CLUSTER) {
+      String resourcePath = "/console/login/LoginForm.jsp";
+      final String adminServerPodName = domainUid + "-admin-server";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    }
+
+    // shutdown domain and verify the domain is shutdown
+    shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
+  }
+
+  /**
+   * Scale cluster using REST API for three different type of domains.
+   * i.e. domain-on-pv, domain-in-image and model-in-image
+   *
+   * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
+   */
+  @ParameterizedTest
+  @DisplayName("scale cluster using REST API for three different type of domains")
+  @ValueSource(strings = {"domainOnPV"})
+  //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
+  @DisabledOnSlimImage
+  void testScaleClustersWithRestApi_domainOnPV(String domainType) {
+
+    DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
+
+    // get domain properties
+    String domainUid = domain.getSpec().getDomainUid();
+    String domainNamespace = domain.getMetadata().getNamespace();
+    int numClusters = domain.getSpec().getClusters().size();
+    String clusterName = domain.getSpec().getClusters().get(0).getName();
+    String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
+    int numberOfServers = 3;
+
+    if (OKE_CLUSTER) {
+      // get operator pod name
+      String operatorPodName = assertDoesNotThrow(() -> getOperatorPodName(OPERATOR_RELEASE_NAME, opNamespace));
+      assertNotNull(operatorPodName, "Operator pod name returned is null");
+      logger.info("Operator pod name {0}", operatorPodName);
+
+      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+          clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
+      curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+      List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          replicaCount, numberOfServers, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+          false, "", "", 0, "", "",
+          curlCmd, managedServersBeforeScale, operatorPodName);
+
+      // then scale cluster back to 2 servers
+      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+          clusterName, domainUid, domainNamespace, numberOfServers, replicaCount);
+      managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, numberOfServers);
+      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+          numberOfServers, replicaCount, true, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+          false, "", "", 0, "", "",
+          curlCmd, managedServersBeforeScale, operatorPodName);
     } else {
       logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
           clusterName, domainUid, domainNamespace, replicaCount, numberOfServers);
