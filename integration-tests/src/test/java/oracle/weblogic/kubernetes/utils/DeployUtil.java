@@ -31,9 +31,11 @@ import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createConfigMap;
@@ -44,6 +46,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.listPods;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.jobCompleted;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -189,14 +192,32 @@ public class DeployUtil {
     String jobName = assertDoesNotThrow(()
         -> createNamespacedJob(jobBody), "Failed to create deploy Job");
 
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("========result before deploy is: {0}", result.toString());
+    } catch (java.io.IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
     logger.info("Checking if the deploy job {0} completed in namespace {1}",
         jobName, namespace);
     testUntil(
+        withLongRetryPolicy,
         jobCompleted(jobName, null, namespace),
         logger,
         "job {0} to be completed in namespace {1}",
         jobName,
         namespace);
+
+    try {
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("========result after deploy is: {0}", result.toString());
+    } catch (java.io.IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
 
     // check job status and fail test if the job failed to deploy
     V1Job job = getJob(jobName, namespace);
