@@ -425,16 +425,6 @@ class ItMultiDomainModelsScale1 {
   @ValueSource(strings = {"domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithWLDF(String domainType) {
-    String command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("curl command to get all --all-namespaces is: {0}", command);
-
-    try {
-      ExecResult result = ExecCommand.exec(command, true);
-      logger.info("result is: {0}", result.toString());
-    } catch (java.io.IOException | InterruptedException ex) {
-      ex.printStackTrace();
-    }
-
     /*
     if (OKE_CLUSTER && (domainType.contains("domainInImage") || domainType.contains("domainOnPV"))) {
       logger.info("=======Uninstalling NGINX");
@@ -520,6 +510,16 @@ class ItMultiDomainModelsScale1 {
       curlCmd = null;
     }
 
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("========result is: {0}", result.toString());
+    } catch (java.io.IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
     // scale up the cluster by 1 server
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
         clusterName, domainUid, domainNamespace, replicaCount, replicaCount + 1);
@@ -532,6 +532,13 @@ class ItMultiDomainModelsScale1 {
         replicaCount, replicaCount + 1, false, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
         true, domainHome, "scaleUp", 1,
         WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
+
+    try {
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("-------- result is: {0}", result.toString());
+    } catch (java.io.IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
 
     // scale down the cluster by 1 server
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
