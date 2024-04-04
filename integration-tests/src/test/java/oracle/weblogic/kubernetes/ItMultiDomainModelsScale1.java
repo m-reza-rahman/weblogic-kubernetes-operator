@@ -417,7 +417,7 @@ class ItMultiDomainModelsScale1 {
   @ParameterizedTest
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
-  @ValueSource(strings = {"domainInImage"})
+  @ValueSource(strings = {"domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithWLDF(String domainType) {
 
