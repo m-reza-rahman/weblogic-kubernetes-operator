@@ -213,6 +213,13 @@ public class DeployUtil {
         namespace);
 
     try {
+      Thread.sleep(300000);
+    } catch (Exception ex) {
+      //
+    }
+
+    logger.info("========>>> after 5 min sleep");
+    try {
       ExecResult result = ExecCommand.exec(command, true);
       logger.info("========result after deploy is: {0}", result.toString());
     } catch (java.io.IOException | InterruptedException ex) {
@@ -222,6 +229,7 @@ public class DeployUtil {
     // check job status and fail test if the job failed to deploy
     V1Job job = getJob(jobName, namespace);
     if (job != null) {
+      logger.info("=====job.getStatus() is {0}", job.getStatus().toString());
       V1JobCondition jobCondition = job.getStatus().getConditions().stream().filter(
           v1JobCondition -> "Failed".equals(v1JobCondition.getType()))
           .findAny()
