@@ -360,7 +360,7 @@ public class ShutdownManagedServerStep extends Step {
     public Result onFailure(Packet packet, HttpResponse<String> response) {
       // TEST
       LOGGER.severe("RJE: Shutting down pod with REST FAILED, serverName: " + serverName
-              + ", response: " + response.statusCode());
+              + ", response: " + Optional.ofNullable(response).map(HttpResponse::statusCode).orElse(-1));
 
       if (getThrowableResponse(packet) != null) {
         Throwable throwable = getThrowableResponse(packet);
