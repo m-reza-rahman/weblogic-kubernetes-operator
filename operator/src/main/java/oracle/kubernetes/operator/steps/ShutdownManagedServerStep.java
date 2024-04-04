@@ -322,11 +322,6 @@ public class ShutdownManagedServerStep extends Step {
         ShutdownManagedServerProcessing processing = new ShutdownManagedServerProcessing(packet, service, pod);
         ShutdownManagedServerResponseStep shutdownManagedServerResponseStep =
                 new ShutdownManagedServerResponseStep(PodHelper.getPodServerName(pod), getNext());
-
-        // TEST
-        LOGGER.severe("RJE: Shutting down pod with REST, name: " + pod.getMetadata().getName()
-                + ", namespace: " + pod.getMetadata().getNamespace());
-
         HttpRequestStep requestStep = processing.createRequestStep(shutdownManagedServerResponseStep);
         return doNext(requestStep, packet);
       }
@@ -352,32 +347,18 @@ public class ShutdownManagedServerStep extends Step {
     @Override
     public Result onSuccess(Packet packet, HttpResponse<String> response) {
       LOGGER.fine(MessageKeys.SERVER_SHUTDOWN_REST_SUCCESS, serverName);
-
-      // TEST
-      LOGGER.severe("RJE: Shutting down pod with REST SUCCESS, serverName: " + serverName
-              + ", body: " + response.body());
-
       removeShutdownRequestRetryCount(packet);
       return doNext(packet);
     }
 
     @Override
     public Result onFailure(Packet packet, HttpResponse<String> response) {
-      // TEST
-      LOGGER.severe("RJE: Shutting down pod with REST FAILED, serverName: " + serverName
-              + ", response: " + Optional.ofNullable(response).map(HttpResponse::statusCode).orElse(-1));
-
       if (getThrowableResponse(packet) != null) {
         Throwable throwable = getThrowableResponse(packet);
         if (shouldRetry(packet)) {
           addShutdownRequestRetryCountToPacket(packet, 1);
           // Retry request
           LOGGER.info(MessageKeys.SERVER_SHUTDOWN_REST_RETRY, serverName);
-
-          // TEST
-          LOGGER.severe("RJE: retry path, serverName: " + serverName
-                  + ", retry count: " + getShutdownRequestRetryCount(packet));
-
           return doNext(requestStep, packet);
         }
         if (!isServerStateShutdown(packet)) {
@@ -386,10 +367,6 @@ public class ShutdownManagedServerStep extends Step {
       } else {
         LOGGER.info(MessageKeys.SERVER_SHUTDOWN_REST_FAILURE, serverName, response);
       }
-
-      // TEST
-      LOGGER.severe("RJE: deletion path, serverName: " + serverName);
-
       removeShutdownRequestRetryCount(packet);
       return doNext(Step.chain(createDomainRefreshStep(getDomainPresenceInfo(packet).getDomainName(),
           getDomainPresenceInfo(packet).getNamespace()), getNext()), packet);
