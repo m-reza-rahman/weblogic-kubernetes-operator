@@ -30,6 +30,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.DomainUtils;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -47,6 +48,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.INGRESS_CLASS_FILE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -423,6 +425,15 @@ class ItMultiDomainModelsScale1 {
   @ValueSource(strings = {"domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithWLDF(String domainType) {
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("result is: {0}", result.toString());
+    } catch (java.io.IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
 
     /*
     if (OKE_CLUSTER && (domainType.contains("domainInImage") || domainType.contains("domainOnPV"))) {
