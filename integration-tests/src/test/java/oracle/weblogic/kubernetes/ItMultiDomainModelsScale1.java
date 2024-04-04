@@ -503,6 +503,14 @@ class ItMultiDomainModelsScale1 {
           WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
     }*/
 
+    try {
+      Thread.sleep(300000);
+    } catch (Exception ex) {
+      //
+    }
+
+    logger.info("==Done sleeping 5 min");
+
     curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
     logger.info("BR: curlCmd = {0}", curlCmd);
 
