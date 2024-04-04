@@ -70,6 +70,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.startDomain;
+import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.adminNodePortAccessible;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.doesDomainExist;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
@@ -103,6 +104,7 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodNam
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -420,6 +422,20 @@ class ItMultiDomainModelsScale1 {
   @ValueSource(strings = {"domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithWLDF(String domainType) {
+    logger.info("=======Uninstalling NGINX");
+    if (nginxHelmParams != null) {
+      assertThat(uninstallNginx(nginxHelmParams.getHelmParams()))
+          .as("Test uninstallNginx1 returns true")
+          .withFailMessage("uninstallNginx() did not return true")
+          .isTrue();
+    }
+
+    // install and verify NGINX
+    nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    logger.info("=========NGINX service name: {0}", nginxServiceName);
+    nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+    logger.info("=========NGINX http node port: {0}", nodeportshttp);
 
     DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
 
