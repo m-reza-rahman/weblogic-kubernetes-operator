@@ -1303,11 +1303,11 @@ public class DomainStatusUpdater {
       }
 
       private boolean isHasFailedPod() {
-        return getInfo().getServerPods().anyMatch(PodHelper::isFailed);
+        return getInfo().getServerPodsNotBeingDeleted().anyMatch(PodHelper::isFailed);
       }
 
       private boolean hasPodNotReadyInTime() {
-        return getInfo().getServerPods().anyMatch(this::isNotReadyInTime);
+        return getInfo().getServerPodsNotBeingDeleted().anyMatch(this::isNotReadyInTime);
       }
 
       private boolean isNotReadyInTime(V1Pod pod) {
@@ -1315,7 +1315,7 @@ public class DomainStatusUpdater {
       }
 
       private boolean hasPodNotRunningInTime() {
-        return getInfo().getServerPods().anyMatch(this::isNotRunningInTime);
+        return getInfo().getServerPodsNotBeingDeleted().anyMatch(this::isNotRunningInTime);
       }
 
       private boolean isNotRunningInTime(V1Pod pod) {

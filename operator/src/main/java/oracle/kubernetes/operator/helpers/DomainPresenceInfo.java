@@ -366,6 +366,16 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
     return getActiveServers().values().stream().map(this::getPod).filter(Objects::nonNull);
   }
 
+  /**
+   * Returns a stream of all server pods present, if the server is not marked for deletion.
+   *
+   * @return a pod stream
+   */
+  public Stream<V1Pod> getServerPodsNotBeingDeleted() {
+    return getActiveServers().values().stream().filter(sko -> !sko.isPodBeingDeleted()
+            .get()).map(this::getPod).filter(Objects::nonNull);
+  }
+
   private V1Pod getPod(ServerKubernetesObjects sko) {
     return sko.getPod().get();
   }
