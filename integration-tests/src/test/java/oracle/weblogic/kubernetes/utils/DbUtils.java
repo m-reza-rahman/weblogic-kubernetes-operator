@@ -773,6 +773,10 @@ public class DbUtils {
    * @throws IOException when fails to modify operator yaml file
    */
   public static void installDBOperator(String namespace) throws IOException {
+
+    if (OKD) {
+      addSccToDBSvcAccount("default", namespace);
+    }
     Path operatorYamlSrcFile = Paths.get(RESOURCE_DIR, "dboperator", "oracle-database-operator.yaml");
     Path operatorYamlDestFile = Paths.get(DOWNLOAD_DIR, namespace, "oracle-database-operator.yaml");
 
