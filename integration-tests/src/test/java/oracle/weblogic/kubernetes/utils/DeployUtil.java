@@ -213,12 +213,12 @@ public class DeployUtil {
         namespace);
 
     try {
-      Thread.sleep(300000);
+      Thread.sleep(600000);
     } catch (Exception ex) {
       //
     }
 
-    logger.info("========>>> after 5 min sleep");
+    logger.info("========>>> after 10 min sleep");
     try {
       ExecResult result = ExecCommand.exec(command, true);
       logger.info("========result after deploy is: {0}", result.toString());
