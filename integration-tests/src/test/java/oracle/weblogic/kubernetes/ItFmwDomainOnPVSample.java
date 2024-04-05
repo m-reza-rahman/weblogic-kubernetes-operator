@@ -166,6 +166,13 @@ class ItFmwDomainOnPVSample {
       envMap.put("WDT_INSTALLER_URL", WDT_DOWNLOAD_URL);
     }
 
+    if (KIND_CLUSTER) {
+      envMap.put("DB_IMAGE_NAME",
+          KIND_REPO + DB_IMAGE_NAME.substring(BASE_IMAGES_REPO.length() + BASE_IMAGES_TENANCY.length() + 2));
+    } else {
+      envMap.put("DB_IMAGE_NAME", DB_IMAGE_NAME);
+    }
+
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       DOMAIN_CREATION_IMAGE_NAME = "localhost/wdt-domain-image";
       envMap.put("OPER_IMAGE_NAME", "localhost/weblogic-kubernetes-operator");
@@ -173,12 +180,9 @@ class ItFmwDomainOnPVSample {
       envMap.put("K8S_NODEPORT_HOST", assertDoesNotThrow(() -> InetAddress.getLocalHost().getHostAddress()));
       envMap.put("TRAEFIK_INGRESS_HTTP_HOSTPORT", "" + TRAEFIK_INGRESS_HTTP_HOSTPORT);
       envMap.put("TRAEFIK_NAMESPACE", TRAEFIK_NAMESPACE);
-      envMap.put("DB_IMAGE_NAME",
-          KIND_REPO + DB_IMAGE_NAME.substring(BASE_IMAGES_REPO.length() + BASE_IMAGES_TENANCY.length() + 2));
     } else {
       envMap.put("TRAEFIK_NAMESPACE", traefikNamespace);
       envMap.put("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
-      envMap.put("DB_IMAGE_NAME", DB_IMAGE_NAME);
     }
 
     logger.info("Environment variables to the script {0}", envMap);
@@ -214,7 +218,7 @@ class ItFmwDomainOnPVSample {
     //    + " -jrf -precleanup ";
 
     String command = KUBERNETES_CLI + " delete pv $(" + KUBERNETES_CLI + " get pv | grep pv | awk '{print $1}')";
-    logger.info("DEBUG: delete-pv-command: %s", command);
+    logger.info("DEBUG: delete-pv-command: {0}", command);
     ExecResult result = Command.withParams(
         new CommandParams()
             .command(command)
