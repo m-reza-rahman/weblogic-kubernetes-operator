@@ -211,14 +211,7 @@ public class DeployUtil {
         "job {0} to be completed in namespace {1}",
         jobName,
         namespace);
-
-    try {
-      Thread.sleep(600000);
-    } catch (Exception ex) {
-      //
-    }
-
-    logger.info("========>>> after 10 min sleep");
+    
     try {
       ExecResult result = ExecCommand.exec(command, true);
       logger.info("========result after deploy is: {0}", result.toString());

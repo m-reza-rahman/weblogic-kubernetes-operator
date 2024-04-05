@@ -420,39 +420,13 @@ class ItMultiDomainModelsScale1 {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @Disabled
+  //@Disabled
   @ParameterizedTest
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
   @ValueSource(strings = {"domainInImage", "domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithWLDF(String domainType) {
-    /*
-    if (OKE_CLUSTER && (domainType.contains("domainInImage") || domainType.contains("domainOnPV"))) {
-      logger.info("=======Uninstalling NGINX");
-      if (nginxHelmParams != null) {
-        assertThat(uninstallNginx(nginxHelmParams.getHelmParams()))
-            .as("Test uninstallNginx1 returns true")
-            .withFailMessage("uninstallNginx() did not return true")
-            .isTrue();
-      }
-
-      // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      logger.info("=========NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      logger.info("=========NGINX http node port: {0}", nodeportshttp);
-    }
-
-    if (OKE_CLUSTER && domainType.contains("domainInImage")) {
-      logger.info("=========shutdownDomain: {0}", miiDomainUid);
-      shutdownDomain(miiDomainUid, miiDomainNamespace);
-    } else if (OKE_CLUSTER && domainType.contains("domainOnPV")) {
-      logger.info("=========shutdownDomain: {0}", dimDomainUid);
-      shutdownDomain(dimDomainUid, domainInImageNamespace);
-    }*/
-
     DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
 
     // get domain properties
@@ -504,14 +478,6 @@ class ItMultiDomainModelsScale1 {
           true, domainHome, "scaleDown", 1,
           WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
     }*/
-
-    try {
-      Thread.sleep(300000);
-    } catch (Exception ex) {
-      //
-    }
-
-    logger.info("==Done sleeping 5 min");
 
     curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
     logger.info("BR: curlCmd = {0}", curlCmd);
@@ -582,86 +548,14 @@ class ItMultiDomainModelsScale1 {
 
     // shutdown domain and verify the domain is shutdown
     shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
-  }
-
-  /**
-   * Scale cluster using WLDF policy for three different type of domains.
-   * i.e. domain-on-pv, domain-in-image and model-in-image
-   */
-  @Test
-  @DisplayName("scale cluster using WLDF policy for three different type of domains")
-  @ValueSource(strings = {"domainInImage", "domainOnPV"})
-  @DisabledOnSlimImage
-  void testScaleClustersWithWLDF_domainInImage() {
-    DomainResource domain = createOrStartDomainBasedOnDomainType("domainInImage");
-
-    // get domain properties
-    String domainUid = domain.getSpec().getDomainUid();
-    String domainNamespace = domain.getMetadata().getNamespace();
-    String domainHome = domain.getSpec().getDomainHome();
-    int numClusters = domain.getSpec().getClusters().size();
-    String clusterName = domain.getSpec().getClusters().get(0).getName();
-
-    String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
-
-    curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
-    logger.info("BR: curlCmd = {0}", curlCmd);
-
-    String command = KUBERNETES_CLI + " get all --all-namespaces";
-    logger.info("curl command to get all --all-namespaces is: {0}", command);
 
     try {
-      ExecResult result = ExecCommand.exec(command, true);
-      logger.info("========result is: {0}", result.toString());
-    } catch (java.io.IOException | InterruptedException ex) {
-      ex.printStackTrace();
+      Thread.sleep(300000);
+    } catch (Exception ex) {
+      //
     }
 
-    // scale up the cluster by 1 server
-    logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-        clusterName, domainUid, domainNamespace, replicaCount, replicaCount + 1);
-    List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
-    String curlCmdForWLDFScript =
-        generateCurlCmd(domainUid, domainNamespace, clusterName, WLDF_OPENSESSION_APP_CONTEXT_ROOT);
-    logger.info("BR: curlCmdForWLDFScript = {0}", curlCmdForWLDFScript);
-
-    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-        replicaCount, replicaCount + 1, false, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
-        true, domainHome, "scaleUp", 1,
-        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
-
-    // scale down the cluster by 1 server
-    logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-        clusterName, domainUid, domainNamespace, replicaCount + 1, replicaCount);
-    managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount + 1);
-
-    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-        replicaCount + 1, replicaCount, false, 0, opNamespace, opServiceAccount,
-        true, domainHome, "scaleDown", 1,
-        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
-
-    // verify admin console login
-    if (OKE_CLUSTER) {
-      String resourcePath = "/console/login/LoginForm.jsp";
-      final String adminServerPodName = domainUid + "-admin-server";
-      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
-      logger.info("result in OKE_CLUSTER is {0}", result.toString());
-      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
-
-      // verify admin console login using ingress controller
-      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
-    } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
-      assertDoesNotThrow(()
-          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
-    } else {
-      verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
-      // verify admin console login using ingress controller
-      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
-    }
-
-    // shutdown domain and verify the domain is shutdown
-    shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
+    logger.info("==Done sleeping 5 min");
   }
 
   /**
@@ -671,7 +565,7 @@ class ItMultiDomainModelsScale1 {
   @Test
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   @DisabledOnSlimImage
-  void testScaleClustersWithWLDF_domainOnPV() {
+  void testScaleClustersWithWLDF_domainOnPV2() {
     DomainResource domain = createOrStartDomainBasedOnDomainType("domainOnPV");
 
     // get domain properties
