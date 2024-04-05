@@ -438,47 +438,6 @@ class ItMultiDomainModelsScale1 {
 
     String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
 
-    /*
-    if (OKE_CLUSTER && (domainType.contains("domainInImage") || domainType.contains("domainOnPV"))) {
-      // scale up the cluster by 1 server
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-          clusterName, domainUid, domainNamespace, replicaCount, replicaCount + 1);
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
-          managedServerPodNamePrefix, replicaCount, replicaCount + 1, null, null);
-
-      // scale down the cluster by 1 server
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-          clusterName, domainUid, domainNamespace, replicaCount + 1, replicaCount);
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace,
-          managedServerPodNamePrefix, replicaCount + 1, replicaCount, null, null);
-    } else {
-      curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
-      logger.info("BR: curlCmd = {0}", curlCmd);
-
-      // scale up the cluster by 1 server
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-          clusterName, domainUid, domainNamespace, replicaCount, replicaCount + 1);
-      List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
-      String curlCmdForWLDFScript =
-          generateCurlCmd(domainUid, domainNamespace, clusterName, WLDF_OPENSESSION_APP_CONTEXT_ROOT);
-      logger.info("BR: curlCmdForWLDFScript = {0}", curlCmdForWLDFScript);
-
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          replicaCount, replicaCount + 1, false, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
-          true, domainHome, "scaleUp", 1,
-          WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
-
-      // scale down the cluster by 1 server
-      logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
-          clusterName, domainUid, domainNamespace, replicaCount + 1, replicaCount);
-      managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount + 1);
-
-      scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
-          replicaCount + 1, replicaCount, false, 0, opNamespace, opServiceAccount,
-          true, domainHome, "scaleDown", 1,
-          WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
-    }*/
-
     curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
     logger.info("BR: curlCmd = {0}", curlCmd);
 
@@ -554,8 +513,6 @@ class ItMultiDomainModelsScale1 {
     } catch (Exception ex) {
       //
     }
-
-    logger.info("==Done sleeping 5 min");
   }
 
   /**
