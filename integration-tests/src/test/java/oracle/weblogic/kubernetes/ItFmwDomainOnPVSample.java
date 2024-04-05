@@ -39,6 +39,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_NAME_OPERATOR;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_BASE;
@@ -209,9 +210,11 @@ class ItFmwDomainOnPVSample {
     Assumptions.assumeTrue(previousTestSuccessful);
     previousTestSuccessful = false;
 
-    String command = domainOnPvSampleScript
-        + " -jrf -precleanup ";
+    //String command = domainOnPvSampleScript
+    //    + " -jrf -precleanup ";
 
+    String command = KUBERNETES_CLI + " delete pv $(" + KUBERNETES_CLI + " get pv | grep pv | awk '{print $1}')";
+    logger.info("DEBUG: delete-pv-command: %s", command);
     ExecResult result = Command.withParams(
         new CommandParams()
             .command(command)
