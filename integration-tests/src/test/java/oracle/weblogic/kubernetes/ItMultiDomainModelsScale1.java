@@ -36,6 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -71,7 +72,6 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getOperatorPodName;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServicePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
-import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.actions.TestActions.startDomain;
 //import static oracle.weblogic.kubernetes.actions.TestActions.uninstallNginx;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.adminNodePortAccessible;
@@ -103,7 +103,9 @@ import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.getRouteHost;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.setTlsTerminationForRoute;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+//import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
+import static oracle.weblogic.kubernetes.utils.PodUtils.getPodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -418,7 +420,7 @@ class ItMultiDomainModelsScale1 {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  //@Disabled
+  @Disabled
   @ParameterizedTest
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
@@ -441,7 +443,7 @@ class ItMultiDomainModelsScale1 {
       logger.info("=========NGINX service name: {0}", nginxServiceName);
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("=========NGINX http node port: {0}", nodeportshttp);
-    }*/
+    }
 
     if (OKE_CLUSTER && domainType.contains("domainInImage")) {
       logger.info("=========shutdownDomain: {0}", miiDomainUid);
@@ -449,7 +451,7 @@ class ItMultiDomainModelsScale1 {
     } else if (OKE_CLUSTER && domainType.contains("domainOnPV")) {
       logger.info("=========shutdownDomain: {0}", dimDomainUid);
       shutdownDomain(dimDomainUid, domainInImageNamespace);
-    }
+    }*/
 
     DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
 
@@ -547,6 +549,165 @@ class ItMultiDomainModelsScale1 {
     } catch (java.io.IOException | InterruptedException ex) {
       ex.printStackTrace();
     }
+
+    // scale down the cluster by 1 server
+    logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+        clusterName, domainUid, domainNamespace, replicaCount + 1, replicaCount);
+    managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount + 1);
+
+    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+        replicaCount + 1, replicaCount, false, 0, opNamespace, opServiceAccount,
+        true, domainHome, "scaleDown", 1,
+        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
+
+    // verify admin console login
+    if (OKE_CLUSTER) {
+      String resourcePath = "/console/login/LoginForm.jsp";
+      final String adminServerPodName = domainUid + "-admin-server";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    }
+
+    // shutdown domain and verify the domain is shutdown
+    shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
+  }
+
+  /**
+   * Scale cluster using WLDF policy for three different type of domains.
+   * i.e. domain-on-pv, domain-in-image and model-in-image
+   */
+  @Test
+  @DisplayName("scale cluster using WLDF policy for three different type of domains")
+  @ValueSource(strings = {"domainInImage", "domainOnPV"})
+  @DisabledOnSlimImage
+  void testScaleClustersWithWLDF_domainInImage() {
+    DomainResource domain = createOrStartDomainBasedOnDomainType("domainInImage");
+
+    // get domain properties
+    String domainUid = domain.getSpec().getDomainUid();
+    String domainNamespace = domain.getMetadata().getNamespace();
+    String domainHome = domain.getSpec().getDomainHome();
+    int numClusters = domain.getSpec().getClusters().size();
+    String clusterName = domain.getSpec().getClusters().get(0).getName();
+
+    String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
+
+    curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+    logger.info("BR: curlCmd = {0}", curlCmd);
+
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("========result is: {0}", result.toString());
+    } catch (java.io.IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
+    // scale up the cluster by 1 server
+    logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+        clusterName, domainUid, domainNamespace, replicaCount, replicaCount + 1);
+    List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+    String curlCmdForWLDFScript =
+        generateCurlCmd(domainUid, domainNamespace, clusterName, WLDF_OPENSESSION_APP_CONTEXT_ROOT);
+    logger.info("BR: curlCmdForWLDFScript = {0}", curlCmdForWLDFScript);
+
+    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+        replicaCount, replicaCount + 1, false, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+        true, domainHome, "scaleUp", 1,
+        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
+
+    // scale down the cluster by 1 server
+    logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+        clusterName, domainUid, domainNamespace, replicaCount + 1, replicaCount);
+    managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount + 1);
+
+    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+        replicaCount + 1, replicaCount, false, 0, opNamespace, opServiceAccount,
+        true, domainHome, "scaleDown", 1,
+        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
+
+    // verify admin console login
+    if (OKE_CLUSTER) {
+      String resourcePath = "/console/login/LoginForm.jsp";
+      final String adminServerPodName = domainUid + "-admin-server";
+      ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName,ADMIN_SERVER_PORT, resourcePath);
+      logger.info("result in OKE_CLUSTER is {0}", result.toString());
+      assertEquals(0, result.exitValue(), "Failed to access WebLogic console");
+
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    } else if (!WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRoutingIfNotExists(domainNamespace, domainUid);
+      assertDoesNotThrow(()
+          -> verifyAdminServerRESTAccess("localhost", TRAEFIK_INGRESS_HTTP_HOSTPORT, false, hostHeader));
+    } else {
+      verifyReadyAppUsingAdminNodePort(domainUid, domainNamespace);
+      // verify admin console login using ingress controller
+      verifyReadyAppUsingIngressController(domainUid, domainNamespace);
+    }
+
+    // shutdown domain and verify the domain is shutdown
+    shutdownDomainAndVerify(domainNamespace, domainUid, replicaCount);
+  }
+
+  /**
+   * Scale cluster using WLDF policy for three different type of domains.
+   * i.e. domain-on-pv, domain-in-image and model-in-image
+   */
+  @Test
+  @DisplayName("scale cluster using WLDF policy for three different type of domains")
+  @DisabledOnSlimImage
+  void testScaleClustersWithWLDF_domainOnPV() {
+    DomainResource domain = createOrStartDomainBasedOnDomainType("domainOnPV");
+
+    // get domain properties
+    String domainUid = domain.getSpec().getDomainUid();
+    String domainNamespace = domain.getMetadata().getNamespace();
+    String domainHome = domain.getSpec().getDomainHome();
+    int numClusters = domain.getSpec().getClusters().size();
+    String clusterName = domain.getSpec().getClusters().get(0).getName();
+
+    String managedServerPodNamePrefix = generateMsPodNamePrefix(numClusters, domainUid, clusterName);
+
+    curlCmd = generateCurlCmd(domainUid, domainNamespace, clusterName, SAMPLE_APP_CONTEXT_ROOT);
+    logger.info("BR: curlCmd = {0}", curlCmd);
+
+    String command = KUBERNETES_CLI + " get all --all-namespaces";
+    logger.info("curl command to get all --all-namespaces is: {0}", command);
+
+    try {
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("========result is: {0}", result.toString());
+    } catch (java.io.IOException | InterruptedException ex) {
+      ex.printStackTrace();
+    }
+
+    // scale up the cluster by 1 server
+    logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
+        clusterName, domainUid, domainNamespace, replicaCount, replicaCount + 1);
+    List<String> managedServersBeforeScale = listManagedServersBeforeScale(numClusters, clusterName, replicaCount);
+    String curlCmdForWLDFScript =
+        generateCurlCmd(domainUid, domainNamespace, clusterName, WLDF_OPENSESSION_APP_CONTEXT_ROOT);
+    logger.info("BR: curlCmdForWLDFScript = {0}", curlCmdForWLDFScript);
+
+    scaleAndVerifyCluster(clusterName, domainUid, domainNamespace, managedServerPodNamePrefix,
+        replicaCount, replicaCount + 1, false, OPERATOR_EXTERNAL_REST_HTTPSPORT, opNamespace, opServiceAccount,
+        true, domainHome, "scaleUp", 1,
+        WLDF_OPENSESSION_APP, curlCmdForWLDFScript, curlCmd, managedServersBeforeScale);
 
     // scale down the cluster by 1 server
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} from {3} servers to {4} servers.",
@@ -698,6 +859,24 @@ class ItMultiDomainModelsScale1 {
     DomainResource domain = DomainUtils.createDomainOnPvUsingWdt(domainUid, domainNamespace, wlSecretName,
         clusterName,
         replicaCount, ItMultiDomainModelsScale.class.getSimpleName());
+
+    try {
+      String podName = getPodName(domainNamespace, "create-domain-onpv-job-mdlb-domainonpv-pv-");
+
+      String command = KUBERNETES_CLI + " describe pod/" + podName + " -n " + domainNamespace;
+      logger.info("curl command to describe pod/: {0}", podName);
+
+      ExecResult result = ExecCommand.exec(command, true);
+      logger.info("========result of describe pod is: {0}", result.toString());
+
+      command = KUBERNETES_CLI + " logs pod/" + podName + " -n " + domainNamespace;
+      logger.info("curl command to logs pod/: {0}", podName);
+
+      result = ExecCommand.exec(command, true);
+      logger.info("========result of logs pod is: {0}", result.toString());
+    } catch (Exception ex) {
+      ex.printStackTrace();
+    }
 
     // build application sample-app and opensessionapp
     List<String> appSrcDirList = new ArrayList<>();
