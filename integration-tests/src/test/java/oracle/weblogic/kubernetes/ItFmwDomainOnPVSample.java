@@ -202,6 +202,31 @@ class ItFmwDomainOnPVSample {
    * Test Domain on PV sample install operator use case.
    */
   @Test
+  @Order(0)
+  public void testPrecleanup() {
+    Assumptions.assumeTrue(previousTestSuccessful);
+    previousTestSuccessful = false;
+
+    String command = domainOnPvSampleScript
+        + " -jrf -precleanup ";
+
+    ExecResult result = Command.withParams(
+        new CommandParams()
+            .command(command)
+            .env(envMap)
+            .redirect(true)
+    ).executeAndReturnResult();
+
+    logger.info(result.stdout());
+    logger.info(result.stderr());
+
+    previousTestSuccessful = true;
+  }
+
+  /**
+   * Test Domain on PV sample install operator use case.
+   */
+  @Test
   @Order(1)
   public void testInstallOperator() {
     String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));

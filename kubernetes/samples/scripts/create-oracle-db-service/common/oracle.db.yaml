@@ -67,7 +67,7 @@ spec:
             ephemeral-storage: "8Gi"
           requests:
             cpu: 500m
-            ephemeral-storage: "6Gi"
+            ephemeral-storage: "3Gi"
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
       dnsPolicy: ClusterFirst
