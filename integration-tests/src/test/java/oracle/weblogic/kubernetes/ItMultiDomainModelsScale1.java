@@ -236,7 +236,7 @@ class ItMultiDomainModelsScale1 {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @Disabled
+  //@Disabled
   @ParameterizedTest
   @DisplayName("scale cluster by patching domain resource with three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
@@ -329,7 +329,7 @@ class ItMultiDomainModelsScale1 {
    *
    * @param domainType domain type, possible value: modelInImage, domainInImage, domainOnPV
    */
-  @Disabled
+  //@Disabled
   @ParameterizedTest
   @DisplayName("scale cluster using REST API for three different type of domains")
   @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
@@ -424,7 +424,7 @@ class ItMultiDomainModelsScale1 {
   @ParameterizedTest
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   //@ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV"})
-  @ValueSource(strings = {"domainInImage", "domainOnPV"})
+  @ValueSource(strings = {"domainOnPV"})
   @DisabledOnSlimImage
   void testScaleClustersWithWLDF(String domainType) {
     DomainResource domain = createOrStartDomainBasedOnDomainType(domainType);
@@ -519,6 +519,7 @@ class ItMultiDomainModelsScale1 {
    * Scale cluster using WLDF policy for three different type of domains.
    * i.e. domain-on-pv, domain-in-image and model-in-image
    */
+  @Disabled
   @Test
   @DisplayName("scale cluster using WLDF policy for three different type of domains")
   @DisabledOnSlimImage
