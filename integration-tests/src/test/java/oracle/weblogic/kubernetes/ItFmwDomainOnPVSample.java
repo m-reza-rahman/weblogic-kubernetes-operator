@@ -41,6 +41,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_REPO;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
@@ -140,6 +141,7 @@ class ItFmwDomainOnPVSample {
     envMap.put("DOMAIN_IMAGE_PULL_SECRET_NAME", TEST_IMAGES_REPO_SECRET_NAME);
     envMap.put("WLSIMG_BUILDER_DEFAULT", WLSIMG_BUILDER_DEFAULT);
     envMap.put("WLSIMG_BUILDER", WLSIMG_BUILDER);
+    envMap.put("RESULT_ROOT", RESULTS_BASE);
     envMap.put("OKD", "" +  OKD);
     envMap.put("KIND_CLUSTER", "" + KIND_CLUSTER);
     envMap.put("OCNE", "" + OCNE);
