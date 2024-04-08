@@ -64,7 +64,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME_DEFAULT;
-//import static oracle.weblogic.kubernetes.TestConstants.WLS_DEV_IMAGE_REGISTRY_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.WLS_DEV_IMAGE_REGISTRY_HOST;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
@@ -132,7 +132,7 @@ class ItMiiDomainUpgradeToSecureMode {
   String clusterIngressHost;
   private final String imageTag1411 = "14.1.1.0-11";
   private final String imageTag12214 = "12.2.1.4";
-  private final String image1412 = "phx.ocir.io/devweblogic/test-images/weblogic:14.1.2.0.0-jdk17";
+  private final String image1412 = WLS_DEV_IMAGE_REGISTRY_HOST + "weblogic:14.1.2.0.0-jdk17";
   private final String sampleAppUri = "/sample-war/index.jsp";
   private final String adminAppUri = "/management/tenant-monitoring/servers";
   private final String adminAppText = "RUNNING";
