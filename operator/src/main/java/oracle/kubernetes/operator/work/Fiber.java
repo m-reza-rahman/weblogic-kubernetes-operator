@@ -5,15 +5,14 @@ package oracle.kubernetes.operator.work;
 
 import java.io.Serial;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.logging.LoggingFacade;
@@ -38,7 +37,7 @@ public final class Fiber implements Runnable {
   private final Step stepline;
   private final Packet packet;
   private final AtomicBoolean isCancelled = new AtomicBoolean(false);
-  private final AtomicReference<List<String>> breadcrumbs = new AtomicReference<>();
+  private final Queue<String> breadcrumbs = new ConcurrentLinkedQueue<>();
 
   public Fiber(FiberExecutor fiberExecutor, Step stepline, Packet packet) {
     this(fiberExecutor, stepline, packet, null);
@@ -79,8 +78,12 @@ public final class Fiber implements Runnable {
   }
 
   void addBreadcrumb(Step step) {
-    if (LOGGER.isFinerEnabled()) {
-      breadcrumbs.getAndUpdate(v -> v != null ? v : new ArrayList<>()).add(step.getResourceName());
+    addBreadcrumb(step.getResourceName());
+  }
+
+  void addBreadcrumb(String crumb) {
+    if (LOGGER.isFineEnabled()) {
+      breadcrumbs.add(crumb);
     }
   }
 
@@ -94,13 +97,8 @@ public final class Fiber implements Runnable {
   private boolean invokeAndPotentiallyRequeue(Step stepline, Packet packet) {
     Result result = stepline.apply(packet);
 
-    if (LOGGER.isFinerEnabled()) {
-      LOGGER.finer("Fiber.iAPR(), fiber: " + getName() + ", requeue: "
-              + Optional.ofNullable(result).map(Result::isRequeue).orElse(false) + ", after: "
-              + Optional.ofNullable(result).map(Result::getRequeueAfter).map(Duration::toString).orElse("none"));
-    }
-
     if (result == null || result.isRequeue()) {
+      addBreadcrumb("[" + result.getRequeueAfter() + "]");
       fiberExecutor.schedule(this, result.getRequeueAfter());
       return false;
     }
@@ -132,15 +130,15 @@ public final class Fiber implements Runnable {
             }
           }
         } catch (Throwable t) {
+          addBreadcrumb("[throw= " + t.getMessage() + "]");
           if (completionCallback != null) {
             completionCallback.onThrowable(packet, t);
           }
         }
       } finally {
 
-        if (LOGGER.isFinerEnabled()) {
-          LOGGER.finer("Fiber.run() END, fiber: " + getName() + ", isCancelled: " + isCancelled()
-                  + ", breadcrumbs: " + breadcrumbs.get());
+        if (LOGGER.isFineEnabled()) {
+          LOGGER.fine("Fiber breadcrumbs: " + breadcrumbs);
         }
 
         if (oldFiber == null) {
@@ -196,7 +194,9 @@ public final class Fiber implements Runnable {
    * Cancels this fiber.
    */
   public void cancel() {
-    isCancelled.set(true);
+    if (!isCancelled.getAndSet(true)) {
+      addBreadcrumb("[cancelled]");
+    }
   }
 
   /**

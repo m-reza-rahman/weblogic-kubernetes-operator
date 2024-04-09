@@ -3,7 +3,6 @@
 
 package oracle.kubernetes.operator.steps;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,7 +21,6 @@ import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo;
 import oracle.kubernetes.operator.helpers.DomainPresenceInfo.ServerShutdownInfo;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
-import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
@@ -153,8 +151,7 @@ public class ServerDownIteratorStep extends Step {
       public Result apply(Packet packet) {
         if (info.getServerPod(ssi.getServerName()) != null) {
           // requeue to wait for pod to be deleted
-          return new Result(true,
-                  Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+          return doRequeue(packet);
         }
         return doEnd(packet);
       }

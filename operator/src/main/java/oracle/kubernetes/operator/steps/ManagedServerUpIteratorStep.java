@@ -3,7 +3,6 @@
 
 package oracle.kubernetes.operator.steps;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,7 +27,6 @@ import oracle.kubernetes.operator.helpers.PodHelper;
 import oracle.kubernetes.operator.helpers.ServiceHelper;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
-import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.work.Fiber;
 import oracle.kubernetes.operator.work.Packet;
@@ -153,8 +151,7 @@ public class ManagedServerUpIteratorStep extends Step {
 
       if (managedPod == null || !isPodReady(managedPod)) {
         // requeue to wait for managed pod to be ready
-        return new Result(true,
-                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+        return doRequeue(packet);
       }
 
       return doNext(packet);

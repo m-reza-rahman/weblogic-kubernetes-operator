@@ -3,7 +3,6 @@
 
 package oracle.kubernetes.operator.helpers;
 
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -460,8 +459,7 @@ public class JobHelper {
         V1Pod jobPod = (V1Pod) packet.get(ProcessingConstants.JOB_POD);
         if (!anyTerminatedContainers(jobPod)) {
           // requeue to wait for the job pod
-          return new Result(true,
-                  Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+          return doRequeue(packet);
         }
         return doNext(packet);
       }

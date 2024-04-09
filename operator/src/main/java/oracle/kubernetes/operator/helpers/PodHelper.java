@@ -48,7 +48,6 @@ import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
 
-import static java.time.Duration.ofSeconds;
 import static oracle.kubernetes.operator.KubernetesConstants.EVICTED_REASON;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTERNAME_LABEL;
@@ -565,8 +564,7 @@ public class PodHelper {
 
       if (adminPod == null || !isPodReady(adminPod)) {
         // requeue to wait for admin pod to be ready
-        return new Result(true,
-                ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+        return doRequeue(packet);
       }
 
       return doNext(packet);
@@ -867,8 +865,7 @@ public class PodHelper {
               info.setServerPod(serverName, null);
             } else if (isMustWait) {
               // requeue to wait for pod to be deleted and gone
-              return new Result(true,
-                      ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+              return doRequeue(packet);
             }
             return doNext(packet);
           }

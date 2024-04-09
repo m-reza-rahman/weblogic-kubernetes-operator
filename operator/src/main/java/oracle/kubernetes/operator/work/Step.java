@@ -12,9 +12,13 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 import io.kubernetes.client.extended.controller.reconciler.Result;
+import oracle.kubernetes.operator.logging.LoggingFacade;
+import oracle.kubernetes.operator.logging.LoggingFactory;
+import oracle.kubernetes.operator.tuning.TuningParameters;
 
 /** Individual step in a processing flow. */
 public abstract class Step {
+  private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
   public interface StepAdapter {
     Step adapt(Fiber fiber, Step step, Packet packet);
@@ -221,6 +225,16 @@ public abstract class Step {
   }
 
   /**
+   * End the fiber processing and requeue after the standard delay.
+   *
+   * @param packet Packet
+   */
+  protected static final Result doRequeue(Packet packet) {
+    return new Result(true,
+            Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+  }
+
+  /**
    * Terminate fiber processing with a throwable.
    *
    * @param throwable Throwable
@@ -228,6 +242,10 @@ public abstract class Step {
    * @return Next action that will end processing with a throwable
    */
   protected static final Result doTerminate(Throwable throwable, Packet packet) {
+    Fiber fiber = Fiber.getCurrentIfSet();
+    if (fiber != null) {
+      fiber.addBreadcrumb("[throw= " + throwable.getMessage() + "]");
+    }
     packet.put(THROWABLE, throwable);
     return doEnd(packet);
   }
@@ -254,6 +272,10 @@ public abstract class Step {
    */
   protected static final Result doDelay(Step step, Packet packet, long delay, TimeUnit unit) {
     try {
+      Fiber fiber = Fiber.getCurrentIfSet();
+      if (fiber != null) {
+        fiber.addBreadcrumb(("[delay: " + unit.toMillis(delay) + "ms]"));
+      }
       unit.sleep(delay);
     } catch (InterruptedException e) {
       return doTerminate(e, packet);
@@ -279,7 +301,17 @@ public abstract class Step {
       Step step, Packet packet, Collection<Fiber.StepAndPacket> startDetails) {
     boolean requeue = false;
     Duration duration = null;
+
+    Fiber fiber = Fiber.getCurrentIfSet();
+    int count = 0;
+    if (LOGGER.isFineEnabled() && fiber != null) {
+      fiber.addBreadcrumb("[forkJoin]");
+    }
     for (Fiber.StepAndPacket sap : startDetails) {
+      if (LOGGER.isFineEnabled() && fiber != null) {
+        fiber.addBreadcrumb("[" + ++count + "of" + startDetails.size() + "]");
+      }
+
       Result r = sap.step().doStepNext(sap.packet());
       if (r != null && r.isRequeue()) {
         requeue = true;
@@ -288,11 +320,20 @@ public abstract class Step {
     }
 
     if (requeue) {
+      if (LOGGER.isFineEnabled() && fiber != null) {
+        fiber.addBreadcrumb("[forkJoin-requeue: " + duration + "]");
+      }
       return new Result(true, duration);
     }
 
     if (step == null) {
+      if (LOGGER.isFineEnabled() && fiber != null) {
+        fiber.addBreadcrumb("[forkJoin-end]");
+      }
       return doEnd(packet);
+    }
+    if (LOGGER.isFineEnabled() && fiber != null) {
+      fiber.addBreadcrumb("[forkJoin-cont]");
     }
     return step.doStepNext(packet);
   }

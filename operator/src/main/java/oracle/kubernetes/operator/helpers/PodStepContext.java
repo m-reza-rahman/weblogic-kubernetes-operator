@@ -4,7 +4,6 @@
 package oracle.kubernetes.operator.helpers;
 
 import java.io.File;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1537,8 +1536,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       }
 
       // requeue to wait for the pod to be deleted
-      return new Result(true,
-              Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+      return doRequeue(packet);
     }
   }
 
@@ -1562,8 +1560,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       V1Pod pod = callResponse.getObject();
       if (pod == null || !isPodReady(pod)) {
         // requeue to wait for the pod to be ready
-        return new Result(true,
-                Duration.ofSeconds(TuningParameters.getInstance().getWatchTuning().getWatchBackstopRecheckDelay()));
+        return doRequeue(packet);
       }
       processResponse(callResponse);
       return doNext(packet);
