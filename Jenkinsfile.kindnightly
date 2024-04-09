@@ -151,10 +151,6 @@ pipeline {
                description: "URL to download WIT. Leave it empty to use the default value, which is the latest nightly build from WIT's main branch",
                defaultValue: ""
         )
-        string(name: 'WLS_DEV_IMAGE_REGISTRY_HOST',
-               description: 'Repository for daily WebLogic/Fusion Midddleware images',
-               defaultValue: "${env.WLS_DEV_IMAGE_REGISTRY_HOST}"
-        )
         string(name: 'TEST_IMAGES_REPO',
                description: '',
                defaultValue: "${env.WKT_OCIR_HOST}"
@@ -524,7 +520,6 @@ EOF
                             ]) {
                                 sh '''
                                     export PATH=${runtime_path}
-                                    export WLS_DEV_IMAGE_REGISTRY_HOST=${WLS_DEV_IMAGE_REGISTRY_HOST}
                                     export KUBECONFIG=${kubeconfig_file}
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export BASE_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
