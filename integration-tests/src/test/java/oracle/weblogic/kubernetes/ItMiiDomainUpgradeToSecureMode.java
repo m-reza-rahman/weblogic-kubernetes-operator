@@ -54,7 +54,6 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_CONAINERPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_CONAINERPORT;
