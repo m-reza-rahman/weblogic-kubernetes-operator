@@ -84,7 +84,6 @@ public interface TestConstants {
 
   public static final String BASE_IMAGES_TENANCY = System.getProperty("wko.it.base.images.tenancy");
 
-  public static final String WLS_DEV_IMAGE_REGISTRY_HOST = System.getenv("WLS_DEV_IMAGE_REGISTRY_HOST");
   public static final String BASE_IMAGES_REPO_USERNAME = System.getenv("BASE_IMAGES_REPO_USERNAME");
   public static final String BASE_IMAGES_REPO_PASSWORD = System.getenv("BASE_IMAGES_REPO_PASSWORD");
   public static final String BASE_IMAGES_REPO_EMAIL = System.getenv("BASE_IMAGES_REPO_EMAIL");
