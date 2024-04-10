@@ -178,6 +178,9 @@ public abstract class Step {
   }
 
   static final Step adapt(Fiber fiber, Step step, Packet packet) {
+    if (fiber != null && fiber.isCancelled()) {
+      return null;
+    }
     return adapter.adapt(fiber, step, packet);
   }
 
