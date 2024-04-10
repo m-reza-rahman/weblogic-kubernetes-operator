@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import io.kubernetes.client.common.KubernetesObject;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Status;
@@ -250,6 +251,12 @@ public abstract class Watcher<T> {
 
   private void handleRegularUpdate(Watch.Response<T> item) {
     LOGGER.finer(MessageKeys.WATCH_EVENT, item.type, item.object);
+
+    // TEST
+    KubernetesObject ko = (KubernetesObject) item.object;
+    LOGGER.severe("RJE: watch type: " + item.type + ", kind: "
+            + ko.getKind() + ", name: " + ko.getMetadata().getName());
+
     trackResourceVersion(item.object);
     if (listener != null) {
       listener.receivedResponse(item);

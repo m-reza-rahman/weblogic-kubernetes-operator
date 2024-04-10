@@ -304,11 +304,11 @@ public abstract class Step {
 
     Fiber fiber = Fiber.getCurrentIfSet();
     int count = 0;
-    if (LOGGER.isFineEnabled() && fiber != null) {
+    if (LOGGER.isSevereEnabled() && fiber != null) { // TEST
       fiber.addBreadcrumb("[forkJoin]");
     }
     for (Fiber.StepAndPacket sap : startDetails) {
-      if (LOGGER.isFineEnabled() && fiber != null) {
+      if (LOGGER.isSevereEnabled() && fiber != null) { // TEST
         fiber.addBreadcrumb("[" + ++count + "of" + startDetails.size() + "]");
       }
 
@@ -320,19 +320,19 @@ public abstract class Step {
     }
 
     if (requeue) {
-      if (LOGGER.isFineEnabled() && fiber != null) {
+      if (LOGGER.isSevereEnabled() && fiber != null) { // TEST
         fiber.addBreadcrumb("[forkJoin-requeue: " + duration + "]");
       }
       return new Result(true, duration);
     }
 
     if (step == null) {
-      if (LOGGER.isFineEnabled() && fiber != null) {
+      if (LOGGER.isSevereEnabled() && fiber != null) { // TEST
         fiber.addBreadcrumb("[forkJoin-end]");
       }
       return doEnd(packet);
     }
-    if (LOGGER.isFineEnabled() && fiber != null) {
+    if (LOGGER.isSevereEnabled() && fiber != null) { // TEST
       fiber.addBreadcrumb("[forkJoin-cont]");
     }
     return step.doStepNext(packet);

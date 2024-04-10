@@ -82,7 +82,7 @@ public final class Fiber implements Runnable {
   }
 
   void addBreadcrumb(String crumb) {
-    if (LOGGER.isFineEnabled()) {
+    if (LOGGER.isSevereEnabled()) { // TEST
       breadcrumbs.add(crumb);
     }
   }
@@ -137,8 +137,8 @@ public final class Fiber implements Runnable {
         }
       } finally {
 
-        if (LOGGER.isFineEnabled()) {
-          LOGGER.fine("Fiber breadcrumbs: " + breadcrumbs);
+        if (LOGGER.isSevereEnabled()) { // TEST
+          LOGGER.severe("RJE: Fiber breadcrumbs: " + breadcrumbs);
         }
 
         if (oldFiber == null) {
