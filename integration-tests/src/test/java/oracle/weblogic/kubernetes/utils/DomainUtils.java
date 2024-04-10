@@ -1109,7 +1109,7 @@ public class DomainUtils {
             .value("/u01/weblogic/" + domainPropertiesFile.getFileName()))
         .addEnvItem(new V1EnvVar()
             .name("WDT_DIR")
-            .value("/u01/shared/" + namespace)) // huizhao 0409
+            .value("/u01/shared/" + domainUid)) // huizhao 0409
         //.value("/u01/shared/wdt"))
         .addEnvItem(new V1EnvVar()
             .name("DOMAIN_HOME_DIR")
