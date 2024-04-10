@@ -943,8 +943,8 @@ public class DomainUtils {
                     .persistentVolumeClaim(new V1PersistentVolumeClaimVolumeSource()
                         .claimName(pvcName)))
                 .addVolumeMountsItem(new V1VolumeMount()
-                    //.mountPath("/u01/shared")
-                    .mountPath("/u01/shared/" + domainNamespace) // huizhao 0409
+                    .mountPath("/u01/shared")
+                    //.mountPath("/u01/shared/" + domainNamespace) // huizhao 0409???
                     .name(pvName)))
             .adminServer(new AdminServer()
                 .adminService(new AdminService()
@@ -1109,7 +1109,7 @@ public class DomainUtils {
             .value("/u01/weblogic/" + domainPropertiesFile.getFileName()))
         .addEnvItem(new V1EnvVar()
             .name("WDT_DIR")
-            .value("/u01/shared/wdt/" + namespace)) // huizhao 0409
+            .value("/u01/shared/" + namespace)) // huizhao 0409
         //.value("/u01/shared/wdt"))
         .addEnvItem(new V1EnvVar()
             .name("DOMAIN_HOME_DIR")
@@ -1198,8 +1198,7 @@ public class DomainUtils {
                                   .mountPath("/u01/weblogic"), // availble under /u01/weblogic inside pod
                             new V1VolumeMount()
                                 .name(pvName) // location to write domain
-                                .mountPath("/u01/shared/" + namespace)))) // huizhao 0409
-                    //.mountPath("/u01/shared")))) // mounted under /u01/shared inside pod
+                                .mountPath("/u01/shared")))) // mounted under /u01/shared inside pod
                     .volumes(Arrays.asList(
                         new V1Volume()
                             .name(pvName)
@@ -1215,7 +1214,7 @@ public class DomainUtils {
                         new V1LocalObjectReference()
                             .name(BASE_IMAGES_REPO_SECRET_NAME)));  // this secret is used only for non-kind cluster
     if (!OKD) {
-      podSpec.initContainers(Arrays.asList(createfixPVCOwnerContainer(pvName, "/u01/shared/" + namespace)));
+      podSpec.initContainers(Arrays.asList(createfixPVCOwnerContainer(pvName, "/u01/shared")));
     }
 
     V1PodTemplateSpec podTemplateSpec = new V1PodTemplateSpec();
