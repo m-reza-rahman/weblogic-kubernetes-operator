@@ -17,6 +17,8 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
@@ -124,6 +127,26 @@ class ItEvictedPodsCycling {
         "domain event {0} to be logged in namespace {1}",
         reason,
         domainNamespace);
+
+    ExecResult result = null;
+    String[] cmds = {KUBERNETES_CLI + " get --raw \"/api/v1/nodes/kind-control-plane/proxy/stats/summary\"",
+        KUBERNETES_CLI + " get --raw \"/api/v1/nodes/kind-worker/proxy/stats/summary\"",
+        KUBERNETES_CLI + " describe node kind-control-plane",
+        KUBERNETES_CLI + " describe node kind-worker"};
+    for (String cmd: cmds) {
+      try {
+        result = ExecCommand.exec(cmd, true);
+      } catch (Exception e) {
+        logger.info("Got exception while running command: {0}", cmd);
+        logger.info(e.toString());
+      }
+      if (result != null) {
+        logger.info("Command *******" + cmd);
+        logger.info("result.stdout: \n{0}", result.stdout());
+        logger.info("result.stderr: \n{0}", result.stderr());
+        logger.info("Command ******* end" + cmd);
+      }
+    }
     resourceLimit.replace("ephemeral-storage", "250M");
     addServerPodResources(domainUid, domainNamespace, resourceLimit, resourceRequest);
 
