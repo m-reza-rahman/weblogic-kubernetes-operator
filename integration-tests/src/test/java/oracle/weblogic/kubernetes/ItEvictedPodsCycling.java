@@ -19,6 +19,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -128,6 +129,15 @@ class ItEvictedPodsCycling {
         reason,
         domainNamespace);
 
+    resourceLimit.replace("ephemeral-storage", "250M");
+    addServerPodResources(domainUid, domainNamespace, resourceLimit, resourceRequest);
+
+    // verify that evicted pods are replaced and started
+    checkServerPodsAndServiceReady();
+  }
+
+  @AfterEach
+  public void afterEach() {
     ExecResult result = null;
     String[] cmds = {KUBERNETES_CLI + " get --raw \"/api/v1/nodes/kind-control-plane/proxy/stats/summary\"",
         KUBERNETES_CLI + " get --raw \"/api/v1/nodes/kind-worker/proxy/stats/summary\"",
@@ -147,11 +157,6 @@ class ItEvictedPodsCycling {
         logger.info("Command ******* end" + cmd);
       }
     }
-    resourceLimit.replace("ephemeral-storage", "250M");
-    addServerPodResources(domainUid, domainNamespace, resourceLimit, resourceRequest);
-
-    // verify that evicted pods are replaced and started
-    checkServerPodsAndServiceReady();
   }
 
   private static DomainResource createAndVerifyDomain() {
