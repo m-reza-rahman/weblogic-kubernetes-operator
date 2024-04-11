@@ -923,7 +923,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       readinessProbe =
           readinessProbe.httpGet(
               httpGetAction(
-                  READINESS_PATH,
+                  getReadinessProbeHttpGetAction(),
                   getLocalAdminProtocolChannelPort(),
                   isLocalAdminProtocolChannelSecure()));
     } catch (Exception e) {
@@ -965,6 +965,10 @@ public abstract class PodStepContext extends BasePodStepContext {
   private int getReadinessProbeFailureThreshold(PodTuning tuning) {
     return Optional.ofNullable(getServerSpec().getReadinessProbe().getFailureThreshold())
             .orElse(tuning.getReadinessProbeFailureThreshold());
+  }
+
+  private String getReadinessProbeHttpGetAction() {
+    return Optional.ofNullable(getServerSpec().getReadinessProbe().getHttpGetActionPath()).orElse(READINESS_PATH);
   }
 
   private V1Probe createLivenessProbe(PodTuning tuning) {

@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.processing;
@@ -22,6 +22,7 @@ import io.kubernetes.client.openapi.models.V1TopologySpreadConstraint;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.weblogic.domain.model.ProbeTuning;
+import oracle.kubernetes.weblogic.domain.model.ReadinessProbe;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
 
 public interface EffectiveServerSpec {
@@ -91,7 +92,7 @@ public interface EffectiveServerSpec {
   ProbeTuning getLivenessProbe();
 
   @Nonnull
-  ProbeTuning getReadinessProbe();
+  ReadinessProbe getReadinessProbe();
 
   @Nonnull
   Shutdown getShutdown();

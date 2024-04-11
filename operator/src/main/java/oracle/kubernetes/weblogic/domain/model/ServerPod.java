@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.weblogic.domain.model;
@@ -94,7 +94,7 @@ class ServerPod extends KubernetesResource {
    * @since 2.0
    */
   @Description("Settings for the readiness probe associated with a WebLogic Server instance.")
-  private final ProbeTuning readinessProbe = new ProbeTuning();
+  private final ReadinessProbe readinessProbe = new ReadinessProbe();
 
   /**
    * Defines the key-value pairs for the pod to fit on a node, the node must have each of the
@@ -371,7 +371,7 @@ class ServerPod extends KubernetesResource {
         .skipWaitingCohEndangeredState(skipWaitingCohEndangeredState);
   }
 
-  ProbeTuning getReadinessProbeTuning() {
+  ReadinessProbe getReadinessProbeTuning() {
     return this.readinessProbe;
   }
 
@@ -386,6 +386,10 @@ class ServerPod extends KubernetesResource {
     this.readinessProbe
         .successThreshold(successThreshold)
         .failureThreshold(failureThreshold);
+  }
+
+  void setReadinessProbeHttpGetActionPath(String httpGetActionPath) {
+    this.readinessProbe.httpGetActionPath(httpGetActionPath);
   }
 
   ProbeTuning getLivenessProbeTuning() {

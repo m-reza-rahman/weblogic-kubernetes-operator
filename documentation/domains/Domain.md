@@ -171,7 +171,7 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | `podSecurityContext` | [Pod Security Context](k8s1.13.5.md#pod-security-context) | Pod-level security attributes. See `kubectl explain pods.spec.securityContext`. Beginning with operator version 4.0.5, if no value is specified for this field, the operator will use default content for the pod-level `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/. |
 | `priorityClassName` | string | If specified, indicates the Pod's priority. "system-node-critical" and "system-cluster-critical" are two special keywords which indicate the highest priorities with the former being the highest priority. Any other name must be defined by creating a PriorityClass object with that name. If not specified, the pod priority will be the default or zero, if there is no default. See `kubectl explain pods.spec.priorityClassName`. |
 | `readinessGates` | Array of [Pod Readiness Gate](k8s1.13.5.md#pod-readiness-gate) | If specified, all readiness gates will be evaluated for Pod readiness. A Pod is ready when all its containers are ready AND all conditions specified in the readiness gates have a status equal to "True". More info: https://github.com/kubernetes/community/blob/master/keps/sig-network/0007-pod-ready%2B%2B.md. |
-| `readinessProbe` | [Probe Tuning](#probe-tuning) | Settings for the readiness probe associated with a WebLogic Server instance. |
+| `readinessProbe` | [Readiness Probe](#readiness-probe) | Settings for the readiness probe associated with a WebLogic Server instance. |
 | `resources` | [Resource Requirements](k8s1.13.5.md#resource-requirements) | Memory and CPU minimum requirements and limits for the WebLogic Server instance. See `kubectl explain pods.spec.containers.resources`. |
 | `restartPolicy` | string | Restart policy for all containers within the Pod. One of Always, OnFailure, Never. Default to Always. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy. See `kubectl explain pods.spec.restartPolicy`. |
 | `runtimeClassName` | string | RuntimeClassName refers to a RuntimeClass object in the node.k8s.io group, which should be used to run this Pod. If no RuntimeClass resource matches the named class, the Pod will not be run. If unset or empty, the "legacy" RuntimeClass will be used, which is an implicit class with an empty definition that uses the default runtime handler. More info: https://github.com/kubernetes/community/blob/master/keps/sig-node/0014-runtime-class.md This is an alpha feature and may change in the future. See `kubectl explain pods.spec.runtimeClassName`. |
@@ -285,6 +285,17 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | Name | Type | Description |
 | --- | --- | --- |
 | `failureThreshold` | integer | Number of times the check is performed before giving up. Giving up in case of liveness probe means restarting the container. In case of readiness probe, the Pod will be marked Unready. Defaults to 1. |
+| `initialDelaySeconds` | integer | The number of seconds before the first check is performed. |
+| `periodSeconds` | integer | The number of seconds between checks. |
+| `successThreshold` | integer | Minimum number of times the check needs to pass for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness Probe. |
+| `timeoutSeconds` | integer | The number of seconds with no response that indicates a failure. |
+
+### Readiness Probe
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `failureThreshold` | integer | Number of times the check is performed before giving up. Giving up in case of liveness probe means restarting the container. In case of readiness probe, the Pod will be marked Unready. Defaults to 1. |
+| `httpGetActionPath` | string | Path to access for the readiness probe. Defaults to /weblogic/ready |
 | `initialDelaySeconds` | integer | The number of seconds before the first check is performed. |
 | `periodSeconds` | integer | The number of seconds between checks. |
 | `successThreshold` | integer | Minimum number of times the check needs to pass for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness Probe. |

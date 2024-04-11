@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 8eb63425366f1b880048f26915d7a1943d788a13ed7a483aeb8081848d4ea971
+    weblogic.sha256: 653439a5d1ec2d78f02b8003d36a1c022f46b16d3bfe070a2b2cb49030c5c4b9
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -1370,6 +1370,10 @@ spec:
                               the Pod will be marked Unready. Defaults to 1.
                             minimum: 1
                             type: integer
+                          httpGetActionPath:
+                            description: Path to access for the readiness probe. Defaults
+                              to /weblogic/ready
+                            type: string
                           periodSeconds:
                             description: The number of seconds between checks.
                             type: integer
@@ -4465,6 +4469,10 @@ spec:
                           be marked Unready. Defaults to 1.
                         minimum: 1
                         type: integer
+                      httpGetActionPath:
+                        description: Path to access for the readiness probe. Defaults
+                          to /weblogic/ready
+                        type: string
                       periodSeconds:
                         description: The number of seconds between checks.
                         type: integer
@@ -7207,6 +7215,10 @@ spec:
                                 1.
                               type: integer
                               minimum: 1
+                            httpGetActionPath:
+                              description: Path to access for the readiness probe.
+                                Defaults to /weblogic/ready
+                              type: string
                             periodSeconds:
                               description: The number of seconds between checks.
                               type: integer
