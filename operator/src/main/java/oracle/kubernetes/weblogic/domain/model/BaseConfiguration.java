@@ -18,6 +18,7 @@ import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1HostAlias;
 import io.kubernetes.client.openapi.models.V1PodReadinessGate;
 import io.kubernetes.client.openapi.models.V1PodSecurityContext;
+import io.kubernetes.client.openapi.models.V1Probe;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Toleration;
@@ -146,7 +147,7 @@ public abstract class BaseConfiguration {
     serverPod.setLivenessProbeThresholds(successThreshold, failureThreshold);
   }
 
-  ProbeTuning getLivenessProbe() {
+  V1Probe getLivenessProbe() {
     return serverPod.getLivenessProbeTuning();
   }
 
@@ -162,7 +163,7 @@ public abstract class BaseConfiguration {
     serverPod.setReadinessProbeHttpGetActionPath(httpGetActionPath);
   }
 
-  ReadinessProbe getReadinessProbe() {
+  V1Probe getReadinessProbe() {
     return serverPod.getReadinessProbeTuning();
   }
 

@@ -163,7 +163,7 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | `hostAliases` | Array of [Host Alias](k8s1.13.5.md#host-alias) | HostAliases is an optional list of hosts and IPs that will be injected into the pod's hosts file if specified. This is only valid for non-hostNetwork pods. |
 | `initContainers` | Array of [Container](k8s1.13.5.md#container) | Initialization containers to be included in the server Pod. See `kubectl explain pods.spec.initContainers`. |
 | `labels` | Map | The labels to be added to generated resources. The label names must not start with "weblogic.". |
-| `livenessProbe` | [Probe Tuning](#probe-tuning) | Settings for the liveness probe associated with a WebLogic Server instance. |
+| `livenessProbe` | [Probe](k8s1.13.5.md#probe) | Settings for the liveness probe associated with a WebLogic Server instance. If not specified, the operator will create a probe that executes a script provided by the operator. The operator will also fill in any missing tuning-related fields, if they are unspecified. Tuning-related fields will be inherited from the domain and cluster scopes unless a more specific scope defines a different action, such as a different script to execute. |
 | `maxPendingWaitTimeSeconds` | integer | The maximum time in seconds that the operator waits for a WebLogic Server pod to reach the running state before it considers the pod failed. Defaults to 5 minutes. |
 | `maxReadyWaitTimeSeconds` | integer | The maximum time in seconds that the operator waits for a WebLogic Server pod to reach the ready state before it considers the pod failed. Defaults to 1800 seconds. |
 | `nodeName` | string | NodeName is a request to schedule this Pod onto a specific Node. If it is non-empty, the scheduler simply schedules this pod onto that node, assuming that it fits the resource requirements. See `kubectl explain pods.spec.nodeName`. |
@@ -171,7 +171,7 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | `podSecurityContext` | [Pod Security Context](k8s1.13.5.md#pod-security-context) | Pod-level security attributes. See `kubectl explain pods.spec.securityContext`. Beginning with operator version 4.0.5, if no value is specified for this field, the operator will use default content for the pod-level `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/. |
 | `priorityClassName` | string | If specified, indicates the Pod's priority. "system-node-critical" and "system-cluster-critical" are two special keywords which indicate the highest priorities with the former being the highest priority. Any other name must be defined by creating a PriorityClass object with that name. If not specified, the pod priority will be the default or zero, if there is no default. See `kubectl explain pods.spec.priorityClassName`. |
 | `readinessGates` | Array of [Pod Readiness Gate](k8s1.13.5.md#pod-readiness-gate) | If specified, all readiness gates will be evaluated for Pod readiness. A Pod is ready when all its containers are ready AND all conditions specified in the readiness gates have a status equal to "True". More info: https://github.com/kubernetes/community/blob/master/keps/sig-network/0007-pod-ready%2B%2B.md. |
-| `readinessProbe` | [Readiness Probe](#readiness-probe) | Settings for the readiness probe associated with a WebLogic Server instance. |
+| `readinessProbe` | [Probe](k8s1.13.5.md#probe) | Settings for the readiness probe associated with a WebLogic Server instance. If not specified, the operator will create an HTTP probe accessing the /weblogic/ready path. If an HTTP probe is specified then the operator will fill in `path`, `port`, and `scheme`, if they are missing. The operator will also fill in any missing tuning-related fields if they are unspecified. Tuning-related fields will be inherited from the domain and cluster scopes unless a more specific scope defines a different action, such as a different HTTP path to access. |
 | `resources` | [Resource Requirements](k8s1.13.5.md#resource-requirements) | Memory and CPU minimum requirements and limits for the WebLogic Server instance. See `kubectl explain pods.spec.containers.resources`. |
 | `restartPolicy` | string | Restart policy for all containers within the Pod. One of Always, OnFailure, Never. Default to Always. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy. See `kubectl explain pods.spec.restartPolicy`. |
 | `runtimeClassName` | string | RuntimeClassName refers to a RuntimeClass object in the node.k8s.io group, which should be used to run this Pod. If no RuntimeClass resource matches the named class, the Pod will not be run. If unset or empty, the "legacy" RuntimeClass will be used, which is an implicit class with an empty definition that uses the default runtime handler. More info: https://github.com/kubernetes/community/blob/master/keps/sig-node/0014-runtime-class.md This is an alpha feature and may change in the future. See `kubectl explain pods.spec.runtimeClassName`. |
@@ -279,27 +279,6 @@ The current status of the operation of the WebLogic domain. Updated automaticall
 | `envFrom` | Array of [Env From Source](k8s1.13.5.md#env-from-source) | List of sources to populate environment variables in the Introspector Job Pod container. The sources include either a config map or a secret. The operator will not expand the dependent variables in the 'envFrom' source. More details: https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/#define-an-environment-variable-for-a-container. Also see: https://oracle.github.io/weblogic-kubernetes-operator/userguide/managing-domains/domain-resource/#jvm-memory-and-java-option-environment-variables. |
 | `podSecurityContext` | [Pod Security Context](k8s1.13.5.md#pod-security-context) | Pod-level security attributes. See `kubectl explain pods.spec.securityContext`. Beginning with operator version 4.0.5, if no value is specified for this field, the operator will use default content for the pod-level `securityContext`. More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/. |
 | `resources` | [Resource Requirements](k8s1.13.5.md#resource-requirements) | Memory and CPU minimum requirements and limits for the Introspector Job Pod. See `kubectl explain pods.spec.containers.resources`. |
-
-### Probe Tuning
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `failureThreshold` | integer | Number of times the check is performed before giving up. Giving up in case of liveness probe means restarting the container. In case of readiness probe, the Pod will be marked Unready. Defaults to 1. |
-| `initialDelaySeconds` | integer | The number of seconds before the first check is performed. |
-| `periodSeconds` | integer | The number of seconds between checks. |
-| `successThreshold` | integer | Minimum number of times the check needs to pass for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness Probe. |
-| `timeoutSeconds` | integer | The number of seconds with no response that indicates a failure. |
-
-### Readiness Probe
-
-| Name | Type | Description |
-| --- | --- | --- |
-| `failureThreshold` | integer | Number of times the check is performed before giving up. Giving up in case of liveness probe means restarting the container. In case of readiness probe, the Pod will be marked Unready. Defaults to 1. |
-| `httpGetActionPath` | string | Path to access for the readiness probe. Defaults to /weblogic/ready |
-| `initialDelaySeconds` | integer | The number of seconds before the first check is performed. |
-| `periodSeconds` | integer | The number of seconds between checks. |
-| `successThreshold` | integer | Minimum number of times the check needs to pass for the probe to be considered successful after having failed. Defaults to 1. Must be 1 for liveness Probe. |
-| `timeoutSeconds` | integer | The number of seconds with no response that indicates a failure. |
 
 ### Shutdown
 

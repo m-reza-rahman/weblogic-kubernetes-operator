@@ -15,14 +15,13 @@ import io.kubernetes.client.openapi.models.V1HostAlias;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1PodReadinessGate;
 import io.kubernetes.client.openapi.models.V1PodSecurityContext;
+import io.kubernetes.client.openapi.models.V1Probe;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Toleration;
 import io.kubernetes.client.openapi.models.V1TopologySpreadConstraint;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
-import oracle.kubernetes.weblogic.domain.model.ProbeTuning;
-import oracle.kubernetes.weblogic.domain.model.ReadinessProbe;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
 
 public interface EffectiveServerSpec {
@@ -89,10 +88,10 @@ public interface EffectiveServerSpec {
   List<V1EnvFromSource> getEnvFrom();
 
   @Nonnull
-  ProbeTuning getLivenessProbe();
+  V1Probe getLivenessProbe();
 
   @Nonnull
-  ReadinessProbe getReadinessProbe();
+  V1Probe getReadinessProbe();
 
   @Nonnull
   Shutdown getShutdown();

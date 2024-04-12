@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 653439a5d1ec2d78f02b8003d36a1c022f46b16d3bfe070a2b2cb49030c5c4b9
+    weblogic.sha256: ee0c6f79288b000cd61aa9438ab7f24f63b6334072e3520f25ee454f8bff6175
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -1360,39 +1360,78 @@ spec:
                         type: array
                       readinessProbe:
                         description: Settings for the readiness probe associated with
-                          a WebLogic Server instance.
+                          a WebLogic Server instance. If not specified, the operator
+                          will create an HTTP probe accessing the /weblogic/ready
+                          path. If an HTTP probe is specified then the operator will
+                          fill in `path`, `port`, and `scheme`, if they are missing.
+                          The operator will also fill in any missing tuning-related
+                          fields if they are unspecified. Tuning-related fields will
+                          be inherited from the domain and cluster scopes unless a
+                          more specific scope defines a different action, such as
+                          a different HTTP path to access.
                         properties:
+                          terminationGracePeriodSeconds:
+                            type: integer
                           failureThreshold:
-                            default: 1
-                            description: Number of times the check is performed before
-                              giving up. Giving up in case of liveness probe means
-                              restarting the container. In case of readiness probe,
-                              the Pod will be marked Unready. Defaults to 1.
-                            minimum: 1
                             type: integer
-                          httpGetActionPath:
-                            description: Path to access for the readiness probe. Defaults
-                              to /weblogic/ready
-                            type: string
                           periodSeconds:
-                            description: The number of seconds between checks.
                             type: integer
+                          tcpSocket:
+                            properties:
+                              port:
+                                x-kubernetes-int-or-string: true
+                              host:
+                                type: string
+                            required:
+                            - port
+                            type: object
                           timeoutSeconds:
-                            description: The number of seconds with no response that
-                              indicates a failure.
                             type: integer
                           successThreshold:
-                            default: 1
-                            description: Minimum number of times the check needs to
-                              pass for the probe to be considered successful after
-                              having failed. Defaults to 1. Must be 1 for liveness
-                              Probe.
-                            minimum: 1
                             type: integer
                           initialDelaySeconds:
-                            description: The number of seconds before the first check
-                              is performed.
                             type: integer
+                          exec:
+                            properties:
+                              command:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
+                          grpc:
+                            properties:
+                              port:
+                                type: integer
+                              service:
+                                type: string
+                            required:
+                            - port
+                            type: object
+                          httpGet:
+                            properties:
+                              path:
+                                type: string
+                              scheme:
+                                type: string
+                              port:
+                                x-kubernetes-int-or-string: true
+                              host:
+                                type: string
+                              httpHeaders:
+                                items:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    value:
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                type: array
+                            required:
+                            - port
+                            type: object
                         type: object
                       containerSecurityContext:
                         description: 'Container-level security attributes. Will override
@@ -1498,35 +1537,76 @@ spec:
                         type: integer
                       livenessProbe:
                         description: Settings for the liveness probe associated with
-                          a WebLogic Server instance.
+                          a WebLogic Server instance. If not specified, the operator
+                          will create a probe that executes a script provided by the
+                          operator. The operator will also fill in any missing tuning-related
+                          fields, if they are unspecified. Tuning-related fields will
+                          be inherited from the domain and cluster scopes unless a
+                          more specific scope defines a different action, such as
+                          a different script to execute.
                         properties:
+                          terminationGracePeriodSeconds:
+                            type: integer
                           failureThreshold:
-                            default: 1
-                            description: Number of times the check is performed before
-                              giving up. Giving up in case of liveness probe means
-                              restarting the container. In case of readiness probe,
-                              the Pod will be marked Unready. Defaults to 1.
-                            minimum: 1
                             type: integer
                           periodSeconds:
-                            description: The number of seconds between checks.
                             type: integer
+                          tcpSocket:
+                            properties:
+                              port:
+                                x-kubernetes-int-or-string: true
+                              host:
+                                type: string
+                            required:
+                            - port
+                            type: object
                           timeoutSeconds:
-                            description: The number of seconds with no response that
-                              indicates a failure.
                             type: integer
                           successThreshold:
-                            default: 1
-                            description: Minimum number of times the check needs to
-                              pass for the probe to be considered successful after
-                              having failed. Defaults to 1. Must be 1 for liveness
-                              Probe.
-                            minimum: 1
                             type: integer
                           initialDelaySeconds:
-                            description: The number of seconds before the first check
-                              is performed.
                             type: integer
+                          exec:
+                            properties:
+                              command:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
+                          grpc:
+                            properties:
+                              port:
+                                type: integer
+                              service:
+                                type: string
+                            required:
+                            - port
+                            type: object
+                          httpGet:
+                            properties:
+                              path:
+                                type: string
+                              scheme:
+                                type: string
+                              port:
+                                x-kubernetes-int-or-string: true
+                              host:
+                                type: string
+                              httpHeaders:
+                                items:
+                                  type: object
+                                  properties:
+                                    name:
+                                      type: string
+                                    value:
+                                      type: string
+                                  required:
+                                  - name
+                                  - value
+                                type: array
+                            required:
+                            - port
+                            type: object
                         type: object
                       topologySpreadConstraints:
                         description: TopologySpreadConstraints describes how a group
@@ -4459,38 +4539,77 @@ spec:
                     type: array
                   readinessProbe:
                     description: Settings for the readiness probe associated with
-                      a WebLogic Server instance.
+                      a WebLogic Server instance. If not specified, the operator will
+                      create an HTTP probe accessing the /weblogic/ready path. If
+                      an HTTP probe is specified then the operator will fill in `path`,
+                      `port`, and `scheme`, if they are missing. The operator will
+                      also fill in any missing tuning-related fields if they are unspecified.
+                      Tuning-related fields will be inherited from the domain and
+                      cluster scopes unless a more specific scope defines a different
+                      action, such as a different HTTP path to access.
                     properties:
+                      terminationGracePeriodSeconds:
+                        type: integer
                       failureThreshold:
-                        default: 1
-                        description: Number of times the check is performed before
-                          giving up. Giving up in case of liveness probe means restarting
-                          the container. In case of readiness probe, the Pod will
-                          be marked Unready. Defaults to 1.
-                        minimum: 1
                         type: integer
-                      httpGetActionPath:
-                        description: Path to access for the readiness probe. Defaults
-                          to /weblogic/ready
-                        type: string
                       periodSeconds:
-                        description: The number of seconds between checks.
                         type: integer
+                      tcpSocket:
+                        properties:
+                          port:
+                            x-kubernetes-int-or-string: true
+                          host:
+                            type: string
+                        required:
+                        - port
+                        type: object
                       timeoutSeconds:
-                        description: The number of seconds with no response that indicates
-                          a failure.
                         type: integer
                       successThreshold:
-                        default: 1
-                        description: Minimum number of times the check needs to pass
-                          for the probe to be considered successful after having failed.
-                          Defaults to 1. Must be 1 for liveness Probe.
-                        minimum: 1
                         type: integer
                       initialDelaySeconds:
-                        description: The number of seconds before the first check
-                          is performed.
                         type: integer
+                      exec:
+                        properties:
+                          command:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      grpc:
+                        properties:
+                          port:
+                            type: integer
+                          service:
+                            type: string
+                        required:
+                        - port
+                        type: object
+                      httpGet:
+                        properties:
+                          path:
+                            type: string
+                          scheme:
+                            type: string
+                          port:
+                            x-kubernetes-int-or-string: true
+                          host:
+                            type: string
+                          httpHeaders:
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - name
+                              - value
+                            type: array
+                        required:
+                        - port
+                        type: object
                     type: object
                   containerSecurityContext:
                     description: 'Container-level security attributes. Will override
@@ -4595,34 +4714,75 @@ spec:
                     type: integer
                   livenessProbe:
                     description: Settings for the liveness probe associated with a
-                      WebLogic Server instance.
+                      WebLogic Server instance. If not specified, the operator will
+                      create a probe that executes a script provided by the operator.
+                      The operator will also fill in any missing tuning-related fields,
+                      if they are unspecified. Tuning-related fields will be inherited
+                      from the domain and cluster scopes unless a more specific scope
+                      defines a different action, such as a different script to execute.
                     properties:
+                      terminationGracePeriodSeconds:
+                        type: integer
                       failureThreshold:
-                        default: 1
-                        description: Number of times the check is performed before
-                          giving up. Giving up in case of liveness probe means restarting
-                          the container. In case of readiness probe, the Pod will
-                          be marked Unready. Defaults to 1.
-                        minimum: 1
                         type: integer
                       periodSeconds:
-                        description: The number of seconds between checks.
                         type: integer
+                      tcpSocket:
+                        properties:
+                          port:
+                            x-kubernetes-int-or-string: true
+                          host:
+                            type: string
+                        required:
+                        - port
+                        type: object
                       timeoutSeconds:
-                        description: The number of seconds with no response that indicates
-                          a failure.
                         type: integer
                       successThreshold:
-                        default: 1
-                        description: Minimum number of times the check needs to pass
-                          for the probe to be considered successful after having failed.
-                          Defaults to 1. Must be 1 for liveness Probe.
-                        minimum: 1
                         type: integer
                       initialDelaySeconds:
-                        description: The number of seconds before the first check
-                          is performed.
                         type: integer
+                      exec:
+                        properties:
+                          command:
+                            items:
+                              type: string
+                            type: array
+                        type: object
+                      grpc:
+                        properties:
+                          port:
+                            type: integer
+                          service:
+                            type: string
+                        required:
+                        - port
+                        type: object
+                      httpGet:
+                        properties:
+                          path:
+                            type: string
+                          scheme:
+                            type: string
+                          port:
+                            x-kubernetes-int-or-string: true
+                          host:
+                            type: string
+                          httpHeaders:
+                            items:
+                              type: object
+                              properties:
+                                name:
+                                  type: string
+                                value:
+                                  type: string
+                              required:
+                              - name
+                              - value
+                            type: array
+                        required:
+                        - port
+                        type: object
                     type: object
                   topologySpreadConstraints:
                     description: TopologySpreadConstraints describes how a group of
@@ -7203,41 +7363,79 @@ spec:
                                 type: string
                         readinessProbe:
                           description: Settings for the readiness probe associated
-                            with a WebLogic Server instance.
+                            with a WebLogic Server instance. If not specified, the
+                            operator will create an HTTP probe accessing the /weblogic/ready
+                            path. If an HTTP probe is specified then the operator
+                            will fill in `path`, `port`, and `scheme`, if they are
+                            missing. The operator will also fill in any missing tuning-related
+                            fields if they are unspecified. Tuning-related fields
+                            will be inherited from the domain and cluster scopes unless
+                            a more specific scope defines a different action, such
+                            as a different HTTP path to access.
                           type: object
                           properties:
+                            terminationGracePeriodSeconds:
+                              type: integer
                             failureThreshold:
-                              default: 1
-                              description: Number of times the check is performed
-                                before giving up. Giving up in case of liveness probe
-                                means restarting the container. In case of readiness
-                                probe, the Pod will be marked Unready. Defaults to
-                                1.
                               type: integer
-                              minimum: 1
-                            httpGetActionPath:
-                              description: Path to access for the readiness probe.
-                                Defaults to /weblogic/ready
-                              type: string
                             periodSeconds:
-                              description: The number of seconds between checks.
                               type: integer
+                            tcpSocket:
+                              type: object
+                              properties:
+                                port:
+                                  x-kubernetes-int-or-string: true
+                                host:
+                                  type: string
+                              required:
+                              - port
                             timeoutSeconds:
-                              description: The number of seconds with no response
-                                that indicates a failure.
                               type: integer
                             successThreshold:
-                              default: 1
-                              description: Minimum number of times the check needs
-                                to pass for the probe to be considered successful
-                                after having failed. Defaults to 1. Must be 1 for
-                                liveness Probe.
                               type: integer
-                              minimum: 1
                             initialDelaySeconds:
-                              description: The number of seconds before the first
-                                check is performed.
                               type: integer
+                            exec:
+                              type: object
+                              properties:
+                                command:
+                                  type: array
+                                  items:
+                                    type: string
+                            grpc:
+                              type: object
+                              properties:
+                                port:
+                                  type: integer
+                                service:
+                                  type: string
+                              required:
+                              - port
+                            httpGet:
+                              type: object
+                              properties:
+                                path:
+                                  type: string
+                                scheme:
+                                  type: string
+                                port:
+                                  x-kubernetes-int-or-string: true
+                                host:
+                                  type: string
+                                httpHeaders:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                              required:
+                              - port
                         containerSecurityContext:
                           description: 'Container-level security attributes. Will
                             override any matching Pod-level attributes. See `kubectl
@@ -7343,37 +7541,77 @@ spec:
                           type: integer
                         livenessProbe:
                           description: Settings for the liveness probe associated
-                            with a WebLogic Server instance.
+                            with a WebLogic Server instance. If not specified, the
+                            operator will create a probe that executes a script provided
+                            by the operator. The operator will also fill in any missing
+                            tuning-related fields, if they are unspecified. Tuning-related
+                            fields will be inherited from the domain and cluster scopes
+                            unless a more specific scope defines a different action,
+                            such as a different script to execute.
                           type: object
                           properties:
+                            terminationGracePeriodSeconds:
+                              type: integer
                             failureThreshold:
-                              default: 1
-                              description: Number of times the check is performed
-                                before giving up. Giving up in case of liveness probe
-                                means restarting the container. In case of readiness
-                                probe, the Pod will be marked Unready. Defaults to
-                                1.
                               type: integer
-                              minimum: 1
                             periodSeconds:
-                              description: The number of seconds between checks.
                               type: integer
+                            tcpSocket:
+                              type: object
+                              properties:
+                                port:
+                                  x-kubernetes-int-or-string: true
+                                host:
+                                  type: string
+                              required:
+                              - port
                             timeoutSeconds:
-                              description: The number of seconds with no response
-                                that indicates a failure.
                               type: integer
                             successThreshold:
-                              default: 1
-                              description: Minimum number of times the check needs
-                                to pass for the probe to be considered successful
-                                after having failed. Defaults to 1. Must be 1 for
-                                liveness Probe.
                               type: integer
-                              minimum: 1
                             initialDelaySeconds:
-                              description: The number of seconds before the first
-                                check is performed.
                               type: integer
+                            exec:
+                              type: object
+                              properties:
+                                command:
+                                  type: array
+                                  items:
+                                    type: string
+                            grpc:
+                              type: object
+                              properties:
+                                port:
+                                  type: integer
+                                service:
+                                  type: string
+                              required:
+                              - port
+                            httpGet:
+                              type: object
+                              properties:
+                                path:
+                                  type: string
+                                scheme:
+                                  type: string
+                                port:
+                                  x-kubernetes-int-or-string: true
+                                host:
+                                  type: string
+                                httpHeaders:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      name:
+                                        type: string
+                                      value:
+                                        type: string
+                                    required:
+                                    - name
+                                    - value
+                              required:
+                              - port
                         topologySpreadConstraints:
                           description: TopologySpreadConstraints describes how a group
                             of pods ought to spread across topology domains. Scheduler

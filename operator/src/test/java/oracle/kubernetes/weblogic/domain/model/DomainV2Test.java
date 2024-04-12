@@ -389,7 +389,7 @@ class DomainV2Test extends DomainTestBase {
     assertThat(spec.getReadinessProbe().getPeriodSeconds(), equalTo(PERIOD));
     assertThat(spec.getReadinessProbe().getSuccessThreshold(), equalTo(CONFIGURED_SUCCESS_THRESHOLD));
     assertThat(spec.getReadinessProbe().getFailureThreshold(), equalTo(CONFIGURED_FAILURE_THRESHOLD));
-    assertThat(spec.getReadinessProbe().getHttpGetActionPath(), equalTo(CONFIGURED_PATH));
+    assertThat(spec.getReadinessProbe().getHttpGet().getPath(), equalTo(CONFIGURED_PATH));
   }
 
   @Test
