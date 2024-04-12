@@ -41,6 +41,7 @@ import io.kubernetes.client.openapi.models.V1PodReadinessGate;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodSpecBuilder;
 import io.kubernetes.client.openapi.models.V1Probe;
+import io.kubernetes.client.openapi.models.V1ProbeBuilder;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
 import io.kubernetes.client.openapi.models.V1Volume;
@@ -953,7 +954,8 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   @SuppressWarnings("SameParameterValue")
   private V1Probe getReadinessProbe() {
-    return Optional.ofNullable(getServerSpec().getReadinessProbe()).orElse(new V1Probe());
+    return Optional.ofNullable(getServerSpec().getReadinessProbe())
+        .map(V1ProbeBuilder::new).map(V1ProbeBuilder::build).orElse(new V1Probe());
   }
 
   private V1Probe createLivenessProbe(PodTuning tuning) {
@@ -997,7 +999,8 @@ public abstract class PodStepContext extends BasePodStepContext {
   }
 
   private V1Probe getLivenessProbe() {
-    return Optional.ofNullable(getServerSpec().getLivenessProbe()).orElse(new V1Probe());
+    return Optional.ofNullable(getServerSpec().getLivenessProbe())
+        .map(V1ProbeBuilder::new).map(V1ProbeBuilder::build).orElse(new V1Probe());
   }
 
   private boolean mockWls() {
