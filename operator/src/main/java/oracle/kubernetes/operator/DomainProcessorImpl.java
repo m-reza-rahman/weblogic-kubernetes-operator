@@ -1012,8 +1012,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       private void runFailureSteps(Throwable throwable) {
         gate.startFiber(
             ((DomainPresenceInfo)presenceInfo).getDomainUid(),
-            getFailureSteps(throwable),
-            packet,
+            () -> getFailureSteps(throwable),
+            () -> operation.createPacket(),
             new FailureReportCompletionCallback());
       }
 
@@ -1102,19 +1102,14 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   @SuppressWarnings("rawtypes")
   private abstract static class Plan<T extends MakeRightOperation> {
 
-    final T operation;
+    protected final T operation;
     protected final ResourcePresenceInfo presenceInfo;
     protected final FiberGate gate;
     protected final DomainProcessorDelegate delegate;
 
-    private final Step firstStep;
-    final Packet packet;
-
     public Plan(T operation, DomainProcessorDelegate delegate) {
       this.operation = operation;
       this.presenceInfo = operation.getPresenceInfo();
-      this.firstStep = operation.createSteps();
-      this.packet = operation.createPacket();
       this.gate = getMakeRightFiberGate(delegate, this.presenceInfo.getNamespace());
       this.delegate = delegate;
     }
@@ -1124,7 +1119,8 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
 
     void execute() {
-      gate.startFiber(presenceInfo.getResourceName(), firstStep, packet, createCompletionCallback());
+      gate.startFiber(presenceInfo.getResourceName(), () -> operation.createSteps(), () -> operation.createPacket(),
+          createCompletionCallback());
     }
 
     abstract CompletionCallback createCompletionCallback();
@@ -1152,7 +1148,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       try {
         Step strategy = Step.chain(new DomainPresenceInfoStep(), ServerStatusReader.createStatusStep(timeoutSeconds));
         getStatusFiberGate(getNamespace())
-            .startFiber(getDomainUid(), strategy, createPacket(), new CompletionCallbackImpl());
+            .startFiber(getDomainUid(), () -> strategy, () -> createPacket(), new CompletionCallbackImpl());
       } catch (Exception t) {
         try (ThreadLoggingContext ignored
                  = setThreadContext().namespace(getNamespace()).domainUid(getDomainUid())) {

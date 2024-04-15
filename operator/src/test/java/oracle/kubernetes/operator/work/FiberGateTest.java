@@ -26,7 +26,7 @@ class FiberGateTest {
 
   @Test
   void whenFiberStarted_stepsAreRun() {
-    fiberGate.startFiber(UID1, terminalStep, packet, completionCallback);
+    fiberGate.startFiber(UID1, () -> terminalStep, () -> packet, completionCallback);
 
     assertThat(terminalStep.wasRun(), is(true));
   }
@@ -35,21 +35,21 @@ class FiberGateTest {
   void afterFiberStarted_callbackIsInvokedWithPacket() {
     packet.put("name", "value");
 
-    fiberGate.startFiber(UID1, terminalStep, packet, completionCallback);
+    fiberGate.startFiber(UID1, () -> terminalStep, () -> packet, completionCallback);
 
     assertThat(completionCallback.foundValue, equalTo("value"));
   }
 
   @Test
   void ifNoFiberAlreadyRunningWithUID_startAnother() {
-    fiberGate.startFiber(UID1, new RunFiberStep(UID2), packet, completionCallback);
+    fiberGate.startFiber(UID1, () -> new RunFiberStep(UID2), () -> packet, completionCallback);
 
     assertThat(terminalStep.wasRun(), is(true));
   }
 
   @Test
   void ifCallbackSettingMatchesCurrentUID_startAnother() {
-    fiberGate.startFiber(UID1, noopStep, packet, new DelegatingCompletionCallback(UID1));
+    fiberGate.startFiber(UID1, () -> noopStep, () -> packet, new DelegatingCompletionCallback(UID1));
 
     assertThat(terminalStep.wasRun(), is(true));
   }
@@ -71,7 +71,7 @@ class FiberGateTest {
 
     @Override
     public @Nonnull Result apply(Packet packet) {
-      fiberGate.startFiber(subStepUid, terminalStep, packet, completionCallback);
+      fiberGate.startFiber(subStepUid, () -> terminalStep, () -> packet, completionCallback);
       return doNext(packet);
     }
   }
@@ -101,7 +101,7 @@ class FiberGateTest {
 
     @Override
     public void onCompletion(Packet packet) {
-      fiberGate.startFiber(uid, terminalStep, packet, completionCallback);
+      fiberGate.startFiber(uid, () -> terminalStep, () -> packet, completionCallback);
     }
 
     @Override

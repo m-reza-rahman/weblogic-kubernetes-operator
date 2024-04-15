@@ -64,8 +64,8 @@ public final class Fiber implements Runnable {
     this.completionCallback = completionCallback;
   }
 
-  private Fiber(Fiber fiber) {
-    this(fiber.fiberExecutor, fiber.stepline, fiber.packet, fiber.completionCallback);
+  private Fiber(Fiber fiber, Step stepline, Packet packet) {
+    this(fiber.fiberExecutor, stepline, packet, fiber.completionCallback);
   }
 
   /**
@@ -105,8 +105,8 @@ public final class Fiber implements Runnable {
     return true;
   }
 
-  static Fiber copy(Fiber fiber) {
-    return new Fiber(fiber);
+  static Fiber copyWithNewStepsAndPacket(Fiber fiber, Step stepline, Packet packet) {
+    return new Fiber(fiber, stepline, packet);
   }
 
   @Override

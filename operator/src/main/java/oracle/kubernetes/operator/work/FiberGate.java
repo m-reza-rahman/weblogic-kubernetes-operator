@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import oracle.kubernetes.operator.work.Fiber.CompletionCallback;
 import oracle.kubernetes.operator.work.Fiber.FiberExecutor;
@@ -46,36 +47,43 @@ public class FiberGate {
    * updated if no Fiber is started.
    *
    * @param domainUid the UID for which a fiber should be started
-   * @param strategy Step for Fiber to begin with
-   * @param packet Packet
+   * @param stepSupplier Supplier for Step for Fiber to begin with
+   * @param packetSupplier Supplier for Packet
    * @param callback Completion callback
    */
-  public void startFiber(String domainUid, Step strategy, Packet packet, CompletionCallback callback) {
-    requestNewFiberStart(domainUid, strategy, packet, callback);
+  public void startFiber(String domainUid, Supplier<Step> stepSupplier, Supplier<Packet> packetSupplier,
+                     CompletionCallback callback) {
+    requestNewFiberStart(domainUid, stepSupplier, packetSupplier, callback);
   }
 
   /**
    * Starts Fiber only if the last started Fiber matches the given old Fiber.
    *
    * @param domainUid the UID for which a fiber should be started
-   * @param strategy Step for Fiber to begin with
-   * @param packet Packet
+   * @param stepSupplier Supplier for step for Fiber to begin with
+   * @param packetSupplier Supplier for Packet
    * @param callback Completion callback
    */
   private synchronized void requestNewFiberStart(
-      String domainUid, Step strategy, Packet packet, CompletionCallback callback) {
-    new FiberRequest(domainUid, strategy, packet, callback).invoke();
+      String domainUid, Supplier<Step> stepSupplier, Supplier<Packet> packetSupplier, CompletionCallback callback) {
+    new FiberRequest(domainUid, stepSupplier, packetSupplier, callback).invoke();
   }
 
   private class FiberRequest {
 
     private final String domainUid;
     private final Fiber fiber;
+    private final Supplier<Step> stepSupplier;
+    private final Supplier<Packet> packetSupplier;
 
-    FiberRequest(String domainUid, Step steps, Packet packet, CompletionCallback callback) {
+    FiberRequest(String domainUid, Supplier<Step> stepSupplier,
+             Supplier<Packet> packetSupplier, CompletionCallback callback) {
       this.domainUid = domainUid;
+      this.stepSupplier = stepSupplier;
+      this.packetSupplier = packetSupplier;
 
-      fiber = new Fiber(new FiberExecutorImpl(), steps, packet, new FiberGateCompletionCallback(callback, domainUid));
+      fiber = new Fiber(new FiberExecutorImpl(), stepSupplier.get(), packetSupplier.get(),
+          new FiberGateCompletionCallback(callback, domainUid));
     }
 
     void invoke() {
@@ -91,7 +99,7 @@ public class FiberGate {
       }
 
       private void scheduledExecution(Fiber fiber) {
-        Fiber scheduledReplacement = Fiber.copy(fiber);
+        Fiber scheduledReplacement = Fiber.copyWithNewStepsAndPacket(fiber, stepSupplier.get(), packetSupplier.get());
         if (gateMap.replace(domainUid, fiber, scheduledReplacement)) {
           scheduledExecutorService.execute(scheduledReplacement);
         }
