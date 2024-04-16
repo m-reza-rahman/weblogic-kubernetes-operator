@@ -129,12 +129,24 @@ public class ManagedServersUpStep extends Step {
     info.setServerStartupInfo(factory.getStartupInfos());
     info.setServerShutdownInfo(factory.getShutdownInfos());
 
+    // TEST
+    LOGGER.severe("RJE: ManagedServersUpStep checkpoint, running servers: " + getRunningServers(info)
+        + ", serversToStart: " + getServerNames(info.getServerStartupInfo())
+        + ", serversToStop: " + getServerNames(info.getServerShutdownInfo()));
+
     LOGGER.exiting();
 
     return doNext(
         nextStepFactory.createServerStep(
             info, config, factory, factory.createNextStep(getNext())),
         packet);
+  }
+
+  private static Collection<String> getServerNames(Collection<? extends DomainPresenceInfo.ServerInfo> serverInfos) {
+    if (serverInfos != null) {
+      return serverInfos.stream().map(DomainPresenceInfo.ServerInfo::getServerName).toList();
+    }
+    return Collections.emptyList();
   }
 
   private void addServersToFactory(@Nonnull ServersUpStepFactory factory, @Nonnull WlsDomainConfig wlsDomainConfig,

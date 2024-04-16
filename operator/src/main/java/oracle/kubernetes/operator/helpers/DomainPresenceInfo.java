@@ -841,6 +841,13 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
     this.serverShutdownInfo.set(serverShutdownInfo);
   }
 
+  /**
+   * Gets server shutdown info.
+   * @return Shutdown info, or null if not set
+   */
+  public Collection<ServerShutdownInfo> getServerShutdownInfo() {
+    return serverShutdownInfo.get();
+  }
 
   /**
    * Check if all cluster status have been initially populated.
