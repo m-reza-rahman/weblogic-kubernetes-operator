@@ -135,7 +135,10 @@ class ItManagedCoherence {
 
     String nodePortValue = null;
     if (!OKE_CLUSTER) {
+      logger.info("It's NOT in OKE_CLUSTER env: " + OKE_CLUSTER);
       nodePortValue = "NodePort";
+    } else {
+      logger.info("It's in OKE_CLUSTER env: " + OKE_CLUSTER);
     }
 
     // install and verify Traefik if not running on OKD
