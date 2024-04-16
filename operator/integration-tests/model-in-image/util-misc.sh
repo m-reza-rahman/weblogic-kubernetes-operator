@@ -119,11 +119,12 @@ testapp() {
       local cluster_service_name=$(get_service_name $domain_uid-cluster-$2)
       local admin_service_name=$(get_service_name $domain_uid-admin-server)
       local ns=${DOMAIN_NAMESPACE:-sample-domain1-ns}
-      if [ "$KIND_CLUSTER" = "true" ]; then
-        local command="${KUBERNETES_CLI:-kubectl} exec -n $ns $admin_service_name -- bash -c \"curl -s -S $(curl_timeout_parms) http://$cluster_service_name:8001/myapp-$3/myapp_war/index.jsp\""
-      else
-        local command="${KUBERNETES_CLI:-kubectl} exec -n $ns $admin_service_name -- bash -c \"curl -s -S $(curl_timeout_parms) http://$cluster_service_name:8001/myapp_war/index.jsp\""
-      fi
+      local command="${KUBERNETES_CLI:-kubectl} exec -n $ns $admin_service_name -- bash -c \"curl -s -S $(curl_timeout_parms) http://$cluster_service_name:8001/myapp_war/index.jsp\""
+      #if [ "$KIND_CLUSTER" = "true" ]; then
+      #  local command="${KUBERNETES_CLI:-kubectl} exec -n $ns $admin_service_name -- bash -c \"curl -s -S $(curl_timeout_parms) http://$cluster_service_name:8001/myapp-$3/myapp_war/index.jsp\""
+      #else
+      #  local command="${KUBERNETES_CLI:-kubectl} exec -n $ns $admin_service_name -- bash -c \"curl -s -S $(curl_timeout_parms) http://$cluster_service_name:8001/myapp_war/index.jsp\""
+      #fi
     elif [ "$1" = "traefik" ]; then
       if [ "$KIND_CLUSTER" = "true" ] && [ "$WLSIMG_BUILDER" != "$WLSIMG_BUILDER_DEFAULT" ]; then
         traefik_nodeport=${TRAEFIK_INGRESS_HTTP_HOSTPORT:-2080}
@@ -138,11 +139,12 @@ EOF
           return 1
         fi
       fi
-      if [ "$KIND_CLUSTER" = "true" ]; then
-        local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp-$3/myapp_war/index.jsp"
-      else
-        local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp_war/index.jsp"
-      fi
+      local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp_war/index.jsp"
+      #if [ "$KIND_CLUSTER" = "true" ]; then
+      #  local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp-$3/myapp_war/index.jsp"
+      #else
+      #  local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://$(get_kube_address):${traefik_nodeport}/myapp_war/index.jsp"
+      #fi
     elif [ "$1" = "OKD" ]; then
       echo "In testapp OKD case"
       local command="$(get_curl_command ${DOMAIN_UID:-sample-domain1}-cluster-$2) http://${ROUTE_HOST}/myapp_war/index.jsp"
@@ -154,11 +156,12 @@ EOF
 
     fi
 
-    if [ "$KIND_CLUSTER" = "true" ]; then
-      local outstr="@@ Info: Searching for '$4' in '$1' mode curl app invoke of cluster '$2' using '$command', "
-    else
-      local outstr="@@ Info: Searching for '$3' in '$1' mode curl app invoke of cluster '$2' using '$command', "
-    fi
+    local outstr="@@ Info: Searching for '$3' in '$1' mode curl app invoke of cluster '$2' using '$command', "
+    #if [ "$KIND_CLUSTER" = "true" ]; then
+    #  local outstr="@@ Info: Searching for '$4' in '$1' mode curl app invoke of cluster '$2' using '$command', "
+    #else
+    #  local outstr="@@ Info: Searching for '$3' in '$1' mode curl app invoke of cluster '$2' using '$command', "
+    #fi
     if [ $quiet = 'false' ]; then
       echo -n "${outstr} output file '$target_file'."
     else

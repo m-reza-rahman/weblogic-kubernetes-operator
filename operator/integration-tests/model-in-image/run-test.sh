@@ -423,8 +423,10 @@ if [ "$DO_INITIAL_MAIN" = "true" ]; then
     if [ "$OKD" = "true" ]; then
       testapp OKD  cluster-1 "Hello World!"
     elif [ "$KIND_CLUSTER" = "true" ]; then
-      testapp internal cluster-1 v1 "Hello World!"
-      testapp traefik  cluster-1 v1 "Hello World!"
+      testapp internal cluster-1 "Hello World!"
+      testapp traefik  cluster-1 "Hello World!"
+      #testapp internal cluster-1 v1 "Hello World!"
+      #testapp traefik  cluster-1 v1 "Hello World!"
     else
       testapp internal cluster-1 "Hello World!"
       testapp traefik  cluster-1 "Hello World!"
