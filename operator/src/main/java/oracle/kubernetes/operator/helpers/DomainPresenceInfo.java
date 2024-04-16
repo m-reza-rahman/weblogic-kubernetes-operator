@@ -388,6 +388,11 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
     return getPodIsBeingDeleted(getSko(serverName));
   }
 
+  public boolean isServerPodDeleted(String serverName) {
+    return Optional.ofNullable(getSko(serverName)).map(ServerKubernetesObjects::getPod).map(AtomicReference::get)
+        .map(PodHelper::isDeleting).orElse(false);
+  }
+
   public void setServerPodBeingDeleted(String serverName, Boolean isBeingDeleted) {
     getSko(serverName).isPodBeingDeleted().set(isBeingDeleted);
   }

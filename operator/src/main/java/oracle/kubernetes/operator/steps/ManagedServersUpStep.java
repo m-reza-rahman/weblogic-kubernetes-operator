@@ -103,8 +103,11 @@ public class ManagedServersUpStep extends Step {
   }
 
   private static boolean isNotAlreadyStoppedOrServiceOnly(DomainPresenceInfo info, ServerShutdownInfo ssi) {
+
+    // HERE, TEST
+
     return (info.getServerPod(ssi.getServerName()) != null
-            && !info.isServerPodBeingDeleted(ssi.getServerName()))
+            && !info.isServerPodDeleted(ssi.getServerName()))
             || (ssi.isServiceOnly() && info.getServerService(ssi.getServerName()) == null);
   }
 
