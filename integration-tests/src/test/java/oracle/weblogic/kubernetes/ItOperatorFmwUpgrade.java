@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -200,57 +200,66 @@ class ItOperatorFmwUpgrade {
   }
 
   /**
-   * Operator upgrade from 3.4.5 to current with a FMW Domain.
+   * Operator upgrade from 3.4.12 to current with a FMW Domain.
    */
   @Test
-  @DisplayName("Upgrade Operator from 3.4.5 to current")
-  void testOperatorFmwUpgradeFrom345ToCurrent() {
-    installAndUpgradeOperator("3.4.5", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 3.4.12 to current")
+  void testOperatorFmwUpgradeFrom3412ToCurrent() {
+    installAndUpgradeOperator("3.4.12", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 3.4.6 to current with a FMW Domain.
+   * Operator upgrade from 3.4.13 to current with a FMW Domain.
    */
   @Test
-  @DisplayName("Upgrade Operator from 3.4.6 to current")
-  void testOperatorFmwUpgradeFrom346ToCurrent() {
-    installAndUpgradeOperator("3.4.6", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 3.4.13 to current")
+  void testOperatorFmwUpgradeFrom3413ToCurrent() {
+    installAndUpgradeOperator("3.4.13", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 4.0.7 to current with a FMW Domain.
+   * Operator upgrade from 4.0.9 to current with a FMW Domain.
    */
   @Test
-  @DisplayName("Upgrade Operator from 4.0.7 to current")
-  void testOperatorFmwUpgradeFrom407ToCurrent() {
-    installAndUpgradeOperator("4.0.7", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 4.0.9 to current")
+  void testOperatorFmwUpgradeFrom409ToCurrent() {
+    installAndUpgradeOperator("4.0.9", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 4.0.8 to current with a FMW Domain.
+   * Operator upgrade from 4.0.10 to current with a FMW Domain.
    */
   @Test
-  @DisplayName("Upgrade Operator from 4.0.8 to current")
-  void testOperatorFmwUpgradeFrom408ToCurrent() {
-    installAndUpgradeOperator("4.0.8", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 4.0.10 to current")
+  void testOperatorFmwUpgradeFrom4010ToCurrent() {
+    installAndUpgradeOperator("4.0.10", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 4.1.0 to current with a FMW Domain.
+   * Operator upgrade from 4.1.12 to current with a FMW Domain.
    */
   @Test
-  @DisplayName("Upgrade Operator from 4.1.0 to current")
-  void testOperatorFmwUpgradeFrom410ToCurrent() {
-    installAndUpgradeOperator("4.1.0", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 4.1.12 to current")
+  void testOperatorFmwUpgradeFrom4112ToCurrent() {
+    installAndUpgradeOperator("4.1.12", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 4.1.1 to current with a FMW Domain.
+   * Operator upgrade from 4.1.13 to current with a FMW Domain.
    */
   @Test
-  @DisplayName("Upgrade Operator from 4.1.1 to current")
-  void testOperatorFmwUpgradeFrom411ToCurrent() {
-    installAndUpgradeOperator("4.1.1", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  @DisplayName("Upgrade Operator from 4.1.13 to current")
+  void testOperatorFmwUpgradeFrom4113ToCurrent() {
+    installAndUpgradeOperator("4.1.13", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  }
+
+  /**
+   * Operator upgrade from 4.2.1 to current with a FMW Domain.
+   */
+  @Test
+  @DisplayName("Upgrade Operator from 4.2.1 to current")
+  void testOperatorFmwUpgradeFrom421ToCurrent() {
+    installAndUpgradeOperator("4.2.1", "v8", DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   private void installAndUpgradeOperator(
