@@ -15,7 +15,7 @@ getClusterPolicy() {
   local effectivePolicy=""
 
   clusterPolicyCmd=".spec.serverStartPolicy"
-  effectivePolicy=$(echo ${clusterJson} | jq "${clusterPolicyCmd}")
+  effectivePolicy=$(jq "${clusterPolicyCmd}" <<< "$clusterJson")
   if [ "${effectivePolicy}" == "null" ]; then
     effectivePolicy=""
   fi
@@ -35,7 +35,7 @@ getDomainPolicy() {
 
   eval $__domainPolicy="IfNeeded"
   domainPolicyCommand=".spec.serverStartPolicy"
-  effectivePolicy=$(echo ${domainJson} | jq "${domainPolicyCommand}")
+  effectivePolicy=$(jq "${domainPolicyCommand}" <<< "$domainJson")
   if [[ "${effectivePolicy}" == "null" || "${effectivePolicy}" == "" ]]; then
     effectivePolicy="IfNeeded"
   fi
@@ -82,7 +82,7 @@ getEffectiveAdminPolicy() {
   local __adminStartPolicy=""
   local __domainStartPolicy=""
 
-  __adminStartPolicy=$(echo ${domainJson} | jq -cr '(.spec.adminServer.serverStartPolicy)')
+  __adminStartPolicy=$(jq -cr '(.spec.adminServer.serverStartPolicy)' <<< "$domainJson" )
   getDomainPolicy "${domainJson}" __domainStartPolicy
   if [[ "${__adminStartPolicy}" == "null" || "${__domainStartPolicy}" == "Never" ]]; then
     __adminStartPolicy="${__domainStartPolicy}"
@@ -105,11 +105,11 @@ getServerPolicy() {
 
   # Get server start policy for this server
   eval $__currentPolicy=""
-  managedServers=$(echo ${domainJson} | jq -cr '(.spec.managedServers)')
+  managedServers=$(jq -cr '(.spec.managedServers)' <<< "$domainJson")
   if [ "${managedServers}" != "null" ]; then
     extractPolicyCmd="(.spec.managedServers[] \
       | select (.serverName == \"${serverName}\") | .serverStartPolicy)"
-    currentServerStartPolicy=$(echo ${domainJson} | jq "${extractPolicyCmd}")
+    currentServerStartPolicy=$(jq "${extractPolicyCmd}" <<< "$domainJson")
     if [ "${currentServerStartPolicy}" == "null" ]; then
       currentServerStartPolicy=""
     fi
@@ -134,12 +134,12 @@ createServerStartPolicyPatch() {
 
   # Get server start policy for this server
   getServerPolicy "${domainJson}" "${serverName}" currentStartPolicy
-  managedServers=$(echo ${domainJson} | jq -cr '(.spec.managedServers)')
+  managedServers=$(jq -cr '(.spec.managedServers)' <<< "$domainJson")
   if [[ -z "${currentStartPolicy}" && "${managedServers}" == "null" ]]; then
     # Server start policy doesn't exist, add a new policy
     addPolicyCmd=".[.| length] |= . + {\"serverName\":\"${serverName}\", \
       \"serverStartPolicy\":\"${policy}\"}"
-    serverStartPolicyPatch=$(echo ${domainJson} | jq .spec.managedServers | jq -c "${addPolicyCmd}")
+    serverStartPolicyPatch=$(jq .spec.managedServers <<< "$domainJson" | jq -c "${addPolicyCmd}")
   elif [ "${managedServers}" != "null" ]; then
     extractSpecCmd="(.spec.managedServers)"
     mapCmd="\
@@ -147,13 +147,13 @@ createServerStartPolicyPatch() {
       if \$idx then \
       .[\$idx][\"serverStartPolicy\"] = \"${policy}\" \
       else .+  [{serverName: \"${serverName}\" , serverStartPolicy: \"${policy}\"}] end"
-    serverStartPolicyPatch=$(echo ${domainJson} | jq "${extractSpecCmd}" | jq "${mapCmd}")
+    serverStartPolicyPatch=$(jq "${extractSpecCmd}" <<< "$domainJson" | jq "${mapCmd}")
   else
     # Server start policy exists, replace policy value
     replacePolicyCmd="(.spec.managedServers[] \
       | select (.serverName == \"${serverName}\") | .serverStartPolicy) |= \"${policy}\""
     servers="(.spec.managedServers)"
-    serverStartPolicyPatch=$(echo ${domainJson} | jq "${replacePolicyCmd}" | jq -cr "${servers}")
+    serverStartPolicyPatch=$(jq "${replacePolicyCmd}" <<< "$domainJson" | jq -cr "${servers}")
   fi
   eval $__result="'${serverStartPolicyPatch}'"
 }
@@ -185,14 +185,14 @@ createPatchJsonToUpdateAdminPolicy() {
   local __serverStartPolicyPatch=""
 
   eval $__result=""
-  __adminServer=$(echo ${domainJson} | jq -cr '(.spec.adminServer)')
+  __adminServer=$(jq -cr '(.spec.adminServer)' <<< "$domainJson")
   if [ "${__adminServer}" == "null" ]; then
     # admin server specs does not exist, add new spec with server start policy
     addPolicyCmd="{\"serverStartPolicy\":\"${policy}\"}"
-    __serverStartPolicyPatch=$(echo ${domainJson} | jq .spec.amdinServer | jq -c "${addPolicyCmd}")
+    __serverStartPolicyPatch=$(jq .spec.amdinServer <<< "$domainJson" | jq -c "${addPolicyCmd}")
   else
     addOrReplaceCmd="(.spec.adminServer) | .+  {\"serverStartPolicy\": \"${policy}\"}"
-    __serverStartPolicyPatch=$(echo ${domainJson} | jq "${addOrReplaceCmd}")
+    __serverStartPolicyPatch=$(jq "${addOrReplaceCmd} <<< "$domainJson"")
   fi
   __patchJson="{\"spec\": {\"adminServer\": "${__serverStartPolicyPatch}"}}"
   eval $__result="'${__patchJson}'"
@@ -242,14 +242,14 @@ unsetServerStartPolicy() {
   local unsetStartPolicyPatchNoNulls=""
 
   unsetCmd="(.spec.managedServers[] | select (.serverName == \"${serverName}\") | del (.serverStartPolicy))"
-  replacePolicyCmd=$(echo ${domainJson} | jq -cr "${unsetCmd}")
+  replacePolicyCmd=$(jq -cr "${unsetCmd}" <<< "$domainJson")
   replacePolicyCmdLen=$(echo "${replacePolicyCmd}" | jq -e keys_unsorted | jq length)
   if [ ${replacePolicyCmdLen} == 1 ]; then
     mapCmd=". |= map(if .serverName == \"${serverName}\" then del(.) else . end)"
   else
     mapCmd=". |= map(if .serverName == \"${serverName}\" then . = ${replacePolicyCmd} else . end)"
   fi
-  unsetStartPolicyPatch=$(echo ${domainJson} | jq "(.spec.managedServers)" | jq "${mapCmd}")
+  unsetStartPolicyPatch=$(jq "(.spec.managedServers)" <<< "$domainJson" | jq "${mapCmd}")
   removeNullCmd="del(.[] | select(. == null))"
   unsetStartPolicyPatchNoNulls=$(echo "${unsetStartPolicyPatch}" | jq "${removeNullCmd}")
   eval $__result="'${unsetStartPolicyPatchNoNulls}'"
@@ -291,7 +291,7 @@ createPatchJsonToUpdateReplicas() {
   local mapCmd=""
   local patchJsonVal=""
 
-  existingClusters=$(echo ${domainJson} | jq -cr '(.spec.clusters)')
+  existingClusters=$(jq -cr '(.spec.clusters)' <<< "$domainJson")
   if [ "${existingClusters}" == "null" ]; then
     # cluster doesn't exist, add cluster with replicas
     addClusterReplicasCmd=".[.| length] |= . + {\"clusterName\":\"${clusterName}\", \
@@ -906,6 +906,7 @@ validateClusterName() {
   local __isValidCluster=$4
 
   getTopology "${domainUid}" "${domainNamespace}" jsonTopology
+
   clusters=($(echo $jsonTopology | jq -cr .domain.configuredClusters[].name))
   if  checkStringInArray "${clusterName}" "${clusters[@]}" ; then
     eval $__isValidCluster=true
@@ -921,43 +922,60 @@ getTopology() {
   local __jsonTopology=""
   local __topology=""
 
-  if [[ "$OSTYPE" == "darwin"* ]]; then
-    configMap=$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
-      -n ${domainNamespace} -o yaml --ignore-not-found)
-  else
-    configMap=$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
-      -n ${domainNamespace} -o json --ignore-not-found)
-  fi
-  if [ -z "${configMap}" ]; then
-    printError "Domain config map '${domainUid}-weblogic-domain-introspect-cm' not found. \
-      This script requires that the introspector job for the specified domain ran \
-      successfully and generated this config map. Exiting."
-    exit 1
-  else
-    __jsonTopology=$(echo "${configMap}" | jq -r '.data["topology.json"]')
-  fi
-  if [ ${__jsonTopology} == null ]; then
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-      if ! [ -x "$(command -v yq)" ]; then
-        validationError "MacOS detected, the domain is hosted on a pre-3.2.0 version of \
-          the Operator, and 'yq' is not installed locally. To fix this, install 'yq', \
-          call the script from Linux instead of MacOS, or upgrade the Operator version."
-        exit 1
-      fi
-      __jsonTopology=$(echo "${configMap}" | yq r - data.[topology.yaml] | yq r - -j)
-    else
-      if ! [ -x "$(command -v python)" ]; then
-        validationError "Linux OS detected, the domain is hosted on a pre-3.2.0 version of \
-          the Operator, and 'python' is not installed locally. To fix this, install 'python' \
-          or upgrade the Operator version."
-        exit 1
-      fi
-      __topology=$(echo "${configMap}" | jq '.data["topology.yaml"]')
-      __jsonTopology=$(python -c \
-      'import sys, yaml, json; print json.dumps(yaml.safe_load('"${__topology}"'), indent=4)')
-    fi
-  fi
+#  if [[ "$OSTYPE" == "darwin"* ]]; then
+#    if ! [ -x "$(command -v yq)" ]; then
+#      validationError "MacOS detected, the domain is hosted on a pre-3.2.0 version of \
+#        the Operator, and 'yq' is not installed locally. To fix this, install 'yq', \
+#        call the script from Linux instead of MacOS, or upgrade the Operator version."
+#      exit 1
+#    fi
+#    configMap=$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
+#      -n ${domainNamespace} -o jsonpath='{.data.topology\.json}' --ignore-not-found)
+#  else
+#    configMap=$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
+#      -n ${domainNamespace} -o jsonpath='{.data.topology\.json}' --ignore-not-found)
+#  fi
+#
+#  if [ -z "${configMap}" ]; then
+#    printError "Domain config map '${domainUid}-weblogic-domain-introspect-cm' not found. \
+#      This script requires that the introspector job for the specified domain ran \
+#      successfully and generated this config map. Exiting."
+#    exit 1
+#  else
+#    echo ""
+#  #  __jsonTopology=$(echo "${configMap}" | jq -r '.data["topology.json"]')
+#  fi
+#
+#
+#  #if [ ${__jsonTopology} == null ]; then
+#    if [[ "$OSTYPE" == "darwin"* ]]; then
+#      if ! [ -x "$(command -v yq)" ]; then
+#        validationError "MacOS detected, the domain is hosted on a pre-3.2.0 version of \
+#          the Operator, and 'yq' is not installed locally. To fix this, install 'yq', \
+#          call the script from Linux instead of MacOS, or upgrade the Operator version."
+#        exit 1
+#      fi
+#      echo "getting json"
+#      __jsonTopology=$(echo "${configMap}" | yq r - data.[topology.yaml] | yq r - -j)
+#      echo "got json"
+#    else
+#      if ! [ -x "$(command -v python)" ]; then
+#        validationError "Linux OS detected, the domain is hosted on a pre-3.2.0 version of \
+#          the Operator, and 'python' is not installed locally. To fix this, install 'python' \
+#          or upgrade the Operator version."
+#        exit 1
+#      fi
+#      __topology=$(echo "${configMap}" | jq '.data["topology.yaml"]')
+#      __jsonTopology=$(python -c \
+#      'import sys, yaml, json; print json.dumps(yaml.safe_load('"${__topology}"'), indent=4)')
+#    fi
+#  #fi
+
+  __jsonTopology=$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
+      -n ${domainNamespace} -o jsonpath='{.data.topology\.json}' --ignore-not-found)
   eval $__result="'${__jsonTopology}'"
+  #echo ${__result}
+
 }
 
 #
@@ -976,11 +994,13 @@ getClusterResource() {
   local clusterNameFromReference=""
   local __clusterResource=""
 
-  clusterReferences=$(echo ${domainJson} | jq -r .spec.clusters[].name)
+  #clusterReferences=$(echo ${domainJson} | jq -r .spec.clusters[].name)
+  clusterReferences=$(jq -r .spec.clusters[].name <<< "$domainJson")
+
   for clusterReference in ${clusterReferences}; do
-    clusterNameFromReference=$(${kubernetesCli} get cluster "${clusterReference}" -n ${domainNamespace} -o json --ignore-not-found | jq -r .spec.clusterName)
+    clusterNameFromReference="$(${kubernetesCli} get cluster "${clusterReference}" -n ${domainNamespace} -o json --ignore-not-found | jq -r .spec.clusterName)"
     if [ -z "${clusterNameFromReference}" ]; then
-      clusterNameFromReference=$(${kubernetesCli} get cluster "${clusterReference}" -n ${domainNamespace} -o json --ignore-not-found | jq -r .metadata.name)
+      clusterNameFromReference="$(${kubernetesCli} get cluster "${clusterReference}" -n ${domainNamespace} -o json --ignore-not-found | jq -r .metadata.name)"
     fi
     if [ "${clusterNameFromReference}" == "${clusterName}" ]; then
       __clusterResource=$clusterReference

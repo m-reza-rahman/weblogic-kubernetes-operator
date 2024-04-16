@@ -239,7 +239,7 @@ clusterStatus() {
          | condition \
          | sort --version-sort
 
-  ) | column --table
+  ) | column -t
 
   echo
 }
