@@ -845,13 +845,13 @@ class ItMultiDomainModelsScale {
 
   private String  createIngressHostRoutingIfNotExists(String domainNamespace,
                                                       String domainUid) {
-    String ingressName = domainNamespace + "-" + domainUid + "-" + adminServerName;
+    String ingressName = domainNamespace + "-" + domainUid + "-" + adminServerName + "-" + ADMIN_SERVER_PORT;
     String hostHeader = "";
     try {
       List<String> ingresses = listIngresses(domainNamespace);
       Optional<String> ingressFound = ingresses.stream().filter(ingress -> ingress.equals(ingressName)).findAny();
       if (ingressFound.isEmpty()) {
-        hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, 7001);
+        hostHeader = createIngressHostRouting(domainNamespace, domainUid, adminServerName, ADMIN_SERVER_PORT);
       }
     } catch (Exception ex) {
       logger.severe(ex.getMessage());
