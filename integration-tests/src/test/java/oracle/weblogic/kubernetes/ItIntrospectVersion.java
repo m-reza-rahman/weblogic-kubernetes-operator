@@ -1571,7 +1571,7 @@ class ItIntrospectVersion {
   }
   
   private void updateIngressBackendServicePort(int newAdminPort) throws ApiException {
-    String ingressName = introDomainNamespace + "-" + domainUid + "-" + adminServerName + "-" + adminPort;
+    String ingressName = introDomainNamespace + "-" + domainUid + "-" + adminServerName + "-7001";
     List<String> ingresses = Ingress.listIngresses(introDomainNamespace);
     logger.info(Yaml.dump(ingresses));
     V1Ingress ingress = Ingress.getIngress(introDomainNamespace, ingressName).orElse(null);

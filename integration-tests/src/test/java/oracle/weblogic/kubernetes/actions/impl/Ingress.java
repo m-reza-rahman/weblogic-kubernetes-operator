@@ -248,14 +248,19 @@ public class Ingress {
 
     V1IngressList ingressList = Kubernetes.listNamespacedIngresses(namespace);
     List<V1Ingress> listOfIngress = ingressList.getItems();
+    getLogger().info(Yaml.dump(listOfIngress));
     for (V1Ingress ingress : listOfIngress) {
       getLogger().info("getting ingress object \"{0}\" in namespace {1}", ingress.getMetadata().getName(), namespace);
-      getLogger().info(Yaml.dump(ingress));
+      getLogger().info("trying to compare the names\n\"{0}\" == \"{1}\"", ingress.getMetadata().getName(), ingressName);
       if (ingress.getMetadata().getName().equals(ingressName)) {
         getLogger().info("ingress found with equals");
+      } else {
+        getLogger().info("ingress not found with equals");
       }
       if (ingress.getMetadata().getName().contains(ingressName)) {
         getLogger().info("ingress found with contains");
+      } else {
+        getLogger().info("ingress not found with contains");
       }
     }
 
