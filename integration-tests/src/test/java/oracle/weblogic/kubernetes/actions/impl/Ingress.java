@@ -21,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1IngressSpec;
 import io.kubernetes.client.openapi.models.V1IngressTLS;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 
 import static oracle.weblogic.kubernetes.actions.ActionConstants.INGRESS_API_VERSION;
@@ -221,6 +222,10 @@ public class Ingress {
     List<String> ingressNames = new ArrayList<>();
     V1IngressList ingressList = Kubernetes.listNamespacedIngresses(namespace);
     List<V1Ingress> listOfIngress = ingressList.getItems();
+    for (V1Ingress ingress : listOfIngress) {
+      getLogger().info("Getting ingress object \"{0}\" in namespace {1}", ingress.getMetadata().getName(), namespace);
+      getLogger().info(Yaml.dump(ingress));
+    }    
 
     listOfIngress.forEach(ingress -> {
       if (ingress.getMetadata() != null) {
@@ -243,6 +248,10 @@ public class Ingress {
 
     V1IngressList ingressList = Kubernetes.listNamespacedIngresses(namespace);
     List<V1Ingress> listOfIngress = ingressList.getItems();
+    for (V1Ingress ingress : listOfIngress) {
+      getLogger().info("getting ingress object \"{0}\" in namespace {1}", ingress.getMetadata().getName(), namespace);
+      getLogger().info(Yaml.dump(ingress));
+    }
 
     return listOfIngress.stream().filter(
         ingress -> ingress.getMetadata().getName().equals(ingressName)).findAny();
