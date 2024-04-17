@@ -296,14 +296,14 @@ createPatchJsonToUpdateReplicas() {
     # cluster doesn't exist, add cluster with replicas
     addClusterReplicasCmd=".[.| length] |= . + {\"clusterName\":\"${clusterName}\", \
       \"replicas\":${replicas}}"
-    replicasPatch=$(echo ${existingClusters} | jq -c "${addClusterReplicasCmd}")
+    replicasPatch=$(jq -c "${addClusterReplicasCmd}" <<< "${existingClusters}")
   else
     mapCmd="\
       . |= (map(.clusterName) | index (\"${clusterName}\")) as \$idx | \
       if \$idx then \
       .[\$idx][\"replicas\"] = ${replicas} \
       else .+  [{clusterName: \"${clusterName}\" , replicas: ${replicas}}] end"
-    replicasPatch=$(echo ${existingClusters} | jq "${mapCmd}")
+    replicasPatch=$(jq "${mapCmd}" <<< "${existingClusters}")
   fi
   patchJsonVal="{\"spec\": {\"clusters\": "${replicasPatch}"}}"
   eval $__result="'${patchJsonVal}'"
@@ -357,19 +357,19 @@ getSortedListOfServers() {
   local otherServers=()
 
   getTopology "${domainUid}" "${domainNamespace}" jsonTopology
-  clusterTopology=$(echo ${jsonTopology} | jq -r '.domain | .configuredClusters[] | select (.name == '\"${clusterName}\"')')
-  dynaCluster=$(echo ${clusterTopology} | jq .dynamicServersConfig)
+  clusterTopology=$(jq -r '.domain | .configuredClusters[] | select (.name == '\"${clusterName}\"')' <<< "${jsonTopology}")
+  dynaCluster=$(jq .dynamicServersConfig <<< "${clusterTopology}")
   if [ "${dynaCluster}" == "null" ]; then
     # Cluster is a configured cluster, get server names
-    servers=($(echo ${clusterTopology} | jq -r .servers[].name))
+    servers=($(jq -r .servers[].name <<< "${clusterTopology}"))
     # Sort server names in numero lexi order
     IFS=$'\n' sortedServers=($(sort --version-sort <<<"${servers[*]}" ))
     unset IFS
     clusterSize=${#sortedServers[@]}
   else
     # Cluster is a dynamic cluster, calculate server names
-    prefix=$(echo ${dynaCluster} | jq -r .serverNamePrefix)
-    clusterSize=$(echo ${dynaCluster} | jq .dynamicClusterSize) 
+    prefix=$(jq -r .serverNamePrefix <<< "${dynaCluster}")
+    clusterSize=$(jq .dynamicClusterSize <<< "${dynaCluster}")
     for (( i=1; i<=$clusterSize; i++ )); do
       localServerName=${prefix}$i
       sortedServers+=(${localServerName})
@@ -409,9 +409,9 @@ getReplicaCount() {
   local __replicaCount=$4
 
   replicasCmd="(.spec.replicas)"
-  replicaCount=$(echo ${clusterJson} | jq "${replicasCmd}")
+  replicaCount=$(jq "${replicasCmd}" <<< "${clusterJson}")
   if [[ -z "${replicaCount}" || "${replicaCount}" == "null" ]]; then
-    replicaCount=$(echo ${domainJson} | jq .spec.replicas)
+    replicaCount=$(jq .spec.replicas <<< "${domainJson}")
   fi
   if [[ -z "${replicaCount}" || "${replicaCount}" == "null" ]]; then
     replicaCount=0
@@ -439,7 +439,7 @@ generateDomainRestartVersion() {
   local __restartVersion=""
 
   eval $__result=""
-  __restartVersion=$(echo ${domainJson} | jq -cr .spec.restartVersion)
+  __restartVersion=$(jq -cr .spec.restartVersion <<< "${domainJson}")
   if ! [[ "$__restartVersion" =~ ^[0-9]+$ ]] ; then
    __restartVersion=0
   fi
@@ -460,7 +460,7 @@ generateDomainIntrospectVersion() {
   local __introspectVersion=""
 
   eval $__result=""
-  __introspectVersion=$(echo ${domainJson} | jq -cr .spec.introspectVersion)
+  __introspectVersion=$(jq -cr .spec.introspectVersion <<< "${domainJson}")
   if ! [[ "$__introspectVersion" =~ ^[0-9]+$ ]] ; then
    __introspectVersion=0
   fi
@@ -491,9 +491,9 @@ generateClusterRestartVersion() {
 
   eval $__result=""
   __restartVersionCmd=".spec.restartVersion"
-  __restartVersion=$(echo ${clusterJson} | jq -cr "${__restartVersionCmd}")
+  __restartVersion=$(jq -cr "${__restartVersionCmd}" <<< "${clusterJson}")
   if [ "${__restartVersion}" == "null" ]; then
-    __restartVersion=$(echo ${domainJson} | jq -cr .spec.restartVersion)
+    __restartVersion=$(jq -cr .spec.restartVersion <<< "${domainJson}")
   fi
   if ! [[ "${__restartVersion}" =~ ^[0-9]+$ ]] ; then
    __restartVersion=0
@@ -550,19 +550,19 @@ createPatchJsonToUpdateClusterRestartVersion() {
   local __mapCmd=""
   local __patchJsonVal=""
 
-  __existingClusters=$(echo ${domainJson} | jq -cr '(.spec.clusters)')
+  __existingClusters=$(jq -cr '(.spec.clusters)' <<< "${domainJson}")
   if [ "${__existingClusters}" == "null" ]; then
     # cluster doesn't exist, add cluster with replicas
     __addClusterReplicasCmd=".[.| length] |= . + {\"clusterName\":\"${clusterName}\", \
       \"restartVersion\":\"${restartVersion}\"}"
-    __restartVersionPatch=$(echo ${__existingClusters} | jq -c "${__addClusterReplicasCmd}")
+    __restartVersionPatch=$(jq -c "${__addClusterReplicasCmd}" <<< "${__existingClusters}")
   else
     __mapCmd="\
       . |= (map(.clusterName) | index (\"${clusterName}\")) as \$idx | \
       if \$idx then \
       .[\$idx][\"restartVersion\"] = \"${restartVersion}\" \
       else .+  [{clusterName: \"${clusterName}\" , restartVersion: \"${restartVersion}\"}] end"
-    __restartVersionPatch=$(echo ${__existingClusters} | jq "${__mapCmd}")
+    __restartVersionPatch=$(jq "${__mapCmd}" <<< "${__existingClusters}")
   fi
   __patchJsonVal="{\"spec\": {\"clusters\": "${__restartVersionPatch}"}}"
   eval $__result="'${__patchJsonVal}'"
@@ -741,11 +741,11 @@ getMinReplicas() {
 
   eval $__result=0
   minReplicaCmd=".status.minimumReplicas"
-  minReplicasVal=$(echo ${clusterJson} | jq "${minReplicaCmd}")
+  minReplicasVal=$(jq "${minReplicaCmd}" <<< "${clusterJson}")
   if [ ${minReplicasVal} == null ]; then
     minReplicaCmd="(.status.clusters[] | select (.clusterName == \"${clusterName}\")) \
       | .minimumReplicas"
-    minReplicasVal=$(echo ${domainJson} | jq "${minReplicaCmd}")
+    minReplicasVal=$(jq "${minReplicaCmd}" <<< "${domainJson}")
     if [ ${minReplicasVal} == null ]; then
       minReplicasVal=""
     fi
@@ -769,11 +769,11 @@ getMaxReplicas() {
   local maxReplicasVal=""
 
   maxReplicaCmd=".status.maximumReplicas"
-  maxReplicasVal=$(echo ${clusterJson} | jq "${maxReplicaCmd}")
+  maxReplicasVal=$(jq "${maxReplicaCmd}" <<< "${clusterJson}")
   if [ ${maxReplicasVal} == null ]; then
     maxReplicaCmd="(.status.clusters[] | select (.clusterName == \"${clusterName}\")) \
       | .maximumReplicas"
-    maxReplicasVal=$(echo ${domainJson} | jq "${maxReplicaCmd}")
+    maxReplicasVal=$(jq "${maxReplicaCmd}" <<< "${domainJson}")
     if [ ${maxReplicasVal} == null ]; then
       maxReplicasVal=""
     fi
@@ -842,11 +842,11 @@ validateServerAndFindCluster() {
   eval $__isAdminServer=false
   eval $__clusterName=UNKNOWN
   getTopology "${domainUid}" "${domainNamespace}" jsonTopology
-  adminServer=$(echo $jsonTopology | jq -r .domain.adminServerName)
+  adminServer=$(jq -r .domain.adminServerName <<< "jsonTopology")
   if [ "${serverName}" == "${adminServer}" ]; then
     eval $__isAdminServer=true
   fi
-  servers=($(echo $jsonTopology | jq -r '.domain.servers[].name'))
+  servers=($(jq -r '.domain.servers[].name' <<< "$jsonTopology"))
   if  checkStringInArray "${serverName}" "${servers[@]}" ; then
     eval $__clusterName=""
     eval $__isValidServer=true
@@ -854,12 +854,12 @@ validateServerAndFindCluster() {
     dynamicClause=".domain.configuredClusters[] | select (.dynamicServersConfig != null)"
     namePrefixSize=". | {name: .name, prefix:.dynamicServersConfig.serverNamePrefix, \
                  max:.dynamicServersConfig.maxDynamicClusterSize}"
-    dynamicClusters=($(echo $jsonTopology | jq "${dynamicClause}" | jq -cr "${namePrefixSize}"))
+    dynamicClusters=($(jq "${dynamicClause}" <<< "$jsonTopology"| jq -cr "${namePrefixSize}"))
     dynamicClustersSize=${#dynamicClusters[@]}
     for dynaClusterNamePrefix in ${dynamicClusters[@]:-}; do
-      prefix=$(echo ${dynaClusterNamePrefix} | jq -r .prefix)
+      prefix=$(jq -r .prefix <<< "${dynaClusterNamePrefix}")
       if [[ "${serverName}" == "${prefix}"* ]]; then
-        maxSize=$(echo ${dynaClusterNamePrefix} | jq -r .max)
+        maxSize=$(jq -r .max <<< "${dynaClusterNamePrefix}")
         number='^[0-9]+$'
         serverCount=$(echo "${serverName:${#prefix}}")
         if ! [[ $serverCount =~ $number ]] ; then
@@ -872,19 +872,19 @@ validateServerAndFindCluster() {
             Please make sure server name is correct."
           exit 1
         fi
-        eval $__clusterName="'$(echo ${dynaClusterNamePrefix} | jq -r .name)'"
+        eval $__clusterName="'$(jq -r .name <<< "${dynaClusterNamePrefix}")'"
         eval $__isValidServer=true
         break
       fi
     done
     staticClause=".domain.configuredClusters[] | select (.dynamicServersConfig == null)"
     nameCmd=" . | {name: .name, serverName: .servers[].name}"
-    configuredClusters=($(echo $jsonTopology | jq "${staticClause}" | jq -cr "${nameCmd}"))
+    configuredClusters=($(jq "${staticClause}" <<< "$jsonTopology" | jq -cr "${nameCmd}"))
     configuredClusterSize=${#configuredClusters[@]}
     for configuredClusterName in ${configuredClusters[@]:-}; do
-      name=$(echo ${configuredClusterName} | jq -r .serverName)
+      name=$(jq -r .serverName <<< "${configuredClusterName}")
       if [ "${serverName}" == "${name}" ]; then
-        eval $__clusterName="'$(echo ${configuredClusterName} | jq -r .name)'"
+        eval $__clusterName="'$(jq -r .name <<< "${configuredClusterName}")'"
         eval $__isValidServer=true
         break
       fi
@@ -906,8 +906,7 @@ validateClusterName() {
   local __isValidCluster=$4
 
   getTopology "${domainUid}" "${domainNamespace}" jsonTopology
-
-  clusters=($(echo $jsonTopology | jq -cr .domain.configuredClusters[].name))
+  clusters=($(jq -cr .domain.configuredClusters[].name <<< "$jsonTopology"))
   if  checkStringInArray "${clusterName}" "${clusters[@]}" ; then
     eval $__isValidCluster=true
   else
@@ -922,60 +921,15 @@ getTopology() {
   local __jsonTopology=""
   local __topology=""
 
-#  if [[ "$OSTYPE" == "darwin"* ]]; then
-#    if ! [ -x "$(command -v yq)" ]; then
-#      validationError "MacOS detected, the domain is hosted on a pre-3.2.0 version of \
-#        the Operator, and 'yq' is not installed locally. To fix this, install 'yq', \
-#        call the script from Linux instead of MacOS, or upgrade the Operator version."
-#      exit 1
-#    fi
-#    configMap=$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
-#      -n ${domainNamespace} -o jsonpath='{.data.topology\.json}' --ignore-not-found)
-#  else
-#    configMap=$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
-#      -n ${domainNamespace} -o jsonpath='{.data.topology\.json}' --ignore-not-found)
-#  fi
-#
-#  if [ -z "${configMap}" ]; then
-#    printError "Domain config map '${domainUid}-weblogic-domain-introspect-cm' not found. \
-#      This script requires that the introspector job for the specified domain ran \
-#      successfully and generated this config map. Exiting."
-#    exit 1
-#  else
-#    echo ""
-#  #  __jsonTopology=$(echo "${configMap}" | jq -r '.data["topology.json"]')
-#  fi
-#
-#
-#  #if [ ${__jsonTopology} == null ]; then
-#    if [[ "$OSTYPE" == "darwin"* ]]; then
-#      if ! [ -x "$(command -v yq)" ]; then
-#        validationError "MacOS detected, the domain is hosted on a pre-3.2.0 version of \
-#          the Operator, and 'yq' is not installed locally. To fix this, install 'yq', \
-#          call the script from Linux instead of MacOS, or upgrade the Operator version."
-#        exit 1
-#      fi
-#      echo "getting json"
-#      __jsonTopology=$(echo "${configMap}" | yq r - data.[topology.yaml] | yq r - -j)
-#      echo "got json"
-#    else
-#      if ! [ -x "$(command -v python)" ]; then
-#        validationError "Linux OS detected, the domain is hosted on a pre-3.2.0 version of \
-#          the Operator, and 'python' is not installed locally. To fix this, install 'python' \
-#          or upgrade the Operator version."
-#        exit 1
-#      fi
-#      __topology=$(echo "${configMap}" | jq '.data["topology.yaml"]')
-#      __jsonTopology=$(python -c \
-#      'import sys, yaml, json; print json.dumps(yaml.safe_load('"${__topology}"'), indent=4)')
-#    fi
-#  #fi
-
-  __jsonTopology=$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
-      -n ${domainNamespace} -o jsonpath='{.data.topology\.json}' --ignore-not-found)
+  __jsonTopology="$(${kubernetesCli} get cm ${domainUid}-weblogic-domain-introspect-cm \
+      -n ${domainNamespace} -o jsonpath='{.data.topology\.json}' --ignore-not-found)"
+  if [ $? != 0 ] ; then
+    printError "Failed to retrieve Domain config map '${domainUid}-weblogic-domain-introspect-cm' not found. \
+      This script requires that the introspector job for the specified domain ran \
+      successfully and generated this config map. Exiting."
+    exit 1
+  fi
   eval $__result="'${__jsonTopology}'"
-  #echo ${__result}
-
 }
 
 #
@@ -994,9 +948,7 @@ getClusterResource() {
   local clusterNameFromReference=""
   local __clusterResource=""
 
-  #clusterReferences=$(echo ${domainJson} | jq -r .spec.clusters[].name)
   clusterReferences=$(jq -r .spec.clusters[].name <<< "$domainJson")
-
   for clusterReference in ${clusterReferences}; do
     clusterNameFromReference="$(${kubernetesCli} get cluster "${clusterReference}" -n ${domainNamespace} -o json --ignore-not-found | jq -r .spec.clusterName)"
     if [ -z "${clusterNameFromReference}" ]; then

@@ -118,13 +118,13 @@ if [ -z "${clusterJson}" ]; then
   printError "Unable to get cluster resource for cluster '${clusterName}' in namespace '${domainNamespace}'. Please make sure that a Cluster exists for cluster '${clusterName}' and that this Cluster is referenced by the Domain."
   exit 1
 fi
-echo "beg"
+
 isReplicasInAllowedRange "${domainJson}" "${clusterJson}" "${clusterName}" "${replicas}" replicasInAllowedRange range
 if [ "${replicasInAllowedRange}" == 'false' ]; then
   printError "Replicas value is not in the allowed range of ${range}. Exiting."
   exit 1
 fi
-echo "end"
+
 printInfo "Patching replicas for cluster: '${clusterName}' to '${replicas}'."
 createPatchJsonToUpdateReplicas "${replicas}" patchJson
 
