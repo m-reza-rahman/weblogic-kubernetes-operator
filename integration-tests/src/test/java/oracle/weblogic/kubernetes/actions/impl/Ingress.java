@@ -251,6 +251,12 @@ public class Ingress {
     for (V1Ingress ingress : listOfIngress) {
       getLogger().info("getting ingress object \"{0}\" in namespace {1}", ingress.getMetadata().getName(), namespace);
       getLogger().info(Yaml.dump(ingress));
+      if (ingress.getMetadata().getName().equals(ingressName)) {
+        getLogger().info("ingress found with equals");
+      }
+      if (ingress.getMetadata().getName().contains(ingressName)) {
+        getLogger().info("ingress found with contains");
+      }
     }
 
     return listOfIngress.stream().filter(
