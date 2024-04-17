@@ -842,7 +842,7 @@ validateServerAndFindCluster() {
   eval $__isAdminServer=false
   eval $__clusterName=UNKNOWN
   getTopology "${domainUid}" "${domainNamespace}" jsonTopology
-  adminServer=$(jq -r .domain.adminServerName <<< "jsonTopology")
+  adminServer=$(jq -r .domain.adminServerName <<< "$jsonTopology")
   if [ "${serverName}" == "${adminServer}" ]; then
     eval $__isAdminServer=true
   fi
