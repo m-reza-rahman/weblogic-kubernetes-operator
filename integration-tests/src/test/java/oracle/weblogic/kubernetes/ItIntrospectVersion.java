@@ -32,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -1571,6 +1572,8 @@ class ItIntrospectVersion {
   
   private void updateIngressBackendServicePort(int newAdminPort) throws ApiException {
     String ingressName = introDomainNamespace + "-" + domainUid + "-" + adminServerName;
+    List<String> ingresses = Ingress.listIngresses(introDomainNamespace);
+    logger.info(Yaml.dump(ingresses));
     V1Ingress ingress = Ingress.getIngress(introDomainNamespace, ingressName).orElse(null);
     if (ingress != null) {
       logger.info("Updating ingress {0} with new admin port {1}", ingressName, newAdminPort);
