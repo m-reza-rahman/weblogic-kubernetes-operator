@@ -57,7 +57,7 @@ pipeline {
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
-        oke_run = "${env.JOB_NAME == 'wko-oke-nightly' ? 'okeint' : 'okeintdev'}
+        oke_run = "${env.JOB_NAME == 'wko-oke-nightly' ? 'okeint' : 'okeintdev'}"
 
     }
 
@@ -456,7 +456,7 @@ EOF
                         compartment_ocid=${compartment_id}
                         echo "creating storage class to setup OFSS ..."
                         echo "getting MountTarget ID"
-                        mount_target_id = "${env.JOB_NAME == 'wko-oke-nightly' ? '`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`' : '${MOUNT_TARGET_OCID}'}
+                        mount_target_id = "${env.JOB_NAME == 'wko-oke-nightly' ? '`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`' : '${MOUNT_TARGET_OCID}'}"
 
 
                         clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"${CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
@@ -482,7 +482,8 @@ EOF
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
                         clusterName = "${CLUSTER_NAME}"
-                        FSS_DIR = "/oketest1,/oketest2,/oketest3,/oketest4,/oketest5,/oketest6,/oketest7,/oketest8,/oketest9,/oketest10,/oketest11,/oketest12,/oketest13,/oketest14,/oketest15"
+                        FSS_DIR = "${env.JOB_NAME == 'wko-oke-nightly' ? '/oketest1,/oketest2,/oketest3,/oketest4,/oketest5,/oketest6,/oketest7,/oketest8,/oketest9,/oketest10,/oketest11,/oketest12,/oketest13,/oketest14,/oketest15' : '/${clusterName}oketest1,/${clusterName}oketest2'}"
+                        
 
                     }
                     steps {
@@ -537,7 +538,7 @@ EOF
                                 NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| head -n2 | tail -n1`
                                 echo "second node external IP ${NODE_IP}"
                                 export NODE_IP=${NODE_IP}
-                                if [ ${env.JOB_NAME}= 'wko-oke-nightly' ]
+                                if [ ${env.JOB_NAME} = 'wko-oke-nightly' ]
                                     then
                                         echo "Mount Target  setup for wko-oke-nightly"
                                         mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
