@@ -460,7 +460,7 @@ EOF
                         compartment_ocid=${compartment_id}
                         echo "creating storage class to setup OFSS ..."
                         echo "getting MountTarget ID"
-                        mount_target_id = "${env.JOB_NAME == 'wko-oke-nightly' ? '`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`' : '${MOUNT_TARET_OCID}'}
+                        mount_target_id = "${env.JOB_NAME == 'wko-oke-nightly' ? '`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`' : '${MOUNT_TARGET_OCID}'}
 
 
                         clusterIP=$(oci ce cluster list --compartment-id=${compartment_id} | jq '.data[]  | select(."name" == '\"${CLUSTER_NAME}\"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
@@ -553,7 +553,7 @@ EOF
                                             mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
                                         fi
                                 else
-                                   mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
+                                   mt_private_ip=`oci network private-ip get --private-ip-id "${MOUNT_TARGET_OCID}" | jq -r '.data | ."ip-address"'`
                                 fi
 
 
