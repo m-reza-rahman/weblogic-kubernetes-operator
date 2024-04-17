@@ -21,11 +21,11 @@ import io.kubernetes.client.openapi.models.V1IngressSpec;
 import io.kubernetes.client.openapi.models.V1IngressTLS;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
-import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 
 import static oracle.weblogic.kubernetes.actions.ActionConstants.INGRESS_API_VERSION;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.INGRESS_KIND;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.listNamespacedIngresses;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 
 /**
@@ -222,10 +222,6 @@ public class Ingress {
     List<String> ingressNames = new ArrayList<>();
     V1IngressList ingressList = Kubernetes.listNamespacedIngresses(namespace);
     List<V1Ingress> listOfIngress = ingressList.getItems();
-    for (V1Ingress ingress : listOfIngress) {
-      getLogger().info("Getting ingress object \"{0}\" in namespace {1}", ingress.getMetadata().getName(), namespace);
-      getLogger().info(Yaml.dump(ingress));
-    }    
 
     listOfIngress.forEach(ingress -> {
       if (ingress.getMetadata() != null) {
@@ -245,26 +241,7 @@ public class Ingress {
    * @throws ApiException if Kubernetes client API call fails
    */
   public static Optional<V1Ingress> getIngress(String namespace, String ingressName) throws ApiException {
-
-    V1IngressList ingressList = Kubernetes.listNamespacedIngresses(namespace);
-    List<V1Ingress> listOfIngress = ingressList.getItems();
-    getLogger().info(Yaml.dump(listOfIngress));
-    for (V1Ingress ingress : listOfIngress) {
-      getLogger().info("getting ingress object \"{0}\" in namespace {1}", ingress.getMetadata().getName(), namespace);
-      getLogger().info("trying to compare the names\n\"{0}\" == \"{1}\"", ingress.getMetadata().getName(), ingressName);
-      if (ingress.getMetadata().getName().equals(ingressName)) {
-        getLogger().info("ingress found with equals");
-      } else {
-        getLogger().info("ingress not found with equals");
-      }
-      if (ingress.getMetadata().getName().contains(ingressName)) {
-        getLogger().info("ingress found with contains");
-      } else {
-        getLogger().info("ingress not found with contains");
-      }
-    }
-
-    return listOfIngress.stream().filter(
+    return listNamespacedIngresses(namespace).getItems().stream().filter(
         ingress -> ingress.getMetadata().getName().equals(ingressName)).findAny();
   }
   
