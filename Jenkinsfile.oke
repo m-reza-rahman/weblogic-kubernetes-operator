@@ -104,19 +104,11 @@ pipeline {
                    '1.9.9'
                ]
         )
-        choice(name: 'CLUSTER_NAME',
-                       description: 'Oke cluster name.',
-                       choices: [
-                           'parone',
-                           'seqone',
-                           'seqtwo'
-                       ]
-                )
+
                 choice(name: 'MAVEN_PROFILE_NAME',
-                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate, oke-sequential1,oke-parallelnew. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate,oke-parallelnew. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                         choices: [
                                 'oke-gate',
-                                'oke-sequential1',
                                 'oke-parallelnew'
                         ]
                 )
@@ -124,6 +116,10 @@ pipeline {
                description: 'Number of threads to run the classes in parallel, default is 3.',
                defaultValue: "3"
         )
+        string(name: 'CLUSTER_NAME',
+                       description: 'OKE cluster name',
+                       defaultValue: "seqone"
+                )
         string(name: 'WDT_DOWNLOAD_URL',
                description: 'URL to download WDT.',
                //defaultValue: 'https://github.com/oracle/weblogic-deploy-tooling/releases/latest'
