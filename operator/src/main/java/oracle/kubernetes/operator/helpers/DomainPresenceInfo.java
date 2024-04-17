@@ -372,29 +372,23 @@ public class DomainPresenceInfo extends ResourcePresenceInfo {
    * @return a pod stream
    */
   public Stream<V1Pod> getServerPodsNotBeingDeleted() {
-    return getActiveServers().values().stream().filter(sko -> !sko.isPodBeingDeleted()
-            .get()).map(this::getPod).filter(Objects::nonNull);
+    return getActiveServers().values().stream().filter(
+        sko -> !PodHelper.isPodAlreadyLabeledForShutdown(sko.getPod().get())).map(this::getPod)
+        .filter(Objects::nonNull);
   }
 
   private V1Pod getPod(ServerKubernetesObjects sko) {
     return sko.getPod().get();
   }
 
-  private Boolean getPodIsBeingDeleted(ServerKubernetesObjects sko) {
-    return sko.isPodBeingDeleted().get();
-  }
-
-  public Boolean isServerPodBeingDeleted(String serverName) {
-    return getPodIsBeingDeleted(getSko(serverName));
+  public boolean isServerPodBeingDeleted(String serverName) {
+    return Optional.ofNullable(getSko(serverName)).map(ServerKubernetesObjects::getPod).map(AtomicReference::get)
+        .map(PodHelper::isPodAlreadyLabeledForShutdown).orElse(false);
   }
 
   public boolean isServerPodDeleted(String serverName) {
     return Optional.ofNullable(getSko(serverName)).map(ServerKubernetesObjects::getPod).map(AtomicReference::get)
         .map(PodHelper::isDeleting).orElse(false);
-  }
-
-  public void setServerPodBeingDeleted(String serverName, Boolean isBeingDeleted) {
-    getSko(serverName).isPodBeingDeleted().set(isBeingDeleted);
   }
 
   /**

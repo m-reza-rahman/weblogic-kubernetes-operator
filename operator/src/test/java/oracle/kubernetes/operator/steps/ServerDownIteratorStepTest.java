@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.steps;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -44,6 +45,7 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.NS;
 import static oracle.kubernetes.operator.DomainProcessorTestSetup.UID;
+import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.POD;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
@@ -64,6 +66,8 @@ class ServerDownIteratorStepTest {
   private static final String MS4 = MS_PREFIX + "4";
   private static final String MS5 = MS_PREFIX + "5";
   private static final String MS6 = MS_PREFIX + "6";
+  private static final String UID_MS1 = UID + "-" + MS1;
+  private static final String UID_MS2 = UID + "-" + MS2;
   private static final int MAX_SERVERS = 5;
   private static final int PORT = 8001;
   private static final String[] MANAGED_SERVER_NAMES =
@@ -87,6 +91,8 @@ class ServerDownIteratorStepTest {
   private List<ServerShutdownInfo> serverShutdownInfos;
   private final V1Pod managedPod1 = defineManagedPod(UID + "-" + MS1);
   private final V1Pod managedPod2 = defineManagedPod(UID + "-" + MS2);
+
+  private final Collection<String> deletedPodNames = new ArrayList<>();
 
   private static WlsDomainConfig createDomainConfig() {
     WlsClusterConfig clusterConfig = new WlsClusterConfig(CLUSTER);
@@ -141,7 +147,8 @@ class ServerDownIteratorStepTest {
             .addToPacket(ProcessingConstants.DOMAIN_TOPOLOGY, domainConfig)
             .addDomainPresenceInfo(domainPresenceInfo);
     testSupport.doOnCreate(KubernetesTestSupport.POD, p -> setPodReadyWithDelay((V1Pod) p));
-    testSupport.doOnDelete(KubernetesTestSupport.POD, this::preDeleteWithDelay);
+    testSupport.doOnDelete(POD, this::recordPodDeletion);
+    //testSupport.doOnDelete(KubernetesTestSupport.POD, this::preDeleteWithDelay);
   }
 
   private V1Pod defineManagedPod(String name) {
@@ -169,6 +176,14 @@ class ServerDownIteratorStepTest {
     return new V1PodStatus()
             .phase("Running")
             .addConditionsItem(new V1PodCondition().status("True").type("Ready"));
+  }
+
+  private void recordPodDeletion(KubernetesTestSupport.DeletionContext context) {
+    deletedPodNames.add(context.name());
+  }
+
+  private Collection<String> serverPodsDeleted() {
+    return deletedPodNames;
   }
 
   private void preDeleteWithDelay(KubernetesTestSupport.DeletionContext context) {
@@ -200,7 +215,7 @@ class ServerDownIteratorStepTest {
             .forClusteredServers(CLUSTER, MS1, MS2)
             .shutdown();
 
-    assertThat(serverPodsBeingDeleted(), containsInAnyOrder(MS2));
+    assertThat(serverPodsDeleted(), containsInAnyOrder(UID_MS2));
     testSupport.setTime(10, TimeUnit.SECONDS);
     assertThat(serverPodsNotDeleted(), not(containsInAnyOrder(MS1, MS2)));
   }
@@ -216,7 +231,7 @@ class ServerDownIteratorStepTest {
             .forClusteredServers(CLUSTER,MS1, MS2)
             .shutdown();
 
-    assertThat(serverPodsBeingDeleted(), containsInAnyOrder(MS1, MS2));
+    assertThat(serverPodsDeleted(), containsInAnyOrder(UID_MS1, UID_MS2));
   }
 
   @Test
@@ -230,7 +245,7 @@ class ServerDownIteratorStepTest {
             .forClusteredServers(CLUSTER,MS1, MS2)
             .shutdown();
 
-    assertThat(serverPodsBeingDeleted(), containsInAnyOrder(MS1, MS2));
+    assertThat(serverPodsDeleted(), containsInAnyOrder(UID_MS1, UID_MS2));
   }
 
   @Test
@@ -244,7 +259,7 @@ class ServerDownIteratorStepTest {
             .forClusteredServers(CLUSTER,MS1, MS2)
             .shutdown();
 
-    assertThat(serverPodsBeingDeleted(), containsInAnyOrder(MS1, MS2));
+    assertThat(serverPodsDeleted(), containsInAnyOrder(UID_MS1, UID_MS2));
   }
 
   @Test
@@ -258,7 +273,7 @@ class ServerDownIteratorStepTest {
             .forClusteredServers(CLUSTER, MS1, MS2, MS3, MS4)
             .shutdown();
 
-    assertThat(serverPodsBeingDeleted(), hasSize(2));
+    assertThat(serverPodsDeleted(), hasSize(2));
     testSupport.setTime(5, TimeUnit.SECONDS);
     assertThat(serverPodsNotDeleted(), hasSize(1));
   }

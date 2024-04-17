@@ -68,17 +68,6 @@ class PodHelperTest {
   // from the pod (if any) in the SKO.
 
   @Test
-  void afterDeletePodStepRun_markedForDeleteInSko() {
-    testSupport.defineResources(pod);
-    domainPresenceInfo.setServerPod(SERVER_NAME, pod);
-
-    testSupport.runSteps(PodHelper.deletePodStep(SERVER_NAME, false, terminalStep));
-
-    MatcherAssert.assertThat(
-        domainPresenceInfo.isServerPodBeingDeleted(SERVER_NAME), is(Boolean.TRUE));
-  }
-
-  @Test
   void whenDeleteFails_reportCompletionFailure() {
     testSupport.failOnResource(POD, POD_NAME, NS, HTTP_BAD_REQUEST);
     domainPresenceInfo.setServerPod(SERVER_NAME, pod);

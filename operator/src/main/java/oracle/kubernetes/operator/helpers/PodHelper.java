@@ -33,6 +33,7 @@ import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
@@ -47,6 +48,7 @@ import oracle.kubernetes.weblogic.domain.model.DomainResource;
 import oracle.kubernetes.weblogic.domain.model.DomainStatus;
 import oracle.kubernetes.weblogic.domain.model.ServerStatus;
 import oracle.kubernetes.weblogic.domain.model.Shutdown;
+import org.jetbrains.annotations.NotNull;
 
 import static oracle.kubernetes.operator.KubernetesConstants.EVICTED_REASON;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
@@ -346,6 +348,68 @@ public class PodHelper {
         .orElse(null);
   }
 
+  private static boolean hasLabel(V1Pod pod, String label) {
+    return Optional.ofNullable(pod).map(V1Pod::getMetadata).map(V1ObjectMeta::getLabels)
+        .map(l -> l.containsKey(label)).orElse(false);
+  }
+
+  private static Step patchPod(V1Pod pod, String label, Step next) {
+    if (!hasLabel(pod, label)) {
+      JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
+      patchBuilder.add("/metadata/labels/" + label, "true");
+      V1ObjectMeta meta = pod.getMetadata();
+      return RequestBuilder.POD.patch(meta.getNamespace(), meta.getName(),
+              V1Patch.PATCH_FORMAT_JSON_PATCH,
+              new V1Patch(patchBuilder.build().toString()), patchResponse(next));
+    }
+    return next;
+  }
+
+  private static ResponseStep<V1Pod> patchResponse(Step next) {
+    return new PatchPodResponseStep(next);
+  }
+
+  private static class PatchPodResponseStep extends ResponseStep<V1Pod> {
+    PatchPodResponseStep(Step next) {
+      super(next);
+    }
+
+    @Override
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+      DomainPresenceInfo info = (DomainPresenceInfo)  packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
+      V1Pod pod = callResponse.getObject();
+      info.setServerPod(getPodServerName(pod), pod);
+      return doNext(packet);
+    }
+
+    @Override
+    public Result onFailure(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+      if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
+        return doNext(packet);
+      }
+      return super.onFailure(packet, callResponse);
+    }
+  }
+
+  /**
+   * Label pod as needing to shut down.
+   * @param pod Pod
+   * @param next Next step
+   * @return Step that will check for existing label and add if it is missing
+   */
+  public static Step labelPodAsNeedingToShutdown(V1Pod pod, Step next) {
+    return patchPod(pod, LabelConstants.TO_BE_SHUTDOWN_LABEL, next);
+  }
+
+  /**
+   * Check if the pod is already labeld for shut down.
+   * @param pod Pod
+   * @return true, if the pod is already labeled.
+   */
+  public static boolean isPodAlreadyLabeledForShutdown(V1Pod pod) {
+    return hasLabel(pod, LabelConstants.TO_BE_SHUTDOWN_LABEL);
+  }
+
   /**
    * Get the message from the pod's status.
    * @param pod pod
@@ -626,9 +690,23 @@ public class PodHelper {
     @Override
     // let the pod rolling step update the pod
     Step replaceCurrentPod(V1Pod pod, Step next) {
-      labelPodAsNeedingToRoll(pod);
-      deferProcessing(createCyclePodStep(pod, next));
-      return null;
+      return labelPodAsNeedingToRoll(pod, new DeferProcessing(pod, next));
+    }
+
+    private class DeferProcessing extends Step {
+      private final V1Pod pod;
+
+      DeferProcessing(V1Pod pod, Step next) {
+        super(next);
+        this.pod = pod;
+      }
+
+      @NotNull
+      @Override
+      public Result apply(Packet packet) {
+        deferProcessing(createCyclePodStep(pod, getNext()));
+        return doEnd(packet);
+      }
     }
 
     @Override
@@ -668,27 +746,9 @@ public class PodHelper {
     }
 
     // Patch the pod to indicate a pending roll.
-    private void labelPodAsNeedingToRoll(V1Pod pod) {
-      if (!isPodAlreadyLabeledToRoll(pod)) {
-        patchPod();
-      }
+    private Step labelPodAsNeedingToRoll(V1Pod pod, Step next) {
+      return patchPod(pod, LabelConstants.TO_BE_ROLLED_LABEL, next);
     }
-
-    private boolean isPodAlreadyLabeledToRoll(V1Pod pod) {
-      return pod.getMetadata().getLabels().containsKey(LabelConstants.TO_BE_ROLLED_LABEL);
-    }
-
-    private void patchPod() {
-      try {
-        JsonPatchBuilder patchBuilder = Json.createPatchBuilder();
-        patchBuilder.add("/metadata/labels/" + LabelConstants.TO_BE_ROLLED_LABEL, "true");
-        RequestBuilder.POD.patch(getNamespace(), super.getPodName(),
-            V1Patch.PATCH_FORMAT_JSON_PATCH, new V1Patch(patchBuilder.build().toString()));
-      } catch (ApiException ignored) {
-        /* extraneous comment to fool checkstyle into thinking that this is not an empty catch block. */
-      }
-    }
-
 
     private Fiber.StepAndPacket createRollRequest(Step deferredStep) {
       return new Fiber.StepAndPacket(deferredStep, packet.copy());
@@ -796,7 +856,6 @@ public class PodHelper {
       if (oldPod == null || info.getDomain() == null) {
         return doNext(packet);
       } else {
-        info.setServerPodBeingDeleted(serverName, Boolean.TRUE);
         final String clusterName = getClusterName(oldPod);
         final String name = oldPod.getMetadata().getName();
         long gracePeriodSeconds = getGracePeriodSeconds(info, clusterName);

@@ -564,8 +564,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     String serverName = getPodLabel(pod, LabelConstants.SERVERNAME_LABEL);
     switch (watchType) {
       case ADDED:
-        info.setServerPodBeingDeleted(serverName, Boolean.FALSE);
-        // fall through
       case MODIFIED:
         boolean podPreviouslyEvicted = info.setServerPodFromEvent(serverName, pod, PodHelper::isEvicted);
         if (PodHelper.isEvicted(pod) && !podPreviouslyEvicted) {

@@ -157,21 +157,6 @@ class ServerStatusReaderTest extends HttpUserAgentTest {
   }
 
   @Test
-  void whenWebLogicServerProcessExitedAndPodBeingDeleted_recordInStateMap() {
-    info.setServerPod("server1", createPod("server1"));
-    info.updateLastKnownServerStatus("server1", "not ready yet");
-    info.setServerPodBeingDeleted("server1", true);
-
-    execFactory.defineResponse("server1", "Shutdown", 1);
-
-    Packet packet =
-        testSupport.runSteps(ServerStatusReader.createDomainStatusReaderStep(info, 0, endStep));
-
-    Map<String, String> serverStates = getServerStates(packet);
-    assertThat(serverStates, hasEntry("server1", SHUTDOWN_STATE));
-  }
-
-  @Test
   void whenWebLogicServerProcessExitedAndPodHasDeletionTimestamp_recordInStateMap() {
     info.setServerPod("server1", createPodWithDeletionTimestamp("server1"));
     info.updateLastKnownServerStatus("server1", "not ready yet");

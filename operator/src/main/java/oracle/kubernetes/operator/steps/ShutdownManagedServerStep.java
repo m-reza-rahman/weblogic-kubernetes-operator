@@ -80,12 +80,13 @@ public class ShutdownManagedServerStep extends Step {
     V1Service service = getDomainPresenceInfo(packet).getServerService(serverName);
 
     if (service == null) {
-      return doNext(packet);
+      return doNext(PodHelper.labelPodAsNeedingToShutdown(pod, getNext()), packet);
     } else {
       return doNext(
             Step.chain(
                 SecretHelper.createAuthorizationSourceStep(),
-                new ShutdownManagedServerWithHttpStep(service, pod, getNext())),
+                PodHelper.labelPodAsNeedingToShutdown(pod,
+                    new ShutdownManagedServerWithHttpStep(service, pod, getNext()))),
             packet);
     }
   }
@@ -315,17 +316,11 @@ public class ShutdownManagedServerStep extends Step {
 
     @Override
     public @Nonnull Result apply(Packet packet) {
-      DomainPresenceInfo info = getDomainPresenceInfo(packet);
-      String serverName = PodHelper.getPodServerName(pod);
-      if (!info.isServerPodBeingDeleted(serverName)) {
-        info.setServerPodBeingDeleted(serverName, true);
-        ShutdownManagedServerProcessing processing = new ShutdownManagedServerProcessing(packet, service, pod);
-        ShutdownManagedServerResponseStep shutdownManagedServerResponseStep =
-                new ShutdownManagedServerResponseStep(PodHelper.getPodServerName(pod), getNext());
-        HttpRequestStep requestStep = processing.createRequestStep(shutdownManagedServerResponseStep);
-        return doNext(requestStep, packet);
-      }
-      return doNext(packet);
+      ShutdownManagedServerProcessing processing = new ShutdownManagedServerProcessing(packet, service, pod);
+      ShutdownManagedServerResponseStep shutdownManagedServerResponseStep =
+              new ShutdownManagedServerResponseStep(PodHelper.getPodServerName(pod), getNext());
+      HttpRequestStep requestStep = processing.createRequestStep(shutdownManagedServerResponseStep);
+      return doNext(requestStep, packet);
     }
 
   }

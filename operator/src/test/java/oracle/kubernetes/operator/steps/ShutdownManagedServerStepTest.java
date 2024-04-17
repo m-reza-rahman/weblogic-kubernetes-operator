@@ -128,7 +128,7 @@ class ShutdownManagedServerStepTest {
 
     testSupport.addDomainPresenceInfo(info);
     testSupport.addToPacket(DOMAIN_TOPOLOGY, configSupport.createDomainConfig());
-    testSupport.defineResources(domain);
+    testSupport.defineResources(domain, configuredManagedServer1, standaloneManagedServer1, dynamicManagedServer1);
 
     configuredServerService = createServerService(CONFIGURED_MANAGED_SERVER1, CONFIGURED_CLUSTER_NAME);
     standaloneServerService = createServerService(MANAGED_SERVER1, null);

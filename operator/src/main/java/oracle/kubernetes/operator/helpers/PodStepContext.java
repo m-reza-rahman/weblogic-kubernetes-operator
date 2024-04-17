@@ -395,10 +395,6 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   // ----------------------- step methods ------------------------------
 
-  private void clearBeingDeleted() {
-    info.setServerPodBeingDeleted(getServerName(), Boolean.FALSE);
-  }
-
   private void setRecordedPod(V1Pod pod) {
     info.setServerPod(getServerName(), pod);
   }
@@ -430,7 +426,6 @@ public abstract class PodStepContext extends BasePodStepContext {
    * @return a step to be scheduled.
    */
   Step createPod(Step next) {
-    clearBeingDeleted();
     return createPodAsync(createResponse(next));
   }
 
@@ -1079,15 +1074,8 @@ public abstract class PodStepContext extends BasePodStepContext {
       return RequestBuilder.POD.delete(getNamespace(), getPodName(), deleteResponse(pod, next));
     }
 
-    // Prevent the watcher from recreating pod with old spec
-    private void markBeingDeleted() {
-      info.setServerPodBeingDeleted(getServerName(), Boolean.TRUE);
-    }
-
     @Override
     public @Nonnull Result apply(Packet packet) {
-
-      markBeingDeleted();
       return doNext(createCyclePodEventStep(deletePod(pod, getNext())), packet);
     }
 
@@ -1585,7 +1573,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     @Override
     public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       processResponse(callResponse);
-      return doNext(getNext(), packet);
+      return doNext(packet);
     }
 
     protected V1Pod processResponse(KubernetesApiResponse<V1Pod> callResponse) {

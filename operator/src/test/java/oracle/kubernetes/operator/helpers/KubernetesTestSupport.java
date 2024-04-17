@@ -199,6 +199,10 @@ public class KubernetesTestSupport extends FiberTestSupport {
     return this;
   }
 
+  static V1ObjectMeta getMetadata(@Nonnull Object resource) {
+    return KubernetesUtils.getResourceMetadata(resource);
+  }
+
   private ClusterList createClusterList(List<ClusterResource> items) {
     return new ClusterList().withMetadata(createListMeta()).withItems(items);
   }
@@ -984,8 +988,7 @@ public class KubernetesTestSupport extends FiberTestSupport {
       if (!hasElementWithName(name)) {
         throw new NotFoundException(getResourceName(), name, namespace);
       }
-      data.remove(name);
-      return getDeleteResult(name, namespace, getResourceName());
+      return getDeleteResult(data.remove(name), name, namespace, getResourceName());
     }
 
     @SuppressWarnings("unchecked")
@@ -1125,9 +1128,18 @@ public class KubernetesTestSupport extends FiberTestSupport {
     }
 
     @SuppressWarnings("unchecked")
-    private T getDeleteResult(String name, String namespace, String resource) {
-      if (POD.equals(resource)) {
-        return (T) new V1Pod().metadata(new V1ObjectMeta().name(name).namespace(namespace));
+    private T getDeleteResult(T resource, String name, String namespace, String resourceType) {
+      if (POD.equals(resourceType)) {
+        V1Pod pod = (V1Pod) resource;
+        V1ObjectMeta meta = pod.getMetadata();
+        if (meta == null) {
+          meta = new V1ObjectMeta().name(name).namespace(namespace);
+          pod.setMetadata(meta);
+        }
+        if (meta.getDeletionTimestamp() == null) {
+          meta.setDeletionTimestamp(SystemClock.now());
+        }
+        return resource;
       } else {
         return (T) new RequestBuilder.V1StatusObject(new V1Status().code(200));
       }
@@ -1187,10 +1199,6 @@ public class KubernetesTestSupport extends FiberTestSupport {
 
     private String getName(@Nonnull Object resource) {
       return Optional.ofNullable(getMetadata(resource)).map(V1ObjectMeta::getName).orElse(null);
-    }
-
-    V1ObjectMeta getMetadata(@Nonnull Object resource) {
-      return KubernetesUtils.getResourceMetadata(resource);
     }
 
     private void setName(@Nonnull Object resource, String name) {
@@ -1466,14 +1474,29 @@ public class KubernetesTestSupport extends FiberTestSupport {
     private <T extends KubernetesType> KubernetesApiResponse<T> deleteResource(DataRepository<T> dataRepository) {
       try {
         dataRepository.sendDeleteCallback(requestName, requestNamespace, gracePeriodSeconds);
-        return new KubernetesApiResponse<>(dataRepository.deleteResource(requestName, requestNamespace));
+        return new KubernetesApiResponse<>(delete(dataRepository));
       } catch (NotFoundException nfe) {
         return new KubernetesApiResponse<>(new V1Status().message(nfe.getMessage()), HttpURLConnection.HTTP_NOT_FOUND);
       }
     }
 
+    private <T extends KubernetesType> T delete(DataRepository<T> dataRepository) {
+      if (POD.equals(resourceType)) {
+        T resource = dataRepository.readResource(requestName, requestNamespace);
+        if (resource != null) {
+          getMetadata(resource).setDeletionTimestamp(SystemClock.now().plusSeconds(1));
+          return resource;
+        }
+      }
+      return dataRepository.deleteResource(requestName, requestNamespace);
+    }
+
     private <T extends KubernetesType> KubernetesApiResponse<T> patchResource(DataRepository<T> dataRepository) {
-      return new KubernetesApiResponse<>(dataRepository.patchResource(requestName, requestNamespace, patch));
+      try {
+        return new KubernetesApiResponse<>(dataRepository.patchResource(requestName, requestNamespace, patch));
+      } catch (NotFoundException nfe) {
+        return new KubernetesApiResponse<>(new V1Status().message(nfe.getMessage()), HttpURLConnection.HTTP_NOT_FOUND);
+      }
     }
 
     private <T extends KubernetesType> KubernetesApiResponse<T> listResources(Integer limit, String cont,
