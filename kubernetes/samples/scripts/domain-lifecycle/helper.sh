@@ -243,7 +243,7 @@ unsetServerStartPolicy() {
 
   unsetCmd="(.spec.managedServers[] | select (.serverName == \"${serverName}\") | del (.serverStartPolicy))"
   replacePolicyCmd=$(jq -cr "${unsetCmd}" <<< "$domainJson")
-  replacePolicyCmdLen=$(echo "${replacePolicyCmd}" | jq -e keys_unsorted | jq length)
+  replacePolicyCmdLen=$(jq -e keys_unsorted <<< "${replacePolicyCmd}" | jq length)
   if [ ${replacePolicyCmdLen} == 1 ]; then
     mapCmd=". |= map(if .serverName == \"${serverName}\" then del(.) else . end)"
   else
@@ -251,7 +251,7 @@ unsetServerStartPolicy() {
   fi
   unsetStartPolicyPatch=$(jq "(.spec.managedServers)" <<< "$domainJson" | jq "${mapCmd}")
   removeNullCmd="del(.[] | select(. == null))"
-  unsetStartPolicyPatchNoNulls=$(echo "${unsetStartPolicyPatch}" | jq "${removeNullCmd}")
+  unsetStartPolicyPatchNoNulls=$(jq "${removeNullCmd}" <<< "${unsetStartPolicyPatch}" )
   eval $__result="'${unsetStartPolicyPatchNoNulls}'"
 }
 
