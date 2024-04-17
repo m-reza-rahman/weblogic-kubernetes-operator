@@ -5,6 +5,6 @@
 
 resource "oci_file_storage_export_set" "oketest_export_set" {
   # Required
-  mount_target_id = ${var.mount_target_ocid}
+  mount_target_id = var.mount_target_ocid
 }
 
