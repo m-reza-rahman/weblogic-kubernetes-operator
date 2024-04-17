@@ -135,16 +135,13 @@ class ItManagedCoherence {
 
     String nodePortValue = null;
     if (!OKE_CLUSTER) {
-      logger.info("It's NOT in OKE_CLUSTER env: " + OKE_CLUSTER);
       nodePortValue = "NodePort";
-    } else {
-      logger.info("It's in OKE_CLUSTER env: " + OKE_CLUSTER);
     }
 
     // install and verify Traefik if not running on OKD
     if (!OKD || (TestConstants.KIND_CLUSTER
             && TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
-      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, "NodePort");
+      traefikParams = installAndVerifyTraefik(traefikNamespace, 0, 0, nodePortValue);
       traefikHelmParams = traefikParams.getHelmParams();
     }
 
