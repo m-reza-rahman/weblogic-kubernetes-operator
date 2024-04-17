@@ -512,8 +512,14 @@ class ItLBTwoDomainsNginx {
   private static NginxParams installNginxLB() {
 
     getLogger().info("Installing NGINX in namespace {0}", nginxNamespace);
+
+    String nodePortValue = null;
+    if (!OKE_CLUSTER) {
+      nodePortValue = "NodePort";
+    }
+
     NginxParams params = installAndVerifyNginx(nginxNamespace, ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT,
-        ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, "NodePort");
+        ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, nodePortValue);
 
     return params;
   }
