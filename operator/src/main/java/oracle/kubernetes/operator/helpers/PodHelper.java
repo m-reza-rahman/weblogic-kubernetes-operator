@@ -13,7 +13,6 @@ import javax.annotation.Nullable;
 
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.extended.controller.reconciler.Result;
-import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1EnvVarBuilder;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
@@ -919,10 +918,11 @@ public class PodHelper {
       return RequestBuilder.POD.delete(namespace, name, deleteOptions,
               new DefaultResponseStep<V1Pod>(conflictStep, next) {
           public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+            DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
             if (callResponse.getHttpStatusCode() == HTTP_NOT_FOUND) {
-              DomainPresenceInfo info = (DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO);
               info.setServerPod(serverName, null);
             } else if (isMustWait) {
+              info.setServerPod(serverName, callResponse.getObject());
               // requeue to wait for pod to be deleted and gone
               return doRequeue(packet);
             }

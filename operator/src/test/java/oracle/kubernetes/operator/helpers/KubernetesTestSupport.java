@@ -1138,6 +1138,8 @@ public class KubernetesTestSupport extends FiberTestSupport {
         }
         if (meta.getDeletionTimestamp() == null) {
           meta.setDeletionTimestamp(SystemClock.now());
+        } else if (SystemClock.now().isAfter(meta.getDeletionTimestamp())) {
+          throw new NotFoundException(getResourceName(), name, namespace);
         }
         return resource;
       } else {
@@ -1484,8 +1486,13 @@ public class KubernetesTestSupport extends FiberTestSupport {
       if (POD.equals(resourceType)) {
         T resource = dataRepository.readResource(requestName, requestNamespace);
         if (resource != null) {
-          getMetadata(resource).setDeletionTimestamp(SystemClock.now().plusSeconds(1));
-          return resource;
+          V1ObjectMeta meta = getMetadata(resource);
+          if (meta.getDeletionTimestamp() == null) {
+            meta.setDeletionTimestamp(SystemClock.now().plusSeconds(1));
+            return resource;
+          } else if (meta.getDeletionTimestamp().isAfter(SystemClock.now())) {
+            return resource;
+          }
         }
       }
       return dataRepository.deleteResource(requestName, requestNamespace);

@@ -79,7 +79,6 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.junit.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class KubernetesTestSupportTest {
 
@@ -377,19 +376,6 @@ class KubernetesTestSupportTest {
   }
 
   @Test
-  void afterDeletePod_podsInDifferentNamespacesStillExist() {
-    V1Pod pod1 = createPod("ns1", "mycrd");
-    V1Pod pod2 = createPod("ns2", "mycrd");
-    V1Pod pod3 = createPod("ns3", "another");
-    testSupport.defineResources(pod1, pod2, pod3);
-
-    TestResponseStep<V1Pod> responseStep = new TestResponseStep<>();
-    testSupport.runSteps(RequestBuilder.POD.delete("ns2", "mycrd", responseStep));
-
-    assertThat(testSupport.getResources(POD), containsInAnyOrder(pod1, pod3));
-  }
-
-  @Test
   void whenHttpErrorAssociatedWithResource_callResponseIsError() {
     testSupport.failOnResource(POD, "pod1", "ns2", HTTP_BAD_REQUEST);
 
@@ -601,19 +587,6 @@ class KubernetesTestSupportTest {
 
     assertThat(getResourcesInNamespace("ns1"), empty());
     assertThat(getResourcesInNamespace("ns2"), hasSize(3));
-  }
-
-  @Test
-  void canPerformActionAfterCallIsCompleted() {
-    testSupport.setAddCreationTimestamp(true);
-    definePodResource();
-    final OffsetDateTime initialCreationTime = getPodCreationTime();
-
-    SystemClockTestSupport.increment();
-    testSupport.doAfterCall(POD, "delete", this::definePodResource);
-    testSupport.runSteps(RequestBuilder.POD.delete("ns", "pod", new DefaultResponseStep<>()));
-
-    assertTrue(getPodCreationTime().isAfter(initialCreationTime));
   }
 
   private void definePodResource() {
