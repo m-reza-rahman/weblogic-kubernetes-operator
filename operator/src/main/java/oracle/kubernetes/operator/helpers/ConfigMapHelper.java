@@ -553,8 +553,6 @@ public class ConfigMapHelper {
           packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE_WDTROLLBACKFILE, rollbackFileContent);
           data.remove(NON_DYNAMIC_CHANGES_FILE);
         }
-        // remove this, there is no need to store it in the configmap
-        data.remove(UPDATEDOMAINRESULT);
       }
     }
 
