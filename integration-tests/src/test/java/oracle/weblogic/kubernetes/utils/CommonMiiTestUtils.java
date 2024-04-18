@@ -4,6 +4,7 @@
 package oracle.weblogic.kubernetes.utils;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.http.HttpResponse;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.Set;
 
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1Job;
@@ -96,6 +98,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourc
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyCredentials;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
@@ -1245,15 +1248,16 @@ public class CommonMiiTestUtils {
     }
 
     String host = K8S_NODEPORT_HOST;
-    if (host.contains(":")) {
-      host = "[" + host + "]";
-    }
+    formatIPv6Host(host);
+    
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      int port = getServicePort(domainNamespace, adminServerPodName, "internal-t3");
+      String channel = "internal-t3";
+      int port = getServicePort(domainNamespace, adminServerPodName,
+          sslChannelName.isEmpty() ? channel : sslChannelName);
       String domainName = adminServerPodName.split("-" + ADMIN_SERVER_NAME_BASE)[0];
       String serviceName = ADMIN_SERVER_NAME_BASE;
       String ingressName = domainNamespace + "-" + domainName + "-" + serviceName + "-" + port;
@@ -1267,10 +1271,11 @@ public class CommonMiiTestUtils {
         } else {
           logger.info("Ingress {0} found, skipping ingress resource creation...", ingressFound);
         }
-      } catch (Exception ex) {
+      } catch (ApiException ex) {
         logger.severe(ex.getMessage());
       }
-      hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      hostAndPort = assertDoesNotThrow(()
+          -> formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT);
       Map<String, String> headers = new HashMap<>();
       headers.put("host", hostHeader);
       headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
