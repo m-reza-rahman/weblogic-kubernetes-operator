@@ -456,7 +456,7 @@ EOF
                         compartment_ocid=${compartment_id}
                         echo "creating storage class to setup OFSS ..."
                         echo "getting MountTarget ID"
-                        if [ ${env.JOB_NAME} = 'wko-oke-nightly']; then
+                        if [ env.JOB_NAME = 'wko-oke-nightly']; then
 
                             mount_target_id = `oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`
                         else
