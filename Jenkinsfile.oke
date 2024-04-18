@@ -547,7 +547,7 @@ EOF
                                         mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
 
                                 else
-                                   mt_privateip_id=`oci fs mount-target get --mount-target-id=${mount_target_ocid} | jq -r '.data| ."private-ip-ids"[]'`
+                                   mt_privateip_id=`oci fs mount-target get --mount-target-id=${MOUNT_TARGET_OCID} | jq -r '.data| ."private-ip-ids"[]'`
                                 fi
                                 # Check if the mt_privateip_id is an array
                                 if [ "$(declare -p mt_privateip_id 2>/dev/null | grep -o 'declare -a')" == "declare -a" ]; then
