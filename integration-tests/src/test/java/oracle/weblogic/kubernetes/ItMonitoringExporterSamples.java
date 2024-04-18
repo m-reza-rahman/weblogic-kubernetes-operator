@@ -841,7 +841,7 @@ class ItMonitoringExporterSamples {
     p.setProperty("MYSQL_PWD", "wlpwd123");
     // create a temporary WebLogic domain property file as a input for WDT model file
     File domainPropertiesFile = assertDoesNotThrow(() ->
-            File.createTempFile("domain", "properties"),
+            File.createTempFile("domain", ".properties", new File(RESULTS_ROOT)),
         "Failed to create domain properties file");
     assertDoesNotThrow(() ->
             p.store(new FileOutputStream(domainPropertiesFile), "WDT properties file"),

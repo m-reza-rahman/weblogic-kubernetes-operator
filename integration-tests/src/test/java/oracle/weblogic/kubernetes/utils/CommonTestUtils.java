@@ -1716,7 +1716,8 @@ public class CommonTestUtils {
       }
 
       // create WLST property file
-      File wlstPropertiesFile = assertDoesNotThrow(() -> File.createTempFile("wlst", "properties"),
+      File wlstPropertiesFile =
+          assertDoesNotThrow(() -> File.createTempFile("wlst", ".properties", new File(RESULTS_ROOT)),
           "Creating WLST properties file failed");
 
       String localhost = "localhost";

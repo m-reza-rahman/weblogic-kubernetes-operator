@@ -5,6 +5,7 @@ package oracle.weblogic.kubernetes;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
@@ -268,8 +270,8 @@ class ItLBTwoDomainsNginx {
 
   private static void createCertKeyFiles(String cn) {
     assertDoesNotThrow(() -> {
-      tlsKeyFile = Files.createTempFile("tls", ".key");
-      tlsCertFile = Files.createTempFile("tls", ".crt");
+      tlsKeyFile = Files.createTempFile(Paths.get(RESULTS_ROOT), "tls", ".key");
+      tlsCertFile = Files.createTempFile(Paths.get(RESULTS_ROOT),"tls", ".crt");
       String command = "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout " + tlsKeyFile
           + " -out " + tlsCertFile + " -subj \"/CN=" + cn + "\"";
       logger.info("Executing command: {0}", command);

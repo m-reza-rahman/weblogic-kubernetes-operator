@@ -61,6 +61,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSE
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
@@ -103,7 +104,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * console and REST management interfaces are accessible thru appropriate channels.
  * Verify deployed customer applications are accessible in appropriate channels and ports.
  */
-
 @DisplayName("Test upgrade to 1412 image for a mii domain")
 @IntegrationTest
 @Tag("kind-parallel")
@@ -142,8 +142,8 @@ class ItMiiDomainUpgradeToSecureMode {
   private static LoggingFacade logger = null;
 
   /**
-   * Install Operator.
-   * @param namespaces list of namespaces.
+   * Install Operators.
+   * @param Namespaces injected by JUnit
    */
   @BeforeAll
   public static void initAll(@Namespaces(8) List<String> ns) {
@@ -1094,8 +1094,8 @@ class ItMiiDomainUpgradeToSecureMode {
 
   private static void createCertKeyFiles(String cn) {
     assertDoesNotThrow(() -> {
-      tlsKeyFile = Files.createTempFile("tls", ".key");
-      tlsCertFile = Files.createTempFile("tls", ".crt");
+      tlsKeyFile = Files.createTempFile(Paths.get(RESULTS_ROOT), "tls", ".key");
+      tlsCertFile = Files.createTempFile(Paths.get(RESULTS_ROOT), "tls", ".crt");
       String command = "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout " + tlsKeyFile
           + " -out " + tlsCertFile + " -subj \"/CN=" + cn + "\"";
       logger.info("Executing command: {0}", command);
