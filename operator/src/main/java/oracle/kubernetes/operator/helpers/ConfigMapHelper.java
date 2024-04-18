@@ -541,6 +541,10 @@ public class ConfigMapHelper {
             .orElse(null);
 
       String updateDomainResult = data.get(UPDATEDOMAINRESULT);
+
+      // TEST
+      LOGGER.severe("RJE: updateDomainResult: " + updateDomainResult);
+
       if (updateDomainResult != null) {
         LOGGER.fine("ConfigMapHelper.apply: MII Dynamic update result " + updateDomainResult);
         packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE, updateDomainResult);
