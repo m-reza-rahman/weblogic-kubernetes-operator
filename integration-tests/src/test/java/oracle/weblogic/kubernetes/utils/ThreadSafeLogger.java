@@ -24,6 +24,9 @@ public class ThreadSafeLogger {
    */
   public static void init(String loggerName) {
     try {
+      // create tmp file directory
+      Files.createDirectories(Paths.get(TestConstants.RESULTS_TEMPFILE));
+
       // create file handler
       Path resultDir = Files.createDirectories(Paths.get(TestConstants.LOGS_DIR,
           loggerName));

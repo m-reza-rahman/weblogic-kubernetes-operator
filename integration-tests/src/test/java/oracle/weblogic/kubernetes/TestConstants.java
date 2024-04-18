@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import static oracle.weblogic.kubernetes.actions.TestActions.listNamespaces;
@@ -194,6 +195,7 @@ public interface TestConstants {
   public static final String PV_ROOT =
       getNonEmptySystemProperty("wko.it.pv.root", RESULTS_BASE + "/pvroot");
   public static final String RESULTS_ROOT = RESULTS_BASE + "/workdir";
+  public static final String RESULTS_TEMPFILE = RESULTS_BASE + "/tmpfile";
 
   // NGINX constants
   public static final String NGINX_REPO_URL = "https://kubernetes.github.io/ingress-nginx";
@@ -212,7 +214,7 @@ public interface TestConstants {
   public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2543;
   
   public static final Path INGRESS_CLASS_FILE_NAME = assertDoesNotThrow(()
-      -> Files.createTempFile("ingressclass", ".name"));
+      -> Files.createTempFile(Paths.get(RESULTS_TEMPFILE), "ingressclass", ".name"));
 
   // Traefik constants
   public static final String TRAEFIK_REPO_URL = "https://helm.traefik.io/traefik";
