@@ -545,15 +545,16 @@ EOF
                                 if [ env.JOB_NAME = 'wko-oke-nightly' ]; then
                                         echo "Mount Target  setup for wko-oke-nightly"
                                         mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
-                                        # Check if the mt_privateip_id is an array
-                                        if [ "$(declare -p mt_privateip_id 2>/dev/null | grep -o 'declare -a')" == "declare -a" ]; then
-                                            # Select first
-                                            mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id[0]}" | jq -r '.data | ."ip-address"'`
-                                        else
-                                            mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
-                                        fi
+
                                 else
-                                   mt_private_ip=`oci network private-ip get --private-ip-id "${MOUNT_TARGET_OCID}" | jq -r '.data | ."ip-address"'`
+                                   mt_privateip_id=`oci fs mount-target get --mount-target-id=${mount_target_ocid} | jq -r '.data| ."private-ip-ids"[]'`
+                                fi
+                                # Check if the mt_privateip_id is an array
+                                if [ "$(declare -p mt_privateip_id 2>/dev/null | grep -o 'declare -a')" == "declare -a" ]; then
+                                    # Select first
+                                    mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id[0]}" | jq -r '.data | ."ip-address"'`
+                                else
+                                    mt_private_ip=`oci network private-ip get --private-ip-id "${mt_privateip_id}" | jq -r '.data | ."ip-address"'`
                                 fi
 
 
