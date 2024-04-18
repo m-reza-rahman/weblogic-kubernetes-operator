@@ -103,9 +103,6 @@ public class ManagedServersUpStep extends Step {
   }
 
   private static boolean isNotAlreadyStoppedOrServiceOnly(DomainPresenceInfo info, ServerShutdownInfo ssi) {
-
-    // HERE, TEST
-
     return (info.getServerPod(ssi.getServerName()) != null
             && !info.isServerPodDeleted(ssi.getServerName()))
             || (ssi.isServiceOnly() && info.getServerService(ssi.getServerName()) == null);
@@ -131,11 +128,6 @@ public class ManagedServersUpStep extends Step {
 
     info.setServerStartupInfo(factory.getStartupInfos());
     info.setServerShutdownInfo(factory.getShutdownInfos());
-
-    // TEST
-    LOGGER.severe("RJE: ManagedServersUpStep checkpoint, running servers: " + getRunningServers(info)
-        + ", serversToStart: " + getServerNames(info.getServerStartupInfo())
-        + ", serversToStop: " + getServerNames(info.getServerShutdownInfo()));
 
     LOGGER.exiting();
 

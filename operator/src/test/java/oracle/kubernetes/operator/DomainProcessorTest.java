@@ -539,8 +539,6 @@ class DomainProcessorTest {
     assertThat(logRecords, not(containsFine(NOT_STARTING_DOMAINUID_THREAD)));
   }
 
-  // HERE
-
   @Test
   void whenDomainSpecMatchesFailureInfoAndProcessingAborted_dontRunUpdateThread() {
     DomainResource localDomain = DomainProcessorTestSetup.createTestDomain();

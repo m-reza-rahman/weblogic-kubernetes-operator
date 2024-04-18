@@ -512,41 +512,16 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   protected boolean canUseNewDomainZip(V1Pod currentPod) {
     String dynamicUpdateResult = packet.getValue(MII_DYNAMIC_UPDATE);
-
-    // TEST
-    String podName = currentPod.getMetadata().getName();
-    LOGGER.severe("RJE: dynamicUpdateResult " + dynamicUpdateResult + ", podName " + podName);
-
     if (miiDomainZipHash == null || isDomainZipUnchanged(currentPod)) {
-
-      // TEST
-      LOGGER.severe("RJE: path #1 returning true");
-
       return true;
     } else if (dynamicUpdateResult == null || !getDomain().isUseOnlineUpdate()) {
-
-      // TEST
-      LOGGER.severe("RJE: path #2 returning false");
-
       return false;
     } else if (dynamicUpdateResult.equals(MII_DYNAMIC_UPDATE_SUCCESS)) {
-
-      // TEST
-      LOGGER.severe("RJE: path #3 returning true");
-
       return true;
     } else if (getDomain().getMiiNonDynamicChangesMethod() == MIINonDynamicChangesMethod.COMMIT_UPDATE_ONLY) {
-
-      // TEST
-      LOGGER.severe("RJE: path #4 returning true");
-
       addRestartRequiredLabel = true;
       return true;
     } else {
-
-      // TEST
-      LOGGER.severe("RJE: path #5 returning false");
-
       return false;
     }
   }

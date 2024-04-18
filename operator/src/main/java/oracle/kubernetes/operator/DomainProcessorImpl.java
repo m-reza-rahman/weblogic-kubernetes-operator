@@ -1093,10 +1093,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     }
   }
 
-  private static class ProcessingGate {
-    // HERE
-  }
-
   @SuppressWarnings("rawtypes")
   private abstract static class Plan<T extends MakeRightOperation> {
 
