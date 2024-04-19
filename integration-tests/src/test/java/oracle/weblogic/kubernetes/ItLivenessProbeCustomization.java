@@ -43,6 +43,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WLS_DOMAIN_TYPE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -905,7 +906,7 @@ class ItLivenessProbeCustomization {
   }
 
   private static File createTempfile(String filename) throws IOException {
-    File tempFile = File.createTempFile(filename, ".txt", new File(RESULTS_ROOT));
+    File tempFile = File.createTempFile(filename, ".txt", new File(RESULTS_TEMPFILE));
     //deletes the file when VM terminates
     tempFile.deleteOnExit();
     try (FileWriter fw = new FileWriter(tempFile)) {
@@ -920,7 +921,7 @@ class ItLivenessProbeCustomization {
    * @throws IOException if can not create a file
    */
   private File createScriptToKillServer() throws IOException {
-    File killServerScript = File.createTempFile("killserver", ".sh", new File(RESULTS_ROOT));
+    File killServerScript = File.createTempFile("killserver", ".sh", new File(RESULTS_TEMPFILE));
     //deletes the file when VM terminates
     killServerScript.deleteOnExit();
     try (FileWriter fw = new FileWriter(killServerScript)) {

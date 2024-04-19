@@ -72,6 +72,7 @@ import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_12213;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
@@ -997,7 +998,7 @@ class ItConfigDistributionStrategy {
 
     // create a temporary WebLogic domain property file
     File domainPropertiesFile = assertDoesNotThrow(()
-            -> File.createTempFile("domain", ".properties", new File(RESULTS_ROOT)),
+            -> File.createTempFile("domain", ".properties", new File(RESULTS_TEMPFILE)),
         "Failed to create domain properties file");
     Properties p = new Properties();
     p.setProperty("domain_path", uniquePath);
@@ -1178,7 +1179,7 @@ class ItConfigDistributionStrategy {
       // 12.2.1.3 - com.mysql.jdbc.Driver
       // 12.2.1.4 and above - com.mysql.cj.jdbc.Driver
       // create a temporary WebLogic domain property file
-      File domainPropertiesFile = File.createTempFile("domain", ".properties", new File(RESULTS_ROOT));
+      File domainPropertiesFile = File.createTempFile("domain", ".properties", new File(RESULTS_TEMPFILE));
       Properties p = new Properties();
       p.setProperty("admin_host", adminServerPodName);
       p.setProperty("admin_port", Integer.toString(defaultChannelPort));

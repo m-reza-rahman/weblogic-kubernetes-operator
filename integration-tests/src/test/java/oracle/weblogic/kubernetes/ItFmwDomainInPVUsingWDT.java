@@ -30,6 +30,7 @@ import static oracle.weblogic.kubernetes.TestConstants.HTTP_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_VERSION;
@@ -288,7 +289,7 @@ class ItFmwDomainInPVUsingWDT {
 
     // create a model property file
     File domainPropertiesFile = assertDoesNotThrow(() ->
-        File.createTempFile(fmwModelFilePrefix, ".properties", new File(RESULTS_ROOT)),
+        File.createTempFile(fmwModelFilePrefix, ".properties", new File(RESULTS_TEMPFILE)),
         "Failed to create FMW model properties file");
 
     // create the property file

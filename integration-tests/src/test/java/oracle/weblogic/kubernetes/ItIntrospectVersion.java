@@ -79,6 +79,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
@@ -307,7 +308,7 @@ class ItIntrospectVersion {
     logger.info("change the cluster1 size to 3 and verify the introspector runs and updates the domain status");
     // create a temporary WebLogic WLST property file
     File wlstPropertiesFile =
-        assertDoesNotThrow(() -> File.createTempFile("wlst", ".properties", new File(RESULTS_ROOT)),
+        assertDoesNotThrow(() -> File.createTempFile("wlst", ".properties", new File(RESULTS_TEMPFILE)),
         "Creating WLST properties file failed");
     Properties p1 = new Properties();
     p1.setProperty("admin_host", adminServerPodName);
@@ -556,7 +557,7 @@ class ItIntrospectVersion {
 
     // create a temporary WebLogic WLST property file
     File wlstPropertiesFile =
-        assertDoesNotThrow(() -> File.createTempFile("wlst", ".properties", new File(RESULTS_ROOT)),
+        assertDoesNotThrow(() -> File.createTempFile("wlst", ".properties", new File(RESULTS_TEMPFILE)),
         "Creating WLST properties file failed");
     Properties p = new Properties();
     p.setProperty("admin_host", adminServerPodName);
@@ -680,7 +681,7 @@ class ItIntrospectVersion {
 
     // create a temporary WebLogic WLST property file
     File wlstPropertiesFile =
-        assertDoesNotThrow(() -> File.createTempFile("wlst", ".properties", new File(RESULTS_ROOT)),
+        assertDoesNotThrow(() -> File.createTempFile("wlst", ".properties", new File(RESULTS_TEMPFILE)),
         "Creating WLST properties file failed");
     Properties p = new Properties();
     p.setProperty("admin_host", adminServerPodName);
@@ -1146,7 +1147,7 @@ class ItIntrospectVersion {
 
     // create a temporary WebLogic domain property file
     File domainPropertiesFile = assertDoesNotThrow(() ->
-            File.createTempFile("domain", ".properties", new File(RESULTS_ROOT)),
+            File.createTempFile("domain", ".properties", new File(RESULTS_TEMPFILE)),
         "Failed to create domain properties file");
     Properties p = new Properties();
     p.setProperty("domain_path", uniquePath);

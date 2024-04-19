@@ -38,6 +38,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
@@ -206,7 +207,7 @@ class ItWlsDomainOnPV {
 
     // create a model property file
     File domainPropertiesFile = assertDoesNotThrow(() ->
-        File.createTempFile(wlsModelFilePrefix, ".properties", new File(RESULTS_ROOT)),
+        File.createTempFile(wlsModelFilePrefix, ".properties", new File(RESULTS_TEMPFILE)),
         "Failed to create WLS model properties file");
 
     // create the property file
