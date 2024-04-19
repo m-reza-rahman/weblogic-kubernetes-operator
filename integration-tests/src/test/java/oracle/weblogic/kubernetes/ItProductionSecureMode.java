@@ -440,7 +440,7 @@ class ItProductionSecureMode {
         Map<String, String> annotations = null;
         annotations = new HashMap<>();
         annotations.put("ingress.kubernetes.io/protocol", "https");
-        createIngressHostRouting(domainNamespace, domainUid, serviceName, port, annotations, tlsList);
+        createIngressHostRouting(domainNamespace, domainUid, serviceName, port, annotations, tlsList, true);
       });
 
     }

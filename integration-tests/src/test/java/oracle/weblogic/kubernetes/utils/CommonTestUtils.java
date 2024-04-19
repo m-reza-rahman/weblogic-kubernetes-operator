@@ -2360,7 +2360,7 @@ public class CommonTestUtils {
    */
   public static String createIngressHostRouting(String domainNamespace, String domainUid,
       String serviceName, int port) {
-    return createIngressHostRouting(domainNamespace, domainUid, serviceName, port, null, null);
+    return createIngressHostRouting(domainNamespace, domainUid, serviceName, port, null, null, false);
   }
 
   /**
@@ -2375,7 +2375,7 @@ public class CommonTestUtils {
    * @return hostheader host header
    */
   public static String createIngressHostRouting(String domainNamespace, String domainUid,
-      String serviceName, int port, Map<String, String> annoations, List<V1IngressTLS> tlsList) {
+      String serviceName, int port, Map<String, String> annoations, List<V1IngressTLS> tlsList, boolean isSecureMode) {
     // create an ingress in domain namespace
     // set the ingress rule host
     String ingressHost = domainNamespace + "." + domainUid + "." + serviceName;
@@ -2407,9 +2407,10 @@ public class CommonTestUtils {
         .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
         .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
         .contains(ingressName);
-    String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-        + "' http://localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT
-        + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+    String curlCmd = assertDoesNotThrow(() -> "curl -g --silent --show-error --noproxy '*' -H 'host: "
+        + ingressHost + "' " + (isSecureMode ? "https" : "http") + "://"
+        + formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + +TRAEFIK_INGRESS_HTTP_HOSTPORT
+        + "/weblogic/ready --write-out %{http_code} -o /dev/null");
     getLogger().info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
 
