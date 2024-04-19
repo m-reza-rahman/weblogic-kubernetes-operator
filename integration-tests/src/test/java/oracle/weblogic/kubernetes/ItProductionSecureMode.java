@@ -7,11 +7,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1IngressTLS;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.weblogic.domain.AdminServer;
@@ -26,6 +30,7 @@ import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +39,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
@@ -59,6 +65,7 @@ import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyIntrospe
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodIntrospectVersionUpdated;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.verifyPodsNotRolled;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -75,6 +82,7 @@ import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOpe
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getPodCreationTime;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
+import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithTLSCertKey;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -323,6 +331,8 @@ class ItProductionSecureMode {
     String introspectVersion = patchDomainResourceWithNewIntrospectVersion(domainUid, domainNamespace);
 
     verifyIntrospectorRuns(domainUid, domainNamespace);
+    String sslChannelName = "default-admin";
+    createIngress(sslChannelName);
 
     String resourcePath = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
         + MANAGED_SERVER_NAME_BASE + "1"
@@ -342,7 +352,7 @@ class ItProductionSecureMode {
                   + MANAGED_SERVER_NAME_BASE + "1"
                   + "/applicationRuntimes/" + MII_BASIC_APP_DEPLOYMENT_NAME
                   + "/workManagerRuntimes/newWM",
-              "200", true, "default-admin"),
+              "200", true, sslChannelName),
               logger, "work manager configuration to be updated.");
     }
 
@@ -409,4 +419,44 @@ class ItProductionSecureMode {
     assertTrue(domCreated, String.format("Create domain custom resource failed with ApiException "
                     + "for %s in namespace %s", domainUid, domNamespace));
   }
+
+  private void createIngress(String sslChannelName) {
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      int port = getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), sslChannelName);
+      String serviceName = ADMIN_SERVER_NAME_BASE;
+      String hostHeader = domainNamespace + "." + domainUid + "." + serviceName;
+
+      List<V1IngressTLS> tlsList = new ArrayList<>();
+      String admintlsSecretName = domainUid + "-admin-tls-secret";
+      assertDoesNotThrow(() -> {
+        createCertKeyFiles(hostHeader);
+        createSecretWithTLSCertKey(admintlsSecretName, domainNamespace, tlsKeyFile, tlsCertFile);
+        V1IngressTLS admintls = new V1IngressTLS()
+            .addHostsItem(hostHeader)
+            .secretName(admintlsSecretName);
+        tlsList.add(admintls);
+
+        Map<String, String> annotations = null;
+        annotations = new HashMap<>();
+        annotations.put("ingress.kubernetes.io/protocol:", "https");
+        createIngressHostRouting(domainNamespace, domainUid, serviceName, port, annotations, tlsList);
+      });
+
+    }
+  }
+  
+  private static Path tlsCertFile;
+  private static Path tlsKeyFile;
+
+  private static void createCertKeyFiles(String cn) {
+    assertDoesNotThrow(() -> {
+      tlsKeyFile = Files.createTempFile("tls", ".key");
+      tlsCertFile = Files.createTempFile("tls", ".crt");
+      String command = "openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout " + tlsKeyFile
+          + " -out " + tlsCertFile + " -subj \"/CN=" + cn + "\"";
+      logger.info("Executing command: {0}", command);
+      ExecCommand.exec(command, true);
+    });
+  }  
 }
