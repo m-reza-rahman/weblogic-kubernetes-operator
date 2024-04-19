@@ -1281,7 +1281,7 @@ public class CommonMiiTestUtils {
       Map<String, String> headers = new HashMap<>();
       headers.put("host", hostHeader);
       headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
-      String url = isSecureMode ? "https" : "http" + "://" + hostAndPort + resourcePath;
+      String url = (isSecureMode ? "https" : "http") + "://" + hostAndPort + resourcePath;
       HttpResponse<String> response;
       try {
         response = OracleHttpClient.get(url, headers, true);
