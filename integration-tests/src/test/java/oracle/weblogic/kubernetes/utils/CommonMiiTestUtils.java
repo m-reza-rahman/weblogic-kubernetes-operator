@@ -72,6 +72,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_DEPLOYMENT_
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTPS_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
@@ -1266,16 +1267,17 @@ public class CommonMiiTestUtils {
       try {
         List<String> ingresses = TestActions.listIngresses(domainNamespace);
         ingressFound = ingresses.stream().filter(ingress -> ingress.equals(ingressName)).findAny();
-        if (ingressFound.isEmpty()) {
+        if (ingressFound.isEmpty() && channel.equals("internal-t3")) {
           createIngressHostRouting(domainNamespace, domainName, serviceName, port);
         } else {
-          logger.info("Ingress {0} found, skipping ingress resource creation...", ingressFound);
+          logger.info("Ingress {0} found or secure channel , skipping ingress resource creation...", ingressFound);
         }
       } catch (ApiException ex) {
         logger.severe(ex.getMessage());
       }
       hostAndPort = assertDoesNotThrow(()
-          -> formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT);
+          -> formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":"
+          + (isSecureMode ? TRAEFIK_INGRESS_HTTPS_HOSTPORT : TRAEFIK_INGRESS_HTTP_HOSTPORT));
       Map<String, String> headers = new HashMap<>();
       headers.put("host", hostHeader);
       headers.put("Authorization", ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT);
