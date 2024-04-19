@@ -257,7 +257,7 @@ pipeline {
                     }
                     steps {
                         sh '''
-                            if [ "${env.JOB_NAME}" = "wko-oke-nightly" ]; then
+                            if [ env.JOB_NAME = "wko-oke-nightly" ]; then
                             echo "wko-oke-nightly"
                                exit 1;
                             else
