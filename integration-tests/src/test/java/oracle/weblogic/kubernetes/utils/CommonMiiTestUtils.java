@@ -1267,7 +1267,7 @@ public class CommonMiiTestUtils {
       try {
         List<String> ingresses = TestActions.listIngresses(domainNamespace);
         ingressFound = ingresses.stream().filter(ingress -> ingress.equals(ingressName)).findAny();
-        if (ingressFound.isEmpty() && channel.equals("internal-t3")) {
+        if (ingressFound.isEmpty() && sslChannelName.isEmpty()) {
           createIngressHostRouting(domainNamespace, domainName, serviceName, port);
         } else {
           logger.info("Ingress {0} found or secure channel , skipping ingress resource creation...", ingressFound);
