@@ -257,6 +257,13 @@ pipeline {
                     }
                     steps {
                         sh '''
+                            if [ "${env.JOB_NAME}" = "wko-oke-nightly" ]; then
+                            echo "wko-oke-nightly"
+                               exit 1;
+                            else
+                               mount_target_id=${MOUNT_TARGET_OCID}
+                               exit 1;
+                            fi
                             export PATH=${runtime_path}
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
                                                             --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
@@ -456,7 +463,7 @@ EOF
                         compartment_ocid=${compartment_id}
                         echo "creating storage class to setup OFSS ..."
                         echo "getting MountTarget ID"
-                        if [ "$env.JOB_NAME" = "wko-oke-nightly" ]; then
+                        if [ "${env.JOB_NAME}" = "wko-oke-nightly" ]; then
                             mount_target_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | .id'`
                         else
                             mount_target_id=${MOUNT_TARGET_OCID}
