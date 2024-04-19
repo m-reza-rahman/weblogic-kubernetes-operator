@@ -73,6 +73,8 @@ public class ConfigMapHelper {
 
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
+  private static final String NON_DYNAMIC_CHANGES_FILE = "non_dynamic_changes.file";
+
   private static final String SCRIPT_LOCATION = "/scripts";
   private static final String UPDATEDOMAINRESULT = "UPDATEDOMAINRESULT";
   private static final ConfigMapComparator COMPARATOR = new ConfigMapComparator();
@@ -510,8 +512,6 @@ public class ConfigMapHelper {
   }
 
   static class IntrospectionLoader {
-    private static final String NON_DYNAMIC_CHANGES_FILE = "non_dynamic_changes.file";
-
     private final Packet packet;
     private final Step conflictStep;
     private final DomainPresenceInfo info;
@@ -545,9 +545,7 @@ public class ConfigMapHelper {
         LOGGER.fine("ConfigMapHelper.apply: MII Dynamic update result " + updateDomainResult);
         packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE, updateDomainResult);
         if (data.containsKey(NON_DYNAMIC_CHANGES_FILE)) {
-          String rollbackFileContent = data.get(NON_DYNAMIC_CHANGES_FILE);
-          packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE_WDTROLLBACKFILE, rollbackFileContent);
-          data.remove(NON_DYNAMIC_CHANGES_FILE);
+          packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE_WDTROLLBACKFILE, data.get(NON_DYNAMIC_CHANGES_FILE));
         }
       }
     }
@@ -889,9 +887,16 @@ public class ConfigMapHelper {
       LOGGER.severe("RJE: ReadIntrospectorConfigMapResponseStep.onSuccess, cm keys:  "
           + Optional.ofNullable(result).map(V1ConfigMap::getData).map(Map::keySet).map(Objects::toString).orElse(""));
 
-      // TEST
-      Optional.ofNullable(result).map(V1ConfigMap::getData).map(d -> d.get(UPDATEDOMAINRESULT))
-          .ifPresent(s -> packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE, s));
+      Optional.ofNullable(result).map(V1ConfigMap::getData).ifPresent(data -> {
+        String updateDomainResult = data.get(UPDATEDOMAINRESULT);
+        if (updateDomainResult != null) {
+          packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE, updateDomainResult);
+          if (data.containsKey(NON_DYNAMIC_CHANGES_FILE)) {
+            packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE_WDTROLLBACKFILE, data.get(NON_DYNAMIC_CHANGES_FILE));
+          }
+        }
+
+      });
 
       DomainTopology domainTopology =
             Optional.ofNullable(result)
