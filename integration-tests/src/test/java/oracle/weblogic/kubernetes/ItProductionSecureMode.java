@@ -35,6 +35,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -198,6 +199,25 @@ class ItProductionSecureMode {
         domainNamespace);
   }
 
+  @AfterAll
+  public static void cleanup() {
+    Path dstFile = Paths.get(TestConstants.RESULTS_ROOT, "traefik/traefik-ingress-rules-tcp.yaml");
+    assertDoesNotThrow(() -> {
+      String command = KUBERNETES_CLI + " delete -f " + dstFile;
+      logger.info("Running {0}", command);
+      ExecResult result;
+      try {
+        result = ExecCommand.exec(command, true);
+        String response = result.stdout().trim();
+        logger.info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+            result.exitValue(), response, result.stderr());
+        assertEquals(0, result.exitValue(), "Command didn't succeed");
+      } catch (IOException | InterruptedException ex) {
+        logger.severe(ex.getMessage());
+      }
+    });
+  }
+  
   /**
    * Verify all server pods are running.
    * Verify all k8s services for all servers are created.
