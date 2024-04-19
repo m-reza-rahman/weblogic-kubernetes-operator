@@ -212,9 +212,11 @@ public interface TestConstants {
   public static final int NGINX_INGRESS_HTTPS_NODEPORT = 31443;
   public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2180;
   public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2543;
-  
+
+  public static final Path RESULTS_TEMPFILE_DIR = assertDoesNotThrow(()
+      -> Files.createDirectories(Paths.get(RESULTS_TEMPFILE)));
   public static final Path INGRESS_CLASS_FILE_NAME = assertDoesNotThrow(()
-      -> Files.createTempFile(Paths.get(RESULTS_TEMPFILE), "ingressclass", ".name"));
+      -> Files.createTempFile(RESULTS_TEMPFILE_DIR, "ingressclass", ".name"));
 
   // Traefik constants
   public static final String TRAEFIK_REPO_URL = "https://helm.traefik.io/traefik";
