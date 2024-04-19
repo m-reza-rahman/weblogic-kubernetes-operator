@@ -142,8 +142,8 @@ class ItMiiDomainUpgradeToSecureMode {
   private static LoggingFacade logger = null;
 
   /**
-   * Install Operators.
-   * @param Namespaces injected by JUnit
+   * Install Operator.
+   * @param namespaces list of namespaces.
    */
   @BeforeAll
   public static void initAll(@Namespaces(8) List<String> ns) {
