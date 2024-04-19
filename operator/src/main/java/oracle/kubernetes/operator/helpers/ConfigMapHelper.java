@@ -876,12 +876,22 @@ public class ConfigMapHelper {
 
     @Override
     public Result onSuccess(Packet packet, KubernetesApiResponse<V1ConfigMap> callResponse) {
+      // HERE, RJE: reading config map to packet
+
       V1ConfigMap result = callResponse.getObject();
       copyMapEntryToPacket(result, packet, SECRETS_MD_5);
       copyMapEntryToPacket(result, packet, DOMAINZIP_HASH);
       copyMapEntryToPacket(result, packet, DOMAIN_RESTART_VERSION);
       copyMapEntryToPacket(result, packet, DOMAIN_INPUTS_HASH);
       copyMapEntryToPacket(result, packet, NUM_CONFIG_MAPS);
+
+      // TEST
+      LOGGER.severe("RJE: ReadIntrospectorConfigMapResponseStep.onSuccess, cm keys:  "
+          + Optional.ofNullable(result).map(V1ConfigMap::getData).map(Map::keySet).map(Objects::toString).orElse(""));
+
+      // TEST
+      Optional.ofNullable(result).map(V1ConfigMap::getData).map(d -> d.get(UPDATEDOMAINRESULT))
+          .ifPresent(s -> packet.put(ProcessingConstants.MII_DYNAMIC_UPDATE, s));
 
       DomainTopology domainTopology =
             Optional.ofNullable(result)
