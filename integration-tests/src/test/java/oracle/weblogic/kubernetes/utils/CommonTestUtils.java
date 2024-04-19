@@ -2407,7 +2407,7 @@ public class CommonTestUtils {
         .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
         .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
         .contains(ingressName);
-    String curlCmd = assertDoesNotThrow(() -> "curl -g --silent --show-error --noproxy '*' -H 'host: "
+    String curlCmd = assertDoesNotThrow(() -> "curl -g -k --silent --show-error --noproxy '*' -H 'host: "
         + ingressHost + "' " + (isSecureMode ? "https" : "http") + "://"
         + formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + +TRAEFIK_INGRESS_HTTP_HOSTPORT
         + "/weblogic/ready --write-out %{http_code} -o /dev/null");
