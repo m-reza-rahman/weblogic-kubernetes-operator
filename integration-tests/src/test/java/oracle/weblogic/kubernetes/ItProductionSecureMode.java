@@ -349,7 +349,10 @@ class ItProductionSecureMode {
 
     verifyIntrospectorRuns(domainUid, domainNamespace);
     String sslChannelName = "default-admin";
-    createTraefikIngressRoutingRules(domainNamespace);
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      createTraefikIngressRoutingRules(domainNamespace);
+    }
 
     String resourcePath = "/management/weblogic/latest/domainRuntime/serverRuntimes/"
         + MANAGED_SERVER_NAME_BASE + "1"
