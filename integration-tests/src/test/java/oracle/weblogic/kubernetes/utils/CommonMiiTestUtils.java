@@ -1285,7 +1285,6 @@ public class CommonMiiTestUtils {
       HttpResponse<String> response;
       try {
         response = OracleHttpClient.get(url, headers, true);
-        logger.info(response.body());
         return Integer.parseInt(expectedStatusCode) == response.statusCode();
       } catch (IOException | InterruptedException | NumberFormatException ex) {
         return false;
