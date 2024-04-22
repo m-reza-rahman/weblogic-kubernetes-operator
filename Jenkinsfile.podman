@@ -450,6 +450,7 @@ EOF
                             for node in $(kind get nodes --name "${kind_name}"); do
                                 kubectl annotate node ${node} tilt.dev/registry=localhost:${registry_port};
                             done
+                            podman exec -it kind-worker bash -c "sysctl vm.max_map_count"
 
                             # Document the local registry
                             # https://github.com/kubernetes/enhancements/tree/master/keps/sig-cluster-lifecycle/generic/1755-communicating-a-local-registry
