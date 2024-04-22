@@ -376,6 +376,7 @@ pipeline {
                                 echo "Deleted orphaned kind cluster ${kind_name}"
                             fi
                             # settings needed by elastic logging tests
+                            echo "running sysctl -w vm.max_map_count=262144"
                             sysctl -w vm.max_map_count=262144
                             cat <<EOF | kind create cluster --name "${kind_name}" --kubeconfig "${kubeconfig_file}" --config=-
 kind: Cluster
