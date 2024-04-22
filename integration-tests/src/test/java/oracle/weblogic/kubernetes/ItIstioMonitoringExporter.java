@@ -27,6 +27,8 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ISTIO_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_ISTIOMONITORINGEXPORTER_PROM_HTTP_CONAINERPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_ISTIOMONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -42,7 +44,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExist
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createTestWebAppWarFile;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getImageBuilderExtraArgs;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.startPortForwardProcess;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.stopPortForwardProcess;
@@ -144,7 +145,7 @@ class ItIstioMonitoringExporter {
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
-    prometheusPort = getNextFreePort();
+    prometheusPort = IT_ISTIOMONITORINGEXPORTER_PROM_HTTP_CONAINERPORT;
   }
 
   /**
@@ -227,6 +228,14 @@ class ItIstioMonitoringExporter {
       // In internal OKE env, use Istio EXTERNAL-IP; in non-OKE env, use K8S_NODEPORT_HOST + ":" + istioIngressPort
       hostPortPrometheus = getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) != null
           ? getServiceExtIPAddrtOke(istioIngressServiceName, istioNamespace) : host + ":" + prometheusPort;
+      if (!TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT) && !OCNE) {
+        try {
+          hostPortPrometheus = InetAddress.getLocalHost().getHostAddress()
+              + ":" + IT_ISTIOMONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+        } catch (UnknownHostException ex) {
+          logger.severe(ex.getLocalizedMessage());
+        }
+      }   
 
       if (OKE_CLUSTER_PRIVATEIP) {
         String localhost = "localhost";
@@ -237,7 +246,6 @@ class ItIstioMonitoringExporter {
         logger.info("Forwarded local port is {0}", forwardPort);
         hostPortPrometheus = localhost + ":" + forwardPort;
         isPrometheusPortForward = true;
-
       }
     } else {
       String newRegex = String.format("regex: %s;%s", domainNamespace, domainUid);
