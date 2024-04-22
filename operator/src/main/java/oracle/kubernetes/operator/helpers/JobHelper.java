@@ -74,6 +74,7 @@ import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_FLUENTD_CON
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED;
 import static oracle.kubernetes.operator.ProcessingConstants.JOB_POD_INTROSPECT_CONTAINER_TERMINATED_MARKER;
 import static oracle.kubernetes.operator.helpers.ConfigMapHelper.readExistingIntrospectorConfigMap;
+import static oracle.kubernetes.operator.watcher.JobWatcher.getFailedReason;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.INTROSPECTION;
 
 public class JobHelper {
@@ -237,8 +238,7 @@ public class JobHelper {
           packet.put(DOMAIN_INTROSPECTOR_JOB, job);
         }
 
-        if (JobWatcher.isFailed(job) || isKnownFailedJob(job)
-                || JobWatcher.isJobTimedOut(job) || isInProgressJobOutdated(job)) {
+        if (isKnownFailedJob(job) || JobWatcher.isJobTimedOut(job) || isInProgressJobOutdated(job)) {
           return doNext(cleanUpAndReintrospect(getNext()), packet);
         } else if (job != null) {
           return doNext(processExistingIntrospectorJob(getNext()), packet);
@@ -437,6 +437,11 @@ public class JobHelper {
       public @Nonnull Result apply(Packet packet) {
         V1Job domainIntrospectorJob = (V1Job) packet.get(ProcessingConstants.DOMAIN_INTROSPECTOR_JOB);
 
+        if (JobWatcher.isFailed(domainIntrospectorJob)) {
+          return doNext(
+              Step.chain(createIntrospectionFailureSteps(
+                  getFailedReason(domainIntrospectorJob), domainIntrospectorJob), getNext()), packet);
+        }
         if (JobWatcher.isComplete(domainIntrospectorJob)) {
           return doNext(createRemoveFailuresStep(getNext()), packet);
         }
