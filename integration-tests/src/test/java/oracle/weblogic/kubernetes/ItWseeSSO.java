@@ -249,10 +249,6 @@ class ItWseeSSO {
               "default"),
           "Getting admin server node port failed");
       String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP + " 80" : K8S_NODEPORT_HOST + " " + serviceNodePort;
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        hostPort = ingressIP + ":" + nodeportshttp;
-      }
       return callPythonScript(domain1Uid, domain1Namespace, "setupPKI.py", hostPort);
     }, logger, "Failed to run python script setupPKI.py");
 
