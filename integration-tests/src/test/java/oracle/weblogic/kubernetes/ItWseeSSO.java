@@ -47,6 +47,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ITWSEESSONGINX_INGRESS_HT
 import static oracle.weblogic.kubernetes.TestConstants.ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.ITWSEESSONGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
@@ -56,6 +57,8 @@ import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -260,11 +263,11 @@ class ItWseeSSO {
                                  String appURI) {
 
     String adminServerPodName = domainUid + "-" + adminServerName;
-    HttpResponse<String> response;
+    HttpResponse<String> response = null;
     String hostAndPort;
     if (!OKE_CLUSTER_PRIVATEIP) {
       int serviceTestNodePort = assertDoesNotThrow(()
-              -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
+          -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
               "default"),
           "Getting admin server node port failed");
 
@@ -273,13 +276,18 @@ class ItWseeSSO {
     } else {
       hostAndPort = ingressIP + ":80";
     }
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    String tmp = hostAndPort;
+    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       hostAndPort = ingressIP + ":" + nodeportshttp;
     }
     String urlTest = "http://" + hostAndPort + appURI;
-    response = assertDoesNotThrow(() -> OracleHttpClient.get(urlTest, true));
+    try {
+      response = OracleHttpClient.get(urlTest, true);
+    } catch (Exception ex) {
+      logger.severe(ex.getLocalizedMessage());
+    }
     assertEquals(200, response.statusCode());
+    urlTest = "http://" + tmp + appURI;
     return urlTest;
   }
 
