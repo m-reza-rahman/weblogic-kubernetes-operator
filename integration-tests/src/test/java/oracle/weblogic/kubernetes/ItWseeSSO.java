@@ -196,6 +196,7 @@ class ItWseeSSO {
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
         ingressIP = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
         nodeportshttp = ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT;
+        logger.info("Running in podman, NGINX host:port {0}:{1}", ingressIP, nodeportshttp);
       }
 
     }
