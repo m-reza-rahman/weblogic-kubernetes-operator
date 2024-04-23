@@ -142,7 +142,7 @@ public class Operator {
         namespace, patchStr.toString());
 
     V1Patch patch = new V1Patch(new String(patchStr));
-    return patchDeployment(OPERATOR_RELEASE_NAME, namespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH);
+    return patchDeployment(OPERATOR_RELEASE_NAME, namespace, patch);
   }
 
 }

@@ -464,19 +464,8 @@ public class Kubernetes {
   public static V1Pod getPod(String namespace, String labelSelector, String podName) throws ApiException {
     V1PodList v1PodList =
         coreV1Api.listNamespacedPod(
-            namespace, // namespace in which to look for the pods.
-            Boolean.FALSE.toString(), // // pretty print output.
-            Boolean.FALSE, // allowWatchBookmarks requests watch events with type "BOOKMARK".
-            null, // continue to query when there is more results to return.
-            null, // selector to restrict the list of returned objects by their fields
-            labelSelector, // selector to restrict the list of returned objects by their labels.
-            null, // maximum number of responses to return for a list call.
-            null, // shows changes that occur after that particular version of a resource.
-            RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
-            SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
-            null, // Timeout for the list/watch call.
-            Boolean.FALSE // Watch for changes to the described resources.
-        );
+            namespace // namespace in which to look for the pods.
+        ).labelSelector(labelSelector).execute();
     for (V1Pod item : v1PodList.getItems()) {
       if (item.getMetadata().getName().contains(podName.trim())) {
         getLogger().info("Name: {0}, Namespace: {1}, Phase: {2}",
@@ -563,19 +552,7 @@ public class Kubernetes {
       logger.info(labelSelector);
     }
     V1ServiceList v1ServiceList
-        = coreV1Api.listServiceForAllNamespaces(
-        Boolean.FALSE, // allowWatchBookmarks requests watch events with type "BOOKMARK".
-        null, // continue to query when there is more results to return.
-        null, // selector to restrict the list of returned objects by their fields
-        labelSelector, // selector to restrict the list of returned objects by their labels.
-        null, // maximum number of responses to return for a list call.
-        Boolean.FALSE.toString(), // pretty print output.
-        null, // shows changes that occur after that particular version of a resource.
-        RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
-        SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
-        null, // Timeout for the list/watch call.
-        Boolean.FALSE // Watch for changes to the described resources.
-    );
+        = coreV1Api.listServiceForAllNamespaces().labelSelector(labelSelector).execute();
     for (V1Service service : v1ServiceList.getItems()) {
       if (service.getMetadata().getName().equals(serviceName.trim())
           && service.getMetadata().getNamespace().equals(namespace.trim())) {
@@ -680,19 +657,8 @@ public class Kubernetes {
   public static V1PodList listPods(String namespace, String labelSelectors) throws ApiException {
     V1PodList v1PodList
         = coreV1Api.listNamespacedPod(
-        namespace, // namespace in which to look for the pods.
-        Boolean.FALSE.toString(), // pretty print output.
-        Boolean.FALSE, // allowWatchBookmarks requests watch events with type "BOOKMARK".
-        null, // continue to query when there is more results to return.
-        null, // selector to restrict the list of returned objects by their fields
-        labelSelectors, // selector to restrict the list of returned objects by their labels.
-        null, // maximum number of responses to return for a list call.
-        null, // shows changes that occur after that particular version of a resource.
-        RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
-        SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
-        null, // Timeout for the list/watch call.
-        Boolean.FALSE // Watch for changes to the described resources.
-    );
+        namespace // namespace in which to look for the pods.
+    ).labelSelector(labelSelectors).execute();
     return v1PodList;
   }
 
@@ -706,19 +672,7 @@ public class Kubernetes {
   public static void listServices(String namespace, String labelSelectors) throws ApiException {
     LoggingFacade logger = getLogger();
     V1ServiceList v1ServiceList
-        = coreV1Api.listServiceForAllNamespaces(
-        Boolean.FALSE, // allowWatchBookmarks requests watch events with type "BOOKMARK".
-        null, // continue to query when there is more results to return.
-        null, // selector to restrict the list of returned objects by their fields
-        labelSelectors, // selector to restrict the list of returned objects by their labels.
-        null, // maximum number of responses to return for a list call.
-        Boolean.FALSE.toString(), // pretty print output.
-        null, // shows changes that occur after that particular version of a resource.
-        RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
-        SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
-        null, // Timeout for the list/watch call.
-        Boolean.FALSE // Watch for changes to the described resources.
-    );
+        = coreV1Api.listServiceForAllNamespaces().labelSelector(labelSelectors).execute();
     List<V1Service> items = v1ServiceList.getItems();
     logger.info(Arrays.toString(items.toArray()));
     for (V1Service service : items) {
@@ -754,19 +708,8 @@ public class Kubernetes {
     try {
       BatchV1Api apiInstance = new BatchV1Api(apiClient);
       list = apiInstance.listNamespacedJob(
-          namespace, // String | name of the namespace.
-          null, // String | pretty print output.
-          null, // Boolean | allowWatchBookmarks requests watch events with type "BOOKMARK".
-          null, // String | The continue option should be set when retrieving more results from the server.
-          null, // String | A selector to restrict the list of returned objects by their fields.
-          labelSelectors, // String | A selector to restrict the list of returned objects by their labels.
-          null, // Integer | limit is a maximum number of responses to return for a list call.
-          "", // String | Shows changes that occur after that particular version of a resource.
-          RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
-          SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
-          5, // Integer | Timeout for the list/watch call.
-          Boolean.FALSE // Boolean | Watch for changes to the described resources
-      );
+          namespace // String | name of the namespace.
+      ).labelSelector(labelSelectors).execute();
     } catch (ApiException apex) {
       getLogger().warning(apex.getResponseBody());
     }
@@ -878,19 +821,7 @@ public class Kubernetes {
   public static V1PersistentVolumeList listPersistentVolumes(String labels) throws ApiException {
     V1PersistentVolumeList listPersistentVolume;
     try {
-      listPersistentVolume = coreV1Api.listPersistentVolume(
-          Boolean.FALSE.toString(), // pretty print output
-          Boolean.FALSE, // allowWatchBookmarks requests watch events with type "BOOKMARK"
-          null, // set when retrieving more results from the server
-          null, // selector to restrict the list of returned objects by their fields
-          labels, // selector to restrict the list of returned objects by their labels
-          null, // maximum number of responses to return for a list call
-          "", // shows changes that occur after that particular version of a resource
-          RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
-          SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
-          5, // Timeout for the list/watch call
-          false // Watch for changes to the described resources
-      );
+      listPersistentVolume = coreV1Api.listPersistentVolume().labelSelector(labels).timeoutSeconds(5).execute();
     } catch (ApiException apex) {
       getLogger().severe(apex.getResponseBody());
       throw apex;
@@ -908,19 +839,8 @@ public class Kubernetes {
     V1PersistentVolumeClaimList v1PersistentVolumeClaimList;
     try {
       v1PersistentVolumeClaimList = coreV1Api.listNamespacedPersistentVolumeClaim(
-          namespace, // namespace in which the persistent volume claims to be listed
-          Boolean.FALSE.toString(), // pretty print output
-          Boolean.FALSE, // allowWatchBookmarks requests watch events with type "BOOKMARK"
-          null, // set when retrieving more results from the server
-          null, // selector to restrict the list of returned objects by their fields
-          "", // selector to restrict the list of returned objects by their labels
-          null, // maximum number of responses to return for a list call
-          "", // shows changes that occur after that particular version of a resource
-          RESOURCE_VERSION_MATCH_UNSET, // String | how to match resource version, leave unset
-          SEND_INITIAL_EVENTS_UNSET, // Boolean | if to send initial events
-          5, // Timeout for the list/watch call
-          false // Watch for changes to the described resources
-      );
+          namespace // namespace in which the persistent volume claims to be listed
+      ).timeoutSeconds(5).execute();
     } catch (ApiException apex) {
       getLogger().severe(apex.getResponseBody());
       throw apex;

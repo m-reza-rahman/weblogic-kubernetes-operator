@@ -40,8 +40,8 @@ public interface KubernetesApiFactory {
       CoreV1Api c = new CoreV1Api(Client.getInstance());
       try {
         return new KubernetesApiResponse<>(new RequestBuilder.V1StatusObject(
-            c.deleteCollectionNamespacedPod(namespace, null, null, null, listOptions.getFieldSelector(), null,
-                listOptions.getLabelSelector(), null, null, null, null, null, null, null, deleteOptions)));
+            c.deleteCollectionNamespacedPod(namespace).fieldSelector(listOptions.getFieldSelector())
+                .labelSelector(listOptions.getLabelSelector()).body(deleteOptions).execute()));
       } catch (ApiException e) {
         return RequestStep.responseFromApiException(c.getApiClient(), e);
       }
@@ -52,8 +52,7 @@ public interface KubernetesApiFactory {
       CoreV1Api c = new CoreV1Api(Client.getInstance());
       try {
         return new KubernetesApiResponse<>(new RequestBuilder.StringObject(
-            c.readNamespacedPodLog(name, namespace, container,
-                null, null, null, null, null, null, null, null)));
+            c.readNamespacedPodLog(name, namespace).container(container).execute()));
       } catch (ApiException e) {
         return RequestStep.responseFromApiException(c.getApiClient(), e);
       }
@@ -63,7 +62,7 @@ public interface KubernetesApiFactory {
     public KubernetesApiResponse<RequestBuilder.VersionInfoObject> getVersionCode() {
       VersionApi c = new VersionApi(Client.getInstance());
       try {
-        return new KubernetesApiResponse<>(new RequestBuilder.VersionInfoObject(c.getCode()));
+        return new KubernetesApiResponse<>(new RequestBuilder.VersionInfoObject(c.getCode().execute()));
       } catch (ApiException e) {
         return RequestStep.responseFromApiException(c.getApiClient(), e);
       }
