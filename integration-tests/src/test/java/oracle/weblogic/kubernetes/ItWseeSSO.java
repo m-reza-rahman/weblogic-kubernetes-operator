@@ -176,13 +176,9 @@ class ItWseeSSO {
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
     if (!OKD) {
-      String nodePortValue = null;
-      if (!OKE_CLUSTER) {
-        nodePortValue = "NodePort";
-      }
       // install and verify NGINX
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, ITWSEESSONGINX_INGRESS_HTTP_NODEPORT,
-          ITWSEESSONGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, nodePortValue);
+          ITWSEESSONGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, (OKE_CLUSTER ? null : "NodePort"));
 
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
