@@ -276,7 +276,6 @@ class ItWseeSSO {
     } else {
       hostAndPort = ingressIP + ":80";
     }
-    String tmp = hostAndPort;
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       hostAndPort = ingressIP + ":" + nodeportshttp;
     }
@@ -287,7 +286,9 @@ class ItWseeSSO {
       logger.severe(ex.getLocalizedMessage());
     }
     assertEquals(200, response.statusCode());
-    urlTest = "http://" + tmp + appURI;
+    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      urlTest = "http://" + K8S_NODEPORT_HOST + ":" + nodeportshttp + appURI;
+    }
     return urlTest;
   }
 
