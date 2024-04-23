@@ -500,5 +500,10 @@ public interface TestConstants {
   public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT = 30444;
   public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT = 2081;
   public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTPS_HOSTPORT = 2444;
+  
+  public static final int ITWSEESSONGINX_INGRESS_HTTP_NODEPORT = 31781;
+  public static final int ITWSEESSONGINX_INGRESS_HTTPS_NODEPORT = 31744;  
+  public static final int ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT = 2781;
+  public static final int ITWSEESSONGINX_INGRESS_HTTPS_HOSTPORT = 2782;  
 
 }
