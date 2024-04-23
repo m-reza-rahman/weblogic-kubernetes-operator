@@ -522,9 +522,6 @@ public class DomainStatusUpdater {
           .withSpec(null)
           .withStatus(status);
 
-      // TEST
-      LOGGER.severe("RJE: updateStatus to: " + status);
-
       return RequestBuilder.DOMAIN.updateStatus(newDomain, DomainResource::getStatus,
           domainStatusUpdaterStep.createResponseStep(this));
     }

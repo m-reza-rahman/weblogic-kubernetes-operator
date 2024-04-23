@@ -798,6 +798,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     } else {
       hostingDomains.forEach(info -> {
         LOGGER.info(MessageKeys.WATCH_CLUSTER, cluster.getMetadata().getName(), info.getDomainUid());
+        info.addClusterResource(cluster);
         createMakeRightOperationForClusterEvent(CLUSTER_CREATED, cluster, info.getDomainUid()).execute();
         createMakeRightOperation(info)
             .interrupt()
