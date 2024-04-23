@@ -135,6 +135,7 @@ class ItWseeSSO {
   Path keyStoresPath;
   final int managedServerPort = 8001;
   int t3ChannelPort;
+  private static String nginxServiceName;
 
   final String wlSecretName = "weblogic-credentials";
 
@@ -183,7 +184,7 @@ class ItWseeSSO {
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, ITWSEESSONGINX_INGRESS_HTTP_NODEPORT,
           ITWSEESSONGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, (OKE_CLUSTER ? null : "NodePort"));
 
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
 
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
@@ -287,7 +288,8 @@ class ItWseeSSO {
     }
     assertEquals(200, response.statusCode());
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-      urlTest = "http://" + K8S_NODEPORT_HOST + ":" + nodeportshttp + appURI;
+      urlTest = "http://" + K8S_NODEPORT_HOST + ":"
+          + getServiceNodePort(nginxNamespace, nginxServiceName, "http") + appURI;
     }
     return urlTest;
   }
