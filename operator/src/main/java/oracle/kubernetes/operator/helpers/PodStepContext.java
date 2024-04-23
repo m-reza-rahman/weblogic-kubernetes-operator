@@ -536,6 +536,7 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   V1Pod createPodModel() {
     final V1Pod podRecipe = createPodRecipe();
+    podRecipe.getSpec().setOverhead(null);
     sha256Hash = AnnotationHelper.createHash(podRecipe);
     return withNonHashedElements(podRecipe);
   }
@@ -1163,11 +1164,14 @@ public abstract class PodStepContext extends BasePodStepContext {
 
       restoreAffinityContent(recipe, currentPod);
 
+      recipe.getSpec().setOverhead(null);
+
       return AnnotationHelper.createHash(recipe);
     }
 
     private String adjustedHash(V1Pod currentPod, List<BiConsumer<V1Pod, V1Pod>> adjustments) {
       V1Pod recipe = createPodRecipe();
+      recipe.getSpec().setOverhead(null);
       adjustments.forEach(adjustment -> adjustment.accept(recipe, currentPod));
 
       return AnnotationHelper.createHash(recipe);
