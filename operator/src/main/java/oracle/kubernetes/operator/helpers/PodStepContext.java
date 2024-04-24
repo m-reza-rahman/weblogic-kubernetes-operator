@@ -33,10 +33,14 @@ import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1ExecAction;
 import io.kubernetes.client.openapi.models.V1HTTPGetAction;
+import io.kubernetes.client.openapi.models.V1LabelSelector;
 import io.kubernetes.client.openapi.models.V1Lifecycle;
 import io.kubernetes.client.openapi.models.V1LifecycleHandler;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
+import io.kubernetes.client.openapi.models.V1PodAffinity;
+import io.kubernetes.client.openapi.models.V1PodAffinityTerm;
+import io.kubernetes.client.openapi.models.V1PodAntiAffinity;
 import io.kubernetes.client.openapi.models.V1PodReadinessGate;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodSpecBuilder;
@@ -46,6 +50,7 @@ import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import io.kubernetes.client.openapi.models.V1WeightedPodAffinityTerm;
 import io.kubernetes.client.util.Yaml;
 import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
@@ -536,7 +541,6 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   V1Pod createPodModel() {
     final V1Pod podRecipe = createPodRecipe();
-    podRecipe.getSpec().setOverhead(null);
     sha256Hash = AnnotationHelper.createHash(podRecipe);
     return withNonHashedElements(podRecipe);
   }
@@ -1164,15 +1168,16 @@ public abstract class PodStepContext extends BasePodStepContext {
 
       restoreAffinityContent(recipe, currentPod);
 
-      recipe.getSpec().setOverhead(null);
+      canonicalizeModel(recipe);
 
       return AnnotationHelper.createHash(recipe);
     }
 
     private String adjustedHash(V1Pod currentPod, List<BiConsumer<V1Pod, V1Pod>> adjustments) {
       V1Pod recipe = createPodRecipe();
-      recipe.getSpec().setOverhead(null);
       adjustments.forEach(adjustment -> adjustment.accept(recipe, currentPod));
+
+      canonicalizeModel(recipe);
 
       return AnnotationHelper.createHash(recipe);
     }
@@ -1383,6 +1388,91 @@ public abstract class PodStepContext extends BasePodStepContext {
           .anyMatch(requiredHash::equals);
     }
 
+    private void canonicalizeModel(@Nonnull V1Pod model) {
+      V1PodSpec spec = model.getSpec();
+      if (spec != null) {
+        Map<?, ?> map = spec.getOverhead();
+        if (map != null && map.isEmpty()) {
+          spec.setOverhead(null);
+        }
+        V1Affinity affinity = spec.getAffinity();
+        if (affinity != null) {
+          V1PodAffinity podAffinity = affinity.getPodAffinity();
+          if (podAffinity != null) {
+            List<V1WeightedPodAffinityTerm> wTerms = podAffinity.getPreferredDuringSchedulingIgnoredDuringExecution();
+            if (wTerms != null) {
+              for (V1WeightedPodAffinityTerm term : wTerms) {
+                V1PodAffinityTerm pTerm = term.getPodAffinityTerm();
+                if (pTerm != null) {
+                  V1LabelSelector labelSelctor = pTerm.getLabelSelector();
+                  if (labelSelctor != null) {
+                    Map<String, String> lmap = labelSelctor.getMatchLabels();
+                    if (lmap != null && lmap.isEmpty()) {
+                      labelSelctor.setMatchLabels(null);
+                    }
+                  }
+                }
+              }
+            }
+            List<V1PodAffinityTerm> terms = podAffinity.getRequiredDuringSchedulingIgnoredDuringExecution();
+            if (terms != null) {
+              for (V1PodAffinityTerm term : terms) {
+                V1LabelSelector labelSelctor = term.getLabelSelector();
+                if (labelSelctor != null) {
+                  Map<String, String> lmap = labelSelctor.getMatchLabels();
+                  if (lmap != null && lmap.isEmpty()) {
+                    labelSelctor.setMatchLabels(null);
+                  }
+                }
+              }
+            }
+          }
+          V1PodAntiAffinity antiAffinity = affinity.getPodAntiAffinity();
+          if (antiAffinity != null) {
+            List<V1WeightedPodAffinityTerm> wTerms = antiAffinity.getPreferredDuringSchedulingIgnoredDuringExecution();
+            if (wTerms != null) {
+              for (V1WeightedPodAffinityTerm term : wTerms) {
+                V1PodAffinityTerm pTerm = term.getPodAffinityTerm();
+                if (pTerm != null) {
+                  V1LabelSelector labelSelctor = pTerm.getLabelSelector();
+                  if (labelSelctor != null) {
+                    Map<String, String> lmap = labelSelctor.getMatchLabels();
+                    if (lmap != null && lmap.isEmpty()) {
+                      labelSelctor.setMatchLabels(null);
+                    }
+                  }
+                }
+              }
+            }
+            List<V1PodAffinityTerm> terms = antiAffinity.getRequiredDuringSchedulingIgnoredDuringExecution();
+            if (terms != null) {
+              for (V1PodAffinityTerm term : terms) {
+                V1LabelSelector labelSelctor = term.getLabelSelector();
+                if (labelSelctor != null) {
+                  Map<String, String> lmap = labelSelctor.getMatchLabels();
+                  if (lmap != null && lmap.isEmpty()) {
+                    labelSelctor.setMatchLabels(null);
+                  }
+                }
+              }
+            }
+          }
+        }
+        List<V1Container> containers = spec.getContainers();
+        if (containers != null) {
+          for (V1Container container : containers) {
+            V1ResourceRequirements requirements = container.getResources();
+            if (requirements != null) {
+              Map<?, ?> limits = requirements.getLimits();
+              if (limits != null && limits.isEmpty()) {
+                requirements.setLimits(null);
+              }
+            }
+          }
+        }
+      }
+    }
+
     private boolean hasCorrectPodHash(V1Pod currentPod) {
 
       return (isLegacyPod(currentPod)
@@ -1394,6 +1484,13 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     private boolean canUseCurrentPod(V1Pod currentPod) {
       boolean useCurrent = hasCorrectPodHash(currentPod) && canUseNewDomainZip(currentPod);
+
+      // TEST
+      System.out.println("From client-20 AdminPodHelperTest.afterUpgradingMiiDomainWith3_4_1_ConvertedAuxImages_patchIt -- first currentPod and then getPodModel()");
+      System.out.println(Yaml.dump(currentPod));
+      V1Pod model = getPodModel();
+      canonicalizeModel(model);
+      System.out.println(Yaml.dump(model));
 
       if (!useCurrent) {
         LOGGER.finer(
