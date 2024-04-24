@@ -6,7 +6,6 @@ package oracle.weblogic.kubernetes;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -217,7 +216,7 @@ class ItWseeSSO {
    */
   @Test
   @DisplayName("Test Wsee connect with sso")
-  void testInvokeWsee() {
+  void testInvokeWsee() throws Exception {
     //deploy application to view server configuration
     deployApplication(clusterName + "," + adminServerName, domain2Namespace, domain2Uid, wseeServiceAppPath);
     //deploy application to view server configuration
@@ -245,39 +244,30 @@ class ItWseeSSO {
 
   private String checkWSDLAccess(String domainNamespace, String domainUid,
       String adminSvcExtHost,
-      String appURI) {
+      String appURI) throws UnknownHostException, IOException, InterruptedException {
 
     String adminServerPodName = domainUid + "-" + adminServerName;
-    HttpResponse<String> response = null;
     String hostAndPort;
     if (!OKE_CLUSTER_PRIVATEIP) {
       int serviceTestNodePort = assertDoesNotThrow(()
-          -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
-              "default"),
+          -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
           "Getting admin server node port failed");
       logger.info("admin svc host = {0}", adminSvcExtHost);
       hostAndPort = getHostAndPort(adminSvcExtHost, serviceTestNodePort);
+      if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        // to access app url in podman we have to use mapped nodeport and localhost
+        String url = "http://" + formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
+            + ":" + ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT + appURI;
+        assertEquals(200, OracleHttpClient.get(url, true).statusCode());
+        // to access app url inside admin pod we have to use nodehost and nodeport
+        return "http://" + K8S_NODEPORT_HOST + ":" + serviceTestNodePort + appURI;
+      }
     } else {
       hostAndPort = ingressIP + ":80";
     }
-    
-    String tmp = "http://" + hostAndPort + appURI;
-    String urlTest = tmp;
-    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-      try {
-        tmp = "http://" + formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
-            + ":" + ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT + appURI;
-      } catch (UnknownHostException ex) {
-        logger.severe(ex.getLocalizedMessage());
-      }
-    }
-    try {
-      response = OracleHttpClient.get(tmp, true);
-    } catch (Exception ex) {
-      logger.severe(ex.getLocalizedMessage());
-    }
-    assertEquals(200, response.statusCode());
-    return urlTest;
+    String url = "http://" + hostAndPort + appURI;
+    assertEquals(200, OracleHttpClient.get(url, true).statusCode());
+    return url;
   }
 
   private void createDomain(String domainNamespace, String domainUid, String modelFileName) {
