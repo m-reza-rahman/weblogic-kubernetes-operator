@@ -177,7 +177,6 @@ class ItWseeSSO {
           ITWSEESSONGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, (OKE_CLUSTER ? null : "NodePort"));
 
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
 
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
@@ -238,9 +237,8 @@ class ItWseeSSO {
             "default"),
         "Getting admin server node port failed");
     String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP + " 80" : K8S_NODEPORT_HOST + " " + serviceNodePort;
-    testUntil(() -> {
-      return callPythonScript(domain1Uid, domain1Namespace, "setupPKI.py", hostPort);
-    }, logger, "Failed to run python script setupPKI.py");
+    testUntil(() -> callPythonScript(domain1Uid, domain1Namespace, "setupPKI.py", hostPort),
+        logger, "Failed to run python script setupPKI.py");
 
     buildRunClientOnPod();
   }
