@@ -504,6 +504,11 @@ public interface TestConstants {
   public static final int ITWSEESSONGINX_INGRESS_HTTP_NODEPORT = 31781;
   public static final int ITWSEESSONGINX_INGRESS_HTTPS_NODEPORT = 31744;  
   public static final int ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT = 2781;
-  public static final int ITWSEESSONGINX_INGRESS_HTTPS_HOSTPORT = 2782;  
+  public static final int ITWSEESSONGINX_INGRESS_HTTPS_HOSTPORT = 2782;
+  
+  public static final int ITHPACUSTOMNGINX_INGRESS_HTTP_NODEPORT = 31785;
+  public static final int ITHPACUSTOMNGINX_INGRESS_HTTPS_NODEPORT = 31746;  
+  public static final int ITHPACUSTOMNGINX_INGRESS_HTTP_HOSTPORT = 2785;
+  public static final int ITHPACUSTOMNGINX_INGRESS_HTTPS_HOSTPORT = 2786;  
 
 }
