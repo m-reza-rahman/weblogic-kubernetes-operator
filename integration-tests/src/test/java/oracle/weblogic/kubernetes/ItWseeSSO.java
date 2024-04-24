@@ -261,17 +261,18 @@ class ItWseeSSO {
       hostAndPort = ingressIP + ":80";
     }
     
-    String urlTest = "http://" + hostAndPort + appURI;
+    String tmp = "http://" + hostAndPort + appURI;
+    String urlTest = tmp;
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       try {
-        urlTest = "http://" + formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
+        tmp = "http://" + formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
             + ":" + ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT + appURI;
       } catch (UnknownHostException ex) {
         logger.severe(ex.getLocalizedMessage());
       }
     }
     try {
-      response = OracleHttpClient.get(urlTest, true);
+      response = OracleHttpClient.get(tmp, true);
     } catch (Exception ex) {
       logger.severe(ex.getLocalizedMessage());
     }
