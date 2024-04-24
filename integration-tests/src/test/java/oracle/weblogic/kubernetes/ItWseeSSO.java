@@ -151,7 +151,7 @@ class ItWseeSSO {
    * @param namespaces injected by JUnit
    */
   @BeforeAll
-  public void initAll(@Namespaces(4) List<String> namespaces) throws UnknownHostException {
+  public void initAll(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
 
     logger.info("Assign a unique namespace for operator");
@@ -227,18 +227,18 @@ class ItWseeSSO {
         "/samlSenderVouches/EchoService");
     senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1,
         "/EchoServiceRef/Echo");
+    
     testUntil(() -> callPythonScript(domain1Uid, domain1Namespace,
         "addSAMLRelyingPartySenderConfig.py", receiverURI),
         logger,
         "Failed to run python script addSAMLRelyingPartySenderConfig.py");
-    
+
     int serviceNodePort = assertDoesNotThrow(()
         -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
             "default"),
         "Getting admin server node port failed");
     String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP + " 80" : K8S_NODEPORT_HOST + " " + serviceNodePort;
     testUntil(() -> {
-
       return callPythonScript(domain1Uid, domain1Namespace, "setupPKI.py", hostPort);
     }, logger, "Failed to run python script setupPKI.py");
 
@@ -246,8 +246,8 @@ class ItWseeSSO {
   }
 
   private String checkWSDLAccess(String domainNamespace, String domainUid,
-                                 String adminSvcExtHost,
-                                 String appURI) {
+      String adminSvcExtHost,
+      String appURI) {
 
     String adminServerPodName = domainUid + "-" + adminServerName;
     HttpResponse<String> response = null;
@@ -257,14 +257,13 @@ class ItWseeSSO {
           -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
               "default"),
           "Getting admin server node port failed");
-
       logger.info("admin svc host = {0}", adminSvcExtHost);
       hostAndPort = getHostAndPort(adminSvcExtHost, serviceTestNodePort);
     } else {
       hostAndPort = ingressIP + ":80";
     }
-    String urlTest = "http://" + hostAndPort + appURI;
     
+    String urlTest = "http://" + hostAndPort + appURI;
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       try {
         urlTest = "http://" + formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
@@ -273,7 +272,6 @@ class ItWseeSSO {
         logger.severe(ex.getLocalizedMessage());
       }
     }
-    
     try {
       response = OracleHttpClient.get(urlTest, true);
     } catch (Exception ex) {
