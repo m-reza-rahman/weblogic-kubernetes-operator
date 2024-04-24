@@ -120,24 +120,16 @@ class ItWseeSSO {
   private static int nodeportshttp = 0;
   private static String WDT_MODEL_FILE_SENDER = "model.wsee1.yaml";
   private static String WDT_MODEL_FILE_RECEIVER = "model.wsee2.yaml";
-  private static List<String> ingressHostList1 = null;
-  private static List<String> ingressHostList2 = null;
   private String receiverURI = null;
   private String senderURI = null;
   final String domain1Uid = "mywseedomain1";
   final String domain2Uid = "mywseedomain2";
   final String clusterName = "cluster-1";
   final String adminServerName = "admin-server";
-  private static List<String> ingressHost1List = null;
   final String adminServerPodName1 = domain1Uid + "-" + adminServerName;
   final String adminServerPodName2 = domain2Uid + "-" + adminServerName;
   final String managedServerNameBase = "managed-server";
   Path keyStoresPath;
-  final int managedServerPort = 8001;
-  int t3ChannelPort;
-  private static String nginxServiceName;
-
-  final String wlSecretName = "weblogic-credentials";
 
   int replicaCount = 2;
   String adminSvcExtHost1 = null;
@@ -184,6 +176,7 @@ class ItWseeSSO {
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, ITWSEESSONGINX_INGRESS_HTTP_NODEPORT,
           ITWSEESSONGINX_INGRESS_HTTPS_NODEPORT, NGINX_CHART_VERSION, (OKE_CLUSTER ? null : "NodePort"));
 
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       logger.info("NGINX service name: {0}", nginxServiceName);
 
@@ -191,14 +184,6 @@ class ItWseeSSO {
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
       logger.info("NGINX http node port: {0}", nodeportshttp);
-      
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        ingressIP = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
-        nodeportshttp = ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT;
-        logger.info("Running in podman, NGINX host:port {0}:{1}", ingressIP, nodeportshttp);
-      }
-
     }
     keyStoresPath = Paths.get(RESULTS_ROOT, "mydomainwsee", "keystores");
     assertDoesNotThrow(() -> deleteDirectory(keyStoresPath.toFile()));
@@ -243,16 +228,17 @@ class ItWseeSSO {
     senderURI = checkWSDLAccess(domain1Namespace, domain1Uid, adminSvcExtHost1,
         "/EchoServiceRef/Echo");
     testUntil(() -> callPythonScript(domain1Uid, domain1Namespace,
-            "addSAMLRelyingPartySenderConfig.py", receiverURI),
+        "addSAMLRelyingPartySenderConfig.py", receiverURI),
         logger,
         "Failed to run python script addSAMLRelyingPartySenderConfig.py");
-
+    
+    int serviceNodePort = assertDoesNotThrow(()
+        -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
+            "default"),
+        "Getting admin server node port failed");
+    String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP + " 80" : K8S_NODEPORT_HOST + " " + serviceNodePort;
     testUntil(() -> {
-      int serviceNodePort = assertDoesNotThrow(()
-          -> getServiceNodePort(domain2Namespace, getExternalServicePodName(adminServerPodName2),
-              "default"),
-          "Getting admin server node port failed");
-      String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP + " 80" : K8S_NODEPORT_HOST + " " + serviceNodePort;
+
       return callPythonScript(domain1Uid, domain1Namespace, "setupPKI.py", hostPort);
     }, logger, "Failed to run python script setupPKI.py");
 
@@ -277,20 +263,23 @@ class ItWseeSSO {
     } else {
       hostAndPort = ingressIP + ":80";
     }
-    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-      hostAndPort = ingressIP + ":" + nodeportshttp;
-    }
     String urlTest = "http://" + hostAndPort + appURI;
+    
+    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      try {
+        urlTest = "http://" + formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
+            + ":" + ITWSEESSONGINX_INGRESS_HTTP_HOSTPORT + appURI;
+      } catch (UnknownHostException ex) {
+        logger.severe(ex.getLocalizedMessage());
+      }
+    }
+    
     try {
       response = OracleHttpClient.get(urlTest, true);
     } catch (Exception ex) {
       logger.severe(ex.getLocalizedMessage());
     }
     assertEquals(200, response.statusCode());
-    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-      urlTest = "http://" + K8S_NODEPORT_HOST + ":"
-          + getServiceNodePort(nginxNamespace, nginxServiceName, "http") + appURI;
-    }
     return urlTest;
   }
 
