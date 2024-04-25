@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ITWEBAPPACCESSNGINX_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITWEBAPPACCESSNGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.ITWEBAPPACCESSNGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
@@ -42,7 +43,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
-import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.callTestWebAppAndCheckForServerNameInResponse;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
@@ -135,10 +135,12 @@ class ItWebAppAccessWithDBTest {
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       logger.info("NGINX service name: {0}", nginxServiceName);
-      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+      //nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+      nodeportshttp = ITWEBAPPACCESSNGINX_INGRESS_HTTP_HOSTPORT;
+      //nodeportshttps = ITWEBAPPACCESSNGINX_INGRESS_HTTPS_HOSTPORT;
+      //nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
       logger.info("NGINX http node port: {0}", nodeportshttp);
-      logger.info("NGINX https node port: {0}", nodeportshttps);
+      //logger.info("NGINX https node port: {0}", nodeportshttps);
     }
     clusterNameMsPortMap = new HashMap<>();
     clusterNameMsPortMap.put(cluster1Name, managedServerPort);

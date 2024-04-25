@@ -504,7 +504,7 @@ public interface TestConstants {
 
   public static final int ITWEBAPPACCESSNGINX_INGRESS_HTTP_NODEPORT = 30538;
   public static final int ITWEBAPPACCESSNGINX_INGRESS_HTTPS_NODEPORT = 30544;
-  // public static final int ITWEBAPPACCESSNGINX_INGRESS_HTTP_HOSTPORT = 2538;
+  public static final int ITWEBAPPACCESSNGINX_INGRESS_HTTP_HOSTPORT = 2538;
   // public static final int ITWEBAPPACCESSNGINX_INGRESS_HTTPS_HOSTPORT = 2539;
 
 }
