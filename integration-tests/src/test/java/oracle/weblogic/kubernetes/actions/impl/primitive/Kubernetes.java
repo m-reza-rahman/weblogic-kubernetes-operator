@@ -83,7 +83,6 @@ import io.kubernetes.client.openapi.models.V1StorageClassList;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfiguration;
 import io.kubernetes.client.openapi.models.V1ValidatingWebhookConfigurationList;
 import io.kubernetes.client.util.ClientBuilder;
-import io.kubernetes.client.util.PatchUtils;
 import io.kubernetes.client.util.Streams;
 import io.kubernetes.client.util.Yaml;
 import io.kubernetes.client.util.exception.CopyNotSupportedException;
@@ -109,7 +108,6 @@ import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodInitialized;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
 
 public class Kubernetes {
 
@@ -759,7 +757,7 @@ public class Kubernetes {
       v1PodList
           = coreV1Api.listNamespacedPod(
           namespace // namespace in which to look for the pods.
-      ).execute();
+      ).labelSelector(labelSelectors).execute();
     } catch (ApiException apex) {
       getLogger().severe(apex.getResponseBody());
       throw apex;
@@ -780,7 +778,7 @@ public class Kubernetes {
     try {
       return policyV1Api.listNamespacedPodDisruptionBudget(
           namespace // namespace in which to look for the pods.
-      ).execute();
+      ).labelSelector(labelSelectors).execute();
     } catch (ApiException apex) {
       getLogger().severe(apex.getResponseBody());
       throw apex;

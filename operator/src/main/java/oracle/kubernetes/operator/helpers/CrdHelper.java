@@ -137,7 +137,7 @@ public class CrdHelper {
     try (Writer writer = Files.newBufferedWriter(PathSupport.getPath(outputFileName))) {
       writer.write(
               """
-              # Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+              # Copyright (c) 2020, 2024, Oracle and/or its affiliates.
               # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
               """);
       writer.write("\n");
@@ -308,6 +308,8 @@ public class CrdHelper {
 
       if (productVersion != null) {
         metadata.putLabelsItem(LabelConstants.OPERATOR_VERSION, productVersion.toString());
+      } else {
+        metadata.setLabels(null);
       }
       return metadata;
     }
@@ -351,7 +353,11 @@ public class CrdHelper {
     static V1CustomResourceValidation getValidationFromCrdSchemaFile(String fileContents) {
       Map<String, Object> data = getSnakeYaml().load(new StringReader(fileContents));
       final Gson gson = new Gson();
-      return gson.fromJson(gson.toJsonTree(data), V1CustomResourceValidation.class);
+      V1CustomResourceValidation validation = gson.fromJson(gson.toJsonTree(data), V1CustomResourceValidation.class);
+      if (validation.getOpenAPIV3Schema() != null) {
+        validation.setOpenAPIV3Schema(canonicalize(validation.getOpenAPIV3Schema()));
+      }
+      return validation;
     }
 
     private static org.yaml.snakeyaml.Yaml getSnakeYaml() {
@@ -436,11 +442,28 @@ public class CrdHelper {
 
       String description = getResourceClass().getAnnotation(Description.class).value();
 
-      return new V1JSONSchemaProps()
+      return canonicalize(new V1JSONSchemaProps()
           .type("object")
           .description(description)
           .putPropertiesItem("spec", spec)
-          .putPropertiesItem("status", status);
+          .putPropertiesItem("status", status));
+    }
+
+    private static V1JSONSchemaProps canonicalize(V1JSONSchemaProps v1JSONSchemaProps) {
+      v1JSONSchemaProps.setDefinitions(null);
+      v1JSONSchemaProps.setDependencies(null);
+      v1JSONSchemaProps.setPatternProperties(null);
+      Map<String, V1JSONSchemaProps> properties = v1JSONSchemaProps.getProperties();
+      if (properties != null) {
+        if (properties.isEmpty()) {
+          v1JSONSchemaProps.setProperties(null);
+        } else {
+          for (Map.Entry<String, V1JSONSchemaProps> entry : properties.entrySet()) {
+            canonicalize(entry.getValue());
+          }
+        }
+      }
+      return v1JSONSchemaProps;
     }
 
     Step verifyCrd(Step next) {

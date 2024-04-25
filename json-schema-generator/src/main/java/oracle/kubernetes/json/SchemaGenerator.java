@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.json;
@@ -504,7 +504,8 @@ public class SchemaGenerator {
     try {
       Method getter = field.getDeclaringClass().getMethod(getterName);
       ApiModelProperty apiModelProperty = getter.getAnnotation(ApiModelProperty.class);
-      return apiModelProperty != null && apiModelProperty.required();
+      return (apiModelProperty != null && apiModelProperty.required())
+          || getter.getAnnotation(jakarta.annotation.Nonnull.class) != null;
     } catch (NoSuchMethodException e) {
       // no op
       return false;

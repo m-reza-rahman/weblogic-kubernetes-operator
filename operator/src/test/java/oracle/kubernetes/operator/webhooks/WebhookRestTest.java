@@ -108,7 +108,7 @@ class WebhookRestTest extends RestTestBase {
   private static final String REJECT_MESSAGE_PATTERN_CLUSTER_SCALE = "Scale request to cluster resource '%s' cannot be "
       + "honored because the replica count would exceed the cluster size '%s'";
   private static final String REJECT_MESSAGE_CLUSTER_NOT_FOUND =
-      "Exception: io.kubernetes.client.openapi.ApiException: Cluster %s not found";
+      "Cluster %s not found";
 
   public static final String KIND_ADMISSION_REVIEW = "AdmissionReview";
 
@@ -606,25 +606,25 @@ class WebhookRestTest extends RestTestBase {
     assertThat(getResponseStatusMessage(responseReview), equalTo(getRejectMessageForClusterResource(proposedCluster)));
   }
 
-  private Object getRejectMessageForDomainResource(DomainResource domain, ClusterResource c1) {
+  private String getRejectMessageForDomainResource(DomainResource domain, ClusterResource c1) {
     return String.format(REJECT_MESSAGE_PATTERN_DOMAIN,
         domain.getDomainUid(), c1.getMetadata().getName(), ORIGINAL_REPLICAS);
   }
 
-  private Object getRejectMessageForDomainResource(DomainResource domain, ClusterResource c1, ClusterResource c2) {
+  private String getRejectMessageForDomainResource(DomainResource domain, ClusterResource c1, ClusterResource c2) {
     return String.format(REJECT_MESSAGE_PATTERN_DOMAIN_MULTIPLE_CLUSTERS, domain.getDomainUid(),
         c1.getMetadata().getName() + ", " + c2.getMetadata().getName(), ORIGINAL_REPLICAS + ", " + ORIGINAL_REPLICAS);
   }
 
-  private Object getRejectMessageForClusterResource(ClusterResource cluster) {
+  private String getRejectMessageForClusterResource(ClusterResource cluster) {
     return String.format(REJECT_MESSAGE_PATTERN_CLUSTER, cluster.getClusterName(), ORIGINAL_REPLICAS);
   }
 
-  private Object getRejectMessageForScaleClusterResource(ClusterResource cluster) {
+  private String getRejectMessageForScaleClusterResource(ClusterResource cluster) {
     return String.format(REJECT_MESSAGE_PATTERN_CLUSTER_SCALE, cluster.getClusterName(), ORIGINAL_REPLICAS);
   }
 
-  private Object getRejectMessageForScaleClusterResourceWithException(ClusterResource cluster) {
+  private String getRejectMessageForScaleClusterResourceNotFound(ClusterResource cluster) {
     return String.format(REJECT_MESSAGE_CLUSTER_NOT_FOUND, cluster.getMetadata().getName());
   }
 
@@ -751,7 +751,7 @@ class WebhookRestTest extends RestTestBase {
 
     assertThat(isAllowed(responseReview), equalTo(false));
     assertThat(getResponseStatusMessage(responseReview),
-        equalTo(getRejectMessageForScaleClusterResourceWithException(proposedCluster)));
+        containsString(getRejectMessageForScaleClusterResourceNotFound(proposedCluster)));
   }
 
   @Test

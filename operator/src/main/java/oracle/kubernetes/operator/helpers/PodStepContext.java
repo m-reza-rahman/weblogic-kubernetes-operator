@@ -111,6 +111,9 @@ import static oracle.kubernetes.operator.ProcessingConstants.MII_DYNAMIC_UPDATE_
 import static oracle.kubernetes.operator.helpers.AffinityHelper.DOMAIN_UID_VARIABLE;
 import static oracle.kubernetes.operator.helpers.AffinityHelper.getDefaultAntiAffinity;
 import static oracle.kubernetes.operator.helpers.AnnotationHelper.SHA256_ANNOTATION;
+import static oracle.kubernetes.operator.helpers.AnnotationHelper.annotateForPrometheus;
+import static oracle.kubernetes.operator.helpers.AnnotationHelper.createHash;
+import static oracle.kubernetes.operator.helpers.AnnotationHelper.getHash;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.POD_CYCLE_STARTING;
 import static oracle.kubernetes.operator.helpers.FluentbitHelper.addFluentbitContainer;
 import static oracle.kubernetes.operator.helpers.FluentdHelper.addFluentdContainer;
@@ -494,7 +497,7 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   abstract Step createCycleEndStep(Step next);
 
-  private boolean isRecentOperator(String operatorVersion) {
+  private boolean isOperatorVersion32OrLater(String operatorVersion) {
     try {
       SemanticVersion version = new SemanticVersion(operatorVersion);
       return version.getMajor() > 3 || (version.getMajor() == 3 && version.getMinor() >= 2);
@@ -503,8 +506,17 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
   }
 
+  private boolean isOperatorVersion43OrLater(String operatorVersion) {
+    try {
+      SemanticVersion version = new SemanticVersion(operatorVersion);
+      return version.getMajor() > 4 || (version.getMajor() == 4 && version.getMinor() >= 3);
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
   private void addLegacyPrometheusAnnotationsFrom31(V1Pod pod) {
-    AnnotationHelper.annotateForPrometheus(pod.getMetadata(), WLS_EXPORTER, getMetricsPort());
+    annotateForPrometheus(pod.getMetadata(), WLS_EXPORTER, getMetricsPort());
   }
 
   private Integer getMetricsPort() {
@@ -541,7 +553,7 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   V1Pod createPodModel() {
     final V1Pod podRecipe = createPodRecipe();
-    sha256Hash = AnnotationHelper.createHash(podRecipe);
+    sha256Hash = createHash(podRecipe);
     return withNonHashedElements(podRecipe);
   }
 
@@ -573,7 +585,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     // Prometheus does not support "prometheus.io/scheme".  The scheme(http/https) can be set
     // in the Prometheus Chart values yaml under the "extraScrapeConfigs:" section.
     if (exporterContext.isEnabled()) {
-      AnnotationHelper.annotateForPrometheus(metadata, exporterContext.getBasePath(), exporterContext.getPort());
+      annotateForPrometheus(metadata, exporterContext.getBasePath(), exporterContext.getPort());
     }
 
     return updateForDeepSubstitution(pod.getSpec(), pod);
@@ -1140,9 +1152,14 @@ public abstract class PodStepContext extends BasePodStepContext {
       return !hasLabel(currentPod, OPERATOR_VERSION);
     }
 
-    private boolean isPodFromRecentOperator(V1Pod currentPod) {
+    private boolean isPodFromOperatorVersion32OrLater(V1Pod currentPod) {
       return Optional.ofNullable(currentPod.getMetadata()).map(V1ObjectMeta::getLabels)
-          .map(l -> l.get(OPERATOR_VERSION)).map(PodStepContext.this::isRecentOperator).orElse(false);
+          .map(l -> l.get(OPERATOR_VERSION)).map(PodStepContext.this::isOperatorVersion32OrLater).orElse(false);
+    }
+
+    private boolean isPodFromOperatorVersion43OrLater(V1Pod currentPod) {
+      return Optional.ofNullable(currentPod.getMetadata()).map(V1ObjectMeta::getLabels)
+              .map(l -> l.get(OPERATOR_VERSION)).map(PodStepContext.this::isOperatorVersion43OrLater).orElse(false);
     }
 
     private boolean isLegacyMiiPod(V1Pod currentPod) {
@@ -1170,7 +1187,7 @@ public abstract class PodStepContext extends BasePodStepContext {
 
       canonicalizeModel(recipe);
 
-      return AnnotationHelper.createHash(recipe);
+      return createHash(recipe);
     }
 
     private String adjustedHash(V1Pod currentPod, List<BiConsumer<V1Pod, V1Pod>> adjustments) {
@@ -1179,11 +1196,11 @@ public abstract class PodStepContext extends BasePodStepContext {
 
       canonicalizeModel(recipe);
 
-      return AnnotationHelper.createHash(recipe);
+      return createHash(recipe);
     }
 
     private void addLegacyPrometheusAnnotationsFrom30(V1Pod pod) {
-      AnnotationHelper.annotateForPrometheus(pod.getMetadata(), WLS_EXPORTER, getOldMetricsPort());
+      annotateForPrometheus(pod.getMetadata(), WLS_EXPORTER, getOldMetricsPort());
     }
 
     private boolean canAdjustLegacyHashToMatch(V1Pod currentPod, String requiredHash) {
@@ -1388,7 +1405,14 @@ public abstract class PodStepContext extends BasePodStepContext {
           .anyMatch(requiredHash::equals);
     }
 
-    private void canonicalizeModel(@Nonnull V1Pod model) {
+    private V1Pod canonicalizeModel(@Nonnull V1Pod model) {
+      V1ObjectMeta meta = model.getMetadata();
+      if (meta != null) {
+        Map<?, ?> map = meta.getAnnotations();
+        if (map != null && map.isEmpty()) {
+          meta.setAnnotations(null);
+        }
+      }
       V1PodSpec spec = model.getSpec();
       if (spec != null) {
         Map<?, ?> map = spec.getOverhead();
@@ -1399,12 +1423,12 @@ public abstract class PodStepContext extends BasePodStepContext {
         if (affinity != null) {
           V1PodAffinity podAffinity = affinity.getPodAffinity();
           if (podAffinity != null) {
-            List<V1WeightedPodAffinityTerm> wTerms = podAffinity.getPreferredDuringSchedulingIgnoredDuringExecution();
-            if (wTerms != null) {
-              for (V1WeightedPodAffinityTerm term : wTerms) {
-                V1PodAffinityTerm pTerm = term.getPodAffinityTerm();
-                if (pTerm != null) {
-                  V1LabelSelector labelSelctor = pTerm.getLabelSelector();
+            List<V1WeightedPodAffinityTerm> wdTerms = podAffinity.getPreferredDuringSchedulingIgnoredDuringExecution();
+            if (wdTerms != null) {
+              for (V1WeightedPodAffinityTerm term : wdTerms) {
+                V1PodAffinityTerm podTerm = term.getPodAffinityTerm();
+                if (podTerm != null) {
+                  V1LabelSelector labelSelctor = podTerm.getLabelSelector();
                   if (labelSelctor != null) {
                     Map<String, String> lmap = labelSelctor.getMatchLabels();
                     if (lmap != null && lmap.isEmpty()) {
@@ -1429,12 +1453,12 @@ public abstract class PodStepContext extends BasePodStepContext {
           }
           V1PodAntiAffinity antiAffinity = affinity.getPodAntiAffinity();
           if (antiAffinity != null) {
-            List<V1WeightedPodAffinityTerm> wTerms = antiAffinity.getPreferredDuringSchedulingIgnoredDuringExecution();
-            if (wTerms != null) {
-              for (V1WeightedPodAffinityTerm term : wTerms) {
-                V1PodAffinityTerm pTerm = term.getPodAffinityTerm();
-                if (pTerm != null) {
-                  V1LabelSelector labelSelctor = pTerm.getLabelSelector();
+            List<V1WeightedPodAffinityTerm> wdTerms = antiAffinity.getPreferredDuringSchedulingIgnoredDuringExecution();
+            if (wdTerms != null) {
+              for (V1WeightedPodAffinityTerm term : wdTerms) {
+                V1PodAffinityTerm podTerm = term.getPodAffinityTerm();
+                if (podTerm != null) {
+                  V1LabelSelector labelSelctor = podTerm.getLabelSelector();
                   if (labelSelctor != null) {
                     Map<String, String> lmap = labelSelctor.getMatchLabels();
                     if (lmap != null && lmap.isEmpty()) {
@@ -1458,7 +1482,7 @@ public abstract class PodStepContext extends BasePodStepContext {
             }
           }
         }
-        List<V1Container> containers = spec.getContainers();
+        List<V1Container> containers = spec.getInitContainers();
         if (containers != null) {
           for (V1Container container : containers) {
             V1ResourceRequirements requirements = container.getResources();
@@ -1471,26 +1495,21 @@ public abstract class PodStepContext extends BasePodStepContext {
           }
         }
       }
+      return model;
     }
 
     private boolean hasCorrectPodHash(V1Pod currentPod) {
-
-      return (isLegacyPod(currentPod)
-              && canAdjustLegacyHashToMatch(currentPod, AnnotationHelper.getHash(currentPod)))
-          || (isPodFromRecentOperator(currentPod)
-              && canAdjustRecentOperatorMajorVersion3HashToMatch(currentPod, AnnotationHelper.getHash(currentPod)))
-          || AnnotationHelper.getHash(getPodModel()).equals(AnnotationHelper.getHash(currentPod));
+      return getHash(getPodModel()).equals(getHash(currentPod))
+          || (isLegacyPod(currentPod)
+              && canAdjustLegacyHashToMatch(currentPod, getHash(currentPod)))
+          || (isPodFromOperatorVersion32OrLater(currentPod)
+              && canAdjustRecentOperatorMajorVersion3HashToMatch(currentPod, getHash(currentPod)))
+          || (isPodFromOperatorVersion43OrLater(currentPod)
+              && getHash(canonicalizeModel(getPodModel())).equals(getHash(currentPod)));
     }
 
     private boolean canUseCurrentPod(V1Pod currentPod) {
       boolean useCurrent = hasCorrectPodHash(currentPod) && canUseNewDomainZip(currentPod);
-
-      // TEST
-      System.out.println("From client-20 AdminPodHelperTest.afterUpgradingMiiDomainWith3_4_1_ConvertedAuxImages_patchIt -- first currentPod and then getPodModel()");
-      System.out.println(Yaml.dump(currentPod));
-      V1Pod model = getPodModel();
-      canonicalizeModel(model);
-      System.out.println(Yaml.dump(model));
 
       if (!useCurrent) {
         LOGGER.finer(

@@ -1,4 +1,4 @@
-// Copyright (c) 2019, 2024, Oracle and/or its affiliates.
+// Copyright (c) 2019, 2023, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
@@ -89,12 +89,12 @@ public abstract class StepContextBase implements StepContextConstants {
   private static final String MODELS_PACKAGE = V1Pod.class.getPackageName();
   private static final String DOMAIN_MODEL_PACKAGE = DomainResource.class.getPackageName();
 
-  boolean isModelClass(Class<?> cls) {
+  private boolean isModelClass(Class<?> cls) {
     return cls.getPackageName().startsWith(MODELS_PACKAGE)
         || cls.getPackageName().startsWith(DOMAIN_MODEL_PACKAGE);
   }
 
-  List<Pair<Method, Method>> typeBeans(Class<?> cls) {
+  private List<Pair<Method, Method>> typeBeans(Class<?> cls) {
     List<Pair<Method, Method>> results = new ArrayList<>();
     Method[] methods = cls.getMethods();
     for (Method m : methods) {
