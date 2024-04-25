@@ -32,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -179,6 +180,7 @@ class ItIntrospectVersion {
   private static String opNamespace = null;
   private static String introDomainNamespace = null;
   private static String miiDomainNamespace = null;
+  private static String miiDomainNamespace2 = null;
   private static final String BADMII_IMAGE = "bad-modelfile-mii-image";
   private static String badMiiImage;
   private static final String BADMII_MODEL_FILE = "mii-bad-model-file.yaml";
@@ -230,7 +232,7 @@ class ItIntrospectVersion {
    * @param namespaces injected by JUnit
    */
   @BeforeAll
-  public static void initAll(@Namespaces(3) List<String> namespaces) {
+  public static void initAll(@Namespaces(4) List<String> namespaces) {
     logger = getLogger();
     logger.info("Assign a unique namespace for operator");
     assertNotNull(namespaces.get(0), "Namespace is null");
@@ -241,7 +243,9 @@ class ItIntrospectVersion {
     logger.info("Assign a unique namespace for mii Introspect Version WebLogic domain");
     assertNotNull(namespaces.get(2), "Namespace is null");
     miiDomainNamespace = namespaces.get(2);
-    
+    logger.info("Assign a unique namespace for mii bad domain");
+    assertNotNull(namespaces.get(3), "Namespace is null");
+    miiDomainNamespace2 = namespaces.get(3);
     // create image with model files
     logger.info("Create image with model file and verify");
     String destBadMiiYamlFile =
@@ -553,6 +557,11 @@ class ItIntrospectVersion {
       pods.put(cluster1ManagedServerPodNamePrefix + i,
           getPodCreationTime(introDomainNamespace, cluster1ManagedServerPodNamePrefix + i));
     }
+    try {
+      logger.info(Yaml.dump(getDomainCustomResource(domainUid, introDomainNamespace)));
+    } catch (ApiException ex) {
+      logger.warning(ex.getLocalizedMessage());
+    }
 
     // create a temporary WebLogic WLST property file
     File wlstPropertiesFile =
@@ -608,6 +617,11 @@ class ItIntrospectVersion {
     V1Patch patch = new V1Patch(patchStr);
     assertTrue(patchDomainCustomResource(domainUid, introDomainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
         "Failed to patch domain");
+    try {
+      logger.info(Yaml.dump(getDomainCustomResource(domainUid, introDomainNamespace)));
+    } catch (ApiException ex) {
+      logger.warning(ex.getLocalizedMessage());
+    }    
 
     //verify the introspector pod is created and runs
     String introspectPodNameBase = getIntrospectJobName(domainUid);
@@ -1062,14 +1076,14 @@ class ItIntrospectVersion {
   void testIntrospectorMakeright() {
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
-    createTestRepoSecret(miiDomainNamespace);
+    createTestRepoSecret(miiDomainNamespace2);
 
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
     String adminSecretName = "weblogic-credentials";
     assertDoesNotThrow(() -> createSecretWithUsernamePassword(
         adminSecretName,
-        miiDomainNamespace,
+        miiDomainNamespace2,
         ADMIN_USERNAME_DEFAULT,
         ADMIN_PASSWORD_DEFAULT),
         String.format("createSecret failed for %s", adminSecretName));
@@ -1079,17 +1093,17 @@ class ItIntrospectVersion {
     String encryptionSecretName = "encryptionsecret";
     assertDoesNotThrow(() -> createSecretWithUsernamePassword(
         encryptionSecretName,
-        miiDomainNamespace,
+        miiDomainNamespace2,
         "weblogicenc",
         "weblogicenc"),
         String.format("createSecret failed for %s", encryptionSecretName));
 
     // create WDT config map without any files
-    createConfigMapAndVerify("empty-cm", domainUid, miiDomainNamespace, Collections.emptyList());
+    createConfigMapAndVerify("empty-cm", domainUid, miiDomainNamespace2, Collections.emptyList());
 
     // create the domain object
     DomainResource domain = createDomainResourceWithConfigMap(domainUid, "cluster-1",
-        miiDomainNamespace,
+        miiDomainNamespace2,
         adminSecretName,
         TEST_IMAGES_REPO_SECRET_NAME,
         encryptionSecretName,
@@ -1100,12 +1114,12 @@ class ItIntrospectVersion {
         "mymii-cluster-resource");
 
     logger.info("Creating a domain resource with bad model file image");
-    createDomainAndVerify(domain, miiDomainNamespace);
+    createDomainAndVerify(domain, miiDomainNamespace2);
     //check the desired completed, available and failed statuses
     // verify the condition type Failed exists
-    checkDomainStatusConditionTypeExists(domainUid, miiDomainNamespace, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
+    checkDomainStatusConditionTypeExists(domainUid, miiDomainNamespace2, DOMAIN_STATUS_CONDITION_FAILED_TYPE);
     // verify the condition Failed type has expected status
-    checkDomainStatusConditionTypeHasExpectedStatus(domainUid, miiDomainNamespace,
+    checkDomainStatusConditionTypeHasExpectedStatus(domainUid, miiDomainNamespace2,
         DOMAIN_STATUS_CONDITION_FAILED_TYPE, "True");
     StringBuffer patchStr = new StringBuffer("[{");
 
@@ -1117,7 +1131,7 @@ class ItIntrospectVersion {
         .append("\"}]");
     logger.info("PatchStr for imageUpdate: {0}", patchStr.toString());
 
-    assertTrue(patchDomainResource(domainUid, miiDomainNamespace, patchStr),
+    assertTrue(patchDomainResource(domainUid, miiDomainNamespace2, patchStr),
         "patchDomainCustomResource(imageUpdate) failed");
 
     final String adminServerPodName = domainUid + "-admin-server";
@@ -1125,13 +1139,13 @@ class ItIntrospectVersion {
 
     // check admin server pod is ready
     logger.info("Wait for admin server pod {0} to be ready in namespace {1}",
-        adminServerPodName, miiDomainNamespace);
-    checkPodReadyAndServiceExists(adminServerPodName, domainUid, miiDomainNamespace);
+        adminServerPodName, miiDomainNamespace2);
+    checkPodReadyAndServiceExists(adminServerPodName, domainUid, miiDomainNamespace2);
     // check managed server pods are ready
     for (int i = 1; i <= 2; i++) {
       logger.info("Wait for managed server pod {0} to be ready in namespace {1}",
-          managedServerPrefix + i, miiDomainNamespace);
-      checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, miiDomainNamespace);
+          managedServerPrefix + i, miiDomainNamespace2);
+      checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, miiDomainNamespace2);
     }
   }
   
@@ -1427,6 +1441,11 @@ class ItIntrospectVersion {
 
 
   private void verifyIntrospectVersionLabelInPod() {
+    try {
+      logger.info(Yaml.dump(getDomainCustomResource(domainUid, introDomainNamespace)));
+    } catch (ApiException ex) {
+      logger.warning(ex.getLocalizedMessage());
+    }    
 
     String introspectVersion
         = assertDoesNotThrow(() -> getCurrentIntrospectVersion(domainUid, introDomainNamespace));
