@@ -6,6 +6,8 @@ package oracle.weblogic.kubernetes;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +33,7 @@ import static oracle.weblogic.kubernetes.TestConstants.ITWEBAPPACCESSNGINX_INGRE
 import static oracle.weblogic.kubernetes.TestConstants.ITWEBAPPACCESSNGINX_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.ITWEBAPPACCESSNGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -39,11 +42,15 @@ import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
+import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.callTestWebAppAndCheckForServerNameInResponse;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -135,10 +142,16 @@ class ItWebAppAccessWithDBTest {
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       logger.info("NGINX service name: {0}", nginxServiceName);
-      //nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
-      nodeportshttp = ITWEBAPPACCESSNGINX_INGRESS_HTTP_HOSTPORT;
-      //nodeportshttps = ITWEBAPPACCESSNGINX_INGRESS_HTTPS_HOSTPORT;
-      //nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
+      nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
+      if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        try {
+          ingressIP = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+        } catch (UnknownHostException ex) {
+          logger.severe(ex.getLocalizedMessage());
+        }
+        nodeportshttp = ITWEBAPPACCESSNGINX_INGRESS_HTTP_HOSTPORT;
+      }
+
       logger.info("NGINX http node port: {0}", nodeportshttp);
       //logger.info("NGINX https node port: {0}", nodeportshttps);
     }
@@ -187,8 +200,12 @@ class ItWebAppAccessWithDBTest {
       if (OKE_CLUSTER_PRIVATEIP) {
         verifyMyAppAccessThroughNginx(ingressHostList.get(0), managedServersCount, ingressIP);
       } else {
+        String hostPort = formatIPv6Host(K8S_NODEPORT_HOST) + ":" + nodeportshttp;
+        if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+          hostPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + nodeportshttp;
+        }
         verifyMyAppAccessThroughNginx(ingressHostList.get(0), managedServersCount,
-            K8S_NODEPORT_HOST + ":" + nodeportshttp);
+            hostPort);
       }
     }
   }
