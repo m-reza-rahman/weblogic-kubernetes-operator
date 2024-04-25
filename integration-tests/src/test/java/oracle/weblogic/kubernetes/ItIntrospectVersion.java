@@ -557,6 +557,12 @@ class ItIntrospectVersion {
       pods.put(cluster1ManagedServerPodNamePrefix + i,
           getPodCreationTime(introDomainNamespace, cluster1ManagedServerPodNamePrefix + i));
     }
+    if (cluster2Created) {
+      for (int i = 1; i <= cluster2ReplicaCount; i++) {
+        pods.put(cluster2ManagedServerPodNamePrefix + i,
+            getPodCreationTime(introDomainNamespace, cluster2ManagedServerPodNamePrefix + i));
+      }
+    }
     try {
       logger.info(Yaml.dump(getDomainCustomResource(domainUid, introDomainNamespace)));
     } catch (ApiException ex) {
