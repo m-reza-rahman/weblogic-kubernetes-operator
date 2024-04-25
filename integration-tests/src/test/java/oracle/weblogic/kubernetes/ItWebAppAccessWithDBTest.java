@@ -27,9 +27,13 @@ import org.junit.jupiter.api.Test;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.ITWEBAPPACCESSNGINX_INGRESS_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITWEBAPPACCESSNGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
@@ -124,7 +128,9 @@ class ItWebAppAccessWithDBTest {
 
     if (!OKD) {
       // install and verify NGINX
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace,
+          ITWEBAPPACCESSNGINX_INGRESS_HTTP_NODEPORT, ITWEBAPPACCESSNGINX_INGRESS_HTTPS_NODEPORT,
+          NGINX_CHART_VERSION, (OKE_CLUSTER ? null : "NodePort"));
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
