@@ -800,10 +800,10 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       hostingDomains.forEach(info -> {
         LOGGER.info(MessageKeys.WATCH_CLUSTER, cluster.getMetadata().getName(), info.getDomainUid());
         info.addClusterResource(cluster);
-        createMakeRightOperationForClusterEvent(CLUSTER_CREATED, cluster, info.getDomainUid()).execute();
-        createMakeRightOperation(info)
-            .interrupt()
-            .withExplicitRecheck()
+        createMakeRightOperationForClusterEvent(CLUSTER_CREATED, cluster, info.getDomainUid())
+            .andThen(createMakeRightOperation(info)
+                .interrupt()
+                .withExplicitRecheck())
             .execute();
       });
     }
@@ -814,6 +814,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         getExistingDomainPresenceInfoForCluster(cluster.getNamespace(), cluster.getMetadata().getName());
     if (hostingDomains.isEmpty()) {
       LOGGER.info(MessageKeys.WATCH_CLUSTER_WITHOUT_DOMAIN, cluster.getMetadata().getName());
+      // FIXME: new behavior is to only run a make-right if the generation doesn't match observedGeneration
       createMakeRightOperationForClusterEvent(CLUSTER_CHANGED, cluster, null).execute();
     } else {
       hostingDomains.forEach(info -> {
@@ -823,10 +824,10 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         }
 
         LOGGER.fine(MessageKeys.WATCH_CLUSTER, cluster.getMetadata().getName(), info.getDomainUid());
-        createMakeRightOperationForClusterEvent(CLUSTER_CHANGED, cluster, info.getDomainUid()).execute();
-        createMakeRightOperation(info)
-            .interrupt()
-            .withExplicitRecheck()
+        createMakeRightOperationForClusterEvent(CLUSTER_CHANGED, cluster, info.getDomainUid())
+            .andThen(createMakeRightOperation(info)
+                .interrupt()
+                .withExplicitRecheck())
             .execute();
       });
     }
@@ -841,11 +842,11 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     } else {
       hostingDomains.forEach(info -> {
         LOGGER.info(MessageKeys.WATCH_CLUSTER_DELETED, cluster.getMetadata().getName(), info.getDomainUid());
-        createMakeRightOperationForClusterEvent(EventItem.CLUSTER_DELETED, cluster, info.getDomainUid()).execute();
         info.removeClusterResource(cluster.getClusterName());
-        createMakeRightOperation(info)
-            .interrupt()
-            .withExplicitRecheck()
+        createMakeRightOperationForClusterEvent(EventItem.CLUSTER_DELETED, cluster, info.getDomainUid())
+            .andThen(createMakeRightOperation(info)
+                .interrupt()
+                .withExplicitRecheck())
             .execute();
       });
     }
@@ -1081,14 +1082,22 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
     @Override
     public CompletionCallback createCompletionCallback() {
-      return new ClusterPlanCompletionCallback();
+      return new ClusterPlanCompletionCallback(operation.getAndThen());
     }
 
     static class ClusterPlanCompletionCallback implements CompletionCallback {
 
+      private final MakeRightDomainOperation domainOperation;
+
+      public ClusterPlanCompletionCallback(MakeRightDomainOperation domainOperation) {
+        this.domainOperation = domainOperation;
+      }
+
       @Override
       public void onCompletion(Packet packet) {
-        // no op
+        if (domainOperation != null) {
+          domainOperation.execute();
+        }
       }
 
       @Override

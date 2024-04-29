@@ -27,4 +27,8 @@ public interface MakeRightClusterOperation extends MakeRightOperation<ClusterPre
   MakeRightClusterOperation interrupt();
 
   MakeRightClusterOperation withExplicitRecheck();
+
+  MakeRightClusterOperation andThen(MakeRightDomainOperation domainOperation);
+
+  MakeRightDomainOperation getAndThen();
 }

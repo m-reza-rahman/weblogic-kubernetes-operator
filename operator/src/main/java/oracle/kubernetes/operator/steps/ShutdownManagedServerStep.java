@@ -70,7 +70,7 @@ public class ShutdownManagedServerStep extends Step {
    * @param pod server pod
    * @return asynchronous step
    */
-  static Step createShutdownManagedServerStep(Step next, String serverName, V1Pod pod) {
+  public static Step createShutdownManagedServerStep(Step next, String serverName, V1Pod pod) {
     return new ShutdownManagedServerStep(next, serverName, pod);
   }
 
