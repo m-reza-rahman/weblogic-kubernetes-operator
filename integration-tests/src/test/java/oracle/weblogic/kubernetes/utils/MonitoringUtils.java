@@ -397,6 +397,7 @@ public class MonitoringUtils {
    *                            default is regex: default;domain1
    * @param promHelmValuesFileDir path to prometheus helm values file directory
    * @param webhookNS namespace for webhook namespace
+   * @param ports optional prometheus and alert manager ports
    * @return the prometheus Helm installation parameters
    */
   public static PrometheusParams installAndVerifyPrometheus(String promReleaseSuffix,
@@ -404,7 +405,8 @@ public class MonitoringUtils {
                                                       String promVersion,
                                                       String prometheusRegexValue,
                                                       String promHelmValuesFileDir,
-                                                      String webhookNS) {
+                                                      String webhookNS,
+                                                      int...ports) {
     LoggingFacade logger = getLogger();
     String prometheusReleaseName = "prometheus" + promReleaseSuffix;
     logger.info("create a staging location for prometheus scripts");
