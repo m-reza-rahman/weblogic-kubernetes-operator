@@ -513,6 +513,6 @@ public interface TestConstants {
   public static final int ITHPACUSTOMNGINX_INGRESS_HTTP_NODEPORT = 31785;
   public static final int ITHPACUSTOMNGINX_INGRESS_HTTPS_NODEPORT = 31746;  
   public static final int ITHPACUSTOMNGINX_INGRESS_HTTP_HOSTPORT = 2785;
-  public static final int ITHPACUSTOMNGINX_INGRESS_HTTPS_HOSTPORT = 2786;
+  public static final int ITHPACUSTOMNGINX_INGRESS_HTTPS_HOSTPORT = 2786;  
 
 }
