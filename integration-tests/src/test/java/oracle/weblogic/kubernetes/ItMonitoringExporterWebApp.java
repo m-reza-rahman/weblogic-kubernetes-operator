@@ -45,7 +45,9 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
-import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITMONITORINGEXPORTERWEBAPP_ALERT_HTTP_CONAINERPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITMONITORINGEXPORTERWEBAPP_PROM_HTTP_CONAINERPORT;
+import static oracle.weblogic.kubernetes.TestConstants.ITMONITORINGEXPORTERWEBAPP_PROM_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
@@ -444,17 +446,26 @@ class ItMonitoringExporterWebApp {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
       String promHelmValuesFileDir = Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
               "prometheus" + releaseSuffix).toString();
-      promHelmParams = installAndVerifyPrometheus(releaseSuffix,
-              monitoringNS,
-              promChartVersion,
-              prometheusRegexValue, promHelmValuesFileDir);
+      if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        promHelmParams = installAndVerifyPrometheus(releaseSuffix,
+            monitoringNS,
+            promChartVersion,
+            prometheusRegexValue, promHelmValuesFileDir, null,
+            ITMONITORINGEXPORTERWEBAPP_PROM_HTTP_CONAINERPORT, ITMONITORINGEXPORTERWEBAPP_ALERT_HTTP_CONAINERPORT);
+      } else {
+        promHelmParams = installAndVerifyPrometheus(releaseSuffix,
+            monitoringNS,
+            promChartVersion,
+            prometheusRegexValue, promHelmValuesFileDir);
+      }
       assertNotNull(promHelmParams, " Failed to install prometheus");
       prometheusDomainRegexValue = prometheusRegexValue;
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
       nodeportPrometheus = promHelmParams.getNodePortServer();
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        nodeportPrometheus = IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+        nodeportPrometheus = ITMONITORINGEXPORTERWEBAPP_PROM_HTTP_HOSTPORT;
         host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
       }
 
