@@ -56,12 +56,13 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
-import static oracle.weblogic.kubernetes.TestConstants.ITMONITORINGEXPORTERSAMPLES_NGINX_HTTPS_CONAINERPORT;
-import static oracle.weblogic.kubernetes.TestConstants.ITMONITORINGEXPORTERSAMPLES_NGINX_HTTPS_HOSTPORT;
-import static oracle.weblogic.kubernetes.TestConstants.ITMONITORINGEXPORTERSAMPLES_NGINX_HTTP_CONAINERPORT;
-import static oracle.weblogic.kubernetes.TestConstants.ITMONITORINGEXPORTERSAMPLES_NGINX_HTTP_HOSTPORT;
-import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
@@ -71,6 +72,8 @@ import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
@@ -249,20 +252,19 @@ class ItMonitoringExporterSamples {
       // install and verify NGINX
       if (!OKE_CLUSTER_PRIVATEIP) {
         nginxHelmParams = installAndVerifyNginx(nginxNamespace,
-            ITMONITORINGEXPORTERSAMPLES_NGINX_HTTP_CONAINERPORT, 
-            ITMONITORINGEXPORTERSAMPLES_NGINX_HTTPS_CONAINERPORT);
+            IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_NODEPORT,
+            IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_NODEPORT);
       } else {
         nginxHelmParams = installAndVerifyNginx(nginxNamespace,
-            0,0);
+            0, 0);
       }
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       logger.info("NGINX service name: {0}", nginxServiceName);
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        nodeportshttp = ITMONITORINGEXPORTERSAMPLES_NGINX_HTTP_HOSTPORT;
-        nodeportshttps = ITMONITORINGEXPORTERSAMPLES_NGINX_HTTPS_HOSTPORT;
+      if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        nodeportshttp = IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_HOSTPORT;
+        nodeportshttps = IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_HOSTPORT;
       } else {
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
         nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
@@ -430,7 +432,7 @@ class ItMonitoringExporterSamples {
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        nodeportPrometheus = IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT;
+        nodeportPrometheus = IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT;
         host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
       }      
       prometheusDomainRegexValue = prometheusRegexValue;
