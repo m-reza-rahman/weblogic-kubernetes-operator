@@ -454,6 +454,14 @@ nodes:
         hostPort: 2208
       - containerPort: 31112
         hostPort: 2212
+      - containerPort: 31116
+        hostPort: 2216
+      - containerPort: 31120
+        hostPort: 2220
+      - containerPort: 31124
+        hostPort: 2224
+      - containerPort: 31128
+        hostPort: 2228
     extraMounts:
       - hostPath: ${pv_root}
         containerPath: ${pv_root}

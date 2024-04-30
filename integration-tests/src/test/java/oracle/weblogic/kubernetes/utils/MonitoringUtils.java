@@ -238,6 +238,7 @@ public class MonitoringUtils {
         .execute());
   }
 
+
   /**
    * Check metrics using Prometheus.
    *
@@ -246,13 +247,17 @@ public class MonitoringUtils {
    * @param hostPortPrometheus host:nodePort for prometheus
    * @throws Exception if command to check metrics fails
    */
-  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal, String hostPortPrometheus)
+  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal,
+                                               String hostPortPrometheus)
       throws Exception {
 
     LoggingFacade logger = getLogger();
     // url
-    String curlCmd = String.format("curl -g --silent --show-error --noproxy '*'  -H 'host: *'"
-            + " http://%s/api/v1/query?query=%s", hostPortPrometheus, searchKey);
+    String curlCmd =
+        String.format("curl -g --silent --show-error --noproxy '*'  -H 'host: *'"
+                + " http://%s/api/v1/query?query=%s",
+            hostPortPrometheus, searchKey);
+
     logger.info("Executing Curl cmd {0}", curlCmd);
     logger.info("Checking searchKey: {0}", searchKey);
     logger.info(" expected Value {0} ", expectedVal);
@@ -470,8 +475,7 @@ public class MonitoringUtils {
     }
     int promServerNodePort = getNextFreePort();
     int alertManagerNodePort = getNextFreePort();
-    if (KIND_CLUSTER
-        && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+    if (ports.length != 0 && KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       promServerNodePort = ports[0];
       alertManagerNodePort = ports[1];
     }
