@@ -50,8 +50,8 @@ import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERWEBA
 import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERWEBAPP_NGINX_HTTPS_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERWEBAPP_NGINX_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERWEBAPP_NGINX_HTTP_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERWEBAPP_PROMETHEUS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERWEBAPP_PROMETHEUS_HTTP_NODEPORT;
-import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
@@ -466,7 +466,7 @@ class ItMonitoringExporterWebApp {
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
       nodeportPrometheus = promHelmParams.getNodePortServer();
       if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-        nodeportPrometheus = IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT;
+        nodeportPrometheus = IT_MONITORINGEXPORTERWEBAPP_PROMETHEUS_HTTP_HOSTPORT;
         host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
       }
 

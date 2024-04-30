@@ -61,8 +61,8 @@ import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMP
 import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_NODEPORT;
-import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
@@ -252,13 +252,12 @@ class ItMonitoringExporterSamples {
         SESSMIGR_APP_NAME, MONEXP_IMAGE_NAME);
     if (!OKD) {
       // install and verify NGINX
-      if (!OKE_CLUSTER_PRIVATEIP) {
+      if (OKE_CLUSTER_PRIVATEIP) {
+        nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      } else {
         nginxHelmParams = installAndVerifyNginx(nginxNamespace,
             IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_NODEPORT,
             IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_NODEPORT);
-      } else {
-        nginxHelmParams = installAndVerifyNginx(nginxNamespace,
-            0, 0);
       }
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
@@ -439,7 +438,7 @@ class ItMonitoringExporterSamples {
       nodeportPrometheus = promHelmParams.getNodePortServer();
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
       if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-        nodeportPrometheus = IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT;
+        nodeportPrometheus = IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_HOSTPORT;
         host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
       }      
       prometheusDomainRegexValue = prometheusRegexValue;
