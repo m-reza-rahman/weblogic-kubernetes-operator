@@ -450,7 +450,6 @@ nodes:
       - containerPort: 31746
         hostPort: 2786
         protocol: TCP
-        protocol: TCP
       - containerPort: 32193
         hostPort: 2193
         protocol: TCP
@@ -472,7 +471,7 @@ nodes:
       - containerPort: 32853 
         hostPort: 2589
         protocol: TCP
-      - containerPort:  32855
+      - containerPort: 32855
         hostPort: 2389
         protocol: TCP
     extraMounts:
