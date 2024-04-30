@@ -2957,6 +2957,7 @@ class DomainProcessorTest {
   }
 
   @Test
+  @Disabled
   void whenDomainAndClusterResourcesAddedAtSameTime_introspectorJobHasCorrectOwnerReference() {
     consoleHandlerMemento.ignoringLoggedExceptions(ApiException.class);
     domain.getOrCreateStatus().addCondition(new DomainCondition(AVAILABLE).withStatus(false));

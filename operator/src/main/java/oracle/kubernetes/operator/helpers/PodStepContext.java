@@ -95,7 +95,6 @@ import static oracle.kubernetes.operator.DomainStatusUpdater.createKubernetesFai
 import static oracle.kubernetes.operator.IntrospectorConfigMapConstants.NUM_CONFIG_MAPS;
 import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_EXPORTER_SIDECAR_PORT;
 import static oracle.kubernetes.operator.KubernetesConstants.EXPORTER_CONTAINER_NAME;
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTER_OBSERVED_GENERATION_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAIN_OBSERVED_GENERATION_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
