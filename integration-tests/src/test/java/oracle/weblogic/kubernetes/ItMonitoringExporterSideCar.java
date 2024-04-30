@@ -476,8 +476,7 @@ class ItMonitoringExporterSideCar {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName,grafanaReleaseName);
       String promHelmValuesFileDir = Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
               "prometheus" + releaseSuffix).toString();
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
         promHelmParams = installAndVerifyPrometheus(releaseSuffix,
             monitoringNS,
             promChartVersion,
