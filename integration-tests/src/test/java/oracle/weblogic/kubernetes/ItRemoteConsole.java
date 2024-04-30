@@ -38,15 +38,15 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_REMOTECONSOLE_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_REMOTECONSOLE_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_REMOTECONSOLE_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_HOSTPORT;
-import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
@@ -382,7 +382,7 @@ class ItRemoteConsole {
     logger.info("nginxServiceName is {0}", nginxServiceName);
 
     if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
-      nginxNodePort = NGINX_INGRESS_HTTP_HOSTPORT;
+      nginxNodePort = IT_REMOTECONSOLE_HTTP_HOSTPORT;
     } else if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
         "Getting Nginx loadbalancer service node port failed");
@@ -433,9 +433,9 @@ class ItRemoteConsole {
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
     } else if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       logger.info("Installing Ngnix controller using http_nodeport {0}, https_nodeport {1}",
-          NGINX_INGRESS_HTTP_NODEPORT, NGINX_INGRESS_HTTPS_NODEPORT);
+          IT_REMOTECONSOLE_HTTP_NODEPORT, IT_REMOTECONSOLE_HTTPS_NODEPORT);
       nginxHelmParams = installAndVerifyNginx(nginxNamespace,
-          NGINX_INGRESS_HTTP_NODEPORT, NGINX_INGRESS_HTTPS_NODEPORT);
+          IT_REMOTECONSOLE_HTTP_NODEPORT, IT_REMOTECONSOLE_HTTPS_NODEPORT);
     }
 
     createNginxIngressPathRoutingRules();

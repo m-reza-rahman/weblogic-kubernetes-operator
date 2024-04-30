@@ -208,10 +208,6 @@ public interface TestConstants {
   public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/ingress-nginx/controller";
   public static final String NGINX_INGRESS_IMAGE_TAG = "v1.2.0";
   public static final String NGINX_NAMESPACE = "ns-nginx";
-  public static final int NGINX_INGRESS_HTTP_NODEPORT = 31880;
-  public static final int NGINX_INGRESS_HTTPS_NODEPORT = 31443;
-  public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2180;
-  public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2543;
 
   public static final Path RESULTS_TEMPFILE_DIR = assertDoesNotThrow(()
       -> Files.createDirectories(Paths.get(RESULTS_TEMPFILE)));
@@ -476,6 +472,10 @@ public interface TestConstants {
       "largedomaintesting.props";
   
   //node ports used by the integration tests
+  public static final int IT_REMOTECONSOLE_HTTP_NODEPORT = 31880;
+  public static final int IT_REMOTECONSOLE_HTTPS_NODEPORT = 31443;
+  public static final int IT_REMOTECONSOLE_HTTP_HOSTPORT = 2180;
+  public static final int IT_REMOTECONSOLE_HTTPS_HOSTPORT = 2543;
   public static final int ITEXTERNALNODEPORTSERVICE_CONAINERPORT = 32156;
   public static final int ITEXTERNALNODEPORTSERVICE_HOSTPORT = 2156;
   
