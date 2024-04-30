@@ -238,7 +238,6 @@ public class MonitoringUtils {
         .execute());
   }
 
-
   /**
    * Check metrics using Prometheus.
    *
@@ -247,17 +246,13 @@ public class MonitoringUtils {
    * @param hostPortPrometheus host:nodePort for prometheus
    * @throws Exception if command to check metrics fails
    */
-  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal,
-                                               String hostPortPrometheus)
+  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal, String hostPortPrometheus)
       throws Exception {
 
     LoggingFacade logger = getLogger();
     // url
-    String curlCmd =
-        String.format("curl -g --silent --show-error --noproxy '*'  -H 'host: *'"
-                + " http://%s/api/v1/query?query=%s",
-            hostPortPrometheus, searchKey);
-
+    String curlCmd = String.format("curl -g --silent --show-error --noproxy '*'  -H 'host: *'"
+            + " http://%s/api/v1/query?query=%s", hostPortPrometheus, searchKey);
     logger.info("Executing Curl cmd {0}", curlCmd);
     logger.info("Checking searchKey: {0}", searchKey);
     logger.info(" expected Value {0} ", expectedVal);
@@ -1207,8 +1202,7 @@ public class MonitoringUtils {
 
     // check that NGINX can access the sample apps from all managed servers in the domain
     String host = formatIPv6Host(K8S_NODEPORT_HOST);
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       host = InetAddress.getLocalHost().getHostAddress();
     }
     String curlCmd =

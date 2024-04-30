@@ -469,7 +469,6 @@ public class CommonTestUtils {
                                            List<String> expectedServerNames,
                                            String... args) {
     LoggingFacade logger = getLogger();
-
     // get the original managed server pod creation timestamp before scale
     List<OffsetDateTime> listOfPodCreationTimestamp = new ArrayList<>();
     for (int i = 1; i <= replicasBeforeScale; i++) {
@@ -956,7 +955,7 @@ public class CommonTestUtils {
   /**
    * Compile java class inside the pod.
    * @param podName name of the pod
-   * @param namespace name of  namespace
+   * @param namespace name of namespace
    * @param destLocation location of java class
    */
   public static void runJavacInsidePod(String podName, String namespace, String destLocation) {
