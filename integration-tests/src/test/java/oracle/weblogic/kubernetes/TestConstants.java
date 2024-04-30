@@ -207,11 +207,6 @@ public interface TestConstants {
       "sha256:314435f9465a7b2973e3aa4f2edad7465cc7bcdc8304be5d146d70e4da136e51";
   public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/ingress-nginx/controller";
   public static final String NGINX_INGRESS_IMAGE_TAG = "v1.2.0";
-  public static final String NGINX_NAMESPACE = "ns-nginx";
-  public static final int NGINX_INGRESS_HTTP_NODEPORT = 30180;
-  public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2180;
-  public static final int NGINX_INGRESS_HTTPS_NODEPORT = 30143;
-  public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2143;
 
   public static final Path RESULTS_TEMPFILE_DIR = assertDoesNotThrow(()
       -> Files.createDirectories(Paths.get(RESULTS_TEMPFILE)));
