@@ -185,8 +185,7 @@ class ItMonitoringExporterMetricsFiltering {
     miiImage = MonitoringUtils.createAndVerifyMiiImage(monitoringExporterAppDir, modelList,
         STICKYSESS_APP_NAME, SESSMIGR_APP_NAME, MONEXP_IMAGE_NAME);
     host = formatIPv6Host(K8S_NODEPORT_HOST);
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
     }
 
@@ -528,8 +527,7 @@ class ItMonitoringExporterMetricsFiltering {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName, grafanaReleaseName);
       String promHelmValuesFileDir = Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
           "prometheus" + releaseSuffix).toString();
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
         promHelmParams = installAndVerifyPrometheus(releaseSuffix,
             monitoringNS,
             promChartVersion,
