@@ -565,16 +565,28 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     String serverName = getPodLabel(pod, LabelConstants.SERVERNAME_LABEL);
     switch (watchType) {
       case ADDED:
+        info.setServerPodFromEvent(serverName, pod);
+        break;
       case MODIFIED:
+        /* HERE
+          -- Pod is evicted
+          -- Pod is ready and I'm waiting for the pod to be ready (label)
+          -- Pod is failed (why?)
+          -- DON'T trigger reconciliation if the pod is labeled to be deleted
+         */
         boolean podPreviouslyEvicted = info.setServerPodFromEvent(serverName, pod, PodHelper::isEvicted);
-        if (PodHelper.isEvicted(pod) && !podPreviouslyEvicted) {
+        boolean isEvicted = PodHelper.isEvicted(pod);
+        if (isEvicted && !podPreviouslyEvicted) {
           if (PodHelper.shouldRestartEvictedPod(pod)) {
             LOGGER.info(MessageKeys.POD_EVICTED, getPodName(pod), getPodStatusMessage(pod));
           } else {
             LOGGER.info(MessageKeys.POD_EVICTED_NO_RESTART, getPodName(pod), getPodStatusMessage(pod));
           }
         }
-        createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
+        if ((isEvicted || PodHelper.isReady(pod) || PodHelper.isFailed(pod))
+            && !(PodHelper.isPodAlreadyLabeledForShutdown(pod) || PodHelper.isDeleting(pod))) {
+          createMakeRightOperation(info).interrupt().withExplicitRecheck().execute();
+        }
         break;
       case DELETED:
         boolean removed = info.deleteServerPodFromEvent(serverName, pod);
@@ -814,12 +826,10 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         getExistingDomainPresenceInfoForCluster(cluster.getNamespace(), cluster.getMetadata().getName());
     if (hostingDomains.isEmpty()) {
       LOGGER.info(MessageKeys.WATCH_CLUSTER_WITHOUT_DOMAIN, cluster.getMetadata().getName());
-      // FIXME: new behavior is to only run a make-right if the generation doesn't match observedGeneration
       createMakeRightOperationForClusterEvent(CLUSTER_CHANGED, cluster, null).execute();
     } else {
       hostingDomains.forEach(info -> {
-        ClusterResource cachedResource = info.getClusterResource(cluster.getClusterName());
-        if (cachedResource == null || !cluster.isGenerationChanged(cachedResource)) {
+        if (!cluster.isGenerationLaterThanObservedGeneration()) {
           return;
         }
 
@@ -910,6 +920,9 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
   }
 
   private void handleModifiedDomain(DomainResource domain) {
+    if (!domain.isGenerationLaterThanObservedGeneration()) {
+      return;
+    }
     LOGGER.fine(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
