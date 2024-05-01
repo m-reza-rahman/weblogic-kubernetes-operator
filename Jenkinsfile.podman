@@ -390,6 +390,10 @@ nodes:
   - role: worker
     image: ${kind_image}
     extraPortMappings:
+      - containerPort: 32480
+        hostPort: 2480
+      - containerPort: 32490
+        hostPort: 2490
       - containerPort: 30080
         hostPort: 2080
       - containerPort: 30443
