@@ -568,12 +568,6 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         info.setServerPodFromEvent(serverName, pod);
         break;
       case MODIFIED:
-        /* HERE
-          -- Pod is evicted
-          -- Pod is ready and I'm waiting for the pod to be ready (label)
-          -- Pod is failed (why?)
-          -- DON'T trigger reconciliation if the pod is labeled to be deleted
-         */
         boolean podPreviouslyEvicted = info.setServerPodFromEvent(serverName, pod, PodHelper::isEvicted);
         boolean isEvicted = PodHelper.isEvicted(pod);
         if (isEvicted && !podPreviouslyEvicted) {
