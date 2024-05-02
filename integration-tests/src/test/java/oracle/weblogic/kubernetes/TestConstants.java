@@ -227,7 +227,7 @@ public interface TestConstants {
   public static final String TRAEFIK_INGRESS_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/traefik";
   public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
 
-  public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v2.10.5";
+  public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v3.0.0";
   public static final String TRAEFIK_NAMESPACE = "ns-traefik";
   public static final int TRAEFIK_INGRESS_HTTP_NODEPORT = 30880;
   public static final int TRAEFIK_INGRESS_HTTPS_NODEPORT = 30443;
