@@ -475,7 +475,7 @@ public class OperatorUtils {
         .domainNamespaces(Arrays.asList(domainNamespace))
         .javaLoggingLevel(loggingLevel)
         .serviceAccount(opServiceAccount);
-    if (System.getProperty("OPERATOR_LOG_LEVEL") != null) {
+    if (System.getProperty("OPERATOR_LOG_LEVEL") != null && !System.getProperty("OPERATOR_LOG_LEVEL").isBlank()) {
       opParams.javaLoggingLevel(System.getProperty("OPERATOR_LOG_LEVEL").trim());
     }
     
@@ -683,7 +683,7 @@ public class OperatorUtils {
         .domainNamespaces(Arrays.asList(domainNamespace))
         .javaLoggingLevel(loggingLevel)
         .serviceAccount(opServiceAccount);
-    if (System.getProperty("OPERATOR_LOG_LEVEL") != null) {
+    if (System.getProperty("OPERATOR_LOG_LEVEL") != null && !System.getProperty("OPERATOR_LOG_LEVEL").isBlank()) {
       opParams.javaLoggingLevel(System.getProperty("OPERATOR_LOG_LEVEL").trim());
     }    
 
