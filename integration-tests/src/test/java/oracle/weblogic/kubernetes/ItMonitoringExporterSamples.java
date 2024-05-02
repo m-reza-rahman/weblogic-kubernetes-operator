@@ -56,7 +56,6 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
-import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_HOSTPORT;
@@ -427,11 +426,7 @@ class ItMonitoringExporterSamples {
       assertNotNull(promHelmParams, " Failed to install prometheus");
       nodeportPrometheus = promHelmParams.getNodePortServer();
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        nodeportPrometheus = IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT;
-        host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
-      }      
+
       prometheusDomainRegexValue = prometheusRegexValue;
 
       hostPortPrometheus = host + ":" + nodeportPrometheus;
@@ -444,8 +439,7 @@ class ItMonitoringExporterSamples {
       }
       String ingressClassName = nginxHelmParams.getIngressClassName();
       createIngressPathRouting(monitoringNS, "/api",
-          prometheusReleaseName + "-server", 80, ingressClassName, prometheusReleaseName
-              + "." + monitoringNS);
+          prometheusReleaseName + "-server", 80, ingressClassName);
     }
     //if prometheus already installed change CM for specified domain
     if (!prometheusRegexValue.equals(prometheusDomainRegexValue)) {
