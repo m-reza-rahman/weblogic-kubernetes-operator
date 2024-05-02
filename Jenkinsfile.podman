@@ -448,6 +448,8 @@ nodes:
         hostPort: 2180
       - containerPort: 31084
         hostPort: 2184
+      - containerPort: 31088
+        hostPort: 2188
       - containerPort: 31092
         hostPort: 2192
       - containerPort: 31096 
