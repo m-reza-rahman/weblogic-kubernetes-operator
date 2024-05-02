@@ -1,4 +1,4 @@
-# Copyright (c) 2020, 2023, Oracle and/or its affiliates.
+# Copyright (c) 2023, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 rbac:
   create: true
@@ -78,8 +78,12 @@ server:
   persistentVolume:
     existingClaim: pvc-prometheus
   service:
-    type: NodePort
-    nodePort: 30500
+    type: ClusterIP
+    ports:
+    - port: 9090
+      protocol: TCP
+      targetPort: 9090
+
   securityContext:
     runAsNonRoot: true
     runAsUser: 1000
@@ -113,7 +117,7 @@ kubeStateMetrics:
   ## If false, kube-state-metrics sub-chart will not be installed
   ##
   enabled: false
-  
+
 prometheus-pushgateway:
   enabled: false
   image:
@@ -143,7 +147,7 @@ serverFiles:
         rules:
           - alert: ClusterWarning
             for: 15s
-            expr: sum by(weblogic_domainUID, weblogic_clusterName) (up{weblogic_domainUID=~'.+',job="wls-domain1"}) == 1
+            expr: sum by(weblogic_domainUID, weblogic_clusterName) (up{weblogic_domainUID=~'.+'}) == 1
             labels:
               severity: page
             annotations:
