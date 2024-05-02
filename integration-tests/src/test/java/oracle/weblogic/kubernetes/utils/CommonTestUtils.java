@@ -2248,10 +2248,12 @@ public class CommonTestUtils {
   public static String backupReports(String uniqueDir) {
     String srcContents = ITTESTS_DIR + "/target/failsafe-reports/*";
     String dstDir = WORK_DIR + "/" + uniqueDir;
-    CommandParams params = new CommandParams().defaults();
-    Command.withParams(params.command("ls -lrt " + srcContents)).execute();
-    Command.withParams(params.command("mkdir -p " + dstDir)).execute();
-    Command.withParams(params.command("cp " + srcContents + " " + dstDir)).execute();
+    if (Files.exists(Path.of(srcContents))) {
+      CommandParams params = new CommandParams().defaults();
+      Command.withParams(params.command("ls -lrt " + srcContents)).execute();
+      Command.withParams(params.command("mkdir -p " + dstDir)).execute();
+      Command.withParams(params.command("cp " + srcContents + " " + dstDir)).execute();
+    }
     return dstDir;
   }
 
@@ -2262,9 +2264,11 @@ public class CommonTestUtils {
    */
   public static void restoreReports(String backupDir) {
     String dstDir = ITTESTS_DIR + "/target/failsafe-reports";
-    CommandParams params = new CommandParams().defaults();
-    Command.withParams(params.command("mkdir -p " + dstDir)).execute();
-    Command.withParams(params.command("cp " + backupDir + "/* " + dstDir)).execute();
+    if (Files.exists(Path.of(dstDir))) {
+      CommandParams params = new CommandParams().defaults();
+      Command.withParams(params.command("mkdir -p " + dstDir)).execute();
+      Command.withParams(params.command("cp " + backupDir + "/* " + dstDir)).execute();
+    }
   }
 
   /**
