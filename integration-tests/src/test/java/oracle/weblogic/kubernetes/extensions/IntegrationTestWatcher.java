@@ -363,11 +363,6 @@ public class IntegrationTestWatcher implements
     } catch (IOException ex) {
       getLogger().warning(ex.getMessage());
     }
-    for (var namespace : namespaces) {
-      LoggingUtil.collectLogs(namespace, resultDir.toString());
-    }
-    // collect the logs in default namespace
-    LoggingUtil.collectLogs("default", resultDir.toString());
     
     // collect node details
     try {
@@ -375,6 +370,12 @@ public class IntegrationTestWatcher implements
     } catch (Exception ex) {
       getLogger().warning(ex.getMessage());
     }
+    
+    for (var namespace : namespaces) {
+      LoggingUtil.collectLogs(namespace, resultDir.toString());
+    }
+    // collect the logs in default namespace
+    LoggingUtil.collectLogs("default", resultDir.toString());
 
     // collect the logs in ns-webhook namespace
     LoggingUtil.collectLogs("ns-webhook", resultDir.toString());
