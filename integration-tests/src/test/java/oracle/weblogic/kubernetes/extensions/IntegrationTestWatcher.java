@@ -368,6 +368,13 @@ public class IntegrationTestWatcher implements
     }
     // collect the logs in default namespace
     LoggingUtil.collectLogs("default", resultDir.toString());
+    
+    // collect node details
+    try {
+      LoggingUtil.collectNodeStatus("kind-worker", resultDir.toString());
+    } catch (Exception ex) {
+      getLogger().warning(ex.getMessage());
+    }
 
     // collect the logs in ns-webhook namespace
     LoggingUtil.collectLogs("ns-webhook", resultDir.toString());

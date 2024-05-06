@@ -39,6 +39,8 @@ import io.kubernetes.client.openapi.models.V1IngressBackend;
 import io.kubernetes.client.openapi.models.V1IngressRule;
 import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
 import io.kubernetes.client.openapi.models.V1IngressTLS;
+import io.kubernetes.client.openapi.models.V1Node;
+import io.kubernetes.client.openapi.models.V1NodeStatus;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainCondition;
@@ -2490,5 +2492,27 @@ public class CommonTestUtils {
         .contains(ingressName);
     getLogger().info("ingress {0} was created in namespace {1}", ingressName, namespace);
   }
+  
+  /**
+   * Get kubernetes node.
+   *
+   * @param nodeName name of the node
+   * @return V1Node
+   * @throws ApiException when call fails
+   */
+  public static V1Node getNode(String nodeName) throws ApiException {
+    return Kubernetes.getNode(nodeName);
+  }
+
+  /**
+   * Get kubernetes node status.
+   *
+   * @param nodeName name of the node
+   * @return V1NodeStatus
+   * @throws ApiException when call fails
+   */
+  public static V1NodeStatus getNodeStatus(String nodeName) throws ApiException {
+    return Kubernetes.getNode(nodeName).getStatus();
+  } 
   
 }

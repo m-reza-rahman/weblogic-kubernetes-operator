@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1Container;
+import io.kubernetes.client.openapi.models.V1Node;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1PersistentVolume;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
@@ -42,6 +43,7 @@ import static oracle.weblogic.kubernetes.TestConstants.VZ_ENV;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNode;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -322,6 +324,19 @@ public class LoggingUtil {
     }
   }
 
+  /**
+   * Write node spec and status to logs.
+   *
+   * @param nodeName name of the node
+   * @param resultDir directory to write the log
+   * @throws ApiException when Kubernetes api call fails
+   * @throws IOException when logs cannot be written
+   */
+  public static void collectNodeStatus(String nodeName, String resultDir) throws ApiException, IOException {
+    V1Node node = getNode(nodeName);
+    writeToFile(node, resultDir, "node.log");
+  }
+  
   /**
    * Copy files from persistent volume to local folder.
    * @param namespace name of the namespace, used for creating temporary pod in it.

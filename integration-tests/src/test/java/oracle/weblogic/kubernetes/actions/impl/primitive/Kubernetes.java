@@ -54,6 +54,7 @@ import io.kubernetes.client.openapi.models.V1JobList;
 import io.kubernetes.client.openapi.models.V1Namespace;
 import io.kubernetes.client.openapi.models.V1NamespaceBuilder;
 import io.kubernetes.client.openapi.models.V1NamespaceList;
+import io.kubernetes.client.openapi.models.V1Node;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1ObjectMetaBuilder;
 import io.kubernetes.client.openapi.models.V1ObjectReference;
@@ -401,7 +402,7 @@ public class Kubernetes {
   public static V1DeploymentList listDeployments(String namespace) throws ApiException {
     V1DeploymentList deployments;
     try {
-      AppsV1Api apiInstance = new AppsV1Api(apiClient);
+      AppsV1Api apiInstance = new AppsV1Api(apiClient);          
       deployments = apiInstance.listNamespacedDeployment(
           namespace, // String | namespace.
           PRETTY, // String | If 'true', then the output is pretty printed.
@@ -1217,7 +1218,7 @@ public class Kubernetes {
    */
   public static List<CoreV1Event> listNamespacedEvents(String namespace) throws ApiException {
     List<CoreV1Event> events = null;
-    try {
+    try {      
       CoreV1EventList list = coreV1Api.listNamespacedEvent(
           namespace, // String | namespace.
           PRETTY, // String | If 'true', then the output is pretty printed.
@@ -3619,6 +3620,23 @@ public class Kubernetes {
     return null;
   }
 
+  /**
+   * Get a node.
+   *
+   * @param nodeName name of the node
+   * @return V1Node
+   * @throws ApiException if Kubernetes client API call fails
+   */
+  public static V1Node getNode(String nodeName) throws ApiException {
+    try {
+      V1Node readNode = coreV1Api.readNode(nodeName, PRETTY);
+      return readNode;
+    } catch (ApiException apex) {
+      getLogger().severe(apex.getResponseBody());
+      throw apex;
+    }
+  }
+  
   /**
    * Simple class to redirect/copy data to both the stdout stream and a buffer
    * which can be read from later.
