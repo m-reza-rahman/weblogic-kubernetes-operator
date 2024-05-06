@@ -367,6 +367,7 @@ public class IntegrationTestWatcher implements
     // collect node details
     try {
       LoggingUtil.collectNodeStatus("kind-worker", resultDir.toString());
+      LoggingUtil.collectNodeStatus("kind-control-plane", resultDir.toString());
     } catch (Exception ex) {
       getLogger().warning(ex.getMessage());
     }
