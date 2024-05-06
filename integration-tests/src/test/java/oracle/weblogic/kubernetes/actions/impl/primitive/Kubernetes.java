@@ -3638,6 +3638,23 @@ public class Kubernetes {
   }
   
   /**
+   * Get a node status.
+   *
+   * @param nodeName name of the node
+   * @return V1Node
+   * @throws ApiException if Kubernetes client API call fails
+   */
+  public static V1Node readNodeStatus(String nodeName) throws ApiException {
+    try {
+      V1Node readNode = coreV1Api.readNodeStatus(nodeName, PRETTY);
+      return readNode;
+    } catch (ApiException apex) {
+      getLogger().severe(apex.getResponseBody());
+      throw apex;
+    }
+  } 
+  
+  /**
    * Simple class to redirect/copy data to both the stdout stream and a buffer
    * which can be read from later.
    */

@@ -40,7 +40,6 @@ import io.kubernetes.client.openapi.models.V1IngressRule;
 import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
 import io.kubernetes.client.openapi.models.V1IngressTLS;
 import io.kubernetes.client.openapi.models.V1Node;
-import io.kubernetes.client.openapi.models.V1NodeStatus;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainCondition;
@@ -2511,8 +2510,8 @@ public class CommonTestUtils {
    * @return V1NodeStatus
    * @throws ApiException when call fails
    */
-  public static V1NodeStatus getNodeStatus(String nodeName) throws ApiException {
-    return Kubernetes.getNode(nodeName).getStatus();
+  public static V1Node getNodeStatus(String nodeName) throws ApiException {
+    return Kubernetes.readNodeStatus(nodeName);
   } 
   
 }

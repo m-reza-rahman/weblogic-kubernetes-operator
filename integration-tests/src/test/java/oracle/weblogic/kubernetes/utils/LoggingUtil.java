@@ -44,6 +44,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getPodLog;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNode;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNodeStatus;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -333,8 +334,12 @@ public class LoggingUtil {
    * @throws IOException when logs cannot be written
    */
   public static void collectNodeStatus(String nodeName, String resultDir) throws ApiException, IOException {
+    // get node details
     V1Node node = getNode(nodeName);
-    writeToFile(node, resultDir, "node.log");
+    writeToFile(node, resultDir, nodeName + ".log");
+    // get node status details
+    node = getNodeStatus(nodeName);
+    writeToFile(node, resultDir, nodeName + ".status.log");
   }
   
   /**
