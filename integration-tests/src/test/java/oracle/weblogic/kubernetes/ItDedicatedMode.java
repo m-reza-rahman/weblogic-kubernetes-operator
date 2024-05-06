@@ -15,6 +15,7 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.UniqueName;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
@@ -46,7 +47,9 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.scaleClusterWithRestApi;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.backupReports;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.restoreReports;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.scaleAndVerifyCluster;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyClusterAfterScaling;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
@@ -175,6 +178,8 @@ class ItDedicatedMode {
   @DisplayName("Verify in Dedicated NamespaceSelectionStrategy domain on operator namespace gets started")
   void testDedicatedModeSameNamespace() {
 
+    String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));
+
     // This test uses the operator restAPI to scale the doamin.
     // To do this in OKD cluster, we need to expose the external service as
     // route and set tls termination to  passthrough
@@ -220,6 +225,8 @@ class ItDedicatedMode {
 
     verifyClusterAfterScaling(domainUid, domain1Namespace, managedServerPodPrefix,
         replicaCount, replicaCount + 1, null, null, listOfPodCreationTimestamp);
+
+    restoreReports(backupReports);
   }
 
   private void createDomain(String domainNamespace) {

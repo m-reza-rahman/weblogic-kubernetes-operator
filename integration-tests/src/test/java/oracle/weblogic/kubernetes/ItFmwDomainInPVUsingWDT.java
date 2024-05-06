@@ -14,6 +14,7 @@ import java.util.Properties;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.kubernetes.actions.impl.UniqueName;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -34,8 +35,10 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WDT_VERSION;
 import static oracle.weblogic.kubernetes.actions.impl.primitive.Image.getImageEnvVar;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.backupReports;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.restoreReports;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
@@ -151,6 +154,8 @@ class ItFmwDomainInPVUsingWDT {
   @Test
   @DisplayName("Create a FMW domainon on PV using WDT")
   void testFmwDomainOnPVUsingWdt() {
+    String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));
+
     final String pvName = getUniqueName(domainUid + "-pv-");
     final String pvcName = getUniqueName(domainUid + "-pvc-");
     final int t3ChannelPort = getNextFreePort();
@@ -198,6 +203,8 @@ class ItFmwDomainInPVUsingWDT {
 
     // verify that all servers are ready and EM console is accessible
     verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
+
+    restoreReports(backupReports);
   }
 
   private void createDomainJobOnPv(Path domainCreationScriptFile,

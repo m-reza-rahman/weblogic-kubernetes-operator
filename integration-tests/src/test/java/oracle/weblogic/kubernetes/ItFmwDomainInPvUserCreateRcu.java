@@ -22,6 +22,7 @@ import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import oracle.weblogic.domain.ClusterResource;
 import oracle.weblogic.domain.DomainCreationImage;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.kubernetes.actions.impl.UniqueName;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
@@ -57,9 +58,11 @@ import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPush
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.addSccToDBSvcAccount;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.backupReports;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createCustomConditionFactory;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.restoreReports;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyConfiguredSystemResource;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
@@ -195,6 +198,7 @@ public class ItFmwDomainInPvUserCreateRcu {
   @DisplayName("Create a FMW domain on PV when user per-creates RCU")
   @Tag("gate")
   void testFmwDomainOnPvUserCreatesRCU() {
+    String backupReports = backupReports(UniqueName.uniqueName(this.getClass().getSimpleName()));
 
     final String pvName = getUniqueName(domainUid1 + "-pv-");
     final String pvcName = getUniqueName(domainUid1 + "-pvc-");
@@ -265,6 +269,8 @@ public class ItFmwDomainInPvUserCreateRcu {
 
     // verify that all servers are ready
     verifyDomainReady(domainNamespace, domainUid1, replicaCount, "nosuffix");
+
+    restoreReports(backupReports);
   }
 
   /**
