@@ -135,12 +135,9 @@ class ItFmwDomainOnPVSample {
     envMap.put("OKD", "" +  OKD);
     envMap.put("KIND_CLUSTER", "" + KIND_CLUSTER);
     envMap.put("OCNE", "" + OCNE);
-
-    if (OCNE) {
-      envMap.put("OPER_IMAGE_NAME", TEST_IMAGES_PREFIX + IMAGE_NAME_OPERATOR);
-      envMap.put("DOMAIN_CREATION_IMAGE_NAME", TEST_IMAGES_PREFIX + DOMAIN_CREATION_IMAGE_NAME);
-      envMap.put("DB_IMAGE_PULL_SECRET", BASE_IMAGES_REPO_SECRET_NAME);
-    }
+    envMap.put("OPER_IMAGE_NAME", TEST_IMAGES_PREFIX + IMAGE_NAME_OPERATOR);
+    envMap.put("DOMAIN_CREATION_IMAGE_NAME", TEST_IMAGES_PREFIX + DOMAIN_CREATION_IMAGE_NAME);
+    envMap.put("DB_IMAGE_PULL_SECRET", BASE_IMAGES_REPO_SECRET_NAME);
 
     // kind cluster uses openjdk which is not supported by image tool
     if (WIT_JAVA_HOME != null) {
