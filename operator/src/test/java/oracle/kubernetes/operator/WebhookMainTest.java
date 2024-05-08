@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -97,10 +96,6 @@ import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAUTHORIZED;
 import static oracle.kubernetes.operator.KubernetesConstants.WEBHOOK_NAMESPACE_ENV;
 import static oracle.kubernetes.operator.KubernetesConstants.WEBHOOK_POD_NAME_ENV;
 import static oracle.kubernetes.operator.LabelConstants.CREATEDBYOPERATOR_LABEL;
-import static oracle.kubernetes.operator.OperatorMain.GIT_BRANCH_KEY;
-import static oracle.kubernetes.operator.OperatorMain.GIT_BUILD_TIME_KEY;
-import static oracle.kubernetes.operator.OperatorMain.GIT_BUILD_VERSION_KEY;
-import static oracle.kubernetes.operator.OperatorMain.GIT_COMMIT_KEY;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CLUSTER;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CUSTOM_RESOURCE_DEFINITION;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.DOMAIN;
@@ -112,6 +107,10 @@ import static oracle.kubernetes.operator.helpers.WebhookHelper.VALIDATING_WEBHOO
 import static oracle.kubernetes.operator.helpers.WebhookHelper.VALIDATING_WEBHOOK_PATH;
 import static oracle.kubernetes.operator.http.rest.RestConfigImpl.CONVERSION_WEBHOOK_HTTPS_PORT;
 import static oracle.kubernetes.operator.tuning.TuningParameters.CRD_PRESENCE_FAILURE_RETRY_MAX_COUNT;
+import static oracle.kubernetes.operator.utils.PropertiesUtils.GIT_BUILD_TIME;
+import static oracle.kubernetes.operator.utils.PropertiesUtils.GIT_BUILD_VERSION;
+import static oracle.kubernetes.operator.utils.PropertiesUtils.IMPL;
+import static oracle.kubernetes.operator.utils.PropertiesUtils.getBuildProperties;
 import static oracle.kubernetes.operator.utils.SelfSignedCertUtils.WEBLOGIC_OPERATOR_WEBHOOK_SVC;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
@@ -131,13 +130,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
   private static final String WEBHOOK_POD_NAME = "my-webhook-1234";
   private static final String WEBHOOK_NAMESPACE = "webhook-namespace";
 
-  private static final String GIT_BUILD_VERSION = "3.1.0";
-  private static final String GIT_BRANCH = "master";
-  private static final String GIT_COMMIT = "a987654";
-  private static final String GIT_BUILD_TIME = "Sep-10-2015";
-  private static final String IMPL = GIT_BRANCH + "." + GIT_COMMIT;
-
-  private static final Properties buildProperties;
   public static final String RESOURCE_VERSION = "123";
   private final KubernetesTestSupport testSupport = new KubernetesTestSupport();
   private final List<Memento> mementos = new ArrayList<>();
@@ -167,28 +159,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
 
   private AdmissionregistrationV1ServiceReference createServiceReference() {
     return new AdmissionregistrationV1ServiceReference().namespace(getWebhookNamespace());
-  }
-
-  static {
-    buildProperties = new PropertiesBuilder()
-              .withProperty(GIT_BUILD_VERSION_KEY, GIT_BUILD_VERSION)
-              .withProperty(GIT_BRANCH_KEY, GIT_BRANCH)
-              .withProperty(GIT_COMMIT_KEY, GIT_COMMIT)
-              .withProperty(GIT_BUILD_TIME_KEY, GIT_BUILD_TIME)
-              .build();
-  }
-
-  private static class PropertiesBuilder {
-    private final Properties properties = new Properties();
-
-    private PropertiesBuilder withProperty(String name, String value) {
-      properties.put(name, value);
-      return this;
-    }
-
-    private Properties build() {
-      return properties;
-    }
   }
 
   @BeforeEach
@@ -230,7 +200,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
   void whenConversionWebhookCreated_logStartupMessage() {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, WEBHOOK_STARTED);
 
-    WebhookMain.createMain(buildProperties);
+    WebhookMain.createMain(getBuildProperties());
 
     assertThat(logRecords,
         containsInfo(WEBHOOK_STARTED).withParams(GIT_BUILD_VERSION, IMPL, GIT_BUILD_TIME));
@@ -240,7 +210,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
   void whenConversionWebhookCreated_logWebhookNamespace() {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, WEBHOOK_CONFIG_NAMESPACE);
 
-    WebhookMain.createMain(buildProperties);
+    WebhookMain.createMain(getBuildProperties());
 
     assertThat(logRecords, containsInfo(WEBHOOK_CONFIG_NAMESPACE).withParams(getWebhookNamespace()));
   }
@@ -251,7 +221,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
     inMemoryFileSystem.defineFile("/deployment/webhook-identity/webhookKey", "asdf");
     loggerControl.ignoringLoggedExceptions(RuntimeException.class, NoSuchFileException.class);
 
-    WebhookMain.createMain(buildProperties).completeBegin();
+    WebhookMain.createMain(getBuildProperties()).completeBegin();
 
     MatcherAssert.assertThat("Found 1 WEBHOOK_START_FAILED_EVENT event with expected count 1",
         containsEventsWithCountOne(getEvents(testSupport),
@@ -633,7 +603,7 @@ public class WebhookMainTest extends CrdHelperTestBase {
 
   @Test
   void whenWebhookStopped_restServerShutdown() {
-    WebhookMain m = WebhookMain.createMain(buildProperties);
+    WebhookMain m = WebhookMain.createMain(getBuildProperties());
     BaseServerStub restServer = new BaseServerStub();
     m.getRestServer().set(restServer);
     m.completeStop();
@@ -879,6 +849,6 @@ public class WebhookMainTest extends CrdHelperTestBase {
   }
 
   public static Certificates getCertificates() {
-    return new Certificates(new CoreDelegateImpl(buildProperties, null));
+    return new Certificates(new CoreDelegateImpl(getBuildProperties(), null));
   }
 }

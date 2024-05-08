@@ -193,7 +193,8 @@ public final class HealthCheckHelper {
 
   private static boolean apiGroupMatch(List<String> ruleApiGroups, String apiGroup) {
     if (apiGroup == null || apiGroup.isEmpty()) {
-      return ruleApiGroups == null || ruleApiGroups.isEmpty() || ruleApiGroups.contains("");
+      return ruleApiGroups == null || ruleApiGroups.isEmpty() || ruleApiGroups.contains("")
+          || ruleApiGroups.contains("*");
     }
     return ruleApiGroups != null && (ruleApiGroups.contains("*") || ruleApiGroups.contains(apiGroup));
   }

@@ -45,10 +45,10 @@ import oracle.kubernetes.utils.SystemClock;
 public abstract class BaseMain {
   static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
 
-  static final String GIT_BUILD_VERSION_KEY = "git.build.version";
-  static final String GIT_BRANCH_KEY = "git.branch";
-  static final String GIT_COMMIT_KEY = "git.commit.id.abbrev";
-  static final String GIT_BUILD_TIME_KEY = "git.build.time";
+  public static final String GIT_BUILD_VERSION_KEY = "git.build.version";
+  public static final String GIT_BRANCH_KEY = "git.branch";
+  public static final String GIT_COMMIT_KEY = "git.commit.id.abbrev";
+  public static final String GIT_BUILD_TIME_KEY = "git.build.time";
 
   static final ThreadFactory threadFactory = Thread.ofVirtual().factory();
   static final ScheduledExecutorService executor = new VirtualScheduledExecutorService();
@@ -78,13 +78,23 @@ public abstract class BaseMain {
       if (deploymentHomeLoc == null) {
         deploymentHomeLoc = System.getProperty("deploymentHome", "/deployment");
       }
-      deploymentHome = new File(deploymentHomeLoc);
+      File deploymentHomeFile = new File(deploymentHomeLoc);
+      if (!PathSupport.isDirectoryExists(deploymentHomeFile)) {
+        deploymentHomeFile = new File(System.getProperty("java.io.tmpdir"), "deployment");
+        deploymentHomeFile.mkdirs();
+      }
+      deploymentHome = deploymentHomeFile;
 
       String probesHomeLoc = HelmAccess.getHelmVariable("PROBES_HOME");
       if (probesHomeLoc == null) {
         probesHomeLoc = System.getProperty("probesHome", "/probes");
       }
-      probesHome = new File(probesHomeLoc);
+      File probesHomeFile = new File(probesHomeLoc);
+      if (!PathSupport.isDirectoryExists(probesHomeFile)) {
+        probesHomeFile = new File(System.getProperty("java.io.tmpdir"), "probes");
+        probesHomeFile.mkdirs();
+      }
+      probesHome = probesHomeFile;
 
       TuningParameters.initializeInstance(executor, new File(deploymentHome, "config"));
     } catch (IOException e) {
@@ -244,14 +254,10 @@ public abstract class BaseMain {
     delegate.scheduleWithFixedDelay(
         () -> {
           File marker = new File(delegate.getDeploymentHome(), CoreDelegate.SHUTDOWN_MARKER_NAME);
-          if (isFileExists(marker)) {
+          if (PathSupport.isFileExists(marker)) {
             releaseShutdownSignal();
           }
         }, 5, 2, TimeUnit.SECONDS);
-  }
-
-  private static boolean isFileExists(File file) {
-    return Files.isRegularFile(PathSupport.getPath(file));
   }
 
   static Packet createPacketWithLoggingContext(String ns) {

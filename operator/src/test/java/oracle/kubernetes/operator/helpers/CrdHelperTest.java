@@ -19,6 +19,7 @@ import io.kubernetes.client.openapi.models.V1CustomResourceDefinition;
 import io.kubernetes.client.openapi.models.V1CustomResourceDefinitionVersion;
 import io.kubernetes.client.openapi.models.V1JSONSchemaProps;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import oracle.kubernetes.operator.CoreDelegateImpl;
 import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.Namespaces;
@@ -43,10 +44,10 @@ import static oracle.kubernetes.common.logging.MessageKeys.CREATING_CRD;
 import static oracle.kubernetes.common.logging.MessageKeys.REPLACE_CRD_FAILED;
 import static oracle.kubernetes.common.utils.LogMatcher.containsInfo;
 import static oracle.kubernetes.operator.ProcessingConstants.WEBHOOK;
-import static oracle.kubernetes.operator.WebhookMainTest.getCertificates;
 import static oracle.kubernetes.operator.helpers.CrdHelperTest.TestSubject.CLUSTER;
 import static oracle.kubernetes.operator.helpers.CrdHelperTest.TestSubject.DOMAIN;
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.CUSTOM_RESOURCE_DEFINITION;
+import static oracle.kubernetes.operator.utils.PropertiesUtils.getBuildProperties;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -549,6 +550,10 @@ class CrdHelperTest extends CrdHelperTestBase {
 
   private V1CustomResourceDefinition defineDomainCrd() {
     return new CrdHelper.DomainCrdContext().createModel(PRODUCT_VERSION, getCertificates());
+  }
+
+  public static Certificates getCertificates() {
+    return new Certificates(new CoreDelegateImpl(getBuildProperties(), null));
   }
 
 }

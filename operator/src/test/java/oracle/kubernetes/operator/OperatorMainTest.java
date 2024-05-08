@@ -114,6 +114,7 @@ import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.STOP_MANA
 import static oracle.kubernetes.operator.helpers.KubernetesTestSupport.DOMAIN;
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
 import static oracle.kubernetes.operator.tuning.TuningParameters.DEFAULT_CALL_LIMIT;
+import static oracle.kubernetes.operator.utils.PropertiesUtils.getBuildProperties;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
@@ -164,7 +165,6 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   private static final String LABEL = "weblogic-operator";
   private static final String VALUE = "enabled";
 
-  private static final Properties buildProperties;
   private static final V1Namespace NAMESPACE_WEBLOGIC1
       = new V1Namespace().metadata(new V1ObjectMeta().name(NS_WEBLOGIC1).putLabelsItem(LABEL, VALUE));
   private static final V1Namespace NAMESPACE_WEBLOGIC2
@@ -189,28 +189,6 @@ class OperatorMainTest extends ThreadFactoryTestBase {
 
   private final Map<String, Map<String, KubernetesEventObjects>> domainEventObjects = new ConcurrentHashMap<>();
   private final Map<String, KubernetesEventObjects> nsEventObjects = new ConcurrentHashMap<>();
-
-  static {
-    buildProperties = new PropertiesBuilder()
-              .withProperty(GIT_BUILD_VERSION_KEY, GIT_BUILD_VERSION)
-              .withProperty(GIT_BRANCH_KEY, GIT_BRANCH)
-              .withProperty(GIT_COMMIT_KEY, GIT_COMMIT)
-              .withProperty(GIT_BUILD_TIME_KEY, GIT_BUILD_TIME)
-              .build();
-  }
-
-  private static class PropertiesBuilder {
-    private final Properties properties = new Properties();
-
-    private PropertiesBuilder withProperty(String name, String value) {
-      properties.put(name, value);
-      return this;
-    }
-
-    private Properties build() {
-      return properties;
-    }
-  }
 
   @BeforeEach
   public void setUp() throws Exception {
@@ -242,7 +220,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   void whenOperatorCreated_logStartupMessage() {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, OPERATOR_STARTED);
 
-    OperatorMain.createMain(buildProperties);
+    OperatorMain.createMain(getBuildProperties());
 
     assertThat(logRecords, containsInfo(OPERATOR_STARTED).withParams(GIT_BUILD_VERSION, IMPL, GIT_BUILD_TIME));
   }
@@ -251,7 +229,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   void whenOperatorCreated_logOperatorNamespace() {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, OP_CONFIG_NAMESPACE);
 
-    OperatorMain.createMain(buildProperties);
+    OperatorMain.createMain(getBuildProperties());
 
     assertThat(logRecords, containsInfo(OP_CONFIG_NAMESPACE).withParams(getOperatorNamespace()));
   }
@@ -260,7 +238,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
   void whenOperatorCreated_logServiceAccountName() {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, OP_CONFIG_SERVICE_ACCOUNT);
 
-    OperatorMain.createMain(buildProperties);
+    OperatorMain.createMain(getBuildProperties());
 
     assertThat(logRecords, containsInfo(OP_CONFIG_SERVICE_ACCOUNT).withParams("default"));
   }
@@ -272,7 +250,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     HelmAccessStub.defineVariable(HelmAccess.OPERATOR_DOMAIN_NAMESPACES,
           String.join(",", NS_WEBLOGIC1, NS_WEBLOGIC2, NS_WEBLOGIC3));
 
-    OperatorMain.createMain(buildProperties);
+    OperatorMain.createMain(getBuildProperties());
 
     assertThat(logRecords, containsInfo(OP_CONFIG_DOMAIN_NAMESPACES)
           .withParams(String.join(", ", NS_WEBLOGIC1, NS_WEBLOGIC2, NS_WEBLOGIC3)));
@@ -283,7 +261,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, OP_CONFIG_DOMAIN_NAMESPACES);
     defineSelectionStrategy(SelectionStrategy.DEDICATED);
 
-    OperatorMain.createMain(buildProperties);
+    OperatorMain.createMain(getBuildProperties());
 
     assertThat(logRecords, containsInfo(OP_CONFIG_DOMAIN_NAMESPACES).withParams(getOperatorNamespace()));
   }
@@ -293,7 +271,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, OP_CONFIG_DOMAIN_NAMESPACES);
     defineSelectionStrategy(SelectionStrategy.REG_EXP);
 
-    OperatorMain.createMain(buildProperties);
+    OperatorMain.createMain(getBuildProperties());
 
     assertThat(logRecords, not(containsInfo(OP_CONFIG_DOMAIN_NAMESPACES)));
   }
@@ -303,7 +281,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
     loggerControl.withLogLevel(Level.INFO).collectLogMessages(logRecords, OP_CONFIG_DOMAIN_NAMESPACES);
     defineSelectionStrategy(SelectionStrategy.LABEL_SELECTOR);
 
-    OperatorMain.createMain(buildProperties);
+    OperatorMain.createMain(getBuildProperties());
 
     assertThat(logRecords, not(containsInfo(OP_CONFIG_DOMAIN_NAMESPACES)));
   }
@@ -1361,7 +1339,7 @@ class OperatorMainTest extends ThreadFactoryTestBase {
 
   @Test
   void whenOperatorStopped_restServerShutdown() {
-    OperatorMain m = OperatorMain.createMain(buildProperties);
+    OperatorMain m = OperatorMain.createMain(getBuildProperties());
     BaseServerStub restServer = new BaseServerStub();
     m.getRestServer().set(restServer);
     m.completeStop();

@@ -1,10 +1,11 @@
-// Copyright (c) 2022, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.utils;
 
 import java.io.File;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Function;
@@ -28,6 +29,14 @@ public class PathSupport {
 
   public static Path getPath(File file) {
     return stringToPath.apply(file.getPath());
+  }
+
+  public static boolean isFileExists(File file) {
+    return Files.isRegularFile(getPath(file));
+  }
+
+  public static boolean isDirectoryExists(File file) {
+    return Files.isDirectory(getPath(file));
   }
 
 }

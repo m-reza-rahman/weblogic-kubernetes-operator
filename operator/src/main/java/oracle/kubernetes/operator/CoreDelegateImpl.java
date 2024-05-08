@@ -38,7 +38,7 @@ public class CoreDelegateImpl implements CoreDelegate {
   protected String domainCrdResourceVersion;
   protected String clusterCrdResourceVersion;
 
-  CoreDelegateImpl(Properties buildProps, ScheduledExecutorService scheduledExecutorService) {
+  public CoreDelegateImpl(Properties buildProps, ScheduledExecutorService scheduledExecutorService) {
     buildVersion = getBuildVersion(buildProps);
     deploymentImpl = getBranch(buildProps) + "." + getCommit(buildProps);
     deploymentBuildTime = getBuildTime(buildProps);
