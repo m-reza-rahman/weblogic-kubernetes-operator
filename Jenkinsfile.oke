@@ -2,8 +2,12 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 //
 
-CRON_SETTINGS = '''H 3 * * * % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seqone;PARALLEL_RUN=false
+CRON_SETTINGS_MAIN = '''H 3 * * * % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seqone;PARALLEL_RUN=false
                    H 2 * * * % MAVEN_PROFILE_NAME=oke-parallel;CLUSTER_NAME=parone;PARALLEL_RUN=true'''
+
+CRON_SETTINGS_42 = '''H 3 * * * % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seq42one;PARALLEL_RUN=false
+                   H 2 * * * % MAVEN_PROFILE_NAME=oke-parallel;CLUSTER_NAME=par42one;PARALLEL_RUN=true'''
+CRON_SETTINGS = "${env.JOB_NAME == 'wko-oke-nightly' ? CRON_SETTINGS_MAIN : CRON_SETTINGS_42}"
 pipeline {
     agent { label 'large' }
     options {
@@ -12,8 +16,8 @@ pipeline {
     }
     triggers {
         // timer trigger for "nightly build"
-        parameterizedCron(env.JOB_NAME == 'wko-oke-nightly' ?
-        CRON_SETTINGS : '')
+        parameterizedCron(env.JOB_NAME == 'wko-oke-dev' ?
+        '' : CRON_SETTINGS)
     }
     tools {
         maven 'maven-3.8.7'
@@ -137,8 +141,8 @@ pipeline {
                        defaultValue: "VM.Standard.E3.Flex"
         )
         string(name: 'MOUNT_TARGET_OCID',
-                               description: 'only for debug runs on wko-oke-dev',
-                               defaultValue: "test"
+                               description: 'to reuse predefined mount target'
+
                 )
         string(name: 'BRANCH',
                        description: '',
