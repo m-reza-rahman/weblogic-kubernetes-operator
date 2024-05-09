@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,7 +56,15 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_ALERT_HTTP_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_NODEPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_INGRESS_HTTPS_NODEPORT;
@@ -69,6 +78,8 @@ import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WLS;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteImage;
@@ -245,21 +256,22 @@ class ItMonitoringExporterSamples {
         SESSMIGR_APP_NAME, MONEXP_IMAGE_NAME);
     if (!OKD) {
       // install and verify NGINX
-      if (!OKE_CLUSTER_PRIVATEIP) {
-        nginxHelmParams = installAndVerifyNginx(nginxNamespace,
-            NGINX_INGRESS_HTTP_NODEPORT, NGINX_INGRESS_HTTPS_NODEPORT);
+
+      if (OKE_CLUSTER_PRIVATEIP) {
+        nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
       } else {
         nginxHelmParams = installAndVerifyNginx(nginxNamespace,
-            0,0);
+            IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_NODEPORT,
+            IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_NODEPORT);
       }
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
           ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
       logger.info("NGINX service name: {0}", nginxServiceName);
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        nodeportshttp = NGINX_INGRESS_HTTP_HOSTPORT;
-        nodeportshttps = NGINX_INGRESS_HTTPS_HOSTPORT;
+
+      if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        nodeportshttp = IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_HOSTPORT;
+        nodeportshttps = IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_HOSTPORT;
       } else {
         nodeportshttp = getServiceNodePort(nginxNamespace, nginxServiceName, "http");
         nodeportshttps = getServiceNodePort(nginxNamespace, nginxServiceName, "https");
@@ -416,15 +428,26 @@ class ItMonitoringExporterSamples {
       cleanupPromGrafanaClusterRoles(prometheusReleaseName,grafanaReleaseName);
       String promHelmValuesFileDir = Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
               "prometheus" + releaseSuffix).toString();
-      promHelmParams = installAndVerifyPrometheus(releaseSuffix,
-          monitoringNS,
-          promChartVersion,
-          prometheusRegexValue,
-          promHelmValuesFileDir,
-          webhookNS);
+      if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        promHelmParams = installAndVerifyPrometheus(releaseSuffix,
+            monitoringNS,
+            promChartVersion,
+            prometheusRegexValue, promHelmValuesFileDir, webhookNS,
+            IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_NODEPORT, IT_MONITORINGEXPORTERSAMPLES_ALERT_HTTP_NODEPORT);
+      } else {
+        promHelmParams = installAndVerifyPrometheus(releaseSuffix,
+            monitoringNS,
+            promChartVersion,
+            prometheusRegexValue, promHelmValuesFileDir, webhookNS);
+      }    
       assertNotNull(promHelmParams, " Failed to install prometheus");
       nodeportPrometheus = promHelmParams.getNodePortServer();
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
+      if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+        nodeportPrometheus = IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_HOSTPORT;
+        host = formatIPv6Host(InetAddress.getLocalHost().getHostAddress());
+      }      
+      prometheusDomainRegexValue = prometheusRegexValue;
 
       prometheusDomainRegexValue = prometheusRegexValue;
 
@@ -438,7 +461,8 @@ class ItMonitoringExporterSamples {
       }
       String ingressClassName = nginxHelmParams.getIngressClassName();
       createIngressPathRouting(monitoringNS, "/api",
-          prometheusReleaseName + "-server", 80, ingressClassName);
+          prometheusReleaseName + "-server", 80, ingressClassName, prometheusReleaseName
+              + "." + monitoringNS);
     }
     //if prometheus already installed change CM for specified domain
     if (!prometheusRegexValue.equals(prometheusDomainRegexValue)) {
