@@ -375,7 +375,8 @@ class ItPodsRestart {
     envList = domain1.getSpec().getServerPod().getEnv();
     String envValue = envList.get(0).getValue();
     logger.info("In the new patched domain envValue is: {0}", envValue);
-    assertTrue(envValue != null && envValue.equalsIgnoreCase("-Dweblogic.StdoutDebugEnabled=true"), "JAVA_OPTIONS was not updated"
+    assertTrue(envValue != null
+        && envValue.equalsIgnoreCase("-Dweblogic.StdoutDebugEnabled=true"), "JAVA_OPTIONS was not updated"
         + " in the new patched domain");
 
     // verify the server pods are rolling restarted and back to ready state
