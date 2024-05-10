@@ -504,7 +504,7 @@ public class Domain {
 
     logger.info("Getting the secret of service account {0} in namespace {1}", opServiceAccount, opNamespace);
     String secretName = Secret.getSecretOfServiceAccount(opNamespace, opServiceAccount);
-    if (secretName != null && secretName.isEmpty()) {
+    if (secretName == null || secretName.isEmpty()) {
       logger.info("Did not find secret of service account {0} in namespace {1}", opServiceAccount, opNamespace);
       return false;
     }
@@ -1136,9 +1136,10 @@ public class Domain {
       logger.info("Command {0} returned with exit value {1}, stderr {2}, stdout {3}",
           commandToExecuteInsidePod, result.exitValue(), result.stderr(), result.stdout());
     } catch (Error err) {
-      assertNotNull(result, "result is null");
-      logger.info("Command {0} returned with exit value {1}, stderr {2}, stdout {3}",
-          commandToExecuteInsidePod, result.exitValue(), result.stderr(), result.stdout());
+      if (result != null) {
+        logger.info("Command {0} returned with exit value {1}, stderr {2}, stdout {3}",
+            commandToExecuteInsidePod, result.exitValue(), result.stderr(), result.stdout());
+      }
       // copy scalingAction.log to local
       testUntil(
               () -> copyFileFromPod(domainNamespace, adminPod.getMetadata().getName(), null,

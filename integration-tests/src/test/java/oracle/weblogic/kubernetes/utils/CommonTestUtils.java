@@ -1166,10 +1166,7 @@ public class CommonTestUtils {
               logger.severe(ex.getMessage());
             }
 
-            String response = "";
-            if (result.stdout() != null) {
-              response = result.stdout().trim();
-            }
+            String response = result != null ? result.stdout().trim() : "result is null";
             logger.info(response);
             for (var managedServer : managedServers.entrySet()) {
               boolean connectToOthers = true;

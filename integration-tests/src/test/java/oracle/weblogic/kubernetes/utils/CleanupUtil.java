@@ -12,6 +12,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
 import io.kubernetes.client.openapi.models.V1Deployment;
+import io.kubernetes.client.openapi.models.V1DeploymentList;
 import io.kubernetes.client.openapi.models.V1Ingress;
 import io.kubernetes.client.openapi.models.V1IngressList;
 import io.kubernetes.client.openapi.models.V1Job;
@@ -20,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1PersistentVolume;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1ReplicaSet;
+import io.kubernetes.client.openapi.models.V1ReplicaSetList;
 import io.kubernetes.client.openapi.models.V1Role;
 import io.kubernetes.client.openapi.models.V1RoleBinding;
 import io.kubernetes.client.openapi.models.V1RoleBindingList;
@@ -30,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceAccount;
 import io.kubernetes.client.openapi.models.V1ServiceAccountList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
+import oracle.weblogic.domain.DomainList;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.TestActions;
@@ -215,13 +218,18 @@ public class CleanupUtil {
 
       // Check if any domains exist
       try {
-        if (!listDomains(namespace).getItems().isEmpty()) {
-          logger.info("Domain still exists !!!");
-          List<DomainResource> items = listDomains(namespace).getItems();
-          for (var item : items) {
-            logger.info(item.getMetadata().getName());
+        DomainList domainList = listDomains(namespace);
+        if (domainList != null) {
+          List<DomainResource> items = domainList.getItems();
+          if (!items.isEmpty()) {
+            logger.info("Domain still exists !!!");
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
+            }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());
@@ -230,15 +238,19 @@ public class CleanupUtil {
 
       // Check if any replica sets exist
       try {
-        if (!listReplicaSets(namespace).getItems().isEmpty()) {
-          logger.info("ReplicaSets still exists!!!");
+        V1ReplicaSetList replicaSetList = listReplicaSets(namespace);
+        if (replicaSetList != null) {
           List<V1ReplicaSet> items = listReplicaSets(namespace).getItems();
-          for (var item : items) {
-            if (item.getMetadata() != null) {
-              logger.info(item.getMetadata().getName());
+          if (!items.isEmpty()) {
+            logger.info("ReplicaSets still exists!!!");
+            //List<V1ReplicaSet> items = listReplicaSets(namespace).getItems();
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
             }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());
@@ -267,15 +279,18 @@ public class CleanupUtil {
 
       // check if any configmaps exist
       try {
-        if (!listConfigMaps(namespace).getItems().isEmpty()) {
-          logger.info("Config Maps still exists!!!");
-          List<V1ConfigMap> items = listConfigMaps(namespace).getItems();
-          for (var item : items) {
-            if (item.getMetadata() != null) {
-              logger.info(item.getMetadata().getName());
+        V1ConfigMapList configMapList = listConfigMaps(namespace);
+        if (configMapList != null) {
+          List<V1ConfigMap> items = configMapList.getItems();
+          if (!items.isEmpty()) {
+            logger.info("Config Maps still exists!!!");
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
             }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());
@@ -354,15 +369,18 @@ public class CleanupUtil {
 
       // check if any deployments exist
       try {
-        if (!listDeployments(namespace).getItems().isEmpty()) {
-          logger.info("Deployments still exists!!!");
+        V1DeploymentList deploymentList = listDeployments(namespace);
+        if (deploymentList != null) {
           List<V1Deployment> items = listDeployments(namespace).getItems();
-          for (var item : items) {
-            if (item.getMetadata() != null) {
-              logger.info(item.getMetadata().getName());
+          if (!items.isEmpty()) {
+            logger.info("Deployments still exists!!!");
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
             }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());

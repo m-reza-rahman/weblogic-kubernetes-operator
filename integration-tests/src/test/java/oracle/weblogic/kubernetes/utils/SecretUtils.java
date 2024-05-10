@@ -264,7 +264,7 @@ public class SecretUtils {
     LoggingFacade logger = getLogger();
     logger.info("Getting the secret of service account {0} in namespace {1}", serviceAccount, namespace);
     String secretName = Secret.getSecretOfServiceAccount(namespace, serviceAccount);
-    if (secretName.isEmpty()) {
+    if (secretName == null || secretName.isEmpty()) {
       logger.info("Did not find secret of service account {0} in namespace {1}", serviceAccount, namespace);
       return null;
     }
@@ -274,7 +274,7 @@ public class SecretUtils {
     logger.info("Getting service account token stored in secret {0} to authenticate as service account {1}"
         + " in namespace {2}", secretName, serviceAccount, namespace);
     String secretToken = Secret.getSecretEncodedToken(namespace, secretName);
-    if (secretToken != null && secretToken.isEmpty()) {
+    if (secretToken == null || secretToken.isEmpty()) {
       logger.info("Did not get encoded token for secret {0} associated with service account {1} in namespace {2}",
           secretName, serviceAccount, namespace);
       return null;

@@ -235,7 +235,7 @@ public class ConfigMapUtils {
     assertNotNull(configMapToModify,"Can't find cm for " + cmName);
     Map<String, String> cmData = configMapToModify.getData();
     String values = null;
-    if (cmData != null) {
+    if (cmData != null && cmData.get("logstash.conf") != null) {
       values = cmData.get("logstash.conf").replace(oldRegex, newRegex);
     }
     assertNotNull(values, "can't find values for key prometheus.yml");
