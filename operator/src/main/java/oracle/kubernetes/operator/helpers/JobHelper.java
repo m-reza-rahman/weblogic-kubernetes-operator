@@ -64,6 +64,7 @@ import static oracle.kubernetes.operator.DomainSourceType.FROM_MODEL;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createIntrospectionFailureSteps;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveFailuresStep;
 import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveSelectedFailuresStep;
+import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_CLUSTER_SPEC_GENERATION;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_DOMAIN_SPEC_GENERATION;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTION_COMPLETE;
@@ -243,6 +244,10 @@ public class JobHelper {
         } else if (job != null) {
           return doNext(processExistingIntrospectorJob(getNext()), packet);
         } else if (isIntrospectionNeeded(packet)) {
+
+          // TEST
+          LOGGER.severe("RJE: Introspection is needed");
+
           return doNext(createIntrospectionSteps(getNext()), packet);
         } else {
           return doNext(packet);
@@ -346,11 +351,27 @@ public class JobHelper {
       }
 
       private boolean isIntrospectionNeeded(Packet packet) {
-        return getDomainTopology() == null
-              || isBringingUpNewDomain(packet)
-              || isIntrospectionRequested(packet)
-              || isModelInImageUpdate(packet)
-              || isIntrospectVersionChanged(packet);
+
+        // HERE: We are now introspecting too often
+        // For instance, since we requeue frequently, we repeat introspection for every server that is rolled
+
+        // TEST
+        boolean isDomainTopologyNull = getDomainTopology() == null;
+        boolean isBringingUpNewDomain = isBringingUpNewDomain(packet);
+        boolean isIntrospectionRequested = isIntrospectionRequested(packet);
+        boolean isModelInImageUpdate = isModelInImageUpdate(packet);
+        boolean isIntrospectVersionChanged = isIntrospectVersionChanged(packet);
+        LOGGER.severe("RJE: isDomainTopologyNull: " + isDomainTopologyNull
+                + ", isBringingUpNewDomain: " + isBringingUpNewDomain
+                + ", isIntrospectionRequested: " + isIntrospectionRequested
+                + ", isModelInImageUpdate: " + isModelInImageUpdate
+                + ", isIntrospectVersionChanged: " + isIntrospectVersionChanged);
+
+        return isDomainTopologyNull
+              || isBringingUpNewDomain
+              || isIntrospectionRequested
+              || isModelInImageUpdate
+              || isIntrospectVersionChanged;
       }
 
       @Nonnull
@@ -359,7 +380,19 @@ public class JobHelper {
       }
 
       private boolean isBringingUpNewDomain(Packet packet) {
-        return getNumRunningServers() == 0 && creatingServers(info) && isDomainGenerationChanged(packet);
+        // TEST
+        int runningServers = getNumRunningServers();
+        boolean isCreatingServers = creatingServers(info);
+        boolean isDomainGenerationChanged = isDomainGenerationChanged(packet);
+        boolean isAnyClusterGenerationChanged = isAnyClusterGenerationChanged(packet);
+        LOGGER.severe("RJE: runningServers: " + runningServers + ", isCreatingServers: " + isCreatingServers
+            + ", isDomainGenerationChanged: " + isDomainGenerationChanged
+            + ", isAnyClusterGenerationChanged: " + isAnyClusterGenerationChanged);
+
+        return runningServers == 0 && isCreatingServers
+                && (isDomainGenerationChanged || isAnyClusterGenerationChanged);
+        // return getNumRunningServers() == 0 && creatingServers(info)
+        //    && (isDomainGenerationChanged(packet) || isAnyClusterGenerationChanged(packet));
       }
 
       private int getNumRunningServers() {
@@ -377,6 +410,31 @@ public class JobHelper {
               .map(V1ObjectMeta::getGeneration)
               .map(Object::toString)
               .orElse("");
+      }
+
+      private boolean isAnyClusterGenerationChanged(Packet packet) {
+        List<ClusterResource> referencedClusters = info.getReferencedClusters();
+        if (referencedClusters.size() != packet.entrySet().stream()
+            .filter(entry -> entry.getKey().startsWith(INTROSPECTION_CLUSTER_SPEC_GENERATION)).count()) {
+          return true;
+        }
+
+        for (ClusterResource clusterResource : referencedClusters) {
+          if (Optional.ofNullable(packet.get(INTROSPECTION_CLUSTER_SPEC_GENERATION
+                  + "." + clusterResource.getMetadata().getName()))
+                  .map(gen -> !gen.equals(getClusterGeneration(clusterResource))).orElse(true)) {
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      private String getClusterGeneration(ClusterResource clusterResource) {
+        return Optional.ofNullable(clusterResource.getMetadata())
+                .map(V1ObjectMeta::getGeneration)
+                .map(Object::toString)
+                .orElse("");
       }
 
       // Returns true if an introspection was requested. Clears the flag in any case.

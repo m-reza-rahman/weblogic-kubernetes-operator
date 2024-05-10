@@ -168,6 +168,13 @@ public class MakeRightDomainOperationImpl extends MakeRightOperationImpl<DomainP
 
   @Override
   public void setInspectionRun() {
+
+    // HERE: going to take a break
+    // introspection is running frequently because we are only relying on this flag to determine if introspection
+    // has run. In the old model, this would be set and a fiber would continue for an entire rolling operation,
+    // but now that we have new make-rights, we need to instead decide if introspection has been run recently
+    // enough such as since the operator transitioned to not complete.
+
     inspectionRun = true;
   }
 
