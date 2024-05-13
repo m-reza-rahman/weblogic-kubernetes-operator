@@ -138,9 +138,8 @@ class ItOCILoadBalancer {
     List<V1LoadBalancerIngress> ingress = service.getStatus().getLoadBalancer().getIngress();
     if (ingress != null) {
       logger.info("LoadBalancer Ingress " + ingress.toString());
-      V1LoadBalancerIngress lbIng = ingress.stream().filter(c -> c.getIp() != null &&
-          !c.getIp().equals("pending")
-      ).findAny().orElse(null);
+      V1LoadBalancerIngress lbIng =
+          ingress.stream().filter(c -> c.getIp() != null && !c.getIp().equals("pending")).findAny().orElse(null);
       if (lbIng != null) {
         logger.info("OCI LoadBalancer is created with external ip" + lbIng.getIp());
         return lbIng.getIp();

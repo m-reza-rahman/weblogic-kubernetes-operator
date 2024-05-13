@@ -339,10 +339,10 @@ public class IstioUtils {
       for (var item : listPods("istio-system", null).getItems()) {
         if (item.getMetadata() != null && item.getMetadata().getName() != null
             && item.getMetadata().getName().contains("prometheus")) {
-            logger.info("Waiting for pod {0} to be ready in namespace {1}",
-                item.getMetadata().getName(), "istio-system");
-            checkPodReady(item.getMetadata().getName(), null, "istio-system");
-            checkServiceExists("prometheus", "istio-system");
+          logger.info("Waiting for pod {0} to be ready in namespace {1}",
+              item.getMetadata().getName(), "istio-system");
+          checkPodReady(item.getMetadata().getName(), null, "istio-system");
+          checkServiceExists("prometheus", "istio-system");
         }
       }
     } catch (ApiException e) {

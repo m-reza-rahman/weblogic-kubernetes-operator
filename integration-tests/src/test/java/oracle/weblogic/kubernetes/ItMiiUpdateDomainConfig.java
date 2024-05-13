@@ -268,8 +268,8 @@ class ItMiiUpdateDomainConfig {
     for (int i = 0; i < envList.size(); i++) {
       logger.info("The name is: {0}, value is: {1}", envList.get(i).getName(), envList.get(i).getValue());
       if (envList.get(i).getName().equalsIgnoreCase("CUSTOM_ENV")) {
-        assertTrue(envList.get(i).getValue() != null &&
-            envList.get(i).getValue().equalsIgnoreCase("${DOMAIN_UID}~##!'%*$(ls)"),
+        assertTrue(envList.get(i).getValue() != null
+                && envList.get(i).getValue().equalsIgnoreCase("${DOMAIN_UID}~##!'%*$(ls)"),
             "Expected value for CUSTOM_ENV variable does not mtach");
         found = true;
       }
