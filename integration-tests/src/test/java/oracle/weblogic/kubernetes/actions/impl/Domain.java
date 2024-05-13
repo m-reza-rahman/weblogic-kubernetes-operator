@@ -504,7 +504,7 @@ public class Domain {
 
     logger.info("Getting the secret of service account {0} in namespace {1}", opServiceAccount, opNamespace);
     String secretName = Secret.getSecretOfServiceAccount(opNamespace, opServiceAccount);
-    if (secretName != null && secretName.isEmpty()) {
+    if (secretName == null || secretName.isEmpty()) {
       logger.info("Did not find secret of service account {0} in namespace {1}", opServiceAccount, opNamespace);
       return false;
     }

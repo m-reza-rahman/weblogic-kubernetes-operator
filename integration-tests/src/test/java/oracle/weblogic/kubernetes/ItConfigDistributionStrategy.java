@@ -1203,6 +1203,7 @@ class ItConfigDistributionStrategy {
     for (V1Service service : services) {
       if (service.getMetadata() != null && service.getMetadata().getName() != null
           && service.getSpec() != null && service.getSpec().getPorts() != null
+          && !service.getSpec().getPorts().isEmpty()
           && service.getMetadata().getName().startsWith(dbName)) {
         return service.getSpec().getPorts().get(0).getNodePort();
       }

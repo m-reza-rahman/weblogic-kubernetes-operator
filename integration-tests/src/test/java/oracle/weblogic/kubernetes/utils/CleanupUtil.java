@@ -12,6 +12,7 @@ import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1ConfigMap;
 import io.kubernetes.client.openapi.models.V1ConfigMapList;
 import io.kubernetes.client.openapi.models.V1Deployment;
+import io.kubernetes.client.openapi.models.V1DeploymentList;
 import io.kubernetes.client.openapi.models.V1Ingress;
 import io.kubernetes.client.openapi.models.V1IngressList;
 import io.kubernetes.client.openapi.models.V1Job;
@@ -20,6 +21,7 @@ import io.kubernetes.client.openapi.models.V1PersistentVolume;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaim;
 import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimList;
 import io.kubernetes.client.openapi.models.V1ReplicaSet;
+import io.kubernetes.client.openapi.models.V1ReplicaSetList;
 import io.kubernetes.client.openapi.models.V1Role;
 import io.kubernetes.client.openapi.models.V1RoleBinding;
 import io.kubernetes.client.openapi.models.V1RoleBindingList;
@@ -30,6 +32,7 @@ import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceAccount;
 import io.kubernetes.client.openapi.models.V1ServiceAccountList;
 import io.kubernetes.client.openapi.models.V1ServiceList;
+import oracle.weblogic.domain.DomainList;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.TestActions;
@@ -165,14 +168,20 @@ public class CleanupUtil {
    */
   private static void deleteDomains(String namespace) {
     LoggingFacade logger = getLogger();
-    try {
-      for (var item : listDomains(namespace).getItems()) {
-        String domainUid = item.getMetadata().getName();
-        deleteDomainCustomResource(domainUid, namespace);
+    DomainList domainList = listDomains(namespace);
+    if (domainList != null) {
+      List<DomainResource> items = domainList.getItems();
+      try {
+        for (var item : items) {
+          if (item.getMetadata() != null) {
+            String domainUid = item.getMetadata().getName();
+            deleteDomainCustomResource(domainUid, namespace);
+          }
+        }
+      } catch (Exception ex) {
+        logger.severe(ex.getMessage());
+        logger.severe("Failed to delete domain or the {0} is not a domain namespace", namespace);
       }
-    } catch (Exception ex) {
-      logger.severe(ex.getMessage());
-      logger.severe("Failed to delete domain or the {0} is not a domain namespace", namespace);
     }
   }
 
@@ -215,13 +224,18 @@ public class CleanupUtil {
 
       // Check if any domains exist
       try {
-        if (!listDomains(namespace).getItems().isEmpty()) {
-          logger.info("Domain still exists !!!");
-          List<DomainResource> items = listDomains(namespace).getItems();
-          for (var item : items) {
-            logger.info(item.getMetadata().getName());
+        DomainList domainList = listDomains(namespace);
+        if (domainList != null) {
+          List<DomainResource> items = domainList.getItems();
+          if (!items.isEmpty()) {
+            logger.info("Domain still exists !!!");
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
+            }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());
@@ -230,15 +244,18 @@ public class CleanupUtil {
 
       // Check if any replica sets exist
       try {
-        if (!listReplicaSets(namespace).getItems().isEmpty()) {
-          logger.info("ReplicaSets still exists!!!");
-          List<V1ReplicaSet> items = listReplicaSets(namespace).getItems();
-          for (var item : items) {
-            if (item.getMetadata() != null) {
-              logger.info(item.getMetadata().getName());
+        V1ReplicaSetList replicaSetList = listReplicaSets(namespace);
+        if (replicaSetList != null) {
+          List<V1ReplicaSet> items = replicaSetList.getItems();
+          if (!items.isEmpty()) {
+            logger.info("ReplicaSets still exists!!!");
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
             }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());
@@ -267,15 +284,18 @@ public class CleanupUtil {
 
       // check if any configmaps exist
       try {
-        if (!listConfigMaps(namespace).getItems().isEmpty()) {
-          logger.info("Config Maps still exists!!!");
-          List<V1ConfigMap> items = listConfigMaps(namespace).getItems();
-          for (var item : items) {
-            if (item.getMetadata() != null) {
-              logger.info(item.getMetadata().getName());
+        V1ConfigMapList configMapList = listConfigMaps(namespace);
+        if (configMapList != null) {
+          List<V1ConfigMap> items = configMapList.getItems();
+          if (!items.isEmpty()) {
+            logger.info("Config Maps still exists!!!");
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
             }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());
@@ -325,7 +345,8 @@ public class CleanupUtil {
       try {
         V1PersistentVolumeClaimList persistentVolumeClaimList = listPersistentVolumeClaims(namespace);
         if (persistentVolumeClaimList != null) {
-          for (var item : persistentVolumeClaimList.getItems()) {
+          List<V1PersistentVolumeClaim> items = persistentVolumeClaimList.getItems();
+          for (var item : items) {
             String label = Optional.ofNullable(item)
                 .map(pvc -> pvc.getMetadata())
                 .map(metadata -> metadata.getLabels())
@@ -354,15 +375,18 @@ public class CleanupUtil {
 
       // check if any deployments exist
       try {
-        if (!listDeployments(namespace).getItems().isEmpty()) {
-          logger.info("Deployments still exists!!!");
-          List<V1Deployment> items = listDeployments(namespace).getItems();
-          for (var item : items) {
-            if (item.getMetadata() != null) {
-              logger.info(item.getMetadata().getName());
+        V1DeploymentList deploymentList = listDeployments(namespace);
+        if (deploymentList != null) {
+          List<V1Deployment> items = deploymentList.getItems();
+          if (!items.isEmpty()) {
+            logger.info("Deployments still exists!!!");
+            for (var item : items) {
+              if (item.getMetadata() != null) {
+                logger.info(item.getMetadata().getName());
+              }
             }
+            nothingFound = false;
           }
-          nothingFound = false;
         }
       } catch (Exception ex) {
         logger.warning(ex.getMessage());
@@ -510,8 +534,14 @@ public class CleanupUtil {
 
     // Delete all Domain objects in the given namespace
     try {
-      for (var item : listDomains(namespace).getItems()) {
-        deleteDomainCustomResource(item.getMetadata().getName(), namespace);
+      DomainList domainList = listDomains(namespace);
+      if (domainList != null) {
+        List<DomainResource> items = domainList.getItems();
+        for (var item : items) {
+          if (item.getMetadata() != null) {
+            deleteDomainCustomResource(item.getMetadata().getName(), namespace);
+          }
+        }
       }
     } catch (Exception ex) {
       logger.warning(ex.getMessage());
@@ -520,9 +550,13 @@ public class CleanupUtil {
 
     // Delete deployments
     try {
-      for (var item : listDeployments(namespace).getItems()) {
-        if (item.getMetadata() != null) {
-          deleteDeployment(namespace, item.getMetadata().getName());
+      V1DeploymentList deploymentList = listDeployments(namespace);
+      if (deploymentList != null) {
+        List<V1Deployment> items = deploymentList.getItems();
+        for (var item : items) {
+          if (item.getMetadata() != null) {
+            deleteDeployment(namespace, item.getMetadata().getName());
+          }
         }
       }
     } catch (Exception ex) {
@@ -532,9 +566,13 @@ public class CleanupUtil {
 
     // Delete replicasets
     try {
-      for (var item : listReplicaSets(namespace).getItems()) {
-        if (item.getMetadata() != null) {
-          deleteReplicaSet(namespace, item.getMetadata().getName());
+      V1ReplicaSetList replicaSetList = listReplicaSets(namespace);
+      if (replicaSetList != null) {
+        List<V1ReplicaSet> items = replicaSetList.getItems();
+        for (var item : items) {
+          if (item.getMetadata() != null) {
+            deleteReplicaSet(namespace, item.getMetadata().getName());
+          }
         }
       }
     } catch (Exception ex) {
@@ -650,9 +688,12 @@ public class CleanupUtil {
 
     // Delete namespaced roles
     try {
-      for (var item : listNamespacedRoles(namespace).getItems()) {
-        if (item.getMetadata() != null) {
-          deleteNamespacedRole(namespace, item.getMetadata().getName());
+      V1RoleList roleList = listNamespacedRoles(namespace);
+      if (roleList != null) {
+        for (var item : roleList.getItems()) {
+          if (item.getMetadata() != null) {
+            deleteNamespacedRole(namespace, item.getMetadata().getName());
+          }
         }
       }
     } catch (Exception ex) {
@@ -662,9 +703,12 @@ public class CleanupUtil {
 
     // Delete namespaced role bindings
     try {
-      for (var item : listNamespacedRoleBinding(namespace).getItems()) {
-        if (item.getMetadata() != null) {
-          deleteNamespacedRoleBinding(namespace, item.getMetadata().getName());
+      V1RoleBindingList roleBindingList = listNamespacedRoleBinding(namespace);
+      if (roleBindingList != null) {
+        for (var item : roleBindingList.getItems()) {
+          if (item.getMetadata() != null) {
+            deleteNamespacedRoleBinding(namespace, item.getMetadata().getName());
+          }
         }
       }
     } catch (Exception ex) {

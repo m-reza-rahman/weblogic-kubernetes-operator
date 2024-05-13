@@ -165,8 +165,8 @@ public class BuildApplication {
 
     //setup temporary WebLogic pod to build application
     V1Pod webLogicPod = setupWebLogicPod(namespace, buildContainer);
-    assertNotNull(webLogicPod);
-    assertNotNull(webLogicPod.getMetadata());
+    assertNotNull(webLogicPod, "webLogicPod is null");
+    assertNotNull(webLogicPod.getMetadata(), "webLogicPod metadata is null");
 
     try {
       //copy the zip file to /u01 location inside pod

@@ -218,7 +218,7 @@ class ItLiftAndShiftFromOnPremDomain {
 
     Path tempDomainDir = Paths.get(DOMAIN_TEMP_DIR);
     String tmpDomainDirZip = createZipFile(tempDomainDir);
-    assertNotNull(tmpDomainDirZip);
+    assertNotNull(tmpDomainDirZip, String.format("failed to create zip file %s", DOMAIN_TEMP_DIR));
     Path zipFile = Paths.get(tmpDomainDirZip);
     logger.info("zipfile is in {0}", zipFile.toString());
 
