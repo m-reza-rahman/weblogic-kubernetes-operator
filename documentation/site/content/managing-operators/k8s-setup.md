@@ -70,7 +70,9 @@ The quick start uses the sample provided in [Multi-region service mesh with Isti
     $ cp terraform.tfvars.example terraform.tfvars
     ```
 
-1.  Update all values with correct paths to the keys and IDs.   For example, run commands:
+1.  In the `terraform.tfvars` file, update all values with the correct paths to the keys and IDs.  
+
+1.  Run the commands:
 
      ```shell   
      $ terraform init
