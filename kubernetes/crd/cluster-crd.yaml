@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: 25a60de9429ea0f9bad45b3083d18c9ff56c86c62a123cdff67af4bacf82eec5
+    weblogic.sha256: c329c2b6b6e208dfd48af3e6fe4dd3cca181ab5c5478e7fd46180725946b9eb3
   name: clusters.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -1706,6 +1706,8 @@ spec:
                                 type: integer
                             required:
                             - containerPort
+                        restartPolicy:
+                          type: string
                         command:
                           type: array
                           items:
@@ -2244,6 +2246,8 @@ spec:
                                 type: integer
                             required:
                             - containerPort
+                        restartPolicy:
+                          type: string
                         command:
                           type: array
                           items:

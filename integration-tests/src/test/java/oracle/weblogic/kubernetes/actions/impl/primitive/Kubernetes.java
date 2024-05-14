@@ -1319,7 +1319,8 @@ public class Kubernetes {
           json, // JSON schema of the Resource to create
           null, // pretty print output
           null, // dry run
-          null // field manager
+          null, // field manager
+          null // field validation
       );
     } catch (ApiException apex) {
       getLogger().severe(apex.getResponseBody());
@@ -1368,7 +1369,8 @@ public class Kubernetes {
           json, // JSON schema of the Resource to create
           null, // pretty print output
           null, // dry run
-          null // field manager
+          null, // field manager
+          null // field validation
       );
     } catch (ApiException apex) {
       getLogger().severe(apex.getResponseBody());
@@ -1455,7 +1457,8 @@ public class Kubernetes {
           json, // JSON schema of the Resource to create
           null, // pretty print output
           null, // dry run
-          null // field manager
+          null, // field manager
+          null // field validation
       );
     } catch (ApiException apex) {
       getLogger().severe(apex.getResponseBody());
@@ -1725,7 +1728,8 @@ public class Kubernetes {
           json, // JSON schema of the Resource to create
           null, // pretty print output
           null, // dry run
-          null // field manager
+          null, // field manager
+          null // field validation
       );
     } catch (ApiException apex) {
       getLogger().severe(apex.getResponseBody());

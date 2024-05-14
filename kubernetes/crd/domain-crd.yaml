@@ -5,7 +5,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    weblogic.sha256: ee0c6f79288b000cd61aa9438ab7f24f63b6334072e3520f25ee454f8bff6175
+    weblogic.sha256: 9d5c3e979a3460cad6b47fa85c18e44dfa6609d74bd6f1f3ba3be99e459db3cc
   name: domains.weblogic.oracle
 spec:
   group: weblogic.oracle
@@ -2806,6 +2806,8 @@ spec:
                                     type: integer
                                 required:
                                 - containerPort
+                            restartPolicy:
+                              type: string
                             command:
                               type: array
                               items:
@@ -3344,6 +3346,8 @@ spec:
                                     type: integer
                                 required:
                                 - containerPort
+                            restartPolicy:
+                              type: string
                             command:
                               type: array
                               items:
@@ -5981,6 +5985,8 @@ spec:
                                 type: integer
                             required:
                             - containerPort
+                        restartPolicy:
+                          type: string
                         command:
                           type: array
                           items:
@@ -6519,6 +6525,8 @@ spec:
                                 type: integer
                             required:
                             - containerPort
+                        restartPolicy:
+                          type: string
                         command:
                           type: array
                           items:
@@ -8812,6 +8820,8 @@ spec:
                                       type: integer
                                   required:
                                   - containerPort
+                              restartPolicy:
+                                type: string
                               command:
                                 type: array
                                 items:
@@ -9350,6 +9360,8 @@ spec:
                                       type: integer
                                   required:
                                   - containerPort
+                              restartPolicy:
+                                type: string
                               command:
                                 type: array
                                 items:
