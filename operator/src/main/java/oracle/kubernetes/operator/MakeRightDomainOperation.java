@@ -64,6 +64,9 @@ public interface MakeRightDomainOperation extends MakeRightOperation<DomainPrese
   boolean wasInspectionRun();
 
   private static boolean wasInspectionRun(Packet packet) {
+
+    // HERE: Can I detect that last introspection was after Completed=False?
+
     return fromPacket(packet).map(MakeRightDomainOperation::wasInspectionRun).orElse(false);
   }
 

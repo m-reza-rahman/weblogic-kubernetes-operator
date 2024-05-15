@@ -567,6 +567,12 @@ public class JobHelper {
 
         String jobPodName = JobHelper.getName(jobPod);
 
+        // HERE: record introspection start time
+        String creationTime = Optional.ofNullable(jobPod).map(V1Pod::getMetadata)
+                .map(V1ObjectMeta::getCreationTimestamp).map(OffsetDateTime::toString).orElse(null);
+        if (creationTime != null) {
+          packet.put("introspectionTime", creationTime);
+        }
         return doNext(readDomainIntrospectorPodLog(jobPodName, containerName, getNext()), packet);
       }
 

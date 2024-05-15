@@ -336,7 +336,8 @@ public class ConfigMapHelper {
                 .map(V1ObjectMeta::getGeneration)
                 .ifPresent(value -> addLabel(INTROSPECTION_CLUSTER_SPEC_GENERATION + "."
                     + cluster.getMetadata().getName(), value.toString()))));
-
+        String creationTime = packet.getValue("introspectionTime");
+        Optional.ofNullable(creationTime).ifPresent(value -> addLabel("introspectionTime", value));
         V1ConfigMap existingMap = withoutTransientData(callResponse.getObject());
         if (existingMap == null) {
           return doNext(createConfigMap(getNext()), packet);
@@ -928,6 +929,8 @@ public class ConfigMapHelper {
       Optional.ofNullable(labels).ifPresent(x -> x.entrySet().stream()
               .filter(entry -> entry.getKey().startsWith(INTROSPECTION_CLUSTER_SPEC_GENERATION))
               .forEach(entry -> packet.put(entry.getKey(), entry.getValue())));
+      Optional.ofNullable(labels).map(l -> l.get("introspectionTime"))
+              .ifPresent(value -> packet.put("introspectionTime", value));
     }
 
     private String getTopologyYaml(Map<String, String> data) {
