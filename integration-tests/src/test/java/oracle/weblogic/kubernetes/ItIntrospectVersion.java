@@ -172,7 +172,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @Tag("olcne-srg")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
-@Tag("oke-sequential1")
+@Tag("oke-gate")
 @Tag("oke-arm")
 class ItIntrospectVersion {
 
@@ -1368,7 +1368,6 @@ class ItIntrospectVersion {
       } else {
         // In non-internal OKE env, verifyMemberHealth using adminSvcExtHost by sending HTTP request from local VM
 
-        // TEST, HERE
         String extSvcPodName = getExternalServicePodName(adminServerPodName);
         logger.info("**** adminServerPodName={0}", adminServerPodName);
         logger.info("**** extSvcPodName={0}", extSvcPodName);

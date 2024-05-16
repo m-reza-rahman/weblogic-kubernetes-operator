@@ -6,6 +6,8 @@ package oracle.weblogic.kubernetes;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,6 +44,8 @@ import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.ServerPod;
+import oracle.weblogic.kubernetes.actions.impl.NginxParams;
+import oracle.weblogic.kubernetes.actions.impl.Service;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -66,6 +70,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_12213;
@@ -91,11 +96,14 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVeri
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapFromFiles;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
@@ -105,6 +113,8 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.JobUtils.createDomainJob;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createNginxIngressPathRoutingRules;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.MySQLDBUtils.createMySQLDB;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -133,13 +143,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify the overrideDistributionStrategy applies the overrides accordingly to the value set")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
-@Tag("oke-sequential")
+@Tag("oke-gate")
 @IntegrationTest
 @Tag("olcne-mrg")
 class ItConfigDistributionStrategy {
 
   private static String opNamespace = null;
   private static String domainNamespace = null;
+  private static String nginxNamespace = null;
+  private static NginxParams nginxHelmParams = null;
 
   final String domainUid = "mydomain";
   final String clusterName = "mycluster";
@@ -155,6 +167,7 @@ class ItConfigDistributionStrategy {
   final String wlSecretName = "weblogic-credentials";
   final String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
   int replicaCount = 2;
+  static String hostAndPort;
 
   static Path clusterViewAppPath;
   String overridecm = "configoverride-cm";
@@ -166,12 +179,13 @@ class ItConfigDistributionStrategy {
   static String dsUrl2;
   static String mysql1SvcEndpoint = null;
   static String mysql2SvcEndpoint = null;
+  private static String ingressIP = null;
 
   String dsName0 = "JdbcTestDataSource-0";
   String dsName1 = "JdbcTestDataSource-1";
   String dsSecret = domainUid.concat("-mysql-secret");
   String adminSvcExtHost = null;
-  static String hostHeader;  
+  static String hostHeader;
 
   private static LoggingFacade logger = null;
 
@@ -187,7 +201,7 @@ class ItConfigDistributionStrategy {
    * @param namespaces injected by JUnit
    */
   @BeforeAll
-  public void initAll(@Namespaces(2) List<String> namespaces) throws ApiException, IOException {
+  public void initAll(@Namespaces(3) List<String> namespaces) throws ApiException, IOException {
     logger = getLogger();
 
     logger.info("Assign a unique namespace for operator");
@@ -196,10 +210,20 @@ class ItConfigDistributionStrategy {
     logger.info("Assign a unique namespace for domain namspace");
     assertNotNull(namespaces.get(1), "Namespace is null");
     domainNamespace = namespaces.get(1);
+    assertNotNull(namespaces.get(2), "Namespace is null");
+    nginxNamespace = namespaces.get(2);
 
     // install operator and verify its running in ready state
     installAndVerifyOperator(opNamespace, domainNamespace);
+    ingressIP = K8S_NODEPORT_HOST;
+    if (OKE_CLUSTER_PRIVATEIP) {
+      // install and verify NGINX
+      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
+      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+      ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+          ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST;
 
+    }
     // create pull secrets for WebLogic image when running in non Kind Kubernetes cluster
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(domainNamespace);
@@ -213,7 +237,7 @@ class ItConfigDistributionStrategy {
     pod = getPod(domainNamespace, null, "mysqldb-2");
     createFileInPod(pod.getMetadata().getName(), domainNamespace, "root456");
     runMysqlInsidePod(pod.getMetadata().getName(), domainNamespace, "root456");
-    
+
     dsUrl1 = "jdbc:mysql://" + dbService1 + "." + domainNamespace + ".svc:3306";
     dsUrl2 = "jdbc:mysql://" + dbService2 + "." + domainNamespace + ".svc:3306";
     logger.info(dsUrl1);
@@ -227,6 +251,14 @@ class ItConfigDistributionStrategy {
 
     //create and start WebLogic domain
     createDomain();
+    if (OKE_CLUSTER_PRIVATEIP) {
+      String ingressClassName = nginxHelmParams.getIngressClassName();
+      String serviceName = domainUid + "-admin-server";
+      final int ADMIN_SERVER_PORT = 7001;
+      String hostAndPort = getHostAndPortOKE();
+      createNginxIngressPathRoutingRules(domainNamespace, ingressClassName,
+          serviceName, ADMIN_SERVER_PORT, hostAndPort);
+    }
 
     // Expose the admin service external node port as  a route for OKD
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
@@ -242,7 +274,8 @@ class ItConfigDistributionStrategy {
    * Verify the default config before starting any test.
    */
   @BeforeEach
-  public void beforeEach() {
+  public void beforeEach() throws UnknownHostException, IOException, InterruptedException {
+    getDomainHealth();
     //check configuration values before override
     verifyConfigXMLOverride(false);
     verifyResourceJDBC0Override(false);
@@ -252,7 +285,8 @@ class ItConfigDistributionStrategy {
    * Delete the overrides and restart domain to get clean state.
    */
   @AfterEach
-  public void afterEach() {
+  public void afterEach() throws IOException, InterruptedException {
+    getDomainHealth();
     deleteConfigMap(overridecm, domainNamespace);
     String patchStr
         = "["
@@ -265,7 +299,7 @@ class ItConfigDistributionStrategy {
 
     logger.info("Getting node port for default channel");
     int serviceNodePort = assertDoesNotThrow(()
-        -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+            -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
         "Getting admin server node port failed");
 
     testUntil(
@@ -281,6 +315,9 @@ class ItConfigDistributionStrategy {
             headers.put("host", hostHeader);
           }
           boolean ipv6 = K8S_NODEPORT_HOST.contains(":");
+          if (OKE_CLUSTER_PRIVATEIP) {
+            hostAndPort = ingressIP;
+          }
           String baseUri = "http://" + hostAndPort + "/clusterview/";
           String serverListUri = "ClusterViewServlet?user=" + ADMIN_USERNAME_DEFAULT
               + "&password=" + ADMIN_PASSWORD_DEFAULT + "&ipv6=" + ipv6;
@@ -661,7 +698,7 @@ class ItConfigDistributionStrategy {
   private Callable<Boolean> configUpdated(String maxMessageSize) {
     logger.info("Getting node port for default channel");
     int serviceNodePort = assertDoesNotThrow(()
-        -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
+            -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName),
             "default"),
         "Getting admin server node port failed");
 
@@ -681,6 +718,9 @@ class ItConfigDistributionStrategy {
         hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         headers = new HashMap<>();
         headers.put("host", hostHeader);
+      }
+      if (OKE_CLUSTER_PRIVATEIP) {
+        hostAndPort = ingressIP;
       }
       String url = "http://" + hostAndPort + appURI;
       HttpResponse<String> response = OracleHttpClient.get(url, headers, true);
@@ -707,6 +747,9 @@ class ItConfigDistributionStrategy {
         hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
         headers = new HashMap<>();
         headers.put("host", hostHeader);
+      }
+      if (OKE_CLUSTER_PRIVATEIP) {
+        hostAndPort = getHostAndPortOKE();
       }
       String baseUri = "http://" + hostAndPort + "/clusterview/";
       HttpResponse<String> response = OracleHttpClient.get(baseUri + configUri, headers, true);
@@ -739,6 +782,9 @@ class ItConfigDistributionStrategy {
             hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
             headers = new HashMap<>();
             headers.put("host", hostHeader);
+          }
+          if (OKE_CLUSTER_PRIVATEIP) {
+            hostAndPort = getHostAndPortOKE();
           }
           logger.info("hostAndPort = {0} ", hostAndPort);
           String baseUri = "http://" + hostAndPort + "/clusterview/ConfigServlet?";
@@ -780,7 +826,7 @@ class ItConfigDistributionStrategy {
       testDatasource(appURI);
     }
   }
-  
+
   private void testDatasource(String appURI) {
     int port = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
     testUntil(
@@ -793,9 +839,12 @@ class ItConfigDistributionStrategy {
             headers = new HashMap<>();
             headers.put("host", hostHeader);
           }
+          if (OKE_CLUSTER_PRIVATEIP) {
+            hostAndPort = getHostAndPortOKE();
+          }
           logger.info("hostAndPort = {0} ", hostAndPort);
           String baseUri = "http://" + hostAndPort + "/clusterview/ConfigServlet?";
-          
+
           String dsConnectionPoolTestUrl = baseUri + appURI;
           HttpResponse<String> response = OracleHttpClient.get(dsConnectionPoolTestUrl, headers, true);
           if (response.statusCode() != 200) {
@@ -831,11 +880,14 @@ class ItConfigDistributionStrategy {
             headers = new HashMap<>();
             headers.put("host", hostHeader);
           }
+          if (OKE_CLUSTER_PRIVATEIP) {
+            hostAndPort = getHostAndPortOKE();
+          }
           String baseUri = "http://" + hostAndPort + "/clusterview/ConfigServlet?";
 
           //verify datasource attributes of JdbcTestDataSource-0
           String appURI = "resTest=true&resName=" + dsName1;
-          String dsOverrideTestUrl = baseUri + appURI;          
+          String dsOverrideTestUrl = baseUri + appURI;
           HttpResponse<String> response = OracleHttpClient.get(dsOverrideTestUrl, headers, true);
           if (response.statusCode() != 200) {
             logger.info("Response code is not 200 retrying...");
@@ -885,6 +937,9 @@ class ItConfigDistributionStrategy {
         headers = new HashMap<>();
         headers.put("host", hostHeader);
       }
+      if (OKE_CLUSTER_PRIVATEIP) {
+        hostAndPort = getHostAndPortOKE();
+      }
       String baseUri = "http://" + hostAndPort + "/clusterview/ConfigServlet?";
       String appURI = "dsTest=true&dsName=" + dsName1 + "&" + "serverName=" + managedServerNameBase + i;
       String dsConnectionPoolTestUrl = baseUri + appURI;
@@ -928,7 +983,7 @@ class ItConfigDistributionStrategy {
 
   //create a standard WebLogic domain.
   private void createDomain() {
-    
+
     String uniquePath = "/shared/" + domainNamespace + "/domains";
 
     // create WebLogic domain credential secret
@@ -953,14 +1008,14 @@ class ItConfigDistributionStrategy {
     p.setProperty("admin_server_port", "7001");
     p.setProperty("admin_username", ADMIN_USERNAME_DEFAULT);
     p.setProperty("admin_password", ADMIN_PASSWORD_DEFAULT);
-    p.setProperty("admin_t3_public_address", K8S_NODEPORT_HOST);
+    p.setProperty("admin_t3_public_address", ingressIP);
     p.setProperty("admin_t3_channel_port", Integer.toString(t3ChannelPort));
     p.setProperty("number_of_ms", "2");
     p.setProperty("managed_server_name_base", managedServerNameBase);
     p.setProperty("domain_logs", uniquePath + "/logs");
     p.setProperty("production_mode_enabled", "true");
     assertDoesNotThrow(()
-        -> p.store(new FileOutputStream(domainPropertiesFile), "domain properties file"),
+            -> p.store(new FileOutputStream(domainPropertiesFile), "domain properties file"),
         "Failed to write domain properties file");
 
     // WLST script for creating domain
@@ -1018,7 +1073,7 @@ class ItConfigDistributionStrategy {
                         .channelName("default")
                         .nodePort(0)))));
     setPodAntiAffinity(domain);
-    
+
     // create cluster object
     ClusterResource cluster = createClusterResource(clusterResName,
         clusterName, domainNamespace, replicaCount);
@@ -1026,7 +1081,7 @@ class ItConfigDistributionStrategy {
     createClusterAndVerify(cluster);
     // set cluster references
     domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
-    
+
     // verify the domain custom resource is created
     createDomainAndVerify(domain, domainNamespace);
 
@@ -1059,7 +1114,7 @@ class ItConfigDistributionStrategy {
   private void deployApplication(String targets) {
     logger.info("Getting port for default channel");
     int defaultChannelPort = assertDoesNotThrow(()
-        -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+            -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
         "Getting admin server default port failed");
     logger.info("default channel port: {0}", defaultChannelPort);
     assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
@@ -1113,7 +1168,7 @@ class ItConfigDistributionStrategy {
     try {
       logger.info("Getting port for default channel");
       int defaultChannelPort = assertDoesNotThrow(()
-          -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+              -> getServicePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
           "Getting admin server default port failed");
       logger.info("default channel port: {0}", defaultChannelPort);
       assertNotEquals(-1, defaultChannelPort, "admin server defaultChannelPort is not valid");
@@ -1160,7 +1215,7 @@ class ItConfigDistributionStrategy {
    * @param namespace name of the domain namespace in which the job is created
    */
   private void createDomainOnPVUsingWlst(Path wlstScriptFile, Path domainPropertiesFile,
-      String pvName, String pvcName, String namespace) {
+                                         String pvName, String pvcName, String namespace) {
     logger.info("Preparing to run create domain job using WLST");
 
     List<Path> domainScriptFiles = new ArrayList<>();
@@ -1223,11 +1278,11 @@ class ItConfigDistributionStrategy {
           + result.exitValue() + " command output: "
           + result.stderr() + "\n" + result.stdout());
       assertTrue((result.exitValue() == 0),
-             "curl command returned non zero value");
+          "curl command returned non zero value");
     } catch (Exception e) {
       getLogger().info("Got exception, command failed with errors " + e.getMessage());
     }
-    return  result.stdout();
+    return result.stdout();
   }
 
   private static void runMysqlInsidePod(String podName, String namespace, String password) {
@@ -1259,12 +1314,12 @@ class ItConfigDistributionStrategy {
 
     Path sourceFile = Files.writeString(Paths.get(WORK_DIR, "grant.sql"),
         "select user();\n"
-        + "SELECT host, user FROM mysql.user;\n"
-        + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
-        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
-        + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
-        + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
-        + "SELECT host, user FROM mysql.user;");
+            + "SELECT host, user FROM mysql.user;\n"
+            + "CREATE USER 'root'@'%' IDENTIFIED BY '" + password + "';\n"
+            + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;\n"
+            + "CREATE USER 'root'@'" + ip + "' IDENTIFIED BY '" + password + "';\n"
+            + "GRANT ALL PRIVILEGES ON *.* TO 'root'@'" + ip + "' WITH GRANT OPTION;\n"
+            + "SELECT host, user FROM mysql.user;");
     StringBuffer mysqlCmd = new StringBuffer("cat " + sourceFile.toString() + " | ");
     mysqlCmd.append(KUBERNETES_CLI + " exec -i -n ");
     mysqlCmd.append(namespace);
@@ -1279,4 +1334,54 @@ class ItConfigDistributionStrategy {
     assertEquals(0, result.exitValue(), "mysql execution fails");
   }
 
+  private void getDomainHealth() throws IOException, InterruptedException {
+    testUntil(
+        withStandardRetryPolicy,
+          () -> {
+            String extSvcPodName = getExternalServicePodName(adminServerPodName);
+            logger.info("**** adminServerPodName={0}", adminServerPodName);
+            logger.info("**** extSvcPodName={0}", extSvcPodName);
+
+            adminSvcExtHost = createRouteForOKD(extSvcPodName, domainNamespace);
+            logger.info("**** adminSvcExtHost={0}", adminSvcExtHost);
+            logger.info("admin svc host = {0}", adminSvcExtHost);
+
+            logger.info("Getting node port for default channel");
+            int serviceNodePort = assertDoesNotThrow(()
+                -> getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default"),
+                "Getting admin server node port failed");
+            String hostAndPort = getHostAndPort(adminSvcExtHost, serviceNodePort);
+            boolean ipv6 = K8S_NODEPORT_HOST.contains(":");
+            Map<String, String> headers = null;
+            if (TestConstants.KIND_CLUSTER
+                && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+              hostAndPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
+                  + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+              headers = new HashMap<>();
+              headers.put("host", hostHeader);
+            }
+            if (OKE_CLUSTER_PRIVATEIP) {
+              hostAndPort = getHostAndPortOKE();
+            }
+            String url = "http://" + hostAndPort
+                + "/clusterview/ClusterViewServlet?user=" + ADMIN_USERNAME_DEFAULT
+                + "&password=" + ADMIN_PASSWORD_DEFAULT + "&ipv6=" + ipv6;
+
+            HttpResponse<String> response;
+            response = OracleHttpClient.get(url, headers, true);
+            return response.statusCode() == 200;
+          },
+        logger,
+        "clusterview app in admin server is accessible after restart");
+  }
+
+  private static String getHostAndPortOKE() {
+    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    int nginxNodePort = assertDoesNotThrow(() -> Service.getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
+        "Getting Nginx loadbalancer service node port failed");
+
+    hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
+        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + ":" + nginxNodePort;
+    return hostAndPort;
+  }
 }
