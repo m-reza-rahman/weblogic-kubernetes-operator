@@ -202,7 +202,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "Image", "FromModel" })
   void testOperatorWlsUpgradeFrom3413ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom3413ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "3.4.13", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator(domainType, "3.4.13", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
 
@@ -214,7 +214,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "Image", "FromModel" })
   void testOperatorWlsUpgradeFrom406ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom408ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.0.8", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installAndUpgradeOperator(domainType, "4.0.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
   
   /**
