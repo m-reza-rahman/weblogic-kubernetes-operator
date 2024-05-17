@@ -67,6 +67,7 @@ import static oracle.kubernetes.operator.DomainStatusUpdater.createRemoveSelecte
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_CLUSTER_SPEC_GENERATION;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_DOMAIN_SPEC_GENERATION;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
+import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_TIME;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTION_COMPLETE;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECTOR_JOB;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_INTROSPECT_REQUESTED;
@@ -244,10 +245,6 @@ public class JobHelper {
         } else if (job != null) {
           return doNext(processExistingIntrospectorJob(getNext()), packet);
         } else if (isIntrospectionNeeded(packet)) {
-
-          // TEST
-          LOGGER.severe("RJE: Introspection is needed");
-
           return doNext(createIntrospectionSteps(getNext()), packet);
         } else {
           return doNext(packet);
@@ -351,27 +348,11 @@ public class JobHelper {
       }
 
       private boolean isIntrospectionNeeded(Packet packet) {
-
-        // HERE: We are now introspecting too often
-        // For instance, since we requeue frequently, we repeat introspection for every server that is rolled
-
-        // TEST
-        boolean isDomainTopologyNull = getDomainTopology() == null;
-        boolean isBringingUpNewDomain = isBringingUpNewDomain(packet);
-        boolean isIntrospectionRequested = isIntrospectionRequested(packet);
-        boolean isModelInImageUpdate = isModelInImageUpdate(packet);
-        boolean isIntrospectVersionChanged = isIntrospectVersionChanged(packet);
-        LOGGER.severe("RJE: isDomainTopologyNull: " + isDomainTopologyNull
-                + ", isBringingUpNewDomain: " + isBringingUpNewDomain
-                + ", isIntrospectionRequested: " + isIntrospectionRequested
-                + ", isModelInImageUpdate: " + isModelInImageUpdate
-                + ", isIntrospectVersionChanged: " + isIntrospectVersionChanged);
-
-        return isDomainTopologyNull
-              || isBringingUpNewDomain
-              || isIntrospectionRequested
-              || isModelInImageUpdate
-              || isIntrospectVersionChanged;
+        return getDomainTopology() == null
+              || isBringingUpNewDomain(packet)
+              || isIntrospectionRequested(packet)
+              || isModelInImageUpdate(packet)
+              || isIntrospectVersionChanged(packet);
       }
 
       @Nonnull
@@ -380,19 +361,8 @@ public class JobHelper {
       }
 
       private boolean isBringingUpNewDomain(Packet packet) {
-        // TEST
-        int runningServers = getNumRunningServers();
-        boolean isCreatingServers = creatingServers(info);
-        boolean isDomainGenerationChanged = isDomainGenerationChanged(packet);
-        boolean isAnyClusterGenerationChanged = isAnyClusterGenerationChanged(packet);
-        LOGGER.severe("RJE: runningServers: " + runningServers + ", isCreatingServers: " + isCreatingServers
-            + ", isDomainGenerationChanged: " + isDomainGenerationChanged
-            + ", isAnyClusterGenerationChanged: " + isAnyClusterGenerationChanged);
-
-        return runningServers == 0 && isCreatingServers
-                && (isDomainGenerationChanged || isAnyClusterGenerationChanged);
-        // return getNumRunningServers() == 0 && creatingServers(info)
-        //    && (isDomainGenerationChanged(packet) || isAnyClusterGenerationChanged(packet));
+        return getNumRunningServers() == 0 && creatingServers(info)
+           && (isDomainGenerationChanged(packet) || isAnyClusterGenerationChanged(packet));
       }
 
       private int getNumRunningServers() {
@@ -567,12 +537,9 @@ public class JobHelper {
 
         String jobPodName = JobHelper.getName(jobPod);
 
-        // HERE: record introspection start time
-        String creationTime = Optional.ofNullable(jobPod).map(V1Pod::getMetadata)
-                .map(V1ObjectMeta::getCreationTimestamp).map(OffsetDateTime::toString).orElse(null);
-        if (creationTime != null) {
-          packet.put("introspectionTime", creationTime);
-        }
+        Optional.ofNullable(jobPod).map(V1Pod::getMetadata)
+            .map(V1ObjectMeta::getCreationTimestamp).map(OffsetDateTime::toString)
+                .ifPresent(creationTime -> packet.put(INTROSPECTION_TIME, creationTime.replace(':', '_')));
         return doNext(readDomainIntrospectorPodLog(jobPodName, containerName, getNext()), packet);
       }
 

@@ -62,6 +62,7 @@ import static oracle.kubernetes.operator.KubernetesConstants.SCRIPT_CONFIG_MAP_N
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_CLUSTER_SPEC_GENERATION;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_DOMAIN_SPEC_GENERATION;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
+import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_TIME;
 import static oracle.kubernetes.operator.ProcessingConstants.DOMAIN_VALIDATION_ERRORS;
 import static oracle.kubernetes.operator.helpers.NamespaceHelper.getOperatorNamespace;
 import static oracle.kubernetes.operator.helpers.StepContextConstants.FLUENTBIT_CONFIGMAP_NAME_SUFFIX;
@@ -336,8 +337,8 @@ public class ConfigMapHelper {
                 .map(V1ObjectMeta::getGeneration)
                 .ifPresent(value -> addLabel(INTROSPECTION_CLUSTER_SPEC_GENERATION + "."
                     + cluster.getMetadata().getName(), value.toString()))));
-        String creationTime = packet.getValue("introspectionTime");
-        Optional.ofNullable(creationTime).ifPresent(value -> addLabel("introspectionTime", value));
+        Optional.ofNullable((String) packet.get(INTROSPECTION_TIME))
+                .ifPresent(value -> addLabel(INTROSPECTION_TIME, value));
         V1ConfigMap existingMap = withoutTransientData(callResponse.getObject());
         if (existingMap == null) {
           return doNext(createConfigMap(getNext()), packet);
@@ -929,8 +930,8 @@ public class ConfigMapHelper {
       Optional.ofNullable(labels).ifPresent(x -> x.entrySet().stream()
               .filter(entry -> entry.getKey().startsWith(INTROSPECTION_CLUSTER_SPEC_GENERATION))
               .forEach(entry -> packet.put(entry.getKey(), entry.getValue())));
-      Optional.ofNullable(labels).map(l -> l.get("introspectionTime"))
-              .ifPresent(value -> packet.put("introspectionTime", value));
+      Optional.ofNullable(labels).map(l -> l.get(INTROSPECTION_TIME))
+              .ifPresent(value -> packet.put(INTROSPECTION_TIME, value));
     }
 
     private String getTopologyYaml(Map<String, String> data) {
