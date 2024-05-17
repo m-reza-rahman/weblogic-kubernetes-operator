@@ -212,7 +212,7 @@ class ItOperatorWlsUpgrade {
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 4.0.8 to current")
   @ValueSource(strings = { "Image", "FromModel" })
-  void testOperatorWlsUpgradeFrom406ToCurrent(String domainType) {
+  void testOperatorWlsUpgradeFrom408ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom408ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "4.0.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
@@ -241,25 +241,25 @@ class ItOperatorWlsUpgrade {
   
 
   /**
-   * Operator upgrade from 4.1.12 to current.
+   * Operator upgrade from 4.1.7 to current.
    */
   @ParameterizedTest
-  @DisplayName("Upgrade Operator from 4.1.12 to current")
+  @DisplayName("Upgrade Operator from 4.1.7 to current")
   @ValueSource(strings = { "Image", "FromModel" })
-  void testOperatorWlsUpgradeFrom4112ToCurrent(String domainType) {
-    logger.info("Starting test testOperatorWlsUpgradeFrom4112ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.1.12", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  void testOperatorWlsUpgradeFrom417ToCurrent(String domainType) {
+    logger.info("Starting test testOperatorWlsUpgradeFrom417ToCurrent with domain type {0}", domainType);
+    installAndUpgradeOperator(domainType, "4.1.7", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Operator upgrade from 4.1.13 to current.
+   * Operator upgrade from 4.1.8 to current.
    */
   @ParameterizedTest
-  @DisplayName("Upgrade Operator from 4.1.13 to current")
+  @DisplayName("Upgrade Operator from 4.1.8 to current")
   @ValueSource(strings = { "Image", "FromModel" })
-  void testOperatorWlsUpgradeFrom4113ToCurrent(String domainType) {
-    logger.info("Starting test testOperatorWlsUpgradeFrom4113ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.1.13", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  void testOperatorWlsUpgradeFrom418ToCurrent(String domainType) {
+    logger.info("Starting test testOperatorWlsUpgradeFrom418ToCurrent with domain type {0}", domainType);
+    installAndUpgradeOperator(domainType, "4.1.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
