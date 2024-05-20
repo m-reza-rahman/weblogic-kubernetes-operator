@@ -263,6 +263,28 @@ class ItOperatorWlsUpgrade {
   }
 
   /**
+   * Operator upgrade from 4.2.2 to current.
+   */
+  @ParameterizedTest
+  @DisplayName("Upgrade Operator from 4.2.2 to current")
+  @ValueSource(strings = {"Image", "FromModel"})
+  void testOperatorWlsUpgradeFrom422ToCurrent(String domainType) {
+    logger.info("Starting test testOperatorWlsUpgradeFrom422ToCurrent with domain type {0}", domainType);
+    installAndUpgradeOperator(domainType, "4.2.2", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  }
+
+  /**
+   * Operator upgrade from 4.2.3 to current.
+   */
+  @ParameterizedTest
+  @DisplayName("Upgrade Operator from 4.2.3 to current")
+  @ValueSource(strings = {"Image", "FromModel"})
+  void testOperatorWlsUpgradeFrom423ToCurrent(String domainType) {
+    logger.info("Starting test testOperatorWlsUpgradeFrom423ToCurrent with domain type {0}", domainType);
+    installAndUpgradeOperator(domainType, "4.2.3", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+  }
+  
+  /**
    * Auxiliary Image Domain upgrade from Operator 3.4.1 to current.
    */
   @Test
