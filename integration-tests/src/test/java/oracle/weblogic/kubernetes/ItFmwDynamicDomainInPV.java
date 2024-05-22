@@ -73,7 +73,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @DisplayName("Test to creat a FMW dynamic domain in persistent volume using WLST")
 @IntegrationTest
 @Tag("oke-sequential")
-@Tag("kind-sequential")
+@Tag("kind-parallel")
 @Tag("okd-fmw-cert")
 class ItFmwDynamicDomainInPV {
 
