@@ -59,6 +59,7 @@ import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.TestActions;
+import oracle.weblogic.kubernetes.actions.impl.Namespace;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
@@ -782,6 +783,7 @@ public class DbUtils {
     } catch (Exception ex) {
       getLogger().severe("Failed to get the Database operator ready status");
     }
+    assertDoesNotThrow(() -> new Namespace().name(namespace).create());
     Path operatorYamlSrcFile = Paths.get(RESOURCE_DIR, "dboperator", "oracle-database-operator.yaml");
     Path operatorYamlDestFile = Paths.get(DOWNLOAD_DIR, namespace, "oracle-database-operator.yaml");
 
