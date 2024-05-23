@@ -41,7 +41,6 @@ import io.kubernetes.client.openapi.models.V1PodList;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodTemplateSpec;
 import io.kubernetes.client.openapi.models.V1PolicyRule;
-import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1Role;
 import io.kubernetes.client.openapi.models.V1RoleBinding;
 import io.kubernetes.client.openapi.models.V1RoleRef;
@@ -262,22 +261,19 @@ public class DbUtils {
                             .addEnvItem(new V1EnvVar().name("DB_DOMAIN").value("k8s"))
                             .addEnvItem(new V1EnvVar().name("DB_BUNDLE").value("basic"))
                             .addEnvItem(new V1EnvVar().name("DB_PASSWD").valueFrom(
-                                new V1EnvVarSource()
-                                    .secretKeyRef(new V1SecretKeySelector()
-                                        .name(ORACLE_DB_SECRET_NAME)
-                                        .key("password"))))
+                               new V1EnvVarSource()
+                                  .secretKeyRef(new V1SecretKeySelector()
+                                  .name(ORACLE_DB_SECRET_NAME)
+                                  .key("password"))))
                             .image(dbBaseImageName)
                             .imagePullPolicy(IMAGE_PULL_POLICY)
                             .name(dbPodNamePrefix)
                             .ports(Arrays.asList(
                                 new V1ContainerPort()
-                                    .containerPort(dbListenerPort)
-                                    .name("tns")
-                                    .protocol("TCP")
-                                    .hostPort(dbListenerPort)))
-                            .resources(new V1ResourceRequirements()
-                                .limits(limits)
-                                .requests(requests))
+                                .containerPort(dbListenerPort)
+                                .name("tns")
+                                .protocol("TCP")
+                                .hostPort(dbListenerPort)))
                             .terminationMessagePath("/dev/termination-log")
                             .terminationMessagePolicy("File")))
                     .dnsPolicy("ClusterFirst")
