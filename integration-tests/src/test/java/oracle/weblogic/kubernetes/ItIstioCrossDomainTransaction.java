@@ -65,7 +65,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
-import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
@@ -147,9 +146,6 @@ class ItIstioCrossDomainTransaction {
     logger.info("Assigning unique namespace for Domain");
     assertNotNull(namespaces.get(2), "Namespace list is null");
     domain2Namespace = namespaces.get(2);
-
-    //install Oracle Database Operator
-    assertDoesNotThrow(() -> installDBOperator(), "Failed to install database operator");
 
     logger.info("Create Oracle DB in namespace: {0} ", domain2Namespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, SYSPASSWORD, domain2Namespace));

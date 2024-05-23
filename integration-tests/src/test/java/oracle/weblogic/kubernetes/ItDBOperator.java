@@ -73,7 +73,6 @@ import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperat
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuAccessSecret;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createRcuSchema;
 import static oracle.weblogic.kubernetes.utils.DbUtils.deleteOracleDB;
-import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.uninstallDBOperator;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
@@ -187,9 +186,6 @@ class ItDBOperator {
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(fmwDomainNamespace);
     createBaseRepoSecret(wlsDomainNamespace);
-
-    //install Oracle Database Operator
-    assertDoesNotThrow(() -> installDBOperator(), "Failed to install database operator");
 
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));

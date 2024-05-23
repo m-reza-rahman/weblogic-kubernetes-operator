@@ -81,7 +81,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapAndVerify;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.deleteOracleDB;
-import static oracle.weblogic.kubernetes.utils.DbUtils.installDBOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.uninstallDBOperator;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.generateFileFromTemplate;
@@ -180,9 +179,6 @@ class ItIstioDBOperator {
     labelMap.put("istio-injection", "enabled");
     assertDoesNotThrow(() -> addLabelsToNamespace(wlsDomainNamespace, labelMap));
     assertDoesNotThrow(() -> addLabelsToNamespace(opNamespace, labelMap));
-
-    //install Oracle Database Operator
-    assertDoesNotThrow(() -> installDBOperator(), "Failed to install database operator");
 
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
