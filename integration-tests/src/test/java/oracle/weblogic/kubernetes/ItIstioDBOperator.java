@@ -181,6 +181,7 @@ class ItIstioDBOperator {
     assertDoesNotThrow(() -> addLabelsToNamespace(opNamespace, labelMap));
 
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
+    createBaseRepoSecret(dbNamespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
     
     // create testwebapp.war

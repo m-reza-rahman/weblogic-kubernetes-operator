@@ -186,6 +186,7 @@ class ItDBOperator {
     // this secret is used only for non-kind cluster
     createBaseRepoSecret(fmwDomainNamespace);
     createBaseRepoSecret(wlsDomainNamespace);
+    createBaseRepoSecret(dbNamespace);
 
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
