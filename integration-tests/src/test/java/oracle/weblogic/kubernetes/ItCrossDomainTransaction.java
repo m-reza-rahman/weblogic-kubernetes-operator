@@ -189,7 +189,7 @@ class ItCrossDomainTransaction {
     createBaseRepoSecret(domain2Namespace);
     
     //install Oracle Database Operator
-    assertDoesNotThrow(() -> installDBOperator(domain2Namespace), "Failed to install database operator");
+    assertDoesNotThrow(() -> installDBOperator(), "Failed to install database operator");
 
     logger.info("Create Oracle DB in namespace: {0} ", domain2Namespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, SYSPASSWORD, domain2Namespace));    

@@ -123,7 +123,7 @@ class ItFmwDomainInPVUsingWLST {
     jrfDomainNamespace = namespaces.get(2);
 
     //install Oracle Database Operator
-    assertDoesNotThrow(() -> installDBOperator(dbNamespace), "Failed to install database operator");
+    assertDoesNotThrow(() -> installDBOperator(), "Failed to install database operator");
 
     logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
     dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
