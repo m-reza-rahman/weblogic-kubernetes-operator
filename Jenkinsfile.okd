@@ -48,7 +48,7 @@ pipeline {
         )
 
         choice(name: 'MAVEN_PROFILE_NAME',
-                description: 'Profile to use in mvn command to run the tests.  Possible values are olcne (the default), wko-olcne-cert and integration-tests. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                description: 'Profile to use in mvn command to run the tests.  Possible values are integration-tests. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                 choices: [
                         'wko-okd-wls-srg',
                         'wko-okd-wls-mrg',
@@ -195,6 +195,15 @@ pipeline {
                     }
                 }
 
+                stage('Build WebLogic Kubernetes Operator') {
+
+                    steps {
+                        withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
+                                                    sh "mvn -DtrimStackTrace=false clean install"
+                        }
+                    }
+                }
+
                 stage('Install Helm') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
@@ -237,16 +246,6 @@ pipeline {
                             chmod +x ${WORKSPACE}/bin/kubectl
                             kubectl version --client=true
                         '''
-                    }
-                }
-
-
-                stage('Build WebLogic Kubernetes Operator') {
-
-                    steps {
-                        withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
-                                                    sh "mvn -DtrimStackTrace=false clean install"
-                        }
                     }
                 }
 
