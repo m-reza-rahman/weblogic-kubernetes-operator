@@ -68,6 +68,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.ORACLE_OPERATOR_NS;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_BUILD_IMAGES_IF_EXISTS;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
@@ -363,6 +364,7 @@ public class InitializationTasks implements BeforeAllCallback, ExtensionContext.
       if (!OKD && !OKE_CLUSTER && !OCNE && !CRIO) {
         logger.info("Delete istio-system namespace after all test suites are run");
         deleteNamespace("istio-system");
+        deleteNamespace(ORACLE_OPERATOR_NS);
       }
       logger.info("Cleanup WIT/WDT binary form {0}", RESULTS_ROOT);
       try {
