@@ -76,7 +76,7 @@ pipeline {
                description: 'Helm version',
                defaultValue: '3.11.2'
         )
-        
+
         choice(name: 'ISTIO_VERSION',
                description: 'Istio version',
                choices: [
@@ -259,6 +259,7 @@ pipeline {
                     steps {
                         sh '''
                            KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
+                           export KUBECONFIG=${kubeconfig_file}
 
                             echo "Checking nodes"
                             ${KUBERNETES_CLI} get nodes -o wide
