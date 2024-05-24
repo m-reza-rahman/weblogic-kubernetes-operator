@@ -67,10 +67,16 @@ pipeline {
                defaultValue: ''
         )
 
+        string(name: 'KUBECTL_VERSION',
+                       description: 'kubectl version',
+                       defaultValue: '1.26.2'
+        )
+
         string(name: 'HELM_VERSION',
                description: 'Helm version',
                defaultValue: '3.11.2'
         )
+        
         choice(name: 'ISTIO_VERSION',
                description: 'Istio version',
                choices: [
