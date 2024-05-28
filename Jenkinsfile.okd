@@ -261,6 +261,7 @@ pipeline {
                            KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
                            export KUBECONFIG=${kubeconfig_file}
 
+                           //TODO need to get OKD cluster firstly
                             echo "Checking nodes"
                             ${KUBERNETES_CLI} get nodes -o wide
 
