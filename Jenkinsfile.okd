@@ -8,7 +8,7 @@ CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=wko-okd-wls-srg
                    H 3 * * * % MAVEN_PROFILE_NAME=wko-okd-fmw-cert'''
 
 pipeline {
-    agent { label 'large' }
+    agent { label 'okd_something' }
     options {
         timeout(time: 1800, unit: 'MINUTES')
         //disableConcurrentBuilds()
@@ -33,7 +33,9 @@ pipeline {
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root = "/export/wls"
         NFS_SERVER="10.196.1.3"
-        kubeconfig_file="/home/opc/install/auth/kubeconfig"
+        
+        okdkub = 'okd-kubeconfig'
+        //TODO kubeconfig_file="/home/opc/install/auth/kubeconfig"
 
         //TODO OKD='true'
 
@@ -257,9 +259,13 @@ pipeline {
 
                 stage('Preparing Integration Test Environment') {
                     steps {
+
+                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')
+                                                        ]) {
+                        export $KUBECONFIG
                         sh '''
                            KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
-                           export KUBECONFIG=${kubeconfig_file}
+                           //TODO export KUBECONFIG=${kubeconfig_file}
 
                            //TODO need to get OKD cluster firstly
                             echo "Checking nodes"
@@ -343,7 +349,7 @@ pipeline {
                             fi
 
                             export PATH=${runtime_path}
-                            export KUBECONFIG=${kubeconfig_file}
+                            export $KUBECONFIG
                             export NFS_SERVER="10.196.1.3"
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
@@ -411,7 +417,7 @@ pipeline {
                                     export no_proxy="localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,${k8s_master_instance_private_ip}"
                                     export PATH=${runtime_path}
                                     export OKD="true"
-                                    export KUBECONFIG=${kubeconfig_file}
+                                    export $KUBECONFIG
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export BASE_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export BASE_IMAGES_REPO_EMAIL="noreply@oracle.com"
@@ -435,7 +441,7 @@ pipeline {
                         always {
                             sh '''
                                 export PATH="${WORKSPACE}/bin:${PATH}"
-                                export KUBECONFIG=${kubeconfig_file}
+                                export $KUBECONFIG
                                 mkdir -m777 -p ${result_root}/kubelogs
                                 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 sudo mv -f ${result_root}/* "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
@@ -453,7 +459,7 @@ pipeline {
                 always {
                     sh '''
                         export PATH="${WORKSPACE}/bin:${PATH}"
-                        export KUBECONFIG=${kubeconfig_file}
+                        export $KUBECONFIG
 
                         rm -rf ${WORKSPACE}/.mvn
                         sudo rm -rf ${pv_root}/*
