@@ -261,61 +261,62 @@ pipeline {
                     steps {
 
                         withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')
-                                                        ]) {
-                        export $KUBECONFIG
-                        sh '''
-                           KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
-                           //TODO export KUBECONFIG=${kubeconfig_file}
+                        ]) {
+                           export $KUBECONFIG
+                           sh '''
+                               KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
+                               //TODO export KUBECONFIG=${kubeconfig_file}
 
-                           //TODO need to get OKD cluster firstly
-                            echo "Checking nodes"
-                            ${KUBERNETES_CLI} get nodes -o wide
+                               //TODO need to get OKD cluster firstly
+                               echo "Checking nodes"
+                               ${KUBERNETES_CLI} get nodes -o wide
 
-                            mkdir -m777 -p ${result_root}
-                            echo "Results will be in ${result_root}"
-                            if [ -d "${PV_ROOT}" ]; then
-                              rm -Rf "${PV_ROOT}/*"
-                            fi
-                            echo "Persistent volume files, if any, will be in ${pv_root}"
+                               mkdir -m777 -p ${result_root}
+                               echo "Results will be in ${result_root}"
+                               if [ -d "${PV_ROOT}" ]; then
+                                 rm -Rf "${PV_ROOT}/*"
+                               fi
+                               echo "Persistent volume files, if any, will be in ${pv_root}"
 
-                            echo "cleaning up k8s artifacts"
-                            ${KUBERNETES_CLI} delete crd $(${KUBERNETES_CLI} get crd | grep weblogic) || true
+                               echo "cleaning up k8s artifacts"
+                               ${KUBERNETES_CLI} delete crd $(${KUBERNETES_CLI} get crd | grep weblogic) || true
 
-                            ${KUBERNETES_CLI} get ns --no-headers | awk '$1 ~ /^ns-/{print $1}' | xargs ${KUBERNETES_CLI} delete ns || true
-                            ${KUBERNETES_CLI} get ns --no-headers | awk '/weblogic/{print $1}' | xargs ${KUBERNETES_CLI} delete ns || true
-                            ${KUBERNETES_CLI} get ns --no-headers | awk '/test-/{print $1}' | xargs ${KUBERNETES_CLI} delete ns || true
-                            ${KUBERNETES_CLI} delete pv domain1-weblogic-sample-pv --wait=false || true
-                            ${KUBERNETES_CLI} delete pv domain2-weblogic-sample-pv --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testalertmanager --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testgrafana --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testprometheus --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testalertmanagertest1 --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testgrafanatest1 --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testprometheustest1 --wait=false || true
+                               ${KUBERNETES_CLI} get ns --no-headers | awk '$1 ~ /^ns-/{print $1}' | xargs ${KUBERNETES_CLI} delete ns || true
+                               ${KUBERNETES_CLI} get ns --no-headers | awk '/weblogic/{print $1}' | xargs ${KUBERNETES_CLI} delete ns || true
+                               ${KUBERNETES_CLI} get ns --no-headers | awk '/test-/{print $1}' | xargs ${KUBERNETES_CLI} delete ns || true
+                               ${KUBERNETES_CLI} delete pv domain1-weblogic-sample-pv --wait=false || true
+                               ${KUBERNETES_CLI} delete pv domain2-weblogic-sample-pv --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testalertmanager --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testgrafana --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testprometheus --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testalertmanagertest1 --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testgrafanatest1 --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testprometheustest1 --wait=false || true
 
-                            ${KUBERNETES_CLI} delete pv pv-testalertmanagertest2 --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testgrafanatest2 --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testprometheustest2 --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testalertmanagertest2 --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testgrafanatest2 --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testprometheustest2 --wait=false || true
 
-                            ${KUBERNETES_CLI} delete pv pv-testalertmanagertest3 --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testgrafanatest3 --wait=false || true
-                            ${KUBERNETES_CLI} delete pv pv-testprometheustest3 --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testalertmanagertest3 --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testgrafanatest3 --wait=false || true
+                               ${KUBERNETES_CLI} delete pv pv-testprometheustest3 --wait=false || true
 
-                            ${KUBERNETES_CLI} get ingressroutes -A --no-headers | awk '/tdlbs-/{print $2}' | xargs ${KUBERNETES_CLI} delete ingressroute || true
-                            ${KUBERNETES_CLI} get clusterroles --no-headers | awk '/ns-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterroles || true
-                            ${KUBERNETES_CLI} get clusterroles --no-headers | awk '/appscode/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterroles || true
-                            ${KUBERNETES_CLI} get clusterroles --no-headers | awk '/nginx-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterroles || true
-                            ${KUBERNETES_CLI} get clusterroles --no-headers | awk '/traefik-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterroles || true
+                               ${KUBERNETES_CLI} get ingressroutes -A --no-headers | awk '/tdlbs-/{print $2}' | xargs ${KUBERNETES_CLI} delete ingressroute || true
+                               ${KUBERNETES_CLI} get clusterroles --no-headers | awk '/ns-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterroles || true
+                               ${KUBERNETES_CLI} get clusterroles --no-headers | awk '/appscode/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterroles || true
+                               ${KUBERNETES_CLI} get clusterroles --no-headers | awk '/nginx-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterroles || true
+                               ${KUBERNETES_CLI} get clusterroles --no-headers | awk '/traefik-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterroles || true
 
-                            ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/ns-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
-                            ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/appscode/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
-                            ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/nginx-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
-                            ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/traefik-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
+                               ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/ns-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
+                               ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/appscode/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
+                               ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/nginx-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
+                               ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/traefik-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
 
-                            sudo rm -rf ${PV_ROOT}/*
+                               sudo rm -rf ${PV_ROOT}/*
 
-                            export OKD=true
-                         '''
+                               export OKD=true
+                           '''
+                         }
                     }
                 }
 
