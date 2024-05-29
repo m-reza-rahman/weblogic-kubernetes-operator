@@ -8,7 +8,7 @@ CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=wko-okd-wls-srg
                    H 3 * * * % MAVEN_PROFILE_NAME=wko-okd-fmw-cert'''
 
 pipeline {
-    agent { label 'okd_something' }
+    agent { label 'large' }
     options {
         timeout(time: 1800, unit: 'MINUTES')
         //disableConcurrentBuilds()
