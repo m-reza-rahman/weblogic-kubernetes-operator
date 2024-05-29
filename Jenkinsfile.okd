@@ -260,10 +260,11 @@ pipeline {
                 stage('Preparing Integration Test Environment') {
                     steps {
 
-                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG'),
+                        withCredentials([file(credentialsId: 'okd-kubeconfig', variable: 'KUBECONFIG'),
                            file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')]) {
                            export $KUBECONFIG
                            sh '''
+                               cat $KUBECONFIG
                                KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
                                //TODO export KUBECONFIG=${kubeconfig_file}
 
