@@ -257,6 +257,23 @@ pipeline {
                     }
                 }
 
+                stage('Setting up KUBECONFIG') {
+                    steps {
+                        sh '''
+                               export NO_PROXY="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
+                               export no_proxy="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
+
+                               echo "NO_PROXY:" $NO_PROXY
+                               echo "no_proxy:" $no_proxy
+                        '''
+                        withCredentials([file(credentialsId: 'okd-kubeconfig', variable: 'KUBECONFIG'),
+                           file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')]) {
+                           sh export $KUBECONFIG
+                           sh cat $KUBECONFIG
+                        }
+                    }
+                }
+
                 stage('Preparing Integration Test Environment') {
                     steps {
 
@@ -471,8 +488,8 @@ pipeline {
                         export $KUBECONFIG
 
                         rm -rf ${WORKSPACE}/.mvn
-                        sudo rm -rf ${pv_root}/*
-                        kubectl delete pod $(kubectl get pod |grep recycler-for|awk '{print $1}') || true
+                        //TODO sudo rm -rf ${pv_root}/*
+
                     '''
                 }
             }
