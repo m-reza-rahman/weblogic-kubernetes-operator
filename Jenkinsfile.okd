@@ -268,8 +268,8 @@ pipeline {
                         '''
                         withCredentials([file(credentialsId: 'okd-kubeconfig', variable: 'KUBECONFIG'),
                            file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')]) {
-                           sh export $KUBECONFIG
-                           sh cat $KUBECONFIG
+                           sh "export $KUBECONFIG"
+                           sh "cat $KUBECONFIG"
                         }
                     }
                 }
