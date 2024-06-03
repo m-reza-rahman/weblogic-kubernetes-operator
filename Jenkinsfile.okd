@@ -266,7 +266,7 @@ pipeline {
                                echo "NO_PROXY:" $NO_PROXY
                                echo "no_proxy:" $no_proxy
                         '''
-                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')]) {
+                        withCredentials([file(credentialsId: "${okdkub}",variable: 'KUBECONFIG')]) {
                            sh '''
                                echo "Debugging!!!"
                                export $KUBECONFIG
@@ -280,7 +280,7 @@ pipeline {
                 stage('Preparing Integration Test Environment') {
                     steps {
 
-                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')])
+                        withCredentials([file(credentialsId: "${okdkub}",variable: 'KUBECONFIG')])
                             {
 
                            sh '''
@@ -292,8 +292,9 @@ pipeline {
                                echo "no_proxy:" $no_proxy
 
 
-                               export $KUBECONFIG
-                               cat $KUBECONFIG
+                               //TODO export $KUBECONFIG
+                               //TODO cat $KUBECONFIG
+                               echo "Debugging222"
 
                                KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
 
@@ -380,7 +381,7 @@ pipeline {
                             fi
 
                             export PATH=${runtime_path}
-                            export $KUBECONFIG
+                            //TODO export $KUBECONFIG
                             export NFS_SERVER="10.196.1.3"
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
@@ -448,7 +449,7 @@ pipeline {
                                     export no_proxy="localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,${k8s_master_instance_private_ip}"
                                     export PATH=${runtime_path}
                                     export OKD="true"
-                                    export $KUBECONFIG
+                                    //TODO export $KUBECONFIG
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export BASE_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export BASE_IMAGES_REPO_EMAIL="noreply@oracle.com"
@@ -472,7 +473,7 @@ pipeline {
                         always {
                             sh '''
                                 export PATH="${WORKSPACE}/bin:${PATH}"
-                                export $KUBECONFIG
+                                //TODO export $KUBECONFIG
                                 mkdir -m777 -p ${result_root}/kubelogs
                                 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 sudo mv -f ${result_root}/* "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
@@ -490,7 +491,7 @@ pipeline {
                 always {
                     sh '''
                         export PATH="${WORKSPACE}/bin:${PATH}"
-                        export $KUBECONFIG
+                        //TODO export $KUBECONFIG
 
                         rm -rf ${WORKSPACE}/.mvn
                         //TODO sudo rm -rf ${pv_root}/*
