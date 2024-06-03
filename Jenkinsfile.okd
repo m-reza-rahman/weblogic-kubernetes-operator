@@ -281,12 +281,14 @@ pipeline {
                            file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')]) {
 
                            sh '''
+                               //echo "Debugging!!!"
                                export NO_PROXY="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
                                export no_proxy="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
 
                                echo "NO_PROXY:" $NO_PROXY
                                echo "no_proxy:" $no_proxy
 
+                               echo "Debugging!!!"
                                export $KUBECONFIG
                                cat $KUBECONFIG
 
