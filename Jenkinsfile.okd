@@ -266,11 +266,12 @@ pipeline {
                                echo "no_proxy:" $no_proxy
 
                         '''
-                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')]) {
+                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')]) {
                            sh '''
                                echo "Debugging!!!"
-                               export PATH=${runtime_path}
-                               export KUBECONFIG=${KUBECONFIG}
+
+                               //export PATH=${runtime_path}
+                               export KUBECONFIG=${KUBECONFIG_FILE}
                                cat $KUBECONFIG
 
                                echo "Checking nodes"
