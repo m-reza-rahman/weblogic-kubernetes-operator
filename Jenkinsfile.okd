@@ -257,6 +257,9 @@ pipeline {
                 }
 
                 stage('Setting up KUBECONFIG') {
+                     environment {
+                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                    }
                     steps {
                         sh '''
                                export NO_PROXY="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
@@ -269,6 +272,7 @@ pipeline {
                         withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')]) {
                            sh '''
                                echo "Debugging!!!"
+                               export PATH=${runtime_path}
 
                                export KUBECONFIG=${KUBECONFIG_FILE}
                                cat $KUBECONFIG
@@ -285,7 +289,7 @@ pipeline {
                 stage('Preparing Integration Test Environment') {
                     steps {
 
-                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG')])
+                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')])
                             {
 
                            sh '''
@@ -297,7 +301,7 @@ pipeline {
                                echo "no_proxy:" $no_proxy
 
                                echo "Debugging222"
-                               export KUBECONFIG=${KUBECONFIG}
+                               export KUBECONFIG=${KUBECONFIG_FILE}
                                cat $KUBECONFIG
 
                                KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
