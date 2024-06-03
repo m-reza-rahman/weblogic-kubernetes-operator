@@ -463,6 +463,7 @@ public interface TestConstants {
 
   public static final String LARGE_DOMAIN_TESTING_PROPS_FILE =
       "largedomaintesting.props";
+  public static final String ORACLE_OPERATOR_NS = "ns-oracle-operator";
   
   //node ports used by the integration tests
   public static final int IT_EXTERNALNODEPORTSERVICE_NODEPORT = 31000;
