@@ -270,9 +270,8 @@ pipeline {
                            sh '''
                                echo "Debugging!!!"
 
-                               //export PATH=${runtime_path}
                                export KUBECONFIG=${KUBECONFIG_FILE}
-                               cat $KUBECONFIG
+                               cat {KUBECONFIG_FILE}
 
                                echo "Checking nodes"
                                KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
