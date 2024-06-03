@@ -270,7 +270,9 @@ pipeline {
                                echo "Debugging!!!"
                                export KUBECONFIG=${KUBECONFIG}
                                cat $KUBECONFIG
+
                                echo "Checking nodes"
+                               KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
                                ${KUBERNETES_CLI} get nodes -o wide
                            '''
 
@@ -292,13 +294,11 @@ pipeline {
                                echo "NO_PROXY:" $NO_PROXY
                                echo "no_proxy:" $no_proxy
 
-
-                               //TODO export $KUBECONFIG
-                               //TODO cat $KUBECONFIG
                                echo "Debugging222"
+                               export KUBECONFIG=${KUBECONFIG}
+                               cat $KUBECONFIG
 
                                KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
-
 
                                echo "Checking nodes"
                                ${KUBERNETES_CLI} get nodes -o wide
