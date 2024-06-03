@@ -34,8 +34,8 @@ pipeline {
         //pv_root = "/export/wls"
         NFS_SERVER="10.196.1.3"
 
-        //okdkub = 'okd-kubeconfig'
-        okdkub = 'wkt-oci-config-file'
+        okdkub = 'okdconfig'
+        //okdkub = 'wkt-oci-config-file'
 
         //TODO OKD='true'
 
