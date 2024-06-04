@@ -259,7 +259,7 @@ pipeline {
                     }
                 }
 
-                stage ('Install OpenShift CLI oc') {
+                /*stage ('Install OpenShift CLI oc') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
                     }
@@ -273,7 +273,7 @@ pipeline {
                             kubectl version --client=true
                         '''
                     }
-                }
+                }*/
 
                 stage('Setting up KUBECONFIG') {
                      environment {
