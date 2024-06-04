@@ -417,7 +417,6 @@ pipeline {
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
 
-                            //set K8S_NODEPORT_HOST
                             address_stack=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
 				            addresses=($address_stack)
 				            echo "address_stack:" $address_stack
