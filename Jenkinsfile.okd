@@ -267,7 +267,7 @@ pipeline {
                         sh '''
                             export PATH=${runtime_path}
                             echo "$(pwd)" //TODO
-                            ls -la
+                            ls -la //TODO
                             wget -N https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
                             tar xvf oc.tar.gz
                             mv oc ${WORKSPACE}/bin/
@@ -292,7 +292,7 @@ pipeline {
                         '''
                         withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')]) {
                            sh '''
-                               echo "Debugging!!!"
+                               echo "Debugging!!!" //TODO
                                export PATH=${runtime_path}
 
                                export KUBECONFIG=${KUBECONFIG_FILE}
@@ -313,8 +313,8 @@ pipeline {
                     }
                     steps {
 
-                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')])
-                            {
+                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')
+                        ]) {
 
                            sh '''
 
@@ -324,7 +324,7 @@ pipeline {
                                echo "NO_PROXY:" $NO_PROXY
                                echo "no_proxy:" $no_proxy
 
-                               echo "Debugging222"
+                               echo "Debugging222" //TODO
                                export PATH=${runtime_path}
                                export KUBECONFIG=${KUBECONFIG_FILE}
                                cat $KUBECONFIG
@@ -375,9 +375,9 @@ pipeline {
                                ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/nginx-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
                                ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/traefik-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
 
-                               sudo rm -rf ${PV_ROOT}/*
+                               //TODO sudo rm -rf ${PV_ROOT}/*
 
-                               export OKD=true
+                               //TODO export OKD=true
                            '''
                          }
                     }
@@ -413,8 +413,8 @@ pipeline {
                             fi
 
                             export PATH=${runtime_path}
-                            //TODO export $KUBECONFIG
-                            export NFS_SERVER="10.196.1.3"
+                            //export OKD=true
+                            //export NFS_SERVER="10.196.1.3"
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
 
@@ -468,7 +468,8 @@ pipeline {
                         '''
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
                             withCredentials([
-                                usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS')
+                                usernamePassword(credentialsId: "${ocir_creds}", usernameVariable: 'OCIR_USER', passwordVariable: 'OCIR_PASS'),
+                                file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')
                             ]) {
                                 sh '''
 
@@ -477,17 +478,33 @@ pipeline {
                                     export HTTP_PROXY='http://www-proxy-hqdc.us.oracle.com:80'
                                     export http_proxy='http://www-proxy-hqdc.us.oracle.com:80'
 
-                                    export NO_PROXY="localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,${k8s_master_instance_private_ip}"
-                                    export no_proxy="localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock,${k8s_master_instance_private_ip}"
+                                    export NO_PROXY="localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock"
+                                    export no_proxy="localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,/var/run/docker.sock"
+
+                                    export NO_PROXY="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
+                                    export no_proxy="api.c1.okd.100-105-4-9.nip.io:6443",$no_proxy
+
+                                    echo "NO_PROXY:" $NO_PROXY
+                                    echo "no_proxy:" $no_proxy
+
                                     export PATH=${runtime_path}
                                     export OKD="true"
-                                    //TODO export $KUBECONFIG
+                                    export NFS_SERVER="10.196.1.3"
+
+                                    export KUBECONFIG = ${KUBECONFIG_FILE}
+                                    cat $KUBECONFIG
+                                    echo "Checking nodes"
+                                    KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
+                                    ${KUBERNETES_CLI} get nodes -o wide
+
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export BASE_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export BASE_IMAGES_REPO_EMAIL="noreply@oracle.com"
                                     export TEST_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
+
+
                                     if [[ -n "${IT_TEST}" && "${IT_TEST}" != "**/It*" ]]; then
                                         echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
                                         export MAVEN_PROFILE_NAME="integration-tests"
@@ -505,7 +522,7 @@ pipeline {
                         always {
                             sh '''
                                 export PATH="${WORKSPACE}/bin:${PATH}"
-                                //TODO export $KUBECONFIG
+
                                 mkdir -m777 -p ${result_root}/kubelogs
                                 mkdir -m777 -p "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
                                 sudo mv -f ${result_root}/* "${WORKSPACE}/logdir/${BUILD_TAG}/wl_k8s_test_results"
@@ -523,8 +540,7 @@ pipeline {
                 always {
                     sh '''
                         export PATH="${WORKSPACE}/bin:${PATH}"
-                        //TODO export $KUBECONFIG
-
+   
                         rm -rf ${WORKSPACE}/.mvn
                         //TODO sudo rm -rf ${pv_root}/*
 
