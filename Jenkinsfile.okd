@@ -416,13 +416,6 @@ pipeline {
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
 
-                            address_stack=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
-				            addresses=($address_stack)
-				            echo "address_stack:" $address_stack
-				            echo "IPV4 address ${addresses[0]}"
-				            K8S_NODEPORT_HOST=${addresses[0]}
-				            echo "K8S_NODEPORT_HOST:" $K8S_NODEPORT_HOST
-
                             if [ -n "${IT_TEST}" ]; then
                                 MAVEN_PROFILE_NAME="integration-tests"
                                 echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
@@ -493,6 +486,13 @@ pipeline {
                                     echo "Checking nodes"
                                     KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
                                     ${KUBERNETES_CLI} get nodes -o wide
+
+                                    address_stack=$(kubectl get node kind-worker -o jsonpath='{.status.addresses[?(@.type == "InternalIP")].address}')
+				                    addresses=($address_stack)
+				                    echo "address_stack:" $address_stack
+				                    echo "IPV4 address ${addresses[0]}"
+				                    K8S_NODEPORT_HOST=${addresses[0]}
+				                    echo "K8S_NODEPORT_HOST:" $K8S_NODEPORT_HOST
 
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export BASE_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
