@@ -36,7 +36,6 @@ pipeline {
 
         okdkub = 'okdconfig'
 
-        //TODO OKD='true'
 
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
@@ -540,7 +539,7 @@ pipeline {
                         export PATH="${WORKSPACE}/bin:${PATH}"
 
                         rm -rf ${WORKSPACE}/.mvn
-                        //TODO sudo rm -rf ${pv_root}/*
+
 
                     '''
                 }
