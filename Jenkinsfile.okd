@@ -267,7 +267,7 @@ pipeline {
                         sh '''
                             export PATH=${runtime_path}
                             echo "$(pwd)" //TODO
-                            ls -la //TODO
+                            ls -la
                             wget -N https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
                             tar xvf oc.tar.gz
                             mv oc ${WORKSPACE}/bin/
@@ -540,7 +540,7 @@ pipeline {
                 always {
                     sh '''
                         export PATH="${WORKSPACE}/bin:${PATH}"
-   
+
                         rm -rf ${WORKSPACE}/.mvn
                         //TODO sudo rm -rf ${pv_root}/*
 
