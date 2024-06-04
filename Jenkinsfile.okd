@@ -375,7 +375,6 @@ pipeline {
                                ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/nginx-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
                                ${KUBERNETES_CLI} get clusterrolebindings --no-headers | awk '/traefik-/{print $1}' | xargs ${KUBERNETES_CLI} delete clusterrolebindings || true
 
-                               //sudo rm -rf ${PV_ROOT}/*
                                echo "PV_ROOT: " ${PV_ROOT}
 
                            '''
