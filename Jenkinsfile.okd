@@ -259,21 +259,23 @@ pipeline {
                     }
                 }
 
-                /*stage ('Install OpenShift CLI oc') {
+                stage ('Install OpenShift CLI oc') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
                     }
                     steps {
                         sh '''
                             export PATH=${runtime_path}
-                            oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
-                                                            --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
-                                                            --auth=instance_principal
-                            chmod +x ${WORKSPACE}/bin/kubectl
-                            kubectl version --client=true
+                            echo "$(pwd)" //TODO
+                            ls -la
+                            wget -N https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
+                            tar xvf oc.tar.gz
+                            mv oc ${WORKSPACE}/bin/
+                            echo "PATH: " $PATH
+                            oc version
                         '''
                     }
-                }*/
+                }
 
                 stage('Setting up KUBECONFIG') {
                      environment {
