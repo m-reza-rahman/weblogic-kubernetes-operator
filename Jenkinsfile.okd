@@ -218,6 +218,8 @@ pipeline {
                     steps {
                         sh '''
                             export PATH=${runtime_path}
+                            echo "$(pwd)" //TODO
+
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
                                 --name=helm/helm-v${HELM_VERSION}.tar.gz --file=helm.tar.gz \
                                 --auth=instance_principal
@@ -241,6 +243,23 @@ pipeline {
                 }*/
 
                 stage ('Install kubectl') {
+                    environment {
+                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                    }
+                    steps {
+                        sh '''
+                            export PATH=${runtime_path}
+                            echo "$(pwd)" //TODO
+                            oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
+                                                            --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
+                                                            --auth=instance_principal
+                            chmod +x ${WORKSPACE}/bin/kubectl
+                            kubectl version --client=true
+                        '''
+                    }
+                }
+
+                stage ('Install OpenShift CLI oc') {
                     environment {
                         runtime_path = "${WORKSPACE}/bin:${PATH}"
                     }
@@ -287,6 +306,9 @@ pipeline {
                 }
 
                 stage('Preparing Integration Test Environment') {
+                    environment {
+                        runtime_path = "${WORKSPACE}/bin:${PATH}"
+                    }
                     steps {
 
                         withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')])
@@ -301,6 +323,7 @@ pipeline {
                                echo "no_proxy:" $no_proxy
 
                                echo "Debugging222"
+                               export PATH=${runtime_path}
                                export KUBECONFIG=${KUBECONFIG_FILE}
                                cat $KUBECONFIG
 
