@@ -413,7 +413,7 @@ pipeline {
 
                             export PATH=${runtime_path}
                             export OKD=true
-                            //export NFS_SERVER="10.196.1.3"
+                            export NFS_SERVER="10.196.1.3"
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
 
