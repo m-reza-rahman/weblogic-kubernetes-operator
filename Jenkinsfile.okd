@@ -417,12 +417,13 @@ pipeline {
                             touch ${WORKSPACE}/.mvn/maven.config
 
                             if [ -n "${IT_TEST}" ]; then
+                                echo 'Overriding MAVEN_PROFILE_NAME to integration-test when running individual test(s)'
                                 MAVEN_PROFILE_NAME="integration-tests"
                                 echo "-Dit.test=\"${IT_TEST}\"" >> ${WORKSPACE}/.mvn/maven.config
                             fi
 
-                            echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME                                               >> ${WORKSPACE}/.mvn/maven.config
-                            echo "PARALLEL_RUN:" $PARALLEL_RUN                                                           >> ${WORKSPACE}/.mvn/maven.config
+                            echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME
+                            echo "PARALLEL_RUN:" $PARALLEL_RUN                                                           
                             echo "-Dwko.it.wle.download.url=\"${wle_download_url}\""                                     >> ${WORKSPACE}/.mvn/maven.config
                             echo "-Dwko.it.result.root=\"${result_root}\""                                               >> ${WORKSPACE}/.mvn/maven.config
                             echo "-Dwko.it.pv.root=\"${pv_root}\""                                                       >> ${WORKSPACE}/.mvn/maven.config
@@ -487,7 +488,7 @@ pipeline {
                                     KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
                                     ${KUBERNETES_CLI} get nodes -o wide
 
-                                    
+
 				                    echo "K8S_NODEPORT_HOST:" $K8S_NODEPORT_HOST
 
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
@@ -503,7 +504,7 @@ pipeline {
                                         export MAVEN_PROFILE_NAME="integration-tests"
                                     fi
                                     echo "MAVEN_PROFILE_NAME:" $MAVEN_PROFILE_NAME
-                                    if ! mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/oketest.log"; then
+                                    if ! mvn -pl integration-tests -P ${MAVEN_PROFILE_NAME} verify 2>&1 | tee "${result_root}/okdtest.log"; then
                                         echo "integration-tests failed"
                                         exit 1
                                     fi
