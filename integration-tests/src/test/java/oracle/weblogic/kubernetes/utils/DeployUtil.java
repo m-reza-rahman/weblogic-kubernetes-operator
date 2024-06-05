@@ -34,6 +34,7 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createConfigMap;
@@ -78,7 +79,8 @@ public class DeployUtil {
     createBaseRepoSecret(namespace);
 
     // create a temporary WebLogic domain property file
-    File domainPropertiesFile = assertDoesNotThrow(() -> File.createTempFile("domain", "properties"),
+    File domainPropertiesFile =
+        assertDoesNotThrow(() -> File.createTempFile("domain", ".properties", new File(RESULTS_TEMPFILE)),
         "Creating domain properties file failed");
     Properties p = new Properties();
     p.setProperty("node_archive_path", MOUNT_POINT + archivePath.getFileName());
@@ -200,7 +202,7 @@ public class DeployUtil {
 
     // check job status and fail test if the job failed to deploy
     V1Job job = getJob(jobName, namespace);
-    if (job != null) {
+    if (job != null && job.getStatus() != null && job.getStatus().getConditions() != null) {
       V1JobCondition jobCondition = job.getStatus().getConditions().stream().filter(
           v1JobCondition -> "Failed".equals(v1JobCondition.getType()))
           .findAny()
@@ -209,12 +211,14 @@ public class DeployUtil {
         logger.severe("Job {0} failed to do deployment", jobName);
         List<V1Pod> pods = listPods(namespace, "job-name=" + jobName).getItems();
         if (!pods.isEmpty()) {
-          logger.severe(getPodLog(pods.get(0).getMetadata().getName(), namespace));
+          V1Pod pod = pods.get(0);
+          if (pod != null && pod.getMetadata() != null) {
+            logger.severe(getPodLog(pod.getMetadata().getName(), namespace));
+          }
           fail("Deployment job failed");
         }
       }
     }
-
   }
 
   /**
@@ -275,7 +279,7 @@ public class DeployUtil {
   public static ExecResult deployUsingRest(String host, String port,
             String userName, String password, String targets, 
             Path archivePath, String hostHeader, String appName) {
-    ExecResult result = null;
+    ExecResult result;
     host = formatIPv6Host(host);
     result = deployUsingRest(host + ":" + port, userName, password, targets, archivePath,
            hostHeader, appName);
@@ -303,14 +307,14 @@ public class DeployUtil {
             String userName, String password, String targets, 
             Path archivePath, String hostHeader, String appName) {
     final LoggingFacade logger = getLogger();
-    ExecResult result = null;
-    StringBuffer headerString = null;
+    ExecResult result;
+    StringBuffer headerString;
     if (hostHeader != null) {
       headerString = new StringBuffer("-H 'host: ");
       headerString.append(hostHeader)
                   .append(" ' ");
     } else {
-      headerString = new StringBuffer("");
+      headerString = new StringBuffer();
     }
     StringBuffer curlString = new StringBuffer("status=$(curl -g --noproxy '*' ");
     curlString.append(" --user " + userName + ":" + password);

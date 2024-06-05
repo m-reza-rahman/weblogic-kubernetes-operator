@@ -48,6 +48,7 @@ import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolume;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePersistentVolumeClaim;
@@ -93,7 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Test to create a FMW domain in persistent volume with new simplified feature")
 @IntegrationTest
 @Tag("kind-parallel")
-@Tag("oke-sequential1")
+@Tag("oke-sequential")
 @Tag("okd-fmw-cert")
 @Tag("olcne-sequential")
 class ItFmwDomainOnPV {
@@ -765,7 +766,7 @@ class ItFmwDomainOnPV {
 
     // create a model property file
     File domainPropertiesFile = assertDoesNotThrow(() ->
-        File.createTempFile(fmwModelFilePrefix, ".properties"),
+        File.createTempFile(fmwModelFilePrefix, ".properties", new File(RESULTS_TEMPFILE)),
         "Failed to create FMW model properties file");
 
     // create the property file

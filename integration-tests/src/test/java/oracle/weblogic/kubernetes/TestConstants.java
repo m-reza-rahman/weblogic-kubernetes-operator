@@ -6,6 +6,7 @@ package oracle.weblogic.kubernetes;
 import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 import static oracle.weblogic.kubernetes.actions.TestActions.listNamespaces;
@@ -194,6 +195,7 @@ public interface TestConstants {
   public static final String PV_ROOT =
       getNonEmptySystemProperty("wko.it.pv.root", RESULTS_BASE + "/pvroot");
   public static final String RESULTS_ROOT = RESULTS_BASE + "/workdir";
+  public static final String RESULTS_TEMPFILE = RESULTS_BASE + "/tmpfile";
 
   // NGINX constants
   public static final String NGINX_REPO_URL = "https://kubernetes.github.io/ingress-nginx";
@@ -205,29 +207,27 @@ public interface TestConstants {
       "sha256:314435f9465a7b2973e3aa4f2edad7465cc7bcdc8304be5d146d70e4da136e51";
   public static final String TEST_NGINX_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/ingress-nginx/controller";
   public static final String NGINX_INGRESS_IMAGE_TAG = "v1.2.0";
-  public static final String NGINX_NAMESPACE = "ns-nginx";
-  public static final int NGINX_INGRESS_HTTP_NODEPORT = 31880;
-  public static final int NGINX_INGRESS_HTTPS_NODEPORT = 31443;
-  public static final int NGINX_INGRESS_HTTP_HOSTPORT = 2180;
-  public static final int NGINX_INGRESS_HTTPS_HOSTPORT = 2543;
-  
+
+  public static final Path RESULTS_TEMPFILE_DIR = assertDoesNotThrow(()
+      -> Files.createDirectories(Paths.get(RESULTS_TEMPFILE)));
   public static final Path INGRESS_CLASS_FILE_NAME = assertDoesNotThrow(()
-      -> Files.createTempFile("ingressclass", ".name"));  
+      -> Files.createTempFile(RESULTS_TEMPFILE_DIR, "ingressclass", ".name"));
 
   // Traefik constants
   public static final String TRAEFIK_REPO_URL = "https://helm.traefik.io/traefik";
   public static final String TRAEFIK_RELEASE_NAME = "traefik-release" + BUILD_ID;
   public static final String TRAEFIK_REPO_NAME = "traefik";
   public static final String TRAEFIK_CHART_NAME = "traefik";
+  public static final String TRAEFIK_CHART_VERSION = "25.0.0";
   public static final String TRAEFIK_INGRESS_IMAGE_NAME = TEST_IMAGES_TENANCY + "/test-images/traefik";
   public static final String TRAEFIK_INGRESS_IMAGE_REGISTRY = TEST_IMAGES_REPO;
 
-  public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v2.10.5";
+  public static final String TRAEFIK_INGRESS_IMAGE_TAG = "v3.0.0";
   public static final String TRAEFIK_NAMESPACE = "ns-traefik";
-  public static final int TRAEFIK_INGRESS_HTTP_NODEPORT = 30880;
-  public static final int TRAEFIK_INGRESS_HTTPS_NODEPORT = 30443;
+  public static final int TRAEFIK_INGRESS_HTTP_NODEPORT = 30080;
   public static final int TRAEFIK_INGRESS_HTTP_HOSTPORT = 2080;
-  public static final int TRAEFIK_INGRESS_HTTPS_HOSTPORT = 2443;  
+  public static final int TRAEFIK_INGRESS_HTTPS_NODEPORT = 30443;
+  public static final int TRAEFIK_INGRESS_HTTPS_HOSTPORT = 2043;  
 
   // ELK Stack and WebLogic logging exporter constants
   public static final String ELASTICSEARCH_NAME = "elasticsearch";
@@ -472,30 +472,88 @@ public interface TestConstants {
       "largedomaintesting.props";
   
   //node ports used by the integration tests
-  public static final int ITEXTERNALNODEPORTSERVICE_CONAINERPORT = 32156;
-  public static final int ITEXTERNALNODEPORTSERVICE_HOSTPORT = 2156;
+  public static final int IT_EXTERNALNODEPORTSERVICE_NODEPORT = 31000;
+  public static final int IT_EXTERNALNODEPORTSERVICE_HOSTPORT = 2100;
   
-  public static final int IT_DEDICATED_MODE_CONAINERPORT = 32159;
-  public static final int IT_DEDICATED_MODE_HOSTPORT = 2160;
+  public static final int IT_DEDICATEDMODE_NODEPORT = 31004;
+  public static final int IT_DEDICATEDMODE_HOSTPORT = 2104;
   
-  public static final int IT_EXTERNALLB_TUNNELING_HTTP_CONAINERPORT = 32169;
-  public static final int IT_EXTERNALLB_TUNNELING_HTTP_HOSTPORT = 2172;
-  public static final int IT_EXTERNALLB_TUNNELING_HTTPS_CONAINERPORT = 32170;
-  public static final int IT_EXTERNALLB_TUNNELING_HTTPS_HOSTPORT = 2173;
+  public static final int IT_EXTERNALLBTUNNELING_HTTP_NODEPORT = 31008;
+  public static final int IT_EXTERNALLBTUNNELING_HTTP_HOSTPORT = 2108;
+  public static final int IT_EXTERNALLBTUNNELING_HTTPS_NODEPORT = 31012;
+  public static final int IT_EXTERNALLBTUNNELING_HTTPS_HOSTPORT = 2112;
   
-  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_CONAINERPORT = 32189;
-  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_HOSTPORT = 2182;
-  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_CONAINERPORT = 32185;
-  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_HOSTPORT = 2175;
+  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_NODEPORT = 31016;
+  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_HOSTPORT = 2116;
+  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_NODEPORT = 31020;
+  public static final int IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_HOSTPORT = 2120;
   
-  public static final int IT_MONITORINGEXPORTER_PROM_HTTP_CONAINERPORT = 32143;
-  public static final int IT_MONITORINGEXPORTER_PROM_HTTP_HOSTPORT = 2143;
-  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_CONAINERPORT = 32343;
-  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_HOSTPORT = 2343; 
+  public static final int IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_NODEPORT = 31024;
+  public static final int IT_MONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT = 2124;
+  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_NODEPORT = 31028;
+  public static final int IT_MONITORINGEXPORTER_ALERT_HTTP_HOSTPORT = 2128;
 
-  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT = 30881;
-  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT = 30444;
-  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT = 2081;
-  public static final int ITLBTWODOMAINSNGINX_INGRESS_HTTPS_HOSTPORT = 2444;
+  public static final int IT_MONITORINGEXPORTERWEBAPP_NGINX_HTTP_NODEPORT = 31032;
+  public static final int IT_MONITORINGEXPORTERWEBAPP_NGINX_HTTP_HOSTPORT = 2132;
+  public static final int IT_MONITORINGEXPORTERWEBAPP_NGINX_HTTPS_NODEPORT = 31036;
+  public static final int IT_MONITORINGEXPORTERWEBAPP_NGINX_HTTPS_HOSTPORT = 2136;
+  
+  public static final int IT_MONITORINGEXPORTERWEBAPP_PROMETHEUS_HTTP_NODEPORT = 31040;
+  public static final int IT_MONITORINGEXPORTERWEBAPP_PROMETHEUS_HTTP_HOSTPORT = 2140;
+  public static final int IT_MONITORINGEXPORTERWEBAPP_ALERT_HTTP_NODEPORT = 31044;
+  public static final int IT_MONITORINGEXPORTERWEBAPP_ALERT_HTTP_HOSTPORT = 2144;
+  
+  public static final int IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_NODEPORT = 31048;
+  public static final int IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTP_HOSTPORT = 2148;
+  public static final int IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_NODEPORT = 31052;
+  public static final int IT_MONITORINGEXPORTERSAMPLES_NGINX_HTTPS_HOSTPORT = 2152;  
+
+  public static final int IT_MONITORINGEXPORTERSIDECAR_PROMETHEUS_HTTP_NODEPORT = 31056;
+  public static final int IT_MONITORINGEXPORTERSIDECAR_PROMETHEUS_HTTP_HOSTPORT = 2156;
+  public static final int IT_MONITORINGEXPORTERSIDECAR_ALERT_HTTP_NODEPORT = 31060;
+  public static final int IT_MONITORINGEXPORTERSIDECAR_ALERT_HTTP_HOSTPORT = 2160;
+  
+  public static final int IT_MONITORINGEXPORTERMF_PROMETHEUS_HTTP_NODEPORT = 31064;
+  public static final int IT_MONITORINGEXPORTERMF_PROMETHEUS_HTTP_HOSTPORT = 2164;
+  public static final int IT_MONITORINGEXPORTERMF_ALERT_HTTP_NODEPORT = 31068;
+  public static final int IT_MONITORINGEXPORTERMF_ALERT_HTTP_HOSTPORT = 2168;
+  
+  public static final int ITHORIZONTALPODSCALER_PROMETHEUS_HTTP_NODEPORT = 31072;
+  public static final int ITHORIZONTALPODSCALER_PROMETHEUS_HTTP_HOSTPORT = 2172;
+  public static final int ITHORIZONTALPODSCALER_ALERT_HTTP_CONAINERPORT = 31076;
+  public static final int ITHORIZONTALPODSCALER_ALERT_HTTP_HOSTPORT = 2176;
+  
+  public static final int IT_ISTIOMONITORINGEXPORTER_PROMETHEUS_HTTP_NODEPORT = 31080;
+  public static final int IT_ISTIOMONITORINGEXPORTER_PROMETHEUS_HTTP_HOSTPORT = 2180;
+
+  public static final int IT_LBTWODOMAINSNGINX_INGRESS_HTTP_NODEPORT = 31084;
+  public static final int IT_LBTWODOMAINSNGINX_INGRESS_HTTP_HOSTPORT = 2184;
+  public static final int IT_LBTWODOMAINSNGINX_INGRESS_HTTPS_NODEPORT = 31088;  
+  public static final int IT_LBTWODOMAINSNGINX_INGRESS_HTTPS_HOSTPORT = 2188;
+  
+  public static final int IT_WSEESSONGINX_INGRESS_HTTP_NODEPORT = 31092;
+  public static final int IT_WSEESSONGINX_INGRESS_HTTP_HOSTPORT = 2192;
+  public static final int IT_WSEESSONGINX_INGRESS_HTTPS_NODEPORT = 31096;
+  public static final int IT_WSEESSONGINX_INGRESS_HTTPS_HOSTPORT = 2196;
+  
+  public static final int IT_HPACUSTOMNGINX_INGRESS_HTTP_NODEPORT = 31100;
+  public static final int IT_HPACUSTOMNGINX_INGRESS_HTTP_HOSTPORT = 2200;
+  public static final int IT_HPACUSTOMNGINX_INGRESS_HTTPS_NODEPORT = 31104;
+  public static final int IT_HPACUSTOMNGINX_INGRESS_HTTPS_HOSTPORT = 2204;
+
+  public static final int IT_WEBAPPACCESSNGINX_INGRESS_HTTP_NODEPORT = 31108;
+  public static final int IT_WEBAPPACCESSNGINX_INGRESS_HTTP_HOSTPORT = 2208;
+  public static final int IT_WEBAPPACCESSNGINX_INGRESS_HTTPS_NODEPORT = 31112;
+  public static final int IT_WEBAPPACCESSNGINX_INGRESS_HTTPS_HOSTPORT = 2212;
+  
+  public static final int IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_NODEPORT = 31116;
+  public static final int IT_MONITORINGEXPORTERSAMPLES_PROMETHEUS_HTTP_HOSTPORT = 2216;
+  public static final int IT_MONITORINGEXPORTERSAMPLES_ALERT_HTTP_NODEPORT = 31120;
+  public static final int IT_MONITORINGEXPORTERSAMPLES_ALERT_HTTP_HOSTPORT = 2220;
+  
+  public static final int IT_REMOTECONSOLENGINX_INGRESS_HTTP_NODEPORT = 31124;
+  public static final int IT_REMOTECONSOLENGINX_INGRESS_HTTP_HOSTPORT = 2224;
+  public static final int IT_REMOTECONSOLENGINX_INGRESS_HTTPS_NODEPORT = 31128;
+  public static final int IT_REMOTECONSOLENGINX_INGRESS_HTTPS_HOSTPORT = 2228;  
 
 }

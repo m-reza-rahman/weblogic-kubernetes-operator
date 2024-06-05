@@ -1,4 +1,4 @@
-// Copyright (c) 2021, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2021, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes.utils;
@@ -83,6 +83,7 @@ import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_BASIC_MODEL_PROPERTIES_FILE;
 import static oracle.weblogic.kubernetes.TestConstants.WDT_IMAGE_DOMAINHOME_BASE_DIR;
@@ -466,7 +467,7 @@ public class DomainUtils {
     logger.info("Removing the cluster {0} from domain resource {1}", clusterName, domainUid);
     DomainResource domainCustomResource = getDomainCustomResource(domainUid, namespace);
     Optional<V1LocalObjectReference> cluster = domainCustomResource.getSpec()
-        .getClusters().stream().filter(o -> o.getName().equals(clusterName)).findAny();
+        .getClusters().stream().filter(o -> o.getName() != null && o.getName().equals(clusterName)).findAny();
     int clusterIndex = -1;
     if (cluster.isPresent()) {
       clusterIndex = domainCustomResource.getSpec().getClusters().indexOf(cluster.get());
@@ -481,8 +482,8 @@ public class DomainUtils {
       V1Patch patch = new V1Patch(patchStr);
       assertTrue(patchDomainCustomResource(domainUid, namespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
           "Failed to patch domain");
-      Callable<Boolean> clusterNotFound = () -> !getDomainCustomResource(domainUid, namespace).getSpec()
-          .getClusters().stream().anyMatch(c -> c.getName().equals(clusterName));
+      Callable<Boolean> clusterNotFound = () -> getDomainCustomResource(domainUid, namespace).getSpec()
+          .getClusters().stream().noneMatch(c -> c.getName() != null && c.getName().equals(clusterName));
       testUntil(clusterNotFound, logger, "cluster {0} to be removed from domain resource in namespace {1}",
           clusterName, namespace);
     } else {
@@ -532,7 +533,7 @@ public class DomainUtils {
     assertFalse(auxiliaryImageList.isEmpty(), "AuxiliaryImage list is empty");
 
     String searchString;
-    int index = 0;
+    int index;
 
     AuxiliaryImage ai = auxiliaryImageList.stream()
         .filter(auxiliaryImage -> oldImageName.equals(auxiliaryImage.getImage()))
@@ -687,7 +688,8 @@ public class DomainUtils {
 
 
     // create a temporary WebLogic domain property file as a input for WDT model file
-    File domainPropertiesFile = assertDoesNotThrow(() -> createTempFile("domainonpv" + domainUid, "properties"),
+    File domainPropertiesFile =
+        assertDoesNotThrow(() -> createTempFile("domainonpv" + domainUid, ".properties", new File(RESULTS_TEMPFILE)),
         "Failed to create domain properties file");
 
     Properties p = new Properties();
@@ -815,7 +817,8 @@ public class DomainUtils {
 
 
     // create a temporary WebLogic domain property file as a input for WDT model file
-    File domainPropertiesFile = assertDoesNotThrow(() -> createTempFile("domainonpv" + domainUid, "properties"),
+    File domainPropertiesFile =
+        assertDoesNotThrow(() -> createTempFile("domainonpv" + domainUid, ".properties", new File(RESULTS_TEMPFILE)),
         "Failed to create domain properties file");
 
     Properties p = new Properties();

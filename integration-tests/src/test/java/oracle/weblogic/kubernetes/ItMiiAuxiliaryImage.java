@@ -121,7 +121,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @Tag("toolkits-srg")
 @Tag("okd-wls-srg")
 @Tag("oke-arm")
-@Tag("oke-parallelnew")
+@Tag("oke-parallel")
 class ItMiiAuxiliaryImage {
 
   private static String domainNamespace = null;
@@ -850,8 +850,9 @@ class ItMiiAuxiliaryImage {
     deleteConfigMap(configMapName, domainNamespace);
     testUntil(
         withLongRetryPolicy,
-        () -> listConfigMaps(domainNamespace).getItems().stream().noneMatch((cm)
-            -> (cm.getMetadata().getName().equals(configMapName))),
+        () -> listConfigMaps(domainNamespace).getItems().stream().noneMatch(cm
+            -> cm.getMetadata() != null && cm.getMetadata().getName() !=  null
+            && cm.getMetadata().getName().equals(configMapName)),
         logger,
         "configmap {0} to be deleted.", configMapName);
   }

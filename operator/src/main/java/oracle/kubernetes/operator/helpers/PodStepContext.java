@@ -23,12 +23,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import io.kubernetes.client.openapi.models.V1Affinity;
 import io.kubernetes.client.openapi.models.V1ConfigMapVolumeSource;
 import io.kubernetes.client.openapi.models.V1Container;
 import io.kubernetes.client.openapi.models.V1ContainerBuilder;
 import io.kubernetes.client.openapi.models.V1ContainerPort;
-import io.kubernetes.client.openapi.models.V1DeleteOptions;
 import io.kubernetes.client.openapi.models.V1EnvFromSource;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1ExecAction;
@@ -41,11 +41,13 @@ import io.kubernetes.client.openapi.models.V1PodReadinessGate;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodSpecBuilder;
 import io.kubernetes.client.openapi.models.V1Probe;
+import io.kubernetes.client.openapi.models.V1ProbeBuilder;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.util.Yaml;
+import io.kubernetes.client.util.generic.KubernetesApiResponse;
 import jakarta.json.Json;
 import jakarta.json.JsonPatchBuilder;
 import oracle.kubernetes.common.logging.MessageKeys;
@@ -56,21 +58,20 @@ import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.LogHomeLayoutType;
 import oracle.kubernetes.operator.MIINonDynamicChangesMethod;
-import oracle.kubernetes.operator.PodAwaiterStepFactory;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.WebLogicConstants;
-import oracle.kubernetes.operator.calls.CallResponse;
-import oracle.kubernetes.operator.calls.UnrecoverableErrorBuilder;
+import oracle.kubernetes.operator.calls.RequestBuilder;
+import oracle.kubernetes.operator.calls.ResponseStep;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
 import oracle.kubernetes.operator.logging.LoggingFacade;
 import oracle.kubernetes.operator.logging.LoggingFactory;
 import oracle.kubernetes.operator.processing.EffectiveServerSpec;
+import oracle.kubernetes.operator.steps.ShutdownManagedServerStep;
 import oracle.kubernetes.operator.tuning.PodTuning;
 import oracle.kubernetes.operator.tuning.TuningParameters;
 import oracle.kubernetes.operator.wlsconfig.NetworkAccessPoint;
 import oracle.kubernetes.operator.wlsconfig.WlsDomainConfig;
 import oracle.kubernetes.operator.wlsconfig.WlsServerConfig;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import oracle.kubernetes.weblogic.domain.model.AuxiliaryImage;
@@ -94,7 +95,6 @@ import static oracle.kubernetes.operator.DomainStatusUpdater.createKubernetesFai
 import static oracle.kubernetes.operator.IntrospectorConfigMapConstants.NUM_CONFIG_MAPS;
 import static oracle.kubernetes.operator.KubernetesConstants.DEFAULT_EXPORTER_SIDECAR_PORT;
 import static oracle.kubernetes.operator.KubernetesConstants.EXPORTER_CONTAINER_NAME;
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
 import static oracle.kubernetes.operator.LabelConstants.CLUSTER_OBSERVED_GENERATION_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.DOMAIN_OBSERVED_GENERATION_LABEL;
 import static oracle.kubernetes.operator.LabelConstants.INTROSPECTION_STATE_LABEL;
@@ -140,7 +140,7 @@ public abstract class PodStepContext extends BasePodStepContext {
   private String sha256Hash;
 
   PodStepContext(Step conflictStep, Packet packet) {
-    super(packet.getSpi(DomainPresenceInfo.class));
+    super((DomainPresenceInfo) packet.get(ProcessingConstants.DOMAIN_PRESENCE_INFO));
     this.conflictStep = conflictStep;
     this.packet = packet;
     domainTopology = (WlsDomainConfig) packet.get(ProcessingConstants.DOMAIN_TOPOLOGY);
@@ -395,10 +395,6 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   // ----------------------- step methods ------------------------------
 
-  private void clearBeingDeleted() {
-    info.setServerPodBeingDeleted(getServerName(), Boolean.FALSE);
-  }
-
   private void setRecordedPod(V1Pod pod) {
     info.setServerPod(getServerName(), pod);
   }
@@ -430,12 +426,11 @@ public abstract class PodStepContext extends BasePodStepContext {
    * @return a step to be scheduled.
    */
   Step createPod(Step next) {
-    clearBeingDeleted();
     return createPodAsync(createResponse(next));
   }
 
   private Step createPodAsync(ResponseStep<V1Pod> response) {
-    return new CallBuilder().createPodAsync(getNamespace(), getPodModel(), response);
+    return RequestBuilder.POD.create(getPodModel(), response);
   }
 
   /**
@@ -517,7 +512,6 @@ public abstract class PodStepContext extends BasePodStepContext {
 
   protected boolean canUseNewDomainZip(V1Pod currentPod) {
     String dynamicUpdateResult = packet.getValue(MII_DYNAMIC_UPDATE);
-
     if (miiDomainZipHash == null || isDomainZipUnchanged(currentPod)) {
       return true;
     } else if (dynamicUpdateResult == null || !getDomain().isUseOnlineUpdate()) {
@@ -907,25 +901,44 @@ public abstract class PodStepContext extends BasePodStepContext {
   }
 
   private V1Probe createReadinessProbe(PodTuning tuning) {
-    V1Probe readinessProbe = new V1Probe();
-    readinessProbe
-        .initialDelaySeconds(getReadinessProbeInitialDelaySeconds(tuning))
-        .timeoutSeconds(getReadinessProbeTimeoutSeconds(tuning))
-        .periodSeconds(getReadinessProbePeriodSeconds(tuning))
-        .failureThreshold(getReadinessProbeFailureThreshold(tuning));
+    V1Probe readinessProbe = getReadinessProbe();
 
-    // Add the success threshold only if the value is non-default to avoid pod roll.
-    if (getReadinessProbeSuccessThreshold(tuning) != DEFAULT_SUCCESS_THRESHOLD) {
-      readinessProbe.successThreshold(getReadinessProbeSuccessThreshold(tuning));
+    if (readinessProbe.getInitialDelaySeconds() == null) {
+      readinessProbe.setInitialDelaySeconds(tuning.getReadinessProbeInitialDelaySeconds());
+    }
+    if (readinessProbe.getTimeoutSeconds() == null) {
+      readinessProbe.setTimeoutSeconds(tuning.getReadinessProbeTimeoutSeconds());
+    }
+    if (readinessProbe.getPeriodSeconds() == null) {
+      readinessProbe.setPeriodSeconds(tuning.getReadinessProbePeriodSeconds());
+    }
+    if (readinessProbe.getFailureThreshold() == null) {
+      readinessProbe.setFailureThreshold(tuning.getReadinessProbeFailureThreshold());
+    }
+    if (readinessProbe.getSuccessThreshold() == null
+        && tuning.getReadinessProbeSuccessThreshold() != DEFAULT_SUCCESS_THRESHOLD) {
+      readinessProbe.setSuccessThreshold(tuning.getReadinessProbeSuccessThreshold());
     }
 
     try {
-      readinessProbe =
-          readinessProbe.httpGet(
-              httpGetAction(
-                  READINESS_PATH,
-                  getLocalAdminProtocolChannelPort(),
-                  isLocalAdminProtocolChannelSecure()));
+      V1HTTPGetAction httpGetAction = readinessProbe.getHttpGet();
+      if (httpGetAction != null) {
+        if (httpGetAction.getPath() == null) {
+          httpGetAction.setPath(READINESS_PATH);
+        }
+        if (httpGetAction.getPort() == null) {
+          httpGetAction.setPort(new IntOrString(getLocalAdminProtocolChannelPort()));
+        }
+        if (httpGetAction.getScheme() == null && isLocalAdminProtocolChannelSecure()) {
+          httpGetAction.setScheme("HTTPS");
+        }
+      } else if (readinessProbe.getExec() == null
+          && readinessProbe.getTcpSocket() == null && readinessProbe.getGrpc() == null) {
+        readinessProbe.setHttpGet(new V1HTTPGetAction()
+                .path(READINESS_PATH)
+                .port(new IntOrString(getLocalAdminProtocolChannelPort()))
+                .scheme(isLocalAdminProtocolChannelSecure() ? "HTTPS" : null));
+      }
     } catch (Exception e) {
       // do nothing
     }
@@ -933,77 +946,54 @@ public abstract class PodStepContext extends BasePodStepContext {
   }
 
   @SuppressWarnings("SameParameterValue")
-  private V1HTTPGetAction httpGetAction(String path, int port, boolean useHttps) {
-    V1HTTPGetAction getAction = new V1HTTPGetAction();
-    getAction.path(path).port(new IntOrString(port));
-    if (useHttps) {
-      getAction.scheme("HTTPS");
-    }
-    return getAction;
-  }
-
-  private int getReadinessProbePeriodSeconds(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getReadinessProbe().getPeriodSeconds())
-        .orElse(tuning.getReadinessProbePeriodSeconds());
-  }
-
-  private int getReadinessProbeTimeoutSeconds(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getReadinessProbe().getTimeoutSeconds())
-        .orElse(tuning.getReadinessProbeTimeoutSeconds());
-  }
-
-  private int getReadinessProbeInitialDelaySeconds(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getReadinessProbe().getInitialDelaySeconds())
-        .orElse(tuning.getReadinessProbeInitialDelaySeconds());
-  }
-
-  private int getReadinessProbeSuccessThreshold(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getReadinessProbe().getSuccessThreshold())
-            .orElse(tuning.getReadinessProbeSuccessThreshold());
-  }
-
-  private int getReadinessProbeFailureThreshold(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getReadinessProbe().getFailureThreshold())
-            .orElse(tuning.getReadinessProbeFailureThreshold());
+  private V1Probe getReadinessProbe() {
+    return Optional.ofNullable(getServerSpec().getReadinessProbe())
+        .map(V1ProbeBuilder::new).map(V1ProbeBuilder::build).orElse(new V1Probe());
   }
 
   private V1Probe createLivenessProbe(PodTuning tuning) {
-    V1Probe livenessProbe = new V1Probe()
-        .initialDelaySeconds(getLivenessProbeInitialDelaySeconds(tuning))
-        .timeoutSeconds(getLivenessProbeTimeoutSeconds(tuning))
-        .periodSeconds(getLivenessProbePeriodSeconds(tuning))
-        .failureThreshold(getLivenessProbeFailureThreshold(tuning));
+    V1Probe livenessProbe = getLivenessProbe();
 
-    // Add the success threshold only if the value is non-default to avoid pod roll.
-    if (getLivenessProbeSuccessThreshold(tuning) != DEFAULT_SUCCESS_THRESHOLD) {
-      livenessProbe.successThreshold(getLivenessProbeSuccessThreshold(tuning));
+    if (livenessProbe.getInitialDelaySeconds() == null) {
+      livenessProbe.setInitialDelaySeconds(tuning.getLivenessProbeInitialDelaySeconds());
     }
-    return livenessProbe.exec(execAction(LIVENESS_PROBE));
+    if (livenessProbe.getTimeoutSeconds() == null) {
+      livenessProbe.setTimeoutSeconds(tuning.getLivenessProbeTimeoutSeconds());
+    }
+    if (livenessProbe.getPeriodSeconds() == null) {
+      livenessProbe.setPeriodSeconds(tuning.getLivenessProbePeriodSeconds());
+    }
+    if (livenessProbe.getFailureThreshold() == null) {
+      livenessProbe.setFailureThreshold(tuning.getLivenessProbeFailureThreshold());
+    }
+    if (livenessProbe.getSuccessThreshold() == null
+            && tuning.getLivenessProbeSuccessThreshold() != DEFAULT_SUCCESS_THRESHOLD) {
+      livenessProbe.setSuccessThreshold(tuning.getLivenessProbeSuccessThreshold());
+    }
+
+    try {
+      V1HTTPGetAction httpGetAction = livenessProbe.getHttpGet();
+      if (httpGetAction != null) {
+        if (httpGetAction.getPort() == null) {
+          httpGetAction.setPort(new IntOrString(getLocalAdminProtocolChannelPort()));
+        }
+        if (httpGetAction.getScheme() == null && isLocalAdminProtocolChannelSecure()) {
+          httpGetAction.setScheme("HTTPS");
+        }
+      } else if (livenessProbe.getExec() == null
+              && livenessProbe.getTcpSocket() == null && livenessProbe.getGrpc() == null) {
+        livenessProbe.setExec(execAction(LIVENESS_PROBE));
+      }
+    } catch (Exception e) {
+      // do nothing
+    }
+
+    return livenessProbe;
   }
 
-  private int getLivenessProbeInitialDelaySeconds(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getLivenessProbe().getInitialDelaySeconds())
-        .orElse(tuning.getLivenessProbeInitialDelaySeconds());
-  }
-
-  private int getLivenessProbeTimeoutSeconds(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getLivenessProbe().getTimeoutSeconds())
-        .orElse(tuning.getLivenessProbeTimeoutSeconds());
-  }
-
-  private int getLivenessProbePeriodSeconds(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getLivenessProbe().getPeriodSeconds())
-        .orElse(tuning.getLivenessProbePeriodSeconds());
-  }
-
-  private int getLivenessProbeSuccessThreshold(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getLivenessProbe().getSuccessThreshold())
-            .orElse(tuning.getLivenessProbeSuccessThreshold());
-  }
-
-  private int getLivenessProbeFailureThreshold(PodTuning tuning) {
-    return Optional.ofNullable(getServerSpec().getLivenessProbe().getFailureThreshold())
-            .orElse(tuning.getLivenessProbeFailureThreshold());
+  private V1Probe getLivenessProbe() {
+    return Optional.ofNullable(getServerSpec().getLivenessProbe())
+        .map(V1ProbeBuilder::new).map(V1ProbeBuilder::build).orElse(new V1Probe());
   }
 
   private boolean mockWls() {
@@ -1028,7 +1018,7 @@ public abstract class PodStepContext extends BasePodStepContext {
   private class ConflictStep extends BaseStep {
 
     @Override
-    public NextAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       return doNext(getConflictStep(), packet);
     }
 
@@ -1068,33 +1058,26 @@ public abstract class PodStepContext extends BasePodStepContext {
       this.message = message;
     }
 
-    private ResponseStep<Object> deleteResponse(V1Pod pod, Step next) {
-      return new DeleteResponseStep(pod, next);
+    private ResponseStep<V1Pod> replaceResponse(Step next) {
+      return new ReplacePodResponseStep(next);
     }
 
     /**
-     * Deletes the specified pod.
+     * Creates the specified replacement pod and records it.
      *
-     * @param pod the existing pod
-     * @param next the next step to perform after the pod deletion is complete.
+     * @param next the next step to perform after the pod creation is complete.
      * @return a step to be scheduled.
      */
-    private Step deletePod(V1Pod pod, Step next) {
-      return new CallBuilder()
-          .deletePodAsync(getPodName(), getNamespace(), getDomainUid(),
-              new V1DeleteOptions(), deleteResponse(pod, next));
-    }
-
-    // Prevent the watcher from recreating pod with old spec
-    private void markBeingDeleted() {
-      info.setServerPodBeingDeleted(getServerName(), Boolean.TRUE);
+    private Step replacePod(Step next) {
+      return createPodAsync(replaceResponse(next));
     }
 
     @Override
-    public NextAction apply(Packet packet) {
-
-      markBeingDeleted();
-      return doNext(createCyclePodEventStep(deletePod(pod, getNext())), packet);
+    public @Nonnull Result apply(Packet packet) {
+      String serverName = PodHelper.getServerName(pod);
+      return doNext(createCyclePodEventStep(
+          ShutdownManagedServerStep.createShutdownManagedServerStep(
+              PodHelper.deletePodStep(serverName, true, replacePod(getNext())), serverName, pod)), packet);
     }
 
     private Step createCyclePodEventStep(Step next) {
@@ -1128,9 +1111,9 @@ public abstract class PodStepContext extends BasePodStepContext {
           patchBuilder, "/metadata/labels/", getLabels(currentPod), getNonHashedPodLabels());
       KubernetesUtils.addPatches(
           patchBuilder, "/metadata/annotations/", getAnnotations(currentPod), getNonHashedPodAnnotations());
-      return new CallBuilder()
-          .patchPodAsync(getPodName(), getNamespace(), getDomainUid(),
-              new V1Patch(patchBuilder.build().toString()), patchResponse(next));
+      return RequestBuilder.POD.patch(getNamespace(), getPodName(),
+          V1Patch.PATCH_FORMAT_JSON_PATCH,
+          new V1Patch(patchBuilder.build().toString()), patchResponse(next));
     }
 
     private Step patchCurrentPod(V1Pod currentPod, Step next) {
@@ -1421,7 +1404,7 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       V1Pod currentPod = info.getServerPod(getServerName());
 
       if (currentPod == null) {
@@ -1456,16 +1439,16 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public NextAction onFailure(Packet packet, CallResponse<V1Pod> callResponse) {
-      if (UnrecoverableErrorBuilder.isAsyncCallUnrecoverableFailure(callResponse)) {
+    public Result onFailure(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+      if (isUnrecoverable(callResponse)) {
         return updateDomainStatus(packet, callResponse);
       } else {
         return onFailure(getConflictStep(), packet, callResponse);
       }
     }
 
-    private NextAction updateDomainStatus(Packet packet, CallResponse<V1Pod> callResponse) {
-      return doNext(createKubernetesFailureSteps(callResponse), packet);
+    private Result updateDomainStatus(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+      return doNext(createKubernetesFailureSteps(callResponse, createFailureMessage(callResponse)), packet);
     }
   }
 
@@ -1480,63 +1463,19 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       logPodCreated();
-      if (callResponse.getResult() != null) {
+      V1Pod pod = callResponse.getObject();
+      if (pod != null) {
         info.updateLastKnownServerStatus(getServerName(), WebLogicConstants.STARTING_STATE);
-        setRecordedPod(callResponse.getResult());
+        setRecordedPod(pod);
       }
 
-      boolean waitForPodReady =
-          (boolean) Optional.ofNullable(packet.get(ProcessingConstants.WAIT_FOR_POD_READY)).orElse(false);
-
-      if (waitForPodReady) {
-        PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
-        return doNext(pw.waitForReady(callResponse.getResult(), getNext()), packet);
-      }
       return doNext(packet);
     }
-  }
 
-  private class DeleteResponseStep extends ResponseStep<Object> {
-    private final V1Pod pod;
-
-    DeleteResponseStep(V1Pod pod, Step next) {
-      super(next);
-      this.pod = pod;
-    }
-
-    @Override
-    protected String getDetail() {
-      return getServerName();
-    }
-
-    @Override
-    public NextAction onFailure(Packet packet, CallResponse<Object> callResponses) {
-      if (callResponses.getStatusCode() == HTTP_NOT_FOUND) {
-        return onSuccess(packet, callResponses);
-      }
-      return super.onFailure(getConflictStep(), packet, callResponses);
-    }
-
-    private ResponseStep<V1Pod> replaceResponse(Step next) {
-      return new ReplacePodResponseStep(next);
-    }
-
-    /**
-     * Creates the specified replacement pod and records it.
-     *
-     * @param next the next step to perform after the pod creation is complete.
-     * @return a step to be scheduled.
-     */
-    private Step replacePod(Step next) {
-      return createPodAsync(replaceResponse(next));
-    }
-
-    @Override
-    public NextAction onSuccess(Packet packet, CallResponse<Object> callResponses) {
-      PodAwaiterStepFactory pw = packet.getSpi(PodAwaiterStepFactory.class);
-      return doNext(pw.waitForDelete(pod, replacePod(getNext())), packet);
+    protected boolean isPodReady(V1Pod result) {
+      return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
     }
   }
 
@@ -1556,10 +1495,18 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
-      return doNext(
-          packet.getSpi(PodAwaiterStepFactory.class).waitForReady(processResponse(callResponse), getNext()),
-          packet);
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
+      V1Pod pod = callResponse.getObject();
+      if (pod == null || !isPodReady(pod)) {
+        // requeue to wait for the pod to be ready
+        return doRequeue(packet);
+      }
+      processResponse(callResponse);
+      return doNext(packet);
+    }
+
+    protected boolean isPodReady(V1Pod result) {
+      return result != null && !PodHelper.isDeleting(result) && PodHelper.isReady(result);
     }
   }
 
@@ -1578,13 +1525,13 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     @Override
-    public NextAction onSuccess(Packet packet, CallResponse<V1Pod> callResponse) {
+    public Result onSuccess(Packet packet, KubernetesApiResponse<V1Pod> callResponse) {
       processResponse(callResponse);
-      return doNext(getNext(), packet);
+      return doNext(packet);
     }
 
-    protected V1Pod processResponse(CallResponse<V1Pod> callResponse) {
-      V1Pod newPod = callResponse.getResult();
+    protected V1Pod processResponse(KubernetesApiResponse<V1Pod> callResponse) {
+      V1Pod newPod = callResponse.getObject();
       logPodChanged();
       if (newPod != null) {
         setRecordedPod(newPod);

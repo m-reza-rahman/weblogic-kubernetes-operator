@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
     + "all managed servers in the domain through OCI Load Balancer")
 @IntegrationTest
 @Tag("oke-arm")
-@Tag("oke-parallelnew")
+@Tag("oke-parallel")
 class ItOCILoadBalancer {
   // domain constants
   private static final int replicaCount = 2;
@@ -133,11 +133,13 @@ class ItOCILoadBalancer {
     V1Service service = getService(lbName, labels, namespace);
     assertNotNull(service, "Can't find service with name " + lbName);
     logger.info("Found service with name {0} in {1} namespace ", lbName, namespace);
+    assertNotNull(service.getStatus(), "service status is null");
+    assertNotNull(service.getStatus().getLoadBalancer(), "service loadbalancer is null");
     List<V1LoadBalancerIngress> ingress = service.getStatus().getLoadBalancer().getIngress();
     if (ingress != null) {
       logger.info("LoadBalancer Ingress " + ingress.toString());
       V1LoadBalancerIngress lbIng = ingress.stream().filter(c ->
-          !c.getIp().equals("pending")
+          c.getIp() != null && !c.getIp().equals("pending")
       ).findAny().orElse(null);
       if (lbIng != null) {
         logger.info("OCI LoadBalancer is created with external ip" + lbIng.getIp());

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
@@ -37,14 +38,14 @@ import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
 import io.kubernetes.client.openapi.models.V1IngressBackend;
 import io.kubernetes.client.openapi.models.V1IngressRule;
 import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
+import io.kubernetes.client.openapi.models.V1IngressTLS;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
-import oracle.weblogic.domain.ClusterSpec;
+import oracle.weblogic.domain.ClusterResource;
 import oracle.weblogic.domain.DomainCondition;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
-import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.awaitility.core.ConditionEvaluationListener;
 import org.awaitility.core.ConditionFactory;
@@ -69,6 +70,7 @@ import static oracle.weblogic.kubernetes.TestConstants.NO_PROXY;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
@@ -97,8 +99,10 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleCluster;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApi;
+import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithRestApiInOpPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.scaleClusterWithWLDF;
 import static oracle.weblogic.kubernetes.actions.impl.UniqueName.random;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.getClusterCustomResource;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsNotValid;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.credentialsValid;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isPodReady;
@@ -162,11 +166,8 @@ public class CommonTestUtils {
   }
 
   public static ConditionFactory withStandardRetryPolicy = createStandardRetryPolicyWithAtMost(5);
-  public static ConditionFactory withStandardRetryPolicyIgnoringExceptions =
-      createStandardRetryPolicyWithAtMost(5).ignoreExceptions();
   public static ConditionFactory withLongRetryPolicy = createStandardRetryPolicyWithAtMost(15);
 
-  private static final String TMP_FILE_NAME = "temp-download-file.out";
   private static int adminListenPort = 7001;
 
   /**
@@ -237,7 +238,7 @@ public class CommonTestUtils {
 
   private static <T> ConditionEvaluationListener<T> createConditionEvaluationListener(
       LoggingFacade logger, String msg, Object... params) {
-    return new ConditionEvaluationListener<T>() {
+    return new ConditionEvaluationListener<>() {
       @Override
       public void conditionEvaluated(EvaluatedCondition<T> condition) {
         int paramsSize = params != null ? params.length : 0;
@@ -385,9 +386,10 @@ public class CommonTestUtils {
    * @return true, if the cluster replica count is matched
    */
   public static boolean checkClusterReplicaCountMatches(String clusterName,
-                                                        String namespace, Integer replicaCount) throws ApiException {
-    ClusterSpec clusterSpec = Kubernetes.getClusterCustomResource(clusterName, namespace, CLUSTER_VERSION).getSpec();
-    return Optional.ofNullable(clusterSpec).get().replicas() == replicaCount;
+                                                        String namespace, int replicaCount) throws ApiException {
+    ClusterResource clusterResource = getClusterCustomResource(clusterName, namespace, CLUSTER_VERSION);
+    return clusterResource != null
+        && clusterResource.getSpec().replicas() == replicaCount;
   }
 
   /** Scale the WebLogic cluster to specified number of servers.
@@ -462,8 +464,10 @@ public class CommonTestUtils {
                                            String myWebAppName,
                                            String curlCmdForWLDFApp,
                                            String curlCmd,
-                                           List<String> expectedServerNames) {
+                                           List<String> expectedServerNames,
+                                           String... args) {
     LoggingFacade logger = getLogger();
+
     // get the original managed server pod creation timestamp before scale
     List<OffsetDateTime> listOfPodCreationTimestamp = new ArrayList<>();
     for (int i = 1; i <= replicasBeforeScale; i++) {
@@ -479,13 +483,25 @@ public class CommonTestUtils {
     logger.info("Scaling cluster {0} of domain {1} in namespace {2} to {3} servers",
         clusterName, domainUid, domainNamespace, replicasAfterScale);
     if (withRestApi) {
-      assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApi(domainUid, clusterName,
-          replicasAfterScale, externalRestHttpsPort, opNamespace, opServiceAccount)))
-          .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
-              clusterName, domainUid, domainNamespace))
-          .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
-              clusterName, domainUid, domainNamespace))
-          .isTrue();
+      if (OKE_CLUSTER && args != null && args.length > 0) {
+        String operatorPodName = args[0];
+        int opExtPort = 8081;
+        assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApiInOpPod(domainUid, clusterName,
+            replicasAfterScale, operatorPodName, opExtPort, opNamespace, opServiceAccount)))
+            .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
+                clusterName, domainUid, domainNamespace))
+            .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
+                clusterName, domainUid, domainNamespace))
+            .isTrue();
+      } else {
+        assertThat(assertDoesNotThrow(() -> scaleClusterWithRestApi(domainUid, clusterName,
+            replicasAfterScale, externalRestHttpsPort, opNamespace, opServiceAccount)))
+            .as(String.format("Verify scaling cluster %s of domain %s in namespace %s with REST API succeeds",
+                clusterName, domainUid, domainNamespace))
+            .withFailMessage(String.format("Scaling cluster %s of domain %s in namespace %s with REST API failed",
+                clusterName, domainUid, domainNamespace))
+            .isTrue();
+      }
     } else if (withWLDF) {
       // scale the cluster using WLDF policy
       assertThat(assertDoesNotThrow(() -> scaleClusterWithWLDF(clusterName, domainUid, domainNamespace,
@@ -1089,15 +1105,15 @@ public class CommonTestUtils {
    * Adds proxy extra arguments for image builder command.
    **/
   public static String getImageBuilderExtraArgs() {
-    StringBuffer extraArgs = new StringBuffer("");
+    StringBuffer extraArgs = new StringBuffer();
 
     String httpsproxy = HTTPS_PROXY;
     String httpproxy = HTTP_PROXY;
     String noproxy = NO_PROXY;
     LoggingFacade logger = getLogger();
     logger.info(" httpsproxy : " + httpsproxy);
-    String proxyHost = "";
-    StringBuffer mvnArgs = new StringBuffer("");
+    String proxyHost;
+    StringBuffer mvnArgs = new StringBuffer();
     if (httpsproxy != null) {
       logger.info(" httpsproxy : " + httpsproxy);
       proxyHost = httpsproxy.substring(httpsproxy.lastIndexOf("www"), httpsproxy.lastIndexOf(":"));
@@ -1118,7 +1134,7 @@ public class CommonTestUtils {
       logger.info(" noproxy : " + noproxy);
       extraArgs.append(String.format(" --build-arg no_proxy=%s",noproxy));
     }
-    if (!mvnArgs.equals("")) {
+    if (mvnArgs.length() > 0) {
       extraArgs.append(" --build-arg MAVEN_OPTS=\" " + mvnArgs.toString() + "\"");
     }
     return extraArgs.toString();
@@ -1149,7 +1165,8 @@ public class CommonTestUtils {
             } catch (IOException | InterruptedException ex) {
               logger.severe(ex.getMessage());
             }
-            String response = result.stdout().trim();
+
+            String response = result != null ? result.stdout().trim() : "result is null";
             logger.info(response);
             for (var managedServer : managedServers.entrySet()) {
               boolean connectToOthers = true;
@@ -1701,7 +1718,8 @@ public class CommonTestUtils {
       }
 
       // create WLST property file
-      File wlstPropertiesFile = assertDoesNotThrow(() -> File.createTempFile("wlst", "properties"),
+      File wlstPropertiesFile =
+          assertDoesNotThrow(() -> File.createTempFile("wlst", ".properties", new File(RESULTS_TEMPFILE)),
           "Creating WLST properties file failed");
 
       String localhost = "localhost";
@@ -1814,7 +1832,7 @@ public class CommonTestUtils {
       ex.printStackTrace();
     }
 
-    return result.stdout().contains("The server started in RUNNING mode");
+    return result != null && result.stdout() != null && result.stdout().contains("The server started in RUNNING mode");
   }
 
   /**
@@ -2047,7 +2065,7 @@ public class CommonTestUtils {
 
   /**
    * Given a repo and tenancy name, determine the prefix length.  For example,
-   * phx.ocir.io/foobar/test-images/myimage will treat phx.ocir.io/foobar/ as
+   * cloud.io/foobar/test-images/myimage will treat cloud.io/foobar/ as
    * the prefix so the length is 19.
    *
    * @param baseRepo    base repo name
@@ -2339,10 +2357,26 @@ public class CommonTestUtils {
    * @param domainUid domain resource name
    * @param serviceName name of the service for which to create ingress routing
    * @param port container port of the service
-   * @return hostheader
+   * @return hostheader host header
    */
   public static String createIngressHostRouting(String domainNamespace, String domainUid,
       String serviceName, int port) {
+    return createIngressHostRouting(domainNamespace, domainUid, serviceName, port, null, null, false);
+  }
+
+  /**
+   * Create ingress resource for a single service.
+   *
+   * @param domainNamespace namespace in which the service exists
+   * @param domainUid domain resource name
+   * @param serviceName name of the service for which to create ingress routing
+   * @param port container port of the service
+   * @param annoations ingress annotations
+   * @param tlsList list of tls secrets
+   * @return hostheader host header
+   */
+  public static String createIngressHostRouting(String domainNamespace, String domainUid,
+      String serviceName, int port, Map<String, String> annoations, List<V1IngressTLS> tlsList, boolean isSecureMode) {
     // create an ingress in domain namespace
     // set the ingress rule host
     String ingressHost = domainNamespace + "." + domainUid + "." + serviceName;
@@ -2366,17 +2400,18 @@ public class CommonTestUtils {
     ingressRules.add(ingressRule);
 
     String ingressName = domainNamespace + "-" + domainUid + "-" + serviceName + "-" + port;
-    assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, null,
-        Files.readString(INGRESS_CLASS_FILE_NAME), ingressRules, null));
+    assertDoesNotThrow(() -> createIngress(ingressName, domainNamespace, annoations,
+        Files.readString(INGRESS_CLASS_FILE_NAME), ingressRules, tlsList));
 
     // check the ingress was found in the domain namespace
     assertThat(assertDoesNotThrow(() -> listIngresses(domainNamespace)))
         .as(String.format("Test ingress %s was found in namespace %s", ingressName, domainNamespace))
         .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domainNamespace))
         .contains(ingressName);
-    String curlCmd = "curl -g --silent --show-error --noproxy '*' -H 'host: " + ingressHost
-        + "' http://localhost:" + TRAEFIK_INGRESS_HTTP_HOSTPORT
-        + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+    String curlCmd = assertDoesNotThrow(() -> "curl -g -k --silent --show-error --noproxy '*' -H 'host: "
+        + ingressHost + "' " + (isSecureMode ? "https" : "http") + "://"
+        + formatIPv6Host(InetAddress.getLocalHost().getHostAddress()) + ":" + +TRAEFIK_INGRESS_HTTP_HOSTPORT
+        + "/weblogic/ready --write-out %{http_code} -o /dev/null");
     getLogger().info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
 
@@ -2433,9 +2468,52 @@ public class CommonTestUtils {
    * @param serviceName name of the service for which to create ingress routing
    * @param port container port of the service
    * @param ingressClassName ingress class name
+   * @param host ingress host name
    */
   public static void createIngressPathRouting(String namespace, String path,
-                                              String serviceName, int port, String ingressClassName) {
+                                              String serviceName, int port, String ingressClassName,
+                                              String host) {
+    // create an ingress in domain namespace
+    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
+        .path(path)
+        .pathType("Prefix")
+        .backend(new V1IngressBackend()
+            .service(new V1IngressServiceBackend()
+                .name(serviceName)
+                .port(new V1ServiceBackendPort().number(port)))
+        );
+
+    // create ingress rule
+    List<V1IngressRule> ingressRules = new ArrayList<>();
+    V1IngressRule ingressRule = new V1IngressRule()
+        .host(host)
+        .http(new V1HTTPIngressRuleValue()
+            .paths(Collections.singletonList(httpIngressPath)));
+    ingressRules.add(ingressRule);
+
+    String ingressName = namespace + "-" + serviceName;
+    assertDoesNotThrow(() -> createIngress(ingressName, namespace, null,
+        ingressClassName, ingressRules, null));
+
+    // check the ingress was found in the domain namespace
+    assertThat(assertDoesNotThrow(() -> listIngresses(namespace)))
+        .as(String.format("Test ingress %s was found in namespace %s", ingressName, namespace))
+        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, namespace))
+        .contains(ingressName);
+    getLogger().info("ingress {0} was created in namespace {1}", ingressName, namespace);
+  }
+
+  /**
+   * Create ingress resource for a single service.
+   *
+   * @param namespace namespace in which the service exists
+   * @param path path prefix
+   * @param serviceName name of the service for which to create ingress routing
+   * @param port container port of the service
+   * @param ingressClassName ingress class name
+   */
+  public static void createIngressPathRouting(String namespace, String path,
+                                                     String serviceName, int port, String ingressClassName) {
     // create an ingress in domain namespace
     V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
         .path(path)

@@ -1,4 +1,4 @@
-// Copyright (c) 2022, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2022, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.makeright;
@@ -8,14 +8,16 @@ import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+import io.kubernetes.client.extended.controller.reconciler.Result;
 import oracle.kubernetes.operator.DomainProcessorDelegate;
 import oracle.kubernetes.operator.MakeRightClusterOperation;
+import oracle.kubernetes.operator.MakeRightDomainOperation;
 import oracle.kubernetes.operator.MakeRightExecutor;
+import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.helpers.ClusterPresenceInfo;
 import oracle.kubernetes.operator.helpers.EventHelper;
 import oracle.kubernetes.operator.helpers.EventHelper.ClusterResourceEventData;
 import oracle.kubernetes.operator.helpers.EventHelper.EventData;
-import oracle.kubernetes.operator.work.NextAction;
 import oracle.kubernetes.operator.work.Packet;
 import oracle.kubernetes.operator.work.Step;
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +27,8 @@ import org.jetbrains.annotations.NotNull;
  */
 public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<ClusterPresenceInfo>
     implements MakeRightClusterOperation {
+
+  MakeRightDomainOperation domainOperation;
 
   /**
    * Create the operation.
@@ -48,6 +52,17 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
   public MakeRightClusterOperation withExplicitRecheck() {
     explicitRecheck = true;
     return this;
+  }
+
+  @Override
+  public MakeRightClusterOperation andThen(MakeRightDomainOperation domainOperation) {
+    this.domainOperation = domainOperation;
+    return this;
+  }
+
+  @Override
+  public MakeRightDomainOperation getAndThen() {
+    return domainOperation;
   }
 
   /**
@@ -81,7 +96,11 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
   @Override
   @Nonnull
   public Packet createPacket() {
-    return new Packet().with(delegate).with(liveInfo).with(this);
+    Packet packet = new Packet();
+    packet.put(ProcessingConstants.CLUSTER_PRESENCE_INFO, liveInfo);
+    packet.put(ProcessingConstants.DELEGATE_COMPONENT_NAME, delegate);
+    packet.put(ProcessingConstants.MAKE_RIGHT_DOMAIN_OPERATION, this);
+    return packet;
   }
 
   @Override
@@ -110,11 +129,6 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
   }
 
   @Override
-  public void addToPacket(Packet packet) {
-    // no op
-  }
-
-  @Override
   public ClusterPresenceInfo getPresenceInfo() {
     return liveInfo;
   }
@@ -136,7 +150,7 @@ public class MakeRightClusterOperationImpl extends MakeRightOperationImpl<Cluste
     }
 
     @Override
-    public NextAction apply(Packet packet) {
+    public @Nonnull Result apply(Packet packet) {
       if (deleting) {
         executor.unregisterClusterPresenceInfo(info);
       } else {

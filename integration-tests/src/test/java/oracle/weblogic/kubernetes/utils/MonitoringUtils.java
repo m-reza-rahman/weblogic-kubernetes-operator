@@ -68,9 +68,8 @@ import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_REPO_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.GRAFANA_REPO_URL;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
-import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_ALERT_HTTP_CONAINERPORT;
-import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTER_PROM_HTTP_CONAINERPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MANAGED_SERVER_NAME_BASE;
 import static oracle.weblogic.kubernetes.TestConstants.MONITORING_EXPORTER_BRANCH;
@@ -92,6 +91,7 @@ import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_REPO_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_REPO_URL;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER;
+import static oracle.weblogic.kubernetes.TestConstants.WLSIMG_BUILDER_DEFAULT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MONITORING_EXPORTER_DOWNLOAD_URL;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deleteSecret;
@@ -238,6 +238,7 @@ public class MonitoringUtils {
         .execute());
   }
 
+
   /**
    * Check metrics using Prometheus.
    *
@@ -246,13 +247,45 @@ public class MonitoringUtils {
    * @param hostPortPrometheus host:nodePort for prometheus
    * @throws Exception if command to check metrics fails
    */
-  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal, String hostPortPrometheus)
+  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal,
+                                               String hostPortPrometheus)
       throws Exception {
 
     LoggingFacade logger = getLogger();
     // url
     String curlCmd =
-        String.format("curl -g --silent --show-error --noproxy '*'  http://%s/api/v1/query?query=%s",
+        String.format("curl -g --silent --show-error --noproxy '*'  -H 'host: *'"
+                + " http://%s/api/v1/query?query=%s",
+            hostPortPrometheus, searchKey);
+
+    logger.info("Executing Curl cmd {0}", curlCmd);
+    logger.info("Checking searchKey: {0}", searchKey);
+    logger.info(" expected Value {0} ", expectedVal);
+    testUntil(
+        searchForKey(curlCmd, expectedVal),
+        logger,
+        "Check prometheus metric {0} against expected {1}",
+        searchKey,
+        expectedVal);
+  }
+
+  /**
+   * Check metrics using Prometheus.
+   *
+   * @param searchKey   - metric query expression
+   * @param expectedVal - expected metrics to search
+   * @param hostPortPrometheus host:nodePort for prometheus
+   * @throws Exception if command to check metrics fails
+   */
+  public static void checkMetricsViaPrometheus(String searchKey, String expectedVal,
+                                               String hostPortPrometheus, String ingressHost)
+      throws Exception {
+
+    LoggingFacade logger = getLogger();
+    // url
+    String curlCmd =
+        String.format("curl -g --silent --show-error --noproxy '*'  -H 'host: " + ingressHost + "'"
+                + " http://%s/api/v1/query?query=%s",
             hostPortPrometheus, searchKey);
 
     logger.info("Executing Curl cmd {0}", curlCmd);
@@ -306,7 +339,7 @@ public class MonitoringUtils {
                                       String prometheusNS, String cmName) throws ApiException {
     List<V1ConfigMap> cmList = Kubernetes.listConfigMaps(prometheusNS).getItems();
     V1ConfigMap promCm = cmList.stream()
-        .filter(cm -> cmName.equals(cm.getMetadata().getName()))
+        .filter(cm -> cm.getMetadata() != null && cmName.equals(cm.getMetadata().getName()))
         .findAny()
         .orElse(null);
 
@@ -364,6 +397,7 @@ public class MonitoringUtils {
    *                            default is regex: default;domain1
    * @param promHelmValuesFileDir path to prometheus helm values file directory
    * @param webhookNS namespace for webhook namespace
+   * @param ports optional prometheus and alert manager ports
    * @return the prometheus Helm installation parameters
    */
   public static PrometheusParams installAndVerifyPrometheus(String promReleaseSuffix,
@@ -371,7 +405,8 @@ public class MonitoringUtils {
                                                       String promVersion,
                                                       String prometheusRegexValue,
                                                       String promHelmValuesFileDir,
-                                                      String webhookNS) {
+                                                      String webhookNS,
+                                                      int...ports) {
     LoggingFacade logger = getLogger();
     String prometheusReleaseName = "prometheus" + promReleaseSuffix;
     logger.info("create a staging location for prometheus scripts");
@@ -440,10 +475,9 @@ public class MonitoringUtils {
     }
     int promServerNodePort = getNextFreePort();
     int alertManagerNodePort = getNextFreePort();
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      promServerNodePort = IT_MONITORINGEXPORTER_PROM_HTTP_CONAINERPORT;
-      alertManagerNodePort = IT_MONITORINGEXPORTER_ALERT_HTTP_CONAINERPORT;
+    if (ports.length != 0 && KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+      promServerNodePort = ports[0];
+      alertManagerNodePort = ports[1];
     }
 
     assertTrue(imageRepoLogin(TestConstants.BASE_IMAGES_REPO,
@@ -649,7 +683,8 @@ public class MonitoringUtils {
     V1SecretList listSecrets = listSecrets(grafanaNamespace);
     if (null != listSecrets) {
       for (V1Secret item : listSecrets.getItems()) {
-        if (item.getMetadata().getName().equals("grafana-secret")) {
+        if (item.getMetadata() != null && item.getMetadata().getName() != null
+            && item.getMetadata().getName().equals("grafana-secret")) {
           secretExists = true;
           break;
         }
@@ -1172,8 +1207,7 @@ public class MonitoringUtils {
 
     // check that NGINX can access the sample apps from all managed servers in the domain
     String host = formatIPv6Host(K8S_NODEPORT_HOST);
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+    if (KIND_CLUSTER && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       host = InetAddress.getLocalHost().getHostAddress();
     }
     String curlCmd =

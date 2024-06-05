@@ -1,4 +1,4 @@
-// Copyright (c) 2018, 2023, Oracle and/or its affiliates.
+// Copyright (c) 2018, 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.kubernetes.operator.helpers;
@@ -22,7 +22,6 @@ import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import oracle.kubernetes.operator.LabelConstants;
-import oracle.kubernetes.operator.calls.UnrecoverableCallException;
 import oracle.kubernetes.operator.utils.InMemoryCertificates;
 import oracle.kubernetes.operator.work.FiberTestSupport;
 import oracle.kubernetes.operator.work.Packet;
@@ -51,7 +50,6 @@ import static oracle.kubernetes.operator.EventMatcher.hasEvent;
 import static oracle.kubernetes.operator.EventTestUtils.getLocalizedString;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_INTERNAL_ERROR;
 import static oracle.kubernetes.operator.KubernetesConstants.HTTP_NOT_FOUND;
-import static oracle.kubernetes.operator.KubernetesConstants.HTTP_UNAUTHORIZED;
 import static oracle.kubernetes.operator.helpers.DomainIntrospectorJobTest.TEST_VOLUME_NAME;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.DOMAIN_FAILED;
 import static oracle.kubernetes.operator.helpers.EventHelper.EventItem.POD_CYCLE_STARTING;
@@ -242,19 +240,6 @@ class AdminPodHelperTest extends PodHelperTestBase {
     V1Pod existingPod = createTestPodModel();
     Objects.requireNonNull(existingPod.getSpec()).setContainers(null);
     return existingPod;
-  }
-
-  @Test
-  void whenAdminPodDeletionFails_unrecoverableFailureOnUnauthorized() {
-    testSupport.addRetryStrategy(retryStrategy);
-    initializeExistingPod(getIncompatiblePod());
-    testSupport.failOnDelete(KubernetesTestSupport.POD, getPodName(), NS, HTTP_UNAUTHORIZED);
-
-    FiberTestSupport.StepFactory stepFactory = getStepFactory();
-    Step initialStep = stepFactory.createStepList(terminalStep);
-    testSupport.runSteps(initialStep);
-
-    testSupport.verifyCompletionThrowable(UnrecoverableCallException.class);
   }
 
   @Test
