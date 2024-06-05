@@ -299,9 +299,16 @@ class ItFmwDomainOnPVSample {
 
     // load the image to kind if using kind cluster
     String imageCreated;
-    imageCreated = TEST_IMAGES_PREFIX + DOMAIN_CREATION_IMAGE_NAME + ":" + DOMAIN_CREATION_IMAGE_JRF_TAG;
-    logger.info("pushing image {0} to repo", imageCreated);
-    imagePush(imageCreated);
+
+    if (KIND_REPO != null) {
+      imageCreated = DOMAIN_CREATION_IMAGE_NAME + ":" + DOMAIN_CREATION_IMAGE_JRF_TAG;
+      logger.info("loading image {0} to kind", imageCreated);
+      imagePush(imageCreated);
+    } else if (OCNE) {
+      imageCreated = TEST_IMAGES_PREFIX + DOMAIN_CREATION_IMAGE_NAME + ":" + DOMAIN_CREATION_IMAGE_JRF_TAG;
+      logger.info("pushing image {0} to repo", imageCreated);
+      imagePush(imageCreated);
+    }
   }
 
   /**
