@@ -27,6 +27,7 @@ import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodDisruptionBudget;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.util.Watch;
+import io.kubernetes.client.util.Yaml;
 import oracle.kubernetes.common.logging.LoggingFilter;
 import oracle.kubernetes.common.logging.MessageKeys;
 import oracle.kubernetes.common.logging.OncePerMessageLoggingFilter;
@@ -916,8 +917,16 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
 
   private void handleModifiedDomain(DomainResource domain) {
     if (!domain.isGenerationLaterThanObservedGeneration()) {
+      LOGGER.warning("DOMAIN IS MODIFIED and generation is not later than observed");
+      LOGGER.warning("!!!!!!!!!!!!!!!!!!!!!");
+      Yaml.dump(domain);
+      LOGGER.warning("!!!!!!!!!!!!!!!!!!!!!");
       return;
     }
+    LOGGER.warning("DOMAIN IS MODIFIED and generation is later than observed");
+      LOGGER.warning("!!!!!!!!!!!!!!!!!!!!!");
+      Yaml.dump(domain);
+      LOGGER.warning("!!!!!!!!!!!!!!!!!!!!!");
     LOGGER.fine(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
@@ -947,6 +956,7 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
     final MakeRightDomainOperation operation = delegate.createMakeRightOperation(this, liveInfo);
 
     if (isFirstDomainNewer(liveInfo, getExistingDomainPresenceInfo(liveInfo))) {
+      LOGGER.warning("FIRST DOMAIN IS NEWER, will interrupt makeright");
       operation.interrupt();
     }
 
