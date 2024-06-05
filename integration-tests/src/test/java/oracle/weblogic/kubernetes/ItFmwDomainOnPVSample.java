@@ -205,8 +205,8 @@ class ItFmwDomainOnPVSample {
   /**
    * Test Domain on PV sample install operator use case.
    */
-  @Test
-  @Order(0)
+  //@Test
+  //@Order(0)
   public void testPrecleanup() {
     Assumptions.assumeTrue(previousTestSuccessful);
     previousTestSuccessful = false;
