@@ -924,9 +924,9 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
       return;
     }
     LOGGER.warning("DOMAIN IS MODIFIED and generation is later than observed");
-      LOGGER.warning("!!!!!!!!!!!!!!!!!!!!!");
-      Yaml.dump(domain);
-      LOGGER.warning("!!!!!!!!!!!!!!!!!!!!!");
+    LOGGER.warning("!!!!!!!!!!!!!!!!!!!!!");
+    Yaml.dump(domain);
+    LOGGER.warning("!!!!!!!!!!!!!!!!!!!!!");
     LOGGER.fine(MessageKeys.WATCH_DOMAIN, domain.getDomainUid());
     createMakeRightOperation(new DomainPresenceInfo(domain))
         .interrupt()
