@@ -270,11 +270,11 @@ class ItFmwDomainOnPVSample {
   @Order(4)
   public void testCreatedb() {
     logger.info("test case for creating a db");
-    //if (KIND_REPO != null) {
-    //  String dbimage = DB_IMAGE_NAME + ":" + DB_IMAGE_TAG;
-    //  logger.info("loading image {0} to kind", dbimage);
-    //  imagePush(dbimage);
-    //}
+    if (KIND_REPO != null) {
+      String dbimage = DB_IMAGE_NAME + ":" + DB_IMAGE_TAG;
+      logger.info("loading image {0} to kind", dbimage);
+      imagePush(dbimage);
+    }
     execTestScriptAndAssertSuccess("-db", "Failed to run -db");
   }
 
@@ -288,6 +288,14 @@ class ItFmwDomainOnPVSample {
     imagePull(BUSYBOX_IMAGE + ":" + BUSYBOX_TAG);
     imageTag(BUSYBOX_IMAGE + ":" + BUSYBOX_TAG, "busybox");
     execTestScriptAndAssertSuccess("-initial-image", "Failed to run -initial-image");
+
+    ExecResult result = Command.withParams(
+        new CommandParams()
+            .command(WLSIMG_BUILDER + " images")
+            .env(envMap)
+            .redirect(true)
+    ).executeAndReturnResult();
+    logger.info(result.stdout());
 
     // load the image to kind if using kind cluster
     String imageCreated;
