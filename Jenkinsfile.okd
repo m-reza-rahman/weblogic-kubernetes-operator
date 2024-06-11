@@ -403,7 +403,7 @@ pipeline {
                             export PATH=${runtime_path}
                             export OKD=true
                             export NFS_SERVER="10.196.1.3"
-                            export pv_root = "/export/wls"
+                            export pv_root="/export/wls"
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
 
@@ -464,7 +464,7 @@ pipeline {
                                     export PATH=${runtime_path}
                                     export OKD="true"
                                     export NFS_SERVER="10.196.1.3"
-                                    export pv_root = "/export/wls"
+                                    export pv_root="/export/wls"
 
                                     export KUBECONFIG=${KUBECONFIG_FILE}
                                     cat $KUBECONFIG
