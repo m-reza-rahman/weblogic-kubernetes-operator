@@ -415,7 +415,7 @@ EOF
 
                             echo 'Create a OKE cluster ${CLUSTER_NAME}'
 
-                            cp -rf ${terraform_script_dir_name}/*.* ${WORKSPACE}/terraform/.
+                            cp -rf ${terraform_script_dir_name}/* ${WORKSPACE}/terraform/.
 
                             chmod 777 ${WORKSPACE}/terraform/*.sh
                             mkdir -p ${WORKSPACE}/terraform/terraforminstall
