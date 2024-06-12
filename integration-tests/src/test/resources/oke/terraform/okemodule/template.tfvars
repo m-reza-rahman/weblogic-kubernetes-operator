@@ -11,7 +11,7 @@
 #
  api_private_key_path = "@OCIPRIVATEKEYPATH@"
 #
- home_region = "@REGION@" # Use short form e.g. ashburn from location column https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
+ home_region = "phoenix" # Use short form e.g. ashburn from location column https://docs.oracle.com/en-us/iaas/Content/General/Concepts/regions.htm
 #
  tenancy_id = "@TENANCYOCID@"
 #
