@@ -4,14 +4,14 @@
 //
 
 CRON_SETTINGS = '''H 1 * * * % MAVEN_PROFILE_NAME=wko-okd-wls-srg'''
-//                   H 2 * * * % MAVEN_PROFILE_NAME=wko-okd-wls-mrg
-//                   H 3 * * * % MAVEN_PROFILE_NAME=wko-okd-fmw-cert'''
+                   H 2 * * * % MAVEN_PROFILE_NAME=wko-okd-wls-mrg
+                   H 3 * * * % MAVEN_PROFILE_NAME=wko-okd-fmw-cert'''
 
 pipeline {
     agent { label 'large' }
     options {
         timeout(time: 1800, unit: 'MINUTES')
-        //disableConcurrentBuilds()
+        disableConcurrentBuilds()
     }
     triggers {
         // timer trigger for "nightly build"
@@ -217,7 +217,7 @@ pipeline {
                     steps {
                         sh '''
                             export PATH=${runtime_path}
-                            echo "$(pwd)" //TODO
+                            echo "$(pwd)"
 
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
                                 --name=helm/helm-v${HELM_VERSION}.tar.gz --file=helm.tar.gz \
@@ -248,7 +248,7 @@ pipeline {
                     steps {
                         sh '''
                             export PATH=${runtime_path}
-                            echo "$(pwd)" //TODO
+                            echo "$(pwd)"
                             oci os object get --namespace=${wko_tenancy} --bucket-name=wko-system-test-files \
                                                             --name=kubectl/kubectl-v${KUBECTL_VERSION} --file=${WORKSPACE}/bin/kubectl \
                                                             --auth=instance_principal
@@ -265,7 +265,7 @@ pipeline {
                     steps {
                         sh '''
                             export PATH=${runtime_path}
-                            echo "$(pwd)" //TODO
+                            echo "$(pwd)"
                             ls -la
                             wget -N https://mirror.openshift.com/pub/openshift-v4/clients/oc/latest/linux/oc.tar.gz
                             tar xvf oc.tar.gz
@@ -273,36 +273,6 @@ pipeline {
                             echo "PATH: " $PATH
                             oc version
                         '''
-                    }
-                }
-
-                stage('Setting up KUBECONFIG') {
-                     environment {
-                        runtime_path = "${WORKSPACE}/bin:${PATH}"
-                    }
-                    steps {
-                        sh '''
-                               export NO_PROXY="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
-                               export no_proxy="api.c1.okd.100-105-4-9.nip.io:6443",$no_proxy
-
-                               echo "NO_PROXY:" $NO_PROXY
-                               echo "no_proxy:" $no_proxy
-
-                        '''
-                        withCredentials([file(credentialsId: "${okdkub}", variable: 'KUBECONFIG_FILE')]) {
-                           sh '''
-                               echo "Debugging!!!" //TODO
-                               export PATH=${runtime_path}
-
-                               export KUBECONFIG=${KUBECONFIG_FILE}
-                               cat $KUBECONFIG
-
-                               echo "Checking nodes"
-                               KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
-                               ${KUBERNETES_CLI} get nodes -o wide
-                           '''
-
-                        }
                     }
                 }
 
@@ -323,7 +293,6 @@ pipeline {
                                echo "NO_PROXY:" $NO_PROXY
                                echo "no_proxy:" $no_proxy
 
-                               echo "Debugging222" //TODO
                                export PATH=${runtime_path}
                                export KUBECONFIG=${KUBECONFIG_FILE}
                                cat $KUBECONFIG
