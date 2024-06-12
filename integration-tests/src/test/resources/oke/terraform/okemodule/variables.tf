@@ -117,6 +117,7 @@ variable "cluster_type" {
 }
 
 variable "mount_target_ocid" {
+  default     = "public"
 }
 
 variable "availability_domain" {
