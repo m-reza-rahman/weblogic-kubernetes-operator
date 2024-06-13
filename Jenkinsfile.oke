@@ -550,13 +550,7 @@ EOF
                                 NODE_IP=`kubectl get nodes -o wide| awk '{print $7}'| head -n2 | tail -n1`
                                 echo "second node external IP ${NODE_IP}"
                                 export NODE_IP=${NODE_IP}
-                                if [ "${JOB_NAME}" = "wko-oke-nightly" ]; then
-                                   echo "Mount Target  setup for wko-oke-nightly"
-                                   mt_privateip_id=`oci fs mount-target  list --compartment-id=${compartment_ocid}  --display-name=${clusterName}-mt --availability-domain=${availability_domain} | jq -r '.data[] | ."private-ip-ids"[]'`
-
-                                else
-                                   mt_privateip_id=`oci fs mount-target get --mount-target-id=${MOUNT_TARGET_OCID} | jq -r '.data| ."private-ip-ids"[]'`
-                                fi
+                                mt_privateip_id=`oci fs mount-target get --mount-target-id=${MOUNT_TARGET_OCID} | jq -r '.data| ."private-ip-ids"[]'`
                                 # Check if the mt_privateip_id is an array
                                 if [ "$(declare -p mt_privateip_id 2>/dev/null | grep -o 'declare -a')" == "declare -a" ]; then
                                     # Select first
