@@ -363,6 +363,8 @@ nodepool.imagename=${IMAGE_ID}
 k8s.version=v${OKE_KUBE_VERSION}
 nodepool.ssh.pubkey=${ssh_pubkey}
 nodepool.ssh.pk=${ssh_pk}
+nodepool.ssh.pubkeypath=${wkotest_ssh_pubcert}
+nodepool.ssh.pkpath=${wkotest_ssh_pk}
 terraform.installdir=${WORKSPACE}/terraform/terraforminstall
 EOF
 

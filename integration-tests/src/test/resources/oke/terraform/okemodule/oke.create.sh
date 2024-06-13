@@ -28,8 +28,8 @@ generateTFVarFile() {
     sed -i -e "s:@OKEK8SVERSION@:${k8s_version}:g" ${tfVarsFiletfVarsFile}
     sed -i -e "s:@NODEPOOLSHAPE@:${nodepool_shape}:g" ${tfVarsFiletfVarsFile}
     sed -i -e "s:@NODEPOOLIMAGENAME@:${nodepool_imagename}:g" ${tfVarsFiletfVarsFile}
-    sed -i -e "s:@NODEPOOLSSHPUBKEY@:${nodepool_ssh_pubkey}:g" ${tfVarsFiletfVarsFile}
-    sed -i -e "s:@NODEPOOLSSHPK@:${nodepool_ssh_pk}:g" ${tfVarsFiletfVarsFile}
+    sed -i -e "s:@NODEPOOLSSHPUBKEY@:${nodepool_ssh_pubkeypath}:g" ${tfVarsFiletfVarsFile}
+    sed -i -e "s:@NODEPOOLSSHPK@:${nodepool_ssh_pkpath}:g" ${tfVarsFiletfVarsFile}
     sed -i -e "s:@REGION@:${region}:g" ${tfVarsFiletfVarsFile}
     echo "Generated TFVars file [${tfVarsFiletfVarsFile}]"
 }
@@ -152,7 +152,8 @@ private_subnet_ocid=$(prop 'private.subnet.ocid')
 k8s_version=$(prop 'k8s.version')
 nodepool_shape=$(prop 'nodepool.shape')
 nodepool_imagename=$(prop 'nodepool.imagename')
-nodepool_ssh_pubkey=$(prop 'nodepool.ssh.pubkey')
+nodepool_ssh_pubkeypath=$(prop 'nodepool.ssh.pubkeypath')
+nodepool_ssh_pkpath=$(prop 'nodepool.ssh.pkpath')
 region=$(prop 'region')
 terraformDir=$(prop 'terraform.installdir')
 
