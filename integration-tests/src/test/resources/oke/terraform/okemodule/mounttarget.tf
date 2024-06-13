@@ -2,7 +2,7 @@
 # Copyright (c)  2024, Oracle and/or its affiliates.
 # Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 */
-resource "oci_file_storage_mount_target" "okemar_mount_target" {
+resource "oci_file_storage_mount_target" "oketest_mount_target" {
   #Required
   availability_domain = var.availability_domain
 
