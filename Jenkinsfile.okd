@@ -36,7 +36,6 @@ pipeline {
 
         okdkub = 'okdconfig'
 
-
         start_time = sh(script: 'date +"%Y-%m-%d %H:%M:%S"', returnStdout: true).trim()
         wle_download_url="https://github.com/oracle/weblogic-logging-exporter/releases/latest"
     }
@@ -202,7 +201,6 @@ pipeline {
                 }
 
                 stage('Build WebLogic Kubernetes Operator') {
-
                     steps {
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
                                                     sh "mvn -DtrimStackTrace=false clean install"
@@ -406,7 +404,7 @@ pipeline {
                             echo "-Dwko.it.grafana.chart.version=\"${GRAFANA_CHART_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
                             echo "-Dwko.it.collect.logs.on.success=\"${COLLECT_LOGS_ON_SUCCESS}\""                       >> ${WORKSPACE}/.mvn/maven.config
                             echo "-Dwko.it.remoteconsole.version=\"${REMOTECONSOLE_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
-				            echo "-DOPERATOR_LOG_LEVEL=\"${OPERATOR_LOG_LEVEL}\""                                        >> ${WORKSPACE}/.mvn/maven.config
+			    echo "-DOPERATOR_LOG_LEVEL=\"${OPERATOR_LOG_LEVEL}\""                                        >> ${WORKSPACE}/.mvn/maven.config
 
                             echo "${WORKSPACE}/.mvn/maven.config contents:"
                             cat "${WORKSPACE}/.mvn/maven.config"
@@ -437,7 +435,7 @@ pipeline {
                                     KUBERNETES_CLI=${KUBERNETES_CLI:-kubectl}
                                     ${KUBERNETES_CLI} get nodes -o wide
 
-				                    echo "K8S_NODEPORT_HOST:" $K8S_NODEPORT_HOST
+				    echo "K8S_NODEPORT_HOST:" $K8S_NODEPORT_HOST
 
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export BASE_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
