@@ -121,7 +121,7 @@ module "c1" {
   drg_display_name = var.cluster_name
 
 
-  vcn_cidrs     = [lookup(lookup(var.clusters, var.cluster_name), "vcn")]
+  vcn_cidrs     = [lookup(lookup(var.clusters, "c1"), "vcn")]
   vcn_name      = "VCN-wktiso1"
 
   #subnets
@@ -171,7 +171,7 @@ module "c1" {
   control_plane_is_public     = true
   control_plane_allowed_cidrs = [local.anywhere]
   kubernetes_version          = var.kubernetes_version
-  services_cidr               = lookup(lookup(var.clusters, var.cluster_name), "services")
+  services_cidr               = lookup(lookup(var.clusters, "c1"), "services")
 
 
   # node pools
