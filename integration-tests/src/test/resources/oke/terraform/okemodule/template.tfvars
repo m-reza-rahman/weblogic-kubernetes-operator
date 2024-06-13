@@ -23,6 +23,9 @@
  control_plane_subnet_id = "@PUBSUBNETOCID@"
  pub_lb_id = "@PUBSUBNETOCID@"
  worker_subnet_id = "@PRIVATESUBNETOCID@"
+
+#MountTarget
+mount_target_ocid="@MOUNTTARGETOCID@"
 #
 # # ssh
  ssh_private_key_path = "@NODEPOOLSSHPK@"
