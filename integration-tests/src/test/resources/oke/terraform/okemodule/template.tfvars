@@ -35,7 +35,7 @@
    c1 = { region = "phoenix", vcn = "10.1.0.0/16", pods = "10.201.0.0/16", services = "10.101.0.0/16", enabled = true }
      }
 #
-     kubernetes_version = "v@OKEK8SVERSION@"
+     kubernetes_version = "@OKEK8SVERSION@"
 #
      cluster_type = "basic"
 #
