@@ -195,26 +195,6 @@ module "c1" {
   }
 }
 
-#resource "null_resource" "create_local_kubeconfig" {
-#  provisioner "local-exec" {
-#    command = "rm -rf generated"
-#  }
-
-#  provisioner "local-exec" {
-#    command = "mkdir generated"
-#  }
-
-#  provisioner "local-exec" {
-#    command = "touch generated/kubeconfig"
-#  }
-#}
-
-#resource "local_file" "kube_config_file" {
-#  content         = data.oci_containerengine_cluster_kube_config.kube_config.content
-#  depends_on      = [null_resource.create_local_kubeconfig, oci_containerengine_cluster.k8s_cluster]
-#  filename        = "${path.module}/generated/kubeconfig"
-#  file_permission = "0600"
-#}
 
 resource "local_file" "test_kube_config_file" {
   content  = data.oci_containerengine_cluster_kube_config.kube_config.content 
