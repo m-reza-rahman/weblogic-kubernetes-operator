@@ -282,8 +282,8 @@ pipeline {
                         ]) {
 
                            sh '''
-                               export NO_PROXY=${env.OKD_IP},$NO_PROXY
-                               export no_proxy=${env.OKD_IP},$no_proxy
+                               export NO_PROXY=${OKD_IP},$NO_PROXY
+                               export no_proxy=${OKD_IP},$no_proxy
 
                                echo "NO_PROXY:" $NO_PROXY
                                echo "no_proxy:" $no_proxy
@@ -366,7 +366,7 @@ pipeline {
                   
                             export PATH=${runtime_path}
                             export OKD=true
-                            export NFS_SERVER=${env.OKD_NFS_SERVER}
+                            export NFS_SERVER=${nfs_server}
                             echo "NFS server is: " $NFS_SERVER
                             export pv_root="/export/wls"
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
@@ -429,7 +429,7 @@ pipeline {
 
                                     export PATH=${runtime_path}
                                     export OKD="true"
-                                    export NFS_SERVER=${env.OKD_NFS_SERVER}
+                                    export NFS_SERVER=${nfs_server}
                                     echo "NFS_SERVER: " $NFS_SERVER
                                     export pv_root="/export/wls"
 
