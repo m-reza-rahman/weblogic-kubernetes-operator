@@ -32,7 +32,8 @@ pipeline {
         outdir = "${WORKSPACE}/staging"
         result_root = "${outdir}/wl_k8s_test_results"
         pv_root = "/export/wls"
-        NFS_SERVER="10.196.1.3"
+        nfs_server = "${env.OKD_NFS_SERVER}"
+        okd_ip = "${env.OKD_IP}"
 
         okdkub = 'okdconfig'
 
@@ -99,11 +100,11 @@ pipeline {
         )
         string(name: 'WDT_DOWNLOAD_URL',
                description: 'URL to download WDT.',
-               //defaultValue: 'https://github.com/oracle/weblogic-deploy-tooling/releases/latest'
+               defaultValue: 'https://github.com/oracle/weblogic-deploy-tooling/releases/latest'
         )
         string(name: 'WIT_DOWNLOAD_URL',
                description: 'URL to download WIT.',
-               //defaultValue: 'https://github.com/oracle/weblogic-image-tool/releases/latest'
+               defaultValue: 'https://github.com/oracle/weblogic-image-tool/releases/latest'
         )
         string(name: 'REPO_REGISTRY',
                description: '',
@@ -281,8 +282,8 @@ pipeline {
                         ]) {
 
                            sh '''
-                               export NO_PROXY="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
-                               export no_proxy="api.c1.okd.100-105-4-9.nip.io:6443",$no_proxy
+                               export NO_PROXY=${env.OKD_IP},$NO_PROXY
+                               export no_proxy=${env.OKD_IP},$no_proxy
 
                                echo "NO_PROXY:" $NO_PROXY
                                echo "no_proxy:" $no_proxy
@@ -365,7 +366,8 @@ pipeline {
                   
                             export PATH=${runtime_path}
                             export OKD=true
-                            export NFS_SERVER="10.196.1.3"
+                            export NFS_SERVER=${env.OKD_NFS_SERVER}
+                            echo "NFS server is: " $NFS_SERVER
                             export pv_root="/export/wls"
                             mkdir -m777 -p "${WORKSPACE}/.mvn"
                             touch ${WORKSPACE}/.mvn/maven.config
@@ -418,15 +420,16 @@ pipeline {
                             ]) {
                                 sh '''
 
-                                    export NO_PROXY="api.c1.okd.100-105-4-9.nip.io:6443",$NO_PROXY
-                                    export no_proxy="api.c1.okd.100-105-4-9.nip.io:6443",$no_proxy
+                                    export NO_PROXY=${env.OKD_IP},$NO_PROXY
+                                    export no_proxy=${env.OKD_IP},$no_proxy
 
+               
                                     echo "NO_PROXY:" $NO_PROXY
                                     echo "no_proxy:" $no_proxy
 
                                     export PATH=${runtime_path}
                                     export OKD="true"
-                                    export NFS_SERVER="10.196.1.3"
+                                    export NFS_SERVER=${env.OKD_NFS_SERVER}
                                     export pv_root="/export/wls"
 
                                     export KUBECONFIG=${KUBECONFIG_FILE}
