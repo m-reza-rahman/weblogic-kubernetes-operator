@@ -1065,7 +1065,17 @@ public class CommonMiiTestUtils {
         expectedStatusCode);
   }
 
-  private static String readRuntimeResource(String adminSvcExtHost, String domainNamespace,
+
+  /**
+   * Use REST APIs to check the application runtime mbean from the WebLogic server.
+   * @param adminSvcExtHost Used only in OKD env - this is the route host created for AS external service
+   * @param domainNamespace Kubernetes namespace that the domain is hosted
+   * @param adminServerPodName Name of the admin server pod to which the REST requests should be sent to
+   * @param resourcePath resource path
+   * @param callerName caller name
+   * @return  the expected response
+   */
+  public static String readRuntimeResource(String adminSvcExtHost, String domainNamespace,
       String adminServerPodName, String resourcePath, String callerName) {
     LoggingFacade logger = getLogger();
     String returnString = null;
