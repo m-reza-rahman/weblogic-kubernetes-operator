@@ -160,11 +160,6 @@ class ItFmwDynamicDomainInPV {
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
       String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
       ingressIP = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-      Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
-      clusterNameMsPortMap.put(clusterName, managedServerPort);
-      ingressHostList
-          = createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
-          false, nginxHelmParams.getIngressClassName(), true, 7001);
     }
 
   }
@@ -180,6 +175,13 @@ class ItFmwDynamicDomainInPV {
     // create FMW dynamic domain and verify
     createFmwDomainAndVerify();
     verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
+    if (OKE_CLUSTER_PRIVATEIP) {
+      Map<String, Integer> clusterNameMsPortMap = new HashMap<>();
+      clusterNameMsPortMap.put(clusterName, managedServerPort);
+      ingressHostList
+          = createIngressForDomainAndVerify(domainUid, domainNamespace, 0, clusterNameMsPortMap,
+          false, nginxHelmParams.getIngressClassName(), true, 7001);
+    }
     // Expose the admin service external node port as  a route for OKD
     adminSvcExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
     if (TestConstants.KIND_CLUSTER
