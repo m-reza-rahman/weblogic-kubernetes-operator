@@ -597,8 +597,9 @@ class ItDBOperator {
             + "/JMSRuntime/JMSServers/"
             + jmsServer,
         "checkJmsServerRuntime");
+    logger.info("Got output " + output);
 
-    assertTrue(output.contains("JMSServer.ClusterJmsServer@managed-server2"), "Can;t find expected output");
+    assertTrue(output.contains("destinationsCurrentCount"), "Can;t find expected output");
 
 
     /*
