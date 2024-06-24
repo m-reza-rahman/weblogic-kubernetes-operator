@@ -588,19 +588,6 @@ class ItDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkJmsServerRuntime(String jmsServer, String managedServer) {
-    String output = readRuntimeResource(
-        adminSvcExtHost,
-        wlsDomainNamespace,
-        wlsAdminServerPodName,
-        "/management/weblogic/latest/domainRuntime/serverRuntimes/"
-            + managedServer
-            + "/JMSRuntime/JMSServers/"
-            + jmsServer,
-        "checkJmsServerRuntime");
-    logger.info("Got output " + output);
-
-    assertTrue(output.contains("destinationsCurrentCount"), "Can;t find expected output");
-
 
     /*
     ExecResult result = null;
@@ -622,13 +609,29 @@ class ItDBOperator {
         .append(" -w %{http_code});")
         .append("echo ${status}");
     logger.info("checkJmsServerRuntime: curl command {0}", new String(curlString));
+    */
     testUntil(
-        assertDoesNotThrow(() -> () -> exec(curlString.toString(), true).stdout().contains("200")),
+        assertDoesNotThrow(() -> () -> getJMSRunTimeOutput(jmsServer,
+            managedServer).contains("destinationsCurrentCount")),
         logger,
         "JMS Server Service to migrate");
 
-     */
+
     return true;
+  }
+
+  private String getJMSRunTimeOutput(String jmsServer, String managedServer) {
+    String output = readRuntimeResource(
+        adminSvcExtHost,
+        wlsDomainNamespace,
+        wlsAdminServerPodName,
+        "/management/weblogic/latest/domainRuntime/serverRuntimes/"
+            + managedServer
+            + "/JMSRuntime/JMSServers/"
+            + jmsServer,
+        "checkJmsServerRuntime");
+    logger.info("Got output " + output);
+    return output;
   }
 
   /*
