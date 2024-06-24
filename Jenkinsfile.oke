@@ -342,7 +342,6 @@ pipeline {
 
                         #################
                         echo "Generating property file oci.prop for terraform scripts"
-			wkotest_ssh_pubcert=${ssh_pubkey} 
 
 cat > $OCI_PROP_FILE <<EOF
 
