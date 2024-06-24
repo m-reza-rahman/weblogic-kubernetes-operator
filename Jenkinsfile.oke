@@ -64,7 +64,8 @@ pipeline {
         kubeconfig_file = "${WORKSPACE}/terraform/${CLUSTER_NAME}_kubeconfig"
         availability_domain = "${env.JOB_NAME == 'wko-oke-nightly-parallel' ? 'mFEn:PHX-AD-1' : 'mFEn:PHX-AD-1'}"
         //oke_run = "${env.JOB_NAME == 'wko-oke-nightly' ? 'okeint' : 'okeintdev'}"
-        oke_run = "okemodule"
+        //oke_run = "okemodule"
+        oke_run = "okeintdev"
 
     }
 
