@@ -1556,7 +1556,7 @@ class ItIntrospectVersion {
     }
   }
   
-  private static File createWdtPropertyFile(String wlsModelFilePrefix, String nodePortHost, int t3Port) {
+  public static File createWdtPropertyFile(String wlsModelFilePrefix, String nodePortHost, int t3Port) {
 
     // create property file used with domain model file
     Properties p = new Properties();
