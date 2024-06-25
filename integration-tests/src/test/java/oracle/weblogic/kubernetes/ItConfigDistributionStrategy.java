@@ -144,7 +144,7 @@ class ItConfigDistributionStrategy {
   final String adminServerName = "admin-server";
   final int adminPort = 7001;
   final String adminServerPodName = domainUid + "-" + adminServerName;
-  final String managedServerNameBase = "managed-server-";
+  final String managedServerNameBase = "managed-server";
   int t3ChannelPort;
   final String pvName = getUniqueName(domainUid + "-pv-");
   final String pvcName = getUniqueName(domainUid + "-pvc-");
