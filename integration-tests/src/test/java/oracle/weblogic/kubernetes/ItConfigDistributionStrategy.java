@@ -144,8 +144,7 @@ class ItConfigDistributionStrategy {
   final String adminServerName = "admin-server";
   final int adminPort = 7001;
   final String adminServerPodName = domainUid + "-" + adminServerName;
-  final String managedServerNameBase = "ms-";
-  final int managedServerPort = 8001;
+  final String managedServerNameBase = "managed-server-";
   int t3ChannelPort;
   final String pvName = getUniqueName(domainUid + "-pv-");
   final String pvcName = getUniqueName(domainUid + "-pvc-");
@@ -157,12 +156,8 @@ class ItConfigDistributionStrategy {
   String overridecm = "configoverride-cm";
   LinkedHashMap<String, OffsetDateTime> podTimestamps;
 
-  static int mysqlDBPort1;
-  static int mysqlDBPort2;
   static String dsUrl1;
   static String dsUrl2;
-  static String mysql1SvcEndpoint = null;
-  static String mysql2SvcEndpoint = null;
 
   String dsName0 = "JdbcTestDataSource-0";
   String dsName1 = "JdbcTestDataSource-1";
