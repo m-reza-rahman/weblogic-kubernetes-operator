@@ -153,7 +153,7 @@ class ItKubernetesDomainEvents {
   static final String adminServerName = "admin-server";
   static final String domainUid = "k8seventsdomain";
   static final String adminServerPodName = domainUid + "-" + adminServerName;
-  static final String managedServerNameBase = "ms-";
+  static final String managedServerNameBase = "managed-server";
   static String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
   static final int managedServerPort = 8001;
   static int replicaCount = 2;
