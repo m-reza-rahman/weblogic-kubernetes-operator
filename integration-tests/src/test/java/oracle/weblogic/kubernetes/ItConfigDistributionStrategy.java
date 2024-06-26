@@ -139,7 +139,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @DisplayName("Verify the overrideDistributionStrategy applies the overrides accordingly to the value set")
 @Tag("kind-parallel")
 @Tag("okd-wls-mrg")
-@Tag("oke-sequential")
+@Tag("oke-gate")
 @IntegrationTest
 @Tag("olcne-mrg")
 class ItConfigDistributionStrategy {
@@ -1345,7 +1345,7 @@ class ItConfigDistributionStrategy {
         "Getting Nginx loadbalancer service node port failed");
 
     hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + ":" + nginxNodePort;
+      ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + ":" + nginxNodePort;
     return hostAndPort;
   }
 }
