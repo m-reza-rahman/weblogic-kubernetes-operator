@@ -588,35 +588,11 @@ class ItDBOperator {
    * @returns true if MBean is found otherwise false
    **/
   private boolean checkJmsServerRuntime(String jmsServer, String managedServer) {
-
-    /*
-    ExecResult result = null;
-    StringBuffer curlString = new StringBuffer("status=$(curl --user "
-        + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT + " ");
-
-    hostAndPort = assignHostAndPort();
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      curlString.append(" -H 'host: " + hostHeader + "' ");
-    }
-    curlString.append("http://" + hostAndPort)
-        .append("/management/weblogic/latest/domainRuntime/serverRuntimes/")
-        .append(managedServer)
-        .append("/JMSRuntime/JMSServers/")
-        .append(jmsServer)
-        .append(" --silent --show-error ")
-        .append(" -o /dev/null")
-        .append(" -w %{http_code});")
-        .append("echo ${status}");
-    logger.info("checkJmsServerRuntime: curl command {0}", new String(curlString));
-    */
     testUntil(
         assertDoesNotThrow(() -> () -> getJMSRunTimeOutput(jmsServer,
             managedServer).contains("destinationsCurrentCount")),
         logger,
         "JMS Server Service to migrate");
-
-
     return true;
   }
 
