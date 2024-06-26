@@ -1142,7 +1142,7 @@ class ItIntrospectVersion {
   }
   
   private static void createDomain() {    
-    String uniqueDomainHome = "/shared/" + introDomainNamespace + "/domains";
+    String uniqueDomainHome = "/shared/" + introDomainNamespace + "/domains/";
 
     // create WebLogic domain credential secret
     createSecretWithUsernamePassword(wlSecretName, introDomainNamespace,
@@ -1177,7 +1177,7 @@ class ItIntrospectVersion {
       configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
     } else {
       configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest, storageClassName,
-          ItIntrospectVersion.class.getName());
+          ItIntrospectVersion.class.getSimpleName());
     }
     configuration.getInitializeDomainOnPV().domain(new DomainOnPV()
         .createMode(CreateIfNotExists.DOMAIN)
