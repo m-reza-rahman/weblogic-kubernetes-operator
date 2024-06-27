@@ -367,7 +367,8 @@ class ItKubernetesDomainEvents {
         + " Changed and Failed events are logged");
     patchStr = "[{\"op\": \"replace\", "
         + "\"path\": \"/spec/domainHome\", \"value\": \"" + originalDomainHome + "bad\"},"
-        + "{\"op\": \"replace\", \"path\": \"/spec/serverStartPolicy\", \"value\": \"IfNeeded\"}]";
+        + "{\"op\": \"replace\", \"path\": \"/spec/serverStartPolicy\", \"value\": \"IfNeeded\"},"
+        + "{\"op\": \"remove\", \"path\": \"/spec/configuration/initializeDomainOnPV\"}]";
     logger.info("PatchStr for domainHome: {0}", patchStr);
 
     patch = new V1Patch(patchStr);
