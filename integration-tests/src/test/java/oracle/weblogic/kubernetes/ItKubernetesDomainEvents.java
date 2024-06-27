@@ -868,14 +868,13 @@ class ItKubernetesDomainEvents {
             .configuration(configuration)));
     domain.spec().setImagePullSecrets(secrets);
 
-    // create cluster resource for the domain
-    String clusterResName = domainUid + "-" + cluster1Name;
-    if (!Cluster.doesClusterExist(clusterResName, CLUSTER_VERSION, domainNamespace)) {
-      ClusterResource cluster = createClusterResource(clusterResName,
+    // create cluster resource for the domain    
+    if (!Cluster.doesClusterExist(cluster1Name, CLUSTER_VERSION, domainNamespace)) {
+      ClusterResource cluster = createClusterResource(cluster1Name,
           cluster1Name, domainNamespace, replicaCount);
       createClusterAndVerify(cluster);
     }
-    domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
+    domain.getSpec().withCluster(new V1LocalObjectReference().name(cluster1Name));
 
     createDomainAndVerify(domain, domainNamespace);
     return domain;
