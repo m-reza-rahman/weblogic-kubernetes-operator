@@ -5,6 +5,7 @@ package oracle.weblogic.kubernetes.actions.impl;
 
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.ClusterList;
 import oracle.weblogic.domain.ClusterResource;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
@@ -90,6 +91,13 @@ public class Cluster {
       return false;
     }
 
+    try {
+      ClusterResource clusterCustomResource = getClusterCustomResource(clusterRes, namespace);
+      logger.info(Yaml.dump(clusterCustomResource));
+      logger.info("Cluster replica size : {0}", clusterCustomResource.getSpec().getReplicas());
+    } catch (ApiException ex) {
+      logger.info(ex.getLocalizedMessage());
+    }
     // construct the patch string for scaling the cluster
     StringBuffer patchStr = new StringBuffer("[{")
         .append("\"op\": \"replace\", ")
