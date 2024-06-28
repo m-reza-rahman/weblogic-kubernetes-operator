@@ -172,7 +172,6 @@ class ItKubernetesDomainEvents {
   static final String adminServerPodName = domainUid + "-" + adminServerName;
   static final String managedServerNameBase = "managed-server";
   static String managedServerPodNamePrefix = domainUid + "-" + managedServerNameBase;
-  static final int managedServerPort = 8001;
   static int replicaCount = 2;
   String clusterRes2Name = cluster2Name;
   String clusterRes1Name = cluster1Name;
@@ -440,7 +439,7 @@ class ItKubernetesDomainEvents {
   void testDomainK8sEventsScalePastMaxAndChangeIntrospectVersion() {
     OffsetDateTime timestamp = now();
     try {
-      removeReplicasSettingAndVerify(domainUid, cluster1Name, domainNamespace3, replicaCount,
+      removeReplicasSettingAndVerify(domainUid, cluster1Name, domainNamespace3, replicaCount - 1,
           managedServerPodNamePrefix);
 
       String introspectVersion = assertDoesNotThrow(() -> getNextIntrospectVersion(domainUid, domainNamespace3));
@@ -453,7 +452,6 @@ class ItKubernetesDomainEvents {
       logger.info("Updating introspect version  using patch string: {0}",  patchStr);
       assertTrue(patchDomainCustomResource(domainUid, domainNamespace3, new V1Patch(patchStr),
           V1Patch.PATCH_FORMAT_JSON_PATCH), "Patch domain did not fail as expected");
-
 
       logger.info("verify the Failed event is generated");
       checkFailedEvent(opNamespace, domainNamespace3, domainUid, REPLICAS_TOO_HIGH_ERROR, "Warning", timestamp);
@@ -509,13 +507,13 @@ class ItKubernetesDomainEvents {
           + "{\"op\": \"replace\", \"path\": \"/spec/serverPod/volumes/0/name\", \"value\": \"sample-pv\"},"
           + "{\"op\": \"replace\", \"path\": "
           + "\"/spec/serverPod/volumes/0/persistentVolumeClaim/claimName\", \"value\": \"sample-pvc\"},"
-          + "{\"op\": \"add\", \"path\": \"/spec/introspectVersion\", \"value\": \"" + introspectVersion + "\"}"
-          + "]";
+          + "{\"op\": \"add\", \"path\": \"/spec/introspectVersion\", \"value\": \"" + introspectVersion + "\"},"
+          + "{\"op\": \"remove\", \"path\": \"/spec/configuration/initializeDomainOnPV\"}]";
       logger.info("Updating pv/pvcs in domain resource using patch string: {0}", patchStr);
       V1Patch patch = new V1Patch(patchStr);
       assertTrue(patchDomainCustomResource(domainUid, domainNamespace3, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
           "Failed to patch domain");
-
+      
       logger.info("verify the Failed event is generated");
       checkEvent(opNamespace, domainNamespace3, domainUid, DOMAIN_FAILED, "Warning", timestamp);
     } finally {
