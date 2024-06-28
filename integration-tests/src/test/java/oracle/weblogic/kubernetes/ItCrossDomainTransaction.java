@@ -1,4 +1,4 @@
-// Copyright (c) 2020, 2024, Oracle and/or its affiliates.
+// Copyright (c) 2020, 2022, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -6,30 +6,18 @@ package oracle.weblogic.kubernetes;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
-import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
-import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
-import io.kubernetes.client.openapi.models.V1IngressBackend;
-import io.kubernetes.client.openapi.models.V1IngressRule;
-import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
-import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.domain.AdminServer;
 import oracle.weblogic.domain.AdminService;
 import oracle.weblogic.domain.Channel;
@@ -38,50 +26,41 @@ import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
-import oracle.weblogic.kubernetes.actions.impl.NginxParams;
-import oracle.weblogic.kubernetes.actions.impl.Service;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
+import oracle.weblogic.kubernetes.assertions.TestAssertions;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
-import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
-import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.OKD;
-import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
-import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
+import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_SLIM;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPodIP;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
-import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsActive;
 import static oracle.weblogic.kubernetes.utils.BuildApplication.buildApplication;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.exeAppInServerPod;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
+import static oracle.weblogic.kubernetes.utils.DbUtils.getDBNodePort;
+import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFolder;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
@@ -89,17 +68,13 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushImageToRegistry;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAndRetryIfFail;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -109,7 +84,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @DisplayName("Verify cross domain transaction is successful")
 @IntegrationTest
-@Tag("oke-gate")
+@Tag("olcne")
+@Tag("oke-parallel")
 @Tag("kind-parallel")
 @Tag("okd-wls-srg")
 class ItCrossDomainTransaction {
@@ -133,27 +109,21 @@ class ItCrossDomainTransaction {
   private static String domainUid2 = "domain2";
   private static int  domain1AdminServiceNodePort = -1;
   private static int  admin2ServiceNodePort = -1;
-  private static String adminServerName = "admin-server";
-  private static String domain1AdminServerPodName = domainUid1 + "-" + adminServerName;
+  private static String domain1AdminServerPodName = domainUid1 + "-admin-server";
   private final String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
-  private static String domain2AdminServerPodName = domainUid2 + "-" + adminServerName;
+  private static String domain2AdminServerPodName = domainUid2 + "-admin-server";
   private final String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
-  private static final String SYSPASSWORD = "Oradoc_db1";
-  private static String dbName = "my-oraclecxt-sidb";
   private static final String ORACLEDBURLPREFIX = "oracledb.";
   private static String ORACLEDBSUFFIX = null;
   private static LoggingFacade logger = null;
-  private static String dbUrl;
-  private static String hostHeader;
-  private static Map<String, String> headers = null;
+  static String dbUrl;
+  static int dbNodePort;
   private static String domain1AdminExtSvcRouteHost = null;
   private static String domain2AdminExtSvcRouteHost = null;
   private static String adminExtSvcRouteHost = null;
   private static String hostAndPort = null;
-  
-  private static String nginxNamespace = null;
-  private static NginxParams nginxHelmParams = null;
-  private static int nginxNodePort;
+  private static String dbPodIP = null;
+  private static int dbPort = 1521;
 
   /**
    * Install Operator.
@@ -161,7 +131,7 @@ class ItCrossDomainTransaction {
    *     JUnit engine parameter resolution mechanism
    */
   @BeforeAll
-  public static void initAll(@Namespaces(4) List<String> namespaces) throws UnknownHostException {
+  public static void initAll(@Namespaces(3) List<String> namespaces) {
     logger = getLogger();
 
     // get a new unique opNamespace
@@ -177,19 +147,25 @@ class ItCrossDomainTransaction {
     assertNotNull(namespaces.get(2), "Namespace list is null");
     domain2Namespace = namespaces.get(2);
 
-    // get a unique Nginx namespace
-    logger.info("Assign a unique namespace for Nginx");
-    assertNotNull(namespaces.get(3), "Namespace list is null");
-    nginxNamespace = namespaces.get(3);
-
     final int dbListenerPort = getNextFreePort();
     ORACLEDBSUFFIX = ".svc.cluster.local:" + dbListenerPort + "/devpdb.k8s";
     dbUrl = ORACLEDBURLPREFIX + domain2Namespace + ORACLEDBSUFFIX;
     createBaseRepoSecret(domain2Namespace);
 
-    logger.info("Create Oracle DB in namespace: {0} ", domain2Namespace);
-    dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, SYSPASSWORD, domain2Namespace));    
+    //Start oracleDB
+    logger.info("Start Oracle DB with namespace: {0}, dbListenerPort:{1}",
+        domain2Namespace, dbListenerPort);
+    assertDoesNotThrow(
+        () -> startOracleDB(DB_IMAGE_TO_USE_IN_SPEC, getNextFreePort(), domain2Namespace, dbListenerPort),
+        "Failed to start Oracle DB");
+    dbNodePort = getDBNodePort(domain2Namespace, "oracledb");
+    logger.info("DB Node Port = {0}", dbNodePort);
 
+    dbPodIP = assertDoesNotThrow(
+        () -> getPodIP(domain2Namespace, "", "oracledb"),
+        String.format("Get pod IP address failed with ApiException for oracledb in namespace %s",
+            domain2Namespace));
+    logger.info("db Pod IP {0} ", dbPodIP);
     // Now that we got the namespaces for both the domains, we need to update the model properties
     // file with the namespaces. For a cross-domain transaction to work, we need to have the externalDNSName
     // set in the config file. Cannot set this after the domain is up since a server restart is
@@ -199,13 +175,6 @@ class ItCrossDomainTransaction {
 
     // install and verify operator
     installAndVerifyOperator(opNamespace, domain1Namespace, domain2Namespace);
-
-    if (OKE_CLUSTER) {
-      logger.info("Installing Nginx controller using helm");
-      // install and verify Nginx
-      nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
-    }
-
     buildApplicationsAndDomains();
   }
 
@@ -255,12 +224,15 @@ class ItCrossDomainTransaction {
 
     FileOutputStream out = new FileOutputStream(PROPS_TEMP_DIR + "/" + propFileName);
     props.setProperty("NAMESPACE", domainNamespace);
-    props.setProperty("PDBCONNECTSTRING", dbUrl);
+    //props.setProperty("K8S_NODEPORT_HOST", K8S_NODEPORT_HOST);
+    //props.setProperty("DBPORT", Integer.toString(dbNodePort));
+    props.setProperty("K8S_NODEPORT_HOST", dbPodIP);
+    props.setProperty("DBPORT", Integer.toString(dbPort));
     props.store(out, null);
     out.close();
   }
 
-  private static void buildApplicationsAndDomains() throws UnknownHostException {
+  private static void buildApplicationsAndDomains() {
 
     //build application archive
 
@@ -390,21 +362,7 @@ class ItCrossDomainTransaction {
         "Getting admin server node port failed");
     assertNotEquals(-1, admin2ServiceNodePort, "admin server default node port is not valid");
 
-    if (OKE_CLUSTER) {
-      createNginxIngressPathRoutingRules();
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-    } else {
-      hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        hostHeader = createIngressHostRouting(domain1Namespace, domainUid1, adminServerName, 7001);
-        hostAndPort = formatIPv6Host(InetAddress.getLocalHost().getHostAddress())
-            + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
-        headers = new HashMap<>();
-        headers.put("host", hostHeader);
-      }
-    }
+    hostAndPort = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
   }
 
   /*
@@ -425,17 +383,23 @@ class ItCrossDomainTransaction {
    */
   @Test
   @DisplayName("Check cross domain transaction works")
-  void testCrossDomainTransaction() throws IOException, InterruptedException {
-    String url = String.format("http://%s/TxForward/TxForward?urls=t3://%s.%s:7001,"
-        + "t3://%s1.%s:8001,t3://%s1.%s:8001,t3://%s2.%s:8001",
+  void testCrossDomainTransaction() {
+
+    String curlRequest = String.format("curl -v --show-error --noproxy '*' "
+            + "http://%s/TxForward/TxForward?urls=t3://%s.%s:7001,t3://%s1.%s:8001,t3://%s1.%s:8001,t3://%s2.%s:8001",
         hostAndPort, domain1AdminServerPodName, domain1Namespace,
         domain1ManagedServerPrefix, domain1Namespace, domain2ManagedServerPrefix, domain2Namespace,
         domain2ManagedServerPrefix, domain2Namespace);
 
-    HttpResponse<String> response;
-    response = OracleHttpClient.get(url, headers, true);
-    assertEquals(200, response.statusCode(), "Didn't get the 200 HTTP status");
-    assertTrue(response.body().contains("Status=Committed"), "crossDomainTransaction failed");
+    ExecResult result = null;
+    logger.info("curl command {0}", curlRequest);
+    result = assertDoesNotThrow(
+        () -> exec(curlRequest, true));
+    if (result.exitValue() == 0) {
+      logger.info("\n HTTP response is \n " + result.stdout());
+      logger.info("curl command returned {0}", result.toString());
+      assertTrue(result.stdout().contains("Status=Committed"), "crossDomainTransaction failed");
+    }
   }
 
   /**
@@ -453,17 +417,22 @@ class ItCrossDomainTransaction {
    */
   @Test
   @DisplayName("Check cross domain transaction with TMAfterTLogBeforeCommitExit property commits")
-  @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER", matches = "true")
-  void testCrossDomainTransactionWithFailInjection() throws IOException, InterruptedException {
+  void testCrossDomainTransactionWithFailInjection() {
 
-    String url = String.format("http://%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
+    String curlRequest = String.format("curl -v --show-error --noproxy '*' "
+            + "http://%s/cdttxservlet/cdttxservlet?namespaces=%s,%s",
         hostAndPort, domain1Namespace, domain2Namespace);
 
-    HttpResponse<String> response;
-    response = OracleHttpClient.get(url, headers, true);
-    assertEquals(200, response.statusCode(), "Didn't get the 200 HTTP status");
-    assertTrue(response.body().contains("Status=SUCCESS"),
-        "crossDomainTransaction with TMAfterTLogBeforeCommitExit failed");
+    ExecResult result = null;
+    logger.info("curl command {0}", curlRequest);
+    result = assertDoesNotThrow(
+        () -> exec(curlRequest, true));
+    if (result.exitValue() == 0) {
+      logger.info("\n HTTP response is \n " + result.stdout());
+      logger.info("curl command returned {0}", result.toString());
+      assertTrue(result.stdout().contains("Status=SUCCESS"),
+          "crossDomainTransaction with TMAfterTLogBeforeCommitExit failed");
+    }
   }
 
   /**
@@ -484,57 +453,57 @@ class ItCrossDomainTransaction {
    */
   @Test
   @DisplayName("Check cross domain transcated MDB communication ")
-  void testCrossDomainTranscatedMDB() throws IOException, InterruptedException {
+  void testCrossDomainTranscatedMDB() {
 
     // No extra header info
-    String curlHostHeader = "";
-    if (TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      curlHostHeader = "--header 'Host: " + hostHeader + "'";
-    }
     assertTrue(checkAppIsActive(hostAndPort,
-        curlHostHeader, "mdbtopic", "cluster-1",
-        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT),
-        "MDB application can not be activated on domain1/cluster");
+                 "", "mdbtopic","cluster-1",
+                 ADMIN_USERNAME_DEFAULT,ADMIN_PASSWORD_DEFAULT),
+             "MDB application can not be activated on domain1/cluster");
 
     logger.info("MDB application is activated on domain1/cluster");
 
-    String url = String.format("http://%s/jmsservlet/jmstest?"
-        + "url=t3://domain2-cluster-cluster-1.%s:8001&"
-        + "cf=jms.ClusterConnectionFactory&"
-        + "action=send&"
-        + "dest=jms/testCdtUniformTopic",
-        hostAndPort, domain2Namespace);
+    String curlRequest = String.format("curl -v --show-error --noproxy '*' "
+            + "\"http://%s/jmsservlet/jmstest?"
+            + "url=t3://domain2-cluster-cluster-1.%s:8001&"
+            + "cf=jms.ClusterConnectionFactory&"
+            + "action=send&"
+            + "dest=jms/testCdtUniformTopic\"",
+           hostAndPort, domain2Namespace);
 
-    HttpResponse<String> response;
-    response = OracleHttpClient.get(url, headers, true);
-    assertEquals(200, response.statusCode(), "Didn't get the 200 HTTP status");
-    assertTrue(response.body().contains("Sent (10) message"),
-        "Can not send message to remote Distributed Topic");
+    ExecResult result = null;
+    logger.info("curl command {0}", curlRequest);
+    result = assertDoesNotThrow(
+        () -> exec(curlRequest, true));
+    if (result.exitValue() == 0) {
+      logger.info("\n HTTP response is \n " + result.stdout());
+      logger.info("curl command returned {0}", result.toString());
+      assertTrue(result.stdout().contains("Sent (10) message"),
+          "Can not send message to remote Distributed Topic");
+    }
 
     assertTrue(checkLocalQueue(),
-        "Expected number of message not found in Accounting Queue");
+         "Expected number of message not found in Accounting Queue");
   }
 
   private boolean checkLocalQueue() {
-    String url = String.format("http://%s/jmsservlet/jmstest?"
-        + "url=t3://localhost:7001&"
-        + "action=receive&dest=jms.testAccountingQueue",
-        hostAndPort);
+    String curlString = String.format("curl -v --show-error --noproxy '*' "
+            + "\"http://%s/jmsservlet/jmstest?"
+            + "url=t3://localhost:7001&"
+            + "action=receive&dest=jms.testAccountingQueue\"",
+            hostAndPort);
 
-    logger.info("Queue check url {0}", url);
-    testUntil(() -> {
-      HttpResponse<String> response;
-      response = OracleHttpClient.get(url, headers, true);
-      return response.statusCode() == 200 && response.body().contains("Messages are distributed");
-    }, logger, "local queue to be updated");
+    logger.info("curl command {0}", curlString);
+
+    testUntil(
+        () -> exec(new String(curlString), true).stdout().contains("Messages are distributed"),
+        logger,
+        "local queue to be updated");
     return true;
   }
 
-  private static void createDomain(String domainUid,
-                                   String domainNamespace,
-                                   String adminSecretName,
-                                   String domainImage) {
+  private static void createDomain(String domainUid, String domainNamespace, String adminSecretName,
+                            String domainImage) {
     // admin/managed server name here should match with model yaml in WDT_MODEL_FILE
     final String adminServerPodName = domainUid + "-admin-server";
     final String managedServerPrefix = domainUid + "-managed-server";
@@ -570,22 +539,34 @@ class ItCrossDomainTransaction {
           managedServerPrefix + i, domainNamespace);
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
-    
-    if (OKD) {
-      adminExtSvcRouteHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
-      // The fail inject test case, the response to the curl command takes longer than the default timeout of 30s
-      // So, have to increase the proxy timeout for the route
-      String command = "oc -n " + domainNamespace + " annotate route "
-          + getExternalServicePodName(adminServerPodName)
-          + " --overwrite haproxy.router.openshift.io/timeout=600s";
-      logger.info("command to set timeout = {0}", command);
-      assertDoesNotThrow(() -> exec(command, true));
-    }
 
-    logger.info("Validating WebLogic admin server access");
-    String resourcePath = "/weblogic/ready";
-    ExecResult result = exeAppInServerPod(domainNamespace, adminServerPodName, 7001, resourcePath);
-    assertEquals(0, result.exitValue(), "Failed to access WebLogic admin server");
+    adminExtSvcRouteHost = createRouteForOKD(getExternalServicePodName(adminServerPodName), domainNamespace);
+    // The fail inject test case, the response to the curl command takes longer than the default timeout of 30s
+    // So, have to increase the proxy timeout for the route
+    String command = "oc -n " + domainNamespace + " annotate route "
+                      + getExternalServicePodName(adminServerPodName)
+                      + " --overwrite haproxy.router.openshift.io/timeout=600s";
+    logger.info("command to set timeout = {0}", command);
+    assertDoesNotThrow(
+        () -> exec(command, true));
+
+    logger.info("Getting node port");
+    int serviceNodePort = assertDoesNotThrow(() -> getServiceNodePort(domainNamespace,
+        getExternalServicePodName(adminServerPodName), "default"),
+        "Getting admin server node port failed");
+
+    if (!WEBLOGIC_SLIM) {
+      logger.info("Validating WebLogic admin console");
+      testUntil(
+          assertDoesNotThrow(() -> {
+            return TestAssertions.adminNodePortAccessible(serviceNodePort,
+                 ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT, adminExtSvcRouteHost);
+          }, "Access to admin server node port failed"),
+          logger,
+          "Console login validation");
+    } else {
+      logger.info("Skipping WebLogic Console check for Weblogic slim images");
+    }
   }
 
   private static void createDomainResource(String domainUid, String domNamespace, String adminSecretName,
@@ -614,10 +595,9 @@ class ItCrossDomainTransaction {
             .serverPod(new ServerPod()
                 .addEnvItem(new V1EnvVar()
                     .name("JAVA_OPTIONS")
-                    .value("-Dweblogic.transaction.EnableInstrumentedTM=true -Dweblogic.StdoutDebugEnabled=false "
+                    .value("-Dweblogic.transaction.EnableInstrumentedTM=true -Dweblogic.StdoutDebugEnabled=false"
                         + "-Dweblogic.debug.DebugJTAXA=true "
-                        + "-Dweblogic.debug.DebugJTA2PC=true "
-                        + "-Dweblogic.security.remoteAnonymousRMIT3Enabled=true "))
+                        + "-Dweblogic.debug.DebugJTA2PC=true"))
                 .addEnvItem(new V1EnvVar()
                     .name("USER_MEM_ARGS")
                     .value("-Djava.security.egd=file:/dev/./urandom ")))
@@ -625,7 +605,7 @@ class ItCrossDomainTransaction {
                 .adminService(new AdminService()
                     .addChannelsItem(new Channel()
                         .channelName("default")
-                        .nodePort(0))))
+                        .nodePort(getNextFreePort()))))
             .configuration(new Configuration()
                 .model(new Model()
                     .domainType("WLS"))
@@ -639,57 +619,5 @@ class ItCrossDomainTransaction {
     assertTrue(domCreated, String.format("Create domain custom resource failed with ApiException "
         + "for %s in namespace %s", domainUid, domNamespace));
   }
-
-  private static void createNginxIngressPathRoutingRules() {
-    // create an ingress in domain namespace
-    final int ADMIN_SERVER_PORT = 7001;
-    String ingressName = domain1Namespace + "-nginx-path-routing";
-    String ingressClassName = nginxHelmParams.getIngressClassName();
-
-    // create ingress rules for two domains
-    List<V1IngressRule> ingressRules = new ArrayList<>();
-    List<V1HTTPIngressPath> httpIngressPaths = new ArrayList<>();
-
-    V1HTTPIngressPath httpIngressPath = new V1HTTPIngressPath()
-        .path("/")
-        .pathType("Prefix")
-        .backend(new V1IngressBackend()
-            .service(new V1IngressServiceBackend()
-                .name(domainUid1 + "-admin-server")
-                .port(new V1ServiceBackendPort()
-                    .number(ADMIN_SERVER_PORT)))
-        );
-    httpIngressPaths.add(httpIngressPath);
-
-    V1IngressRule ingressRule = new V1IngressRule()
-        .host("")
-        .http(new V1HTTPIngressRuleValue()
-            .paths(httpIngressPaths));
-
-    ingressRules.add(ingressRule);
-
-    createIngressAndRetryIfFail(60, false, ingressName, domain1Namespace, null, ingressClassName, ingressRules, null);
-
-    // check the ingress was found in the domain namespace
-    assertThat(assertDoesNotThrow(() -> listIngresses(domain1Namespace)))
-        .as(String.format("Test ingress %s was found in namespace %s", ingressName, domain1Namespace))
-        .withFailMessage(String.format("Ingress %s was not found in namespace %s", ingressName, domain1Namespace))
-        .contains(ingressName);
-
-    logger.info("ingress {0} was created in namespace {1}", ingressName, domain1Namespace);
-
-    // check the ingress is ready to route the app to the server pod
-    String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    nginxNodePort = assertDoesNotThrow(() -> Service.getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
-        "Getting Nginx loadbalancer service node port failed");
-
-    String hostAndPort = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) != null
-        ? getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace) : K8S_NODEPORT_HOST + ":" + nginxNodePort;
-
-    String curlCmd = "curl -g --silent --show-error --noproxy '*' http://" + hostAndPort
-        + "/weblogic/ready --write-out %{http_code} -o /dev/null";
-
-    logger.info("Executing curl command {0}", curlCmd);
-    assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
-  }
 }
+
