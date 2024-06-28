@@ -1065,7 +1065,6 @@ public class CommonMiiTestUtils {
         expectedStatusCode);
   }
 
-
   /**
    * Use REST APIs to check the application runtime mbean from the WebLogic server.
    * @param adminSvcExtHost Used only in OKD env - this is the route host created for AS external service
