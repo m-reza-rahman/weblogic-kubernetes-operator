@@ -441,6 +441,7 @@ class ItKubernetesDomainEvents {
     try {
       removeReplicasSettingAndVerify(domainUid, cluster1Name, domainNamespace3, replicaCount - 1,
           managedServerPodNamePrefix);
+      checkPodDoesNotExist(managedServerPodNamePrefix + 2, domainUid, domainNamespace3);
 
       String introspectVersion = assertDoesNotThrow(() -> getNextIntrospectVersion(domainUid, domainNamespace3));
       String patchStr
