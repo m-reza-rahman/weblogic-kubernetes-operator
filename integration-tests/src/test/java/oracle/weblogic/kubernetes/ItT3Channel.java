@@ -106,7 +106,7 @@ class ItT3Channel {
 
   // domain constants
   private final String domainUid = "t3channel-domain";
-  private final String clusterName = "cluster-1";
+  private final String clusterName = "mycluster";
   private final int replicaCount = 2;
   private final String adminServerName = ADMIN_SERVER_NAME_BASE;
   private final String adminServerPodName = domainUid + "-" + adminServerName;
