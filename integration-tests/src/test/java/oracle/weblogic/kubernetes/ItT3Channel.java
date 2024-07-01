@@ -331,7 +331,7 @@ class ItT3Channel {
         -> getServicePort(domainNamespace,
               domainUid + "-cluster-" + clusterName, "ms-nap"),
               "Getting Cluster Service nap port failed");
-    assertEquals(8011, napPort, "Nap Service Port is not set to 8011");
+    assertEquals(7110, napPort, "Nap Service Port is not set to 7110");
 
     servicePort = assertDoesNotThrow(()
         -> getServicePort(domainNamespace,
