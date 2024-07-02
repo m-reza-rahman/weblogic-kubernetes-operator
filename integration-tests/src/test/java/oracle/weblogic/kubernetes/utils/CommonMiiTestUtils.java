@@ -1078,7 +1078,7 @@ public class CommonMiiTestUtils {
   public static String readRuntimeResource(String adminSvcExtHost, String domainNamespace,
       String adminServerPodName, String resourcePath, String callerName) {
     LoggingFacade logger = getLogger();
-    String returnString = null;
+    String returnString = "";
     String curlString = null;
 
     if (TestConstants.KIND_CLUSTER
@@ -1106,8 +1106,8 @@ public class CommonMiiTestUtils {
       HttpResponse<String> response;
       try {
         response = OracleHttpClient.get(url, headers, true);
-        assertEquals(200, response.statusCode());
         returnString = response.body();
+        assertEquals(200, response.statusCode());
       } catch (Exception ex) {
         ex.printStackTrace();
       } catch (AssertionError e) {
