@@ -1128,10 +1128,7 @@ public class CommonMiiTestUtils {
       } else {
         int adminServiceNodePort
             = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-        String host = K8S_NODEPORT_HOST;
-        if (host.contains(":")) {
-          host = "[" + host + "]";
-        }
+        String host = formatIPv6Host(K8S_NODEPORT_HOST);
         String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
         logger.info("hostAndPort = {0} ", hostAndPort);
 
@@ -1142,17 +1139,15 @@ public class CommonMiiTestUtils {
             + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
 
         logger.info(callerName + ": curl command {0}", curlString);
-
-        try {
-          String result = exec(curlString, true).stdout();
-          logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
-          returnString = result;
-        } catch (Exception ex) {
-          logger.info(callerName + ": caught unexpected exception {0}", ex);
-        }
+      }
+      try {
+        String result = exec(curlString, true).stdout();
+        logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
+        returnString = result;
+      } catch (Exception ex) {
+        logger.info(callerName + ": caught unexpected exception {0}", ex);
       }
     }
-
     return returnString;
   }
 
@@ -1250,8 +1245,7 @@ public class CommonMiiTestUtils {
       curlString = new StringBuffer("status=$(curl -g --user weblogic:welcome1 http://");
     }
 
-    String host = K8S_NODEPORT_HOST;
-    formatIPv6Host(host);
+    String host = formatIPv6Host(K8S_NODEPORT_HOST);
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
