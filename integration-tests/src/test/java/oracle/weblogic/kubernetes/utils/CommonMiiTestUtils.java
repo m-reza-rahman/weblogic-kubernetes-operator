@@ -1079,7 +1079,6 @@ public class CommonMiiTestUtils {
     LoggingFacade logger = getLogger();
     String returnString = "";
     String curlString = null;
-
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       int port = getServicePort(domainNamespace, adminServerPodName, "internal-t3");
