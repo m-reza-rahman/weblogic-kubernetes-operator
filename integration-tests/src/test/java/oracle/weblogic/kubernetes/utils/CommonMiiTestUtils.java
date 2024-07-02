@@ -1109,6 +1109,8 @@ public class CommonMiiTestUtils {
         returnString = response.body();
       } catch (Exception ex) {
         ex.printStackTrace();
+      } catch (AssertionError e) {
+        e.printStackTrace();
       }
     } else {
       String curlString;

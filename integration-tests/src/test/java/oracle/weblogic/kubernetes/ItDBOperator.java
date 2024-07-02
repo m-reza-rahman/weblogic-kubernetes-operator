@@ -44,6 +44,7 @@ import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
@@ -197,8 +198,7 @@ class ItDBOperator {
     traefikNamespace = namespaces.get(4);
 
     // install and verify Traefik
-    if (!OKD && !(TestConstants.KIND_CLUSTER
-        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT))) {
+    if (OKE_CLUSTER_PRIVATEIP) {
       traefikParams =
           installAndVerifyTraefik(traefikNamespace, 0, 0);
       traefikHelmParams = traefikParams.getHelmParams();
