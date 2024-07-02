@@ -1244,7 +1244,6 @@ public class CommonMiiTestUtils {
     }
 
     String host = formatIPv6Host(K8S_NODEPORT_HOST);
-    
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
 
