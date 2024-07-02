@@ -1140,15 +1140,16 @@ public class CommonMiiTestUtils {
             + ":"
             + ADMIN_PASSWORD_DEFAULT
             + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
-      }
-      logger.info(callerName + ": curl command {0}", curlString);
 
-      try {
-        String result = exec(curlString, true).stdout();
-        logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
-        returnString = result;
-      } catch (Exception ex) {
-        logger.info(callerName + ": caught unexpected exception {0}", ex);
+        logger.info(callerName + ": curl command {0}", curlString);
+
+        try {
+          String result = exec(curlString, true).stdout();
+          logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
+          returnString = result;
+        } catch (Exception ex) {
+          logger.info(callerName + ": caught unexpected exception {0}", ex);
+        }
       }
     }
 
