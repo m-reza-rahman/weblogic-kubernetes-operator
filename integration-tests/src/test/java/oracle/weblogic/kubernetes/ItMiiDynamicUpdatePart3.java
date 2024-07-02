@@ -54,7 +54,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResour
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkSystemResourceConfigViaAdminPod;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifySystemResourceConfiguration;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifySystemResourceConfiguration;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.JobUtils.getIntrospectJobName;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.DOMAIN_FAILED;
@@ -414,11 +414,16 @@ class ItMiiDynamicUpdatePart3 {
       assertNotEquals(-1, adminServiceNodePort, "admin server default node port is not valid");
       if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+        logger.info("Test debugging111");
         assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
             "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
       } else {
-        verifySystemResourceConfiguration(null, adminServiceNodePort,
-            "JDBCSystemResources", "TestDataSource2", "404", httpHostHeader);
+        //verifySystemResourceConfiguration(null, adminServiceNodePort,
+        //    "JDBCSystemResources", "TestDataSource2", "404", httpHostHeader);
+        logger.info("Test debugging222");
+        assertFalse(checkSystemResourceConfig(helper.adminSvcExtHost, adminServiceNodePort, "JDBCSystemResources",
+            "TestDataSource2"), "Found JDBCSystemResource datasource, should be deleted");
+
       }
     }
     logger.info("JDBCSystemResource Datasource is deleted");
