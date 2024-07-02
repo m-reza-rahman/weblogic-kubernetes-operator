@@ -1079,6 +1079,7 @@ public class CommonMiiTestUtils {
       String adminServerPodName, String resourcePath, String callerName) {
     LoggingFacade logger = getLogger();
     String returnString = null;
+    String curlString = null;
 
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
@@ -1113,7 +1114,6 @@ public class CommonMiiTestUtils {
         e.printStackTrace();
       }
     } else {
-      String curlString;
       if (OKE_CLUSTER_PRIVATEIP) {
         String protocol = "http";
         String port = "7001";
@@ -1128,10 +1128,7 @@ public class CommonMiiTestUtils {
       } else {
         int adminServiceNodePort
             = getServiceNodePort(domainNamespace, getExternalServicePodName(adminServerPodName), "default");
-        String host = K8S_NODEPORT_HOST;
-        if (host.contains(":")) {
-          host = "[" + host + "]";
-        }
+        String host = formatIPv6Host(K8S_NODEPORT_HOST);
         String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
         logger.info("hostAndPort = {0} ", hostAndPort);
 
@@ -1140,9 +1137,9 @@ public class CommonMiiTestUtils {
             + ":"
             + ADMIN_PASSWORD_DEFAULT
             + " http://%s%s/ --silent --show-error ", hostAndPort, resourcePath);
-      }
-      logger.info(callerName + ": curl command {0}", curlString);
 
+        logger.info(callerName + ": curl command {0}", curlString);
+      }
       try {
         String result = exec(curlString, true).stdout();
         logger.info(callerName + ": exec curl command {0} got: {1}", curlString, result);
@@ -1151,7 +1148,6 @@ public class CommonMiiTestUtils {
         logger.info(callerName + ": caught unexpected exception {0}", ex);
       }
     }
-
     return returnString;
   }
 
@@ -1249,8 +1245,7 @@ public class CommonMiiTestUtils {
       curlString = new StringBuffer("status=$(curl -g --user weblogic:welcome1 http://");
     }
 
-    String host = K8S_NODEPORT_HOST;
-    formatIPv6Host(host);
+    String host = formatIPv6Host(K8S_NODEPORT_HOST);
     
     String hostAndPort = (OKD) ? adminSvcExtHost : host + ":" + adminServiceNodePort;
     logger.info("hostAndPort = {0} ", hostAndPort);
