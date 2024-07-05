@@ -484,7 +484,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
     });
 
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodenotconfigured";
@@ -574,7 +573,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
     });
 
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prod12214off";
@@ -660,7 +658,6 @@ class ItMiiDomainUpgradeToSecureMode {
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
     });
 
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prod1214on";

@@ -24,9 +24,6 @@ topology:
                 MinDynamicClusterSize: 0
                 CalculatedListenPorts: false
     ProductionModeEnabled: '@@PROP:ProductionModeEnabled@@'
-    SecurityConfiguration:
-        SecureMode:
-            SecureModeEnabled: '@@PROP:SecureModeEnabled@@'    
     AdministrationPortEnabled: '@@PROP:AdministrationPortEnabled@@'
 appDeployments:
     Application:
