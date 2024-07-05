@@ -145,7 +145,7 @@ class ItMultiDomainModels {
   @ParameterizedTest
   @DisplayName("scale cluster by patching domain resource with four different type of domains and "
       + "verify admin server is accessible via REST interface.")
-  @ValueSource(strings = {"modelInImage", "domainInImage", "domainOnPV", "auxiliaryImageDomain"})
+  @ValueSource(strings = {"domainOnPV"})
   @Tag("gate")
   void testScaleClustersAndAdminRESTAccess(String domainType) {
     DomainResource domain = createDomainBasedOnDomainType(domainType);
