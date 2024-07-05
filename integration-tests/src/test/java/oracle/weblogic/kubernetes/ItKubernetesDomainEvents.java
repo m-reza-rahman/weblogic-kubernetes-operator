@@ -85,6 +85,7 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourc
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.removeReplicasSettingAndVerify;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -776,7 +777,8 @@ class ItKubernetesDomainEvents {
         K8S_NODEPORT_HOST, t3ChannelPort);
 
     // create domainCreationImage
-    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "events-domain-on-pv-image";
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "wls-domain-on-pv-image";
+    String domainCreationImagetag = getDateAndTimeStamp();
     // create image with model and wdt installation files
     WitParams witParams
         = new WitParams()
@@ -784,10 +786,10 @@ class ItKubernetesDomainEvents {
             .modelImageTag(MII_BASIC_IMAGE_TAG)
             .modelFiles(Collections.singletonList(MODEL_DIR + "/" + wlsModelFile))
             .modelVariableFiles(Collections.singletonList(wlsModelPropFile.getAbsolutePath()));
-    createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
+    createAndPushAuxiliaryImage(domainCreationImageName, domainCreationImagetag, witParams);
 
     DomainCreationImage domainCreationImage
-        = new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
+        = new DomainCreationImage().image(domainCreationImageName + ":" + domainCreationImagetag);
 
     // create a domain resource
     logger.info("Creating domain custom resource");
