@@ -59,7 +59,6 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
-import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
@@ -783,7 +782,7 @@ class ItKubernetesDomainEvents {
     WitParams witParams
         = new WitParams()
             .modelImageName(domainCreationImageName)
-            .modelImageTag(MII_BASIC_IMAGE_TAG)
+            .modelImageTag(domainCreationImagetag)
             .modelFiles(Collections.singletonList(MODEL_DIR + "/" + wlsModelFile))
             .modelVariableFiles(Collections.singletonList(wlsModelPropFile.getAbsolutePath()));
     createAndPushAuxiliaryImage(domainCreationImageName, domainCreationImagetag, witParams);

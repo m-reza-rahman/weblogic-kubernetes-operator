@@ -1155,7 +1155,7 @@ class ItIntrospectVersion {
     WitParams witParams
         = new WitParams()
             .modelImageName(domainCreationImageName)
-            .modelImageTag(MII_BASIC_IMAGE_TAG)
+            .modelImageTag(domainCreationImagetag)
             .modelFiles(Collections.singletonList(MODEL_DIR + "/" + wlsModelFile))
             .modelVariableFiles(Collections.singletonList(wlsModelPropFile.getAbsolutePath()));
     createAndPushAuxiliaryImage(domainCreationImageName, domainCreationImagetag, witParams);

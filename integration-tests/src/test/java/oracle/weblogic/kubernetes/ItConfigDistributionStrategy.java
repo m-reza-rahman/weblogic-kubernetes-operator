@@ -64,7 +64,6 @@ import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
-import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
@@ -993,7 +992,7 @@ class ItConfigDistributionStrategy {
     WitParams witParams
         = new WitParams()
             .modelImageName(domainCreationImageName)
-            .modelImageTag(MII_BASIC_IMAGE_TAG)
+            .modelImageTag(domainCreationImagetag)
             .modelFiles(Collections.singletonList(MODEL_DIR + "/" + wlsModelFile))
             .modelVariableFiles(Collections.singletonList(wlsModelPropFile.getAbsolutePath()));
     createAndPushAuxiliaryImage(domainCreationImageName, domainCreationImagetag, witParams);
