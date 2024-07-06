@@ -103,8 +103,10 @@ class ModelDiffer:
             for key in [ 'Server', 'ServerTemplate']:
                 # topology.Server|ServerTemplate
                 if model[_TOPOLOGY].has_key(key):
-                    temp = model[_TOPOLOGY][key]
-                    for server in temp:
+                    # topology.Server or topology.ServerTemplate
+                    svr_list = model[_TOPOLOGY][key]
+                    for server in svr_list:
+                        # topology.Server.item or topology.ServerTemplate.item
                         # cannot delete server or template
                         if server.startswith('!'):
                             return 1
@@ -112,16 +114,16 @@ class ModelDiffer:
                         if server not in original_model['topology'][key]:
                             continue
                         for not_this in forbidden_network_attributes:
-                            if temp[server].has_key(not_this):
+                            if svr_list[server].has_key(not_this):
                                 return 1
-                        if temp[server].has_key(_NAP):
-                            nap = temp[server][_NAP]
-                            for n in nap:
+                        if svr_list[server].has_key(_NAP):
+                            naps = svr_list[server][_NAP]
+                            for nap in naps:
                                 for not_this in forbidden_network_attributes:
-                                    if temp[server].has_key(not_this):
+                                    if svr_list[server][_NAP][nap].has_key(not_this):
                                         return 1
                         # Do not allow any SSL changes
-                        if temp[server].has_key(_SSL):
+                        if svr_list[server].has_key(_SSL):
                             return 1
 
         return 0
@@ -129,22 +131,15 @@ class ModelDiffer:
 
 class ModelFileDiffer:
 
-    def eval_file(self, file):
-        true = True
-        false = False
-        fh = open(file, 'r')
-        content = fh.read()
-        return eval(content)
+    def eval_string(self, string):
+        return eval(string)
 
     def compare(self):
-        original_model = self.eval_file(sys.argv[1])
-        # past_dict = self.eval_file(sys.argv[2])
+        original_topology = self.eval_string(sys.argv[1])
+        net_diff = self.eval_string(sys.argv[2])
         obj = ModelDiffer()
-        if os.path.exists('/tmp/diffed_model.json'):
-            net_diff = self.eval_file('/tmp/diffed_model.json')
-        else:
-            net_diff = {}
-        return obj.is_safe_diff(net_diff, original_model)
+        return obj.is_safe_diff(net_diff, original_topology)
+
 
 def debug(format_string, *arguments):
     if os.environ.has_key('DEBUG_INTROSPECT_JOB'):

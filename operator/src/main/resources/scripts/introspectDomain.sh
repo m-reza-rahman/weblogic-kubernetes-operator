@@ -185,6 +185,12 @@ doIntrospect() {
     if [ $? -ne 0 ] ; then
       trace SEVERE "DomainSourceType is 'FromModel', 'unzip' is missing in the image. Please use an image with 'unzip' installed" && exit 1
     fi
+    if [ "true" == "$MII_USE_ONLINE_UPDATE" ] ; then
+      command -v jq
+      if [ $? -ne 0 ] ; then
+        trace SEVERE "DomainSourceType is 'FromModel' and 'onlineUpdate' is enabled, 'jq' is missing in the image. Please use an image with 'jq' installed" && exit 1
+      fi
+    fi
     createFolder "${DOMAIN_HOME}" "DomainSourceType is 'FromModel' and this is the DOMAIN_HOME directory specified by 'domain.spec.domainHome'." || exit 1
     createWLDomain || exit 1
     created_domain=$DOMAIN_CREATED

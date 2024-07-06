@@ -587,20 +587,20 @@ diff_model() {
   trace "Entering diff_model"
   # wdt shell script or logFileRotate may return non-zero code if trap is on, then it will go to trap instead
   # temporarily disable it
-  stop_trap
-
-  export __WLSDEPLOY_STORE_MODEL__=1
-  # $1 - new model, $2 original model
-
-  ${WDT_BINDIR}/compareModel.sh -oracle_home ${ORACLE_HOME} -output_dir /tmp $1 $2 > ${WDT_OUTPUT} 2>&1
-  ret=$?
-  if [ $ret -ne 0 ]; then
-    trace SEVERE "WDT Compare Model failed:"
-    cat ${WDT_OUTPUT}
-    exitOrLoop
-  fi
 
   if [ "true" == "$MII_USE_ONLINE_UPDATE" ] ; then
+    stop_trap
+    export __WLSDEPLOY_STORE_MODEL__=1
+    # $1 - new model, $2 original model
+
+    ${WDT_BINDIR}/compareModel.sh -oracle_home ${ORACLE_HOME} -output_dir /tmp $1 $2 > ${WDT_OUTPUT} 2>&1
+    ret=$?
+    if [ $ret -ne 0 ]; then
+      trace SEVERE "WDT Compare Model failed:"
+      cat ${WDT_OUTPUT}
+      exitOrLoop
+    fi
+
     if [  ! -f "/tmp/diffed_model.yaml" ] ; then
       if [ -f "/tmp/compare_model_stdout" ] ; then
         trace SEVERE "WDT Compare Model detected 'There are no changes to apply between the old and new models'" \
@@ -618,30 +618,35 @@ diff_model() {
         fi
       fi
     fi
-  fi
 
-  if [ "${MERGED_MODEL_ENVVARS_SAME}" == "false" ] ; then
-    # Generate diffed model update compatibility result
-    local ORACLE_SERVER_DIR=${ORACLE_HOME}/wlserver
-    local JAVA_PROPS="-Dpython.cachedir.skip=true ${JAVA_PROPS}"
-    local JAVA_PROPS="-Dpython.path=${ORACLE_SERVER_DIR}/common/wlst/modules/jython-modules.jar/Lib ${JAVA_PROPS}"
-    local JAVA_PROPS="-Dpython.console= ${JAVA_PROPS} -Djava.security.egd=file:/dev/./urandom"
-    local CP=${ORACLE_SERVER_DIR}/server/lib/weblogic.jar
-    ${JAVA_HOME}/bin/java -cp ${CP} \
-      ${JAVA_PROPS} \
-      org.python.util.jython \
-      ${SCRIPTPATH}/model-diff.py $2 > ${WDT_OUTPUT} 2>&1
-    if [ $? -ne 0 ] ; then
-      trace SEVERE "Failed to compare models. Error output:"
-      cat ${WDT_OUTPUT}
-      exitOrLoop
+    if [ "${MERGED_MODEL_ENVVARS_SAME}" == "false" ] ; then
+      # Generate diffed model update compatibility result, use partial model to avoid loading large model
+      local ORACLE_SERVER_DIR=${ORACLE_HOME}/wlserver
+      local JAVA_PROPS="-Dpython.cachedir.skip=true ${JAVA_PROPS}"
+      local JAVA_PROPS="-Dpython.path=${ORACLE_SERVER_DIR}/common/wlst/modules/jython-modules.jar/Lib ${JAVA_PROPS}"
+      local JAVA_PROPS="-Dpython.console= ${JAVA_PROPS} -Djava.security.egd=file:/dev/./urandom"
+      local CP=${ORACLE_SERVER_DIR}/server/lib/weblogic.jar
+      # Get partial models for sanity check for forbidden attribute change
+      local SERVER_OR_SERVERTEMPLATES_NAMES=$(jq '{topology: {Server: (.topology.Server | with_entries(.value = "")), ServerTemplate: (.topology.ServerTemplate | with_entries(.value = ""))}}' $2)
+      local PARTIAL_DIFFED_MODEL=$(jq '{domainInfo, topology} | with_entries(select(.value != null))' /tmp/diffed_model.json)
+      ${JAVA_HOME}/bin/java -cp ${CP} \
+        ${JAVA_PROPS} \
+        org.python.util.jython \
+        ${SCRIPTPATH}/model-diff.py "$SERVER_OR_SERVERTEMPLATES_NAMES" "$PARTIAL_DIFFED_MODEL" > ${WDT_OUTPUT} 2>&1
+      if [ $? -ne 0 ] ; then
+        trace SEVERE "Failed to compare models. Error output:"
+        cat ${WDT_OUTPUT}
+        exitOrLoop
+      fi
     fi
-  fi
 
-  wdtRotateAndCopyLogFile "${WDT_COMPARE_MODEL_LOG}"
+    wdtRotateAndCopyLogFile "${WDT_COMPARE_MODEL_LOG}"
+
+    start_trap
+
+  fi
 
   # restore trap
-  start_trap
 
   trace "Exiting diff_model"
 }
