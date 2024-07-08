@@ -68,6 +68,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 @DisplayName("ELK Stack sample to test to use Elasticsearch API to query Operator logs")
 @IntegrationTest
 @Tag("kind-parallel")
+@Tag("oke-gate")
 class ItElasticLoggingSample {
   // constants for namespaces
   private static String domainNamespace = null;
