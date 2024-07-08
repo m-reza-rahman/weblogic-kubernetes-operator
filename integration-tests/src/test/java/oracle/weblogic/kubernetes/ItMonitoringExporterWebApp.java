@@ -280,7 +280,7 @@ class ItMonitoringExporterWebApp {
         String ingressClassName = nginxHelmParams.getIngressClassName();
         ingressHost1List
             = createIngressForDomainAndVerify(domain1Uid, domain1Namespace, 0, clusterNameMsPortMap,
-                false, ingressClassName, false, 0);
+                true, ingressClassName, false, 0);
         if (OKE_CLUSTER_PRIVATEIP) {
           verifyMonExpAppAccessThroughNginx(ingressHost1List.get(0), 1, ingressIP);
         } else {
