@@ -631,8 +631,21 @@ diff_model() {
     local JAVA_PROPS="-Dpython.console= ${JAVA_PROPS} -Djava.security.egd=file:/dev/./urandom"
     local CP=${ORACLE_SERVER_DIR}/server/lib/weblogic.jar
     # Get partial models for sanity check for forbidden attribute change
-    local SERVER_OR_SERVERTEMPLATES_NAMES=$(jq '{topology: {Server: (.topology.Server | with_entries(.value = "")), ServerTemplate: (.topology.ServerTemplate | with_entries(.value = ""))}}' $2)
-    local PARTIAL_DIFFED_MODEL=$(jq '{domainInfo, topology} | with_entries(select(.value != null))' /tmp/diffed_model.json)
+    local SERVER_OR_SERVERTEMPLATES_NAMES=$(jq '{ topology: { Server: (.topology.Server | with_entries(.value = {})),
+     ServerTemplate: (if .topology.ServerTemplate then (.topology.ServerTemplate | with_entries(.value = {})) else empty end)
+       }} | if .topology.ServerTemplate == {} then del(.topology.ServerTemplate) else . end' $2)
+    rc=$?
+    if [ $rc -ne 0 ] ; then
+      trace SEVERE "Failed to extract server names from original model using jq "$rc
+      exitOrLoop
+    fi
+    local PARTIAL_DIFFED_MODEL=$(jq '{domainInfo: .domainInfo, topology: .topology} | with_entries(select(.value != null))' /tmp/diffed_model.json)
+    rc=$?
+    if [ $rc -ne 0 ] ; then
+      trace SEVERE "Failed to extract domainInfo and topology from delta model using jq "$rc
+      exitOrLoop
+    fi
+
     ${JAVA_HOME}/bin/java -cp ${CP} \
       ${JAVA_PROPS} \
       org.python.util.jython \

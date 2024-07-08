@@ -46,8 +46,9 @@ class ModelDiffer:
 
     def is_safe_diff(self, model, original_model):
         """
-        Is it a safe difference for update.
+        Is the difference safe for update.
         :param model: diffed model
+        :param original_model: original model (partial only contain server and template names)
         return 0 - always return 0 for V1
         """
 
