@@ -165,6 +165,18 @@ public class JobUtils {
     // check job status and fail test if the job failed to create domain
     V1Job job = assertDoesNotThrow(() -> getJob(jobName, namespace),
         "Getting the job failed");
+    if (job != null) {
+        logger.info("@@ DEBUGGING111", jobName);
+        List<V1Pod> pods = assertDoesNotThrow(() -> listPods(
+            namespace, "job-name=" + jobName).getItems(),
+            "Listing pods failed");
+        if (!pods.isEmpty() && pods.get(0).getMetadata() != null) {
+          String podLog = assertDoesNotThrow(() -> getPodLog(pods.get(0).getMetadata().getName(), namespace),
+              "Failed to get pod log");
+          logger.info(podLog);
+
+        }
+    }
     if (job != null && job.getStatus() != null && job.getStatus().getConditions() != null) {
       V1JobCondition jobCondition = job.getStatus().getConditions().stream().filter(
           v1JobCondition -> "Failed".equals(v1JobCondition.getType()))
