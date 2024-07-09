@@ -1127,7 +1127,9 @@ public class DomainUtils {
     }
 
     getLogger().info("Running a Kubernetes job to create the domain");
-    createDomainJob(pvName, pvcName, domainScriptConfigMapName, namespace, jobCreationContainer);
+    JobUtils.createDomainJob(WEBLOGIC_IMAGE_TO_USE_IN_SPEC, pvName, pvcName, domainScriptConfigMapName,
+        namespace, jobCreationContainer);
+    //createDomainJob(pvName, pvcName, domainScriptConfigMapName, namespace, jobCreationContainer);
   }
 
   /**

@@ -166,16 +166,16 @@ public class JobUtils {
     V1Job job = assertDoesNotThrow(() -> getJob(jobName, namespace),
         "Getting the job failed");
     if (job != null) {
-        logger.info("@@ DEBUGGING111", jobName);
-        List<V1Pod> pods = assertDoesNotThrow(() -> listPods(
+      logger.info("@@ DEBUGGING111", jobName);
+      List<V1Pod> pods = assertDoesNotThrow(() -> listPods(
             namespace, "job-name=" + jobName).getItems(),
             "Listing pods failed");
-        if (!pods.isEmpty() && pods.get(0).getMetadata() != null) {
-          String podLog = assertDoesNotThrow(() -> getPodLog(pods.get(0).getMetadata().getName(), namespace),
+      if (!pods.isEmpty() && pods.get(0).getMetadata() != null) {
+        String podLog = assertDoesNotThrow(() -> getPodLog(pods.get(0).getMetadata().getName(), namespace),
               "Failed to get pod log");
-          logger.info(podLog);
+        logger.info(podLog);
 
-        }
+      }
     }
     if (job != null && job.getStatus() != null && job.getStatus().getConditions() != null) {
       V1JobCondition jobCondition = job.getStatus().getConditions().stream().filter(
