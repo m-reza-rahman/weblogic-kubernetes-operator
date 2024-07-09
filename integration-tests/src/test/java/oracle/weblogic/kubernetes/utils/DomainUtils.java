@@ -1114,7 +1114,10 @@ public class DomainUtils {
             .value("/u01/shared/wdt"))
         .addEnvItem(new V1EnvVar()
             .name("DOMAIN_HOME_DIR")
-            .value(uniquePath));
+            .value(uniquePath))
+        .addEnvItem(new V1EnvVar()
+            .name("DOMAIN_TYPE")
+            .value("WLS"));
 
     if (HTTP_PROXY != null) {
       jobCreationContainer.addEnvItem(new V1EnvVar().name("http_proxy").value(HTTP_PROXY));
