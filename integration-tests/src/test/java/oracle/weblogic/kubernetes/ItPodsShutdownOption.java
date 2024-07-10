@@ -480,7 +480,7 @@ class ItPodsShutdownOption {
                     .configMap(cmName)
                     .domainType(WLS_DOMAIN_TYPE)
                     .runtimeEncryptionSecret(encryptionSecretName))
-                .introspectorJobActiveDeadlineSeconds(600L))
+                .introspectorJobActiveDeadlineSeconds(3000L))
             .addManagedServersItem(new ManagedServer()
                 .serverStartPolicy("Always")
                 .serverName(indManagedServerName1)
