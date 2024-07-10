@@ -634,7 +634,7 @@ class ItMonitoringExporterWebApp {
     WebRequest request = new WebRequest(url);
 
     // Add custom headers to the request
-    request.setAdditionalHeader("host", "monexp-domain-1.ns-yinawt.cluster-1.test");
+    request.setAdditionalHeader("host", ingressHost1List.get(0));
 
     // Add basic authentication header
     String auth = ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT;
