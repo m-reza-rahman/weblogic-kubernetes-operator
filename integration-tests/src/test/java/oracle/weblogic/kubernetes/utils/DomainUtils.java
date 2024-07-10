@@ -1115,7 +1115,7 @@ public class DomainUtils {
         .addEnvItem(new V1EnvVar()
             .name("DOMAIN_HOME_DIR")
             .value(uniquePath));
-  
+
     if (HTTP_PROXY != null) {
       jobCreationContainer.addEnvItem(new V1EnvVar().name("http_proxy").value(HTTP_PROXY));
     }
