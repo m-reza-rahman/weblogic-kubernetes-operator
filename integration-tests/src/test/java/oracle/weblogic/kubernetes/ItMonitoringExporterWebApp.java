@@ -579,7 +579,9 @@ class ItMonitoringExporterWebApp {
 
   private HtmlPage submitConfigureForm(
           String exporterUrl, String effect, String configFile, WebClient webClient) throws Exception {
-
+    webClient.getOptions().setJavaScriptEnabled(true);
+    webClient.getOptions().setCssEnabled(true);
+    webClient.waitForBackgroundJavaScript(10000); // Adjust the wait time as needed
     HtmlPage page1 = getHtmlPage(exporterUrl, webClient);
     logger.info("Exporter Page " + page1.asNormalizedText());
     assertTrue((page1.asNormalizedText()).contains("Oracle WebLogic Monitoring Exporter"));
@@ -615,6 +617,7 @@ class ItMonitoringExporterWebApp {
     try {
       page2 = button.click();
       assertNotNull(page2, "can't reach page after submit");
+      logger.info("Navigated to: " + page2.getUrl());
       logger.info("page " + page2.asNormalizedText());
       assertFalse((page2.asNormalizedText()).contains("Error 500--Internal Server Error"),
           "page returns Error 500--Internal Server Error");
