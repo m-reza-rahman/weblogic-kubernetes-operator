@@ -1015,7 +1015,7 @@ class ItMiiUpdateDomainConfig {
                                     .domainType("WLS")
                                     .configMap(configmapName)
                                     .runtimeEncryptionSecret(encryptionSecretName))
-                        .introspectorJobActiveDeadlineSeconds(300L))
+                        .introspectorJobActiveDeadlineSeconds(3000L))
                 .replicas(replicaCount));
     setPodAntiAffinity(domain);
     return domain;
