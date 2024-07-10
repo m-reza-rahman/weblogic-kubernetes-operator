@@ -581,6 +581,7 @@ class ItMonitoringExporterWebApp {
           String exporterUrl, String effect, String configFile, WebClient webClient) throws Exception {
 
     HtmlPage page1 = getHtmlPage(exporterUrl, webClient);
+    logger.info("Exporter Page " + page1.asNormalizedText());
     assertTrue((page1.asNormalizedText()).contains("Oracle WebLogic Monitoring Exporter"));
 
     // Get the form that we are dealing with and within that form,
@@ -614,6 +615,7 @@ class ItMonitoringExporterWebApp {
     try {
       page2 = button.click();
       assertNotNull(page2, "can't reach page after submit");
+      logger.info("page " + page2.asNormalizedText());
       assertFalse((page2.asNormalizedText()).contains("Error 500--Internal Server Error"),
           "page returns Error 500--Internal Server Error");
     } catch (ClassCastException ex) {
@@ -679,7 +681,7 @@ class ItMonitoringExporterWebApp {
   private void replaceConfiguration() throws Exception {
     HtmlPage page = submitConfigureForm(exporterUrl, "replace", RESOURCE_DIR + "/exporter/rest_jvm.yaml");
     assertNotNull(page, "Failed to replace configuration");
-
+    logger.info("Exporter page : " + page.asNormalizedText());
     assertTrue(page.asNormalizedText().contains("JVMRuntime"),
         "Page does not contain expected JVMRuntime configuration");
     assertFalse(page.asNormalizedText().contains("WebAppComponentRuntime"),
