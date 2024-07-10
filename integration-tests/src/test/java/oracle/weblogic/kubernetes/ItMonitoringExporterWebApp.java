@@ -5,6 +5,7 @@ package oracle.weblogic.kubernetes;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.Map;
 import com.gargoylesoftware.htmlunit.FailingHttpStatusCodeException;
 import com.gargoylesoftware.htmlunit.TextPage;
 import com.gargoylesoftware.htmlunit.WebClient;
+import com.gargoylesoftware.htmlunit.WebRequest;
 import com.gargoylesoftware.htmlunit.html.HtmlFileInput;
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
@@ -34,6 +36,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.MonitoringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -545,7 +548,8 @@ class ItMonitoringExporterWebApp {
           throws Exception {
     final WebClient webClient = new WebClient();
     //webClient.addRequestHeader("Host", ingressHost1List.get(0));
-    HtmlPage originalPage = webClient.getPage(exporterUrl);
+    HtmlPage originalPage = getHtmlPage(exporterUrl, webClient);
+    //HtmlPage originalPage = webClient.getPage(exporterUrl);
     assertNotNull(originalPage);
     HtmlPage page = submitConfigureForm(exporterUrl, effect, configFile);
     assertTrue((page.asNormalizedText()).contains(expectedErrorMsg));
@@ -575,13 +579,8 @@ class ItMonitoringExporterWebApp {
 
   private HtmlPage submitConfigureForm(
           String exporterUrl, String effect, String configFile, WebClient webClient) throws Exception {
-    // Get the first page
-    HtmlPage page1 = webClient.getPage(exporterUrl);
-    if (page1 == null) {
-      //try again
-      page1 = webClient.getPage(exporterUrl);
-    }
-    assertNotNull(page1, "can't retrieve exporter dashboard page");
+
+    HtmlPage page1 = getHtmlPage(exporterUrl, webClient);
     assertTrue((page1.asNormalizedText()).contains("Oracle WebLogic Monitoring Exporter"));
 
     // Get the form that we are dealing with and within that form,
@@ -626,6 +625,32 @@ class ItMonitoringExporterWebApp {
           + page3.getContent());
     }
     return page2;
+  }
+
+  @NotNull
+  private static HtmlPage getHtmlPage(String exporterUrl, WebClient webClient) throws IOException {
+    URL url = new URL(exporterUrl);
+    // Create a WebRequest object for the URL
+    WebRequest request = new WebRequest(url);
+
+    // Add custom headers to the request
+    request.setAdditionalHeader("host", "monexp-domain-1.ns-yinawt.cluster-1.test");
+
+    // Add basic authentication header
+    String auth = ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT;
+    String encodedAuth = Base64.getEncoder().encodeToString(auth.getBytes());
+    request.setAdditionalHeader("Authorization", "Basic " + encodedAuth);
+
+    // Get the HtmlPage object
+    HtmlPage page1 = webClient.getPage(request);
+    // Get the first page
+    //HtmlPage page1 = webClient.getPage(exporterUrl);
+    if (page1 == null) {
+      //try again
+      page1 = webClient.getPage(request);
+    }
+    assertNotNull(page1, "can't retrieve exporter dashboard page");
+    return page1;
   }
 
   private static void setCredentials(WebClient webClient) {
