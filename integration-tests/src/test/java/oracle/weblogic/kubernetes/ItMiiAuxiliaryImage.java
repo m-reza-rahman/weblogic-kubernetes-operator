@@ -79,7 +79,8 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyConfiguredSystemResouceByPath;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyConfiguredSystemResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withQuickRetryPolicy;
+//import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withStandardRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapForDomainCreation;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeExists;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusConditionTypeHasExpectedStatus;
@@ -1559,7 +1560,7 @@ class ItMiiAuxiliaryImage {
       int replicaCount, String expectedResponse) {
     for (int i = 1; i <= replicaCount; i++) {
       int index = i;
-      testUntil(withStandardRetryPolicy,
+      testUntil(withQuickRetryPolicy,
           () -> appAccessibleInPod(domainNamespace, managedServerPrefixDomain1 + index, "8001",
               "sample-war/index.jsp", expectedResponse + index),
           logger,
