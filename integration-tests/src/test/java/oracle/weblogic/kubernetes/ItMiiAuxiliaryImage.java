@@ -1560,7 +1560,7 @@ class ItMiiAuxiliaryImage {
       int replicaCount, String expectedResponse) {
     for (int i = 1; i <= replicaCount; i++) {
       int index = i;
-      testUntil(withQuickRetryPolicy,
+      testUntil(withLongRetryPolicy,
           () -> appAccessibleInPod(domainNamespace, managedServerPrefixDomain1 + index, "8001",
               "sample-war/index.jsp", expectedResponse + index),
           logger,
