@@ -987,7 +987,7 @@ class ItMiiDomain {
                     .domainType("WLS")
                     .configMap(configmapName)
                     .runtimeEncryptionSecret(encryptionSecretName))
-                .introspectorJobActiveDeadlineSeconds(300L)));
+                .introspectorJobActiveDeadlineSeconds(3000L)));
     setPodAntiAffinity(domain);
     return domain;
   }
