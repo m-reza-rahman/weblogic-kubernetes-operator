@@ -43,6 +43,7 @@ import oracle.weblogic.kubernetes.actions.impl.Service;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
 import org.junit.jupiter.api.BeforeAll;
@@ -58,6 +59,7 @@ import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
@@ -93,6 +95,7 @@ import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAn
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -688,6 +691,18 @@ class ItCrossDomainTransaction {
 
     String curlCmd = "curl -g --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
+    try {
+      ExecResult result = ExecCommand.exec(curlCmd);
+      if (result.exitValue() != 0 || "502".equals(result.stdout().trim())) {
+        result = ExecCommand.exec(KUBERNETES_CLI + " get all -A");
+        logger.info(result.stdout());
+        result = ExecCommand.exec(KUBERNETES_CLI + " rollout restart deployment coredns -n kube-system");
+        logger.info(result.stdout());
+        checkPodReady("core-dns", null, "kube-system");
+      }
+    } catch (Exception ex) {
+      logger.warning(ex.getLocalizedMessage());
+    }
 
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
