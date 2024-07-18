@@ -431,7 +431,7 @@ EOF
                             echo "NO_PROXY before : ${NO_PROXY}"
                             export NO_PROXY=${clusterPublicIP}
                             echo "NO_PROXY:" $NO_PROXY
-                            
+
                             export SERVICE_ACCOUNT_NAME=${CLUSTER_NAME}-sa
                             ${KUBERNETES_CLI:-kubectl} -n kube-system create serviceaccount ${SERVICE_ACCOUNT_NAME}
                             ${KUBERNETES_CLI:-kubectl} create clusterrolebinding add-on-cluster-admin --clusterrole=cluster-admin --serviceaccount=kube-system:${SERVICE_ACCOUNT_NAME}
