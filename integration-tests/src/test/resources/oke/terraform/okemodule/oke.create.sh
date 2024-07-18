@@ -88,7 +88,7 @@ checkClusterRunning () {
     myline_output=$(${KUBERNETES_CLI:-kubectl} get nodes -o wide 2>&1)
     if echo "$myline_output" | grep -q "Unable to connect to the server: net/http: TLS handshake timeout"; then
         echo "[ERROR] Unable to connect to the server: net/http: TLS handshake timeout"
-        echo "retrying to execute kubectl"
+        echo "retrying to execute KUBERNETES_CLI"
         clusterIP=$(oci ce cluster list --compartment-id=${compartment_ocid} | jq '.data[]  | select(."name" == '"${okeclustername}"' and (."lifecycle-state" == "ACTIVE"))' | jq ' ."endpoints" | ."public-endpoint"')
         echo "clusterIp : $clusterIP"
         clusterPublicIP=${clusterIP:1:-6}
