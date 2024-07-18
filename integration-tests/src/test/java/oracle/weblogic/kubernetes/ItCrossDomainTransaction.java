@@ -693,9 +693,9 @@ class ItCrossDomainTransaction {
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
     try {
       ExecResult result = ExecCommand.exec(curlCmd);
+      result = ExecCommand.exec(KUBERNETES_CLI + " get all -A");
+      logger.info(result.stdout());
       if (result.exitValue() != 0 || "502".equals(result.stdout().trim())) {
-        result = ExecCommand.exec(KUBERNETES_CLI + " get all -A");
-        logger.info(result.stdout());
         result = ExecCommand.exec(KUBERNETES_CLI + " rollout restart deployment coredns -n kube-system");
         logger.info(result.stdout());
         checkPodReady("core-dns", null, "kube-system");
