@@ -587,8 +587,8 @@ diff_model() {
   trace "Entering diff_model"
   # wdt shell script or logFileRotate may return non-zero code if trap is on, then it will go to trap instead
   # temporarily disable it
-  stop_trap
 
+  stop_trap
   export __WLSDEPLOY_STORE_MODEL__=1
   # $1 - new model, $2 original model
 
@@ -620,19 +620,42 @@ diff_model() {
     fi
   fi
 
+  #  Checking whether domain, rcu credentials have been changed - needed for offline
+  #  and also incompatible changes for online update.
+
   if [ "${MERGED_MODEL_ENVVARS_SAME}" == "false" ] ; then
-    # Generate diffed model update compatibility result
+    # Generate diffed model update compatibility result, use partial model to avoid loading large model
     local ORACLE_SERVER_DIR=${ORACLE_HOME}/wlserver
     local JAVA_PROPS="-Dpython.cachedir.skip=true ${JAVA_PROPS}"
     local JAVA_PROPS="-Dpython.path=${ORACLE_SERVER_DIR}/common/wlst/modules/jython-modules.jar/Lib ${JAVA_PROPS}"
     local JAVA_PROPS="-Dpython.console= ${JAVA_PROPS} -Djava.security.egd=file:/dev/./urandom"
     local CP=${ORACLE_SERVER_DIR}/server/lib/weblogic.jar
-    ${JAVA_HOME}/bin/java -cp ${CP} \
-      ${JAVA_PROPS} \
-      org.python.util.jython \
-      ${SCRIPTPATH}/model-diff.py $2 > ${WDT_OUTPUT} 2>&1
+    # Get partial models for sanity check for forbidden attribute change
+    local SERVER_OR_SERVERTEMPLATES_NAMES
+    SERVER_OR_SERVERTEMPLATES_NAMES=$(jq '{ topology: { Server: (.topology.Server | with_entries(.value = {})),
+     ServerTemplate: (if .topology.ServerTemplate then (.topology.ServerTemplate | with_entries(.value = {})) else empty end)
+       }} | if .topology.ServerTemplate == {} then del(.topology.ServerTemplate) else . end' $2)
+    rc=$?
+    if [ $rc -ne 0 ] ; then
+      trace SEVERE "Failed to extract server names from original model using jq "$rc
+      exitOrLoop
+    fi
+    local PARTIAL_DIFFED_MODEL
+    if [ -f /tmp/diffed_model.json ] ; then
+      PARTIAL_DIFFED_MODEL=$(jq '{domainInfo: .domainInfo, topology: .topology} | with_entries(select(.value != null))' /tmp/diffed_model.json)
+      rc=$?
+      if [ $rc -ne 0 ] ; then
+        trace SEVERE "Failed to extract domainInfo and topology from delta model using jq "$rc
+        exitOrLoop
+      fi
+    else
+      PARTIAL_DIFFED_MODEL="{}"
+    fi
+    # Use the real wlst.sh and not the operator wrap script, calling jypthon directory has problem understanding WLST boolean false, true etc..
+    # eval will fail
+    ${ORACLE_HOME}/oracle_common/common/bin/wlst.sh ${SCRIPTPATH}/model-diff.py "${SERVER_OR_SERVERTEMPLATES_NAMES}" "${PARTIAL_DIFFED_MODEL}" > ${WDT_OUTPUT} 2>&1
     if [ $? -ne 0 ] ; then
-      trace SEVERE "Failed to compare models. Error output:"
+      trace SEVERE "Failed to interpret models results . Error output:"
       cat ${WDT_OUTPUT}
       exitOrLoop
     fi
@@ -640,7 +663,6 @@ diff_model() {
 
   wdtRotateAndCopyLogFile "${WDT_COMPARE_MODEL_LOG}"
 
-  # restore trap
   start_trap
 
   trace "Exiting diff_model"
