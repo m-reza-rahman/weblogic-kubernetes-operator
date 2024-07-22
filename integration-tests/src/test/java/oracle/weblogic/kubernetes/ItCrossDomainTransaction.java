@@ -691,17 +691,21 @@ class ItCrossDomainTransaction {
 
     String curlCmd = "curl -g --silent --show-error --noproxy '*' http://" + hostAndPort
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
-    try {
-      ExecResult result = ExecCommand.exec(curlCmd);
-      result = ExecCommand.exec(KUBERNETES_CLI + " get all -A");
-      logger.info(result.stdout());
-      if (result.exitValue() != 0 || "502".equals(result.stdout().trim())) {
-        result = ExecCommand.exec(KUBERNETES_CLI + " rollout restart deployment coredns -n kube-system");
-        logger.info(result.stdout());
-        checkPodReady("core-dns", null, "kube-system");
+    if (OKE_CLUSTER) {
+      try {
+        if (!callWebAppAndWaitTillReady(curlCmd, 60)) {
+          ExecResult result = ExecCommand.exec(KUBERNETES_CLI + " get all -A");
+          logger.info(result.stdout());
+          //restart core-dns service
+          result = ExecCommand.exec(KUBERNETES_CLI + " rollout restart deployment coredns -n kube-system");
+          logger.info(result.stdout());
+          checkPodReady("core-dns", null, "kube-system");
+          result = ExecCommand.exec(curlCmd);
+          logger.info(result.stdout());
+        }
+      } catch (Exception ex) {
+        logger.warning(ex.getLocalizedMessage());
       }
-    } catch (Exception ex) {
-      logger.warning(ex.getLocalizedMessage());
     }
 
     logger.info("Executing curl command {0}", curlCmd);
