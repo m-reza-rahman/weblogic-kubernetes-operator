@@ -211,7 +211,7 @@ class ItIstioProductionSecureMode {
       istioIngressPort = ISTIO_HTTPS_HOSTPORT;
       hostAndPort = InetAddress.getLocalHost().getHostAddress() + ":" + istioIngressPort;
     }
-    String url = "http://" + hostAndPort + "/weblogic/ready";
+    String url = "https://" + hostAndPort + "/weblogic/ready";
     testUntil(
         () -> checkAppUsingHostHeader(url,
             "istio-mii-securemode-admin-server.NAMESPACE.svc.cluster.local".replace("NAMESPACE", domainNamespace)),

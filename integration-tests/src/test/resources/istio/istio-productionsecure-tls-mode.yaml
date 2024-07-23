@@ -4,15 +4,37 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: wls-securedomain-gateway
+  name: wls-domain-gateway
   namespace: NAMESPACE
 spec:
   selector:
     istio: ingressgateway
   servers:
     - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+    - port:
         number: 443
         name: https-default-admin
+        protocol: HTTPS
+      tls:
+        mode: PASSTHROUGH
+      hosts:
+        - "*"
+    - port:
+        number: 9002
+        name: https-cluster-admin
+        protocol: HTTPS
+      tls:
+        mode: PASSTHROUGH
+      hosts:
+        - "*"
+    - port:
+        number: 7002
+        name: https-cluster-ssl
         protocol: HTTPS
       tls:
         mode: PASSTHROUGH
@@ -22,7 +44,7 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: wls-securedomain-virtualservice
+  name: wls-domain-virtualservice
   namespace: NAMESPACE
 spec:
   gateways:
@@ -39,4 +61,22 @@ spec:
             host: istio-mii-securemode-admin-server.NAMESPACE.svc.cluster.local
             port:
               number: 9002
+    - match:
+        - port: 9002
+          sniHosts:
+          - "*"
+      route:
+        - destination:
+            host: istio-mii-securemode-cluster-cluster-1.NAMESPACE.svc.cluster.local
+            port:
+              number: 9002
+    - match:
+        - port: 7002
+          sniHosts:
+          - "*"
+      route:
+        - destination:
+            host: istio-mii-securemode-cluster-cluster-1.NAMESPACE.svc.cluster.local
+            port:
+              number: 7002
 
