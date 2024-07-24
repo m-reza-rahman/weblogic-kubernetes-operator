@@ -89,7 +89,7 @@ checkClusterRunning () {
     if echo "$myline_output" | grep -q "Unable to connect to the server: net/http: TLS handshake timeout"; then
         echo "[ERROR] Unable to connect to the server: net/http: TLS handshake timeout"
 
-        echo '- could not talk to cluster, aborting'
+        echo '- could not talk to OKE cluster, aborting'
         cd ${terraformVarDir}
         terraform destroy -auto-approve -var-file=${terraformVarDir}/${clusterTFVarsFile}.tfvars
         terraform apply -auto-approve -var-file=${terraformVarDir}/${clusterTFVarsFile}.tfvars
@@ -104,7 +104,7 @@ checkClusterRunning () {
         myline_output=$(${KUBERNETES_CLI:-kubectl} get nodes -o wide 2>&1)
         if echo "$myline_output" | grep -q "Unable to connect to the server: net/http: TLS handshake timeout"; then
                 echo "[ERROR] Unable to connect to the server: net/http: TLS handshake timeout"
-                echo '- could not talk to cluster, aborting'
+                echo '- could not talk to OKE cluster, aborting'
                 cd ${terraformVarDir}
                 terraform destroy -auto-approve -var-file=${terraformVarDir}/${clusterTFVarsFile}.tfvars
                 exit 1
@@ -135,7 +135,7 @@ checkClusterRunning () {
     if [ "$NODES" == "2" ]; then
       echo '- looks good'
     else
-      echo '- could not talk to cluster, aborting'
+      echo '- could not talk to OKE cluster, aborting'
       cd ${terraformVarDir}
       terraform destroy -auto-approve -var-file=${terraformVarDir}/${clusterTFVarsFile}.tfvars
       exit 1
