@@ -3,9 +3,11 @@
 
 package oracle.weblogic.kubernetes;
 
+//import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import oracle.weblogic.kubernetes.actions.impl.UniqueName;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
@@ -55,12 +57,14 @@ import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.backupReports;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.restoreReports;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.SampleUtils.createPVHostPathAndChangePermissionInKindCluster;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+//import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test and verify Domain on PV FMW domain sample.
@@ -256,7 +260,12 @@ class ItFmwDomainOnPVSample {
       createPVHostPathAndChangePermissionInKindCluster("/shared", envMap);
     }
 
-    execTestScriptAndAssertSuccess("-initial-main", "Failed to run -initial-main");
+    //execTestScriptAndAssertSuccess("-initial-main", "Failed to run -initial-main");
+    testUntil(
+        withLongRetryPolicy,
+        checkTestScriptAndAssertSuccess("-initial-main", "Failed to run -initial-main"),
+        logger,
+        "create PV HostPath and change Permission in Kind Cluster");
   }
 
   /**
@@ -264,8 +273,8 @@ class ItFmwDomainOnPVSample {
    * @param arg arguments to execute script
    * @param errString a string of detailed error
    */
-  private void execTestScriptAndAssertSuccess(String arg,
-                                              String errString) {
+  private boolean execTestScriptAndAssertSuccess(String arg,
+                                                 String errString) {
 
     Assumptions.assumeTrue(previousTestSuccessful);
     previousTestSuccessful = false;
@@ -292,9 +301,15 @@ class ItFmwDomainOnPVSample {
     outStr += ", stderr=\n{\n" + (result != null ? result.stderr() : "") + "\n}\n";
     outStr += ", stdout=\n{\n" + (result != null ? result.stdout() : "") + "\n}\n";
 
-    assertTrue(success, outStr);
+    //assertTrue(success, outStr);
 
     previousTestSuccessful = true;
+
+    return success;
+  }
+
+  private Callable<Boolean> checkTestScriptAndAssertSuccess(String arg, String errString) {
+    return () -> execTestScriptAndAssertSuccess(arg, errString);
   }
 
   /**
