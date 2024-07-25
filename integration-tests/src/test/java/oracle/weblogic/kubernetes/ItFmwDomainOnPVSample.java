@@ -3,7 +3,6 @@
 
 package oracle.weblogic.kubernetes;
 
-//import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +63,6 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.SampleUtils.createPVHostPathAndChangePermissionInKindCluster;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-//import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test and verify Domain on PV FMW domain sample.
@@ -260,7 +258,6 @@ class ItFmwDomainOnPVSample {
       createPVHostPathAndChangePermissionInKindCluster("/shared", envMap);
     }
 
-    //execTestScriptAndAssertSuccess("-initial-main", "Failed to run -initial-main");
     testUntil(
         withLongRetryPolicy,
         checkTestScriptAndAssertSuccess("-initial-main", "Failed to run -initial-main"),
@@ -301,7 +298,7 @@ class ItFmwDomainOnPVSample {
     outStr += ", stderr=\n{\n" + (result != null ? result.stderr() : "") + "\n}\n";
     outStr += ", stdout=\n{\n" + (result != null ? result.stdout() : "") + "\n}\n";
 
-    //assertTrue(success, outStr);
+    logger.info("output String is: {0}", outStr);
 
     previousTestSuccessful = true;
 
