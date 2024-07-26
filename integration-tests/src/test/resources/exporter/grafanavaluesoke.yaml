@@ -9,7 +9,7 @@ image:
   pullPolicy: IfNotPresent
 
 persistence:
-  enabled: true
+  enabled: false
   existingClaim: pvc-grafana
 service:
   type: ClusterIP

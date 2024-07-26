@@ -44,6 +44,7 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.assertions.impl.Deployment;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -343,7 +344,6 @@ class ItMonitoringExporterSamples {
             domain2Namespace,
             domain2Uid);
       }
-
       installWebhook();
       installCoordinator(domain2Namespace);
       if (!OKD) {
@@ -455,6 +455,9 @@ class ItMonitoringExporterSamples {
       createIngressPathRouting(monitoringNS, "/api",
           prometheusReleaseName + "-server", 80, ingressClassName, prometheusReleaseName
               + "." + monitoringNS);
+      createIngressPathRouting(monitoringNS, "/",
+          grafanaReleaseName, 80, ingressClassName,
+          grafanaReleaseName + "." + monitoringNS);
     }
     //if prometheus already installed change CM for specified domain
     if (!prometheusRegexValue.equals(prometheusDomainRegexValue)) {
@@ -475,11 +478,12 @@ class ItMonitoringExporterSamples {
       assertNotNull(grafanaHelmParams, "Grafana failed to install");
       String host = formatIPv6Host(K8S_NODEPORT_HOST);
 
-      String hostPortGrafana = host + ":" + grafanaHelmParams.getNodePort();
+      String hostPort = OKE_CLUSTER_PRIVATEIP ? ingressIP : host + ":" + grafanaHelmParams.getNodePort();
       if (OKD) {
-        hostPortGrafana = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
+        hostPort = createRouteForOKD(grafanaReleaseName, monitoringNS) + ":" + grafanaHelmParams.getNodePort();
       }
-      // installVerifyGrafanaDashBoard(hostPortGrafana, monitoringExporterEndToEndDir);
+      final String hostPortGrafana = hostPort;
+      assertDoesNotThrow(() -> installVerifyGrafanaDashBoard(hostPortGrafana, monitoringExporterEndToEndDir));
     }
     logger.info("Grafana is running");
   }
@@ -894,5 +898,47 @@ class ItMonitoringExporterSamples {
     imageRepoLoginAndPushImageToRegistry(wdtImage);
 
     return wdtImage;
+  }
+
+  void installVerifyGrafanaDashBoard(String hostPortGrafana,
+                                     String monitoringExporterEndToEndDir)
+      throws IOException, InterruptedException {
+
+    logger.info("installing grafana dashboard");
+    Path srcPromFile = Paths.get(monitoringExporterEndToEndDir, "grafana/dashboard.json");
+    assertDoesNotThrow(() -> {
+      replaceStringInFile(srcPromFile.toString(),
+          "cluster-1",
+          cluster1Name);
+      replaceStringInFile(srcPromFile.toString(),
+          "managed-server-1", MANAGED_SERVER_NAME_BASE + "1"
+      );
+      replaceStringInFile(srcPromFile.toString(),
+          "managed-server-2", MANAGED_SERVER_NAME_BASE + "2"
+      );
+      replaceStringInFile(srcPromFile.toString(),
+          "domain1", domain2Uid
+      );
+    });
+    final String crdCmd =
+        " cd "
+            + monitoringExporterEndToEndDir
+
+            + "&& curl -g --silent --show-error --noproxy '*' -H 'host: "
+            + grafanaReleaseName + "." + monitoringNS
+            + "' -v -H 'Content-Type: application/json' -H \"Content-Type: application/json\""
+            + "  -X POST http://admin:12345678@" + hostPortGrafana + "/api/datasources/"
+            + "  --data-binary @grafana/datasource.json";
+    assertDoesNotThrow(() -> ExecCommand.exec(crdCmd,true));
+
+    final String crdCmd1 =
+        " cd "
+            + monitoringExporterEndToEndDir
+            + "&& curl -g --silent --show-error --noproxy '*' -H 'host: "
+        + grafanaReleaseName + "." + monitoringNS
+            + "'  -v -H 'Content-Type: application/json' -H \"Content-Type: application/json\""
+            + "  -X POST http://admin:12345678@" + hostPortGrafana + "/api/dashboards/db/"
+            + "  --data-binary @grafana/dashboard.json";
+    assertDoesNotThrow(() -> ExecCommand.exec(crdCmd1,true));
   }
 }
