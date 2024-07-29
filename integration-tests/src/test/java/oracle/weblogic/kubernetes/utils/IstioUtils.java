@@ -152,7 +152,7 @@ public class IstioUtils {
     ExecResult result;
     StringBuffer getIngressPort;
     getIngressPort = new StringBuffer(KUBERNETES_CLI + " -n istio-system get service istio-ingressgateway ");
-    getIngressPort.append("-o jsonpath='{.spec.ports[?(@.name==\"" + portName + "\")].nodePort}'");
+    getIngressPort.append("-o jsonpath='{.spec.ports[?(@.name==\"" + portName.trim() + "\")].nodePort}'");
     logger.info("getIngressPort: " + KUBERNETES_CLI + " command {0}", new String(getIngressPort));
     try {
       result = exec(new String(getIngressPort), true);
