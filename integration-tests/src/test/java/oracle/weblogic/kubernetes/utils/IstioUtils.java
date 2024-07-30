@@ -145,6 +145,7 @@ public class IstioUtils {
   /**
    * Get the http ingress port of istio installation.
    *
+   * @param portName name of port to get
    * @return ingress port for istio-ingressgateway
    */
   public static int getIstioHttpIngressPort(String portName) {
