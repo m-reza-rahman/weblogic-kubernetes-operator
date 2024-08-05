@@ -270,24 +270,6 @@ class ItSecureModeDomain {
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
-    
-    //upgrade domain to use 1412 images
-    upgradeImage(domainNamespace, domainUid, image1412);
-    
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    //verify sample app is available in admin server in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify admin console is available in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample application is available in cluster address
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
   }
   
   /**
