@@ -210,12 +210,11 @@ class ItSecureModeDomain {
   }
   
   /**
-   * Test upgrade from 1411 container image to 1412 container image with production off and secure mode off.
+   * Test starting a 14.1.2.0.0 domain with serverStartMode(prod).
    * 
-   * Verify the sample application and console are available in default port 7001 before upgrade.
-   * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
-   * Verify the sample application continue to available in default port 7001 after upgrade.
-   * Verify the console is moved to a new location in 1412.
+   * Verify the sample application and console are available in default port 7001.
+   * Verify the management REST interface continue to be available in default port 7001.
+   * Verify the sample application available in default port 7001 and 8001.
    * 
    */
   @Test
@@ -370,7 +369,7 @@ class ItSecureModeDomain {
    */
   @Test
   @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode on")
-  void testUpgrade1411to1412ProdOnSecOn() throws UnknownHostException {
+  void testStartModeSecure() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(4);
     domainUid = "testdomain3";
     adminServerPodName = domainUid + "-" + adminServerName;
@@ -386,19 +385,21 @@ class ItSecureModeDomain {
       Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
     });
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodeon";
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-startmodesecure";
     String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model.yaml");
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startmode-secure.yaml");
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1411;
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
     //name of channel available in domain configuration
     String channelName = "internal-admin";
     //create a MII domain resource with the auxiliary image
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
     //create ingress resources to route traffic to various service endpoints
     createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
 
@@ -410,26 +411,6 @@ class ItSecureModeDomain {
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
-    //verify admin console is available in port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample app is available in admin server in secure port 7002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 8500
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
-    
-    //upgrade domain to use 1412 images
-    upgradeImage(domainNamespace, domainUid, image1412);
-    dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         adminAppUri, adminAppText, true, ingressIP);
