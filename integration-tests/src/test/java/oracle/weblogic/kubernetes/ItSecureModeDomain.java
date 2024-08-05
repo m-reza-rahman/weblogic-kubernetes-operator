@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.custom.V1Patch;
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1HTTPIngressPath;
 import io.kubernetes.client.openapi.models.V1HTTPIngressRuleValue;
@@ -71,6 +72,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.createIngress;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.TestActions.getPod;
 import static oracle.weblogic.kubernetes.actions.TestActions.getPodCreationTimestamp;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listDomainCustomResources;
@@ -218,7 +220,7 @@ class ItSecureModeDomain {
    */
   @Test
   @DisplayName("Test starting a 14.1.2.0.0 domain with serverStartMode as production")
-  void testStartModeProduction() throws UnknownHostException {
+  void testStartModeProduction() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(2);
     domainUid = "testdomain1";
     adminServerPodName = domainUid + "-" + adminServerName;
@@ -248,7 +250,9 @@ class ItSecureModeDomain {
     //create ingress resources to route traffic to various service endpoints
     createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));    
+    logger.info(Yaml.dump(dcr));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
     
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
