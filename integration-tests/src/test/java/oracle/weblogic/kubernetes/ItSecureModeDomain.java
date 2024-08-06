@@ -295,7 +295,7 @@ class ItSecureModeDomain {
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(wdtVariableFile);
       Files.createDirectories(wdtVariableFile.getParent());
-      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
     });
 
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-mbeanprodsecuressldisabled";
