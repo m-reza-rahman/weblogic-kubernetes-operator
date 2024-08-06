@@ -10,6 +10,7 @@ topology:
     Server:
         adminserver:
             ListenPort: 7001
+            ListenPortEnabled: true
             SSL:
                 Enabled: false
                 ListenPort: 7002
@@ -20,7 +21,8 @@ topology:
             SSL:
                 Enabled: false
                 ListenPort: 8500
-            ListenPort: 8001            
+            ListenPort: 8001
+            ListenPortEnabled: true
     Cluster:
         mycluster:
             DynamicServers:
