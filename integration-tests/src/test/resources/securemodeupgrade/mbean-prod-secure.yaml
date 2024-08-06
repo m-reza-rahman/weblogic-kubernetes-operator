@@ -4,7 +4,6 @@
 domainInfo:
     AdminUserName: '@@SECRET:__weblogic-credentials__:username@@'
     AdminPassword: '@@SECRET:__weblogic-credentials__:password@@'
-    ServerStartMode: 'secure'
 topology:
     Name: '@@PROP:DomainName@@'
     AdminServerName: adminserver
@@ -12,14 +11,14 @@ topology:
         adminserver:
             ListenPort: 7001
             SSL:
-                Enabled: true
-                ListenPort: 7002    
+                Enabled: false
+                ListenPort: 7002
     ServerTemplate:
         myserver-template:
             Cluster: mycluster
             AutoMigrationEnabled: false
             SSL:
-                Enabled: true
+                Enabled: false
                 ListenPort: 8500
             ListenPort: 8001            
     Cluster:
@@ -30,6 +29,11 @@ topology:
                 DynamicClusterSize: 2
                 MinDynamicClusterSize: 0
                 CalculatedListenPorts: false
+    SecurityConfiguration:
+        SecureMode:
+            SecureModeEnabled: true
+    ProductionModeEnabled: true            
+    AdministrationPortEnabled: true
 appDeployments:
     Application:
         sample-app:
