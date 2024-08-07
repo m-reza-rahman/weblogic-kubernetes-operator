@@ -468,7 +468,7 @@ class ItSecureModeDomain {
         sampleAppUri, msName, true, ingressIP);
   }
 
-    /**
+  /**
    * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure.
    * 
    * Verify all services are available only in HTTPS in adminserver as well as managed servers.
