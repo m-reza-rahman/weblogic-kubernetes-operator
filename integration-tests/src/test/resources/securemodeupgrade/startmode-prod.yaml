@@ -11,12 +11,13 @@ topology:
     Server:
         adminserver:
             ListenPort: 7001
+            SSL:
+                ListenPort: 7002 
     ServerTemplate:
         myserver-template:
             Cluster: mycluster
             AutoMigrationEnabled: false
             SSL:
-                Enabled: false
                 ListenPort: 8500
             ListenPort: 8001
     Cluster:

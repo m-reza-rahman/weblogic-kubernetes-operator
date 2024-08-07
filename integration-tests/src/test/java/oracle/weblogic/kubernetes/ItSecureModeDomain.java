@@ -212,9 +212,9 @@ class ItSecureModeDomain {
   /**
    * Test starting a 14.1.2.0.0 domain with serverStartMode(prod).
    * 
-   * Verify the sample application and console are available in default port 7001.
-   * Verify the management REST interface continue to be available in default port 7001.
-   * Verify the sample application available in default port 7001 and 8001.
+   * Verify the sample application is available in default port 7001.
+   * Verify the management REST interface is available in default port 7001.
+   * Verify the cluster sample application available in default 8001.
    * 
    */
   @Test
@@ -228,11 +228,7 @@ class ItSecureModeDomain {
     assertDoesNotThrow(() -> {
       Files.deleteIfExists(wdtVariableFile);
       Files.createDirectories(wdtVariableFile.getParent());
-      Files.writeString(wdtVariableFile, "SSLEnabled=false\n", StandardOpenOption.CREATE);
-      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ProductionModeEnabled=false\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "SecureModeEnabled=false\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "AdministrationPortEnabled=false\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
     });
 
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-startmodeprod";
@@ -275,20 +271,84 @@ class ItSecureModeDomain {
         sampleAppUri, msName, true, ingressIP);
   }
 
+
   /**
-   * Test starting a 14.1.2.0.0 domain with production and secure mode enabled but all SSL ports are disabled.
+   * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure.
    * 
-   * Verify the sample application and console are available in default port 7001.
-   * Verify the management REST interface continue to be available in default port 7001.
-   * Verify the sample application available in default port 7001 and 8001.
+   * Verify all services are available only in HTTPS in adminserver as well as managed servers.
+   * Verify the admin server sample application is available in default SSL port 7002.
+   * Verify the management REST interface is available in default admin port 9002.
+   * Verify the cluster sample application available in default SSL port 8500.
    * 
    */
   @Test
-  @DisplayName("Test starting a 14.1.2.0.0 domain with production and secure mode enabled but "
-      + "all SSL ports are disabled")
+  @DisplayName("Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure")
+  void testStartModeSecure() throws UnknownHostException, ApiException {
+    domainNamespace = namespaces.get(4);
+    domainUid = "testdomain2";
+    adminServerPodName = domainUid + "-" + adminServerName;
+    // create WDT properties file for the WDT model
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
+    });
+
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-startmodesecure";
+    String auxImageTag = getDateAndTimeStamp();
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startmode-secure.yaml");
+
+    // create auxiliary domain creation image
+    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
+    //name of channel available in domain configuration
+    String channelName = "internal-admin";
+    //create a MII domain resource with the auxiliary image
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
+    //create ingress resources to route traffic to various service endpoints
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
+
+    //verify the number of channels available in the domain resource match with the count and name
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    //get ingress ip of the ingress controller to send http requests to servers in domain
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+
+    //verify /weblogic/ready is available in port 9002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        adminAppUri, adminAppText, true, ingressIP);
+    //verify REST access is available in admin server port 9002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
+    //verify sample app is available in admin server in secure port 7002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
+        sampleAppUri, adminServerName, true, ingressIP);
+    //verify sample application is available in cluster address secure port 8500
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
+        sampleAppUri, msName, true, ingressIP);
+  }
+  
+  /**
+   * Test starting a 14.1.2.0.0 domain with production and secure mode enabled but all SSL ports are disabled.
+   * 
+   * Verify the sample application is available in default port 7001.
+   * Verify the management REST interface is available in default port 7001.
+   * Verify the cluster sample application is available in default port 8001.
+   * 
+   */
+  @Test
+  @DisplayName("Test starting a 14.1.2.0.0 domain with production and secure mode "
+      + "enabled but all SSL ports are disabled")
   void testMbeanProductionSecureSSLDisabled() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(3);
-    domainUid = "testdomain2";
+    domainUid = "testdomain3";
     adminServerPodName = domainUid + "-" + adminServerName;
     // create WDT properties file for the WDT model
     Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
@@ -333,13 +393,13 @@ class ItSecureModeDomain {
     //verify REST access is available in admin server port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample application is available in cluster address
+    //verify sample application is available in cluster address in port 8001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
   }
 
   /**
-   * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure.
+   * Test start domain with 14.1.2.0.0 image and SSLEnabled at domain level.
    * 
    * Verify all services are available only in HTTPS in adminserver as well as managed servers.
    * Verify the admin server sample application is available in default port 7002.
@@ -348,74 +408,7 @@ class ItSecureModeDomain {
    * 
    */
   @Test
-  @DisplayName("Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure")
-  void testStartModeSecure() throws UnknownHostException, ApiException {
-    domainNamespace = namespaces.get(4);
-    domainUid = "testdomain3";
-    adminServerPodName = domainUid + "-" + adminServerName;
-    // create WDT properties file for the WDT model
-    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(wdtVariableFile);
-      Files.createDirectories(wdtVariableFile.getParent());
-      Files.writeString(wdtVariableFile, "SSLEnabled=true\n", StandardOpenOption.CREATE);
-      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "ProductionModeEnabled=true\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "SecureModeEnabled=true\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile, "AdministrationPortEnabled=true\n", StandardOpenOption.APPEND);
-    });
-
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-startmodesecure";
-    String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startmode-secure.yaml");
-
-    // create auxiliary domain creation image
-    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
-    //name of channel available in domain configuration
-    String channelName = "internal-admin";
-    //create a MII domain resource with the auxiliary image
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
-    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));
-    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
-    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
-    //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
-
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));
-
-    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    //get ingress ip of the ingress controller to send http requests to servers in domain
-    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
-
-    //verify /weblogic/ready is available in port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample app is available in admin server in secure port 7002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 8500
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
-  }
-
-  /**
-   * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure.
-   * 
-   * Verify all services are available only in HTTPS in adminserver as well as managed servers.
-   * Verify the admin server sample application is available in default port 7002.
-   * Verify the management REST interface continue to be available in default admin port 9002.
-   * Verify the cluster sample application available in default port 8500.
-   * 
-   */
-  @Test
-  @DisplayName("Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure")
+  @DisplayName("Test start domain with 14.1.2.0.0 image and SSLEnabled at domain level")
   void testProductionSSLEnabledGlobal() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(4);
     domainUid = "testdomain4";
@@ -469,16 +462,17 @@ class ItSecureModeDomain {
   }
 
   /**
-   * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure.
+   * Test start domain with 14.1.2.0.0 image and SSLEnabled false at domain level and enable at adminserver level.
    * 
-   * Verify all services are available only in HTTPS in adminserver as well as managed servers.
+   * Verify all services are available only in HTTPS in adminserver.
    * Verify the admin server sample application is available in default port 7002.
    * Verify the management REST interface continue to be available in default admin port 9002.
-   * Verify the cluster sample application available in default port 8500.
+   * Verify the cluster sample application available in default port 8100.
    * 
    */
   @Test
-  @DisplayName("Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure")
+  @DisplayName("Test start domain with 14.1.2.0.0 image and SSLEnabled false at domain "
+      + "level and enable at adminserver level")
   void testProductionSSLDisbledGlobalPartial() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(4);
     domainUid = "testdomain4";
@@ -493,7 +487,7 @@ class ItSecureModeDomain {
 
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-ssldisbledglobalpartial";
     String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "mbean-global-ssl-disbled.yaml");
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "mbean-global-ssl-disbled-partial.yaml");
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
@@ -507,7 +501,7 @@ class ItSecureModeDomain {
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
     logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
     //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 8100, nginxParams.getIngressClassName(), true);
 
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
@@ -526,7 +520,7 @@ class ItSecureModeDomain {
     //verify sample app is available in admin server in secure port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 8500
+    //verify sample application is available in cluster address secure port 8100
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
   }
