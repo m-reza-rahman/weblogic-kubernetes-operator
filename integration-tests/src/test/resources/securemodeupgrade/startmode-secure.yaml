@@ -8,18 +8,10 @@ domainInfo:
 topology:
     Name: '@@PROP:DomainName@@'
     AdminServerName: adminserver
-    Server:
-        adminserver:
-            ListenPort: 7001
-            SSL:
-                ListenPort: 7002    
     ServerTemplate:
         myserver-template:
             Cluster: mycluster
             AutoMigrationEnabled: false
-            ListenPort: 8001
-            SSL:
-                ListenPort: 8500
     Cluster:
         mycluster:
             DynamicServers:
