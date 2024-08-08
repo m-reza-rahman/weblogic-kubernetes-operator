@@ -18,9 +18,9 @@ topology:
         myserver-template:
             Cluster: mycluster
             AutoMigrationEnabled: false
+            ListenPort: 8001
             SSL:
                 ListenPort: 8500
-            ListenPort: 8001
     Cluster:
         mycluster:
             DynamicServers:
