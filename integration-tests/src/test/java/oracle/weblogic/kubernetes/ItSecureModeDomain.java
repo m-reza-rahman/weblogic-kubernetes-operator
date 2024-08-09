@@ -311,7 +311,7 @@ class ItSecureModeDomain {
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
     logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
     //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 7100, nginxParams.getIngressClassName(), true);
 
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
@@ -330,7 +330,7 @@ class ItSecureModeDomain {
     //verify sample app is available in admin server in secure port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 8500
+    //verify sample application is available in cluster address secure port 7100
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
   }
