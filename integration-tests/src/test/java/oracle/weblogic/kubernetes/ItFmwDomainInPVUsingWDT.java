@@ -132,7 +132,6 @@ class ItFmwDomainInPVUsingWDT {
     DOMAINHOMEPREFIX = "/shared/" + domainNamespace + "/domains/";
 
     if (OKD) {
-
       logger.info("Start DB and create RCU schema for namespace: {0}, dbListenerPort: {1}, RCU prefix: {2}, "
           + "dbUrl: {3}, dbImage: {4},  fmwImage: {5} ", dbNamespace, dbListenerPort, RCUSCHEMAPREFIX, dbUrl,
           DB_IMAGE_TO_USE_IN_SPEC, FMWINFRA_IMAGE_TO_USE_IN_SPEC);
@@ -140,7 +139,6 @@ class ItFmwDomainInPVUsingWDT {
           RCUSCHEMAPREFIX, dbNamespace, getNextFreePort(), dbUrl, dbListenerPort),
           String.format("Failed to create RCU schema for prefix %s in the namespace %s with "
           + "dbUrl %s, dbListenerPost %s", RCUSCHEMAPREFIX, dbNamespace, dbUrl, dbListenerPort));
-
     } else {
       logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
       createBaseRepoSecret(dbNamespace);
