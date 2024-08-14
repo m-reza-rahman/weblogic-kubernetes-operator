@@ -60,6 +60,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSE
 import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_NODEPORT;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE_DIR;
@@ -97,6 +98,7 @@ import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImage
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -134,10 +136,10 @@ class ItSecureModeDomain {
   private final String imageTag12214 = "12.2.1.4";
   private final String imageTag1412 = "14.1.2.0.0-jdk17";
   private final String image1412 = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
+  private final String weblogicReady = "/weblogic/ready";
   private final String sampleAppUri = "/sample-war/index.jsp";
   private final String adminAppUri = "/management/tenant-monitoring/servers";
   private final String adminAppText = "RUNNING";
-  private final String adminAppMoved = "This document you requested has moved";
   private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"
       + "/serverRuntimes/adminserver/applicationRuntimes";
   
@@ -214,7 +216,7 @@ class ItSecureModeDomain {
    * 
    * Verify the sample application is available in default port 7001.
    * Verify the management REST interface is available in default port 7001.
-   * Verify the cluster sample application available in default 8001.
+   * Verify the cluster sample application available in default 7101.
    * 
    */
   @Test
@@ -243,7 +245,7 @@ class ItSecureModeDomain {
     //create a MII domain resource with the auxiliary image
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
+    createNginxIngressHostRouting(domainUid, 7001, 7002, 7101, nginxParams.getIngressClassName(), false);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
@@ -269,16 +271,23 @@ class ItSecureModeDomain {
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
+    
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
+      String managedServerPodName = managedServerPrefix + i;
+      assertFalse(verifyServerAccess(domainNamespace, managedServerPodName, 
+          "8101", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+    }
   }
 
 
   /**
    * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure.
    * 
-   * Verify all services are available only in HTTPS in adminserver as well as managed servers.
+   * Verify all services are available only in HTTPS in adminserver as well as in managed servers.
    * Verify the admin server sample application is available in default SSL port 7002.
    * Verify the management REST interface is available in default admin port 9002.
-   * Verify the cluster sample application available in default SSL port 8500.
+   * Verify the cluster sample application available in default SSL port 8501.
    * 
    */
   @Test
@@ -311,7 +320,7 @@ class ItSecureModeDomain {
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
     logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
     //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 7100, nginxParams.getIngressClassName(), true);
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 8501, nginxParams.getIngressClassName(), true);
 
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
@@ -337,17 +346,17 @@ class ItSecureModeDomain {
 
 
   /**
-   * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure disable SSL at server level.
+   * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure disable SSL at domain level.
    * 
-   * Verify all services are available only in HTTP in adminserver as well as managed servers.
-   * Verify the admin server sample application is available in default port 7001.
-   * Verify the management REST interface is available in default admin port 9002.
-   * Verify the cluster sample application available in default port 8100.
+   * Verify all services are available in HTTP, in adminserver as well as in managed servers.
+   * Verify the admin server sample application is available in port 7005.
+   * Verify the management REST interface is available in default admin port 7001.
+   * Verify the cluster sample application available in default port 7101. 
    * 
    */
   @Test
   @DisplayName("Test start secure domain with 14.1.2.0.0 image and ServerStartMode "
-      + "as secure disable SSL at server level")
+      + "as secure disable SSL at domain level")
   void testStartModeSecureOverrideSSL() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(4);
     domainUid = "testdomain6";
@@ -376,7 +385,7 @@ class ItSecureModeDomain {
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
     logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
     //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 9002, 7001, 8001, nginxParams.getIngressClassName(), true);
+    createNginxIngressHostRouting(domainUid, 7005, 7005, 7101, nginxParams.getIngressClassName(), false);
 
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
@@ -386,32 +395,31 @@ class ItSecureModeDomain {
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
-    //verify /weblogic/ready is available in port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+    //verify /weblogic/ready is available in port 7005
+    verifyAppServerAccess(true, getNginxLbNodePort("http"), true, adminIngressHost,
         adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+    //verify REST access is available in admin server port 7005
+    verifyAppServerAccess(true, getNginxLbNodePort("http"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample app is available in admin server in secure port 7001
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
+    //verify sample app is available in admin server in secure port 7005
+    verifyAppServerAccess(true, getNginxLbNodePort("http"), true, adminAppIngressHost,
         sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 8001
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
+    //verify sample application is available in cluster address secure port 7101
+    verifyAppServerAccess(true, getNginxLbNodePort("http"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
   }
   
   /**
-   * Test starting a 14.1.2.0.0 domain with production and secure mode enabled but all SSL ports are disabled.
+   * Test starting a 14.1.2.0.0 domain with production and secure mode enabled using MBean configuration.
    * 
-   * Verify the sample application is available in default port 7001.
-   * Verify the management REST interface is available in default port 7001.
-   * Verify the cluster sample application is available in default port 8001.
+   * Verify the sample application is available in default SSL port 7002 in admin server.
+   * Verify the management REST interface is available in default port 7002 in admin server.
+   * Verify the cluster sample application is available in default SSL port 8101.
    * 
    */
   @Test
-  @DisplayName("Test starting a 14.1.2.0.0 domain with production and secure mode "
-      + "enabled but all SSL ports are disabled")
-  void testMbeanProductionSecureSSLDisabled() throws UnknownHostException, ApiException {
+  @DisplayName("Test starting a 14.1.2.0.0 domain with production and secure mode enabled using MBean configuration.")
+  void testMbeanProductionSecureMBeanConfiguration() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(3);
     domainUid = "testdomain3";
     adminServerPodName = domainUid + "-" + adminServerName;
@@ -435,7 +443,7 @@ class ItSecureModeDomain {
     //create a MII domain resource with the auxiliary image
     createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
     //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 8101, nginxParams.getIngressClassName(), false);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
@@ -449,32 +457,31 @@ class ItSecureModeDomain {
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
-    //verify sample app is available in admin server in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    //verify sample app is available in admin server in port 7002
+    verifyAppServerAccess(false, getNginxLbNodePort("https"), true, adminIngressHost,
         sampleAppUri, adminServerName, true, ingressIP);
-    //verify admin console is available in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    //verify admin console is available in port 9002
+    verifyAppServerAccess(false, getNginxLbNodePort("https"), true, adminIngressHost,
         adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+    //verify REST access is available in admin server port 9002
+    verifyAppServerAccess(false, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample application is available in cluster address in port 8001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+    //verify sample application is available in cluster address in port 8101
+    verifyAppServerAccess(false, getNginxLbNodePort("https"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
   }
   
   /**
-   * Test start domain with 14.1.2.0.0 image and SSLEnabled at domain level.
-   * 
-   * Verify all services are available only in HTTPS in adminserver as well as managed servers.
-   * Verify the admin server sample application is available in default port 7002.
-   * Verify the management REST interface continue to be available in default admin port 9002.
-   * Verify the cluster sample application available in default port 8500.
+   * Test start domain with 14.1.2.0.0 image and SSLEnabled at domain level with start mode prod.
+   *    
+   * Verify the admin server sample application is available in ports 7001 and HTTPS 7002.
+   * Verify the management REST interface available in ports 7001 and HTTPS 7002.
+   * Verify the cluster sample application available in ports 7101 and HTTPS 8101.
    * 
    */
   @Test
-  @DisplayName("Test start domain with 14.1.2.0.0 image and SSLEnabled at domain level")
-  void testProductionSSLEnabledGlobal() throws UnknownHostException, ApiException {
+  @DisplayName("Test start domain with 14.1.2.0.0 image and SSLEnabled at domain level with start mode prod.")
+  void testStartmodeProductionSSLEnabledGlobal() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(4);
     domainUid = "testdomain4";
     adminServerPodName = domainUid + "-" + adminServerName;
@@ -502,7 +509,7 @@ class ItSecureModeDomain {
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
     logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
     //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
+    createNginxIngressHostRouting(domainUid, 7001, 7002, 8101, nginxParams.getIngressClassName(), true);
 
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
@@ -512,33 +519,33 @@ class ItSecureModeDomain {
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
 
-    //verify /weblogic/ready is available in port 9002
+    //verify /weblogic/ready is available in port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 9002
+    //verify REST access is available in admin server port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in secure port 7002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
         sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 8500
+    //verify sample application is available in cluster address secure port 8101
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
   }
 
   /**
-   * Test start domain with 14.1.2.0.0 image and SSLEnabled false at domain level and enable at adminserver level.
+   * Test start domain with 14.1.2.0.0 image, secure mode disabled in MBean, enable SSL at adminserver level.
    * 
-   * Verify all services are available only in HTTPS in adminserver.
-   * Verify the admin server sample application is available in default port 7002.
-   * Verify the management REST interface continue to be available in default admin port 9002.
-   * Verify the cluster sample application available in default port 8100.
+   * Verify admin server starts with 2 listen ports non ssl at 7001 and SSL at 7002.
+   * Verify the admin server sample application is available in ports 7001 and 7002.
+   * Verify the management REST interface available in 7001 and 7002
+   * Verify the cluster sample application available in port 8002.
    * 
    */
   @Test
-  @DisplayName("Test start domain with 14.1.2.0.0 image and SSLEnabled false at domain "
-      + "level and enable at adminserver level")
-  void testProductionSSLDisbledGlobalPartial() throws UnknownHostException, ApiException {
+  @DisplayName("Test start domain with 14.1.2.0.0 image, secure mode disabled in MBean, "
+      + "enable SSL at adminserver level.")
+  void testProductionSSLEnabledPartial() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(4);
     domainUid = "testdomain4";
     adminServerPodName = domainUid + "-" + adminServerName;
@@ -565,29 +572,26 @@ class ItSecureModeDomain {
     logger.info(Yaml.dump(dcr));
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
     logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
-    //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 8100, nginxParams.getIngressClassName(), true);
 
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
-    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    //get ingress ip of the ingress controller to send http requests to servers in domain
-    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+    //verify /weblogic/ready is available in port 7001 and 7002
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7001", "http", weblogicReady, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7002", "https", weblogicReady, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
 
-    //verify /weblogic/ready is available in port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample app is available in admin server in secure port 7002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 8100
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
+      String managedServerPodName = managedServerPrefix + i;
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+    }
   }
 
   /**
@@ -1070,4 +1074,23 @@ class ItSecureModeDomain {
     }
   }
 
+  private static boolean verifyServerAccess(String namespace, String podName, String port,
+      String protocol, String uri, String expected) {
+    logger.info("Checking the server access");
+    String command = KUBERNETES_CLI + " exec -n " + namespace + "  " + podName
+        + " -- curl -vkgs --noproxy '*' " + protocol + "://" + podName + ":" + port + uri;
+    ExecResult result = null;
+    try {
+      result = ExecCommand.exec(command, true);
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+    assertNotNull(result, "result is null");
+    String response = result.stdout().trim();
+    logger.info(response);
+    logger.info(result.stderr());
+    logger.info("{0}", result.exitValue());
+    return response.contains(expected);
+  }
+  
 }

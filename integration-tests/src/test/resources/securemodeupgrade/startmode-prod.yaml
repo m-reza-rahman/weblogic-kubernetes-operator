@@ -8,18 +8,9 @@ domainInfo:
 topology:
     Name: '@@PROP:DomainName@@'
     AdminServerName: adminserver
-    Server:
-        adminserver:
-            ListenPort: 7001
-            SSL:
-                ListenPort: 7002
     ServerTemplate:
         myserver-template:
             Cluster: mycluster
-            AutoMigrationEnabled: false
-            ListenPort: 8001
-            SSL:
-                ListenPort: 8500
     Cluster:
         mycluster:
             DynamicServers:
@@ -27,7 +18,7 @@ topology:
                 ServerNamePrefix: mycluster-ms-
                 DynamicClusterSize: 2
                 MinDynamicClusterSize: 0
-                CalculatedListenPorts: false
+                CalculatedListenPorts: true
 appDeployments:
     Application:
         sample-app:
@@ -35,4 +26,4 @@ appDeployments:
               mycluster,
               adminserver
             ]
-            SourcePath: wlsdeploy/applications/sample-app.ear                
+            SourcePath: wlsdeploy/applications/sample-app.ear

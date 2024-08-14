@@ -11,15 +11,17 @@ topology:
     ServerTemplate:
         myserver-template:
             Cluster: mycluster
-            AutoMigrationEnabled: false
+            SSL:
+                ListenPort: 8500
     Cluster:
         mycluster:
+            SecureReplicationEnabled: false
             DynamicServers:
                 ServerTemplate: myserver-template
                 ServerNamePrefix: mycluster-ms-
                 DynamicClusterSize: 2
                 MinDynamicClusterSize: 0
-                CalculatedListenPorts: false
+                CalculatedListenPorts: true
 appDeployments:
     Application:
         sample-app:
