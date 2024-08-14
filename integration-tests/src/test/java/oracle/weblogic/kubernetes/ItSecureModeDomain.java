@@ -595,6 +595,122 @@ class ItSecureModeDomain {
   }
 
   /**
+   * Test start domain with 14.1.2.0.0 image, secure mode enabled in MBean, disable SSL, 
+   * enable listenport at domain level.
+   * 
+   * Verify admin server starts with 2 listen ports non ssl at 7001 and SSL at 7002.
+   * Verify the admin server sample application is available in ports 7001 and 7002.
+   * Verify the management REST interface available in 7001 and 7002
+   * Verify the cluster sample application available in port 8002.
+   * 
+   */
+  @Test
+  @DisplayName("Test start domain with 14.1.2.0.0 image, secure mode disabled in MBean, "
+      + "enable SSL at adminserver level.")
+  void testSecureSSLDisabledListenportEnabled() throws UnknownHostException, ApiException {
+    domainNamespace = namespaces.get(5);
+    domainUid = "testdomain7";
+    adminServerPodName = domainUid + "-" + adminServerName;
+    // create WDT properties file for the WDT model
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
+    });
+
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-ssldisablelistenportenable";
+    String auxImageTag = getDateAndTimeStamp();
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "secure-listenport-enabled.yaml");
+
+    // create auxiliary domain creation image
+    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
+    //name of channel available in domain configuration
+    String channelName = "internal-admin";
+    //create a MII domain resource with the auxiliary image
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
+
+    //verify the number of channels available in the domain resource match with the count and name
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    //verify /weblogic/ready is available in port 7001 and 7002
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
+      String managedServerPodName = managedServerPrefix + i;
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7101", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+    }
+  }
+  
+  /**
+   * Test start domain with 14.1.2.0.0 image, secure mode enabled in MBean, disable SSL, 
+   * enable listenport at domain level.
+   * 
+   * Verify admin server starts with 2 listen ports non ssl at 7001 and SSL at 7002.
+   * Verify the admin server sample application is available in ports 7001 and 7002.
+   * Verify the management REST interface available in 7001 and 7002
+   * Verify the cluster sample application available in port 8002.
+   * 
+   */
+  @Test
+  @DisplayName("Test start domain with 14.1.2.0.0 image, secure mode disabled in MBean, "
+      + "enable SSL at adminserver level.")
+  void testStartSecureSSLDisabledListenportEnabled() throws UnknownHostException, ApiException {
+    domainNamespace = namespaces.get(5);
+    domainUid = "testdomain7";
+    adminServerPodName = domainUid + "-" + adminServerName;
+    // create WDT properties file for the WDT model
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
+    });
+
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-ssldisablelistenportenable";
+    String auxImageTag = getDateAndTimeStamp();
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startsecure-listenport-enabled.yaml");
+
+    // create auxiliary domain creation image
+    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
+    //name of channel available in domain configuration
+    String channelName = "internal-admin";
+    //create a MII domain resource with the auxiliary image
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
+
+    //verify the number of channels available in the domain resource match with the count and name
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    //verify /weblogic/ready is available in port 7001 and 7002
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
+      String managedServerPodName = managedServerPrefix + i;
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7101", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+    }
+  }
+  
+  /**
    * Create domain custom resource with auxiliary image, base image and channel name.
    *
    * @param domainNamespace namespace in which to create domain
