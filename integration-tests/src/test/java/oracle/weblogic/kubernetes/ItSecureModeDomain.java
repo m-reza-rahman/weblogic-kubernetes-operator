@@ -244,34 +244,7 @@ class ItSecureModeDomain {
     }
   }
 
-  private DomainResource createDomain(String wdtModel) {
-    // create WDT properties file for the WDT model
-    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(wdtVariableFile);
-      Files.createDirectories(wdtVariableFile.getParent());
-      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
-    });
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securedomain-image";
-    String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", wdtModel);
-
-    // create auxiliary domain creation image
-    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-
-    //create a MII domain resource with the auxiliary image
-    DomainResource domain = createDomainUsingAuxiliaryImage(domainNamespace, domainUid, image1412, auxImage, null);
-    return domain;
-  }
-  
-  private void dumpResources() throws ApiException {
-    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));
-    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
-    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
-  }
-  
   /**
    * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure.
    * 
@@ -284,55 +257,37 @@ class ItSecureModeDomain {
   @Test
   @DisplayName("Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure")
   void testStartModeSecure() throws UnknownHostException, ApiException {
-    domainNamespace = namespaces.get(4);
+    domainNamespace = namespaces.get(2);
     domainUid = "testdomain2";
     adminServerPodName = domainUid + "-" + adminServerName;
-    // create WDT properties file for the WDT model
-    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(wdtVariableFile);
-      Files.createDirectories(wdtVariableFile.getParent());
-      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
-    });
+    String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-startmodesecure";
-    String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startmode-secure.yaml");
+    createDomain("startmode-secure.yaml");
+    dumpResources();
 
-    // create auxiliary domain creation image
-    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
     //name of channel available in domain configuration
     String channelName = "internal-admin";
-    //create a MII domain resource with the auxiliary image
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
-    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));
-    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
-    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
-    //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 9002, 7002, 8501, nginxParams.getIngressClassName(), true);
-
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
 
-    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    //get ingress ip of the ingress controller to send http requests to servers in domain
-    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+    //verify /weblogic/ready and sample app available in port 7001
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+    //verify secure channel is disabled
+    assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7001", "http1", weblogicReady, "Connection refused"));
 
-    //verify /weblogic/ready is available in port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 9002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample app is available in admin server in secure port 7002
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 7100
-    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "710", "http", weblogicReady, "HTTP/1.1 200 OK"));
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7101", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+      assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8101", "https", weblogicReady, "Connection refused"));
+    }
   }
 
 
@@ -700,6 +655,35 @@ class ItSecureModeDomain {
           "7101", "https", sampleAppUri, "HTTP/1.1 200 OK"));
     }
   }
+  
+  private DomainResource createDomain(String wdtModel) {
+    // create WDT properties file for the WDT model
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
+    });
+
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securedomain-image";
+    String auxImageTag = getDateAndTimeStamp();
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", wdtModel);
+
+    // create auxiliary domain creation image
+    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
+
+    //create a MII domain resource with the auxiliary image
+    DomainResource domain = createDomainUsingAuxiliaryImage(domainNamespace, domainUid, image1412, auxImage, null);
+    return domain;
+  }
+  
+  private void dumpResources() throws ApiException {
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
+    logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
+  }
+    
   
   /**
    * Create domain custom resource with auxiliary image, base image and channel name.
