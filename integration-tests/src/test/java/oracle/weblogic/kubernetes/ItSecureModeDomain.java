@@ -19,7 +19,6 @@ import io.kubernetes.client.util.Yaml;
 import oracle.weblogic.domain.Channel;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.AppParams;
-import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -87,17 +86,11 @@ class ItSecureModeDomain {
   private static String domainUid;
   private static final String adminServerName = "adminserver";
   private static final String clusterName = "mycluster";
-  private static final String msName = "ms-1";
   private String adminServerPodName;
   private String managedServerPrefix;
   private static final String wlSecretName = "weblogic-credentials";
   private static final String encryptionSecretName = "encryptionsecret";
   
-  private static NginxParams nginxParams;
-  private static String ingressIP = null;
-  String adminIngressHost;
-  String adminAppIngressHost;
-  String clusterIngressHost;
   private final String imageTag1412 = "14.1.2.0.0-jdk17";
   private final String image1412 = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
   private final String weblogicReady = "/weblogic/ready";
