@@ -673,9 +673,9 @@ class ItSecureModeDomain {
 
   private static boolean verifyServerAccess(String namespace, String podName, String port,
       String protocol, String uri, String expected) {
-    logger.info("Checking the server access");
-    String command = KUBERNETES_CLI + " exec -n " + namespace + "  " + podName
-        + " -- curl -vkgs --noproxy '*' " + protocol + "://" + podName + ":" + port + uri;
+    String curlCmd = " -- curl -vkgs --noproxy '*' " + protocol + "://" + podName + ":" + port + uri;
+    logger.info("Checking the server access at {0}", curlCmd);
+    String command = KUBERNETES_CLI + " exec -n " + namespace + "  " + podName + curlCmd;
     ExecResult result = null;
     try {
       result = ExecCommand.exec(command, true);
