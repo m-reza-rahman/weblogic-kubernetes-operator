@@ -20,7 +20,7 @@ topology:
                 ServerNamePrefix: mycluster-ms-
                 DynamicClusterSize: 2
                 MinDynamicClusterSize: 0
-                CalculatedListenPorts: true
+                CalculatedListenPorts: false
 appDeployments:
     Application:
         sample-app:
