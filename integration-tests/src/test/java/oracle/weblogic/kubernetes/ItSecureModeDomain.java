@@ -103,12 +103,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The test verifies the before and after upgrade to 1412 images.
- * Verify all the servers in the domain comes up and WebLogic
- * console and REST management interfaces are accessible thru appropriate channels.
+ * The test verifies various secure domains using 1412 image.
+ * Verify different combinations of production secure domain can start
+ * REST management interfaces are accessible thru appropriate channels.
  * Verify deployed customer applications are accessible in appropriate channels and ports.
  */
-@DisplayName("Test upgrade to 1412 image for a mii domain")
+@DisplayName("Test secure domains with 1412 image for a mii domain")
 @IntegrationTest
 @Tag("kind-parallel")
 class ItSecureModeDomain {
@@ -132,8 +132,6 @@ class ItSecureModeDomain {
   String adminIngressHost;
   String adminAppIngressHost;
   String clusterIngressHost;
-  private final String imageTag1411 = "14.1.1.0-11";
-  private final String imageTag12214 = "12.2.1.4";
   private final String imageTag1412 = "14.1.2.0.0-jdk17";
   private final String image1412 = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
   private final String weblogicReady = "/weblogic/ready";
@@ -150,7 +148,7 @@ class ItSecureModeDomain {
    * @param namespaces list of namespaces.
    */
   @BeforeAll
-  public static void initAll(@Namespaces(8) List<String> ns) {
+  public static void initAll(@Namespaces(9) List<String> ns) {
     logger = getLogger();
     namespaces = ns;
 
@@ -158,22 +156,13 @@ class ItSecureModeDomain {
     logger.info("Assigning unique namespace for Operator");
     assertNotNull(namespaces.get(0), "Namespace list is null");
     opNamespace = namespaces.get(0);
-    // get a new unique for ingress
-    logger.info("Assigning unique namespace for Ingress");
-    ingressNamespace = namespaces.get(1);
 
     // install operator watching 6 domain namespaces
-    installAndVerifyOperator(opNamespace, namespaces.subList(2, 8).toArray(String[]::new));
+    installAndVerifyOperator(opNamespace, namespaces.subList(1, 9).toArray(String[]::new));
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
-    namespaces.subList(2, 8).stream().forEach(ImageUtils::createTestRepoSecret);
-
-    // install Nginx ingress controller for all test cases using Nginx
-    installNginx();
-    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;   
+    namespaces.subList(1, 9).stream().forEach(ImageUtils::createTestRepoSecret);
   }
 
   /**
@@ -225,6 +214,37 @@ class ItSecureModeDomain {
     domainNamespace = namespaces.get(2);
     domainUid = "testdomain1";
     adminServerPodName = domainUid + "-" + adminServerName;
+    String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
+
+    createDomain("startmode-prod.yaml");
+    dumpResources();
+
+    //name of channel available in domain configuration
+    String channelName = "default";
+    //verify the number of channels available in the domain resource match with the count and name
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    //verify /weblogic/ready and sample app available in port 7001
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7001", "http", weblogicReady, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+    //verify secure channel is disabled
+    assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7002", "https", weblogicReady, "Connection refused"));
+
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7101", "http", weblogicReady, "HTTP/1.1 200 OK"));
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7101", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+      assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8101", "https", weblogicReady, "Connection refused"));
+    }
+  }
+
+  private DomainResource createDomain(String wdtModel) {
     // create WDT properties file for the WDT model
     Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
     assertDoesNotThrow(() -> {
@@ -233,54 +253,25 @@ class ItSecureModeDomain {
       Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
     });
 
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-startmodeprod";
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securedomain-image";
     String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startmode-prod.yaml");
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", wdtModel);
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
-    //name of channel available in domain configuration
-    String channelName = "default";
+
     //create a MII domain resource with the auxiliary image
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
-    //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 7001, 7002, 7101, nginxParams.getIngressClassName(), false);
+    DomainResource domain = createDomainUsingAuxiliaryImage(domainNamespace, domainUid, image1412, auxImage, null);
+    return domain;
+  }
+  
+  private void dumpResources() throws ApiException {
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
     logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
-    
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    
-    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    //get ingress ip of the ingress controller to send http requests to servers in domain
-    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
-
-    //verify sample app is available in admin server in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify admin console is available in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample application is available in cluster address
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
-    
-    for (int i = 1; i <= replicaCount; i++) {
-      String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
-      String managedServerPodName = managedServerPrefix + i;
-      assertFalse(verifyServerAccess(domainNamespace, managedServerPodName, 
-          "8101", "http", sampleAppUri, "HTTP/1.1 200 OK"));
-    }
   }
-
-
+  
   /**
    * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure.
    * 
