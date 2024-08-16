@@ -9,16 +9,26 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1ContainerPort;
 import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1LocalObjectReference;
+import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.util.Yaml;
-import oracle.weblogic.domain.Channel;
+import oracle.weblogic.domain.AuxiliaryImage;
+import oracle.weblogic.domain.ClusterList;
+import oracle.weblogic.domain.ClusterSpec;
 import oracle.weblogic.domain.DomainResource;
 import oracle.weblogic.kubernetes.actions.impl.AppParams;
+import oracle.weblogic.kubernetes.actions.impl.Cluster;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
@@ -35,9 +45,11 @@ import org.junit.jupiter.api.Test;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_PREFIX;
+import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ENCRYPION_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_APP_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.SSL_PROPERTIES;
@@ -53,15 +65,16 @@ import static oracle.weblogic.kubernetes.actions.TestActions.listDomainCustomRes
 import static oracle.weblogic.kubernetes.actions.TestActions.shutdownDomain;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExist;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
-import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createDomainResourceWithAuxiliaryImage;
+import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
+import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
+import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretsForImageRepos;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -178,10 +191,17 @@ class ItSecureModeDomain {
     createDomain("startmode-prod.yaml");
     dumpResources();
 
-    //name of channel available in domain configuration
-    String channelName = "default";
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default", 7001);
+    adminPorts.put("internal-t3", 7001);
+    verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
+
+    Map<String, Integer> msPorts = new HashMap<>();
+    msPorts.put("default", 7100);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
+    }
 
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
@@ -224,10 +244,18 @@ class ItSecureModeDomain {
     createDomain("startmode-secure.yaml");
     dumpResources();
 
-    //name of channel available in domain configuration
-    String channelName = "internal-admin";
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default-secure", 7002);
+    adminPorts.put("internal-admin", 9002);
+    verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
+    
+    Map<String, Integer> msPorts = new HashMap<>();
+    msPorts.put("default-secure", 8500);
+    msPorts.put("internal-admin", 9002);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
+    }
 
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
@@ -271,10 +299,18 @@ class ItSecureModeDomain {
     createDomain("startmode-secure-ssl-override.yaml");
     dumpResources();
 
-    //name of channel available in domain configuration
-    String channelName = "internal-admin";
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName)); 
+    Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default-secure", 7002);
+    adminPorts.put("internal-admin", 9002);
+    verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
+    
+    Map<String, Integer> msPorts = new HashMap<>();
+    msPorts.put("default-secure", 8500);
+    msPorts.put("internal-admin", 9002);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
+    }
     
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
@@ -329,10 +365,18 @@ class ItSecureModeDomain {
     createDomain("mbean-prod-secure.yaml");
     dumpResources();
 
-    //name of channel available in domain configuration
-    String channelName = "default";
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName)); 
+    Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default-secure", 7002);
+    adminPorts.put("internal-admin", 9002);
+    verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
+    
+    Map<String, Integer> msPorts = new HashMap<>();
+    msPorts.put("default-secure", 8500);
+    msPorts.put("internal-admin", 9002);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
+    }
     
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
@@ -379,19 +423,29 @@ class ItSecureModeDomain {
     createDomain("mbean-global-ssl-enabled.yaml");
     dumpResources();
 
-    //name of channel available in domain configuration
-    String channelName = "internal-admin";
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName)); 
+    Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default-secure", 7002);
+    adminPorts.put("internal-admin", 9002);
+    verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
+    
+    Map<String, Integer> msPorts = new HashMap<>();
+    msPorts.put("default-secure", 8500);
+    msPorts.put("internal-admin", 9002);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
+    }
     
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
+        "7001", "https", weblogicReady, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7002", "https", weblogicReady, "HTTP/1.1 200 OK"));    
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+    //verify secure channel is disabled
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
-    //verify secure channel is disabled
-    assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http1", weblogicReady, "Connection refused"));
     
     /*
     //verify /weblogic/ready is available in port 7002
@@ -430,10 +484,18 @@ class ItSecureModeDomain {
     createDomain("mbean-global-ssl-disbled-partial.yaml");
     dumpResources();
 
-    //name of channel available in domain configuration
-    String channelName = "internal-admin";
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName)); 
+    Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default-secure", 7002);
+    adminPorts.put("internal-admin", 9002);
+    verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
+    
+    Map<String, Integer> msPorts = new HashMap<>();
+    msPorts.put("default-secure", 8500);
+    msPorts.put("internal-admin", 9002);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
+    }
     
     //verify /weblogic/ready is available in port 7001 and 7002
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
@@ -475,11 +537,19 @@ class ItSecureModeDomain {
     createDomain("secure-listenport-enabled.yaml");
     dumpResources();
 
-    //name of channel available in domain configuration
-    String channelName = "internal-admin";
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));    
+    Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default-secure", 7002);
+    adminPorts.put("internal-admin", 9002);
+    verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
+    Map<String, Integer> msPorts = new HashMap<>();
+    msPorts.put("default-secure", 8500);
+    msPorts.put("internal-admin", 9002);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
+    }
+ 
     //verify /weblogic/ready is available in port 7001 and 7002
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
@@ -516,10 +586,18 @@ class ItSecureModeDomain {
     createDomain("startsecure-listenport-enabled.yaml");
     dumpResources();
 
-    //name of channel available in domain configuration
-    String channelName = "internal-admin";
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));  
+    Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default-secure", 7002);
+    adminPorts.put("internal-admin", 9002);
+    verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
+    
+    Map<String, Integer> msPorts = new HashMap<>();
+    msPorts.put("default-secure", 8500);
+    msPorts.put("internal-admin", 9002);
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
+    }
     
     //verify /weblogic/ready is available in port 7001 and 7002
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
@@ -565,58 +643,37 @@ class ItSecureModeDomain {
     
   
   /**
-   * Create domain custom resource with auxiliary image, base image and channel name.
+   * Create domain custom resource with auxiliary image, base image.
    *
    * @param domainNamespace namespace in which to create domain
    * @param domainUid domain id
    * @param baseImage base image used by the WebLogic pods
    * @param auxImage auxiliary image containing domain creation WDT model and properties files
-   * @param channelName name of the channel to configure in domain resource
    * @return domain resource object
    */
-  private DomainResource createDomainUsingAuxiliaryImage(String domainNamespace, String domainUid,
-      String baseImage, String auxImage, String channelName) {
+  private DomainResource createDomainUsingAuxiliaryImage(String domainNamespace, String domainUid, String clusterName,
+      String baseImage, String auxImage) {
     // create secret for admin credentials
     logger.info("Create secret for admin credentials");
     createSecretWithUsernamePassword(wlSecretName, domainNamespace,
         ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
-
     // create encryption secret
     logger.info("Create encryption secret");
     createSecretWithUsernamePassword(encryptionSecretName, domainNamespace,
         ENCRYPION_USERNAME_DEFAULT, ENCRYPION_PASSWORD_DEFAULT);
 
-    // admin/managed server name here should match with model yaml
-    final String auxiliaryImagePath = "/auxiliary";
     // create domain custom resource using a auxiliary image
     logger.info("Creating domain custom resource with domainUid {0} and auxiliary images {1}",
         domainUid, auxImage);
-
-    DomainResource domainCR
-        = createDomainResourceWithAuxiliaryImage(domainUid, domainNamespace,
-            baseImage, wlSecretName, createSecretsForImageRepos(domainNamespace),
-            encryptionSecretName, auxiliaryImagePath, auxImage);
-    // replace the default channel with given channel from method parameters
-    if (channelName != null) {
-      Channel channel = domainCR.getSpec().getAdminServer().getAdminService().channels().get(0);
-      channel.channelName(channelName);
-      domainCR.getSpec().adminServer().adminService().channels(List.of(channel));
-    }
-    //add SSL properties
-    domainCR.getSpec().getServerPod()
-        .addEnvItem(new V1EnvVar()
-            .name("JAVA_OPTIONS")
-            .value(SSL_PROPERTIES))
-        .addEnvItem(new V1EnvVar()
-            .name("WLSDEPLOY_PROPERTIES")
-            .value(SSL_PROPERTIES));
+    DomainResource domainCR = createDomainResource(domainUid, domainNamespace, auxImage,
+        baseImage, wlSecretName, createSecretsForImageRepos(domainNamespace),
+        encryptionSecretName, replicaCount, clusterName);
 
     // create domain and verify its running
     logger.info("Creating domain {0} with auxiliary images {1} in namespace {2}",
         domainUid, auxImage, domainNamespace);
-    createDomainAndVerify(domainUid, domainCR, domainNamespace,
-        adminServerPodName, managedServerPrefix, replicaCount);
-
+    createDomainAndVerify(domainUid, domainCR, domainNamespace, adminServerPodName, 
+        managedServerPrefix, replicaCount);
     return domainCR;
   }
 
@@ -652,23 +709,108 @@ class ItSecureModeDomain {
     return imageName + ":" + imageTag;
   }
 
+  private static DomainResource createDomainResource(
+      String domainResourceName,
+      String domNamespace,
+      String auxImageName,
+      String imageName,
+      String adminSecretName,
+      String[] repoSecretNames,
+      String encryptionSecretName,
+      int replicaCount,
+      String clusterName) {
 
-  private void verifyChannel(String domainNamespace, String domainUid, List<String> channelNames) {
-    //get the number of channels available in domain resource and assert it is equal to the expected count
-    assertThat(assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace)
-        .getSpec().getAdminServer().getAdminService().getChannels().stream().count())
-        .equals(Long.valueOf(channelNames.size())))
-        .withFailMessage("Number of channels are not equal to expected length");
-
-    //verify the name of channels available in the domain resource match with the expected names
-    for (String channelName : channelNames) {
-      assertThat(assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace)
-          .getSpec().getAdminServer().getAdminService().getChannels().stream()
-          .anyMatch(ch -> ch.channelName().equals(channelName))))
-          .as(String.format("Channel %s was found in domain resource %s", channelName, domainUid))
-          .withFailMessage(String.format("Channel %s was found not in domain resource %s", channelName, domainUid))
-          .isEqualTo(true);
+    // create secrets
+    List<V1LocalObjectReference> secrets = new ArrayList<>();
+    for (String secret : repoSecretNames) {
+      secrets.add(new V1LocalObjectReference().name(secret));
     }
+
+    // create the domain CR
+    DomainResource domain = new DomainResource()
+        .apiVersion(DOMAIN_API_VERSION)
+        .kind("Domain")
+        .metadata(new io.kubernetes.client.openapi.models.V1ObjectMeta()
+            .name(domainResourceName)
+            .namespace(domNamespace))
+        .spec(new oracle.weblogic.domain.DomainSpec()
+            .domainUid(domainResourceName)
+            .domainHomeSourceType("FromModel")
+            .image(imageName)
+            .imagePullPolicy(IMAGE_PULL_POLICY)
+            .webLogicCredentialsSecret(new V1LocalObjectReference()
+                .name(adminSecretName))
+            .imagePullSecrets(secrets)
+            .includeServerOutInPodLog(true)
+            .serverStartPolicy("IfNeeded")
+            .serverPod(new oracle.weblogic.domain.ServerPod()
+                .addEnvItem(new V1EnvVar()
+                    .name("JAVA_OPTIONS")
+                    .value(SSL_PROPERTIES))
+                .addEnvItem(new V1EnvVar()
+                    .name("WLSDEPLOY_PROPERTIES")
+                    .value(SSL_PROPERTIES))
+                .addEnvItem(new V1EnvVar()
+                    .name("JAVA_OPTIONS")
+                    .value("-Dweblogic.security.SSL.ignoreHostnameVerification=true"))
+                .addEnvItem(new io.kubernetes.client.openapi.models.V1EnvVar()
+                    .name("USER_MEM_ARGS")
+                    .value("-Djava.security.egd=file:/dev/./urandom ")))
+            .configuration(new oracle.weblogic.domain.Configuration()
+                .model(new oracle.weblogic.domain.Model()
+                    .withAuxiliaryImage(new AuxiliaryImage()
+                        .image(auxImageName)
+                        .imagePullPolicy(IMAGE_PULL_POLICY)
+                        .sourceWDTInstallHome("/auxiliary/weblogic-deploy")
+                        .sourceModelHome("/auxiliary/models"))
+                    .domainType("WLS")
+                    .runtimeEncryptionSecret(encryptionSecretName))
+                .introspectorJobActiveDeadlineSeconds(3000L)));
+
+    ClusterList clusters = Cluster.listClusterCustomResources(domNamespace);
+
+    if (clusterName != null) {
+      String clusterResName = clusterName;
+      if (clusters.getItems().stream().anyMatch(cluster -> cluster.getClusterName().equals(clusterResName))) {
+        getLogger().info("!!!Cluster {0} in namespace {1} already exists, skipping...", clusterResName, domNamespace);
+      } else {
+        getLogger().info("Creating cluster {0} in namespace {1}", clusterResName, domNamespace);
+        ClusterSpec spec
+            = new ClusterSpec().withClusterName(clusterName).replicas(replicaCount).serverStartPolicy("IfNeeded");
+        createClusterAndVerify(createClusterResource(clusterResName, domNamespace, spec));
+      }
+      // set cluster references
+      domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
+    }
+    setPodAntiAffinity(domain);
+    return domain;
+  }
+  
+  private void verifyServerChannels(String domainNamespace, String podName,
+      Map<String, Integer> portsExpected) throws ApiException {
+    //get the pod
+    V1Pod pod = getPod(domainNamespace, null, podName);
+    assertNotNull(pod);
+
+    //verify if all the container port names and numbers are in the expected list
+    Map<String, Integer> ports = pod.getSpec().getContainers().stream()
+        .filter(container -> container.getName().equals("weblogic-server"))
+        .findFirst().get().getPorts().stream()
+        .collect(Collectors.toMap(V1ContainerPort::getName, V1ContainerPort::getContainerPort));
+    logger.info(ports.toString());
+    assertTrue(ports.equals(portsExpected), "Didn't get the correct container ports");
+
+    /*
+    List<String> portNames = pod.getSpec().getContainers().stream()
+        .filter(container -> container.getName().equals("weblogic-server"))
+        .flatMap(container -> container.getPorts().stream())
+        .map(V1ContainerPort::getName).collect(Collectors.toList());
+    Collections.sort(channelNames);
+    Collections.sort(portNames);
+    logger.info("Expected channels {0}", channelNames);
+    logger.info("Got channels {0}", portNames);
+    assertTrue(portNames.equals(channelNames), "The expected channels are not in the container");
+     */
   }
 
   private static boolean verifyServerAccess(String namespace, String podName, String port,
@@ -691,5 +833,5 @@ class ItSecureModeDomain {
         && result.stderr().trim().contains(expected)
         || result.stdout().trim().contains(expected);
   }
-  
+    
 }
