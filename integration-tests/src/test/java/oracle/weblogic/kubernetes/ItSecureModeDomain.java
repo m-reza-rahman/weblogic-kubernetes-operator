@@ -424,13 +424,14 @@ class ItSecureModeDomain {
     dumpResources();
 
     Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default", 7001);
     adminPorts.put("default-secure", 7002);
-    adminPorts.put("internal-admin", 9002);
+    adminPorts.put("internal-t3", 7001);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default-secure", 8500);
-    msPorts.put("internal-admin", 9002);
+    msPorts.put("default-secure", 8100);
+    msPorts.put("default", 7100);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -789,7 +790,8 @@ class ItSecureModeDomain {
   
   private void verifyServerChannels(String domainNamespace, String podName,
       Map<String, Integer> portsExpected) throws ApiException {
-    //get the pod
+    logger.info("Verifying server channels in pod {0}", podName);
+    //get the pod    
     V1Pod pod = getPod(domainNamespace, null, podName);
     assertNotNull(pod);
 
