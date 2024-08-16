@@ -215,11 +215,11 @@ class ItSecureModeDomain {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7101", "http", weblogicReady, "HTTP/1.1 200 OK"));
+          "7100", "http", weblogicReady, "HTTP/1.1 200 OK"));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7101", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
       assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8101", "https", weblogicReady, "Connection refused"));
+          "8100", "https", weblogicReady, "Connection refused"));
     }
   }
 
@@ -251,7 +251,6 @@ class ItSecureModeDomain {
     
     Map<String, Integer> msPorts = new HashMap<>();
     msPorts.put("default-secure", 8500);
-    msPorts.put("internal-admin", 9002);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -264,16 +263,16 @@ class ItSecureModeDomain {
         "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify secure channel is disabled
     assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http1", weblogicReady, "Connection refused"));
+        "7001", "http", weblogicReady, "Connection refused"));
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "710", "http", weblogicReady, "HTTP/1.1 200 OK"));
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7101", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+          "8500", "https", sampleAppUri, "HTTP/1.1 200 OK"));
       assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8101", "https", weblogicReady, "Connection refused"));
+          "7100", "http", sampleAppUri, "Connection refused"));
     }
   }
 
@@ -300,13 +299,12 @@ class ItSecureModeDomain {
     dumpResources();
 
     Map<String, Integer> adminPorts = new HashMap<>();
-    adminPorts.put("default-secure", 7002);
+    adminPorts.put("default", 7005);
     adminPorts.put("internal-admin", 9002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default-secure", 8500);
-    msPorts.put("internal-admin", 9002);
+    msPorts.put("default", 7100);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -316,34 +314,20 @@ class ItSecureModeDomain {
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+        "7005", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify secure channel is disabled
     assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http1", weblogicReady, "Connection refused"));
+        "7002", "https", sampleAppUri, "Connection refused"));
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "710", "http", weblogicReady, "HTTP/1.1 200 OK"));
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK")); 
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7101", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
       assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8101", "https", weblogicReady, "Connection refused"));
+          "7101", "https", sampleAppUri, "Connection refused"));
     }
-
-    /*    
-    //verify /weblogic/ready is available in port 7005
-    verifyAppServerAccess(true, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 7005
-    verifyAppServerAccess(true, getNginxLbNodePort("http"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample app is available in admin server in secure port 7005
-    verifyAppServerAccess(true, getNginxLbNodePort("http"), true, adminAppIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample application is available in cluster address secure port 7101
-    verifyAppServerAccess(true, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP); */
   }
   
   /**
