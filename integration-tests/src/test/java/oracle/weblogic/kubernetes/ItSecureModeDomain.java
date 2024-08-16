@@ -630,7 +630,7 @@ class ItSecureModeDomain {
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
 
     //create a MII domain resource with the auxiliary image
-    DomainResource domain = createDomainUsingAuxiliaryImage(domainNamespace, domainUid, image1412, auxImage, null);
+    DomainResource domain = createDomainUsingAuxiliaryImage(domainNamespace, domainUid, clusterName, image1412, auxImage);
     return domain;
   }
   
