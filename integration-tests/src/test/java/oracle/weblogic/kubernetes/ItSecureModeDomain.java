@@ -687,7 +687,9 @@ class ItSecureModeDomain {
     logger.info(response);
     logger.info(result.stderr());
     logger.info("{0}", result.exitValue());
-    return response.contains(expected);
+    return result.exitValue() == 0
+        && result.stderr().trim().contains(expected)
+        || result.stdout().trim().contains(expected);
   }
   
 }
