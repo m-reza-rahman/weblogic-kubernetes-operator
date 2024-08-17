@@ -246,11 +246,12 @@ class ItSecureModeDomain {
 
     Map<String, Integer> adminPorts = new HashMap<>();
     adminPorts.put("default-secure", 7002);
-    adminPorts.put("internal-admin", 9002);
+    adminPorts.put("default-admin", 9002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
     msPorts.put("default-secure", 8500);
+    msPorts.put("default-admin", 9002);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -263,7 +264,7 @@ class ItSecureModeDomain {
         "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify secure channel is disabled
     assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", weblogicReady, "Connection refused"));
+        "7001", "http", sampleAppUri, "Connection refused"));
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
@@ -300,11 +301,11 @@ class ItSecureModeDomain {
 
     Map<String, Integer> adminPorts = new HashMap<>();
     adminPorts.put("default", 7005);
-    adminPorts.put("internal-admin", 9002);
+    adminPorts.put("internal-t3", 7005);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default", 7100);
+    msPorts.put("default", 8100);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -312,7 +313,7 @@ class ItSecureModeDomain {
     
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
+        "7005", "http", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "7005", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify secure channel is disabled
@@ -322,11 +323,11 @@ class ItSecureModeDomain {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "9002", "https", weblogicReady, "HTTP/1.1 200 OK")); 
+          "8100", "http", weblogicReady, "HTTP/1.1 200 OK")); 
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+          "8100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
       assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7101", "https", sampleAppUri, "Connection refused"));
+          "7100", "https", sampleAppUri, "Connection refused"));
     }
   }
   
@@ -351,12 +352,12 @@ class ItSecureModeDomain {
 
     Map<String, Integer> adminPorts = new HashMap<>();
     adminPorts.put("default-secure", 7002);
-    adminPorts.put("internal-admin", 9002);
+    adminPorts.put("default-admin", 9002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default-secure", 8500);
-    msPorts.put("internal-admin", 9002);
+    msPorts.put("default-secure", 8100);
+    msPorts.put("default-admin", 9002);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -367,24 +368,19 @@ class ItSecureModeDomain {
         "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
-    //verify secure channel is disabled
+    //verify listenport is disabled
     assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http1", weblogicReady, "Connection refused"));  
+        "7001", "http", sampleAppUri, "Connection refused"));
     
-    /*
-    //verify sample app is available in admin server in port 7002
-    verifyAppServerAccess(false, getNginxLbNodePort("https"), true, adminIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify admin console is available in port 9002
-    verifyAppServerAccess(false, getNginxLbNodePort("https"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 9002
-    verifyAppServerAccess(false, getNginxLbNodePort("https"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample application is available in cluster address in port 8101
-    verifyAppServerAccess(false, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
-     */
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK")); 
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8100", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+      assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7100", "http", sampleAppUri, "Connection refused"));
+    }  
   }
   
   /**
@@ -470,13 +466,14 @@ class ItSecureModeDomain {
     dumpResources();
 
     Map<String, Integer> adminPorts = new HashMap<>();
+    adminPorts.put("default", 7001);
+    adminPorts.put("internal-t3", 7001);
     adminPorts.put("default-secure", 7002);
-    adminPorts.put("internal-admin", 9002);
+    adminPorts.put("internal-t3s", 7002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default-secure", 8500);
-    msPorts.put("internal-admin", 9002);
+    msPorts.put("default", 8001);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -491,12 +488,15 @@ class ItSecureModeDomain {
         "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "9002", "https", weblogicReady, "Connection refused"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "9002", "http", weblogicReady, "Connection refused"));    
 
     for (int i = 1; i <= replicaCount; i++) {
-      String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+          "8001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     }
   }
 
@@ -515,7 +515,7 @@ class ItSecureModeDomain {
       + "enable SSL at adminserver level.")
   void testSecureSSLDisabledListenportEnabled() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(7);
-    domainUid = "testdomain6";
+    domainUid = "testdomain7";
     adminServerPodName = domainUid + "-" + adminServerName;
     managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
 
@@ -523,13 +523,13 @@ class ItSecureModeDomain {
     dumpResources();
 
     Map<String, Integer> adminPorts = new HashMap<>();
-    adminPorts.put("default-secure", 7002);
-    adminPorts.put("internal-admin", 9002);
+    adminPorts.put("default", 7001);
+    adminPorts.put("default-admin", 9002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default-secure", 8500);
-    msPorts.put("internal-admin", 9002);
+    msPorts.put("default", 7100);
+    msPorts.put("default-admin", 9002);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -540,12 +540,17 @@ class ItSecureModeDomain {
         "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7002", "https", sampleAppUri, "Connection refused"));    
 
     for (int i = 1; i <= replicaCount; i++) {
-      String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7101", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8100", "https", sampleAppUri, "Connection refused"));
     }
   }
   
@@ -564,7 +569,7 @@ class ItSecureModeDomain {
       + "enable SSL at adminserver level.")
   void testStartSecureSSLDisabledListenportEnabled() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(8);
-    domainUid = "testdomain6";
+    domainUid = "testdomain8";
     adminServerPodName = domainUid + "-" + adminServerName;
     managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
 
@@ -572,13 +577,13 @@ class ItSecureModeDomain {
     dumpResources();
 
     Map<String, Integer> adminPorts = new HashMap<>();
-    adminPorts.put("default-secure", 7002);
-    adminPorts.put("internal-admin", 9002);
+    adminPorts.put("default", 7001);
+    adminPorts.put("default-admin", 9002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default-secure", 8500);
-    msPorts.put("internal-admin", 9002);
+    msPorts.put("default", 7100);
+    msPorts.put("default-admin", 9002);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -589,12 +594,17 @@ class ItSecureModeDomain {
         "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+    assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
+        "7002", "https", sampleAppUri, "Connection refused"));    
 
     for (int i = 1; i <= replicaCount; i++) {
-      String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7101", "https", sampleAppUri, "HTTP/1.1 200 OK"));
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8100", "https", sampleAppUri, "Connection refused"));
     }
   }
   
@@ -816,6 +826,11 @@ class ItSecureModeDomain {
     logger.info(response);
     logger.info(result.stderr());
     logger.info("{0}", result.exitValue());
+    if (result.stderr().trim().contains(expected) || result.stdout().trim().contains(expected)) {
+      logger.info("Got the expected server response");
+    } else {
+      logger.info("Didn't get the expected server response {0}", expected);
+    }
     return result.exitValue() == 0
         && result.stderr().trim().contains(expected)
         || result.stdout().trim().contains(expected);
