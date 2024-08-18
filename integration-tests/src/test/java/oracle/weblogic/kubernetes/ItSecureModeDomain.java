@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.kubernetes.client.openapi.ApiException;
@@ -113,7 +112,6 @@ class ItSecureModeDomain {
   private final String adminAppText = "RUNNING";
   private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"
       + "/serverRuntimes/adminserver/applicationRuntimes";
-  private static final String expected200response = "HTTP\\/[12](?:\\.\\d)?\\s200(?:\\sOK)?";
   
   private static LoggingFacade logger = null;
 
@@ -147,6 +145,7 @@ class ItSecureModeDomain {
     if (listDomainCustomResources(domainNamespace).getItems().stream().anyMatch(dr
         -> dr.getMetadata().getName().equals(domainUid))) {
       DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+      logger.info(Yaml.dump(dcr));
       shutdownDomain(domainUid, domainNamespace);
       logger.info("Checking that adminserver pod {0} does not exist in namespace {1}",
           adminServerPodName, domainNamespace);
@@ -206,21 +205,21 @@ class ItSecureModeDomain {
 
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", weblogicReady, "HTTP/1.1 200 OK", true));
+        "7001", "http", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify secure channel is disabled
     assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", weblogicReady, "Connection refused", false));
+        "7002", "https", weblogicReady, "Connection refused"));
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", weblogicReady, "HTTP/1.1 200 OK", true));
+          "7100", "http", weblogicReady, "HTTP/1.1 200 OK"));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
       assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "https", weblogicReady, "Connection refused", false));
+          "8100", "https", weblogicReady, "Connection refused"));
     }
   }
 
@@ -260,21 +259,21 @@ class ItSecureModeDomain {
 
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify secure channel is disabled
     assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", sampleAppUri, "Connection refused", false));
+        "7001", "http", sampleAppUri, "Connection refused"));
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8500", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "8500", "https", sampleAppUri, "HTTP/1.1 200 OK"));
       assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "Connection refused", false));
+          "7100", "http", sampleAppUri, "Connection refused"));
     }
   }
 
@@ -314,21 +313,21 @@ class ItSecureModeDomain {
     
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7005", "http", weblogicReady, "HTTP/1.1 200 OK", true));
+        "7005", "http", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7005", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7005", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify secure channel is disabled
     assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", sampleAppUri, "Connection refused", false));
+        "7002", "https", sampleAppUri, "Connection refused"));
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "http", weblogicReady, "HTTP/1.1 200 OK", true)); 
+          "8100", "http", weblogicReady, "HTTP/1.1 200 OK")); 
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "8100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
       assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "https", sampleAppUri, "Connection refused", false));
+          "7100", "https", sampleAppUri, "Connection refused"));
     }
   }
   
@@ -366,21 +365,21 @@ class ItSecureModeDomain {
     
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify listenport is disabled
     assertFalse(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", sampleAppUri, "Connection refused", false));
+        "7001", "http", sampleAppUri, "Connection refused"));
     
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true)); 
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK")); 
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "8100", "https", sampleAppUri, "HTTP/1.1 200 OK"));
       assertFalse(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "Connection refused", false));
+          "7100", "http", sampleAppUri, "Connection refused"));
     }  
   }
   
@@ -420,14 +419,14 @@ class ItSecureModeDomain {
     
     //verify /weblogic/ready and sample app available in port 7001
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+        "7001", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", weblogicReady, "HTTP/1.1 200 OK", true));    
+        "7002", "https", weblogicReady, "HTTP/1.1 200 OK"));    
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     //verify secure channel is disabled
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
     
     /*
     //verify /weblogic/ready is available in port 7002
@@ -482,22 +481,22 @@ class ItSecureModeDomain {
     
     //verify /weblogic/ready is available in port 7001 and 7002
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", weblogicReady, "HTTP/1.1 200 OK", true));
+        "7001", "http", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+        "7002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7002", "https", sampleAppUri, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "9002", "https", weblogicReady, "Connection refused", false));
+        "9002", "https", weblogicReady, "Connection refused"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "9002", "http", weblogicReady, "Connection refused", false));    
+        "9002", "http", weblogicReady, "Connection refused"));    
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "8001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     }
   }
 
@@ -538,20 +537,20 @@ class ItSecureModeDomain {
  
     //verify /weblogic/ready is available in port 7001 and 7002
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", sampleAppUri, "Connection refused", false));    
+        "7002", "https", sampleAppUri, "Connection refused"));    
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "https", sampleAppUri, "Connection refused", false));
+          "8100", "https", sampleAppUri, "Connection refused"));
     }
   }
   
@@ -592,20 +591,20 @@ class ItSecureModeDomain {
     
     //verify /weblogic/ready is available in port 7001 and 7002
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+        "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+        "7001", "http", sampleAppUri, "HTTP/1.1 200 OK"));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7002", "https", sampleAppUri, "Connection refused", false));    
+        "7002", "https", sampleAppUri, "Connection refused"));    
 
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+          "9002", "https", weblogicReady, "HTTP/1.1 200 OK"));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK"));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "https", sampleAppUri, "Connection refused", false));
+          "8100", "https", sampleAppUri, "Connection refused"));
     }
   }
   
@@ -797,12 +796,22 @@ class ItSecureModeDomain {
         .collect(Collectors.toMap(V1ContainerPort::getName, V1ContainerPort::getContainerPort));
     logger.info(ports.toString());
     assertTrue(ports.equals(portsExpected), "Didn't get the correct container ports");
+
+    /*
+    List<String> portNames = pod.getSpec().getContainers().stream()
+        .filter(container -> container.getName().equals("weblogic-server"))
+        .flatMap(container -> container.getPorts().stream())
+        .map(V1ContainerPort::getName).collect(Collectors.toList());
+    Collections.sort(channelNames);
+    Collections.sort(portNames);
+    logger.info("Expected channels {0}", channelNames);
+    logger.info("Got channels {0}", portNames);
+    assertTrue(portNames.equals(channelNames), "The expected channels are not in the container");
+     */
   }
 
-  private static boolean verifyServerAccess(String namespace, String podName, String port, String protocol,
-      String uri, String expected, boolean checkHttpCode) {
-    boolean success = false;
-    
+  private static boolean verifyServerAccess(String namespace, String podName, String port,
+      String protocol, String uri, String expected) {
     String curlCmd = " -- curl -vkgs --noproxy '*' " + protocol + "://" + podName + ":" + port + uri;
     logger.info("Checking the server access at {0}", curlCmd);
     String command = KUBERNETES_CLI + " exec -n " + namespace + "  " + podName + curlCmd;
@@ -813,25 +822,18 @@ class ItSecureModeDomain {
       logger.severe(ex.getMessage());
     }
     assertNotNull(result, "result is null");
-    
     String response = result.stdout().trim();
     logger.info(response);
     logger.info(result.stderr());
     logger.info("{0}", result.exitValue());
-    
-    if (checkHttpCode) {
-      Pattern httpCode = Pattern.compile(expected200response);
-      success = httpCode.matcher(response).matches();
+    if (result.stderr().trim().contains(expected) || result.stdout().trim().contains(expected)) {
+      logger.info("Got the expected server response");
     } else {
-      if (result.stderr().trim().contains(expected) || result.stdout().trim().contains(expected)) {
-        logger.info("Got the expected server response");
-        success = true;
-      } else {
-        logger.info("Didn't get the expected server response {0}", expected);
-        success = false;
-      }
+      logger.info("Didn't get the expected server response {0}", expected);
     }
-    return success;
+    return result.exitValue() == 0
+        && result.stderr().trim().contains(expected)
+        || result.stdout().trim().contains(expected);
   }
-  
+    
 }
