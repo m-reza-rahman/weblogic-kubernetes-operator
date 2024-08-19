@@ -15,7 +15,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.kubernetes.client.openapi.ApiException;
@@ -799,15 +798,15 @@ class ItSecureModeDomain {
     assertTrue(ports.equals(portsExpected), "Didn't get the correct container ports");
   }
 
-  private static boolean verifyServerAccess(String namespace, String podName, String port, String protocol, 
+  private static boolean verifyServerAccess(String namespace, String podName, String port, String protocol,
       String uri, String expected, boolean checkHttpresponseCode) {
     boolean success = false;
-    
+
     String url = protocol + "://" + podName + ":" + port + uri;
     String curlCmd = " -- curl -vkgs --noproxy '*' " + url;
     logger.info("Checking the server access at {0}", curlCmd);
     String command = KUBERNETES_CLI + " exec -n " + namespace + "  " + podName + curlCmd;
-    
+
     ExecResult result = null;
     try {
       result = ExecCommand.exec(command, true);
@@ -820,13 +819,15 @@ class ItSecureModeDomain {
     logger.info(result.stderr());
     logger.info("{0}", result.exitValue());
     if (checkHttpresponseCode) {
-      String regex = "HTTP\\/(1\\.1|2)\\s200(?:\\sOK)?";
-      // Compile the pattern
-      Pattern pattern = Pattern.compile(regex);
-      success = pattern.matcher(result.stderr().trim()).matches() 
-          || pattern.matcher(result.stdout().trim()).matches();
+      if (result.stderr().trim().contains("HTTP/1.1 200 OK")
+          || result.stderr().trim().contains("HTTP/2 200")) {
+        success = true;
+      } else {
+        logger.info("Didn't get the expected http response code");
+      }
     } else {
-      if (result.stderr().trim().contains(expected) || result.stdout().trim().contains(expected)) {
+      if (result.stderr().trim().contains(expected)
+          || result.stdout().trim().contains(expected)) {
         logger.info("Got the expected server response");
         success = true;
       } else {
