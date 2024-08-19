@@ -30,7 +30,7 @@ pipeline {
 
     triggers {
         // timer trigger for "nightly build"
-        parameterizedCron(env.JOB_NAME == 'wko-kind-main-nightly-podman-upgrade' ?
+        parameterizedCron(env.JOB_NAME == 'wko-kind-release42-nightly-podman-upgrade' ?
         CRON_SETTINGS : '')
     }
 
