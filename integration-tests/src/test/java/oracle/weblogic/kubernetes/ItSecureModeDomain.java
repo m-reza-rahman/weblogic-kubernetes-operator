@@ -245,6 +245,7 @@ class ItSecureModeDomain {
     Map<String, Integer> adminPorts = new HashMap<>();
     adminPorts.put("default-secure", 7002);
     adminPorts.put("default-admin", 9002);
+    adminPorts.put("internal-admin", 9002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
@@ -303,7 +304,7 @@ class ItSecureModeDomain {
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default", 8100);
+    msPorts.put("default", 7100);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -321,11 +322,11 @@ class ItSecureModeDomain {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "http", weblogicReady, "HTTP/1.1 200 OK", true)); 
+          "7100", "http", weblogicReady, "HTTP/1.1 200 OK", true)); 
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "https", sampleAppUri, "Connection refused", false));
+          "8100", "https", sampleAppUri, "Connection refused", false));
     }
   }
   
@@ -351,6 +352,7 @@ class ItSecureModeDomain {
     Map<String, Integer> adminPorts = new HashMap<>();
     adminPorts.put("default-secure", 7002);
     adminPorts.put("default-admin", 9002);
+    adminPorts.put("internal-admin", 9002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
