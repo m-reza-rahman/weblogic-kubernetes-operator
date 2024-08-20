@@ -79,7 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * The test verifies various secure domains using 1412 image.
- * Verify different combinations of production secure domain can start
+ * Verify different combinations of production secure domain configurations can start.
  * REST management interfaces are accessible thru appropriate channels.
  * Verify deployed customer applications are accessible in appropriate channels and ports.
  */
@@ -89,8 +89,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ItSecureModeDomain {
 
   private static List<String> namespaces;
-  private static String opNamespace;
-  private static String ingressNamespace;  
+  private static String opNamespace; 
   private static String domainNamespace;
   private static final int replicaCount = 1;
   private static String domainUid;
@@ -106,10 +105,6 @@ class ItSecureModeDomain {
   private final String image1412 = "phx.ocir.io/devweblogic/test-images/weblogic-dev:wls.14.1.2.sankar1";
   private final String weblogicReady = "/weblogic/ready";
   private final String sampleAppUri = "/sample-war/index.jsp";
-  private final String adminAppUri = "/management/tenant-monitoring/servers";
-  private final String adminAppText = "RUNNING";
-  private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"
-      + "/serverRuntimes/adminserver/applicationRuntimes";
   
   private static LoggingFacade logger = null;
 
@@ -136,14 +131,13 @@ class ItSecureModeDomain {
   }
 
   /**
-   * Shutdown domains created by each test method.
+   * Shutdown domains after each test method.
    */
   @AfterEach
   void afterEach() {
     if (listDomainCustomResources(domainNamespace).getItems().stream().anyMatch(dr
         -> dr.getMetadata().getName().equals(domainUid))) {
       DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-      logger.info(Yaml.dump(dcr));
       shutdownDomain(domainUid, domainNamespace);
       logger.info("Checking that adminserver pod {0} does not exist in namespace {1}",
           adminServerPodName, domainNamespace);
@@ -175,7 +169,7 @@ class ItSecureModeDomain {
    * 
    * Verify the sample application is available in default port 7001.
    * Verify the management REST interface is available in default port 7001.
-   * Verify the cluster sample application available in default 7101.
+   * Verify the sample application available in cluster server in default port 7100.
    * 
    */
   @Test
@@ -228,7 +222,7 @@ class ItSecureModeDomain {
    * Verify all services are available only in HTTPS in adminserver as well as in managed servers.
    * Verify the admin server sample application is available in default SSL port 7002.
    * Verify the management REST interface is available in default admin port 9002.
-   * Verify the cluster sample application available in default SSL port 8501.
+   * Verify the cluster sample application available in configured SSL port 8500.
    * 
    */
   @Test
@@ -278,12 +272,12 @@ class ItSecureModeDomain {
 
 
   /**
-   * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure disable SSL at domain level.
+   * Test start secure domain with 14.1.2.0.0 image and ServerStartMode as secure, disable SSL at domain level.
    * 
    * Verify all services are available in HTTP, in adminserver as well as in managed servers.
-   * Verify the admin server sample application is available in port 7005.
-   * Verify the management REST interface is available in default admin port 7001.
-   * Verify the cluster sample application available in default port 7101. 
+   * Verify the admin server sample application is available in configured listenport 7005.
+   * Verify the management REST interface is available in configured listenport 7005.
+   * Verify the sample application is available in cluster server default port 7100.
    * 
    */
   @Test
@@ -332,10 +326,10 @@ class ItSecureModeDomain {
   
   /**
    * Test starting a 14.1.2.0.0 domain with production and secure mode enabled using MBean configuration.
-   * 
-   * Verify the sample application is available in default SSL port 7002 in admin server.
-   * Verify the management REST interface is available in default port 7002 in admin server.
-   * Verify the cluster sample application is available in default SSL port 8101.
+   * Verify the management REST interface is only available in 
+   * default admin port 9002 in admin server and managed server.
+   * Verify the sample application is available in default SSL port 7002 in admin server.   
+   * Verify the sample application is available in default SSL port in cluster server 8100.
    * 
    */
   @Test
@@ -386,9 +380,10 @@ class ItSecureModeDomain {
   /**
    * Test start domain with 14.1.2.0.0 image and SSLEnabled at domain level with start mode prod.
    *    
-   * Verify the admin server sample application is available in ports 7001 and HTTPS 7002.
-   * Verify the management REST interface available in ports 7001 and HTTPS 7002.
-   * Verify the cluster sample application available in ports 7101 and HTTPS 8101.
+   * Verify the admin server sample application is available in port 7001 and in SSL port 7002.
+   * Verify the management REST interface available in ports 7001 and SSL port 7002.
+   * Verify the management REST interface available in cluster in ports 7100 and SSL port 8100.
+   * Verify the cluster sample application available in ports 7100 and HTTPS 8100.
    * 
    */
   @Test
@@ -442,12 +437,13 @@ class ItSecureModeDomain {
   }
 
   /**
-   * Test start domain with 14.1.2.0.0 image, secure mode disabled in MBean, enable SSL at adminserver level.
+   * Test start domain with 14.1.2.0.0 image, secure mode disabled in MBean, enable SSL in adminserver only.
    * 
    * Verify admin server starts with 2 listen ports non ssl at 7001 and SSL at 7002.
    * Verify the admin server sample application is available in ports 7001 and 7002.
    * Verify the management REST interface available in 7001 and 7002
-   * Verify the cluster sample application available in port 8002.
+   * Verify the cluster sample application available in configured listenport 8001.
+   * Verify the management REST interface available in cluster in configured listenport 8001.
    * 
    */
   @Test
@@ -493,6 +489,8 @@ class ItSecureModeDomain {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8001", "http", weblogicReady, "HTTP/1.1 200 OK", true));      
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
           "8001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
           "8100", "https", sampleAppUri, "Connection refused", false));      
@@ -500,18 +498,18 @@ class ItSecureModeDomain {
   }
 
   /**
-   * Test start domain with 14.1.2.0.0 image, secure mode enabled in MBean, disable SSL, 
-   * enable listenport at domain level.
+   * Test start domain with 14.1.2.0.0 image, secure mode enabled in MBean, disable SSL at domain level, 
+   * disable admin port, enable listenport at domain level.
    * 
-   * Verify admin server starts with 2 listen ports non ssl at 7001 and SSL at 7002.
-   * Verify the admin server sample application is available in ports 7001 and 7002.
-   * Verify the management REST interface available in 7001 and 7002
-   * Verify the cluster sample application available in port 8002.
+   * Verify admin server starts with only 1 listen port, non ssl at 7001.
+   * Verify the admin server sample application is available in port 7001.
+   * Verify the management REST interface available in 7001.
+   * Verify the cluster sample application available in port 7100.
    * 
    */
   @Test
   @DisplayName("Test start domain with 14.1.2.0.0 image, secure mode disabled in MBean, "
-      + "enable SSL at adminserver level.")
+      + "enable listenport at domain level")
   void testSecureSSLDisabledListenportEnabled() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(7);
     domainUid = "testdomain7";
@@ -557,18 +555,18 @@ class ItSecureModeDomain {
   }
   
   /**
-   * Test start domain with 14.1.2.0.0 image, secure mode enabled in MBean, disable SSL, 
+   * Test start domain with 14.1.2.0.0 image, secure mode enabled in MBean, disable SSL at domain level, 
    * enable listenport at domain level.
    * 
-   * Verify admin server starts with 2 listen ports non ssl at 7001 and SSL at 7002.
-   * Verify the admin server sample application is available in ports 7001 and 7002.
-   * Verify the management REST interface available in 7001 and 7002
-   * Verify the cluster sample application available in port 8002.
+   * Verify admin server starts with 2 listen ports non ssl at 7001 and admin SSL port 9002.
+   * Verify the admin server sample application is available in port 7001.
+   * Verify the management REST interface available only in adminport 9002.
+   * Verify the cluster sample application available in listenport 7100.
    * 
    */
   @Test
   @DisplayName("Test start domain with 14.1.2.0.0 image, secure mode disabled in MBean, "
-      + "enable SSL at adminserver level.")
+      + "disable SSL at domain level.")
   void testStartSecureSSLDisabledListenportEnabled() throws UnknownHostException, ApiException {
     domainNamespace = namespaces.get(8);
     domainUid = "testdomain8";
