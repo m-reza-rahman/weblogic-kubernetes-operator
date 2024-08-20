@@ -427,6 +427,18 @@ class ItSecureModeDomain {
     //verify secure channel is disabled
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "7002", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+    
+    for (int i = 1; i <= replicaCount; i++) {
+      String managedServerPodName = managedServerPrefix + i;
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8100", "https", weblogicReady, "HTTP/1.1 200 OK", true)); 
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "8100", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+      assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
+          "7100", "http", weblogicReady, "HTTP/1.1 200 OK", true));      
+    }      
   }
 
   /**

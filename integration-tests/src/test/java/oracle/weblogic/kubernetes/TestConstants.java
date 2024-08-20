@@ -400,7 +400,8 @@ public interface TestConstants {
       "The Domain resource specified 'spec.configuration.model.onlineUpdate.enabled=true', "
           + "but there are unsupported model changes for online update";
   public static final String SSL_PROPERTIES =
-      "-Dweblogic.security.SSL.ignoreHostnameVerification=true -Dweblogic.security.TrustKeyStore=DemoTrust";
+      "-Dweblogic.security.SSL.ignoreHostnameVerification=true "
+      + "-Dweblogic.security.TrustKeyStore=DemoTrust -Dfa.write.default.values=false";
 
   public static final boolean WEBLOGIC_SLIM = WEBLOGIC_IMAGE_TAG.contains("slim");
   public static final boolean WEBLOGIC_12213 = WEBLOGIC_IMAGE_TAG.contains("12.2.1.3") 
