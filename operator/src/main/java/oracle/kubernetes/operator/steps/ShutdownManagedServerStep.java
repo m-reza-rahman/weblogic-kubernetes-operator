@@ -123,9 +123,17 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     private HttpRequest createRequest() {
-      return createRequestBuilder(getRequestUrl(isGracefulShutdown))
-            .POST(HttpRequest.BodyPublishers.ofString(getManagedServerShutdownPayload(
-                isGracefulShutdown, ignoreSessions, timeout, waitForAllSessions))).build();
+
+      String body = getManagedServerShutdownPayload(isGracefulShutdown, ignoreSessions, timeout, waitForAllSessions);
+      String url = getRequestUrl(isGracefulShutdown);
+
+      // TEST
+      StringBuilder sb = new StringBuilder();
+      sb.append("*** RJE: request url: ").append(url);
+      sb.append(" , body: ").append(body);
+      LOGGER.severe(sb.toString());
+
+      return createRequestBuilder(url).POST(HttpRequest.BodyPublishers.ofString(body)).build();
     }
 
     private void initializeRequestPayloadParameters() {
@@ -347,6 +355,14 @@ public class ShutdownManagedServerStep extends Step {
 
     @Override
     public Result onFailure(Packet packet, HttpResponse<String> response) {
+
+      // TEST
+      StringBuilder sb = new StringBuilder();
+      sb.append("*** RJE: response status: ").append(response.statusCode());
+      sb.append(" , body: ").append(response.body());
+      sb.append(" , headers: ").append(response.headers());
+      LOGGER.severe(sb.toString());
+
       if (getThrowableResponse(packet) != null) {
         Throwable throwable = getThrowableResponse(packet);
         if (shouldRetry(packet)) {

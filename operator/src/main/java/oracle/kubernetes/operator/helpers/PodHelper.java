@@ -423,7 +423,7 @@ public class PodHelper {
   }
 
   /**
-   * Check if the pod is already labeld for shut down.
+   * Check if the pod is already labeled for shut down.
    * @param pod Pod
    * @return true, if the pod is already labeled.
    */
