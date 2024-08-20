@@ -19,7 +19,6 @@ topology:
             ListenPort: 8001
     Cluster:
         mycluster:
-            SecureReplicationEnabled: false
             DynamicServers:
                 ServerTemplate: myserver-template
                 ServerNamePrefix: mycluster-ms-
