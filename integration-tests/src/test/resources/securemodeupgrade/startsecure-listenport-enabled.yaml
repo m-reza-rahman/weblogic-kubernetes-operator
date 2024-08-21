@@ -13,9 +13,9 @@ topology:
     ServerTemplate:
         myserver-template:
             Cluster: mycluster
-    Cluster:
-        SecureReplicationEnabled: false
+    Cluster:        
         mycluster:
+            SecureReplicationEnabled: false
             DynamicServers:
                 ServerTemplate: myserver-template
                 ServerNamePrefix: mycluster-ms-
