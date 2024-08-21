@@ -102,7 +102,7 @@ class ItSecureModeDomain {
   
   private final String imageTag1412 = "14.1.2.0.0-jdk17";
   //private final String image1412 = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
-  private final String image1412 = "phx.ocir.io/devweblogic/test-images/weblogic-dev:wls.14.1.2.sankar3";
+  private final String image1412 = "phx.ocir.io/devweblogic/test-images/weblogic-dev:wls.14.1.2-2163022-1";
   private final String weblogicReady = "/weblogic/ready";
   private final String sampleAppUri = "/sample-war/index.jsp";
   
