@@ -533,7 +533,7 @@ class ItSecureModeDomain {
  
     //verify /weblogic/ready is available in port 7001 and 7002
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
-        "7001", "https", weblogicReady, "HTTP/1.1 200 OK", true));
+        "7001", "http", weblogicReady, "HTTP/1.1 200 OK", true));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
         "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
     assertTrue(verifyServerAccess(domainNamespace, adminServerPodName,
