@@ -95,7 +95,7 @@ class ItSecureModeDomain {
   private static String domainUid;
   private static final String adminServerName = "adminserver";
   private static final String clusterName = "mycluster";
-  private String adminServerPodName;
+  private static String adminServerPodName;
   private String managedServerPrefix;
   private static final String wlSecretName = "weblogic-credentials";
   private static final String encryptionSecretName = "encryptionsecret";
@@ -631,8 +631,9 @@ class ItSecureModeDomain {
     return domain;
   }
   
-  private void dumpResources() throws ApiException {
+  private static void dumpResources() throws ApiException {
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    getConfigXML();
     logger.info(Yaml.dump(dcr));
     logger.info(Yaml.dump(getPod(domainNamespace, null, adminServerPodName)));
     logger.info(Yaml.dump(getPod(domainNamespace, null, domainUid + "-" + clusterName + "-ms-1")));
@@ -837,6 +838,20 @@ class ItSecureModeDomain {
       }
     }
     return success;
+  }
+  
+  private static void getConfigXML() {
+    String curlCmd = " cat /u01/domains/" + domainUid + "/config/config.xml";
+    logger.info("Dumping config.xml the server access at {0}", curlCmd);
+    String command = KUBERNETES_CLI + " exec -n " + domainNamespace + "  " + adminServerPodName + curlCmd;
+    ExecResult result = null;
+    try {
+      result = ExecCommand.exec(command, true);
+    } catch (IOException | InterruptedException ex) {
+      logger.severe(ex.getMessage());
+    }
+    logger.info(result.stdout().trim());
+    logger.info(result.stderr().trim());
   }
     
 }
