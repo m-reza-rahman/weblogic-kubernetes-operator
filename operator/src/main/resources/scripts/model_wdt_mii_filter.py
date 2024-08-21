@@ -593,8 +593,12 @@ def addAdminChannelPortForwardNetworkAccessPoints(server):
     _writeAdminChannelPortForwardNAP(name='internal-admin', server=server,
                                      listen_port=getAdministrationPort(server, model['topology']), protocol='admin')
   elif index == 0:
-    if not secure_mode and is_listenport_enabled(server):
-      _writeAdminChannelPortForwardNAP(name='internal-t3', server=server, listen_port=admin_server_port, protocol='t3')
+    if not env.wlsVersionEarlierThan("14.1.2.0"):
+        if is_listenport_enabled(server):
+          _writeAdminChannelPortForwardNAP(name='internal-t3', server=server, listen_port=admin_server_port, protocol='t3')
+    else:
+        if not secure_mode and is_listenport_enabled(server):
+          _writeAdminChannelPortForwardNAP(name='internal-t3', server=server, listen_port=admin_server_port, protocol='t3')
 
     ssl = getSSLOrNone(server)
     ssl_listen_port = None
