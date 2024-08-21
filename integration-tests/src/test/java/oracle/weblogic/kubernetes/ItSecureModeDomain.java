@@ -189,7 +189,7 @@ class ItSecureModeDomain {
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
 
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default", 7100);
+    msPorts.put("default", 7001);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -207,9 +207,9 @@ class ItSecureModeDomain {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", weblogicReady, "HTTP/1.1 200 OK", true));
+          "7001", "http", weblogicReady, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
           "8100", "https", weblogicReady, "Connection refused", false));
     }
@@ -298,7 +298,7 @@ class ItSecureModeDomain {
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default", 7100);
+    msPorts.put("default", 7001);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -316,9 +316,9 @@ class ItSecureModeDomain {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", weblogicReady, "HTTP/1.1 200 OK", true)); 
+          "7001", "http", weblogicReady, "HTTP/1.1 200 OK", true)); 
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
           "8100", "https", sampleAppUri, "Connection refused", false));
     }
@@ -350,7 +350,7 @@ class ItSecureModeDomain {
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default-secure", 8100);
+    msPorts.put("default-secure", 7002);
     msPorts.put("default-admin", 9002);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
@@ -371,9 +371,9 @@ class ItSecureModeDomain {
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
           "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true)); 
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7002", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "Connection refused", false));
+          "7001", "http", sampleAppUri, "Connection refused", false));
     }  
   }
   
@@ -406,8 +406,8 @@ class ItSecureModeDomain {
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default-secure", 8100);
-    msPorts.put("default", 7100);
+    msPorts.put("default-secure", 7002);
+    msPorts.put("default", 7001);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -426,13 +426,13 @@ class ItSecureModeDomain {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "https", weblogicReady, "HTTP/1.1 200 OK", true)); 
+          "7002", "https", weblogicReady, "HTTP/1.1 200 OK", true)); 
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "8100", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7002", "https", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", weblogicReady, "HTTP/1.1 200 OK", true));      
+          "7001", "http", weblogicReady, "HTTP/1.1 200 OK", true));      
     }      
   }
 
@@ -525,7 +525,7 @@ class ItSecureModeDomain {
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default", 7100);
+    msPorts.put("default", 7001);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       verifyServerChannels(domainNamespace, managedServerPodName, msPorts);
@@ -544,9 +544,9 @@ class ItSecureModeDomain {
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", weblogicReady, "HTTP/1.1 200 OK", true));
+          "7001", "http", weblogicReady, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
           "9002", "https", weblogicReady, "Connection refused", false));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
@@ -583,7 +583,7 @@ class ItSecureModeDomain {
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
-    msPorts.put("default", 7100);
+    msPorts.put("default", 7001);
     msPorts.put("default-admin", 9002);
     for (int i = 1; i <= replicaCount; i++) {
       String managedServerPodName = managedServerPrefix + i;
@@ -603,7 +603,7 @@ class ItSecureModeDomain {
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
           "9002", "https", weblogicReady, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
-          "7100", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
+          "7001", "http", sampleAppUri, "HTTP/1.1 200 OK", true));
       assertTrue(verifyServerAccess(domainNamespace, managedServerPodName,
           "8100", "https", sampleAppUri, "Connection refused", false));
     }
