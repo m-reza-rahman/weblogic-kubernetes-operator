@@ -357,11 +357,13 @@ public class ShutdownManagedServerStep extends Step {
     public Result onFailure(Packet packet, HttpResponse<String> response) {
 
       // TEST
-      StringBuilder sb = new StringBuilder();
-      sb.append("*** RJE: response status: ").append(response.statusCode());
-      sb.append(" , body: ").append(response.body());
-      sb.append(" , headers: ").append(response.headers());
-      LOGGER.severe(sb.toString());
+      if (response != null) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("*** RJE: response status: ").append(response.statusCode());
+        sb.append(" , body: ").append(response.body());
+        sb.append(" , headers: ").append(response.headers());
+        LOGGER.severe(sb.toString());
+      }
 
       if (getThrowableResponse(packet) != null) {
         Throwable throwable = getThrowableResponse(packet);
