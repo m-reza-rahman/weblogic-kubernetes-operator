@@ -550,22 +550,8 @@ def _get_ssl_listen_port(server):
       ssl_listen_port = "7002"
   elif ssl is None and isSecureModeEnabledForDomain(model):
     ssl_listen_port = "7002"
-
-  # Check overrride for 14.1.2.x
-  if not env.wlsVersionEarlierThan("14.1.2.0") and not isGlobalSSLEnabled():
-          return None
   return ssl_listen_port
 
-def isGlobalSSLEnabled(model):
-    result=False
-    if 'topology' in model:
-        if 'SSLEnabled' in model['topology']:
-            val = model['topology']['SSLEnabled']
-            if isinstance(val, str) or isinstance(val, unicode):
-              result = Boolean.valueOf(val)
-            else:
-              result = val
-    return result
 
 def addAdminChannelPortForwardNetworkAccessPoints(server):
   admin_channel_port_forwarding_enabled = env.getEnvOrDef("ADMIN_CHANNEL_PORT_FORWARDING_ENABLED", "true")
@@ -604,9 +590,6 @@ def addAdminChannelPortForwardNetworkAccessPoints(server):
         ssl_listen_port = "7002"
     elif ssl is None and secure_mode:
       ssl_listen_port = "7002"
-    # if 14.1.2.0 and above
-    if not env.wlsVersionEarlierThan("14.1.2.0") and not isGlobalSSLEnabled(model):
-        ssl_listen_port = None
 
     if ssl_listen_port is not None:
       _writeAdminChannelPortForwardNAP(name='internal-t3s', server=server, listen_port=ssl_listen_port, protocol='t3s')
