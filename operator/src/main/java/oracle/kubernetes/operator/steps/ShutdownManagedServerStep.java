@@ -126,15 +126,8 @@ public class ShutdownManagedServerStep extends Step {
     }
 
     private HttpRequest createRequest() {
-
       String body = getManagedServerShutdownPayload(isGracefulShutdown, ignoreSessions, timeout, waitForAllSessions);
       String url = getRequestUrl(isGracefulShutdown);
-
-      // TEST
-      StringBuilder sb = new StringBuilder();
-      sb.append("*** RJE: request url: ").append(url);
-      sb.append(" , body: ").append(body);
-      LOGGER.severe(sb.toString());
 
       return createRequestBuilder(url, HTTP_SHUTDOWN_SECONDS).POST(HttpRequest.BodyPublishers.ofString(body)).build();
     }
@@ -358,24 +351,8 @@ public class ShutdownManagedServerStep extends Step {
 
     @Override
     public Result onFailure(Packet packet, HttpResponse<String> response) {
-
-      // TEST
-      if (response != null) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("*** RJE: response status: ").append(response.statusCode());
-        sb.append(" , body: ").append(response.body());
-        sb.append(" , headers: ").append(response.headers());
-        LOGGER.severe(sb.toString());
-      }
-
       Throwable throwable = getThrowableResponse(packet);
       if (throwable != null) {
-
-        // TEST
-        StringBuilder sb = new StringBuilder();
-        sb.append("*** RJE: response throwable: ").append(throwable.getClass().getName());
-        LOGGER.severe(sb.toString());
-
         if (throwable instanceof HttpTimeoutException) {
           return doRequeue(packet);
         }

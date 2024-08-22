@@ -95,25 +95,10 @@ public class HttpRequestStep extends Step {
     DomainPresenceInfo info = getDomainPresenceInfo(packet);
     try (ThreadLoggingContext ignored =
              setThreadContext().namespace(getNamespaceFromInfo(info)).domainUid(getDomainUIDFromInfo(info))) {
-
-      // TEST
-      LOGGER.severe("*** RJE: BEFORE SEND");
-
       HttpResponse<String> response = sender.send(request);
-
-      // TEST
-      LOGGER.severe("*** RJE: AFTER SEND");
-
       recordResponse(response, packet);
     } catch (IOException | InterruptedException e) {
-
-      // TEST
-      LOGGER.severe("*** RJE: SEND EXCEPTION: " + e.getMessage());
-
       recordThrowableResponse(e, packet);
-    } catch (Throwable t) {
-      // TEST
-      LOGGER.severe("*** RJE: OTHER EXCEPTION: " + t.getMessage());
     }
     return doNext(packet);
   }
