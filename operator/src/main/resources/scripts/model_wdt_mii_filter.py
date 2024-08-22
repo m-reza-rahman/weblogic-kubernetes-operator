@@ -567,6 +567,17 @@ def isGlobalSSLEnabled(model):
               result = val
     return result
 
+def isGlobalListenPortEnabled(model):
+    result=False
+    if 'topology' in model:
+        if 'ListenPortEnabled' in model['topology']:
+            val = model['topology']['ListenPortEnabled']
+            if isinstance(val, str) or isinstance(val, unicode):
+              result = Boolean.valueOf(val)
+            else:
+              result = val
+    return result
+
 def addAdminChannelPortForwardNetworkAccessPoints(server):
   admin_channel_port_forwarding_enabled = env.getEnvOrDef("ADMIN_CHANNEL_PORT_FORWARDING_ENABLED", "true")
   if (admin_channel_port_forwarding_enabled == 'false'):
@@ -594,7 +605,9 @@ def addAdminChannelPortForwardNetworkAccessPoints(server):
                                      listen_port=getAdministrationPort(server, model['topology']), protocol='admin')
   elif index == 0:
     if not env.wlsVersionEarlierThan("14.1.2.0"):
-        if is_listenport_enabled(server):
+        if not secure_mode and is_listenport_enabled(server):
+          _writeAdminChannelPortForwardNAP(name='internal-t3', server=server, listen_port=admin_server_port, protocol='t3')
+        elif secure_mode and (is_listenport_enabled(server) or isGlobalListenPortEnabled(model)):
           _writeAdminChannelPortForwardNAP(name='internal-t3', server=server, listen_port=admin_server_port, protocol='t3')
     else:
         if not secure_mode and is_listenport_enabled(server):
@@ -608,23 +621,27 @@ def addAdminChannelPortForwardNetworkAccessPoints(server):
         ssl_listen_port = "7002"
     elif ssl is None and secure_mode:
       ssl_listen_port = "7002"
-    # if 14.1.2.0 and above
-    if not env.wlsVersionEarlierThan("14.1.2.0") and not isGlobalSSLEnabled(model):
-        ssl_listen_port = None
+    # Check override for 14.1.2.x
+
+    if not env.wlsVersionEarlierThan("14.1.2.0") and ssl is None:
+        if isGlobalSSLEnabled(model):
+            ssl_listen_port = 7002
+        else:
+            ssl_listen_port = None
 
     if ssl_listen_port is not None:
       _writeAdminChannelPortForwardNAP(name='internal-t3s', server=server, listen_port=ssl_listen_port, protocol='t3s')
 
 
 def is_listenport_enabled(server):
+  is_listen_port_enabled = True
   if 'ListenPortEnabled' in server:
     val = server['ListenPortEnabled']
     if isinstance(val, str) or isinstance(val, unicode):
       is_listen_port_enabled = Boolean.valueOf(val)
     else:
       is_listen_port_enabled = val
-  else:
-    is_listen_port_enabled = True
+
   return is_listen_port_enabled
 
 
