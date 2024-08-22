@@ -401,8 +401,8 @@ class ItSecureModeDomain {
     Map<String, Integer> adminPorts = new HashMap<>();
     adminPorts.put("default", 7001);
     adminPorts.put("default-secure", 7002);
-    adminPorts.put("internal-t3", 7001); // check what is channel created by WKO
-    adminPorts.put("internal-t3s", 7002); // check what is channel created by WKO
+    adminPorts.put("internal-t3", 7001);
+    adminPorts.put("internal-t3s", 7002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
@@ -460,9 +460,9 @@ class ItSecureModeDomain {
 
     Map<String, Integer> adminPorts = new HashMap<>();
     adminPorts.put("default", 7001);
-    adminPorts.put("internal-t3", 7001); // check what is channel created by WKO
+    adminPorts.put("internal-t3", 7001);
     adminPorts.put("default-secure", 7002);
-    adminPorts.put("internal-t3s", 7002); // check what is channel created by WKO
+    adminPorts.put("internal-t3s", 7002);
     verifyServerChannels(domainNamespace, adminServerPodName, adminPorts);
     
     Map<String, Integer> msPorts = new HashMap<>();
