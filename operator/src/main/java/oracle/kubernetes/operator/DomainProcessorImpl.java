@@ -86,6 +86,7 @@ import static oracle.kubernetes.operator.helpers.PodHelper.getPodDomainUid;
 import static oracle.kubernetes.operator.helpers.PodHelper.getPodName;
 import static oracle.kubernetes.operator.helpers.PodHelper.getPodNamespace;
 import static oracle.kubernetes.operator.helpers.PodHelper.getPodStatusMessage;
+import static oracle.kubernetes.operator.helpers.PodHelper.isReady;
 import static oracle.kubernetes.operator.logging.ThreadLoggingContext.setThreadContext;
 import static oracle.kubernetes.weblogic.domain.model.DomainFailureReason.PERSISTENT_VOLUME_CLAIM;
 
@@ -611,6 +612,13 @@ public class DomainProcessorImpl implements DomainProcessor, MakeRightExecutor {
         info.setServerPodFromEvent(serverName, pod);
         break;
       case MODIFIED:
+
+        // TEST
+        StringBuilder sb = new StringBuilder();
+        sb.append("*** RJE: pod modified: ").append(pod.getMetadata().getName());
+        sb.append(", isReady: ").append(isReady(pod));
+        LOGGER.severe(sb.toString());
+
         boolean podPreviouslyEvicted = info.setServerPodFromEvent(serverName, pod, PodHelper::isEvicted);
         boolean isEvicted = PodHelper.isEvicted(pod);
         if (isEvicted && !podPreviouslyEvicted) {

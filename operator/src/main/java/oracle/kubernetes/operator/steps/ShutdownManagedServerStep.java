@@ -52,6 +52,7 @@ import static oracle.kubernetes.operator.WebLogicConstants.RUNNING_STATE;
 import static oracle.kubernetes.operator.WebLogicConstants.SHUTDOWN_STATE;
 
 public class ShutdownManagedServerStep extends Step {
+  private static final Long HTTP_SHUTDOWN_SECONDS = 5L;
 
   private static final LoggingFacade LOGGER = LoggingFactory.getLogger("Operator", "Operator");
   private final String serverName;
@@ -134,7 +135,7 @@ public class ShutdownManagedServerStep extends Step {
       sb.append(" , body: ").append(body);
       LOGGER.severe(sb.toString());
 
-      return createRequestBuilder(url, timeout).POST(HttpRequest.BodyPublishers.ofString(body)).build();
+      return createRequestBuilder(url, HTTP_SHUTDOWN_SECONDS).POST(HttpRequest.BodyPublishers.ofString(body)).build();
     }
 
     private void initializeRequestPayloadParameters() {
@@ -368,9 +369,14 @@ public class ShutdownManagedServerStep extends Step {
 
       Throwable throwable = getThrowableResponse(packet);
       if (throwable != null) {
+
+        // TEST
+        StringBuilder sb = new StringBuilder();
+        sb.append("*** RJE: response throwable: ").append(throwable.getClass().getName());
+        LOGGER.severe(sb.toString());
+
         if (throwable instanceof HttpTimeoutException) {
-          removeShutdownRequestRetryCount(packet);
-          return doNext(packet);
+          return doRequeue(packet);
         }
 
         if (shouldRetry(packet)) {
