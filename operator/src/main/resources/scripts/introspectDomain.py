@@ -2133,7 +2133,9 @@ def isListenPortEnabledForServer(server, domain, is_server_template=False):
     cd('/Server')
   cd(server.getName())
   if not isSet('ListenPortEnabled') and isSecureModeEnabledForDomain(domain):
-    enabled = False
+      enabled = False
+      if not LegalHelper.versionEarlierThan(domain.getDomainVersion(), "14.1.2.0") and domain.isListenPortEnabled():
+          enabled = True
   return enabled
 
 def isSSLListenPortEnabled(ssl, domain):
