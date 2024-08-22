@@ -5,6 +5,7 @@ package oracle.kubernetes.operator.steps;
 
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -133,7 +134,7 @@ public class ShutdownManagedServerStep extends Step {
       sb.append(" , body: ").append(body);
       LOGGER.severe(sb.toString());
 
-      return createRequestBuilder(url).POST(HttpRequest.BodyPublishers.ofString(body)).build();
+      return createRequestBuilder(url, timeout).POST(HttpRequest.BodyPublishers.ofString(body)).build();
     }
 
     private void initializeRequestPayloadParameters() {
@@ -365,8 +366,13 @@ public class ShutdownManagedServerStep extends Step {
         LOGGER.severe(sb.toString());
       }
 
-      if (getThrowableResponse(packet) != null) {
-        Throwable throwable = getThrowableResponse(packet);
+      Throwable throwable = getThrowableResponse(packet);
+      if (throwable != null) {
+        if (throwable instanceof HttpTimeoutException) {
+          removeShutdownRequestRetryCount(packet);
+          return doNext(packet);
+        }
+
         if (shouldRetry(packet)) {
           addShutdownRequestRetryCountToPacket(packet, 1);
           // Retry request
