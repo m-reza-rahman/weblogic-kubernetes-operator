@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import io.kubernetes.client.custom.Quantity;
@@ -88,6 +89,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.verifyServerCommunication;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ConfigMapUtils.createConfigMapFromFiles;
 import static oracle.weblogic.kubernetes.utils.DeployUtil.deployUsingWlst;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
@@ -830,12 +832,12 @@ public class CommonLBTestUtils {
    * @param pathLocation path location in the console url
    * @param hostName external IP address on OKE or k8s node IP address on non-OKE env
    */
-  public static void verifyAdminServerAccess(boolean isTLS,
-                                             int lbNodePort,
-                                             boolean isHostRouting,
-                                             String ingressHostName,
-                                             String pathLocation,
-                                             String hostName) {
+  public static Callable<Boolean> checkAdminServerAccess(boolean isTLS,
+                                                         int lbNodePort,
+                                                         boolean isHostRouting,
+                                                         String ingressHostName,
+                                                         String pathLocation,
+                                                         String hostName) {
     StringBuffer readyAppUrl = new StringBuffer();
     String hostAndPort = OKE_CLUSTER_PRIVATEIP ? hostName : getHostAndPort(hostName, lbNodePort);
 
@@ -864,24 +866,52 @@ public class CommonLBTestUtils {
       }
     }
 
-    boolean consoleAccessible = false;
-    for (int i = 0; i < 10; i++) {
-      assertDoesNotThrow(() -> TimeUnit.SECONDS.sleep(1));
-      ExecResult result;
-      try {
-        getLogger().info("Accessing app on admin server using curl request, iteration {0}: {1}", i, curlCmd);
-        result = ExecCommand.exec(curlCmd, true);
-        String response = result.stdout().trim();
-        getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
-            result.exitValue(), response, result.stderr());
-        if (response.contains("RUNNING")) {
-          consoleAccessible = true;
-          break;
+    //boolean consoleAccessible = false;
+    return () -> {
+      for (int i = 0; i < 10; i++) {
+        assertDoesNotThrow(() -> TimeUnit.SECONDS.sleep(1));
+        ExecResult result;
+        try {
+          getLogger().info("Accessing app on admin server using curl request, iteration {0}: {1}", i, curlCmd);
+          result = ExecCommand.exec(curlCmd, true);
+          String response = result.stdout().trim();
+          getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
+              result.exitValue(), response, result.stderr());
+          if (response.contains("RUNNING")) {
+            return true;
+            //consoleAccessible = true;
+            //break;
+          }
+        } catch (IOException | InterruptedException ex) {
+          getLogger().severe(ex.getMessage());
         }
-      } catch (IOException | InterruptedException ex) {
-        getLogger().severe(ex.getMessage());
       }
-    }
-    assertTrue(consoleAccessible, "Couldn't access admin server app");
+      return false;
+    };
+
+    //assertTrue(consoleAccessible, "Couldn't access admin server app");
+  }
+
+  /**
+   * Verify the admin server access.
+   * @param isTLS whether is TLS
+   * @param lbNodePort loadbalancer node port
+   * @param isHostRouting whether it is host routing
+   * @param ingressHostName ingress host name
+   * @param pathLocation path location in the console url
+   * @param hostName external IP address on OKE or k8s node IP address on non-OKE env
+   */
+  public static void verifyAdminServerAccess(boolean isTLS,
+                                             int lbNodePort,
+                                             boolean isHostRouting,
+                                             String ingressHostName,
+                                             String pathLocation,
+                                             String hostName) {
+    LoggingFacade logger = getLogger();
+    testUntil(
+        withLongRetryPolicy,
+        checkAdminServerAccess(isTLS, lbNodePort, isHostRouting, ingressHostName, pathLocation, hostName),
+        logger,
+        "Waiting until Admin Server Access");
   }
 }
