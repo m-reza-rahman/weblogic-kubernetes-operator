@@ -49,14 +49,20 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
+import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runClientInsidePod;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.runJavacInsidePod;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
+import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PodUtils.getExternalServicePodName;
@@ -96,6 +102,12 @@ class ItCrossDomainTransactionSecurity {
   private static int replicaCount = 2;
   private static int t3ChannelPort1 = getNextFreePort();
   private static int t3ChannelPort2 = getNextFreePort();
+  private static String domain1AdminExtSvcRouteHost = null;
+  private static String domain2AdminExtSvcRouteHost = null;
+  private static String adminExtSvcRouteHost = null;
+  private static String hostAndPort1 = null;
+  private static String hostAndPort2 = null;
+
 
 
   /**
@@ -167,6 +179,32 @@ class ItCrossDomainTransactionSecurity {
           = getServiceNodePort(domainNamespace, getExternalServicePodName(domain2AdminServerPodName), "default");
     assertNotEquals(-1, domain1AdminServiceNodePort, "domain2 admin server default node port is not valid");
     logger.info("domain2AdminServiceNodePort is: " + domain2AdminServiceNodePort);
+    hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
+    logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);
+
+    String headers = "";
+    String curlCmd1 = "curl -skg --show-error --noproxy '*' "
+          + headers + " \"http://" + hostAndPort1
+          + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=commit\""
+          + " --write-out %{http_code}"
+          + " -o /dev/null";
+    logger.info("Executing curl command: {0}", curlCmd1);
+    assertTrue(callWebAppAndWaitTillReady(curlCmd1, 10));
+
+    // build the standalone JMS Client on Admin pod
+    String destLocation = "/u01/JmsSendReceiveClient.java";
+    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+        domain1AdminServerPodName, "",
+        Paths.get(RESOURCE_DIR, "jms", "JmsSendReceiveClient.java"),
+        Paths.get(destLocation)));
+    runJavacInsidePod(domain1AdminServerPodName, domainNamespace, destLocation);
+    testUntil(
+        runClientInsidePod(domain1AdminServerPodName, domainNamespace,
+            "/u01", "JmsSendReceiveClient",
+            "t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "1"),
+
+        logger,
+        "Wait for JMS Client to send/recv msg");
   }
 
   private static String createAuxImage(String imageName, String imageTag, List<String> wdtModelFile,
