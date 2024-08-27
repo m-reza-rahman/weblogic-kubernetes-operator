@@ -722,6 +722,14 @@ public class LoadBalancerUtils {
   public static String getLbExternalIp(String lbrelname, String lbns) throws Exception {
     LoggingFacade logger = getLogger();
 
+    //DEBUG
+    String cmdallip = KUBERNETES_CLI + " get svc --all-namespaces";
+    logger.info("Command to list all external IP is: {0} ", cmdallip);
+
+    ExecResult resultallip = exec(cmdallip, true);
+    logger.info("The command returned exit value: " + resultallip.exitValue()
+        + " command output: " + resultallip.stderr() + "\n" + resultallip.stdout());
+
     String cmdip = KUBERNETES_CLI + " get svc --namespace " + lbns
           + " -o jsonpath='{.items[?(@.metadata.name == \"" + lbrelname + "\")]"
           + ".status.loadBalancer.ingress[0].ip}'";
