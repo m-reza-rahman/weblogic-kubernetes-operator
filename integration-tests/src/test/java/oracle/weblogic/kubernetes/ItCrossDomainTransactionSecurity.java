@@ -3,9 +3,6 @@
 
 package oracle.weblogic.kubernetes;
 
-/*import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;*/
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -28,6 +25,8 @@ import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -160,11 +159,13 @@ class ItCrossDomainTransactionSecurity {
    * On both domains create a user (cross-domain) with group CrossDomainConnectors
    * Add required Credential Mapping
    * Deploy a JSP on d1's admin server that takes 2 parameteers
-   * # a. The tx aaction b. the d2's cluster service url
-   * # Starts a User transcation
-   * # send a message to local destination (jms.admin.adminQueue) on d1
-   * # send a messgae to a distributed destination (jms.testUniformQueue) on d2
-   * # Commit/rollback the transation
+   * a. The tx aaction b. the d2's cluster service url
+   * Starts a User transcation
+   * Send 10 messgaes to a distributed destination (jms.testUniformQueue) on d2 that has 2 members
+   * Send a message to local destination (jms.admin.adminQueue) on d1
+   * Commit/rollback the transation
+   * Receive the messages from the distributed destination (jms.testUniformQueue) on d2
+   * Receive the message from the local destination (jms.admin.adminQueue) on d1
    */
   @Test
   @DisplayName("Check cross domain transaction works")
@@ -182,6 +183,7 @@ class ItCrossDomainTransactionSecurity {
     hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);
 
+    //send 10 msg to remote udq and 1 msg to local queue
     String headers = "";
     String curlCmd1 = "curl -skg --show-error --noproxy '*' "
           + headers + " \"http://" + hostAndPort1
@@ -191,6 +193,16 @@ class ItCrossDomainTransactionSecurity {
     logger.info("Executing curl command: {0}", curlCmd1);
     assertTrue(callWebAppAndWaitTillReady(curlCmd1, 10));
 
+    //receive msg from the udq that has 2 memebers
+    String curlCmd2 = "curl -j --show-error --noproxy '*' "
+          + headers + " \"http://" + hostAndPort1
+          + "/sample_war/get.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=recv&dest=jms.testUniformQueue\"";
+    logger.info("Executing curl command: {0}", curlCmd2);
+    for (int i = 0; i < 2; i++) {
+      assertTrue(getCurlResult(curlCmd2).contains("Total Message(s) Received : 5"),
+          "Didn't receive expected msg count from remote queue");
+    }
+
     // build the standalone JMS Client on Admin pod
     String destLocation = "/u01/JmsSendReceiveClient.java";
     assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
@@ -198,11 +210,11 @@ class ItCrossDomainTransactionSecurity {
         Paths.get(RESOURCE_DIR, "jms", "JmsSendReceiveClient.java"),
         Paths.get(destLocation)));
     runJavacInsidePod(domain1AdminServerPodName, domainNamespace, destLocation);
+    // receive msg from the local queue
     testUntil(
         runClientInsidePod(domain1AdminServerPodName, domainNamespace,
             "/u01", "JmsSendReceiveClient",
             "t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "1"),
-
         logger,
         "Wait for JMS Client to send/recv msg");
   }
@@ -350,9 +362,6 @@ class ItCrossDomainTransactionSecurity {
       String auxiliaryImagePath,
       String... auxiliaryImageName) {
 
-    /*DomainResource domainCR = CommonMiiTestUtils.createDomainResource(domainResourceName, domNamespace,
-        baseImageName, adminSecretName, repoSecretName,
-        encryptionSecretName);*/
     DomainResource domainCR = createDomainResource(
         domainResourceName,
         domNamespace,
@@ -463,8 +472,19 @@ class ItCrossDomainTransactionSecurity {
     return domain;
   }
 
-
-
+  private String getCurlResult(String curlCmd) {
+    ExecResult result = null;
+    try {
+      result = ExecCommand.exec(curlCmd, true);
+    } catch (Exception e) {
+      logger.info("Got exception while running command: {0}", curlCmd);
+      logger.info(e.toString());
+    }
+    if (result != null) {
+      logger.info("result.stderr: \n{0}", result.stderr());
+    }
+    return result.stdout();
+  }
 
 }
 
