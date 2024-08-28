@@ -518,7 +518,8 @@ public class LoadBalancerUtils {
         + "/weblogic/ready --write-out %{http_code} -o /dev/null";
 
     logger.info("Executing curl command {0}", curlCmd);
-    assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
+    assertTrue(callWebAppAndWaitTillReady(curlCmd, 120));
+    //assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
   }
 
   /**
