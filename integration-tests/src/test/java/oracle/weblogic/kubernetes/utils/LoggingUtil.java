@@ -472,7 +472,10 @@ public class LoggingUtil {
   public static boolean doesPodLogContainString(String namespace, String podName, String expectedString) {
     String podLog;
     try {
+      getLogger().info("========== before getPodLog in doesPodLogContainString");
       podLog = getPodLog(podName, namespace);
+      getLogger().info("========== after getPodLog in doesPodLogContainString");
+      getLogger().info("========== podLog: " + podLog);
       getLogger().info("pod log for pod {0} in namespace {1} : {2}", podName, namespace, podLog);
     } catch (ApiException apiEx) {
       getLogger().severe("got ApiException while getting pod log: ", apiEx);
