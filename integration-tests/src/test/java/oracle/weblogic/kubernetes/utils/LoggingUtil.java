@@ -46,6 +46,7 @@ import static oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes.listP
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -536,6 +537,7 @@ public class LoggingUtil {
 
     getLogger().info("Wait for string {0} existing in pod {1} in namespace {2}", expectedString, podName, namespace);
     testUntil(
+        withLongRetryPolicy,
         assertDoesNotThrow(() -> podLogContainsString(namespace, podName, expectedString),
           "podLogContainsString failed with IOException, ApiException or InterruptedException"),
         getLogger(),
