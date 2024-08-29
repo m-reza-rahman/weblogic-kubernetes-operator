@@ -878,6 +878,12 @@ public class CommonLBTestUtils {
           consoleAccessible = true;
           break;
         }
+
+        try {
+          Thread.sleep(5000);
+        } catch (InterruptedException ignore) {
+          // ignore
+        }
       } catch (IOException | InterruptedException ex) {
         getLogger().severe(ex.getMessage());
       }
