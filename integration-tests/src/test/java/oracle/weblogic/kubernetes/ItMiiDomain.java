@@ -399,7 +399,9 @@ class ItMiiDomain {
                 MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG);
 
     // set low introspectorJobActiveDeadlineSeconds and verify introspector retries on timeouts
-    domain.getSpec().configuration().introspectorJobActiveDeadlineSeconds(30L);
+    //HUIZHAO
+    //domain.getSpec().configuration().introspectorJobActiveDeadlineSeconds(30L);
+    domain.getSpec().configuration().introspectorJobActiveDeadlineSeconds(10L);
 
     domain = createClusterResourceAndAddReferenceToDomain(domainUid1 + "-" + clusterName,
         clusterName, domainNamespace1, domain, replicaCount);
