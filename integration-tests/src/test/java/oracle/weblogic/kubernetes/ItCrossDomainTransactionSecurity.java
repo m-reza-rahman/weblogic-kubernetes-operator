@@ -48,7 +48,6 @@ import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.buildAppArchive;
 import static oracle.weblogic.kubernetes.actions.TestActions.defaultAppParams;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
-import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
@@ -144,10 +143,6 @@ class ItCrossDomainTransactionSecurity {
   @BeforeEach
   public void beforeEach() {
     int replicaCount = 2;
-    /*for (int i = 1; i <= replicaCount; i++) {
-      checkPodReadyAndServiceExists(domain2ManagedServerPrefix + i,
-            domainUid2, domainNamespace);
-    }*/
     for (int i = 1; i <= replicaCount; i++) {
       checkPodReadyAndServiceExists(domain1ManagedServerPrefix + i,
             domainUid1, domainNamespace);
@@ -169,7 +164,7 @@ class ItCrossDomainTransactionSecurity {
    */
   @Test
   @DisplayName("Check cross domain transaction works")
-  void testCrossDomainTransactionSecurityEnable() {
+  void testCrossDomainTransactionCommitSecurityEnable() {
 
     logger.info("2 domains with crossDomainSecurity enabled start up!");
     int domain1AdminServiceNodePort
@@ -183,15 +178,22 @@ class ItCrossDomainTransactionSecurity {
     hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);
 
-    //send 10 msg to remote udq and 1 msg to local queue
+    // build the standalone JMS Client on Admin pod
+    String destLocation = "/u01/JmsSendReceiveClient.java";
+    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
+        domain1AdminServerPodName, "",
+        Paths.get(RESOURCE_DIR, "jms", "JmsSendReceiveClient.java"),
+        Paths.get(destLocation)));
+    runJavacInsidePod(domain1AdminServerPodName, domainNamespace, destLocation);
+
+    //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and commit the tx
     String headers = "";
     String curlCmd1 = "curl -skg --show-error --noproxy '*' "
           + headers + " \"http://" + hostAndPort1
-          + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=commit\""
-          + " --write-out %{http_code}"
-          + " -o /dev/null";
+          + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=commit\"";
+    assertTrue(getCurlResult(curlCmd1).contains("Message sent in a commit User Transation"),
+          "Didn't send expected msg ");
     logger.info("Executing curl command: {0}", curlCmd1);
-    assertTrue(callWebAppAndWaitTillReady(curlCmd1, 10));
 
     //receive msg from the udq that has 2 memebers
     String curlCmd2 = "curl -j --show-error --noproxy '*' "
@@ -203,20 +205,41 @@ class ItCrossDomainTransactionSecurity {
           "Didn't receive expected msg count from remote queue");
     }
 
-    // build the standalone JMS Client on Admin pod
-    String destLocation = "/u01/JmsSendReceiveClient.java";
-    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-        domain1AdminServerPodName, "",
-        Paths.get(RESOURCE_DIR, "jms", "JmsSendReceiveClient.java"),
-        Paths.get(destLocation)));
-    runJavacInsidePod(domain1AdminServerPodName, domainNamespace, destLocation);
-    // receive msg from the local queue
+    // receive 1 msg from the local queue
     testUntil(
         runClientInsidePod(domain1AdminServerPodName, domainNamespace,
             "/u01", "JmsSendReceiveClient",
             "t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "1"),
         logger,
         "Wait for JMS Client to send/recv msg");
+
+    //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and rollback the tx
+    String curlCmd3 = "curl -j --noproxy '*' "
+          + headers + " \"http://" + hostAndPort1
+          + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=rollback\"";
+    logger.info("Executing curl command: {0}", curlCmd3);
+    assertTrue(getCurlResult(curlCmd3).contains("Message sent in a rolled-back User Transation"),
+          "Didn't send expected msg ");
+
+    //receive 0 msg from the udq that has 2 memebers
+    String curlCmd4 = "curl -j --show-error --noproxy '*' "
+          + headers + " \"http://" + hostAndPort1
+          + "/sample_war/get.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=recv&dest=jms.testUniformQueue\"";
+    logger.info("Executing curl command: {0}", curlCmd4);
+    for (int i = 0; i < 2; i++) {
+      assertTrue(getCurlResult(curlCmd4).contains("Total Message(s) Received : 0"),
+          "Didn't receive expected msg count from remote queue");
+    }
+
+    // receive 0 msg from the local queue
+    testUntil(
+        runClientInsidePod(domain1AdminServerPodName, domainNamespace,
+            "/u01", "JmsSendReceiveClient",
+            "t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "0"),
+        logger,
+        "Wait for JMS Client to send/recv msg");
+
+
   }
 
   private static String createAuxImage(String imageName, String imageTag, List<String> wdtModelFile,
