@@ -215,6 +215,12 @@ class ItStickySession {
           = getIngressServiceNodePort(traefikNamespace, ingressServiceName, channelName);
     }
 
+    try {
+      Thread.sleep(30000);
+    } catch (Exception ex) {
+      //
+    }
+
     // verify that two HTTP connections are sticky to the same server
     sendHttpRequestsToTestSessionStickinessAndVerify(hostName, ingressServiceNodePort);
   }
