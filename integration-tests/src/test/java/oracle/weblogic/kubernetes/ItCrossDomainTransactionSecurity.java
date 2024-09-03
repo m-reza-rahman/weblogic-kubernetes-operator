@@ -3,6 +3,7 @@
 
 package oracle.weblogic.kubernetes;
 
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,7 +11,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -33,6 +36,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import static java.net.InetAddress.getLocalHost;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
@@ -41,6 +45,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOSTNAME;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
+import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.TestConstants.WEBLOGIC_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ARCHIVE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
@@ -53,6 +58,8 @@ import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVeri
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -90,21 +97,19 @@ class ItCrossDomainTransactionSecurity {
   private static String domainNamespace = null;
   private static String domainUid1 = "domain1";
   private static String domainUid2 = "domain2";
-  private static int  admin2ServiceNodePort = -1;
+  private static String adminServerName = "adminserver";
   private static String domain1AdminServerPodName = domainUid1 + "-adminserver";
   private static String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
   private static String domain2AdminServerPodName = domainUid2 + "-adminserver";
   private static String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
-  private static int  domain1AdminServiceNodePort = -1;
   private static LoggingFacade logger = null;
   private static int replicaCount = 2;
   private static int t3ChannelPort1 = getNextFreePort();
   private static int t3ChannelPort2 = getNextFreePort();
   private static String domain1AdminExtSvcRouteHost = null;
-  private static String domain2AdminExtSvcRouteHost = null;
-  private static String adminExtSvcRouteHost = null;
   private static String hostAndPort1 = null;
-  private static String hostAndPort2 = null;
+  private static String hostHeader;
+  private static Map<String, String> headers = null;
 
 
 
@@ -164,7 +169,7 @@ class ItCrossDomainTransactionSecurity {
    */
   @Test
   @DisplayName("Check cross domain transaction works")
-  void testCrossDomainTransactionCommitSecurityEnable() {
+  void testCrossDomainTransactionCommitSecurityEnable() throws UnknownHostException {
 
     logger.info("2 domains with crossDomainSecurity enabled start up!");
     int domain1AdminServiceNodePort
@@ -175,6 +180,16 @@ class ItCrossDomainTransactionSecurity {
           = getServiceNodePort(domainNamespace, getExternalServicePodName(domain2AdminServerPodName), "default");
     assertNotEquals(-1, domain1AdminServiceNodePort, "domain2 admin server default node port is not valid");
     logger.info("domain2AdminServiceNodePort is: " + domain2AdminServiceNodePort);
+
+    hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
+    if (TestConstants.KIND_CLUSTER
+          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      hostHeader = createIngressHostRouting(domainNamespace, domainUid1, adminServerName, 7001);
+      hostAndPort1 = formatIPv6Host(getLocalHost().getHostAddress())
+            + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
+      headers = new HashMap<>();
+      headers.put("host", hostHeader);
+    }
     hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);
 
@@ -187,7 +202,6 @@ class ItCrossDomainTransactionSecurity {
     runJavacInsidePod(domain1AdminServerPodName, domainNamespace, destLocation);
 
     //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and commit the tx
-    String headers = "";
     String curlCmd1 = "curl -skg --show-error --noproxy '*' "
           + headers + " \"http://" + hostAndPort1
           + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=commit\"";
