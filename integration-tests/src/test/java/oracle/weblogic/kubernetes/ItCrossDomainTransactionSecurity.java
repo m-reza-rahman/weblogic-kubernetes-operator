@@ -190,7 +190,6 @@ class ItCrossDomainTransactionSecurity {
       headers = new HashMap<>();
       headers.put("host", hostHeader);
     }
-    hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);
 
     // build the standalone JMS Client on Admin pod
