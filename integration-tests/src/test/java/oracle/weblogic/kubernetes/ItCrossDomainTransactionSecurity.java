@@ -97,10 +97,10 @@ class ItCrossDomainTransactionSecurity {
   private static String domainNamespace = null;
   private static String domainUid1 = "domain1";
   private static String domainUid2 = "domain2";
-  private static String adminServerName = "adminserver";
-  private static String domain1AdminServerPodName = domainUid1 + "-adminserver";
+  private static String adminServerName = "admin-server";
+  private static String domain1AdminServerPodName = domainUid1 + "-" + adminServerName;
   private static String domain1ManagedServerPrefix = domainUid1 + "-managed-server";
-  private static String domain2AdminServerPodName = domainUid2 + "-adminserver";
+  private static String domain2AdminServerPodName = domainUid2 + "-" + adminServerName;
   private static String domain2ManagedServerPrefix = domainUid2 + "-managed-server";
   private static LoggingFacade logger = null;
   private static int replicaCount = 2;
@@ -303,7 +303,7 @@ class ItCrossDomainTransactionSecurity {
       Files.createDirectories(wdtVariableFile1.getParent());
       Files.writeString(wdtVariableFile1, "DOMAIN_UID=domain1\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile1, "CLUSTER_NAME=cluster-1\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile1, "ADMIN_SERVER_NAME=adminserver\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile1, "ADMIN_SERVER_NAME=admin-server\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile1, "MANAGED_SERVER_BASE_NAME=managed-server\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile1, "MANAGED_SERVER_PORT=8001\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile1, "MANAGED_SERVER_COUNT=4\n", StandardOpenOption.APPEND);
@@ -323,7 +323,7 @@ class ItCrossDomainTransactionSecurity {
       Files.createDirectories(wdtVariableFile2.getParent());
       Files.writeString(wdtVariableFile2, "DOMAIN_UID=domain2\n", StandardOpenOption.CREATE);
       Files.writeString(wdtVariableFile2, "CLUSTER_NAME=cluster-2\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile2, "ADMIN_SERVER_NAME=adminserver\n", StandardOpenOption.APPEND);
+      Files.writeString(wdtVariableFile2, "ADMIN_SERVER_NAME=admin-server\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile2, "MANAGED_SERVER_BASE_NAME=managed-server\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile2, "MANAGED_SERVER_PORT=8001\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile2, "MANAGED_SERVER_COUNT=4\n", StandardOpenOption.APPEND);
