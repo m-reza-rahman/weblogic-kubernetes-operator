@@ -86,6 +86,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -195,7 +196,8 @@ class ItMiiDomainUpgradeToSecureMode {
 
       for (int i = 1; i <= replicaCount; i++) {
         String managedServerPodName = managedServerPrefix + i;
-        testUntil(assertDoesNotThrow(() -> podDoesNotExist(managedServerPodName, domainUid, domainNamespace),
+        testUntil(withLongRetryPolicy,
+            assertDoesNotThrow(() -> podDoesNotExist(managedServerPodName, domainUid, domainNamespace),
             String.format("podDoesNotExist failed with ApiException for pod %s in namespace %s",
                 managedServerPodName, domainNamespace)),
             logger,
