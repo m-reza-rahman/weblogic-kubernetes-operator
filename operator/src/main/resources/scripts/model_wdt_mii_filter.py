@@ -183,6 +183,9 @@ def filter_model(model):
   try:
 
     if model is not None:
+
+      upgradeServerIfNeeded(model)
+
       if getOfflineWlstEnv() is None:
         initOfflineWlstEnv(model)
 
@@ -216,7 +219,6 @@ def filter_model(model):
         if 'ServerTemplate' in topology:
           customizeServerTemplates(model)
 
-        upgradeServerIfNeeded(model)
   except:
       exc_type, exc_obj, exc_tb = sys.exc_info()
       ee_string = traceback.format_exception(exc_type, exc_obj, exc_tb)
