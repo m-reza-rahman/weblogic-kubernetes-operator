@@ -256,8 +256,6 @@ class ItCrossDomainTransactionSecurity {
             "t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "0"),
         logger,
         "Wait for JMS Client to send/recv msg");
-
-
   }
 
   private static String createAuxImage(String imageName, String imageTag, List<String> wdtModelFile,
