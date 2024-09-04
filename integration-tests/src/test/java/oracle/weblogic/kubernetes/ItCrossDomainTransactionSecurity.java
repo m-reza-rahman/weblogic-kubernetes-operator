@@ -11,7 +11,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -108,7 +107,7 @@ class ItCrossDomainTransactionSecurity {
   private static int t3ChannelPort2 = getNextFreePort();
   private static String domain1AdminExtSvcRouteHost = null;
   private static String hostAndPort1 = null;
-  private static String hostHeader;
+  private static String hostHeader1;
   private static Map<String, String> headers = null;
 
 
@@ -184,12 +183,13 @@ class ItCrossDomainTransactionSecurity {
     hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
     if (TestConstants.KIND_CLUSTER
           && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-      hostHeader = createIngressHostRouting(domainNamespace, domainUid1, adminServerName, 7001);
+      hostHeader1 = createIngressHostRouting(domainNamespace, domainUid1, adminServerName, 7001);
       hostAndPort1 = formatIPv6Host(getLocalHost().getHostAddress())
             + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
-      headers = new HashMap<>();
-      headers.put("host", hostHeader);
+      //headers = new HashMap<>();
+      //headers.put("host", hostHeader);
     }
+    logger.info("hostHeader1 for domain1 is: " + hostHeader1);
     logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);
 
     // build the standalone JMS Client on Admin pod
@@ -201,12 +201,24 @@ class ItCrossDomainTransactionSecurity {
     runJavacInsidePod(domain1AdminServerPodName, domainNamespace, destLocation);
 
     //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and commit the tx
-    String curlCmd1 = "curl -skg --show-error --noproxy '*' "
+    /*String curlCmd1 = "curl -skg --show-error --noproxy '*' "
           + headers + " \"http://" + hostAndPort1
           + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=commit\"";
-    assertTrue(getCurlResult(curlCmd1).contains("Message sent in a commit User Transation"),
-          "Didn't send expected msg ");
     logger.info("Executing curl command: {0}", curlCmd1);
+    assertTrue(getCurlResult(curlCmd1).contains("Message sent in a commit User Transation"),
+          "Didn't send expected msg ");*/
+    StringBuffer curlCmd1 = new StringBuffer("curl -skg --show-error --noproxy '*' ");
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      curlCmd1.append(" -H 'host: " + hostHeader1 + "' ");
+    }
+
+    String url1 = "\"http://" + hostAndPort1
+        + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=commit\"";
+    curlCmd1.append(url1);
+    logger.info("Executing curl command: {0}", curlCmd1);
+    assertTrue(getCurlResult(curlCmd1.toString()).contains("Message sent in a commit User Transation"),
+          "Didn't send expected msg ");
 
     //receive msg from the udq that has 2 memebers
     String curlCmd2 = "curl -j --show-error --noproxy '*' "
