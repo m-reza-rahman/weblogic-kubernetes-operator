@@ -30,7 +30,6 @@ import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -56,7 +55,6 @@ import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPush
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResourceAndAddReferenceToDomain;
-import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressHostRouting;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
@@ -80,9 +78,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Cross domain transaction tests.
+ * Cross domain transaction with CrossDomainSecurityEnabled set to true.
  */
-@DisplayName("Verify cross domain transaction is successful")
+@DisplayName("Verify cross domain transaction is successful with CrossDomainSecurityEnabled set to true")
 @IntegrationTest
 @Tag("kind-parallel")
 class ItCrossDomainTransactionSecurity {
@@ -141,19 +139,6 @@ class ItCrossDomainTransactionSecurity {
   }
 
   /**
-   * Verify all server pods are running.
-   * Verify k8s services for all servers are created.
-   */
-  @BeforeEach
-  public void beforeEach() {
-    int replicaCount = 2;
-    for (int i = 1; i <= replicaCount; i++) {
-      checkPodReadyAndServiceExists(domain1ManagedServerPrefix + i,
-            domainUid1, domainNamespace);
-    }
-  }
-
-  /**
    * Configure two domains d1 and d2 with CrossDomainSecurityEnabled set to true
    * On both domains create a user (cross-domain) with group CrossDomainConnectors
    * Add required Credential Mapping
@@ -201,12 +186,6 @@ class ItCrossDomainTransactionSecurity {
     runJavacInsidePod(domain1AdminServerPodName, domainNamespace, destLocation);
 
     //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and commit the tx
-    /*String curlCmd1 = "curl -skg --show-error --noproxy '*' "
-          + headers + " \"http://" + hostAndPort1
-          + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=commit\"";
-    logger.info("Executing curl command: {0}", curlCmd1);
-    assertTrue(getCurlResult(curlCmd1).contains("Message sent in a commit User Transation"),
-          "Didn't send expected msg ");*/
     StringBuffer curlCmd1 = new StringBuffer("curl -skg --show-error --noproxy '*' ");
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
@@ -220,10 +199,6 @@ class ItCrossDomainTransactionSecurity {
           "Didn't send expected msg ");
 
     //receive msg from the udq that has 2 memebers
-    /*String curlCmd2 = "curl -j --show-error --noproxy '*' "
-          + headers + " \"http://" + hostAndPort1
-          + "/sample_war/get.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=recv&dest=jms.testUniformQueue\"";
-    logger.info("Executing curl command: {0}", curlCmd2);*/
     StringBuffer curlCmd2 = new StringBuffer("curl -j --show-error --noproxy '*' ");
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
@@ -247,12 +222,6 @@ class ItCrossDomainTransactionSecurity {
         "Wait for JMS Client to send/recv msg");
 
     //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and rollback the tx
-    /*String curlCmd3 = "curl -j --noproxy '*' "
-          + headers + " \"http://" + hostAndPort1
-          + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=rollback\"";
-    logger.info("Executing curl command: {0}", curlCmd3);
-    assertTrue(getCurlResult(curlCmd3).contains("Message sent in a rolled-back User Transation"),
-          "Didn't send expected msg ");*/
     StringBuffer curlCmd3 = new StringBuffer("curl -skg --show-error --noproxy '*' ");
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
@@ -266,10 +235,6 @@ class ItCrossDomainTransactionSecurity {
           "Didn't send expected msg ");
 
     //receive 0 msg from the udq that has 2 memebers
-    /*String curlCmd4 = "curl -j --show-error --noproxy '*' "
-          + headers + " \"http://" + hostAndPort1
-          + "/sample_war/get.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=recv&dest=jms.testUniformQueue\"";
-    logger.info("Executing curl command: {0}", curlCmd4);*/
     StringBuffer curlCmd4 = new StringBuffer("curl -j --show-error --noproxy '*' ");
     if (TestConstants.KIND_CLUSTER
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
