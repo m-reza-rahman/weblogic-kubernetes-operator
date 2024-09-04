@@ -212,7 +212,6 @@ class ItCrossDomainTransactionSecurity {
         && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
       curlCmd1.append(" -H 'host: " + hostHeader1 + "' ");
     }
-
     String url1 = "\"http://" + hostAndPort1
         + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=commit\"";
     curlCmd1.append(url1);
@@ -221,12 +220,21 @@ class ItCrossDomainTransactionSecurity {
           "Didn't send expected msg ");
 
     //receive msg from the udq that has 2 memebers
-    String curlCmd2 = "curl -j --show-error --noproxy '*' "
+    /*String curlCmd2 = "curl -j --show-error --noproxy '*' "
           + headers + " \"http://" + hostAndPort1
           + "/sample_war/get.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=recv&dest=jms.testUniformQueue\"";
+    logger.info("Executing curl command: {0}", curlCmd2);*/
+    StringBuffer curlCmd2 = new StringBuffer("curl -j --show-error --noproxy '*' ");
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      curlCmd2.append(" -H 'host: " + hostHeader1 + "' ");
+    }
+    String url2 = "\"http://" + hostAndPort1
+          + "/sample_war/get.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=recv&dest=jms.testUniformQueue\"";
+    curlCmd2.append(url2);
     logger.info("Executing curl command: {0}", curlCmd2);
     for (int i = 0; i < 2; i++) {
-      assertTrue(getCurlResult(curlCmd2).contains("Total Message(s) Received : 5"),
+      assertTrue(getCurlResult(curlCmd2.toString()).contains("Total Message(s) Received : 5"),
           "Didn't receive expected msg count from remote queue");
     }
 
@@ -239,20 +247,40 @@ class ItCrossDomainTransactionSecurity {
         "Wait for JMS Client to send/recv msg");
 
     //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and rollback the tx
-    String curlCmd3 = "curl -j --noproxy '*' "
+    /*String curlCmd3 = "curl -j --noproxy '*' "
           + headers + " \"http://" + hostAndPort1
           + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=rollback\"";
     logger.info("Executing curl command: {0}", curlCmd3);
     assertTrue(getCurlResult(curlCmd3).contains("Message sent in a rolled-back User Transation"),
+          "Didn't send expected msg ");*/
+    StringBuffer curlCmd3 = new StringBuffer("curl -skg --show-error --noproxy '*' ");
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      curlCmd3.append(" -H 'host: " + hostHeader1 + "' ");
+    }
+    String url3 = "\"http://" + hostAndPort1
+        + "/sample_war/dtx.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=rollback\"";
+    curlCmd3.append(url3);
+    logger.info("Executing curl command: {0}", curlCmd3);
+    assertTrue(getCurlResult(curlCmd3.toString()).contains("Message sent in a rolled-back User Transation"),
           "Didn't send expected msg ");
 
     //receive 0 msg from the udq that has 2 memebers
-    String curlCmd4 = "curl -j --show-error --noproxy '*' "
+    /*String curlCmd4 = "curl -j --show-error --noproxy '*' "
           + headers + " \"http://" + hostAndPort1
           + "/sample_war/get.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=recv&dest=jms.testUniformQueue\"";
+    logger.info("Executing curl command: {0}", curlCmd4);*/
+    StringBuffer curlCmd4 = new StringBuffer("curl -j --show-error --noproxy '*' ");
+    if (TestConstants.KIND_CLUSTER
+        && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
+      curlCmd4.append(" -H 'host: " + hostHeader1 + "' ");
+    }
+    String url4 = "\"http://" + hostAndPort1
+          + "/sample_war/get.jsp?remoteurl=t3://domain2-cluster-cluster-2:8001&action=recv&dest=jms.testUniformQueue\"";
+    curlCmd4.append(url4);
     logger.info("Executing curl command: {0}", curlCmd4);
     for (int i = 0; i < 2; i++) {
-      assertTrue(getCurlResult(curlCmd4).contains("Total Message(s) Received : 0"),
+      assertTrue(getCurlResult(curlCmd4.toString()).contains("Total Message(s) Received : 0"),
           "Didn't receive expected msg count from remote queue");
     }
 
