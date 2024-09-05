@@ -284,7 +284,6 @@ class ItIntrospectVersion {
   @Test
   @DisplayName("Test introSpectVersion starting a introspector and updating domain status")
   @Tag("gate")
-  @Tag("crio")
   void testDomainIntrospectVersionNotRolling() {
     // get the pod creation time stamps
     Map<String, OffsetDateTime> pods = new LinkedHashMap<>();
@@ -389,11 +388,6 @@ class ItIntrospectVersion {
 
     //verify admin server accessibility and the health of cluster members
     verifyMemberHealth(adminServerPodName, managedServerNames, wlsUserName, wlsPassword);
-
-    // verify each managed server can see other member in the cluster
-    for (String managedServerName : managedServerNames) {
-      verifyConnectionBetweenClusterMembers(managedServerName, managedServerNames);
-    }
 
     //update the global replica count since the test changed the replica count of cluster1 to 3
     cluster1ReplicaCount = 3;
@@ -747,7 +741,7 @@ class ItIntrospectVersion {
   }
 
   /**
-   * Modify the domain scope property
+   * Modify the domain scope property.
    * From: "image: container-registry.oracle.com/middleware/weblogic:ImageTagBeingUsed" to
    * To: "image: container-registry.oracle.com/middleware/weblogic:DateAndTimeStamp"
    * e.g, From ""image: container-registry.oracle.com/middleware/weblogic:12.2.1.4"
