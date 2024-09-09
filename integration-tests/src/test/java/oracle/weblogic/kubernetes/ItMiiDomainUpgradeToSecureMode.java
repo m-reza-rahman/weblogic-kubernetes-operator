@@ -551,84 +551,6 @@ class ItMiiDomainUpgradeToSecureMode {
   }
 
   /**
-   * Test upgrade from 12214 container image  to 1412 container image  with serverStartMode prod.
-   *
-   * Verify the sample application and console are available in default port 7001 before upgrade.
-   * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
-   * Verify the sample application continue to available in default port 7001 after upgrade.
-   * Verify the console is moved to a new location in 1412.
-   *
-   */
-  @Test
-  @DisplayName("Test upgrade from 12214 to 1412 with serverStartMode prod")
-  void testUpgrade12214to1412ServerStartModeProd() throws UnknownHostException {
-    domainNamespace = namespaces.get(3);
-    domainUid = "testdomain9";
-    adminServerPodName = domainUid + "-" + adminServerName;
-    // create WDT properties file for the WDT model
-    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
-    assertDoesNotThrow(() -> {
-      Files.deleteIfExists(wdtVariableFile);
-      Files.createDirectories(wdtVariableFile.getParent());
-      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
-    });
-
-    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prodon";
-    String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model.yaml");
-
-    // create auxiliary domain creation image
-    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag12214;
-    //name of channel available in domain configuration
-    String channelName = "default";
-    // create auxiliary domain creation image
-    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
-    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));
-    //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
-
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));
-
-    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-    //get ingress ip of the ingress controller to send http requests to servers in domain
-    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
-
-    //verify sample app is available in admin server in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify admin console is available in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample application is available in cluster address
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
-
-    //upgrade domain to use 1412 images
-    upgradeImage(domainNamespace, domainUid, image1412);
-    //verify the number of channels available in the domain resource match with the count and name
-    verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    //verify sample app is available in admin server in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        sampleAppUri, adminServerName, true, ingressIP);
-    //verify sample app is available in admin server in port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        adminAppUri, adminAppText, true, ingressIP);
-    //verify REST access is available in admin server port 7001
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
-    //verify sample application is available in cluster address
-    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
-  }
-
-  /**
    * Test upgrade from 12214 to 1412 with production off and secure mode off.
    * 
    * Verify the sample application and console are available in default port 7001 before upgrade.
@@ -915,6 +837,166 @@ class ItMiiDomainUpgradeToSecureMode {
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodeon";
     String auxImageTag = getDateAndTimeStamp();
     Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model.yaml");
+
+    // create auxiliary domain creation image
+    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag12214;
+    //name of channel available in domain configuration
+    String channelName = "internal-admin";
+    //create a MII domain resource with the auxiliary image
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, channelName);
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    //create ingress resources to route traffic to various service endpoints
+    createNginxIngressHostRouting(domainUid, 9002, 7002, 8500, nginxParams.getIngressClassName(), true);
+
+    //verify the number of channels available in the domain resource match with the count and name
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    //get ingress ip of the ingress controller to send http requests to servers in domain
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+
+    //verify admin console is available in port 9002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        adminAppUri, adminAppText, true, ingressIP);
+    //verify REST access is available in admin server port 9002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
+    //verify sample app is available in admin server in secure port 7002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
+        sampleAppUri, adminServerName, true, ingressIP);
+    //verify sample application is available in cluster address secure port 8500
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
+        sampleAppUri, msName, true, ingressIP);
+
+    //upgrade domain to use 1412 images
+    upgradeImage(domainNamespace, domainUid, image1412);
+    dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    //verify the number of channels available in the domain resource match with the count and name
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    //verify admin console is available in port 9002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        adminAppUri, adminAppText, true, ingressIP);
+    //verify REST access is available in admin server port 9002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
+    //verify sample app is available in admin server in secure port 7002
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminAppIngressHost,
+        sampleAppUri, adminServerName, true, ingressIP);
+    //verify sample application is available in cluster address secure port 8500
+    verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
+        sampleAppUri, msName, true, ingressIP);
+  }
+
+  /**
+   * Test upgrade from 12214 container image  to 1412 container image  with ServerStartMode prod.
+   *
+   * Verify the sample application and console are available in default port 7001 before upgrade.
+   * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
+   * Verify the sample application continue to available in default port 7001 after upgrade.
+   * Verify the console is moved to a new location in 1412.
+   *
+   */
+  @Test
+  @DisplayName("Test upgrade from 12214 to 1412 with serverStartMode prod")
+  void testUpgrade12214to1412ServerStartModeProd() throws UnknownHostException {
+    domainNamespace = namespaces.get(3);
+    domainUid = "testdomain9";
+    adminServerPodName = domainUid + "-" + adminServerName;
+    // create WDT properties file for the WDT model
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
+    });
+
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prodon";
+    String auxImageTag = getDateAndTimeStamp();
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startmode-prod.yaml");
+
+    // create auxiliary domain creation image
+    String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag12214;
+    //name of channel available in domain configuration
+    String channelName = "default";
+    // create auxiliary domain creation image
+    createDomainUsingAuxiliaryImage(domainNamespace, domainUid, baseImage, auxImage, null);
+    DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
+    logger.info(Yaml.dump(dcr));
+    //create ingress resources to route traffic to various service endpoints
+    createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
+
+    //verify the number of channels available in the domain resource match with the count and name
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+
+    String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
+    //get ingress ip of the ingress controller to send http requests to servers in domain
+    ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
+
+    //verify sample app is available in admin server in port 7001
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        sampleAppUri, adminServerName, true, ingressIP);
+    //verify admin console is available in port 7001
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        adminAppUri, adminAppText, true, ingressIP);
+    //verify REST access is available in admin server port 7001
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
+    //verify sample application is available in cluster address
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        sampleAppUri, msName, true, ingressIP);
+
+    //upgrade domain to use 1412 images
+    upgradeImage(domainNamespace, domainUid, image1412);
+    //verify the number of channels available in the domain resource match with the count and name
+    verifyChannel(domainNamespace, domainUid, List.of(channelName));
+    //verify sample app is available in admin server in port 7001
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        sampleAppUri, adminServerName, true, ingressIP);
+    //verify sample app is available in admin server in port 7001
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        adminAppUri, adminAppText, true, ingressIP);
+    //verify REST access is available in admin server port 7001
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
+    //verify sample application is available in cluster address
+    verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
+        sampleAppUri, msName, true, ingressIP);
+  }
+
+  /**
+   * Test upgrade from 12214 container image  to 1412 container image  with ServerStartMode secure.
+   *
+   * Verify all services are available only in HTTPS in adminserver as well as managed servers.
+   * Verify the admin server sample application is available in default port 7002 before upgrade and after upgrade.
+   * Verify the management REST interface continue to be available in default admin port 9002 before and after upgrade.
+   * Verify the cluster sample application continue to available in default port 8500 before and after upgrade.
+   * Verify the console is moved to a new location in 1412.
+   *
+   */
+  @Test
+  @DisplayName("Test upgrade from 12214 to 1412 with server start mode secure")
+  void testUpgrade12214to1412ServerStartModeSecure() throws UnknownHostException {
+    domainNamespace = namespaces.get(4);
+    domainUid = "testdomain10";
+    adminServerPodName = domainUid + "-" + adminServerName;
+    // create WDT properties file for the WDT model
+    Path wdtVariableFile = Paths.get(WORK_DIR, this.getClass().getSimpleName(), "wdtVariable.properties");
+    assertDoesNotThrow(() -> {
+      Files.deleteIfExists(wdtVariableFile);
+      Files.createDirectories(wdtVariableFile.getParent());
+      Files.writeString(wdtVariableFile, "DomainName=" + domainUid + "\n", StandardOpenOption.CREATE);
+    });
+
+    String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodeon";
+    String auxImageTag = getDateAndTimeStamp();
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startmode-secure.yaml");
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
