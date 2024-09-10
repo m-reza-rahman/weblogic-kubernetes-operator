@@ -171,8 +171,7 @@ class ItCrossDomainTransactionSecurity {
       hostHeader1 = createIngressHostRouting(domainNamespace, domainUid1, adminServerName, 7001);
       hostAndPort1 = formatIPv6Host(getLocalHost().getHostAddress())
             + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
-      //headers = new HashMap<>();
-      //headers.put("host", hostHeader);
+
     }
     logger.info("hostHeader1 for domain1 is: " + hostHeader1);
     logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);
