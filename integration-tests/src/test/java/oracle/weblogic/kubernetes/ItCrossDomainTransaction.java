@@ -40,12 +40,14 @@ import oracle.weblogic.domain.Model;
 import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.Service;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecCommand;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,6 +57,7 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.COMPARTMENT_OCID;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
@@ -67,10 +70,12 @@ import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_N
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_INGRESS_HTTP_HOSTPORT;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.APP_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
+import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.WORK_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.createDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.getServiceNodePort;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Command.defaultCommandParams;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.domainExists;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.checkAppIsActive;
@@ -226,6 +231,34 @@ class ItCrossDomainTransaction {
     for (int i = 1; i <= replicaCount; i++) {
       checkPodReadyAndServiceExists(domain1ManagedServerPrefix + i,
             domainUid1, domain1Namespace);
+    }
+  }
+
+  @AfterAll
+  public void tearDownAll() {
+
+    logger.info("Deleting LoadBalancer left over ");
+    if (OKE_CLUSTER) {
+      if (!hostAndPort.isEmpty()) {
+        if (hostAndPort.startsWith("[") && hostAndPort.endsWith("]")) {
+          // Remove the brackets and return the content inside
+          hostAndPort = hostAndPort.substring(1, hostAndPort.length() - 1);
+
+          LoggingFacade logger = getLogger();
+          Path deleteLBPath =
+              Paths.get(RESOURCE_DIR, "bash-scripts", "delete_loadbalancer.sh");
+          String deleteLBScript = deleteLBPath.toString();
+          String command =
+              String.format("%s %s %s %s", deleteLBScript, hostAndPort, COMPARTMENT_OCID);
+          logger.info("Delete Load Balancer command {0}", command);
+          assertTrue(() -> Command.withParams(
+                  defaultCommandParams()
+                      .command(command)
+                      .redirect(false))
+              .execute());
+        }
+
+      }
     }
   }
 
