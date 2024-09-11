@@ -929,7 +929,7 @@ class ItMiiDomainUpgradeToSecureMode {
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     //create ingress resources to route traffic to various service endpoints
-    createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
+    createNginxIngressHostRouting(domainUid, 7001, 7002, 7001, nginxParams.getIngressClassName(), false);
 
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
