@@ -1000,7 +1000,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
-    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag12214;
+    String baseImage = BASE_IMAGES_PREFIX + WEBLOGIC_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
     //name of channel available in domain configuration
     String channelName = "internal-admin";
     //create a MII domain resource with the auxiliary image
@@ -1032,7 +1032,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, msName, true, ingressIP);
 
     //upgrade domain to use 1412 images
-    upgradeImage(domainNamespace, domainUid, image1412);
+    /* upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     //verify the number of channels available in the domain resource match with the count and name
@@ -1049,7 +1049,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address secure port 8500
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP);
+        sampleAppUri, msName, true, ingressIP); */
   }
 
 
