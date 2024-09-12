@@ -147,6 +147,11 @@ class ItCrossDomainTransactionSecurity {
     assertNotNull(namespaces.get(1), "Namespace list is null");
     domainNamespace = namespaces.get(1);
 
+    // get a unique Nginx namespace
+    logger.info("Assign a unique namespace for Nginx");
+    assertNotNull(namespaces.get(2), "Namespace list is null");
+    nginxNamespace = namespaces.get(2);
+
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
     createTestRepoSecret(domainNamespace);
