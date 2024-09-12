@@ -917,7 +917,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-prodon";
     String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "startmode-prod.yaml");
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-startmode-prod.yaml");
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
