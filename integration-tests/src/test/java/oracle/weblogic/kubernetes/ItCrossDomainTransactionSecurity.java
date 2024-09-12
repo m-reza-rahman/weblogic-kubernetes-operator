@@ -253,7 +253,8 @@ class ItCrossDomainTransactionSecurity {
     testUntil(
         runClientInsidePod(domain1AdminServerPodName, domainNamespace,
             "/u01", "JmsSendReceiveClient",
-            "t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "1"),
+            //"t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "1"),
+            "t3://" + "localhost" + ":" + "7001", "receive", "jms.admin.adminQueue", "1"),
         logger,
         "Wait for JMS Client to send/recv msg");
 
@@ -289,7 +290,8 @@ class ItCrossDomainTransactionSecurity {
     testUntil(
         runClientInsidePod(domain1AdminServerPodName, domainNamespace,
             "/u01", "JmsSendReceiveClient",
-            "t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "0"),
+            //"t3://" + K8S_NODEPORT_HOST + ":" + t3ChannelPort1, "receive", "jms.admin.adminQueue", "0"),
+            "t3://" + "localhost" + ":" + "7001", "receive", "jms.admin.adminQueue", "0"),
         logger,
         "Wait for JMS Client to send/recv msg");
   }
