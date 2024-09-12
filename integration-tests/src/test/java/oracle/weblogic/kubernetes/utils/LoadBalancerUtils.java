@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import io.kubernetes.client.custom.IntOrString;
 import io.kubernetes.client.openapi.ApiException;
@@ -29,10 +30,12 @@ import io.kubernetes.client.openapi.models.V1ServiceSpec;
 import oracle.weblogic.kubernetes.TestConstants;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
 import oracle.weblogic.kubernetes.actions.impl.TraefikParams;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_SERVER_NAME_BASE;
+import static oracle.weblogic.kubernetes.TestConstants.COMPARTMENT_OCID;
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KUBERNETES_CLI;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_NAME;
@@ -40,6 +43,7 @@ import static oracle.weblogic.kubernetes.TestConstants.NGINX_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_REPO_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.NGINX_REPO_URL;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
 import static oracle.weblogic.kubernetes.TestConstants.TEST_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.TRAEFIK_CHART_NAME;
@@ -53,6 +57,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.installNginx;
 import static oracle.weblogic.kubernetes.actions.TestActions.installTraefik;
 import static oracle.weblogic.kubernetes.actions.TestActions.listIngresses;
 import static oracle.weblogic.kubernetes.actions.TestActions.upgradeTraefikImage;
+import static oracle.weblogic.kubernetes.actions.impl.primitive.Command.defaultCommandParams;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isHelmReleaseDeployed;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isNginxReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isOCILoadBalancerReady;
@@ -126,6 +131,14 @@ public class LoadBalancerUtils {
         logger,
         "external IP to be generated in {0}",
         namespace);
+    if (OKE_CLUSTER) {
+      testUntil(
+          assertDoesNotThrow(() -> isLoadBalancerHealthy(namespace, loadBalancerName),
+              "isLoadBalancerHealthy failed with ApiException"),
+          logger,
+          "OCI LB to be healthy in namespace {0}",
+          namespace);
+    }
   }
 
   /**
@@ -212,6 +225,14 @@ public class LoadBalancerUtils {
         logger,
         "NGINX to be ready in namespace {0}",
         nginxNamespace);
+    if (OKE_CLUSTER) {
+      testUntil(
+          assertDoesNotThrow(() -> isLoadBalancerHealthy(nginxNamespace, NGINX_RELEASE_NAME),
+              "isLoadBalancerHealthy failed with ApiException"),
+          logger,
+          "NGINX LB to be healthy in namespace {0}",
+          nginxNamespace);
+    }
 
     return nginxParams;
   }
@@ -282,9 +303,59 @@ public class LoadBalancerUtils {
         logger,
         "Traefik to be ready in namespace {0}",
         traefikNamespace);
-
+    if (OKE_CLUSTER) {
+      testUntil(
+          assertDoesNotThrow(() -> isLoadBalancerHealthy(traefikNamespace, TRAEFIK_RELEASE_NAME),
+              "isLoadBalancerHealthy failed with ApiException"),
+          logger,
+          "Traefik to be healthy in namespace {0}",
+          traefikNamespace);
+    }
     return traefikParams;
   }
+
+  /**
+   * Check lb has healty status.
+   *
+   * @param namespace in which to check for lb controller
+   * @name release name of lb controller
+   * @return true if healthy, false otherwise
+   */
+  public static Callable<Boolean> isLoadBalancerHealthy(String namespace, String name) {
+    return () -> checkLoadBalancerHealthy(namespace, name);
+  }
+
+  private static boolean checkLoadBalancerHealthy(String namespace, String releaseName)  {
+    String lbPublicIP = assertDoesNotThrow(() -> getLbExternalIp(namespace, releaseName));
+    LoggingFacade logger = getLogger();
+
+    final String command = "oci lb load-balancer list --compartment-id " + COMPARTMENT_OCID
+        + " --query \"data[?contains(ip-addresses[0].ip-address, '" + lbPublicIP + "')].id\" --raw-output";
+
+    logger.info("Command to retrieve external IP is: {0} ", command);
+
+    ExecResult result = assertDoesNotThrow(() -> exec(command, true));
+    logger.info("The command returned exit value: " + result.exitValue()
+        + " command output: " + result.stderr() + "\n" + result.stdout());
+
+    if (result == null || result.exitValue() != 0 || result.stdout() == null) {
+      return false;
+    }
+    String lbOCID = result.stdout().trim();
+    //check health status
+    final String command1 = "oci lb load-balancer-health get --load-balancer-id " + lbOCID;
+    result = assertDoesNotThrow(() -> exec(command, true));
+    logger.info("The command returned exit value: " + result.exitValue()
+        + " command output: " + result.stderr() + "\n" + result.stdout());
+
+    if (result == null || result.exitValue() != 0 || result.stdout() == null) {
+      return false;
+    }
+
+    return result.stdout().contains("OK");
+
+  }
+
 
   /** Upgrade Traefik and wait for up to five minutes for the Traefik pod to be ready.
    *
@@ -731,5 +802,33 @@ public class LoadBalancerUtils {
     logger.info("LB_PUBLIC_IP is " + result.stdout().trim());
 
     return result.stdout().trim();
+  }
+
+  /**
+   * Delete Load Balancer , created in OCI by using provided public IP.
+   *
+   * @param lbPublicIP public Load Balancer IP
+   */
+  public static void deleteLoadBalancer(String lbPublicIP) {
+    if (!lbPublicIP.isEmpty()) {
+      if (lbPublicIP.startsWith("[") && lbPublicIP.endsWith("]")) {
+        // Remove the brackets and return the content inside
+        lbPublicIP = lbPublicIP.substring(1, lbPublicIP.length() - 1);
+
+        LoggingFacade logger = getLogger();
+        Path deleteLBPath =
+            Paths.get(RESOURCE_DIR, "bash-scripts", "delete_loadbalancer.sh");
+        String deleteLBScript = deleteLBPath.toString();
+        String command =
+            String.format("%s %s %s %s", deleteLBScript, lbPublicIP, COMPARTMENT_OCID);
+        logger.info("Delete Load Balancer command {0}", command);
+        assertTrue(() -> Command.withParams(
+                defaultCommandParams()
+                    .command(command)
+                    .redirect(false))
+            .execute());
+      }
+
+    }
   }
 }
