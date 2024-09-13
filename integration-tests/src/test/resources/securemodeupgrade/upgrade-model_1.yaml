@@ -11,6 +11,9 @@ topology:
         myserver-template:
             Cluster: mycluster
             AutoMigrationEnabled: false
+            SSL:
+                Enabled: '@@PROP:SSLEnabled@@'
+                ListenPort: 8500
             ListenPort: 8001
     Cluster:
         mycluster:

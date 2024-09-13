@@ -239,7 +239,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
     String auxImageName = DOMAIN_IMAGES_PREFIX + "dci-securemodeoff";
     String auxImageTag = getDateAndTimeStamp();
-    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model_1.yaml");
+    Path wdtModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "upgrade-model.yaml");
 
     // create auxiliary domain creation image
     String auxImage = createAuxImage(auxImageName, auxImageTag, wdtModelFile.toString(), wdtVariableFile.toString());
@@ -1050,7 +1050,7 @@ class ItMiiDomainUpgradeToSecureMode {
         sampleAppUri, adminServerName, true, ingressIP);
     //verify sample application is available in cluster address secure port 8500
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
-        sampleAppUri, msName, true, ingressIP); 
+        sampleAppUri, msName, true, ingressIP);
   }
 
 
