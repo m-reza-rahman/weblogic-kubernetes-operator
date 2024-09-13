@@ -328,8 +328,9 @@ public class LoadBalancerUtils {
   private static boolean checkLoadBalancerHealthy(String namespace, String releaseName)  {
     String lbPublicIP = assertDoesNotThrow(() -> getLbExternalIp(namespace, releaseName));
     LoggingFacade logger = getLogger();
-
-    final String command = "oci lb load-balancer list --compartment-id " + COMPARTMENT_OCID
+    String TEST_COMPARTMENT_OCID = System.getProperty("wko.it.oci.compartment.ocid");
+    logger.info("wko.it.oci.compartment.ocid property " + TEST_COMPARTMENT_OCID);
+    final String command = "oci lb load-balancer list --compartment-id " + TEST_COMPARTMENT_OCID
         + " --query \"data[?contains(ip-addresses[0].ip-address, '" + lbPublicIP + "')].id\" --raw-output";
 
     logger.info("Command to retrieve external IP is: {0} ", command);
