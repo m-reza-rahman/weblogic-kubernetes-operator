@@ -620,6 +620,7 @@ EOF
                                     export PATH=${runtime_path}
                                     export OKE_CLUSTER="true"
                                     export OKE_CLUSTER_PRIVATEIP="true"
+                                    export COMPARTMENT_OCID=${compartment_id}
                                     export OKD="false"
                                     export KUBECONFIG=${kubeconfig_file}
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
