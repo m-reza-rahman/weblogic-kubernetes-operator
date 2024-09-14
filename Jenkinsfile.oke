@@ -529,6 +529,7 @@ EOF
                                 export OCI_CLI_PROFILE=${oci_profile}
                                 compartment_ocid=${compartment_id}
                                 export COMPARTMENT_OCID=${compartment_id}
+                                echo "COMPARTMENT_OCID : ${COMPARTMENT_OCID}"
                                 mkdir -m777 -p "${WORKSPACE}/.mvn"
                                 touch ${WORKSPACE}/.mvn/maven.config
                                 export KUBECONFIG=${kubeconfig_file}
@@ -599,6 +600,7 @@ EOF
                                 echo "-Dwko.it.fmwinfra.image.tag=\"${FMWINFRA_IMAGE_TAG}\""                                 >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.db.image.name=\"${DB_IMAGE_NAME}\""                                           >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.db.image.tag=\"${DB_IMAGE_TAG}\""                                             >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.oci.compartment.ocid=\"${COMPARTMENT_OCID}\""                                             >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.monitoring.exporter.branch=\"${MONITORING_EXPORTER_BRANCH}\""                 >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.monitoring.exporter.webapp.version=\"${MONITORING_EXPORTER_WEBAPP_VERSION}\"" >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.prometheus.chart.version=\"${PROMETHEUS_CHART_VERSION}\""                     >> ${WORKSPACE}/.mvn/maven.config
