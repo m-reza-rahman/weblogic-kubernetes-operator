@@ -91,7 +91,7 @@ class ItOCILoadBalancer {
     if (OKE_CLUSTER) {
       deleteLoadBalancer(loadBalancerIP);
     }
-    
+
   }
 
   /**

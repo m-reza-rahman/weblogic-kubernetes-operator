@@ -361,7 +361,7 @@ public class LoadBalancerUtils {
     String testcompartmentid = System.getProperty("wko.it.oci.compartment.ocid");
     logger.info("wko.it.oci.compartment.ocid property " + testcompartmentid);
     final String command = "oci lb load-balancer list --compartment-id " + testcompartmentid
-        + " --query \"data[?contains(ip-addresses[0].ip-address, '" + lbPublicIP + "')].id\" --raw-output";
+        + " --query \"data[?contains(ip-addresses[0].\"ip-address\", '" + lbPublicIP + "')].id\" --raw-output";
 
     logger.info("Command to retrieve external IP is: {0} ", command);
 
