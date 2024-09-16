@@ -361,7 +361,8 @@ public class LoadBalancerUtils {
     String testcompartmentid = System.getProperty("wko.it.oci.compartment.ocid");
     logger.info("wko.it.oci.compartment.ocid property " + testcompartmentid);
     final String command = "oci lb load-balancer list --compartment-id " + testcompartmentid
-        + " --query \"data[?contains(\"ip-addresses\"[0].\"ip-address\", '" + lbPublicIP + "')].id\" --raw-output";
+        + " --query \"data[?contains(\"ip-addresses\"[0].\"ip-address\", '"
+        + lbPublicIP + "')].id | [0]\" --raw-output --all";
 
     logger.info("Command to retrieve Load Balancer OCID  is: {0} ", command);
 
@@ -374,11 +375,7 @@ public class LoadBalancerUtils {
     }
 
     // Clean up the string to extract the Load Balancer ID
-    String lbOCID = result.stdout().trim() // Remove leading/trailing whitespace
-        .replace("[", "") // Remove opening bracket
-        .replace("]", "") // Remove closing bracket
-        .replace("\"", "") // Remove double quotes
-        .trim(); // Trim any additional whitespace
+    String lbOCID = result.stdout().trim();
 
     //check health status
     final String command1 = "oci lb load-balancer-health get --load-balancer-id " + lbOCID;
