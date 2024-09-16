@@ -360,9 +360,10 @@ public class LoadBalancerUtils {
     LoggingFacade logger = getLogger();
     String testcompartmentid = System.getProperty("wko.it.oci.compartment.ocid");
     logger.info("wko.it.oci.compartment.ocid property " + testcompartmentid);
-    final String command = "oci lb load-balancer list --compartment-id " + testcompartmentid
-        + " --query \"data[?contains(\"ip-addresses\"[0].\"ip-address\", '"
-        + lbPublicIP + "')].id | [0]\" --raw-output --all";
+
+    final String command = "oci lb load-balancer list --compartment-id "
+        + testcompartmentid + " --query \"data[?contains(\\\"ip-addresses\\\"[0].\\\"ip-address\\\", '"
+        + lbPublicIP + "')].id\" --raw-output --all";
 
     logger.info("Command to retrieve Load Balancer OCID  is: {0} ", command);
 
