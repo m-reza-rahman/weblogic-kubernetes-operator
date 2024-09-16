@@ -13,7 +13,7 @@ TARGET_IP="$1"
 COMPARTMENT_ID="$2"
 
 # List load balancers in the specified compartment
-LOAD_BALANCER_OCID=$(oci lb load-balancer list --compartment-id $COMPARTMENT_ID --query "data[?contains(ip-addresses[0].\"ip-address\", '$TARGET_IP')].id" --raw-output)
+LOAD_BALANCER_OCID=$(oci lb load-balancer list --compartment-id $COMPARTMENT_ID --query "data[?contains(\"ip-addresses\"[0].\"ip-address\", '$TARGET_IP')].id" --raw-output)
 
 # Check if a load balancer with the specified IP was found
 if [ -z "$LOAD_BALANCER_OCID" ]; then
