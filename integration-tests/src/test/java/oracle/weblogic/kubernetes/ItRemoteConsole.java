@@ -70,6 +70,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAndRetryIfFail;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.deleteLoadBalancer;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
@@ -105,6 +106,7 @@ class ItRemoteConsole {
   private static NginxParams nginxHelmParams = null;
   private static int nginxNodePort;
   private static String nginxHostAndPort;
+  private static String hostAndPort = null;
 
   // domain constants
   private static final String domainUid = "domain1";
@@ -237,7 +239,7 @@ class ItRemoteConsole {
     int sslPort = getServicePort(
          domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
     setTargetPortForRoute("domain1-admin-server-sslport-ext", domainNamespace, sslPort);
-    String hostAndPort = null;
+
     String httpsHostHeader = "";
     String header = "";
     if (!OKD) {
@@ -309,6 +311,11 @@ class ItRemoteConsole {
   public void tearDownAll() {
     if (!SKIP_CLEANUP)  {
       assertTrue(shutdownWlsRemoteConsole(), "Remote Console shutdown failed");
+    }
+    if (OKE_CLUSTER) {
+      deleteLoadBalancer(nginxHostAndPort);
+      deleteLoadBalancer(hostAndPort);
+
     }
   }
 
