@@ -22,6 +22,7 @@ import io.kubernetes.client.openapi.models.V1IngressBackend;
 import io.kubernetes.client.openapi.models.V1IngressRule;
 import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
 import io.kubernetes.client.openapi.models.V1IngressTLS;
+import io.kubernetes.client.openapi.models.V1LoadBalancerIngress;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Service;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
@@ -62,6 +63,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.isHelmRelease
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isNginxReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isOCILoadBalancerReady;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.isTraefikReady;
+import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.getService;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndWaitTillReady;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkServiceExists;
@@ -325,8 +327,36 @@ public class LoadBalancerUtils {
     return () -> checkLoadBalancerHealthy(namespace, name);
   }
 
+  /**
+   * Retreive external IP from OCI LoadBalancer.
+   *
+   * @param namespace - namespace
+   * @param lbName -loadbalancer service name
+   */
+  public static String getLoadBalancerIP(String namespace, String lbName) throws Exception {
+    Map<String, String> labels = new HashMap<>();
+    labels.put("loadbalancer", lbName);
+    V1Service service = getService(lbName, labels, namespace);
+    assertNotNull(service, "Can't find service with name " + lbName);
+    LoggingFacade logger = getLogger();
+    logger.info("Found service with name {0} in {1} namespace ", lbName, namespace);
+    assertNotNull(service.getStatus(), "service status is null");
+    assertNotNull(service.getStatus().getLoadBalancer(), "service loadbalancer is null");
+    List<V1LoadBalancerIngress> ingress = service.getStatus().getLoadBalancer().getIngress();
+    if (ingress != null) {
+      logger.info("LoadBalancer Ingress " + ingress.toString());
+      V1LoadBalancerIngress lbIng =
+          ingress.stream().filter(c -> c.getIp() != null && !c.getIp().equals("pending")).findAny().orElse(null);
+      if (lbIng != null) {
+        logger.info("OCI LoadBalancer is created with external ip" + lbIng.getIp());
+        return lbIng.getIp();
+      }
+    }
+    return null;
+  }
+
   private static boolean checkLoadBalancerHealthy(String namespace, String releaseName)  {
-    String lbPublicIP = assertDoesNotThrow(() -> getLbExternalIp(namespace, releaseName));
+    String lbPublicIP = assertDoesNotThrow(() -> getLoadBalancerIP(namespace, releaseName));
     LoggingFacade logger = getLogger();
     String testcompartmentid = System.getProperty("wko.it.oci.compartment.ocid");
     logger.info("wko.it.oci.compartment.ocid property " + testcompartmentid);
