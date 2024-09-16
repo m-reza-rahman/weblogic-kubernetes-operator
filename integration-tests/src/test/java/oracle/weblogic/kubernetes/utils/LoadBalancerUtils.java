@@ -380,7 +380,8 @@ public class LoadBalancerUtils {
 
     //check health status
     final String command1 = "oci lb load-balancer-health get --load-balancer-id " + lbOCID;
-    result = assertDoesNotThrow(() -> exec(command, true));
+    logger.info("Command to retrieve Load Balancer health status  is: {0} ", command1);
+    result = assertDoesNotThrow(() -> exec(command1, true));
     logger.info("The command returned exit value: " + result.exitValue()
         + " command output: " + result.stderr() + "\n" + result.stdout());
 
