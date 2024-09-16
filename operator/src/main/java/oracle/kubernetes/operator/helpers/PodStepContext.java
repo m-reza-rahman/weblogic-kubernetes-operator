@@ -38,12 +38,14 @@ import io.kubernetes.client.openapi.models.V1LifecycleHandler;
 import io.kubernetes.client.openapi.models.V1ObjectMeta;
 import io.kubernetes.client.openapi.models.V1Pod;
 import io.kubernetes.client.openapi.models.V1PodReadinessGate;
+import io.kubernetes.client.openapi.models.V1PodSecurityContext;
 import io.kubernetes.client.openapi.models.V1PodSpec;
 import io.kubernetes.client.openapi.models.V1PodSpecBuilder;
 import io.kubernetes.client.openapi.models.V1Probe;
 import io.kubernetes.client.openapi.models.V1ProbeBuilder;
 import io.kubernetes.client.openapi.models.V1ResourceRequirements;
 import io.kubernetes.client.openapi.models.V1SecretVolumeSource;
+import io.kubernetes.client.openapi.models.V1SecurityContext;
 import io.kubernetes.client.openapi.models.V1Volume;
 import io.kubernetes.client.openapi.models.V1VolumeMount;
 import io.kubernetes.client.util.Yaml;
@@ -1382,6 +1384,24 @@ public abstract class PodStepContext extends BasePodStepContext {
           }));
     }
 
+    private void restoreSecurityContextEmpty(V1Pod recipe, V1Pod currentPod) {
+      if (PodSecurityHelper.getDefaultPodSecurityContext().equals(recipe.getSpec().getSecurityContext())) {
+        recipe.getSpec().setSecurityContext(new V1PodSecurityContext());
+      }
+      Optional.ofNullable(recipe.getSpec().getContainers())
+              .ifPresent(containers -> containers.forEach(container -> {
+                if (PodSecurityHelper.getDefaultContainerSecurityContext().equals(container.getSecurityContext())) {
+                  container.setSecurityContext(new V1SecurityContext());
+                }
+              }));
+      Optional.ofNullable(recipe.getSpec().getInitContainers())
+              .ifPresent(initContainers -> initContainers.forEach(initContainer -> {
+                if (PodSecurityHelper.getDefaultContainerSecurityContext().equals(initContainer.getSecurityContext())) {
+                  initContainer.setSecurityContext(new V1SecurityContext());
+                }
+              }));
+    }
+
     private boolean canAdjustRecentOperatorMajorVersion3HashToMatch(V1Pod currentPod, String requiredHash) {
       // start with list of adjustment methods
       // generate stream of combinations
@@ -1394,7 +1414,8 @@ public abstract class PodStepContext extends BasePodStepContext {
           this::restoreAffinityContent,
           this::restoreLogHomeLayoutEnvVar,
           this::restoreFluentdVolume,
-          this::restoreSecurityContext);
+          this::restoreSecurityContext,
+          this::restoreSecurityContextEmpty);
       return Combinations.of(adjustments)
           .map(adjustment -> adjustedHash(currentPod, adjustment))
           .anyMatch(requiredHash::equals);
