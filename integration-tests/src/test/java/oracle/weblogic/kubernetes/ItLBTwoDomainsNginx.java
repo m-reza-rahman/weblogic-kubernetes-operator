@@ -19,6 +19,7 @@ import io.kubernetes.client.openapi.models.V1IngressServiceBackend;
 import io.kubernetes.client.openapi.models.V1IngressTLS;
 import io.kubernetes.client.openapi.models.V1ServiceBackendPort;
 import oracle.weblogic.kubernetes.actions.impl.NginxParams;
+import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
@@ -59,6 +60,7 @@ import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyHeadersIn
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.deleteLoadBalancer;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithTLSCertKey;
@@ -253,6 +255,11 @@ class ItLBTwoDomainsNginx {
         // delete pv
         deletePersistentVolume(pvPvcNamePair.get(0));
       }
+    }
+
+    logger.info("Deleting LoadBalancer left over ");
+    if (OKE_CLUSTER) {
+      deleteLoadBalancer(ingressIP);
     }
   }
 
