@@ -363,7 +363,7 @@ public class LoadBalancerUtils {
 
     final String command = "oci lb load-balancer list --compartment-id "
         + testcompartmentid + " --query \"data[?contains(\\\"ip-addresses\\\"[0].\\\"ip-address\\\", '"
-        + lbPublicIP + "')].id\" --raw-output --all";
+        + lbPublicIP + "')].id | [0]\" --raw-output --all";
 
     logger.info("Command to retrieve Load Balancer OCID  is: {0} ", command);
 
