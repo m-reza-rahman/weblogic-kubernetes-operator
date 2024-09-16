@@ -363,7 +363,7 @@ public class LoadBalancerUtils {
     final String command = "oci lb load-balancer list --compartment-id " + testcompartmentid
         + " --query \"data[?contains(\"ip-addresses\"[0].\"ip-address\", '" + lbPublicIP + "')].id\" --raw-output";
 
-    logger.info("Command to retrieve external IP is: {0} ", command);
+    logger.info("Command to retrieve Load Balancer OCID  is: {0} ", command);
 
     ExecResult result = assertDoesNotThrow(() -> exec(command, true));
     logger.info("The command returned exit value: " + result.exitValue()
@@ -372,7 +372,14 @@ public class LoadBalancerUtils {
     if (result == null || result.exitValue() != 0 || result.stdout() == null) {
       return false;
     }
-    String lbOCID = result.stdout().trim();
+
+    // Clean up the string to extract the Load Balancer ID
+    String lbOCID = result.stdout().trim() // Remove leading/trailing whitespace
+        .replace("[", "") // Remove opening bracket
+        .replace("]", "") // Remove closing bracket
+        .replace("\"", "") // Remove double quotes
+        .trim(); // Trim any additional whitespace
+
     //check health status
     final String command1 = "oci lb load-balancer-health get --load-balancer-id " + lbOCID;
     result = assertDoesNotThrow(() -> exec(command, true));
