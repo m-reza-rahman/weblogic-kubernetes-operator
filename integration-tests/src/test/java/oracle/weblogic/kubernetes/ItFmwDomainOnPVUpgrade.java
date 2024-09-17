@@ -174,77 +174,77 @@ class ItFmwDomainOnPVUpgrade {
     final int t3ChannelPort = getNextFreePort();
     final String wlSecretName = domainUid + "-weblogic-credentials";
     final String fmwModelFile = fmwModelFilePrefix + ".yaml";
-      // create FMW domain credential secret
-      createSecretWithUsernamePassword(wlSecretName, domainNamespace,
-          ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
+    // create FMW domain credential secret
+    createSecretWithUsernamePassword(wlSecretName, domainNamespace,
+        ADMIN_USERNAME_DEFAULT, ADMIN_PASSWORD_DEFAULT);
 
-      // create a model property file
-      File fmwModelPropFile = createWdtPropertyFile("jrfonpv-simplified1", RCUSCHEMAPREFIX + "1");
+    // create a model property file
+    File fmwModelPropFile = createWdtPropertyFile("jrfonpv-simplified1", RCUSCHEMAPREFIX + "1");
 
-      // create domainCreationImage
-      String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "jrf-domain-on-pv-image";
-      // create image with model and wdt installation files
-      WitParams witParams =
-          new WitParams()
-              .modelImageName(domainCreationImageName)
-              .modelImageTag(MII_BASIC_IMAGE_TAG)
-              .modelFiles(Collections.singletonList(MODEL_DIR + "/" + fmwModelFile))
-              .modelVariableFiles(Collections.singletonList(fmwModelPropFile.getAbsolutePath()));
-      createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
+    // create domainCreationImage
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "jrf-domain-on-pv-image";
+    // create image with model and wdt installation files
+    WitParams witParams
+        = new WitParams()
+            .modelImageName(domainCreationImageName)
+            .modelImageTag(MII_BASIC_IMAGE_TAG)
+            .modelFiles(Collections.singletonList(MODEL_DIR + "/" + fmwModelFile))
+            .modelVariableFiles(Collections.singletonList(fmwModelPropFile.getAbsolutePath()));
+    createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
 
-      DomainCreationImage domainCreationImage =
-          new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
+    DomainCreationImage domainCreationImage
+        = new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
 
-      // create opss wallet password secret
-      String opsswalletpassSecretName = domainUid + "-opss-wallet-password-secret";
-      logger.info("Create OPSS wallet password secret");
-      assertDoesNotThrow(() -> createOpsswalletpasswordSecret(
-              opsswalletpassSecretName,
-              domainNamespace,
-              ADMIN_PASSWORD_DEFAULT),
-          String.format("createSecret failed for %s", opsswalletpassSecretName));
+    // create opss wallet password secret
+    String opsswalletpassSecretName = domainUid + "-opss-wallet-password-secret";
+    logger.info("Create OPSS wallet password secret");
+    assertDoesNotThrow(() -> createOpsswalletpasswordSecret(
+        opsswalletpassSecretName,
+        domainNamespace,
+        ADMIN_PASSWORD_DEFAULT),
+        String.format("createSecret failed for %s", opsswalletpassSecretName));
 
-      // create a domain resource
-      logger.info("Creating domain custom resource");
-      Map<String, Quantity> pvCapacity = new HashMap<>();
-      pvCapacity.put("storage", new Quantity("2Gi"));
+    // create a domain resource
+    logger.info("Creating domain custom resource");
+    Map<String, Quantity> pvCapacity = new HashMap<>();
+    pvCapacity.put("storage", new Quantity("2Gi"));
 
-      Map<String, Quantity> pvcRequest = new HashMap<>();
-      pvcRequest.put("storage", new Quantity("2Gi"));
-      Configuration configuration = null;
-      if (OKE_CLUSTER) {
-        configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
-      } else {
-        configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest, storageClassName,
-            this.getClass().getSimpleName());
-      }
-      configuration.getInitializeDomainOnPV().domain(new DomainOnPV()
-          .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
-          .domainCreationImages(Collections.singletonList(domainCreationImage))
-          .domainType(DomainOnPVType.JRF)
-          .opss(new Opss()
-              .walletPasswordSecret(opsswalletpassSecretName)));
-      DomainResource domain = createDomainResourceOnPv(
-          domainUid,
-          domainNamespace,
-          wlSecretName,
-          clusterName,
-          pvName,
-          pvcName,
-          new String[]{BASE_IMAGES_REPO_SECRET_NAME},
-          DOMAINHOMEPREFIX,
-          replicaCount,
-          t3ChannelPort,
-          configuration);
+    Map<String, Quantity> pvcRequest = new HashMap<>();
+    pvcRequest.put("storage", new Quantity("2Gi"));
+    Configuration configuration = null;
+    if (OKE_CLUSTER) {
+      configuration = getConfiguration(pvcName, pvcRequest, "oci-fss");
+    } else {
+      configuration = getConfiguration(pvName, pvcName, pvCapacity, pvcRequest, storageClassName,
+          this.getClass().getSimpleName());
+    }
+    configuration.getInitializeDomainOnPV().domain(new DomainOnPV()
+        .createMode(CreateIfNotExists.DOMAIN_AND_RCU)
+        .domainCreationImages(Collections.singletonList(domainCreationImage))
+        .domainType(DomainOnPVType.JRF)
+        .opss(new Opss()
+            .walletPasswordSecret(opsswalletpassSecretName)));
+    DomainResource domain = createDomainResourceOnPv(
+        domainUid,
+        domainNamespace,
+        wlSecretName,
+        clusterName,
+        pvName,
+        pvcName,
+        new String[]{BASE_IMAGES_REPO_SECRET_NAME},
+        DOMAINHOMEPREFIX,
+        replicaCount,
+        t3ChannelPort,
+        configuration);
 
-      // Set the inter-pod anti-affinity for the domain custom resource
-      setPodAntiAffinity(domain);
+    // Set the inter-pod anti-affinity for the domain custom resource
+    setPodAntiAffinity(domain);
 
-      // create a domain custom resource and verify domain is created
-      createDomainAndVerify(domain, domainNamespace);
+    // create a domain custom resource and verify domain is created
+    createDomainAndVerify(domain, domainNamespace);
 
-      // verify that all servers are ready
-      verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
+    // verify that all servers are ready
+    verifyDomainReady(domainNamespace, domainUid, replicaCount, "nosuffix");
   }
 
   private File createWdtPropertyFile(String domainName, String rcuSchemaPrefix) {
