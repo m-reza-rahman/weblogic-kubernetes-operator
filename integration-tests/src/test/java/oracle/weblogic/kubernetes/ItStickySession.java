@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,6 +54,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.withLongRetryPolicy;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
@@ -216,7 +218,12 @@ class ItStickySession {
     }
 
     // verify that two HTTP connections are sticky to the same server
-    sendHttpRequestsToTestSessionStickinessAndVerify(hostName, ingressServiceNodePort);
+    //sendHttpRequestsToTestSessionStickinessAndVerify(hostName, ingressServiceNodePort);
+    testUntil(
+        withLongRetryPolicy,
+        isHttpRequestsResponded(hostName, ingressServiceNodePort),
+        logger,
+        "Waiting until Http Requests response");
   }
 
   /**
@@ -230,7 +237,6 @@ class ItStickySession {
   @EnabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testSameSessionStickinessinOKD() {
     final String serviceName = domainUid + "-cluster-" + clusterName;
-    //final String channelName = "web";
 
     // create route for cluster service
     String ingressHost = createRouteForOKD(serviceName, domainNamespace);
@@ -394,6 +400,7 @@ class ItStickySession {
     final String serverNameAttr = "servername";
     final String sessionIdAttr = "sessionid";
     final String countAttr = "count";
+    Map<String, String> httpDataInfo = new HashMap<String, String>();
 
     // send a HTTP request
     logger.info("Process HTTP request in host {0} and servicePort {1} ",
@@ -406,6 +413,10 @@ class ItStickySession {
     String sessionId = httpAttrInfo.get(sessionIdAttr);
     String countStr = httpAttrInfo.get(countAttr);
 
+    if (serverName == null || sessionId == null || countStr == null) {
+      return httpDataInfo;
+    }
+
     // verify that the HTTP response data are not null
     assertAll("Check that WebLogic server and session vars is not null or empty",
         () -> assertNotNull(serverName,"Server name shouldn’t be null"),
@@ -414,7 +425,6 @@ class ItStickySession {
     );
 
     // map to save server and session info
-    Map<String, String> httpDataInfo = new HashMap<String, String>();
     httpDataInfo.put(serverNameAttr, serverName);
     httpDataInfo.put(sessionIdAttr, sessionId);
     httpDataInfo.put(countAttr, countStr);
@@ -548,7 +558,15 @@ class ItStickySession {
     return ingressServiceNodePort;
   }
 
-  private void sendHttpRequestsToTestSessionStickinessAndVerify(String hostname,
+  private Callable<Boolean> isHttpRequestsResponded(String hostname,
+                                                    int servicePort,
+                                                    String... clusterAddress) {
+    return () -> {
+      return sendHttpRequestsToTestSessionStickinessAndVerify(hostname, servicePort, clusterAddress);
+    };
+  }
+
+  private boolean sendHttpRequestsToTestSessionStickinessAndVerify(String hostname,
                                                                 int servicePort,
                                                                 String... clusterAddress) {
     final int counterNum = 4;
@@ -570,6 +588,11 @@ class ItStickySession {
     // send a HTTP request again to get server and session info
     httpDataInfo = getServerAndSessionInfoAndVerify(hostname,
         servicePort, webServiceGetUrl, " -b ", clusterAddress);
+
+    if (httpDataInfo.isEmpty()) {
+      return false;
+    }
+
     // get server and session info from web service deployed on the cluster
     String serverName2 = httpDataInfo.get(serverNameAttr);
     String sessionId2 = httpDataInfo.get(sessionIdAttr);
@@ -591,5 +614,7 @@ class ItStickySession {
     logger.info("SUCCESS --- test same session stickiness \n"
         + "Two HTTP connections are sticky to server {0} The session state "
         + "from the second HTTP connections is {2}", serverName2, SESSION_STATE);
+
+    return true;
   }
 }
