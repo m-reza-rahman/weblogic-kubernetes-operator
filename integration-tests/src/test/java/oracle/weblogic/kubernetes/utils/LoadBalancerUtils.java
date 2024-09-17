@@ -229,7 +229,8 @@ public class LoadBalancerUtils {
         nginxNamespace);
     if (OKE_CLUSTER) {
       testUntil(
-          assertDoesNotThrow(() -> isLoadBalancerHealthy(nginxNamespace, NGINX_RELEASE_NAME),
+          assertDoesNotThrow(() -> isLoadBalancerHealthy(nginxNamespace,
+                  nginxHelmParams.getReleaseName() + "-ingress-nginx-controller"),
               "isLoadBalancerHealthy failed with ApiException"),
           logger,
           "NGINX LB to be healthy in namespace {0}",
@@ -307,7 +308,7 @@ public class LoadBalancerUtils {
         traefikNamespace);
     if (OKE_CLUSTER) {
       testUntil(
-          assertDoesNotThrow(() -> isLoadBalancerHealthy(traefikNamespace, TRAEFIK_RELEASE_NAME),
+          assertDoesNotThrow(() -> isLoadBalancerHealthy(traefikNamespace, traefikHelmParams.getReleaseName()),
               "isLoadBalancerHealthy failed with ApiException"),
           logger,
           "Traefik to be healthy in namespace {0}",
@@ -320,7 +321,7 @@ public class LoadBalancerUtils {
    * Check lb has healty status.
    *
    * @param namespace in which to check for lb controller
-   * @name release name of lb controller
+   * @name service name of lb controller
    * @return true if healthy, false otherwise
    */
   public static Callable<Boolean> isLoadBalancerHealthy(String namespace, String name) {
@@ -355,8 +356,8 @@ public class LoadBalancerUtils {
     return null;
   }
 
-  private static boolean checkLoadBalancerHealthy(String namespace, String releaseName)  {
-    String lbPublicIP = assertDoesNotThrow(() -> getLoadBalancerIP(namespace, releaseName));
+  private static boolean checkLoadBalancerHealthy(String namespace, String lbServiceName)  {
+    String lbPublicIP = assertDoesNotThrow(() -> getLoadBalancerIP(namespace, lbServiceName));
     LoggingFacade logger = getLogger();
     String testcompartmentid = System.getProperty("wko.it.oci.compartment.ocid");
     logger.info("wko.it.oci.compartment.ocid property " + testcompartmentid);
