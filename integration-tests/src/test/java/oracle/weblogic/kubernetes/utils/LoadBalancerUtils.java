@@ -852,21 +852,19 @@ public class LoadBalancerUtils {
       if (lbPublicIP.startsWith("[") && lbPublicIP.endsWith("]")) {
         // Remove the brackets and return the content inside
         lbPublicIP = lbPublicIP.substring(1, lbPublicIP.length() - 1);
-
-        LoggingFacade logger = getLogger();
-        Path deleteLBPath =
-            Paths.get(RESOURCE_DIR, "bash-scripts", "delete_loadbalancer.sh");
-        String deleteLBScript = deleteLBPath.toString();
-        String command =
-            String.format("%s %s %s %s", deleteLBScript, lbPublicIP, COMPARTMENT_OCID);
-        logger.info("Delete Load Balancer command {0}", command);
-        assertTrue(() -> Command.withParams(
-                defaultCommandParams()
-                    .command(command)
-                    .redirect(false))
-            .execute());
       }
-
+      LoggingFacade logger = getLogger();
+      Path deleteLBPath =
+          Paths.get(RESOURCE_DIR, "bash-scripts", "delete_loadbalancer.sh");
+      String deleteLBScript = deleteLBPath.toString();
+      String command =
+          String.format("%s %s %s %s", deleteLBScript, lbPublicIP, COMPARTMENT_OCID);
+      logger.info("Delete Load Balancer command {0}", command);
+      assertTrue(() -> Command.withParams(
+              defaultCommandParams()
+                  .command(command)
+                  .redirect(false))
+          .execute());
     }
   }
 }
