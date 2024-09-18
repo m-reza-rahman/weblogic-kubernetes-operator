@@ -337,7 +337,7 @@ public class LoadBalancerUtils {
   public static String getLoadBalancerIP(String namespace, String lbName) throws Exception {
     Map<String, String> labels = new HashMap<>();
     labels.put("loadbalancer", lbName);
-    V1Service service = getService(lbName, labels, namespace);
+    V1Service service = getService(lbName, null, namespace);
     assertNotNull(service, "Can't find service with name " + lbName);
     LoggingFacade logger = getLogger();
     logger.info("Found service with name {0} in {1} namespace ", lbName, namespace);
@@ -858,12 +858,21 @@ public class LoadBalancerUtils {
           Paths.get(RESOURCE_DIR, "bash-scripts", "delete_loadbalancer.sh");
       String deleteLBScript = deleteLBPath.toString();
       String command =
-          String.format("%s %s %s %s", deleteLBScript, lbPublicIP, COMPARTMENT_OCID);
+          String.format("chmod 777 %s ", deleteLBScript);
       logger.info("Delete Load Balancer command {0}", command);
       assertTrue(() -> Command.withParams(
               defaultCommandParams()
                   .command(command)
-                  .redirect(false))
+                  .redirect(true))
+          .execute());
+
+      String command1 =
+          String.format("%s %s %s ", deleteLBScript, lbPublicIP, COMPARTMENT_OCID);
+      logger.info("Delete Load Balancer command {0}", command);
+      assertTrue(() -> Command.withParams(
+              defaultCommandParams()
+                  .command(command1)
+                  .redirect(true))
           .execute());
     }
   }
