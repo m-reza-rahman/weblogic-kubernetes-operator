@@ -55,6 +55,7 @@ import static oracle.weblogic.kubernetes.TestConstants.IT_MONITORINGEXPORTERWEBA
 import static oracle.weblogic.kubernetes.TestConstants.K8S_NODEPORT_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.KIND_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
+import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER_PRIVATEIP;
 import static oracle.weblogic.kubernetes.TestConstants.PROMETHEUS_CHART_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_ROOT;
@@ -75,6 +76,7 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.createIngressPath
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.deleteLoadBalancer;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.checkMetricsViaPrometheus;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
@@ -522,6 +524,10 @@ class ItMonitoringExporterWebApp {
           .as("Test uninstallNginx1 returns true")
           .withFailMessage("uninstallNginx() did not return true")
           .isTrue();
+    }
+    if (OKE_CLUSTER) {
+      deleteLoadBalancer(hostPortPrometheus);
+      deleteLoadBalancer(ingressIP);
     }
     // delete mii domain images created
     if (miiImage != null) {

@@ -30,6 +30,7 @@ import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import oracle.weblogic.kubernetes.utils.OracleHttpClient;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -85,6 +86,7 @@ import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.deleteLoadBalancer;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -206,6 +208,13 @@ class ItWseeSSO {
     assertTrue(wseeServiceRefAppPath.toFile().exists(), "Application archive is not available");
     wseeServiceRefStubsPath = Paths.get(distDir.toString(), "EchoServiceRefStubs.jar");
     assertTrue(wseeServiceRefStubsPath.toFile().exists(), "client stubs  archive is not available");
+  }
+
+  @AfterAll
+  public void tearDownAll() {
+    if (OKE_CLUSTER) {
+      deleteLoadBalancer(ingressIP);
+    }
   }
 
   /**
