@@ -85,11 +85,10 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * In OKD cluster, we do not use thrid party loadbalancers, so the tests that
+/** In OKD cluster, we do not use thrid party loadbalancers, so the tests that
  * specifically test nginx or traefik are diasbled for OKD cluster. A test
  * using routes are added to run only on OKD cluster.
- */
+*/
 
 @DisplayName("Test WebLogic remote console connecting to mii domain")
 @IntegrationTest
@@ -106,7 +105,6 @@ class ItRemoteConsole {
   private static NginxParams nginxHelmParams = null;
   private static int nginxNodePort;
   private static String nginxHostAndPort;
-  private static String hostAndPort = null;
 
   // domain constants
   private static final String domainUid = "domain1";
@@ -184,6 +182,7 @@ class ItRemoteConsole {
   @DisplayName("Verify Connecting to Mii domain WLS Remote Console through Traefik is successful")
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testWlsRemoteConsoleConnectionThroughTraefik() {
+
     int traefikNodePort = -1;
     if (traefikHelmParams != null) {
       logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
@@ -225,27 +224,27 @@ class ItRemoteConsole {
   @DisplayName("Verify Connecting to Mii domain by Remote Console using SSL is successful")
   void testWlsRemoteConsoleConnectionUsingSSL() {
     int sslNodePort = getServiceNodePort(
-        domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
+         domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
     assertNotEquals(-1, sslNodePort,
-        "Could not get the default-secure external service node port");
+          "Could not get the default-secure external service node port");
     logger.info("Found the administration service nodePort {0}", sslNodePort);
 
     //expose the admin server external service to access the console in OKD cluster
     //set the sslPort as the target port
     String adminSvcSslPortExtHost = createRouteForOKD(getExternalServicePodName(adminServerPodName),
-        domainNamespace, "domain1-admin-server-sslport-ext");
+                    domainNamespace, "domain1-admin-server-sslport-ext");
     setTlsTerminationForRoute("domain1-admin-server-sslport-ext", domainNamespace);
     int sslPort = getServicePort(
-        domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
+         domainNamespace, getExternalServicePodName(adminServerPodName), "default-secure");
     setTargetPortForRoute("domain1-admin-server-sslport-ext", domainNamespace, sslPort);
-
+    String hostAndPort = null;
     String httpsHostHeader = "";
     String header = "";
     if (!OKD) {
       if (KIND_CLUSTER
           && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
         httpsHostHeader = createIngressHostRouting(domainNamespace, domainUid,
-            "admin-server", adminServerSecurePort);
+          "admin-server", adminServerSecurePort);
         hostAndPort = "localhost:" + TRAEFIK_INGRESS_HTTPS_HOSTPORT;
         header = " -H 'host: " + httpsHostHeader + "' ";
       } else {
@@ -263,7 +262,7 @@ class ItRemoteConsole {
     //verify ready app is accessible through default-secure nodeport
     String curlCmd = "";
     if (KIND_CLUSTER
-        && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+          && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       curlCmd = "curl -g -sk --show-error --noproxy '*' "
           + header + " https://" + hostAndPort
           + "/weblogic/ready --write-out %{http_code} -o /dev/null";
@@ -277,7 +276,7 @@ class ItRemoteConsole {
     logger.info("ready app is accessible thru default-secure service");
 
     if (KIND_CLUSTER
-        && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
+          && !WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       curlCmd = "curl -g -sk -v --show-error --noproxy '*' --user "
           + ADMIN_USERNAME_DEFAULT + ":" + ADMIN_PASSWORD_DEFAULT
           + " http://localhost:8012/api/providers/AdminServerConnection -H  "
@@ -308,7 +307,7 @@ class ItRemoteConsole {
    */
   @AfterAll
   public void tearDownAll() {
-    if (!SKIP_CLEANUP) {
+    if (!SKIP_CLEANUP)  {
       assertTrue(shutdownWlsRemoteConsole(), "Remote Console shutdown failed");
     }
   }
@@ -386,7 +385,7 @@ class ItRemoteConsole {
       nginxNodePort = IT_REMOTECONSOLENGINX_INGRESS_HTTP_HOSTPORT;
     } else if (WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT)) {
       nginxNodePort = assertDoesNotThrow(() -> getServiceNodePort(nginxNamespace, nginxServiceName, "http"),
-          "Getting Nginx loadbalancer service node port failed");
+        "Getting Nginx loadbalancer service node port failed");
     }
     logger.info("nginxNodePort is {0}", nginxNodePort);
 
@@ -405,7 +404,7 @@ class ItRemoteConsole {
     logger.info("Executing curl command {0}", curlCmd);
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
   }
-
+  
   private static void installTraefikIngressController() {
     if (!OKD || (KIND_CLUSTER
         && WLSIMG_BUILDER.equals(WLSIMG_BUILDER_DEFAULT))) {
@@ -476,9 +475,9 @@ class ItRemoteConsole {
 
   /**
    * Install WebLogic Remote Console.
-   *
-   * @param domainNamespace    namespace in which the domain will be created
+   * @param domainNamespace namespace in which the domain will be created
    * @param adminServerPodName the name of the admin server pod
+   *
    * @return true if WebLogic Remote Console is successfully installed, false otherwise.
    */
   public static boolean installAndVerifyWlsRemoteConsole(String domainNamespace, String adminServerPodName) {

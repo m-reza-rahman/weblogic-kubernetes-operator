@@ -109,7 +109,6 @@ class ItStickySession {
   // constants for Traefik
   private static HelmParams traefikHelmParams = null;
   private static LoggingFacade logger = null;
-  private static String hostAndPort = null;
 
   /**
    * Install Traefik and operator, create a custom image using model in image
@@ -474,6 +473,7 @@ class ItStickySession {
 
     if (clusterAddress.length == 0) {
       //use a LBer ingress controller to build the curl command to run on local
+      String hostAndPort = null;
       final String httpHeaderFile = LOGS_DIR + "/headers";
       logger.info("Build a curl command with hostname {0} and port {1}", hostName, servicePort);
 
