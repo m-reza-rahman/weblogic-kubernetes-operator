@@ -111,7 +111,7 @@ class ItMiiDomainUpgradeToSecureMode {
 
   private static List<String> namespaces;
   private static String opNamespace;
-  private static String ingressNamespace;  
+  private static String ingressNamespace;
   private static String domainNamespace;
   private static final int replicaCount = 1;
   private static String domainUid;
@@ -122,7 +122,7 @@ class ItMiiDomainUpgradeToSecureMode {
   private String managedServerPrefix;
   private static final String wlSecretName = "weblogic-credentials";
   private static final String encryptionSecretName = "encryptionsecret";
-  
+
   private static NginxParams nginxParams;
   private static String ingressIP = null;
   String adminIngressHost;
@@ -138,11 +138,12 @@ class ItMiiDomainUpgradeToSecureMode {
   private final String adminAppMoved = "This document you requested has moved";
   private final String applicationRuntimes = "/management/weblogic/latest/domainRuntime"
       + "/serverRuntimes/adminserver/applicationRuntimes";
-  
+
   private static LoggingFacade logger = null;
 
   /**
    * Install Operator.
+   *
    * @param namespaces list of namespaces.
    */
   @BeforeAll
@@ -169,7 +170,7 @@ class ItMiiDomainUpgradeToSecureMode {
     installNginx();
     String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
-        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;   
+        ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
   }
 
   /**
@@ -196,8 +197,8 @@ class ItMiiDomainUpgradeToSecureMode {
       for (int i = 1; i <= replicaCount; i++) {
         String managedServerPodName = managedServerPrefix + i;
         testUntil(assertDoesNotThrow(() -> podDoesNotExist(managedServerPodName, domainUid, domainNamespace),
-            String.format("podDoesNotExist failed with ApiException for pod %s in namespace %s",
-                managedServerPodName, domainNamespace)),
+                String.format("podDoesNotExist failed with ApiException for pod %s in namespace %s",
+                    managedServerPodName, domainNamespace)),
             logger,
             "pod {0} to be deleted in namespace {1}",
             managedServerPodName,
@@ -206,15 +207,14 @@ class ItMiiDomainUpgradeToSecureMode {
       }
     }
   }
-
+  
   /**
    * Test upgrade from 1411 container image to 1412 container image with production off and secure mode off.
-   * 
+   * <p>
    * Verify the sample application and console are available in default port 7001 before upgrade.
    * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
    * Verify the sample application continue to available in default port 7001 after upgrade.
    * Verify the console is moved to a new location in 1412.
-   * 
    */
   @Test
   @DisplayName("Test upgrade from 1411 container image to "
@@ -249,11 +249,11 @@ class ItMiiDomainUpgradeToSecureMode {
     //create ingress resources to route traffic to various service endpoints
     createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));    
-    
+    logger.info(Yaml.dump(dcr));
+
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    
+
     String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     //get ingress ip of the ingress controller to send http requests to servers in domain
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
@@ -271,10 +271,10 @@ class ItMiiDomainUpgradeToSecureMode {
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
-    
+
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
-    
+
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
     //verify sample app is available in admin server in port 7001
@@ -290,15 +290,14 @@ class ItMiiDomainUpgradeToSecureMode {
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
   }
-  
+
   /**
    * Test upgrade from 1411 container image  to 1412 container image  with production on and secure mode off.
-   * 
+   * <p>
    * Verify the sample application and console are available in default port 7001 before upgrade.
    * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
    * Verify the sample application continue to available in default port 7001 after upgrade.
    * Verify the console is moved to a new location in 1412.
-   * 
    */
   @Test
   @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode off")
@@ -354,7 +353,7 @@ class ItMiiDomainUpgradeToSecureMode {
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
-    
+
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
     //verify the number of channels available in the domain resource match with the count and name
@@ -375,13 +374,12 @@ class ItMiiDomainUpgradeToSecureMode {
 
   /**
    * Test upgrade from 1411 container image  to 1412 container image  with production and secure mode on.
-   * 
+   * <p>
    * Verify all services are available only in HTTPS in adminserver as well as managed servers.
    * Verify the admin server sample application is available in default port 7002 before upgrade and after upgrade.
    * Verify the management REST interface continue to be available in default admin port 9002 before and after upgrade.
    * Verify the cluster sample application continue to available in default port 8500 before and after upgrade.
    * Verify the console is moved to a new location in 1412.
-   * 
    */
   @Test
   @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode on")
@@ -437,14 +435,14 @@ class ItMiiDomainUpgradeToSecureMode {
     //verify sample application is available in cluster address secure port 8500
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
-    
+
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    
+
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, adminIngressHost,
         adminAppUri, adminAppText, true, ingressIP);
@@ -461,13 +459,12 @@ class ItMiiDomainUpgradeToSecureMode {
 
   /**
    * Test upgrade from 1411 container image  to 1412 container image  with production on and secure mode not configured.
-   *
-   * Verify the sample application available at default port 7001 before and after upgrade. 
-   * Verify the console and REST management interfaces available at default 
-   * administration port 9002 before upgrade and only REST management interfaces available at 
-   * default administration port 9002 after upgrade through HTTPS protocol. 
+   * <p>
+   * Verify the sample application available at default port 7001 before and after upgrade.
+   * Verify the console and REST management interfaces available at default
+   * administration port 9002 before upgrade and only REST management interfaces available at
+   * default administration port 9002 after upgrade through HTTPS protocol.
    * Verify the console is moved to a new location in 1412.
-   *
    */
   @Test
   @DisplayName("Test upgrade from 1411 to 1412 with production on and secure mode not configured")
@@ -500,7 +497,7 @@ class ItMiiDomainUpgradeToSecureMode {
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     //create ingress resource to route administration traffic to admin server secure service endpoint
-    String administrationIngressHost = createAdministrationIngressHostRouting(domainUid, 9002, 
+    String administrationIngressHost = createAdministrationIngressHostRouting(domainUid, 9002,
         nginxParams.getIngressClassName(), true);
     //create ingress resources to route traffic to various service endpoints
     createNginxIngressHostRouting(domainUid, 9002, 7001, 8001, nginxParams.getIngressClassName(), false);
@@ -512,7 +509,7 @@ class ItMiiDomainUpgradeToSecureMode {
     //get ingress ip of the ingress controller to send http requests to servers in domain
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
         ? getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) : K8S_NODEPORT_HOST;
-    
+
     //verify admin console is available in port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         adminAppUri, adminAppText, true, ingressIP);
@@ -525,15 +522,15 @@ class ItMiiDomainUpgradeToSecureMode {
     //verify sample application is available in cluster address
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, clusterIngressHost,
         sampleAppUri, msName, true, ingressIP);
-    
+
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
-    
+
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    
+
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
         applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
@@ -550,12 +547,11 @@ class ItMiiDomainUpgradeToSecureMode {
 
   /**
    * Test upgrade from 12214 to 1412 with production off and secure mode off.
-   * 
+   * <p>
    * Verify the sample application and console are available in default port 7001 before upgrade.
    * Verify the management REST interface continue to be available in default port 7001 before and after upgrade.
    * Verify the sample application continue to available in default port 7001 after upgrade.
    * Verify the console is moved to a new location in 1412.
-   * 
    */
   @Test
   @DisplayName("Test upgrade from 12214 container image  to "
@@ -589,11 +585,11 @@ class ItMiiDomainUpgradeToSecureMode {
     //create ingress resources to route traffic to various service endpoints
     createNginxIngressHostRouting(domainUid, 7001, 7002, 8001, nginxParams.getIngressClassName(), false);
     DomainResource dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
-    logger.info(Yaml.dump(dcr));    
-    
+    logger.info(Yaml.dump(dcr));
+
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    
+
     String ingressServiceName = nginxParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
     //get ingress ip of the ingress controller to send http requests to servers in domain
     ingressIP = getServiceExtIPAddrtOke(ingressServiceName, ingressNamespace) != null
@@ -614,10 +610,10 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
-    
+
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    
+
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminIngressHost,
         sampleAppUri, adminServerName, true, ingressIP);
@@ -633,15 +629,14 @@ class ItMiiDomainUpgradeToSecureMode {
   }
 
   /**
-   * Test upgrade from 12214 container image  to 
+   * Test upgrade from 12214 container image  to
    * 1412 container image  with production on and secure mode not configured.
-   *
-   * Verify the sample application available at default port 7001 before and after upgrade. 
-   * Verify the console and REST management interfaces available at default 
-   * administration port 9002 before upgrade and only REST management interfaces available at 
-   * default administration port 9002 after upgrade through HTTPS protocol. 
+   * <p>
+   * Verify the sample application available at default port 7001 before and after upgrade.
+   * Verify the console and REST management interfaces available at default
+   * administration port 9002 before upgrade and only REST management interfaces available at
+   * default administration port 9002 after upgrade through HTTPS protocol.
    * Verify the console is moved to a new location in 1412.
-   *
    */
   @Test
   @DisplayName("Test upgrade from 12214 to 1412 with production on and administration port enabled")
@@ -702,15 +697,15 @@ class ItMiiDomainUpgradeToSecureMode {
 
     //upgrade domain to use 1412 images
     upgradeImage(domainNamespace, domainUid, image1412);
-    
+
     dcr = assertDoesNotThrow(() -> getDomainCustomResource(domainUid, domainNamespace));
     logger.info(Yaml.dump(dcr));
     //verify the number of channels available in the domain resource match with the count and name
     verifyChannel(domainNamespace, domainUid, List.of(channelName));
-    
+
     //verify REST access is available in admin server port 9002
     verifyAppServerAccess(true, getNginxLbNodePort("https"), true, administrationIngressHost,
-        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);    
+        applicationRuntimes, MII_BASIC_APP_NAME, true, ingressIP);
     //verify sample app is available in admin server in port 7001
     verifyAppServerAccess(false, getNginxLbNodePort("http"), true, adminAppIngressHost,
         sampleAppUri, adminServerName, true, ingressIP);
@@ -726,14 +721,14 @@ class ItMiiDomainUpgradeToSecureMode {
    * Create domain custom resource with auxiliary image, base image and channel name.
    *
    * @param domainNamespace namespace in which to create domain
-   * @param domainUid domain id
-   * @param baseImage base image used by the WebLogic pods
-   * @param auxImage auxiliary image containing domain creation WDT model and properties files
-   * @param channelName name of the channel to configure in domain resource
+   * @param domainUid       domain id
+   * @param baseImage       base image used by the WebLogic pods
+   * @param auxImage        auxiliary image containing domain creation WDT model and properties files
+   * @param channelName     name of the channel to configure in domain resource
    * @return domain resource object
    */
   private DomainResource createDomainUsingAuxiliaryImage(String domainNamespace, String domainUid,
-      String baseImage, String auxImage, String channelName) {
+                                                         String baseImage, String auxImage, String channelName) {
     String adminServerPodName = domainUid + "-" + adminServerName;
     String managedServerPrefix = domainUid + "-" + clusterName + "-ms-";
 
@@ -755,8 +750,8 @@ class ItMiiDomainUpgradeToSecureMode {
 
     DomainResource domainCR
         = createDomainResourceWithAuxiliaryImage(domainUid, domainNamespace,
-            baseImage, wlSecretName, createSecretsForImageRepos(domainNamespace),
-            encryptionSecretName, auxiliaryImagePath, auxImage);
+        baseImage, wlSecretName, createSecretsForImageRepos(domainNamespace),
+        encryptionSecretName, auxiliaryImagePath, auxImage);
     // replace the default channel with given channel from method parameters
     if (channelName != null) {
       Channel channel = domainCR.getSpec().getAdminServer().getAdminService().channels().get(0);
@@ -784,9 +779,9 @@ class ItMiiDomainUpgradeToSecureMode {
   /**
    * Create auxiliary image.
    *
-   * @param imageName name of the auxiliary image
-   * @param imageTag auxiliary image tag
-   * @param wdtModelFile WDT model file
+   * @param imageName       name of the auxiliary image
+   * @param imageTag        auxiliary image tag
+   * @param wdtModelFile    WDT model file
    * @param wdtVariableFile WDT property file
    * @return name of the auxiliary image created
    */
@@ -803,11 +798,11 @@ class ItMiiDomainUpgradeToSecureMode {
     //create an auxilary image with model and sample-app application
     WitParams witParams
         = new WitParams()
-            .modelImageName(imageName)
-            .modelImageTag(imageTag)
-            .modelFiles(Arrays.asList(wdtModelFile))
-            .modelVariableFiles(Arrays.asList(wdtVariableFile))
-            .modelArchiveFiles(archiveList);
+        .modelImageName(imageName)
+        .modelImageTag(imageTag)
+        .modelFiles(Arrays.asList(wdtModelFile))
+        .modelVariableFiles(Arrays.asList(wdtVariableFile))
+        .modelArchiveFiles(archiveList);
     createAndPushAuxiliaryImage(imageName, imageTag, witParams);
 
     return imageName + ":" + imageTag;
@@ -817,8 +812,8 @@ class ItMiiDomainUpgradeToSecureMode {
    * Upgrade domain with 1412 images using domain patching and verify rolling restart.
    *
    * @param domainNamespace domain namespace
-   * @param domainUid domain id
-   * @param newImage the new 1412 image to patch the domain resource
+   * @param domainUid       domain id
+   * @param newImage        the new 1412 image to patch the domain resource
    */
   private void upgradeImage(String domainNamespace, String domainUid, String newImage) {
     // get the original domain resource before update
@@ -872,23 +867,23 @@ class ItMiiDomainUpgradeToSecureMode {
   private static void installNginx() {
     // install and verify Nginx ingress controller
     logger.info("Installing Nginx controller using helm");
-    nginxParams = installAndVerifyNginx(ingressNamespace, 
-        IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_NODEPORT, 
+    nginxParams = installAndVerifyNginx(ingressNamespace,
+        IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTP_NODEPORT,
         IT_ITMIIDOMAINUPGRADETOSECUREMODE_HTTPS_NODEPORT);
   }
 
   /**
    * Create Ingress objects for routing administration and application traffic to admin server and cluster.
    *
-   * @param domainUid domain id for which to create the traffic rules
-   * @param adminPort administration port of the admin server
+   * @param domainUid          domain id for which to create the traffic rules
+   * @param adminPort          administration port of the admin server
    * @param adminSecureAppPort secure application of admin server
-   * @param msPort managed server port
-   * @param ingressClassName ingress class name
-   * @param isTLS is TLS needs to configured
+   * @param msPort             managed server port
+   * @param ingressClassName   ingress class name
+   * @param isTLS              is TLS needs to configured
    */
   private void createNginxIngressHostRouting(String domainUid, int adminPort, int adminSecureAppPort, int msPort,
-      String ingressClassName, boolean isTLS) {
+                                             String ingressClassName, boolean isTLS) {
     // create an ingress in domain namespace
     String ingressName;
 
@@ -950,7 +945,7 @@ class ItMiiDomainUpgradeToSecureMode {
     V1IngressRule adminAppIngressRule = new V1IngressRule()
         .host(adminAppIngressHost)
         .http(new V1HTTPIngressRuleValue()
-            .paths(Collections.singletonList(adminAppIngressPath)));    
+            .paths(Collections.singletonList(adminAppIngressPath)));
     V1IngressRule clusterIngressRule = new V1IngressRule()
         .host(clusterIngressHost)
         .http(new V1HTTPIngressRuleValue()
@@ -975,7 +970,7 @@ class ItMiiDomainUpgradeToSecureMode {
           .secretName(admintlsSecretName);
       V1IngressTLS adminApptls = new V1IngressTLS()
           .addHostsItem(adminAppIngressHost)
-          .secretName(admintlsSecretName);      
+          .secretName(admintlsSecretName);
       V1IngressTLS clustertls = new V1IngressTLS()
           .addHostsItem(clusterIngressHost)
           .secretName(clustertlsSecretName);
@@ -1007,17 +1002,16 @@ class ItMiiDomainUpgradeToSecureMode {
   }
 
   /**
-   *
    * Create ingress resource to route administration requests to admin server.
    *
-   * @param domainUid domain id
-   * @param adminPort adminport of admin server
+   * @param domainUid        domain id
+   * @param adminPort        adminport of admin server
    * @param ingressClassName ingress class name
-   * @param isTLS is TLS connection
+   * @param isTLS            is TLS connection
    * @return name of the hostname configued in the routing
    */
-  private String createAdministrationIngressHostRouting(String domainUid, int adminPort, 
-      String ingressClassName, boolean isTLS) {
+  private String createAdministrationIngressHostRouting(String domainUid, int adminPort,
+                                                        String ingressClassName, boolean isTLS) {
     // create an ingress in domain namespace
     String ingressName;
     String adminIngressHost;
@@ -1088,7 +1082,7 @@ class ItMiiDomainUpgradeToSecureMode {
     logger.info("ingress {0} was created in namespace {1}", ingressName, domainNamespace);
     return adminIngressHost;
   }
-  
+
   private static Path tlsCertFile;
   private static Path tlsKeyFile;
 
@@ -1117,13 +1111,13 @@ class ItMiiDomainUpgradeToSecureMode {
   }
 
   private void verifyAppServerAccess(boolean isTLS,
-      int lbNodePort,
-      boolean isHostRouting,
-      String ingressHostName,
-      String pathLocation,
-      String content,
-      boolean useCredentials,
-      String... hostName) throws UnknownHostException {
+                                     int lbNodePort,
+                                     boolean isHostRouting,
+                                     String ingressHostName,
+                                     String pathLocation,
+                                     String content,
+                                     boolean useCredentials,
+                                     String... hostName) throws UnknownHostException {
 
     StringBuffer url = new StringBuffer();
     String hostAndPort;
