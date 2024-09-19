@@ -230,6 +230,13 @@ public class LoadBalancerUtils {
         nginxNamespace);
     if (OKE_CLUSTER) {
       testUntil(
+          assertDoesNotThrow(() -> isOCILoadBalancerReady(
+              nginxHelmParams.getReleaseName() + "-ingress-nginx-controller",
+              null, nginxNamespace), "isOCILoadBalancerReady failed with ApiException"),
+          logger,
+          "external IP to be generated in {0}",
+          nginxNamespace);
+      testUntil(
           assertDoesNotThrow(() -> isLoadBalancerHealthy(nginxNamespace,
                   nginxHelmParams.getReleaseName() + "-ingress-nginx-controller"),
               "isLoadBalancerHealthy failed with ApiException"),
@@ -308,6 +315,13 @@ public class LoadBalancerUtils {
         "Traefik to be ready in namespace {0}",
         traefikNamespace);
     if (OKE_CLUSTER) {
+      testUntil(
+          assertDoesNotThrow(() -> isOCILoadBalancerReady(
+              traefikHelmParams.getReleaseName(),
+              null, traefikNamespace), "isOCILoadBalancerReady failed with ApiException"),
+          logger,
+          "external IP to be generated in {0}",
+          traefikNamespace);
       testUntil(
           assertDoesNotThrow(() -> isLoadBalancerHealthy(traefikNamespace, traefikHelmParams.getReleaseName()),
               "isLoadBalancerHealthy failed with ApiException"),
