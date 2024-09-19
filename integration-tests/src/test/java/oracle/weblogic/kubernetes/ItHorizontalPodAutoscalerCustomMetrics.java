@@ -90,7 +90,6 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
 import static oracle.weblogic.kubernetes.utils.K8sEvents.getEvents;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressForDomainAndVerify;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.deleteLoadBalancer;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPromGrafanaClusterRoles;
 import static oracle.weblogic.kubernetes.utils.MonitoringUtils.cleanupPrometheusAdapterClusterRoles;
@@ -497,9 +496,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
           .withFailMessage("uninstallNginx() did not return true")
           .isTrue();
     }
-    if (OKE_CLUSTER) {
-      deleteLoadBalancer(ingressIP);
-    }
+
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " delete -f " + targetHPAFile);
     ExecResult result = Command.withParams(params).executeAndReturnResult();

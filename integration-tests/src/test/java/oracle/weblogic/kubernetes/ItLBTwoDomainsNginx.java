@@ -59,7 +59,6 @@ import static oracle.weblogic.kubernetes.utils.CommonLBTestUtils.verifyHeadersIn
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createBaseRepoSecret;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.deleteLoadBalancer;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithTLSCertKey;
@@ -254,11 +253,6 @@ class ItLBTwoDomainsNginx {
         // delete pv
         deletePersistentVolume(pvPvcNamePair.get(0));
       }
-    }
-
-    logger.info("Deleting LoadBalancer left over ");
-    if (OKE_CLUSTER) {
-      deleteLoadBalancer(ingressIP);
     }
   }
 

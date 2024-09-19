@@ -70,7 +70,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.formatIPv6Host;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getHostAndPort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getServiceExtIPAddrtOke;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.createIngressAndRetryIfFail;
-import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.deleteLoadBalancer;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyNginx;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyTraefik;
 import static oracle.weblogic.kubernetes.utils.OKDUtils.createRouteForOKD;
@@ -311,10 +310,6 @@ class ItRemoteConsole {
   public void tearDownAll() {
     if (!SKIP_CLEANUP) {
       assertTrue(shutdownWlsRemoteConsole(), "Remote Console shutdown failed");
-    }
-    if (OKE_CLUSTER) {
-      deleteLoadBalancer(nginxHostAndPort);
-      deleteLoadBalancer(hostAndPort);
     }
   }
 
