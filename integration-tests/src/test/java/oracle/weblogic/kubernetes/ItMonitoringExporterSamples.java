@@ -562,7 +562,6 @@ class ItMonitoringExporterSamples {
           .withFailMessage("uninstallNginx() did not return true")
           .isTrue();
     }
-
     // delete coordinator and webhook images
     if (webhookImage != null) {
       deleteImage(webhookImage);

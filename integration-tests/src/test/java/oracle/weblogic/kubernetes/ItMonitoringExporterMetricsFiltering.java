@@ -133,7 +133,7 @@ class ItMonitoringExporterMetricsFiltering {
   private static String releaseSuffix = "testfilter";
   private static String prometheusReleaseName = "prometheus" + releaseSuffix;
   private static String grafanaReleaseName = "grafana" + releaseSuffix;
-  private static String monitoringExporterDir;
+  private static  String monitoringExporterDir;
   private static String hostPortPrometheus = null;
 
 
@@ -165,7 +165,7 @@ class ItMonitoringExporterMetricsFiltering {
     logger.info("Get a unique namespace for Traefik");
     assertNotNull(namespaces.get(2), "Namespace list is null");
     traefikNamespace = namespaces.get(2);
-
+    
 
     logger.info("Get a unique namespace for domain1");
     assertNotNull(namespaces.get(3), "Namespace list is null");
@@ -273,7 +273,7 @@ class ItMonitoringExporterMetricsFiltering {
     checkExcluded.add("servletName=\"com.oracle.wls.exporter.webapp.MainServlet\"");
     checkExcluded.add("app=\"myear1\"");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_included_webapp_and_servlet_names.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_included_webapp_and_servlet_names.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -289,7 +289,7 @@ class ItMonitoringExporterMetricsFiltering {
     checkExcluded.add("app=\"wls-exporter\"");
 
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_excluded_webapp_name.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_excluded_webapp_name.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -323,7 +323,7 @@ class ItMonitoringExporterMetricsFiltering {
     checkExcluded.add("servletName=\"com.oracle.wls.exporter.webapp.MainServlet\"");
     checkExcluded.add("app=\"myear123\"");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_excluded_webapp_and_servlet_names.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_excluded_webapp_and_servlet_names.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -339,7 +339,7 @@ class ItMonitoringExporterMetricsFiltering {
     List<String> checkExcluded = new ArrayList<>();
     checkExcluded.add("servletName=\"com.oracle.wls.exporter.webapp.ExporterServlet\"");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_included_webapp_excluded_servlet_name.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_included_webapp_excluded_servlet_name.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -356,7 +356,7 @@ class ItMonitoringExporterMetricsFiltering {
     List<String> checkExcluded = new ArrayList<>();
     checkExcluded.add("app=\"myear123\"");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_included_excluded_webapp_names.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_included_excluded_webapp_names.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -373,7 +373,7 @@ class ItMonitoringExporterMetricsFiltering {
     List<String> checkExcluded = new ArrayList<>();
     checkExcluded.add("servletName=\"com.oracle.wls.exporter.webapp.ExporterServlet\"");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_included_excluded_servlet_name.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_included_excluded_servlet_name.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -390,7 +390,7 @@ class ItMonitoringExporterMetricsFiltering {
     List<String> checkExcluded = new ArrayList<>();
     checkExcluded.add("app=");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_included_not_existedkey.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_included_not_existedkey.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -407,7 +407,7 @@ class ItMonitoringExporterMetricsFiltering {
     List<String> checkExcluded = new ArrayList<>();
     checkExcluded.add("app=notexisted");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_excluded_not_existedkey.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_excluded_not_existedkey.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -424,7 +424,7 @@ class ItMonitoringExporterMetricsFiltering {
     List<String> checkExcluded = new ArrayList<>();
     checkExcluded.add("servletName=");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_included_not_existedkey_sublevel.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_included_not_existedkey_sublevel.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -441,7 +441,7 @@ class ItMonitoringExporterMetricsFiltering {
     List<String> checkExcluded = new ArrayList<>();
     checkExcluded.add("servletName=notexisted");
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_excluded_not_existedkey_sublevel.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_excluded_not_existedkey_sublevel.yaml",checkIncluded, checkExcluded);
   }
 
   /**
@@ -454,7 +454,7 @@ class ItMonitoringExporterMetricsFiltering {
     logger.info("Testing filtering of properties field with no admin privileges");
 
     replaceConfiguration(RESOURCE_DIR
-            + "/exporter/rest_filter_jdbc_privileged.yaml",
+        + "/exporter/rest_filter_jdbc_privileged.yaml",
         "wls_datasource_state%7Bname%3D%22TestDataSource%22%7D%5B15s%5D",
         "Running, Suspended, Shutdown, Overloaded, Unknown", "TestDataSource");
   }
@@ -472,7 +472,7 @@ class ItMonitoringExporterMetricsFiltering {
     checkExcluded.add("app=\"wls-exporter\"");
 
     replaceConfigurationWithFilter(RESOURCE_DIR
-        + "/exporter/rest_filter_excluded_webapp_name.yaml", checkIncluded, checkExcluded);
+        + "/exporter/rest_filter_excluded_webapp_name.yaml",checkIncluded, checkExcluded);
     appendConfiguration(RESOURCE_DIR
         + "/exporter/rest_filter_excluded_servlet_name.yaml");
     logger.info("Verify metrics configuration has not change");
@@ -495,8 +495,8 @@ class ItMonitoringExporterMetricsFiltering {
     if (OKD) {
       String hostName = createRouteForOKD(clusterService, domainNamespace);
       logger.info("hostName = {0} ", hostName);
-      verifyMonExpAppAccess(1, hostName);
-      exporterUrl = String.format("http://%s/wls-exporter/", hostName);
+      verifyMonExpAppAccess(1,hostName);
+      exporterUrl = String.format("http://%s/wls-exporter/",hostName);
     }
     if (!OKD) {
       installPrometheusGrafana(PROMETHEUS_CHART_VERSION, GRAFANA_CHART_VERSION,
@@ -512,16 +512,15 @@ class ItMonitoringExporterMetricsFiltering {
     assertTrue(callWebAppAndWaitTillReady(curlCmd, 60));
 
   }
-
+  
   /**
    * Install Prometheus, Grafana using specified helm chart version, and verify that pods are running.
-   *
    * @throws ApiException when creating helm charts or pods fails
    */
   private void installPrometheusGrafana(String promChartVersion,
-                                        String grafanaChartVersion,
-                                        String domainNS,
-                                        String domainUid
+                                               String grafanaChartVersion,
+                                               String domainNS,
+                                               String domainUid
   ) throws IOException, ApiException {
     final String prometheusRegexValue = String.format("regex: %s;%s", domainNS, domainUid);
     if (promHelmParams == null) {
@@ -556,7 +555,7 @@ class ItMonitoringExporterMetricsFiltering {
 
     logger.info("Prometheus is running");
     if (grafanaHelmParams == null) {
-      String grafanaHelmValuesFileDir = Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
+      String grafanaHelmValuesFileDir =  Paths.get(RESULTS_ROOT, this.getClass().getSimpleName(),
           grafanaReleaseName).toString();
       grafanaHelmParams = installAndVerifyGrafana(grafanaReleaseName,
           monitoringNS,
@@ -570,7 +569,7 @@ class ItMonitoringExporterMetricsFiltering {
 
     createIngressPathRouting(monitoringNS, "/api",
         prometheusReleaseName + "-server", 80, ingressClassName, prometheusReleaseName
-            + "." + monitoringNS);
+        + "." + monitoringNS);
 
   }
 
@@ -588,7 +587,6 @@ class ItMonitoringExporterMetricsFiltering {
           .withFailMessage("uninstallTraefik() did not return true")
           .isTrue();
     }
-
     // delete mii domain images created
     if (miiImage != null) {
       deleteImage(miiImage);
@@ -606,7 +604,7 @@ class ItMonitoringExporterMetricsFiltering {
     deleteNamespace(monitoringNS);
     deleteMonitoringExporterTempDir(monitoringExporterDir);
   }
-
+  
 
   private HtmlPage submitConfigureForm(String exporterUrl, String effect, String configFile)
       throws Exception {
@@ -713,7 +711,7 @@ class ItMonitoringExporterMetricsFiltering {
       // "heap_free_current{name="managed-server1"}[15s]" search for results for last 15secs
       checkMetricsViaPrometheus(checkMetricsPrometheusString,
           expectedValue, hostPortPrometheus, prometheusReleaseName
-              + "." + monitoringNS);
+          + "." + monitoringNS);
     }
   }
 
@@ -781,7 +779,7 @@ class ItMonitoringExporterMetricsFiltering {
     }
     logger.info("Getting web node port for Traefik loadbalancer {0}", traefikHelmParams.getReleaseName());
     return assertDoesNotThrow(()
-            -> getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
+        -> getServiceNodePort(traefikNamespace, traefikHelmParams.getReleaseName(), isHttps ? "websecure" : "web"),
         "Getting web node port for Traefik loadbalancer failed");
   }
 }

@@ -523,7 +523,6 @@ class ItMonitoringExporterWebApp {
           .withFailMessage("uninstallNginx() did not return true")
           .isTrue();
     }
-
     // delete mii domain images created
     if (miiImage != null) {
       deleteImage(miiImage);
