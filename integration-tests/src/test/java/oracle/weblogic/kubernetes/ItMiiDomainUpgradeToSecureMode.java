@@ -216,7 +216,7 @@ class ItMiiDomainUpgradeToSecureMode {
       deleteLoadBalancer(ingressIP);
     }
   }
-  
+
   /**
    * Test upgrade from 1411 container image to 1412 container image with production off and secure mode off.
    * 
