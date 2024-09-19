@@ -496,7 +496,6 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
           .withFailMessage("uninstallNginx() did not return true")
           .isTrue();
     }
-
     CommandParams params = new CommandParams().defaults();
     params.command(KUBERNETES_CLI + " delete -f " + targetHPAFile);
     ExecResult result = Command.withParams(params).executeAndReturnResult();
