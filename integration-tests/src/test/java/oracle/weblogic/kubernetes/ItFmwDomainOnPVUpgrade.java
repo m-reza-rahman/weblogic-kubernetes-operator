@@ -195,7 +195,7 @@ class ItFmwDomainOnPVUpgrade {
     String domainHome = DOMAINHOMEPREFIX + domainUid;
     String startMode = "prod";
     String pvcName = getUniqueName(domainUid + "-pvc-");
-    String rcuSchemaPrefix = "jrfproduction";
+    String rcuSchemaPrefix = "jrfprod1";
     String fmwModelFile = Paths.get(RESOURCE_DIR, "jrfdomainupgrade", "jrf-production-upgrade.yaml").toString();
     createDomain(domainUid, startMode, rcuSchemaPrefix, fmwModelFile, pvcName);
     launchPvHelperPod(domainNamespace, pvcName);
