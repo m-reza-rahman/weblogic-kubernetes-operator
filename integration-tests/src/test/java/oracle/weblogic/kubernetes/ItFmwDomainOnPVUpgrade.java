@@ -220,7 +220,7 @@ class ItFmwDomainOnPVUpgrade {
     File fmwModelPropFile = createWdtPropertyFile(domainName, startMode, rcuSchemaprefix);
 
     // create domainCreationImage
-    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "dci-" + domainName;
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "dci-jrfonpv";
     String dciTag = getDateAndTimeStamp();
     // create image with model and wdt installation files
     WitParams witParams
