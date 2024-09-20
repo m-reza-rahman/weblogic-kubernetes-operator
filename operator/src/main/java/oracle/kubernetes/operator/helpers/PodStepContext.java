@@ -58,6 +58,7 @@ import oracle.kubernetes.operator.KubernetesConstants;
 import oracle.kubernetes.operator.LabelConstants;
 import oracle.kubernetes.operator.LogHomeLayoutType;
 import oracle.kubernetes.operator.MIINonDynamicChangesMethod;
+import oracle.kubernetes.operator.Pair;
 import oracle.kubernetes.operator.ProcessingConstants;
 import oracle.kubernetes.operator.WebLogicConstants;
 import oracle.kubernetes.operator.calls.RequestBuilder;
@@ -1177,11 +1178,23 @@ public abstract class PodStepContext extends BasePodStepContext {
       return AnnotationHelper.createHash(recipe);
     }
 
-    private String adjustedHash(V1Pod currentPod, List<BiConsumer<V1Pod, V1Pod>> adjustments) {
+    private String adjustedHash(V1Pod currentPod, List<Pair<String, BiConsumer<V1Pod, V1Pod>>> adjustments) {
       V1Pod recipe = createPodRecipe();
-      adjustments.forEach(adjustment -> adjustment.accept(recipe, currentPod));
+      adjustments.forEach(adjustment -> adjustment.right().accept(recipe, currentPod));
 
-      return AnnotationHelper.createHash(recipe);
+      // TEST
+      String result =  AnnotationHelper.createHash(recipe);
+      if (result.equals("fc8e3c36de352b0419844b393fd42bf01f32c67932a635cdedce230122d44d0a")) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("adjustments: ").append(adjustments.stream().map(Pair::left).toList()).append("\n");
+        sb.append("currentPod: ").append("\n").append(Yaml.dump(currentPod)).append("\n");
+        sb.append("adjusted: ").append("\n").append(Yaml.dump(recipe)).append("\n");
+        sb.append("original: ").append("\n").append(Yaml.dump(createPodRecipe())).append("\n");
+        String output = sb.toString();
+        System.out.println(output);
+      }
+
+      return result;
     }
 
     private void addLegacyPrometheusAnnotationsFrom30(V1Pod pod) {
@@ -1377,14 +1390,14 @@ public abstract class PodStepContext extends BasePodStepContext {
       // generate stream of combinations
       // for each combination, start with pod recipe, apply all adjustments, and generate hash
       // return true if any adjusted hash matches required hash
-      List<BiConsumer<V1Pod, V1Pod>> adjustments = List.of(
-          this::restoreMetricsExporterSidecarPortTcpMetrics,
-          this::convertAuxImagesInitContainerVolumeAndMounts,
-          this::restoreLegacyIstioPortsConfig,
-          this::restoreAffinityContent,
-          this::restoreLogHomeLayoutEnvVar,
-          this::restoreFluentdVolume,
-          this::restoreSecurityContext);
+      List<Pair<String, BiConsumer<V1Pod, V1Pod>>> adjustments = List.of(
+          Pair.of("restoreMetricsExporterSidecarPortTcpMetrics", this::restoreMetricsExporterSidecarPortTcpMetrics),
+          Pair.of("convertAuxImagesInitContainerVolumeAndMounts", this::convertAuxImagesInitContainerVolumeAndMounts),
+          Pair.of("restoreLegacyIstioPortsConfig", this::restoreLegacyIstioPortsConfig),
+          Pair.of("restoreAffinityContent", this::restoreAffinityContent),
+          Pair.of("restoreLogHomeLayoutEnvVar", this::restoreLogHomeLayoutEnvVar),
+          Pair.of("restoreFluentdVolume", this::restoreFluentdVolume),
+          Pair.of("restoreSecurityContext", this::restoreSecurityContext));
       return Combinations.of(adjustments)
           .map(adjustment -> adjustedHash(currentPod, adjustment))
           .anyMatch(requiredHash::equals);
@@ -1396,7 +1409,11 @@ public abstract class PodStepContext extends BasePodStepContext {
               && canAdjustLegacyHashToMatch(currentPod, AnnotationHelper.getHash(currentPod)))
           || (isPodFromRecentOperator(currentPod)
               && canAdjustRecentOperatorMajorVersion3HashToMatch(currentPod, AnnotationHelper.getHash(currentPod)))
-          || AnnotationHelper.getHash(getPodModel()).equals(AnnotationHelper.getHash(currentPod));
+          || simpleCheck(currentPod);
+    }
+
+    private boolean simpleCheck(V1Pod currentPod) {
+      return AnnotationHelper.getHash(getPodModel()).equals(AnnotationHelper.getHash(currentPod));
     }
 
     private boolean canUseCurrentPod(V1Pod currentPod) {

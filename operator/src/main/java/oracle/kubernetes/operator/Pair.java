@@ -9,6 +9,18 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public record Pair<L, R>(L left, R right) {
 
+  /**
+   * Create pair.
+   * @param left left
+   * @param right right
+   * @return pair
+   * @param <A> Left type
+   * @param <B> Right type
+   */
+  public static <A, B> Pair<A, B> of(A left, B right) {
+    return new Pair<A, B>(left, right);
+  }
+
   @Override
   public String toString() {
     return new ToStringBuilder(this).append("left", left).append("right", right).toString();
