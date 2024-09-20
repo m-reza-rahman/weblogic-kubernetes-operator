@@ -50,7 +50,6 @@ import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
-import static oracle.weblogic.kubernetes.TestConstants.MII_BASIC_IMAGE_TAG;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -69,6 +68,7 @@ import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExi
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
+import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getUniqueName;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
@@ -220,18 +220,19 @@ class ItFmwDomainOnPVUpgrade {
     File fmwModelPropFile = createWdtPropertyFile(domainName, startMode, rcuSchemaprefix);
 
     // create domainCreationImage
-    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "jrf-upgrade-dci-" + domainName;
+    String domainCreationImageName = DOMAIN_IMAGES_PREFIX + "dci-" + domainName;
+    String dciTag = getDateAndTimeStamp();
     // create image with model and wdt installation files
     WitParams witParams
         = new WitParams()
             .modelImageName(domainCreationImageName)
-            .modelImageTag(MII_BASIC_IMAGE_TAG)
+            .modelImageTag(dciTag)
             .modelFiles(Collections.singletonList(fmwModelFile))
             .modelVariableFiles(Collections.singletonList(fmwModelPropFile.getAbsolutePath()));
-    createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
+    createAndPushAuxiliaryImage(domainCreationImageName, dciTag, witParams);
 
     DomainCreationImage domainCreationImage
-        = new DomainCreationImage().image(domainCreationImageName + ":" + MII_BASIC_IMAGE_TAG);
+        = new DomainCreationImage().image(domainCreationImageName + ":" + dciTag);
 
     // create opss wallet password secret
     String opsswalletpassSecretName = domainName + "-opss-wallet-password-secret";
