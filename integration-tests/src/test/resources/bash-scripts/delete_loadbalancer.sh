@@ -17,10 +17,8 @@ LOAD_BALANCER_OCID=$(oci lb load-balancer list --compartment-id $COMPARTMENT_ID 
 # Check if a load balancer with the specified IP was found
 if [ -z "$LOAD_BALANCER_OCID" ]; then
   echo "No load balancer found with IP address: $TARGET_IP"
-  exit 1
 else
   echo "Found load balancer with OCID: $LOAD_BALANCER_OCID"
-
   # Delete the load balancer
   oci lb load-balancer delete --load-balancer-id $LOAD_BALANCER_OCID --force
   echo "Deletion initiated for load balancer with OCID: $LOAD_BALANCER_OCID"
