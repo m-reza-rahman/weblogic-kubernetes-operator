@@ -123,7 +123,7 @@ class ItFmwDomainOnPVUpgrade {
   private final String fmwModelFilePrefix = "model-fmwdomain-onpv-simplified";
   private final String wlsModelFilePrefix = "model-wlsdomain-onpv-simplified";
   
-  private final String image1412 = "";
+  private final String image1412 = "phx.ocir.io/devweblogic/jrf-domain-on-pv-image:sankar2";
 
   /**
    * Assigns unique namespaces for DB, operator and domain.
