@@ -58,7 +58,6 @@ import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_RELEASE_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.RESULTS_TEMPFILE;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.ITTESTS_DIR;
-import static oracle.weblogic.kubernetes.actions.ActionConstants.MODEL_DIR;
 import static oracle.weblogic.kubernetes.actions.ActionConstants.RESOURCE_DIR;
 import static oracle.weblogic.kubernetes.actions.TestActions.deletePod;
 import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
@@ -197,7 +196,7 @@ class ItFmwDomainOnPVUpgrade {
     String startMode = "prod";
     String pvcName = getUniqueName(domainUid + "-pvc-");
     String rcuSchemaPrefix = "jrfproduction";
-    String fmwModelFile = Paths.get(RESOURCE_DIR, "securemodeupgrade", "jrf-production-upgrade").toString();
+    String fmwModelFile = Paths.get(RESOURCE_DIR, "jrfdomainupgrade", "jrf-production-upgrade.yaml").toString();
     createDomain(domainUid, startMode, rcuSchemaPrefix, fmwModelFile, pvcName);
     launchPvHelperPod(domainNamespace, pvcName);
     copyResponseFile(domainNamespace, dbUrl, rcuSchemaPrefix, domainHome);
@@ -227,7 +226,7 @@ class ItFmwDomainOnPVUpgrade {
         = new WitParams()
             .modelImageName(domainCreationImageName)
             .modelImageTag(MII_BASIC_IMAGE_TAG)
-            .modelFiles(Collections.singletonList(MODEL_DIR + "/" + fmwModelFile))
+            .modelFiles(Collections.singletonList(fmwModelFile))
             .modelVariableFiles(Collections.singletonList(fmwModelPropFile.getAbsolutePath()));
     createAndPushAuxiliaryImage(domainCreationImageName, MII_BASIC_IMAGE_TAG, witParams);
 
