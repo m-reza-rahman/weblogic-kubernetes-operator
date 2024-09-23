@@ -185,8 +185,7 @@ class ItFmwDomainOnPVUpgrade {
    * server and managed servers. 
    * Run the upgrade assistant to upgade the JRF domain 
    * verify the domain starts and is upgraded to 14.1.2.0.0
-   */
-  @Test
+   */  
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
   @Tag("gate")
@@ -206,6 +205,34 @@ class ItFmwDomainOnPVUpgrade {
     patchDomain(domainUid, domainNamespace);
     verifyDomainReady(domainUid, domainNamespace);
   }
+  
+  /**
+   * Create a basic FMW domain on PV with server start mode prod
+   * Verify Pod is ready and service exists for both admin
+   * server and managed servers. 
+   * Run the upgrade assistant to upgade the JRF domain 
+   * verify the domain starts and is upgraded to 14.1.2.0.0
+   */
+  @Test
+  @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
+  @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
+  @Tag("gate")
+  void testUpgradeDevDomain() {
+    String domainUid = "jrfonpv-dev";
+    String domainHome = DOMAINHOMEPREFIX + domainUid;
+    String startMode = "dev";
+    String pvcName = getUniqueName(domainUid + "-pvc-");
+    String rcuSchemaPrefix = "jrfdev1";
+    String fmwModelFile = Paths.get(RESOURCE_DIR, "jrfdomainupgrade", "jrf-production-upgrade.yaml").toString();
+    createDomain(domainUid, startMode, rcuSchemaPrefix, fmwModelFile, pvcName);
+    launchPvHelperPod(domainNamespace, pvcName);
+    copyResponseFile(domainNamespace, dbUrl, rcuSchemaPrefix, domainHome);
+    runUpgradeAssistant(domainNamespace);
+    runUpgradeDomain(domainNamespace, domainHome);
+    deletePvhelperPod(domainNamespace);
+    patchDomain(domainUid, domainNamespace);
+    verifyDomainReady(domainUid, domainNamespace);
+  }  
 
   void createDomain(String domainName, String startMode, String rcuSchemaprefix, String fmwModelFile, String pvcName) {
     final String pvName = getUniqueName(domainName + "-pv-");
