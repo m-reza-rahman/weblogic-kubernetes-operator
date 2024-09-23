@@ -14,7 +14,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -1172,9 +1171,9 @@ public abstract class PodStepContext extends BasePodStepContext {
       // TEST
       String result =  AnnotationHelper.createHash(recipe);
       // if (result.equals("fc8e3c36de352b0419844b393fd42bf01f32c67932a635cdedce230122d44d0a")) {
-      if (adjustments.size() == 3
+      if (adjustments.size() == 1
           && adjustments.stream().map(Pair::left).toList()
-          .containsAll(List.of("restoreLegacyIstioPortsConfig", "restoreAffinityContent", "restoreSecurityContextEmpty"))) {
+          .containsAll(List.of("restoreSecurityContextEmpty"))) {
         StringBuilder sb = new StringBuilder();
         sb.append("adjustments: ").append(adjustments.stream().map(Pair::left).toList()).append("\n");
         sb.append("currentPod: ").append("\n").append(Yaml.dump(currentPod)).append("\n");
@@ -1378,7 +1377,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       Optional.ofNullable(recipe.getSpec().getInitContainers())
           .ifPresent(initContainers -> initContainers.forEach(initContainer -> {
             if (PodSecurityHelper.getDefaultContainerSecurityContext().equals(initContainer.getSecurityContext())) {
-              initContainer.setSecurityContext(new V1SecurityContext());
+              initContainer.setSecurityContext(isAuxiliaryContainer(initContainer) ? null : new V1SecurityContext());
             }
           }));
     }
@@ -1389,17 +1388,18 @@ public abstract class PodStepContext extends BasePodStepContext {
       // for each combination, start with pod recipe, apply all adjustments, and generate hash
       // return true if any adjusted hash matches required hash
       List<Pair<String, BiConsumer<V1Pod, V1Pod>>> adjustments = List.of(
-              Pair.of("restoreMetricsExporterSidecarPortTcpMetrics", this::restoreMetricsExporterSidecarPortTcpMetrics),
-              Pair.of("convertAuxImagesInitContainerVolumeAndMounts", this::convertAuxImagesInitContainerVolumeAndMounts),
-              Pair.of("restoreLegacyIstioPortsConfig", this::restoreLegacyIstioPortsConfig),
-              Pair.of("restoreAffinityContent", this::restoreAffinityContent),
-              Pair.of("restoreLogHomeLayoutEnvVar", this::restoreLogHomeLayoutEnvVar),
-              Pair.of("restoreFluentdVolume", this::restoreFluentdVolume),
-              Pair.of("restoreSecurityContext", this::restoreSecurityContext),
-              Pair.of("restoreSecurityContextEmpty", this::restoreSecurityContextEmpty));
+          Pair.of("restoreMetricsExporterSidecarPortTcpMetrics", this::restoreMetricsExporterSidecarPortTcpMetrics),
+          Pair.of("convertAuxImagesInitContainerVolumeAndMounts",
+              this::convertAuxImagesInitContainerVolumeAndMounts),
+          Pair.of("restoreLegacyIstioPortsConfig", this::restoreLegacyIstioPortsConfig),
+          Pair.of("restoreAffinityContent", this::restoreAffinityContent),
+          Pair.of("restoreLogHomeLayoutEnvVar", this::restoreLogHomeLayoutEnvVar),
+          Pair.of("restoreFluentdVolume", this::restoreFluentdVolume),
+          Pair.of("restoreSecurityContext", this::restoreSecurityContext),
+          Pair.of("restoreSecurityContextEmpty", this::restoreSecurityContextEmpty));
       return Combinations.of(adjustments)
-              .map(adjustment -> adjustedHash(currentPod, adjustment))
-              .anyMatch(requiredHash::equals);
+          .map(adjustment -> adjustedHash(currentPod, adjustment))
+          .anyMatch(requiredHash::equals);
     }
 
     private boolean hasCorrectPodHash(V1Pod currentPod) {
