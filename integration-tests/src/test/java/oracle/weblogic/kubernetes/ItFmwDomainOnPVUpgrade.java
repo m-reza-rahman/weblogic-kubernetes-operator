@@ -203,12 +203,13 @@ class ItFmwDomainOnPVUpgrade {
    * server and managed servers. 
    * Run the upgrade assistant to upgade the JRF domain 
    * verify the domain starts and is upgraded to 14.1.2.0.0
-   */  
+   */
+  @Test
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
   @Tag("gate")
   void testUpgradeProductionDomain() {
-    String domainUid = "jrfonpv-production";
+    String domainUid = "jrfonpv-prod";
     String domainHome = DOMAINHOMEPREFIX + domainUid;
     String startMode = "prod";
     String pvcName = getUniqueName(domainUid + "-pvc-");
@@ -233,6 +234,7 @@ class ItFmwDomainOnPVUpgrade {
    * Run the upgrade assistant to upgade the JRF domain 
    * verify the domain starts and is upgraded to 14.1.2.0.0
    */
+  @Test
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
   @Tag("gate")
