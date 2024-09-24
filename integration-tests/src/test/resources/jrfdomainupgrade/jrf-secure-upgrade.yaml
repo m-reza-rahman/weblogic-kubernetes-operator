@@ -18,7 +18,10 @@ topology:
     AdminServerName: "admin-server"
     Server:
         adminserver:
-            ListenPort: 7005        
+            ListenPort: 7001
+            SSL:
+                Enabled: true
+                ListenPort: 7002        
     Cluster:
         "cluster-1":
             FrontendHost: '@@PROP:domainName@@-cluster-cluster-1'

@@ -262,7 +262,7 @@ class ItFmwDomainOnPVUpgrade {
   @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
   @Tag("gate")
   void testUpgradeSecureDomain() {
-    String domainUid = "jrfonpv-dev";
+    String domainUid = "jrfonpv-secure";
     String domainHome = DOMAINHOMEPREFIX + domainUid;
     String startMode = "secure";
     String pvcName = getUniqueName(domainUid + "-pvc-");
