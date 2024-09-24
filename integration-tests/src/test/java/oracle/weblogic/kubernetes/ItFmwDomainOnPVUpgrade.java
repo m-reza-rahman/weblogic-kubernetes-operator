@@ -250,7 +250,7 @@ class ItFmwDomainOnPVUpgrade {
     String startMode = "secure";
     String pvcName = getUniqueName(domainUid + "-pvc-");
     String rcuSchemaPrefix = "jrfsecure1";
-    String fmwModelFile = Paths.get(RESOURCE_DIR, "jrfdomainupgrade", "jrf-production-upgrade.yaml").toString();
+    String fmwModelFile = Paths.get(RESOURCE_DIR, "jrfdomainupgrade", "jrf-secure-upgrade.yaml").toString();
     createDomain(domainUid, startMode, rcuSchemaPrefix, fmwModelFile, pvcName);
     launchPvHelperPod(domainNamespace, pvcName);
     copyResponseFile(domainNamespace, dbUrl, rcuSchemaPrefix, domainHome);
