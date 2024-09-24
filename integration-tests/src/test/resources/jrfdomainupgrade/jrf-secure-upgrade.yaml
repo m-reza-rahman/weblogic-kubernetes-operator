@@ -18,7 +18,6 @@ topology:
     AdminServerName: "admin-server"
     Server:
         admin-server:
-            ListenPort: 7001
             SSL:
                 Enabled: true
                 ListenPort: 7002        
@@ -36,4 +35,4 @@ topology:
             Cluster: cluster-1
             SSL:
                 Enabled: true
-                ListenPort: 8500
+                ListenPort: 8002
