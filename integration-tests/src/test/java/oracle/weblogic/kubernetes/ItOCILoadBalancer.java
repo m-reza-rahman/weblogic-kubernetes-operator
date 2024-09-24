@@ -29,6 +29,7 @@ import static oracle.weblogic.kubernetes.assertions.impl.Kubernetes.getService;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndCheckForServerNameInResponse;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.getLoadBalancerIP;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyOCILoadBalancer;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.ThreadSafeLogger.getLogger;
@@ -122,31 +123,6 @@ class ItOCILoadBalancer {
     assertNotNull(loadBalancerIP, "External IP for Load Balancer is undefined");
     logger.info("LoadBalancer IP is " + loadBalancerIP);
     verifyWebAppAccessThroughOCILoadBalancer(loadBalancerIP, 2, clusterHttpPort);
-  }
-
-  /**
-   * Retreive external IP from OCI LoadBalancer.
-   */
-  private static String getLoadBalancerIP(String namespace, String lbName) throws Exception {
-    Map<String, String> labels = new HashMap<>();
-    labels.put("loadbalancer", lbName);
-    V1Service service = getService(lbName, labels, namespace);
-    assertNotNull(service, "Can't find service with name " + lbName);
-    logger.info("Found service with name {0} in {1} namespace ", lbName, namespace);
-    assertNotNull(service.getStatus(), "service status is null");
-    assertNotNull(service.getStatus().getLoadBalancer(), "service loadbalancer is null");
-    List<V1LoadBalancerIngress> ingress = service.getStatus().getLoadBalancer().getIngress();
-    if (ingress != null) {
-      logger.info("LoadBalancer Ingress " + ingress.toString());
-      V1LoadBalancerIngress lbIng = ingress.stream().filter(c ->
-          c.getIp() != null && !c.getIp().equals("pending")
-      ).findAny().orElse(null);
-      if (lbIng != null) {
-        logger.info("OCI LoadBalancer is created with external ip" + lbIng.getIp());
-        return lbIng.getIp();
-      }
-    }
-    return null;
   }
 
   /**

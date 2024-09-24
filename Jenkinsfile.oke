@@ -3,6 +3,7 @@
 //
 
 CRON_SETTINGS = '''H 3 * * * % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seqone;PARALLEL_RUN=false
+                   H 1 * * * % MAVEN_PROFILE_NAME=oke-sequential;CLUSTER_NAME=seqtwo;PARALLEL_RUN=false
                    H 2 * * * % MAVEN_PROFILE_NAME=oke-parallel;CLUSTER_NAME=parone;PARALLEL_RUN=true'''
 pipeline {
     agent { label 'large' }
@@ -113,9 +114,10 @@ pipeline {
         )
 
                 choice(name: 'MAVEN_PROFILE_NAME',
-                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate,oke-parallel. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate,oke-parallel, oke-sequential. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                         choices: [
                                 'oke-gate',
+                                'oke-sequential',
                                 'oke-parallel'
                         ]
                 )
@@ -528,6 +530,8 @@ EOF
                                 export OCI_CLI_CONFIG_FILE=${jenkins_home_directory}/.oci/config
                                 export OCI_CLI_PROFILE=${oci_profile}
                                 compartment_ocid=${compartment_id}
+                                export COMPARTMENT_OCID=${compartment_id}
+                                echo "COMPARTMENT_OCID : ${COMPARTMENT_OCID}"
                                 mkdir -m777 -p "${WORKSPACE}/.mvn"
                                 touch ${WORKSPACE}/.mvn/maven.config
                                 export KUBECONFIG=${kubeconfig_file}
@@ -599,6 +603,7 @@ EOF
                                 echo "-Dwko.it.monitoring.exporter.branch=\"${MONITORING_EXPORTER_BRANCH}\""                 >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.monitoring.exporter.webapp.version=\"${MONITORING_EXPORTER_WEBAPP_VERSION}\"" >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.prometheus.chart.version=\"${PROMETHEUS_CHART_VERSION}\""                     >> ${WORKSPACE}/.mvn/maven.config
+                                echo "-Dwko.it.oci.compartment.ocid=\"${COMPARTMENT_OCID}\""                                 >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.grafana.chart.version=\"${GRAFANA_CHART_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.collect.logs.on.success=\"${COLLECT_LOGS_ON_SUCCESS}\""                       >> ${WORKSPACE}/.mvn/maven.config
                                 echo "-Dwko.it.remoteconsole.version=\"${REMOTECONSOLE_VERSION}\""                           >> ${WORKSPACE}/.mvn/maven.config
@@ -608,6 +613,10 @@ EOF
                                 echo "${WORKSPACE}/.mvn/maven.config contents:"
                                 cat "${WORKSPACE}/.mvn/maven.config"
                                 cp "${WORKSPACE}/.mvn/maven.config" "${result_root}"
+                                echo "${HTTP_PROXY} HTTP_PROXY settings"
+                                echo "${HTTPS_PROXY} HTTPS_PROXY settings"
+                                echo "${http_proxy} http_proxy settings"
+                                echo "${https_proxy} https_proxy settings"
                             '''
                         }
                         withMaven(globalMavenSettingsConfig: 'wkt-maven-settings-xml', publisherStrategy: 'EXPLICIT') {
@@ -620,6 +629,7 @@ EOF
                                     export OKE_CLUSTER_PRIVATEIP="true"
                                     export OKD="false"
                                     export KUBECONFIG=${kubeconfig_file}
+                                    export COMPARTMENT_OCID=${compartment_id}
                                     export BASE_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export BASE_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export BASE_IMAGES_REPO_EMAIL="noreply@oracle.com"
