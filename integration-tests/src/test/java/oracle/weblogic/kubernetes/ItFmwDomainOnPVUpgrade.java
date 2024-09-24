@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,17 +23,27 @@ import java.util.concurrent.Callable;
 import io.kubernetes.client.custom.Quantity;
 import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.models.V1EnvVar;
+import io.kubernetes.client.openapi.models.V1LocalObjectReference;
+import io.kubernetes.client.openapi.models.V1ObjectMeta;
+import io.kubernetes.client.openapi.models.V1PersistentVolumeClaimVolumeSource;
+import io.kubernetes.client.openapi.models.V1Volume;
+import io.kubernetes.client.openapi.models.V1VolumeMount;
+import oracle.weblogic.domain.ClusterResource;
 import oracle.weblogic.domain.Configuration;
 import oracle.weblogic.domain.CreateIfNotExists;
 import oracle.weblogic.domain.DomainCreationImage;
 import oracle.weblogic.domain.DomainOnPV;
 import oracle.weblogic.domain.DomainOnPVType;
 import oracle.weblogic.domain.DomainResource;
+import oracle.weblogic.domain.DomainSpec;
 import oracle.weblogic.domain.Opss;
+import oracle.weblogic.domain.ServerPod;
 import oracle.weblogic.kubernetes.actions.impl.primitive.HelmParams;
 import oracle.weblogic.kubernetes.actions.impl.primitive.WitParams;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
+import oracle.weblogic.kubernetes.assertions.impl.Cluster;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.BeforeAll;
@@ -46,10 +57,15 @@ import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
+import static oracle.weblogic.kubernetes.TestConstants.CLUSTER_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.ELASTICSEARCH_HOST;
+import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SECONDS;
+import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
+import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
 import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
@@ -67,6 +83,8 @@ import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomRe
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
+import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
+import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.checkPodReadyAndServiceExists;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getDateAndTimeStamp;
 import static oracle.weblogic.kubernetes.utils.CommonTestUtils.getNextFreePort;
@@ -75,7 +93,6 @@ import static oracle.weblogic.kubernetes.utils.CommonTestUtils.testUntil;
 import static oracle.weblogic.kubernetes.utils.DbUtils.createOracleDBUsingOperator;
 import static oracle.weblogic.kubernetes.utils.DbUtils.startOracleDB;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
-import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainResourceOnPv;
 import static oracle.weblogic.kubernetes.utils.ExecCommand.exec;
 import static oracle.weblogic.kubernetes.utils.FileUtils.copyFileToPod;
 import static oracle.weblogic.kubernetes.utils.FileUtils.replaceStringInFile;
@@ -328,7 +345,8 @@ class ItFmwDomainOnPVUpgrade {
         DOMAINHOMEPREFIX,
         replicaCount,
         t3ChannelPort,
-        configuration);
+        configuration,
+        FMWINFRA_IMAGE_TO_USE_IN_SPEC);
 
     // Set the inter-pod anti-affinity for the domain custom resource
     setPodAntiAffinity(domain);
@@ -537,6 +555,76 @@ class ItFmwDomainOnPVUpgrade {
           cluster1ManagedServerPodNamePrefix + i, namespace);
       checkPodReadyAndServiceExists(cluster1ManagedServerPodNamePrefix + i, domainUid, namespace);
     }
+  }
+  
+  private static DomainResource createDomainResourceOnPv(String domainUid,
+                                                  String domNamespace,
+                                                  String adminSecretName,
+                                                  String clusterName,
+                                                  String pvName,
+                                                  String pvcName,
+                                                  String[] repoSecretName,
+                                                  String domainInHomePrefix,
+                                                  int replicaCount,
+                                                  int t3ChannelPort,
+                                                  Configuration configuration,
+                                                  String imageToUse) {
+
+    // create secrets
+    List<V1LocalObjectReference> secrets = new ArrayList<>();
+    for (String secret : repoSecretName) {
+      secrets.add(new V1LocalObjectReference().name(secret));
+    }
+    
+    // create a domain custom resource configuration object
+    DomainResource domain = new DomainResource()
+        .apiVersion(DOMAIN_API_VERSION)
+        .kind("Domain")
+        .metadata(new V1ObjectMeta()
+            .name(domainUid)
+            .namespace(domNamespace))
+        .spec(new DomainSpec()
+            .domainUid(domainUid)
+            .domainHome(domainInHomePrefix + domainUid)
+            .domainHomeSourceType("PersistentVolume")
+            .image(imageToUse)
+            .imagePullPolicy(IMAGE_PULL_POLICY)
+            .webLogicCredentialsSecret(new V1LocalObjectReference()
+                .name(adminSecretName))
+            .includeServerOutInPodLog(true)
+            .logHomeEnabled(Boolean.TRUE)
+            .logHome("/shared/" + domNamespace + "/logs/" + domainUid)
+            .dataHome("")
+            .serverStartPolicy("IfNeeded")
+            .failureRetryIntervalSeconds(FAILURE_RETRY_INTERVAL_SECONDS)
+            .failureRetryLimitMinutes(FAILURE_RETRY_LIMIT_MINUTES)
+            .serverPod(new ServerPod() //serverpod
+                .addEnvItem(new V1EnvVar()
+                    .name("JAVA_OPTIONS")
+                    .value("-Dweblogic.StdoutDebugEnabled=false"))
+                .addEnvItem(new V1EnvVar()
+                    .name("USER_MEM_ARGS")
+                    .value("-Djava.security.egd=file:/dev/./urandom"))
+                .addVolumesItem(new V1Volume()
+                    .name(pvName)
+                    .persistentVolumeClaim(new V1PersistentVolumeClaimVolumeSource()
+                        .claimName(pvcName)))
+                .addVolumeMountsItem(new V1VolumeMount()
+                    .mountPath("/shared")
+                    .name(pvName)))
+            .configuration(configuration));
+    domain.spec().setImagePullSecrets(secrets);
+
+    // create cluster resource for the domain
+    String clusterResName  = domainUid + "-" + clusterName;
+    if (!Cluster.doesClusterExist(clusterResName, CLUSTER_VERSION, domNamespace)) {
+      ClusterResource cluster = createClusterResource(clusterResName,
+          clusterName, domNamespace, replicaCount);
+      createClusterAndVerify(cluster);
+    }
+    domain.getSpec().withCluster(new V1LocalObjectReference().name(clusterResName));
+
+    return domain;
   }
   
 }
