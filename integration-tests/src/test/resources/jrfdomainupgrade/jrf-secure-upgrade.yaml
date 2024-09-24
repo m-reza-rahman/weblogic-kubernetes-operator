@@ -29,7 +29,7 @@ topology:
                 MaxDynamicClusterSize: 5
                 CalculatedListenPorts: false
     ServerTemplate:
-        myserver-template:
+        cluster-1-template:
             Cluster: cluster-1
             SSL:
                 ListenPort: 8500
