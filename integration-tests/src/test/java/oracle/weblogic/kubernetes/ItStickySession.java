@@ -184,7 +184,6 @@ class ItStickySession {
   @DisplayName("Create a Traefik ingress resource and verify that two HTTP connections are sticky to the same server")
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
   void testSameSessionStickinessUsingTraefik() {
-    
     final String channelName = "web";
 
     // create Traefik ingress resource
@@ -218,7 +217,6 @@ class ItStickySession {
     }
 
     // verify that two HTTP connections are sticky to the same server
-    //sendHttpRequestsToTestSessionStickinessAndVerify(hostName, ingressServiceNodePort);
     testUntil(
         withLongRetryPolicy,
         isHttpRequestsResponded(hostName, ingressServiceNodePort),
@@ -243,16 +241,20 @@ class ItStickySession {
 
     // Since the app seems to take a bit longer to be available,
     // checking if the app is running by executing the curl command
-    String curlString
-        = buildCurlCommand(ingressHost, 0, SESSMIGR_APP_WAR_NAME + "/?getCounter", " -b ");
+    String curlString = buildCurlCommand(ingressHost, 0, SESSMIGR_APP_WAR_NAME
+        + "/?getCounter", " -b ");
     logger.info("Command to set HTTP request or get HTTP response {0} ", curlString);
-    testUntil(
-        assertDoesNotThrow(()
-            -> () -> exec(curlString, true).stdout().contains("managed-server")),
+    testUntil(assertDoesNotThrow(()
+        -> () -> exec(curlString, true).stdout().contains("managed-server")),
         logger,
         "Checking if app is available");
+
     // verify that two HTTP connections are sticky to the same server
-    sendHttpRequestsToTestSessionStickinessAndVerify(ingressHost, 0);
+    testUntil(
+        withLongRetryPolicy,
+        isHttpRequestsResponded(ingressHost, 0),
+        logger,
+        "Waiting until Http Requests response");
   }
 
   /**
@@ -284,7 +286,11 @@ class ItStickySession {
     logger.info("cluster port for cluster server {0} is: {1}", clusterAddress, clusterPort);
 
     // verify that two HTTP connections are sticky to the same server
-    sendHttpRequestsToTestSessionStickinessAndVerify(hostName, clusterPort, clusterAddress);
+    testUntil(
+        withLongRetryPolicy,
+        isHttpRequestsResponded(hostName, clusterPort, clusterAddress),
+        logger,
+        "Waiting until Http Requests response");
   }
 
   private static String createAndVerifyDomainImage() {
@@ -400,7 +406,6 @@ class ItStickySession {
     final String serverNameAttr = "servername";
     final String sessionIdAttr = "sessionid";
     final String countAttr = "count";
-    Map<String, String> httpDataInfo = new HashMap<String, String>();
 
     // send a HTTP request
     logger.info("Process HTTP request in host {0} and servicePort {1} ",
@@ -414,7 +419,7 @@ class ItStickySession {
     String countStr = httpAttrInfo.get(countAttr);
 
     if (serverName == null || sessionId == null || countStr == null) {
-      return httpDataInfo;
+      return new HashMap<String, String>();
     }
 
     // verify that the HTTP response data are not null
@@ -425,6 +430,7 @@ class ItStickySession {
     );
 
     // map to save server and session info
+    Map<String, String> httpDataInfo = new HashMap<String, String>();
     httpDataInfo.put(serverNameAttr, serverName);
     httpDataInfo.put(sessionIdAttr, sessionId);
     httpDataInfo.put(countAttr, countStr);
@@ -579,6 +585,7 @@ class ItStickySession {
     // send a HTTP request to set http session state(count number) and save HTTP session info
     Map<String, String> httpDataInfo = getServerAndSessionInfoAndVerify(hostname,
             servicePort, webServiceSetUrl, " -c ", clusterAddress);
+
     // get server and session info from web service deployed on the cluster
     String serverName1 = httpDataInfo.get(serverNameAttr);
     String sessionId1 = httpDataInfo.get(sessionIdAttr);
