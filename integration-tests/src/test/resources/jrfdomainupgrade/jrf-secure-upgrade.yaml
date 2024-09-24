@@ -35,4 +35,5 @@ topology:
         cluster-1-template:
             Cluster: cluster-1
             SSL:
+                Enabled: true
                 ListenPort: 8500
