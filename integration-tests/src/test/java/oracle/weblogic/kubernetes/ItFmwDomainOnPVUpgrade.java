@@ -1,4 +1,4 @@
-// Copyright (c) 2023, 2024, Oracle and/or its affiliates.
+// Copyright (c) 2024, Oracle and/or its affiliates.
 // Licensed under the Universal Permissive License v 1.0 as shown at https://oss.oracle.com/licenses/upl.
 
 package oracle.weblogic.kubernetes;
@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -21,7 +20,6 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 
 import io.kubernetes.client.custom.Quantity;
-import io.kubernetes.client.custom.V1Patch;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.models.V1EnvVar;
 import io.kubernetes.client.openapi.models.V1LocalObjectReference;
@@ -55,7 +53,6 @@ import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
-import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_PREFIX;
 import static oracle.weblogic.kubernetes.TestConstants.BASE_IMAGES_REPO_SECRET_NAME;
 import static oracle.weblogic.kubernetes.TestConstants.CLUSTER_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DB_IMAGE_TO_USE_IN_SPEC;
@@ -66,7 +63,6 @@ import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_INTERVAL_SE
 import static oracle.weblogic.kubernetes.TestConstants.FAILURE_RETRY_LIMIT_MINUTES;
 import static oracle.weblogic.kubernetes.TestConstants.FMWINFRA_IMAGE_TO_USE_IN_SPEC;
 import static oracle.weblogic.kubernetes.TestConstants.IMAGE_PULL_POLICY;
-import static oracle.weblogic.kubernetes.TestConstants.OCNE;
 import static oracle.weblogic.kubernetes.TestConstants.OKD;
 import static oracle.weblogic.kubernetes.TestConstants.OKE_CLUSTER;
 import static oracle.weblogic.kubernetes.TestConstants.OPERATOR_CHART_DIR;
@@ -79,10 +75,8 @@ import static oracle.weblogic.kubernetes.actions.TestActions.execCommand;
 import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePull;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
-import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.shutdown;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExist;
-import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterAndVerify;
 import static oracle.weblogic.kubernetes.utils.ClusterUtils.createClusterResource;
@@ -103,7 +97,6 @@ import static oracle.weblogic.kubernetes.utils.ImageUtils.imageRepoLoginAndPushI
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
 import static oracle.weblogic.kubernetes.utils.PatchDomainUtils.patchDomainResource;
 import static oracle.weblogic.kubernetes.utils.PodUtils.checkPodReady;
-import static oracle.weblogic.kubernetes.utils.PodUtils.getPodsWithTimeStamps;
 import static oracle.weblogic.kubernetes.utils.PodUtils.setPodAntiAffinity;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createOpsswalletpasswordSecret;
 import static oracle.weblogic.kubernetes.utils.SecretUtils.createSecretWithUsernamePassword;
@@ -113,9 +106,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Test to create a FMW domain in persistent volume with new simplified feature.
+ * Test to create a FMW domain in persistent volume and upgrade it to 14.1.2.0.
  */
-@DisplayName("Test to create a FMW domain in persistent volume with new simplified feature")
+@DisplayName("Test to create a FMW domain in persistent volume and upgrade to 14.1.2.0")
 @IntegrationTest
 @Tag("kind-sequential")
 @Tag("oke-sequential")
@@ -124,8 +117,7 @@ class ItFmwDomainOnPVUpgrade {
 
   private static String domainNamespace = null;
   private static String dbNamespace = null;
-
-  private static final String RCUSCHEMAPREFIX = "fmwdomainpv";
+  
   private static final String ORACLEDBURLPREFIX = "oracledb.";
   private static final String RCUSYSPASSWORD = "Oradoc_db1";
   private static final String RCUSCHEMAPASSWORD = "Oradoc_db1";
@@ -137,10 +129,11 @@ class ItFmwDomainOnPVUpgrade {
   private static final String clusterName = "cluster-1";
   private static final int replicaCount = 2;
 
-  private final String fmwModelFilePrefix = "model-fmwdomain-onpv-simplified";
-  private final String wlsModelFilePrefix = "model-wlsdomain-onpv-simplified";
+  private final String fmwModelFilePrefix = "model-fmwdomain-upgrade";
   
   private final String image1412 = "phx.ocir.io/devweblogic/jrf-domain-on-pv-image:sankar2";
+  private final String imageTag1412 = "14.1.2.0.0-jdk17";
+  //private final String image1412 = BASE_IMAGES_PREFIX + FMWINFRA_IMAGE_NAME_DEFAULT + ":" + imageTag1412;
 
   /**
    * Assigns unique namespaces for DB, operator and domain.
@@ -177,7 +170,7 @@ class ItFmwDomainOnPVUpgrade {
           String.format("Failed to start Oracle DB in the namespace %s with dbUrl %s, dbListenerPost %s",
               dbNamespace, dbUrl, dbListenerPort));
     } else {
-      String dbName = "fmwdomainonpv1" + "my-oracle-db";
+      String dbName = "fmwupgradedomain-" + "oracle-db";
       logger.info("Create Oracle DB in namespace: {0} ", dbNamespace);
       createBaseRepoSecret(dbNamespace);
       dbUrl = assertDoesNotThrow(() -> createOracleDBUsingOperator(dbName, RCUSYSPASSWORD, dbNamespace));
@@ -199,15 +192,13 @@ class ItFmwDomainOnPVUpgrade {
   
   /**
    * Create a basic FMW domain on PV with server start mode prod
-   * Verify Pod is ready and service exists for both admin
-   * server and managed servers. 
+   * Verify Pod is ready and service exists for both admin server and managed servers. 
    * Run the upgrade assistant to upgade the JRF domain 
    * verify the domain starts and is upgraded to 14.1.2.0.0
    */
   @Test
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
-  @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
-  @Tag("gate")
+  @DisplayName("Create a FMW domain and upgrade to 14.1.2.0 in prod server start mode")
   void testUpgradeProductionDomain() {
     String domainUid = "jrfonpv-prod";
     String domainHome = DOMAINHOMEPREFIX + domainUid;
@@ -228,15 +219,14 @@ class ItFmwDomainOnPVUpgrade {
   }
   
   /**
-   * Create a basic FMW domain on PV with server start mode prod
-   * Verify Pod is ready and service exists for both admin
-   * server and managed servers. 
+   * Create a basic FMW domain on PV with server start mode dev
+   * Verify Pod is ready and service exists for both admin server and managed servers. 
    * Run the upgrade assistant to upgade the JRF domain 
    * verify the domain starts and is upgraded to 14.1.2.0.0
    */
   @Test
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
-  @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
+  @DisplayName("Create a FMW domain and upgrade to 14.1.2.0 in dev server start mode")
   @Tag("gate")
   void testUpgradeDevDomain() {
     String domainUid = "jrfonpv-dev";
@@ -258,15 +248,14 @@ class ItFmwDomainOnPVUpgrade {
   }  
 
   /**
-   * Create a basic FMW domain on PV with server start mode prod
-   * Verify Pod is ready and service exists for both admin
-   * server and managed servers. 
+   * Create a basic FMW domain on PV with server start mode secure
+   * Verify Pod is ready and service exists for both admin server and managed servers. 
    * Run the upgrade assistant to upgade the JRF domain 
    * verify the domain starts and is upgraded to 14.1.2.0.0
    */
   @Test
   @DisabledIfEnvironmentVariable(named = "OKD", matches = "true")
-  @DisplayName("Create a FMW domain on PV using simplified feature, Operator creates PV/PVC/RCU/Domain")
+  @DisplayName("Create a FMW domain and upgrade to 14.1.2.0 in secure server start mode")
   @Tag("gate")
   void testUpgradeSecureDomain() {
     String domainUid = "jrfonpv-secure";
@@ -287,10 +276,10 @@ class ItFmwDomainOnPVUpgrade {
     shutdown(domainUid, domainNamespace);
   }  
   
-  void createDomain(String domainName, String startMode, String rcuSchemaprefix, String fmwModelFile, String pvcName) {
+  private void createDomain(String domainName, String startMode, String rcuSchemaprefix, 
+      String fmwModelFile, String pvcName) {
+    
     final String pvName = getUniqueName(domainName + "-pv-");
-
-    final int t3ChannelPort = getNextFreePort();
     final String wlSecretName = domainName + "-weblogic-credentials";
     // create FMW domain credential secret
     createSecretWithUsernamePassword(wlSecretName, domainNamespace,
@@ -353,7 +342,6 @@ class ItFmwDomainOnPVUpgrade {
         new String[]{BASE_IMAGES_REPO_SECRET_NAME},
         DOMAINHOMEPREFIX,
         replicaCount,
-        t3ChannelPort,
         configuration,
         FMWINFRA_IMAGE_TO_USE_IN_SPEC);
 
@@ -401,45 +389,6 @@ class ItFmwDomainOnPVUpgrade {
       imageRepoLoginAndPushImageToRegistry(taggedImage);
       return result;
     });
-  }
-
-  private void verifyRollingRestartWithImageChg(String domainUid, String domainNamespace) {
-    // get the map with server pods and their original creation timestamps
-    String adminServerPodName = domainUid + "-admin-server";
-    String managedServerPodNamePrefix = domainUid + "-managed-server";
-    Map<String, OffsetDateTime> podsWithTimeStamps = getPodsWithTimeStamps(domainNamespace,
-        adminServerPodName, managedServerPodNamePrefix, replicaCount);
-
-    // update the domain with new base image
-    int index = FMWINFRA_IMAGE_TO_USE_IN_SPEC.lastIndexOf(":");
-    String newImage;
-    if (OCNE) {
-      newImage = BASE_IMAGES_PREFIX + "fmw-infrastructure1:newtag";
-    } else {
-      newImage = FMWINFRA_IMAGE_TO_USE_IN_SPEC.substring(0, index) + ":newtag";
-    }
-    testUntil(
-        tagImageAndPushIfNeeded(FMWINFRA_IMAGE_TO_USE_IN_SPEC, newImage),
-          logger,
-          "tagImageAndPushIfNeeded for image {0} to be successful",
-          newImage);
-
-    logger.info("patch the domain resource with new image {0}", newImage);
-    String patchStr
-          = "["
-          + "{\"op\": \"replace\", \"path\": \"/spec/image\", "
-          + "\"value\": \"" + newImage + "\"}"
-          + "]";
-    logger.info("Updating domain configuration using patch string: {0}\n", patchStr);
-    V1Patch patch = new V1Patch(patchStr);
-    assertTrue(patchDomainCustomResource(domainUid, domainNamespace, patch, V1Patch.PATCH_FORMAT_JSON_PATCH),
-          "Failed to patch domain");
-
-    // verify the server pods are rolling restarted and back to ready state
-    logger.info("Verifying rolling restart occurred for domain {0} in namespace {1}",
-        domainUid, domainNamespace);
-    assertTrue(verifyRollingRestartOccurred(podsWithTimeStamps, 1, domainNamespace),
-        String.format("Rolling restart failed for domain %s in namespace %s", domainUid, domainNamespace));
   }
 
   private void launchPvHelperPod(String namespace, String pvcName) {
@@ -577,7 +526,6 @@ class ItFmwDomainOnPVUpgrade {
                                                   String[] repoSecretName,
                                                   String domainInHomePrefix,
                                                   int replicaCount,
-                                                  int t3ChannelPort,
                                                   Configuration configuration,
                                                   String imageToUse) {
 
