@@ -80,6 +80,7 @@ import static oracle.weblogic.kubernetes.actions.TestActions.getDomainCustomReso
 import static oracle.weblogic.kubernetes.actions.TestActions.imagePull;
 import static oracle.weblogic.kubernetes.actions.TestActions.imageTag;
 import static oracle.weblogic.kubernetes.actions.impl.Domain.patchDomainCustomResource;
+import static oracle.weblogic.kubernetes.actions.impl.Domain.shutdown;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.podDoesNotExist;
 import static oracle.weblogic.kubernetes.assertions.TestAssertions.verifyRollingRestartOccurred;
 import static oracle.weblogic.kubernetes.utils.AuxiliaryImageUtils.createAndPushAuxiliaryImage;
@@ -214,6 +215,7 @@ class ItFmwDomainOnPVUpgrade {
     String rcuSchemaPrefix = "jrfprod1";
     String fmwModelFile = Paths.get(RESOURCE_DIR, "jrfdomainupgrade", "jrf-production-upgrade.yaml").toString();
     createDomain(domainUid, startMode, rcuSchemaPrefix, fmwModelFile, pvcName);
+    shutdown(domainUid, domainNamespace);
     launchPvHelperPod(domainNamespace, pvcName);
     copyResponseFile(domainNamespace, dbUrl, rcuSchemaPrefix, domainHome);
     runUpgradeAssistant(domainNamespace);
@@ -221,6 +223,7 @@ class ItFmwDomainOnPVUpgrade {
     deletePvhelperPod(domainNamespace);
     patchDomain(domainUid, domainNamespace);
     verifyDomainReady(domainUid, domainNamespace);
+    shutdown(domainUid, domainNamespace);
   }
   
   /**
@@ -241,6 +244,7 @@ class ItFmwDomainOnPVUpgrade {
     String rcuSchemaPrefix = "jrfdev1";
     String fmwModelFile = Paths.get(RESOURCE_DIR, "jrfdomainupgrade", "jrf-production-upgrade.yaml").toString();
     createDomain(domainUid, startMode, rcuSchemaPrefix, fmwModelFile, pvcName);
+    shutdown(domainUid, domainNamespace);
     launchPvHelperPod(domainNamespace, pvcName);
     copyResponseFile(domainNamespace, dbUrl, rcuSchemaPrefix, domainHome);
     runUpgradeAssistant(domainNamespace);
@@ -248,6 +252,7 @@ class ItFmwDomainOnPVUpgrade {
     deletePvhelperPod(domainNamespace);
     patchDomain(domainUid, domainNamespace);
     verifyDomainReady(domainUid, domainNamespace);
+    shutdown(domainUid, domainNamespace);
   }  
 
   /**
@@ -269,6 +274,7 @@ class ItFmwDomainOnPVUpgrade {
     String rcuSchemaPrefix = "jrfsecure1";
     String fmwModelFile = Paths.get(RESOURCE_DIR, "jrfdomainupgrade", "jrf-secure-upgrade.yaml").toString();
     createDomain(domainUid, startMode, rcuSchemaPrefix, fmwModelFile, pvcName);
+    shutdown(domainUid, domainNamespace);
     launchPvHelperPod(domainNamespace, pvcName);
     copyResponseFile(domainNamespace, dbUrl, rcuSchemaPrefix, domainHome);
     runUpgradeAssistant(domainNamespace);
@@ -276,6 +282,7 @@ class ItFmwDomainOnPVUpgrade {
     deletePvhelperPod(domainNamespace);
     patchDomain(domainUid, domainNamespace);
     verifyDomainReady(domainUid, domainNamespace);
+    shutdown(domainUid, domainNamespace);
   }  
   
   void createDomain(String domainName, String startMode, String rcuSchemaprefix, String fmwModelFile, String pvcName) {
@@ -477,9 +484,11 @@ class ItFmwDomainOnPVUpgrade {
 
   private void runUpgradeAssistant(String namespace) {
     String command = "/u01/oracle/oracle_common/upgrade/bin/ua -response /tmp/jrfresponse.txt -logDir /tmp";
+    String success = "Oracle Metadata Services schema upgrade finished with status: succeeded";
     try {
       ExecResult result = execCommand(namespace, "pvhelper", null, true, "/bin/sh", "-c", command);
-      assertTrue((result.exitValue() == 0), "command returned non zero value");
+      boolean done = result.stderr().contains(success) || result.stdout().contains(success);
+      assertTrue(done, "upgrade assistant didn't succeed");
     } catch (ApiException | IOException | InterruptedException ex) {
       logger.severe(ex.getMessage());
     }
