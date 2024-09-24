@@ -17,7 +17,7 @@ topology:
         FileName: '@@PROP:domainName@@.log'
     AdminServerName: "admin-server"
     Server:
-        adminserver:
+        admin-server:
             ListenPort: 7001
             SSL:
                 Enabled: true
