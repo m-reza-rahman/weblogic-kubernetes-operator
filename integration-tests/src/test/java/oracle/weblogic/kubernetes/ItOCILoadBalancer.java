@@ -9,6 +9,7 @@ import java.util.List;
 import oracle.weblogic.kubernetes.actions.impl.primitive.Kubernetes;
 import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
+import oracle.weblogic.kubernetes.extensions.InitializationTasks;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
     + "all managed servers in the domain through OCI Load Balancer")
 @IntegrationTest
 @Tag("oke-arm")
-@Tag("oke-parallel")
+@Tag("oke-gate")
 class ItOCILoadBalancer {
   // domain constants
   private static final int replicaCount = 2;
@@ -115,6 +116,7 @@ class ItOCILoadBalancer {
         clusterHttpPort, clusterName, domainUid, OCI_LB_NAME),
         "Installation of OCI Load Balancer failed");
     loadBalancerIP = getLoadBalancerIP(domainNamespace,OCI_LB_NAME);
+    InitializationTasks.registerLoadBalancerExternalIP(loadBalancerIP);
     assertNotNull(loadBalancerIP, "External IP for Load Balancer is undefined");
     logger.info("LoadBalancer IP is " + loadBalancerIP);
     verifyWebAppAccessThroughOCILoadBalancer(loadBalancerIP, 2, clusterHttpPort);
