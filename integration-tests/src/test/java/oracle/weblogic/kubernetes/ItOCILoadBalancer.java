@@ -116,9 +116,9 @@ class ItOCILoadBalancer {
         clusterHttpPort, clusterName, domainUid, OCI_LB_NAME),
         "Installation of OCI Load Balancer failed");
     loadBalancerIP = getLoadBalancerIP(domainNamespace,OCI_LB_NAME, true);
-    InitializationTasks.registerLoadBalancerExternalIP(loadBalancerIP);
     assertNotNull(loadBalancerIP, "External IP for Load Balancer is undefined");
     logger.info("LoadBalancer IP is " + loadBalancerIP);
+    InitializationTasks.registerLoadBalancerExternalIP(loadBalancerIP);
     verifyWebAppAccessThroughOCILoadBalancer(loadBalancerIP, 2, clusterHttpPort);
   }
 
