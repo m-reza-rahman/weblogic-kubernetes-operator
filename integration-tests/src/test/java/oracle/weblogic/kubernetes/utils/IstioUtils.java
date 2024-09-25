@@ -119,13 +119,13 @@ public class IstioUtils {
             .redirect(false))
         .execute());
     if (OKE_CLUSTER) {
+      String loadBalancerIP = getServiceExtIPAddrtOke("istio-ingressgateway", "istio-system");
       testUntil(
           assertDoesNotThrow(() -> isLoadBalancerHealthy("istio-system", "istio-ingressgateway"),
               "isLoadBalancerHealthy failed with ApiException"),
           logger,
           "Istio LoadBalancer to be healthy in namespace {0}",
           "istio-system");
-      String loadBalancerIP = getServiceExtIPAddrtOke("istio-ingressgateway", "istio-system");
       InitializationTasks.registerLoadBalancerExternalIP(loadBalancerIP);
     }
   }
