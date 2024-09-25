@@ -865,7 +865,7 @@ public class LoadBalancerUtils {
    * @param lbPublicIP public Load Balancer IP
    */
   public static void deleteLoadBalancer(String lbPublicIP) {
-    if (!lbPublicIP.isEmpty()) {
+    if (lbPublicIP != null && !lbPublicIP.isEmpty()) {
       if (lbPublicIP.startsWith("[") && lbPublicIP.endsWith("]")) {
         // Remove the brackets and return the content inside
         lbPublicIP = lbPublicIP.substring(1, lbPublicIP.length() - 1);
