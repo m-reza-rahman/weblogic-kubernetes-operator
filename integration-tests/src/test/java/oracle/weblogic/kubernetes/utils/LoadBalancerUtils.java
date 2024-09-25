@@ -872,7 +872,7 @@ public class LoadBalancerUtils {
       }
       LoggingFacade logger = getLogger();
       Path deleteLBPath =
-          Paths.get(RESOURCE_DIR, "bash-scripts", "bash-scripts/delete_loadbalancer.sh");
+          Paths.get(RESOURCE_DIR, "bash-scripts", "delete_loadbalancer.sh");
       String deleteLBScript = deleteLBPath.toString();
       String command =
           String.format("chmod 777 %s ", deleteLBScript);
