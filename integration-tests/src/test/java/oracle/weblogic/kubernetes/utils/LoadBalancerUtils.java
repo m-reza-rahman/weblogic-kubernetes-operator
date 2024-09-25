@@ -351,9 +351,23 @@ public class LoadBalancerUtils {
    * @param lbName -loadbalancer service name
    */
   public static String getLoadBalancerIP(String namespace, String lbName) throws Exception {
-    Map<String, String> labels = new HashMap<>();
-    labels.put("loadbalancer", lbName);
-    V1Service service = getService(lbName, null, namespace);
+    return getLoadBalancerIP(namespace, lbName, false);
+  }
+
+  /**
+   * Retreive external IP from OCI LoadBalancer.
+   *
+   * @param namespace - namespace
+   * @param lbName -loadbalancer service name
+   * @param addLabel search service with label
+   */
+  public static String getLoadBalancerIP(String namespace, String lbName, boolean addLabel) throws Exception {
+    Map<String, String> labels = null;
+    if (addLabel) {
+      labels = new HashMap<>();
+      labels.put("loadbalancer", lbName);
+    }
+    V1Service service = getService(lbName, labels, namespace);
     assertNotNull(service, "Can't find service with name " + lbName);
     LoggingFacade logger = getLogger();
     logger.info("Found service with name {0} in {1} namespace ", lbName, namespace);
