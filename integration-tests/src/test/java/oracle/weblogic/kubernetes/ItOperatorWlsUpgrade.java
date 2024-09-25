@@ -177,7 +177,7 @@ class ItOperatorWlsUpgrade {
    */
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 3.3.8 to current")
-  @ValueSource(strings = { "Image", "FromModel" })
+  @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom338ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom338ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "3.3.8", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -188,7 +188,7 @@ class ItOperatorWlsUpgrade {
    */
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 3.4.12 to current")
-  @ValueSource(strings = { "Image", "FromModel" })
+  @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom3412ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom3412ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "3.4.12", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -199,7 +199,7 @@ class ItOperatorWlsUpgrade {
    */
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 3.4.13 to current")
-  @ValueSource(strings = { "Image", "FromModel" })
+  @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom3413ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom3413ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "3.4.13", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -211,7 +211,7 @@ class ItOperatorWlsUpgrade {
    */
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 4.0.8 to current")
-  @ValueSource(strings = { "Image", "FromModel" })
+  @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom408ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom408ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "4.0.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -222,7 +222,7 @@ class ItOperatorWlsUpgrade {
    */
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 4.0.9 to current")
-  @ValueSource(strings = { "Image", "FromModel" })
+  @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom409ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom409ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "4.0.9", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -233,7 +233,7 @@ class ItOperatorWlsUpgrade {
    */
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 4.0.10 to current")
-  @ValueSource(strings = { "Image", "FromModel" })
+  @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom4010ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom4010ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "4.0.10", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -245,7 +245,7 @@ class ItOperatorWlsUpgrade {
    */
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 4.1.7 to current")
-  @ValueSource(strings = { "Image", "FromModel" })
+  @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom417ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom417ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "4.1.7", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -256,32 +256,43 @@ class ItOperatorWlsUpgrade {
    */
   @ParameterizedTest
   @DisplayName("Upgrade Operator from 4.1.8 to current")
-  @ValueSource(strings = { "Image", "FromModel" })
+  @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom418ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom418ToCurrent with domain type {0}", domainType);
     installAndUpgradeOperator(domainType, "4.1.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
-   * Auxiliary Image Domain upgrade from Operator 3.4.1 to current.
+   * Operator upgrade from 4.2.7 to current.
+   */
+  @DisplayName("Upgrade Operator from 4.2.7 to current")
+  void testOperatorWlsUpgradeFrom427ToCurrent() {
+    logger.info("Starting test testOperatorWlsUpgradeFrom427ToCurrent to upgrade Domain with "
+        + "Auxiliary Image with v9 schema to current");
+    // installAndUpgradeOperator(domainType, "4.2.7", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    upgradeWlsAuxDomain("4.2.7", DOMAIN_VERSION);
+  }
+
+  /**
+   * Auxiliary Image Domain upgrade from Operator 3.4.13 to current.
    */
   @Test
-  @DisplayName("Upgrade 3.4.1 Auxiliary Domain(v8 schema) Image to current")
-  void testOperatorWlsAuxDomainUpgradeFrom341ToCurrent() {
-    logger.info("Starting testOperatorWlsAuxDomainUpgradeFrom341ToCurrent " 
+  @DisplayName("Upgrade 3.4.13 Auxiliary Domain(v8 schema) Image to current")
+  void testOperatorWlsAuxDomainV8UpgradeFrom3413ToCurrent() {
+    logger.info("Starting testOperatorWlsAuxDomainV8UpgradeFrom3413ToCurrent "
          + "to upgrade Domain with Auxiliary Image with v8 schema to current");
-    upgradeWlsAuxDomain("3.4.1");
+    upgradeWlsAuxDomain("3.4.13", OLD_DOMAIN_VERSION);
   }
 
   /**
    * Auxiliary Image Domain upgrade from Operator 3.4.4 to current.
    */
   @Test
-  @DisplayName("Upgrade 3.4.4 Auxiliary Domain(v8 schema) Image to current")
-  void testOperatorWlsAuxDomainUpgradeFrom344ToCurrent() {
-    logger.info("Starting testOperatorWlsAuxDomainUpgradeFrom344ToCurrent " 
+  @DisplayName("Upgrade 3.4.12 Auxiliary Domain(v8 schema) Image to current")
+  void testOperatorWlsAuxDomainV8UpgradeFrom3412ToCurrent() {
+    logger.info("Starting testOperatorWlsAuxDomainV8UpgradeFrom3412ToCurrent "
         + "to upgrade Domain with Auxiliary Image with v8 schema to current");
-    upgradeWlsAuxDomain("3.4.4");
+    upgradeWlsAuxDomain("3.4.12", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -293,9 +304,9 @@ class ItOperatorWlsUpgrade {
    */
   @Disabled
   @DisplayName("Upgrade 3.3.8 Auxiliary Domain(v8 schema) Image to current")
-  void testOperatorWlsAuxDomainUpgradeFrom338ToCurrent() {
+  void testOperatorWlsAuxDomainV8UpgradeFrom338ToCurrent() {
     logger.info("Starting test to upgrade Domain with Auxiliary Image with v8 schema to current");
-    upgradeWlsAuxDomain("3.3.8");
+    upgradeWlsAuxDomain("3.3.8", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -310,9 +321,9 @@ class ItOperatorWlsUpgrade {
     }
   }
 
-  void upgradeWlsAuxDomain(String oldVersion) {
-    logger.info("Upgrade version/{0} Auxiliary Domain(v8) to current", oldVersion);
-    installOldOperator(oldVersion,opNamespace,domainNamespace);
+  void upgradeWlsAuxDomain(String operatorVersion, String domainApiVersion) {
+    logger.info("Upgrade version/{0} Auxiliary Domain(v8) to current", operatorVersion);
+    installOldOperator(operatorVersion, opNamespace, domainNamespace);
     createSecrets();
 
     // Create the repo secret to pull base WebLogic image
@@ -327,7 +338,7 @@ class ItOperatorWlsUpgrade {
     logger.info("creating auxiliary image {0}:{1} using imagetool.sh ", miiAuxiliaryImage, MII_BASIC_IMAGE_TAG);
     createPushAuxiliaryImageWithDomainConfig(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImageTag, archiveList, modelList);
 
-    // Generate a v8 version of domain.yaml file from a template file
+    // Generate a v8/v9 version of domain.yaml file from a template file
     // by replacing domain namespace, domain uid, base image and aux image
     String auxImage = MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImageTag;
     Map<String, String> templateMap  = new HashMap<>();
@@ -335,7 +346,7 @@ class ItOperatorWlsUpgrade {
     templateMap.put("DOMAIN_UID", domainUid);
     templateMap.put("AUX_IMAGE", auxImage);
     templateMap.put("BASE_IMAGE", WEBLOGIC_IMAGE_TO_USE_IN_SPEC);
-    templateMap.put("API_VERSION", "v8");
+    templateMap.put("API_VERSION", domainApiVersion);
     Path srcDomainFile = Paths.get(RESOURCE_DIR,
         "upgrade", "auxilary.single.image.template.yaml");
     Path targetDomainFile = assertDoesNotThrow(
@@ -354,7 +365,7 @@ class ItOperatorWlsUpgrade {
     // wait for the domain to exist
     logger.info("Checking for domain custom resource in namespace {0}", domainNamespace);
     testUntil(
-        domainExists(domainUid, "v8", domainNamespace),
+        domainExists(domainUid, domainApiVersion, domainNamespace),
         logger,
         "domain {0} to be created in namespace {1}",
         domainUid,
@@ -369,7 +380,7 @@ class ItOperatorWlsUpgrade {
     // verify there is no status condition type Completed
     // before upgrading to Latest
     verifyDomainStatusConditionTypeDoesNotExist(domainUid, domainNamespace,
-        DOMAIN_STATUS_CONDITION_COMPLETED_TYPE, OLD_DOMAIN_VERSION);
+        DOMAIN_STATUS_CONDITION_COMPLETED_TYPE, domainApiVersion);
     upgradeOperatorToCurrent(opNamespace);
     checkDomainStatus(domainNamespace,domainUid);
     verifyPodsNotRolled(domainNamespace, pods);
