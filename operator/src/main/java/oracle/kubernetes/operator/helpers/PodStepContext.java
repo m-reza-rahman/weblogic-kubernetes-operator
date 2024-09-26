@@ -1374,6 +1374,9 @@ public abstract class PodStepContext extends BasePodStepContext {
                   getContainerName().equals(container.getName()) ? new V1SecurityContext() : null);
             }
           }));
+    }
+
+    private void restoreSecurityContextEmptyInitContainer(V1Pod recipe, V1Pod currentPod) {
       Optional.ofNullable(recipe.getSpec().getInitContainers())
           .ifPresent(initContainers -> initContainers.forEach(initContainer -> {
             if (PodSecurityHelper.getDefaultContainerSecurityContext().equals(initContainer.getSecurityContext())) {
@@ -1396,7 +1399,8 @@ public abstract class PodStepContext extends BasePodStepContext {
           Pair.of("restoreLogHomeLayoutEnvVar", this::restoreLogHomeLayoutEnvVar),
           Pair.of("restoreFluentdVolume", this::restoreFluentdVolume),
           Pair.of("restoreSecurityContext", this::restoreSecurityContext),
-          Pair.of("restoreSecurityContextEmpty", this::restoreSecurityContextEmpty));
+          Pair.of("restoreSecurityContextEmpty", this::restoreSecurityContextEmpty),
+          Pair.of("restoreSecurityContextEmptyInitContainer", this::restoreSecurityContextEmptyInitContainer));
       return Combinations.of(adjustments)
           .map(adjustment -> adjustedHash(currentPod, adjustment))
           .anyMatch(requiredHash::equals);
@@ -1411,17 +1415,6 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     private boolean canUseCurrentPod(V1Pod currentPod) {
       boolean useCurrent = hasCorrectPodHash(currentPod) && canUseNewDomainZip(currentPod);
-
-      // TEST
-      /*
-      StringBuilder sb = new StringBuilder();
-      sb.append("useCurrent: ").append(useCurrent).append("\n");
-      sb.append("currentPod: ").append("\n").append(Yaml.dump(currentPod)).append("\n");
-      sb.append("model: ").append("\n").append(Yaml.dump(getPodModel())).append("\n");
-      String output = sb.toString();
-      System.out.println(output);
-       */
-
       if (!useCurrent) {
         LOGGER.finer(
             MessageKeys.POD_DUMP,
