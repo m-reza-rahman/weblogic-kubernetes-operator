@@ -506,10 +506,6 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
   }
 
-  private Integer getMetricsPort() {
-    return getListenPort() != null ? getListenPort() : getSslListenPort();
-  }
-
   private String getLabel(V1Pod currentPod, String key) {
     return currentPod.getMetadata().getLabels().get(key);
   }
@@ -1168,22 +1164,7 @@ public abstract class PodStepContext extends BasePodStepContext {
       V1Pod recipe = createPodRecipe();
       adjustments.forEach(adjustment -> adjustment.right().accept(recipe, currentPod));
 
-      // TEST
-      String result =  AnnotationHelper.createHash(recipe);
-      // if (result.equals("fc8e3c36de352b0419844b393fd42bf01f32c67932a635cdedce230122d44d0a")) {
-      if (adjustments.size() == 1
-          && adjustments.stream().map(Pair::left).toList()
-          .containsAll(List.of("restoreSecurityContextEmpty"))) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("adjustments: ").append(adjustments.stream().map(Pair::left).toList()).append("\n");
-        sb.append("currentPod: ").append("\n").append(Yaml.dump(currentPod)).append("\n");
-        sb.append("adjusted: ").append("\n").append(Yaml.dump(recipe)).append("\n");
-        sb.append("original: ").append("\n").append(Yaml.dump(createPodRecipe())).append("\n");
-        String output = sb.toString();
-        System.out.println(output);
-      }
-
-      return result;
+      return AnnotationHelper.createHash(recipe);
     }
 
     private void adjustVolumeMountName(List<V1VolumeMount> convertedVolumeMounts, V1VolumeMount volumeMount) {
@@ -1415,6 +1396,7 @@ public abstract class PodStepContext extends BasePodStepContext {
 
     private boolean canUseCurrentPod(V1Pod currentPod) {
       boolean useCurrent = hasCorrectPodHash(currentPod) && canUseNewDomainZip(currentPod);
+
       if (!useCurrent) {
         LOGGER.finer(
             MessageKeys.POD_DUMP,
