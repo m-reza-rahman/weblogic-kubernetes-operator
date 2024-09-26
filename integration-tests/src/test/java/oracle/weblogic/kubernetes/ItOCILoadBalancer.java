@@ -25,6 +25,7 @@ import static oracle.weblogic.kubernetes.TestConstants.SKIP_CLEANUP;
 import static oracle.weblogic.kubernetes.utils.ApplicationUtils.callWebAppAndCheckForServerNameInResponse;
 import static oracle.weblogic.kubernetes.utils.CommonMiiTestUtils.createMiiDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
+import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.deleteLoadBalancer;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.getLoadBalancerIP;
 import static oracle.weblogic.kubernetes.utils.LoadBalancerUtils.installAndVerifyOCILoadBalancer;
 import static oracle.weblogic.kubernetes.utils.OperatorUtils.installAndVerifyOperator;
@@ -85,6 +86,7 @@ class ItOCILoadBalancer {
     if (!SKIP_CLEANUP) {
       Kubernetes.deleteService(OCI_LB_NAME, domainNamespace);
     }
+    deleteLoadBalancer(loadBalancerIP);
   }
 
   /**
