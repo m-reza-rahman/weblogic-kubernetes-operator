@@ -263,8 +263,9 @@ class ItOperatorWlsUpgrade {
   }
 
   /**
-   * Operator upgrade from 4.2.7 to current.
+   * Operator upgrade from 4.2.7 to current with Auxiliary Image Domain, V9 schema.
    */
+  @Test
   @DisplayName("Upgrade Operator from 4.2.7 to current")
   void testOperatorWlsUpgradeFrom427ToCurrent() {
     logger.info("Starting test testOperatorWlsUpgradeFrom427ToCurrent to upgrade Domain with "
