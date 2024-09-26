@@ -364,6 +364,18 @@ class ServerPod extends KubernetesResource {
       if (podSecurityContext.getSysctls() == null) {
         podSecurityContext.sysctls(from.getSysctls());
       }
+      if (podSecurityContext.getFsGroupChangePolicy() == null) {
+        podSecurityContext.fsGroupChangePolicy(from.getFsGroupChangePolicy());
+      }
+      if (podSecurityContext.getSeccompProfile() == null) {
+        podSecurityContext.seccompProfile(from.getSeccompProfile());
+      }
+      if (podSecurityContext.getWindowsOptions() == null) {
+        podSecurityContext.windowsOptions(from.getWindowsOptions());
+      }
+      if (podSecurityContext.getAppArmorProfile() == null) {
+        podSecurityContext.appArmorProfile(from.getAppArmorProfile());
+      }
     }
   }
 
@@ -398,6 +410,18 @@ class ServerPod extends KubernetesResource {
       }
       if (containerSecurityContext.getSeLinuxOptions() == null) {
         containerSecurityContext.seLinuxOptions(from.getSeLinuxOptions());
+      }
+      if (containerSecurityContext.getAppArmorProfile() == null) {
+        containerSecurityContext.appArmorProfile(from.getAppArmorProfile());
+      }
+      if (containerSecurityContext.getProcMount() == null) {
+        containerSecurityContext.procMount(from.getProcMount());
+      }
+      if (containerSecurityContext.getSeccompProfile() == null) {
+        containerSecurityContext.seccompProfile(from.getSeccompProfile());
+      }
+      if (containerSecurityContext.getWindowsOptions() == null) {
+        containerSecurityContext.windowsOptions(from.getWindowsOptions());
       }
     }
   }
