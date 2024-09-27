@@ -1388,10 +1388,9 @@ public abstract class PodStepContext extends BasePodStepContext {
     }
 
     private boolean hasCorrectPodHash(V1Pod currentPod) {
-
-      return (isPodFromRecentOperator(currentPod)
-              && canAdjustRecentOperatorMajorVersion3HashToMatch(currentPod, AnnotationHelper.getHash(currentPod)))
-          || AnnotationHelper.getHash(getPodModel()).equals(AnnotationHelper.getHash(currentPod));
+      return AnnotationHelper.getHash(getPodModel()).equals(AnnotationHelper.getHash(currentPod))
+          || (isPodFromRecentOperator(currentPod)
+            && canAdjustRecentOperatorMajorVersion3HashToMatch(currentPod, AnnotationHelper.getHash(currentPod)));
     }
 
     private boolean canUseCurrentPod(V1Pod currentPod) {
