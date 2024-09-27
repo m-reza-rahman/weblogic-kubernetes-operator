@@ -637,10 +637,6 @@ EOF
                                     export TEST_IMAGES_REPO_USERNAME="${OCIR_USER}"
                                     export TEST_IMAGES_REPO_PASSWORD="${OCIR_PASS}"
                                     export TEST_IMAGES_REPO_EMAIL="noreply@oracle.com"
-                                    export HTTP_PROXY="http://www-proxy-hqdc.us.oracle.com:80"
-                                    export HTTPS_PROXY="http://www-proxy-hqdc.us.oracle.com:80"
-                                    export http_proxy="http://www-proxy-hqdc.us.oracle.com:80"
-                                    export https_proxy="http://www-proxy-hqdc.us.oracle.com:80"
                                     export no_proxy="${NO_PROXY},localhost,127.0.0.1,.us.oracle.com,.oraclecorp.com,login.oracle.com"
                                     export NO_PROXY="${no_proxy}"
                                     
