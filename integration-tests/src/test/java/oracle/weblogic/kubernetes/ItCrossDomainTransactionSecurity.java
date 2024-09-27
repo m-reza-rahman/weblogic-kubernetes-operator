@@ -138,7 +138,7 @@ class ItCrossDomainTransactionSecurity {
   private static Path tlsCertFile;
   private static Path tlsKeyFile;
   private static Path jksTrustFile;
-  private static String tlsSecretName = domainUid2 + "-test-tls-secret"; //TODO domain1 or domain2
+  private static String tlsSecretName = domainUid2 + "-test-tls-secret";
   private static String hostAddress = K8S_NODEPORT_HOST;
 
 
@@ -526,10 +526,6 @@ class ItCrossDomainTransactionSecurity {
       Files.writeString(wdtVariableFile1, "MANAGED_SERVER_COUNT=4\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile1, "T3PUBLICADDRESS=" + K8S_NODEPORT_HOSTNAME + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile1, "T3CHANNELPORT=" + t3ChannelPort1 + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile1, "SSLPUBLICADDRESS=" + K8S_NODEPORT_HOSTNAME + "\n",
-          StandardOpenOption.APPEND);
-      //TODO what should be SSLCHANNELPORT
-      Files.writeString(wdtVariableFile1, "SSLCHANNELPORT=" + t3ChannelPort1 + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile1, "REMOTE_DOMAIN=domain2\n", StandardOpenOption.APPEND);
     });
 
@@ -550,9 +546,6 @@ class ItCrossDomainTransactionSecurity {
       Files.writeString(wdtVariableFile2, "MANAGED_SERVER_COUNT=4\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile2, "T3PUBLICADDRESS=" + K8S_NODEPORT_HOSTNAME + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile2, "T3CHANNELPORT=" + t3ChannelPort2 + "\n", StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile1, "SSLPUBLICADDRESS=" + K8S_NODEPORT_HOSTNAME + "\n",
-          StandardOpenOption.APPEND);
-      Files.writeString(wdtVariableFile1, "SSLCHANNELPORT=" + t3ChannelPort1 + "\n", StandardOpenOption.APPEND);
       Files.writeString(wdtVariableFile2, "REMOTE_DOMAIN=domain1\n", StandardOpenOption.APPEND);
     });
 
