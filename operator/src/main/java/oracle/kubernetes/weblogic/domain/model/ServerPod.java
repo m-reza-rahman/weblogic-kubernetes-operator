@@ -202,7 +202,7 @@ class ServerPod extends KubernetesResource {
    * @since 2.0
    */
   @Description("Pod-level security attributes. See `kubectl explain pods.spec.securityContext`. "
-      + "Beginning with operator version 4.0.5, if no value is specified for this field, the operator will use default "
+      + "If no value is specified for this field, the operator will use default "
       + "content for the pod-level `securityContext`. "
       + "More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.")
   private V1PodSecurityContext podSecurityContext = null;
@@ -242,7 +242,7 @@ class ServerPod extends KubernetesResource {
    */
   @Description("Container-level security attributes. Will override any matching Pod-level attributes. "
       + "See `kubectl explain pods.spec.containers.securityContext`. "
-      + "Beginning with operator version 4.0.5, if no value is specified for this field, the operator will use default "
+      + "If no value is specified for this field, the operator will use default "
       + "content for container-level `securityContext`. "
       + "More info: https://oracle.github.io/weblogic-kubernetes-operator/security/domain-security/pod-and-container/.")
   private V1SecurityContext containerSecurityContext = null;
@@ -373,9 +373,6 @@ class ServerPod extends KubernetesResource {
       if (podSecurityContext.getWindowsOptions() == null) {
         podSecurityContext.windowsOptions(from.getWindowsOptions());
       }
-      if (podSecurityContext.getAppArmorProfile() == null) {
-        podSecurityContext.appArmorProfile(from.getAppArmorProfile());
-      }
     }
   }
 
@@ -410,9 +407,6 @@ class ServerPod extends KubernetesResource {
       }
       if (containerSecurityContext.getSeLinuxOptions() == null) {
         containerSecurityContext.seLinuxOptions(from.getSeLinuxOptions());
-      }
-      if (containerSecurityContext.getAppArmorProfile() == null) {
-        containerSecurityContext.appArmorProfile(from.getAppArmorProfile());
       }
       if (containerSecurityContext.getProcMount() == null) {
         containerSecurityContext.procMount(from.getProcMount());
