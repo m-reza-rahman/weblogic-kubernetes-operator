@@ -108,7 +108,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @IntegrationTest
 @Tag("olcne-srg")
 @Tag("kind-parallel")
-@Tag("oke-gate")
+@Tag("oke-weekly")
 @Tag("oke-arm")
 class ItTwoDomainsManagedByTwoOperators {
 

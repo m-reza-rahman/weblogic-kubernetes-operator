@@ -3,11 +3,11 @@
 //
 
 
-CRON_SETTINGS_MAIN = '''H 3 * * 1-5 % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seqone;PARALLEL_RUN=false
-                   H 2 * * 1-5 % MAVEN_PROFILE_NAME=oke-parallel;CLUSTER_NAME=parone;PARALLEL_RUN=true'''
-CRON_SETTINGS_42 = '''H 1 * * 6 % MAVEN_PROFILE_NAME=oke-gate;CLUSTER_NAME=seq42one;PARALLEL_RUN=false
-                    H 18 * * 1-5 % MAVEN_PROFILE_NAME=oke-sequential;CLUSTER_NAME=seq42two;PARALLEL_RUN=false
-                   H 8 * * 1-5 % MAVEN_PROFILE_NAME=oke-parallel;CLUSTER_NAME=par42one;PARALLEL_RUN=true'''
+CRON_SETTINGS_MAIN = '''H 3 * * 0-4 % MAVEN_PROFILE_NAME=oke-weekly;CLUSTER_NAME=seqone;PARALLEL_RUN=false
+                   H 2 * * 0-4 % MAVEN_PROFILE_NAME=oke-parallel;CLUSTER_NAME=parone;PARALLEL_RUN=true'''
+CRON_SETTINGS_42 = '''H 1 * * 5 % MAVEN_PROFILE_NAME=oke-weekly;CLUSTER_NAME=seq42one;PARALLEL_RUN=false
+                    H 23 * * 0-4 % MAVEN_PROFILE_NAME=oke-sequential;CLUSTER_NAME=seq42two;PARALLEL_RUN=false
+                   H 18 * * 0-4 % MAVEN_PROFILE_NAME=oke-parallel;CLUSTER_NAME=par42one;PARALLEL_RUN=true'''
 
 
 
@@ -117,9 +117,9 @@ pipeline {
         )
 
                 choice(name: 'MAVEN_PROFILE_NAME',
-                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-gate,oke-parallel, oke-sequential. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
+                        description: 'Profile to use in mvn command to run the tests.  Possible values are oke-weekly,oke-parallel, oke-sequential. Refer to weblogic-kubernetes-operator/integration-tests/pom.xml on the branch.',
                         choices: [
-                                'oke-gate',
+                                'oke-weekly',
                                 'oke-sequential',
                                 'oke-parallel'
                         ]
