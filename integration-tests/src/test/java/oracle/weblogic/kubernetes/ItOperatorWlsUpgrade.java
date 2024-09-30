@@ -47,6 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_USERNAME_DEFAULT;
+import static oracle.weblogic.kubernetes.TestConstants.CLUSTER_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_API_VERSION;
 import static oracle.weblogic.kubernetes.TestConstants.DOMAIN_STATUS_CONDITION_COMPLETED_TYPE;
@@ -267,7 +268,7 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade Operator from 4.2.7 to current")
-  void testOperatorWlsUpgradeFrom427ToCurrent() {
+  void testOperatorWlsAuxDomainUpgradeFrom427ToCurrent() {
     logger.info("Starting test testOperatorWlsUpgradeFrom427ToCurrent to upgrade Domain with "
         + "Auxiliary Image with v9 schema to current");
     // installAndUpgradeOperator(domainType, "4.2.7", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -342,14 +343,19 @@ class ItOperatorWlsUpgrade {
     // Generate a v8/v9 version of domain.yaml file from a template file
     // by replacing domain namespace, domain uid, base image and aux image
     String auxImage = MII_AUXILIARY_IMAGE_NAME + ":" + miiAuxiliaryImageTag;
+    String auxImageDomainYaml = "auxilary.single.image.template.yaml";
     Map<String, String> templateMap  = new HashMap<>();
     templateMap.put("DOMAIN_NS", domainNamespace);
     templateMap.put("DOMAIN_UID", domainUid);
     templateMap.put("AUX_IMAGE", auxImage);
     templateMap.put("BASE_IMAGE", WEBLOGIC_IMAGE_TO_USE_IN_SPEC);
     templateMap.put("API_VERSION", domainApiVersion);
+    templateMap.put("CLUSTER_VERSION", CLUSTER_VERSION);
+    if (domainApiVersion.equals(DOMAIN_VERSION)) {
+      auxImageDomainYaml =  "auxilary.single.image.v9.template.yaml";
+    }
     Path srcDomainFile = Paths.get(RESOURCE_DIR,
-        "upgrade", "auxilary.single.image.template.yaml");
+        "upgrade", auxImageDomainYaml);
     Path targetDomainFile = assertDoesNotThrow(
         () -> generateFileFromTemplate(srcDomainFile.toString(),
         "domain.yaml", templateMap));
