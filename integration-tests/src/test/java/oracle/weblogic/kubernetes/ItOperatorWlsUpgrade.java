@@ -442,10 +442,10 @@ class ItOperatorWlsUpgrade {
     installDomainResource(domainType, domainVersion, externalServiceNameSuffix);
 
     // upgrade to current operator
-    upgradeOperatorAndVerify(opNamespace, domainNamespace);
+    upgradeOperatorAndVerify(opNamespace, domainNamespace, domainVersion);
   }
 
-  private void upgradeOperatorAndVerify(String opNamespace, String domainNamespace) {
+  private void upgradeOperatorAndVerify(String opNamespace, String domainNamespace, String domainVersion) {
     String opServiceAccount = opNamespace + "-sa";
     String appName = "testwebapp.war";
 
@@ -500,7 +500,7 @@ class ItOperatorWlsUpgrade {
               "Application was not always available when the operator was getting upgraded");
       }
     }
-    scaleClusterUpAndDown();
+    scaleClusterUpAndDown(domainVersion);
 
     // check CRD version is updated
     logger.info("Checking CRD version");
