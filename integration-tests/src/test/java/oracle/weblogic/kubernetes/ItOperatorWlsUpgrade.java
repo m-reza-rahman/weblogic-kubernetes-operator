@@ -352,7 +352,7 @@ class ItOperatorWlsUpgrade {
     templateMap.put("API_VERSION", domainApiVersion);
     templateMap.put("CLUSTER_VERSION", CLUSTER_VERSION);
     if (domainApiVersion.equals(DOMAIN_VERSION)) {
-      auxImageDomainYaml =  "auxilary.single.image.v9.template.yaml";
+      auxImageDomainYaml =  "auxiliary.single.image.v9.template.yaml";
     }
     Path srcDomainFile = Paths.get(RESOURCE_DIR,
         "upgrade", auxImageDomainYaml);
