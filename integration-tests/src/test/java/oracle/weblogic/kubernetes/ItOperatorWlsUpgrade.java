@@ -331,12 +331,12 @@ class ItOperatorWlsUpgrade {
     // Create the repo secret to pull base WebLogic image
     createBaseRepoSecret(domainNamespace);
 
-    // Creating an aux image domain with v8 version
+    // Creating an aux image domain with v8/v9 version
     final String auxiliaryImagePath = "/auxiliary";
     List<String> archiveList = Collections.singletonList(ARCHIVE_DIR + "/" + MII_BASIC_APP_NAME + ".zip");
     List<String> modelList = new ArrayList<>();
     modelList.add(MODEL_DIR + "/" + MII_BASIC_WDT_MODEL_FILE);
-    modelList.add(MODEL_DIR + "/model.jms2.yaml");
+    // modelList.add(MODEL_DIR + "/model.jms2.yaml");
     logger.info("creating auxiliary image {0}:{1} using imagetool.sh ", miiAuxiliaryImage, MII_BASIC_IMAGE_TAG);
     createPushAuxiliaryImageWithDomainConfig(MII_AUXILIARY_IMAGE_NAME, miiAuxiliaryImageTag, archiveList, modelList);
 
