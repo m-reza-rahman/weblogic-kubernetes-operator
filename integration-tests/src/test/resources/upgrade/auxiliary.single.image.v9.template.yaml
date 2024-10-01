@@ -27,7 +27,7 @@ spec:
          nodePort: 0
        - channelName: T3Channel
   clusters:
-  - name: @CLUSTER_NAME@
+  - name: cluster-1
   configuration:
       model:
         domainType: WLS
