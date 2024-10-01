@@ -319,7 +319,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
       hostPort = host + ":" + nodeportshttp;
     }    
     String curlCmd =
-        String.format("curl --silent --show-error --noproxy '*' -H 'host: %s' http://%s:%s@%s/" + SESSMIGT_APP_URL,
+        String.format("curl -g --silent --show-error -v --noproxy '*' -H 'host: %s' http://%s:%s@%s/" + SESSMIGT_APP_URL,
             ingressHostList.get(0),
             ADMIN_USERNAME_DEFAULT,
             ADMIN_PASSWORD_DEFAULT,
@@ -331,7 +331,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
       String response = result.stdout().trim();
       getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
           result.exitValue(), response, result.stderr());
-      if (!response.contains("200")) {
+      if (!response.contains("cluster-1-managed")) {
         logger.info("Can't invoke application");
 
         if (OKE_CLUSTER) {
@@ -343,7 +343,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
             //restart core-dns service
             result = ExecCommand.exec(KUBERNETES_CLI + " rollout restart deployment coredns -n kube-system");
             logger.info(result.stdout());
-            checkPodReady("core-dns", null, "kube-system");
+            checkPodReady("coredns", null, "kube-system");
 
           } catch (Exception ex) {
             logger.warning(ex.getLocalizedMessage());
@@ -357,9 +357,7 @@ public class ItHorizontalPodAutoscalerCustomMetrics {
         String response = result.stdout().trim();
         getLogger().info("exitCode: {0}, \nstdout: {1}, \nstderr: {2}",
             result.exitValue(), response, result.stderr());
-        if (!response.contains("200")) {
-          logger.info("Can't invoke application");
-        }
+        assertTrue(response.contains("cluster-1-managed"), "Can't invoke application");
       });
     }
     //check hpa scaled up to one more server

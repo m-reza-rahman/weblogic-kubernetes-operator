@@ -277,7 +277,7 @@ class ItWseeSSO {
           //restart core-dns service
           result = ExecCommand.exec(KUBERNETES_CLI + " rollout restart deployment coredns -n kube-system");
           logger.info(result.stdout());
-          checkPodReady("core-dns", null, "kube-system");
+          checkPodReady("coredns", null, "kube-system");
         }
       } catch (Exception ex) {
         logger.warning(ex.getLocalizedMessage());
