@@ -391,13 +391,16 @@ class ItOperatorWlsUpgrade {
     upgradeOperatorToCurrent(opNamespace);
     checkDomainStatus(domainNamespace,domainUid);
     verifyPodsNotRolled(domainNamespace, pods);
-    scaleClusterUpAndDown();
+    scaleClusterUpAndDown(domainApiVersion);
   }
 
   // After upgrade scale up/down the cluster
-  private void scaleClusterUpAndDown() {
+  private void scaleClusterUpAndDown(String domainApiVersion) {
 
     String clusterName = domainUid + "-" + "cluster-1";
+    if (domainApiVersion.equals(DOMAIN_VERSION)) {
+      clusterName = "cluster-1";
+    }
     logger.info("Updating the cluster {0} replica count to 3", clusterName);
     boolean p1Success = scaleCluster(clusterName, domainNamespace,3);
     assertTrue(p1Success,
