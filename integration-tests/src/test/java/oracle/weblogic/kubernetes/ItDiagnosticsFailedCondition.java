@@ -960,7 +960,8 @@ class ItDiagnosticsFailedCondition {
       checkPodReadyAndServiceExists(managedServerPrefix + i, domainUid, domainNamespace);
     }
     checkDomainStatusConditionTypeHasExpectedStatus(domainUid, domainNamespace,
-        DOMAIN_STATUS_CONDITION_COMPLETED_TYPE, "True");     
+        DOMAIN_STATUS_CONDITION_COMPLETED_TYPE, "True");
+    checkDomainStatusConditionTypeExists(domainUid, domainNamespace, DOMAIN_STATUS_CONDITION_AVAILABLE_TYPE);
   }
   
   // Create a domain resource with a custom ConfigMap
