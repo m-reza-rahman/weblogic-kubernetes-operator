@@ -135,6 +135,7 @@ import static oracle.weblogic.kubernetes.utils.DomainUtils.checkDomainStatusCond
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainAndVerify;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.createDomainResourceOnPv;
 import static oracle.weblogic.kubernetes.utils.DomainUtils.verifyDomainStatusConditionTypeDoesNotExist;
+import static oracle.weblogic.kubernetes.utils.FileUtils.createWdtPropertyFile;
 import static oracle.weblogic.kubernetes.utils.FmwUtils.getConfiguration;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createMiiImageAndVerify;
 import static oracle.weblogic.kubernetes.utils.ImageUtils.createTestRepoSecret;
@@ -1506,7 +1507,8 @@ class ItIntrospectVersion {
       fail("Ingress is null, failed to update ingress");
     }
   }
-  
+
+  /*
   public static File createWdtPropertyFile(String wlsModelFilePrefix, String nodePortHost, int t3Port) {
 
     // create property file used with domain model file
@@ -1527,5 +1529,6 @@ class ItIntrospectVersion {
         "Failed to write WLS properties file");
 
     return domainPropertiesFile;
-  } 
+  }
+  */
 }
