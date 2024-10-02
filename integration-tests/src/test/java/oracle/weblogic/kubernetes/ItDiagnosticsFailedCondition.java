@@ -936,7 +936,7 @@ class ItDiagnosticsFailedCondition {
         .append(" \"path\": \"/spec/image\",")
         .append("\"value\": \"")
         .append(MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG)
-        .append("},")
+        .append("\"},")
         .append("{\"op\": \"add\",")
         .append(" \"path\": \"/spec/restartVersion\",").append("\"value\": ").append("\"1\"")
         .append("}"
