@@ -930,12 +930,17 @@ class ItDiagnosticsFailedCondition {
         DOMAIN_STATUS_CONDITION_FAILED_TYPE, "True");
 
     //fix the domain failure by patching the domain resource with good image
-    patchStr = new StringBuffer("[{");    
+    patchStr = new StringBuffer("["
+        + "{");
     patchStr.append("\"op\": \"replace\",")
         .append(" \"path\": \"/spec/image\",")
         .append("\"value\": \"")
         .append(MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG)
-        .append("\"}]");
+        .append("},")
+        .append("{\"op\": \"add\",")
+        .append(" \"path\": \"/spec/restartVersion\",").append("\"value\": ").append("\"1\"")
+        .append("}"
+            + "]");
     logger.info("PatchStr for imageUpdate: {0}", patchStr.toString());
 
     assertTrue(patchDomainResource(domainUid, domainNamespace, patchStr),
