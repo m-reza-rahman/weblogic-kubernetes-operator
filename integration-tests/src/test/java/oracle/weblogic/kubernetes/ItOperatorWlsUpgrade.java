@@ -181,7 +181,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom338ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom338ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "3.3.8", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateMiiDomainAndUpgrade("3.3.8", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
@@ -192,7 +192,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom3412ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom3412ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "3.4.12", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateMiiDomainAndUpgrade("3.4.12", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
@@ -203,7 +203,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom3413ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom3413ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "3.4.13", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateMiiDomainAndUpgrade("3.4.13", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
 
@@ -215,7 +215,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom408ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom408ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.0.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateMiiDomainAndUpgrade("4.0.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
   
   /**
@@ -226,7 +226,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom409ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom409ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.0.9", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateMiiDomainAndUpgrade("4.0.9", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
@@ -237,7 +237,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom4010ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom4010ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.0.10", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateMiiDomainAndUpgrade("4.0.10", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
   
 
@@ -249,7 +249,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom417ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom417ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.1.7", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateMiiDomainAndUpgrade("4.1.7", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
@@ -260,7 +260,7 @@ class ItOperatorWlsUpgrade {
   @ValueSource(strings = { "FromModel" })
   void testOperatorWlsUpgradeFrom418ToCurrent(String domainType) {
     logger.info("Starting test testOperatorWlsUpgradeFrom418ToCurrent with domain type {0}", domainType);
-    installAndUpgradeOperator(domainType, "4.1.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateMiiDomainAndUpgrade("4.1.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
@@ -268,11 +268,22 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade Operator from 4.2.7 to current")
-  void testOperatorWlsAuxDomainUpgradeFrom427ToCurrent() {
-    logger.info("Starting test testOperatorWlsUpgradeFrom427ToCurrent to upgrade Domain with "
+  void testOperatorUpgradeWlsAuxDomainV9From427ToCurrent() {
+    logger.info("Starting test testOperatorUpgradeWlsAuxDomainV9From427ToCurrent to upgrade Domain with "
         + "Auxiliary Image with v9 schema to current");
     // installAndUpgradeOperator(domainType, "4.2.7", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
-    upgradeWlsAuxDomain("4.2.7", DOMAIN_VERSION);
+    installOperatorCreateAuxDomainAndUpgrade("4.2.7", DOMAIN_VERSION);
+  }
+
+  /**
+   * Operator upgrade from 4.2.6 to current with Model in Image Domain, V8 schema.
+   */
+  @Test
+  @DisplayName("Upgrade Operator from 4.2.6 to current")
+  void testOperatorUpgradeWlsMiiDomainV8From426ToCurrent() {
+    logger.info("Starting test testOperatorUpgradeWlsMiiDomainV8From426ToCurrent to upgrade Domain with "
+        + "Auxiliary Image with v8 schema to current");
+    installOperatorCreateMiiDomainAndUpgrade("4.2.6", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
   }
 
   /**
@@ -283,7 +294,7 @@ class ItOperatorWlsUpgrade {
   void testOperatorWlsAuxDomainV8UpgradeFrom3413ToCurrent() {
     logger.info("Starting testOperatorWlsAuxDomainV8UpgradeFrom3413ToCurrent "
          + "to upgrade Domain with Auxiliary Image with v8 schema to current");
-    upgradeWlsAuxDomain("3.4.13", OLD_DOMAIN_VERSION);
+    installOperatorCreateAuxDomainAndUpgrade("3.4.13", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -294,7 +305,7 @@ class ItOperatorWlsUpgrade {
   void testOperatorWlsAuxDomainV8UpgradeFrom3412ToCurrent() {
     logger.info("Starting testOperatorWlsAuxDomainV8UpgradeFrom3412ToCurrent "
         + "to upgrade Domain with Auxiliary Image with v8 schema to current");
-    upgradeWlsAuxDomain("3.4.12", OLD_DOMAIN_VERSION);
+    installOperatorCreateAuxDomainAndUpgrade("3.4.12", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -308,7 +319,7 @@ class ItOperatorWlsUpgrade {
   @DisplayName("Upgrade 3.3.8 Auxiliary Domain(v8 schema) Image to current")
   void testOperatorWlsAuxDomainV8UpgradeFrom338ToCurrent() {
     logger.info("Starting test to upgrade Domain with Auxiliary Image with v8 schema to current");
-    upgradeWlsAuxDomain("3.3.8", OLD_DOMAIN_VERSION);
+    installOperatorCreateAuxDomainAndUpgrade("3.3.8", OLD_DOMAIN_VERSION);
   }
 
   /**
@@ -323,7 +334,7 @@ class ItOperatorWlsUpgrade {
     }
   }
 
-  void upgradeWlsAuxDomain(String operatorVersion, String domainApiVersion) {
+  void installOperatorCreateAuxDomainAndUpgrade(String operatorVersion, String domainApiVersion) {
     logger.info("Upgrade version/{0} Auxiliary Domain(v8) to current", operatorVersion);
     installOldOperator(operatorVersion, opNamespace, domainNamespace);
     createSecrets();
@@ -414,8 +425,7 @@ class ItOperatorWlsUpgrade {
             clusterName, domainNamespace));
   }
 
-  private void installDomainResource(
-      String domainType,
+  private void installMiiDomainResource(
       String domainVersion,
       String externalServiceNameSuffix) {
 
@@ -425,21 +435,20 @@ class ItOperatorWlsUpgrade {
             domainUid, domainNamespace);
 
     // create WLS domain and verify
-    createWlsDomainAndVerifyByDomainYaml(domainType, domainNamespace, externalServiceNameSuffix);
+    createWlsMiiDomainByDomainYamlAndVerify(domainNamespace, externalServiceNameSuffix, domainVersion);
 
   }
 
   // Since Operator version 3.1.0 the service pod prefix has been changed
   // from -external to -ext e.g.
   // domain1-adminserver-ext  NodePort    10.96.46.242   30001:30001/TCP
-  private void installAndUpgradeOperator(String domainType,
-      String operatorVersion, String domainVersion,
-      String externalServiceNameSuffix) {
+  private void installOperatorCreateMiiDomainAndUpgrade(String operatorVersion, String domainVersion,
+                                                        String externalServiceNameSuffix) {
 
     installOldOperator(operatorVersion,opNamespace,domainNamespace);
 
     // create WLS domain and verify
-    installDomainResource(domainType, domainVersion, externalServiceNameSuffix);
+    installMiiDomainResource(domainVersion, externalServiceNameSuffix);
 
     // upgrade to current operator
     upgradeOperatorAndVerify(opNamespace, domainNamespace, domainVersion);
@@ -709,12 +718,13 @@ class ItOperatorWlsUpgrade {
    * Replace the fields in domain yaml file with testing attributes.
    * For example, namespace, domainUid,  and image. Then create domain using
    * KUBERNETES_CLI and verify the domain is created
-   * @param domainType either domain in image(Image) or model in image (FromModel)
-   * @param domainNamespace namespace in which to create domain
+   *
+   * @param domainNamespace           namespace in which to create domain
    * @param externalServiceNameSuffix suffix of externalServiceName
+   * @param domainVersion             version of the domain
    */
-  private void createWlsDomainAndVerifyByDomainYaml(String domainType,
-      String domainNamespace, String externalServiceNameSuffix) {
+  private void createWlsMiiDomainByDomainYamlAndVerify(String domainNamespace,
+                                                       String externalServiceNameSuffix, String domainVersion) {
 
     // Create the repo secret to pull the image
     // this secret is used only for non-kind cluster
@@ -726,13 +736,13 @@ class ItOperatorWlsUpgrade {
         Paths.get(RESULTS_ROOT + "/" + this.getClass().getSimpleName())),
         String.format("Could not create directory under %s", RESULTS_ROOT));
 
-    if (domainType.equalsIgnoreCase("Image")) {
-      logger.info("Domain home in image domain will be created ");
-      srcDomainYaml = Paths.get(RESOURCE_DIR, "domain", "domain-v8.yaml");
+    if (domainVersion.equals(DOMAIN_VERSION)) {
+      logger.info("Model in image domain using " + DOMAIN_VERSION + " will be created ");
+      srcDomainYaml = Paths.get(RESOURCE_DIR, "domain", "mii-cluster-domain.yaml");
       destDomainYaml =
         Paths.get(RESULTS_ROOT + "/" + this.getClass().getSimpleName() + "/" + "domain.yaml");
       assertDoesNotThrow(() -> Files.copy(srcDomainYaml, destDomainYaml, REPLACE_EXISTING),
-          "File copy failed for domain-v8.yaml");
+          "File copy failed for mii-cluster-domain.yaml");
     } else {
       logger.info("Model in image domain will be created ");
       srcDomainYaml = Paths.get(RESOURCE_DIR, "domain", "mii-domain-v8.yaml");
@@ -752,20 +762,14 @@ class ItOperatorWlsUpgrade {
     assertDoesNotThrow(() -> replaceStringInFile(
         destDomainYaml.toString(), "domain1-weblogic-credentials", adminSecretName),
         "Could not modify the webLogicCredentialsSecret in the domain.yaml file");
-    if (domainType.equalsIgnoreCase("Image")) {
-      assertDoesNotThrow(() -> replaceStringInFile(
-          destDomainYaml.toString(), "domain-home-in-image:14.1.1.0",
-          WDT_BASIC_IMAGE_NAME + ":" + WDT_BASIC_IMAGE_TAG),
-          "Could not modify image name in the domain.yaml file");
-    } else {
-      assertDoesNotThrow(() -> replaceStringInFile(
-          destDomainYaml.toString(), "domain1-runtime-encryption-secret", encryptionSecretName),
-          "Could not modify runtimeEncryptionSecret in the domain-v8.yaml file");
-      assertDoesNotThrow(() -> replaceStringInFile(
-          destDomainYaml.toString(), "model-in-image:WLS-v1",
-          MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG),
-          "Could not modify image name in the mii-domain-v8.yaml file");
-    }
+    assertDoesNotThrow(() -> replaceStringInFile(
+        destDomainYaml.toString(), "domain1-runtime-encryption-secret", encryptionSecretName),
+        "Could not modify runtimeEncryptionSecret in the domain.yaml file");
+    assertDoesNotThrow(() -> replaceStringInFile(
+        destDomainYaml.toString(), "model-in-image:WLS-v1",
+        MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG),
+        "Could not modify image name in the domain.yaml file");
+
     assertTrue(Command
         .withParams(new CommandParams()
             .command(KUBERNETES_CLI + " create -f " + destDomainYaml))
