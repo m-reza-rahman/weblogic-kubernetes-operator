@@ -45,6 +45,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 
 import static java.net.InetAddress.getLocalHost;
 import static oracle.weblogic.kubernetes.TestConstants.ADMIN_PASSWORD_DEFAULT;
@@ -234,34 +235,7 @@ class ItCrossDomainTransactionSecurity {
   @Test
   @DisplayName("Check cross domain transaction works")
   void testCrossDomainTransactionCommitSecurityEnable() throws UnknownHostException {
-
-    /*logger.info("2 domains with crossDomainSecurity enabled start up!");
-    int domain1AdminServiceNodePort
-          = getServiceNodePort(domainNamespace, getExternalServicePodName(domain1AdminServerPodName), "default");
-    assertNotEquals(-1, domain1AdminServiceNodePort, "domain1 admin server default node port is not valid");
-    logger.info("domain1AdminServiceNodePort is: " + domain1AdminServiceNodePort);
-    int domain2AdminServiceNodePort
-          = getServiceNodePort(domainNamespace, getExternalServicePodName(domain2AdminServerPodName), "default");
-    assertNotEquals(-1, domain1AdminServiceNodePort, "domain2 admin server default node port is not valid");
-    logger.info("domain2AdminServiceNodePort is: " + domain2AdminServiceNodePort);
-
-    if (OKE_CLUSTER) {
-      createNginxIngressPathRoutingRules();
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      hostAndPort1 = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-    } else {
-      hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        hostHeader1 = createIngressHostRouting(domainNamespace, domainUid1, adminServerName, 7001);
-        hostAndPort1 = formatIPv6Host(getLocalHost().getHostAddress())
-            + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
-
-      }
-    }
-    logger.info("hostHeader1 for domain1 is: " + hostHeader1);
-    logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);*/
-
+    
     // build the standalone JMS Client on Admin pod
     String destLocation = "/u01/JmsSendReceiveClient.java";
     assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
@@ -358,42 +332,8 @@ class ItCrossDomainTransactionSecurity {
    */
   @Test
   @DisplayName("Check cross domain transaction works when SSL enabled")
+  @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER", matches = "true")
   void testCrossDomainTransactionCommitSecuritySSLEnable() throws UnknownHostException {
-
-    /*int domain1AdminServiceNodePort
-          = getServiceNodePort(domainNamespace, getExternalServicePodName(domain1AdminServerPodName), "default");
-    assertNotEquals(-1, domain1AdminServiceNodePort, "domain1 admin server default node port is not valid");
-    logger.info("domain1AdminServiceNodePort is: " + domain1AdminServiceNodePort);
-    int domain2AdminServiceNodePort
-          = getServiceNodePort(domainNamespace, getExternalServicePodName(domain2AdminServerPodName), "default");
-    assertNotEquals(-1, domain1AdminServiceNodePort, "domain2 admin server default node port is not valid");
-    logger.info("domain2AdminServiceNodePort is: " + domain2AdminServiceNodePort);
-
-    if (OKE_CLUSTER) {
-      createNginxIngressPathRoutingRules();
-      String nginxServiceName = nginxHelmParams.getHelmParams().getReleaseName() + "-ingress-nginx-controller";
-      hostAndPort1 = getServiceExtIPAddrtOke(nginxServiceName, nginxNamespace);
-    } else {
-      hostAndPort1 = getHostAndPort(domain1AdminExtSvcRouteHost, domain1AdminServiceNodePort);
-      if (TestConstants.KIND_CLUSTER
-          && !TestConstants.WLSIMG_BUILDER.equals(TestConstants.WLSIMG_BUILDER_DEFAULT)) {
-        hostHeader1 = createIngressHostRouting(domainNamespace, domainUid1, adminServerName, 7001);
-        hostAndPort1 = formatIPv6Host(getLocalHost().getHostAddress())
-            + ":" + TRAEFIK_INGRESS_HTTP_HOSTPORT;
-
-      }
-    }
-    logger.info("hostHeader1 for domain1 is: " + hostHeader1);
-    logger.info("hostAndPort1 for domain1 is: " + hostAndPort1);*/
-
-    // build the standalone JMS Client on Admin pod
-    /*String destLocation = "/u01/JmsSendReceiveClient.java";
-    assertDoesNotThrow(() -> copyFileToPod(domainNamespace,
-        domain1AdminServerPodName, "",
-        Paths.get(RESOURCE_DIR, "jms", "JmsSendReceiveClient.java"),
-        Paths.get(destLocation)));
-    runJavacInsidePod(domain1AdminServerPodName, domainNamespace, destLocation);*/
-
     //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and commit the tx
     StringBuffer curlCmd1 = new StringBuffer("curl -skg --show-error --noproxy '*' ");
     if (TestConstants.KIND_CLUSTER
@@ -437,13 +377,6 @@ class ItCrossDomainTransactionSecurity {
     logger.info("Executing curl command for local queue: {0}", curlCmdx);
     assertTrue(getCurlResult(curlCmdx.toString()).contains("Total Message(s) Received : 1"),
           "Didn't receive expected msg count from local queue");
-
-    /*testUntil(
-        runClientInsidePod(domain1AdminServerPodName, domainNamespace,
-            "/u01", "JmsSendReceiveClient",
-            "t3s://" + "localhost" + ":" + "7002", "receive", "jms.admin.adminQueue", "1"),
-        logger,
-        "Wait for JMS Client to send/recv msg");*/
 
     //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and rollback the tx
     StringBuffer curlCmd3 = new StringBuffer("curl -skg --show-error --noproxy '*' ");
@@ -489,13 +422,6 @@ class ItCrossDomainTransactionSecurity {
     assertTrue(getCurlResult(curlCmdx.toString()).contains("Total Message(s) Received : 0"),
           "Didn't receive expected msg count from local queue");
 
-    // receive 0 msg from the local queue
-    /*testUntil(
-        runClientInsidePod(domain1AdminServerPodName, domainNamespace,
-            "/u01", "JmsSendReceiveClient",
-            "t3://" + "localhost" + ":" + "7001", "receive", "jms.admin.adminQueue", "0"),
-        logger,
-        "Wait for JMS Client to send/recv msg");*/
   }
 
   private static String createAuxImage(String imageName, String imageTag, List<String> wdtModelFile,
