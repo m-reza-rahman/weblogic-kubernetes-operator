@@ -192,7 +192,7 @@ class ItOperatorWlsUpgrade {
   void testOperatorUpgradeAuxDomainV9From418ToCurrent() {
     logger.info("Starting test testOperatorUpgradeAuxDomainV9From418ToCurrent to upgrade Auxiliary Domain "
         + "with V9 schema to current");
-    installOperatorCreateMiiDomainAndUpgrade("4.1.8", DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
+    installOperatorCreateAuxDomainAndUpgrade("4.1.8", DOMAIN_VERSION);
   }
 
   /**
@@ -226,6 +226,17 @@ class ItOperatorWlsUpgrade {
     logger.info("Starting testOperatorUpgradeAuxDomainV9From3413ToCurrent "
          + "to upgrade Domain with Auxiliary Image with v9 schema to current");
     installOperatorCreateAuxDomainAndUpgrade("3.4.13", DOMAIN_VERSION);
+  }
+
+  /**
+   * Operator upgrade from 3.4.13 to current with Auxiliary Image Domain, V8 schema.
+   */
+  @Test
+  @DisplayName("Upgrade 3.4.13 Auxiliary Domain(v8 schema) Image to current")
+  void testOperatorUpgradeAuxDomainV8From3413ToCurrent() {
+    logger.info("Starting testOperatorUpgradeAuxDomainV8From3413ToCurrent "
+        + " to upgrade Domain with Auxiliary Image with v8 schema to current");
+    installOperatorCreateAuxDomainAndUpgrade("3.4.13", OLD_DOMAIN_VERSION);
   }
 
   /**
