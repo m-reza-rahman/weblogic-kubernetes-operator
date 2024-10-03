@@ -178,14 +178,6 @@ class ItCrossDomainTransactionSecurity {
       nginxHelmParams = installAndVerifyNginx(nginxNamespace, 0, 0);
     }
 
-    // Create SSL certificate and key using openSSL with SAN extension
-    createCertKeyFiles(hostAddress);
-    // Create kubernates secret using genereated certificate and key
-    createSecretWithTLSCertKey(tlsSecretName);
-    // Import the tls certificate into a JKS truststote to be used while
-    // running the standalone client.
-    importKeytoTrustStore();
-
     buildDomains();
 
     logger.info("2 domains with crossDomainSecurity enabled start up!");
@@ -331,6 +323,15 @@ class ItCrossDomainTransactionSecurity {
   @DisplayName("Check cross domain transaction works when SSL enabled")
   @DisabledIfEnvironmentVariable(named = "OKE_CLUSTER", matches = "true")
   void testCrossDomainTransactionCommitSecuritySSLEnable() throws UnknownHostException {
+
+    // Create SSL certificate and key using openSSL with SAN extension
+    createCertKeyFiles(hostAddress);
+    // Create kubernates secret using genereated certificate and key
+    createSecretWithTLSCertKey(tlsSecretName);
+    // Import the tls certificate into a JKS truststote to be used while
+    // running the standalone client.
+    importKeytoTrustStore();
+
     //In a UserTransaction send 10 msg to remote udq and 1 msg to local queue and commit the tx
     StringBuffer curlCmd1 = new StringBuffer("curl -skg --show-error --noproxy '*' ");
     if (TestConstants.KIND_CLUSTER
