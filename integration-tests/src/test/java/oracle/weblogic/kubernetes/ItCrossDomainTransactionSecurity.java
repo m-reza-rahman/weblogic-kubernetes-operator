@@ -134,8 +134,6 @@ class ItCrossDomainTransactionSecurity {
   private static String nginxNamespace = null;
   private static NginxParams nginxHelmParams = null;
   private static int nginxNodePort;
-  private static String traefikNamespace = null;
-  private static HelmParams traefikHelmParams = null;
   private static Path tlsCertFile;
   private static Path tlsKeyFile;
   private static Path jksTrustFile;
