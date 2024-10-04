@@ -7,7 +7,7 @@
     <parent>
         <groupId>oracle.kubernetes</groupId>
         <artifactId>operator-parent</artifactId>
-        <version>4.2.8-SNAPSHOT</version>
+        <version>4.2.9-SNAPSHOT</version>
     </parent>
 
     <artifactId>integration-tests</artifactId>
@@ -469,10 +469,10 @@
         </profile>
 
         <profile>
-            <id>oke-gate</id>
+            <id>oke-weekly-sequential</id>
             <properties>
                 <skipITs>false</skipITs>
-                <groups>oke-gate</groups>
+                <groups>oke-weekly-sequential</groups>
             </properties>
         </profile>
         <profile>
