@@ -51,6 +51,9 @@ ${KUBERNETES_CLI} create namespace istio-system
   bin/istioctl verify-install
   ${KUBERNETES_CLI} patch svc -n istio-system istio-ingressgateway --type='json' -p='[{"op":"replace","path":"/spec/ports/1/nodePort","value":32480}]'
   ${KUBERNETES_CLI} patch svc -n istio-system istio-ingressgateway --type='json' -p='[{"op":"replace","path":"/spec/ports/2/nodePort","value":32490}]'
+  # Patch to set the load balancer shape to flexible
+  ${KUBERNETES_CLI} patch svc -n istio-system istio-ingressgateway --type='json' -p='[{"op":"add","path":"/metadata/annotations/service.beta.kubernetes.io/oci-load-balancer-shape","value":"flexible"},{"op":"add","path":"/metadata/annotations/service.beta.kubernetes.io/oci-load-balancer-shape-flex-min","value":"10"},{"op":"add","path":"/metadata/annotations/service.beta.kubernetes.io/oci-load-balancer-shape-flex-max","value":"100"}]'
+
   bin/istioctl version
 )
 }
