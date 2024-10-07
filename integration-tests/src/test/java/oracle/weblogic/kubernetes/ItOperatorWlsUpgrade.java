@@ -158,6 +158,7 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade Operator from 4.0.9 to current")
+  @Order(2)
   void testOperatorUpgradeMiiDomainV8From409ToCurrent() {
     logger.info("Starting test testOperatorUpgradeMiiDomainV8From409ToCurrent with Mii domain v8 schema");
     installOperatorCreateMiiDomainAndUpgrade("4.0.9", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -179,6 +180,7 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade Operator from 4.1.7 to current")
+  @Order(3)
   void testOperatorUpgradeMiiDomainV8From417ToCurrent() {
     logger.info("Starting test testOperatorUpgradeMiiDomainV8From417ToCurrent with Mii domain v8 schema");
     installOperatorCreateMiiDomainAndUpgrade("4.1.7", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -211,6 +213,7 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade Operator from 4.2.6 to current")
+  @Order(4)
   void testOperatorUpgradeMiiDomainV8From426ToCurrent() {
     logger.info("Starting test testOperatorUpgradeMiiDomainV8From426ToCurrent to upgrade Domain with "
         + "Auxiliary Image with v8 schema to current");
@@ -233,6 +236,7 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade 3.4.13 Auxiliary Domain(v8 schema) Image to current")
+  @Order(1)
   void testOperatorUpgradeAuxDomainV8From3413ToCurrent() {
     logger.info("Starting testOperatorUpgradeAuxDomainV8From3413ToCurrent "
         + " to upgrade Domain with Auxiliary Image with v8 schema to current");
@@ -244,6 +248,7 @@ class ItOperatorWlsUpgrade {
    */
   @Disabled
   @DisplayName("Upgrade 3.4.12 Mii Domain(v8 schema) Image to current")
+  @Order(5)
   void testOperatorUpgradeMiiDomainV8From3412ToCurrent() {
     logger.info("Starting testOperatorWlsAuxDomainV8UpgradeFrom3412ToCurrent "
         + "to upgrade MII Domain with v8 schema to current");
