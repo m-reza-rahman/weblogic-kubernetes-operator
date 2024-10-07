@@ -21,13 +21,14 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.CleanupUtil;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -159,7 +160,6 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade Operator from 4.0.9 to current")
-  @Order(2)
   void testOperatorUpgradeMiiDomainV8From409ToCurrent() {
     logger.info("Starting test testOperatorUpgradeMiiDomainV8From409ToCurrent with Mii domain v8 schema");
     installOperatorCreateMiiDomainAndUpgrade("4.0.9", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -181,7 +181,6 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade Operator from 4.1.7 to current")
-  @Order(3)
   void testOperatorUpgradeMiiDomainV8From417ToCurrent() {
     logger.info("Starting test testOperatorUpgradeMiiDomainV8From417ToCurrent with Mii domain v8 schema");
     installOperatorCreateMiiDomainAndUpgrade("4.1.7", OLD_DOMAIN_VERSION, DEFAULT_EXTERNAL_SERVICE_NAME_SUFFIX);
@@ -214,7 +213,6 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade Operator from 4.2.6 to current")
-  @Order(4)
   void testOperatorUpgradeMiiDomainV8From426ToCurrent() {
     logger.info("Starting test testOperatorUpgradeMiiDomainV8From426ToCurrent to upgrade Domain with "
         + "Auxiliary Image with v8 schema to current");
@@ -237,7 +235,6 @@ class ItOperatorWlsUpgrade {
    */
   @Test
   @DisplayName("Upgrade 3.4.13 Auxiliary Domain(v8 schema) Image to current")
-  @Order(1)
   void testOperatorUpgradeAuxDomainV8From3413ToCurrent() {
     logger.info("Starting testOperatorUpgradeAuxDomainV8From3413ToCurrent "
         + " to upgrade Domain with Auxiliary Image with v8 schema to current");
@@ -249,7 +246,6 @@ class ItOperatorWlsUpgrade {
    */
   @Disabled
   @DisplayName("Upgrade 3.4.12 Mii Domain(v8 schema) Image to current")
-  @Order(5)
   void testOperatorUpgradeMiiDomainV8From3412ToCurrent() {
     logger.info("Starting testOperatorWlsAuxDomainV8UpgradeFrom3412ToCurrent "
         + "to upgrade MII Domain with v8 schema to current");
@@ -327,6 +323,12 @@ class ItOperatorWlsUpgrade {
     params.command(KUBERNETES_CLI + " apply -f "
             + Paths.get(WORK_DIR + "/domain.yaml").toString());
     boolean result = Command.withParams(params).execute();
+    try {
+      ExecResult crdRes = ExecCommand.exec(KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml");
+      logger.info("Crd Result " + crdRes.stdout());
+    } catch (Exception ex) {
+      logger.info("Exception " + ex);
+    }
     assertTrue(result, "Failed to create domain custom resource");
 
     // wait for the domain to exist
@@ -604,10 +606,17 @@ class ItOperatorWlsUpgrade {
         MII_BASIC_IMAGE_NAME + ":" + MII_BASIC_IMAGE_TAG),
         "Could not modify image name in the domain.yaml file");
 
-    assertTrue(Command
+    boolean result = Command
         .withParams(new CommandParams()
             .command(KUBERNETES_CLI + " create -f " + destDomainYaml))
-        .execute(), KUBERNETES_CLI + " create failed");
+        .execute();
+    try {
+      ExecResult crdRes = ExecCommand.exec(KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml");
+      logger.info("Crd Result " + crdRes.stdout());
+    } catch (Exception ex) {
+      logger.info("Exception " + ex);
+    }
+    assertTrue(result, KUBERNETES_CLI + " create failed");
 
     verifyDomain(domainUid, domainNamespace, externalServiceNameSuffix);
 
