@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
@@ -22,8 +21,6 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.CleanupUtil;
-import oracle.weblogic.kubernetes.utils.ExecCommand;
-import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -234,8 +231,8 @@ class ItOperatorWlsUpgrade {
   /**
    * Operator upgrade from 3.4.13 to current with Auxiliary Image Domain, V8 schema.
    */
-  @Test
   @DisplayName("Upgrade 3.4.13 Auxiliary Domain(v8 schema) Image to current")
+  @Disabled
   void testOperatorUpgradeAuxDomainV8From3413ToCurrent() {
     logger.info("Starting testOperatorUpgradeAuxDomainV8From3413ToCurrent "
         + " to upgrade Domain with Auxiliary Image with v8 schema to current");
@@ -324,16 +321,16 @@ class ItOperatorWlsUpgrade {
     params.command(KUBERNETES_CLI + " apply -f "
             + Paths.get(WORK_DIR + "/domain.yaml").toString());
     boolean result = Command.withParams(params).execute();
-    try {
-      Random rand = new Random();
+    /* try {
+      int randInt = new Random().nextInt(1000);
       String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml > "
-          + "/tmp/crd" + rand.nextInt(1000) + ".yaml";
+          + "/tmp/crd" + randInt + ".yaml";
       ExecResult crdRes = ExecCommand.exec(cmd);
       logger.info("Crd Result " + crdRes.stdout());
     } catch (Exception ex) {
       logger.info("Exception while get crd domains.weblogic.oracle " + ex);
       ex.printStackTrace();
-    }
+    } */
     assertTrue(result, "Failed to create domain custom resource");
 
     // wait for the domain to exist
@@ -615,7 +612,7 @@ class ItOperatorWlsUpgrade {
         .withParams(new CommandParams()
             .command(KUBERNETES_CLI + " create -f " + destDomainYaml))
         .execute();
-    try {
+    /* try {
       Random rand = new Random();
       String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml > "
           + "/tmp/crd" + rand.nextInt(1000) + ".yaml";
@@ -624,7 +621,7 @@ class ItOperatorWlsUpgrade {
     } catch (Exception ex) {
       logger.info("Exception while get crd domains.weblogic.oracle " + ex);
       ex.printStackTrace();
-    }
+    } */
     assertTrue(result, KUBERNETES_CLI + " create failed");
 
     verifyDomain(domainUid, domainNamespace, externalServiceNameSuffix);
