@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import oracle.weblogic.kubernetes.actions.impl.primitive.Command;
 import oracle.weblogic.kubernetes.actions.impl.primitive.CommandParams;
@@ -324,8 +325,11 @@ class ItOperatorWlsUpgrade {
             + Paths.get(WORK_DIR + "/domain.yaml").toString());
     boolean result = Command.withParams(params).execute();
     try {
-      ExecResult crdRes = ExecCommand.exec(KUBERNETES_CLI + " get crd domain.weblogic.oracle -o yaml");
-      logger.info("Crd Result " + crdRes.toString());
+      Random rand = new Random();
+      String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml > "
+          + "/tmp/crd" + rand.nextInt(1000) + ".yaml";
+      ExecResult crdRes = ExecCommand.exec(cmd);
+      logger.info("Crd Result " + crdRes.stdout());
     } catch (Exception ex) {
       logger.info("Exception while get crd domains.weblogic.oracle " + ex);
       ex.printStackTrace();
@@ -612,7 +616,10 @@ class ItOperatorWlsUpgrade {
             .command(KUBERNETES_CLI + " create -f " + destDomainYaml))
         .execute();
     try {
-      ExecResult crdRes = ExecCommand.exec(KUBERNETES_CLI + " get crd domain.weblogic.oracle -o yaml");
+      Random rand = new Random();
+      String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml > "
+          + "/tmp/crd" + rand.nextInt(1000) + ".yaml";
+      ExecResult crdRes = ExecCommand.exec(cmd);
       logger.info("Crd Result " + crdRes.stdout());
     } catch (Exception ex) {
       logger.info("Exception while get crd domains.weblogic.oracle " + ex);
