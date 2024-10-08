@@ -325,9 +325,10 @@ class ItOperatorWlsUpgrade {
     boolean result = Command.withParams(params).execute();
     try {
       ExecResult crdRes = ExecCommand.exec(KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml");
-      logger.info("Crd Result " + crdRes.stdout());
+      logger.info("Crd Result " + crdRes.toString());
     } catch (Exception ex) {
-      logger.info("Exception " + ex);
+      logger.info("Exception while get crd domains.weblogic.oracle " + ex);
+      ex.printStackTrace();
     }
     assertTrue(result, "Failed to create domain custom resource");
 
@@ -614,7 +615,8 @@ class ItOperatorWlsUpgrade {
       ExecResult crdRes = ExecCommand.exec(KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml");
       logger.info("Crd Result " + crdRes.stdout());
     } catch (Exception ex) {
-      logger.info("Exception " + ex);
+      logger.info("Exception while get crd domains.weblogic.oracle " + ex);
+      ex.printStackTrace();
     }
     assertTrue(result, KUBERNETES_CLI + " create failed");
 
