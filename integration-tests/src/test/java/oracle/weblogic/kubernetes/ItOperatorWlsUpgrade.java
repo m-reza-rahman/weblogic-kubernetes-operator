@@ -21,6 +21,8 @@ import oracle.weblogic.kubernetes.annotations.IntegrationTest;
 import oracle.weblogic.kubernetes.annotations.Namespaces;
 import oracle.weblogic.kubernetes.logging.LoggingFacade;
 import oracle.weblogic.kubernetes.utils.CleanupUtil;
+import oracle.weblogic.kubernetes.utils.ExecCommand;
+import oracle.weblogic.kubernetes.utils.ExecResult;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -278,6 +280,15 @@ class ItOperatorWlsUpgrade {
   }
 
   void installOperatorCreateAuxDomainAndUpgrade(String operatorVersion, String domainApiVersion) {
+    try {
+      String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle "
+          + "-o jsonpath='{.spec.conversion.webhook.clientConfig.service}'";
+      ExecResult crdRes = ExecCommand.exec(cmd);
+      logger.info("Crd Result before Operator install" + crdRes.stdout());
+    } catch (Exception ex) {
+      logger.info("Exception while get crd domains.weblogic.oracle " + ex);
+      ex.printStackTrace();
+    }
     logger.info("Upgrade version/{0} Auxiliary Domain(v8) to current", operatorVersion);
     installOldOperator(operatorVersion, opNamespace, domainNamespace);
     createSecrets();
@@ -314,6 +325,15 @@ class ItOperatorWlsUpgrade {
         () -> generateFileFromTemplate(srcDomainFile.toString(),
         "domain.yaml", templateMap));
     logger.info("Generated Domain Resource file {0}", targetDomainFile);
+    try {
+      String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle "
+          + "-o jsonpath='{.spec.conversion.webhook.clientConfig.service}'";
+      ExecResult crdRes = ExecCommand.exec(cmd);
+      logger.info("Crd Result after Operator install" + crdRes.stdout());
+    } catch (Exception ex) {
+      logger.info("Exception while get crd domains.weblogic.oracle " + ex);
+      ex.printStackTrace();
+    }
 
     // run KUBERNETES_CLI to create the domain
     logger.info("Run " + KUBERNETES_CLI + " to create the domain");
@@ -321,16 +341,6 @@ class ItOperatorWlsUpgrade {
     params.command(KUBERNETES_CLI + " apply -f "
             + Paths.get(WORK_DIR + "/domain.yaml").toString());
     boolean result = Command.withParams(params).execute();
-    /* try {
-      int randInt = new Random().nextInt(1000);
-      String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml > "
-          + "/tmp/crd" + randInt + ".yaml";
-      ExecResult crdRes = ExecCommand.exec(cmd);
-      logger.info("Crd Result " + crdRes.stdout());
-    } catch (Exception ex) {
-      logger.info("Exception while get crd domains.weblogic.oracle " + ex);
-      ex.printStackTrace();
-    } */
     assertTrue(result, "Failed to create domain custom resource");
 
     // wait for the domain to exist
@@ -397,9 +407,27 @@ class ItOperatorWlsUpgrade {
   // domain1-adminserver-ext  NodePort    10.96.46.242   30001:30001/TCP
   private void installOperatorCreateMiiDomainAndUpgrade(String operatorVersion, String domainVersion,
                                                         String externalServiceNameSuffix) {
+    try {
+      String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle "
+          + "-o jsonpath='{.spec.conversion.webhook.clientConfig.service}'";
+      ExecResult crdRes = ExecCommand.exec(cmd);
+      logger.info("Crd Result before Operator install" + crdRes.stdout());
+    } catch (Exception ex) {
+      logger.info("Exception while get crd domains.weblogic.oracle " + ex);
+      ex.printStackTrace();
+    }
 
     installOldOperator(operatorVersion,opNamespace,domainNamespace);
 
+    try {
+      String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle "
+          + "-o jsonpath='{.spec.conversion.webhook.clientConfig.service}'";
+      ExecResult crdRes = ExecCommand.exec(cmd);
+      logger.info("Crd Result after Operator install" + crdRes.stdout());
+    } catch (Exception ex) {
+      logger.info("Exception while get crd domains.weblogic.oracle " + ex);
+      ex.printStackTrace();
+    }
     // create WLS domain and verify
     installMiiDomainResource(domainVersion, externalServiceNameSuffix);
 
@@ -612,16 +640,6 @@ class ItOperatorWlsUpgrade {
         .withParams(new CommandParams()
             .command(KUBERNETES_CLI + " create -f " + destDomainYaml))
         .execute();
-    /* try {
-      Random rand = new Random();
-      String cmd = KUBERNETES_CLI + " get crd domains.weblogic.oracle -o yaml > "
-          + "/tmp/crd" + rand.nextInt(1000) + ".yaml";
-      ExecResult crdRes = ExecCommand.exec(cmd);
-      logger.info("Crd Result " + crdRes.stdout());
-    } catch (Exception ex) {
-      logger.info("Exception while get crd domains.weblogic.oracle " + ex);
-      ex.printStackTrace();
-    } */
     assertTrue(result, KUBERNETES_CLI + " create failed");
 
     verifyDomain(domainUid, domainNamespace, externalServiceNameSuffix);
